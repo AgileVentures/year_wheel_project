@@ -1,0 +1,264 @@
+@mixin display_flex($flex-direction, $justify-content, $align-items, $flex-wrap){
+    display: flex;
+    flex-direction: $flex-direction;
+    justify-content: $justify-content;
+    align-items: $align-items;
+    flex-wrap: $flex-wrap;
+}
+
+@mixin margin_vertical($margin){
+    margin-top: calc($margin / 2);
+    margin-bottom: calc($margin / 2);
+    &:first-child {
+        margin-top: 0;
+    }
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+@mixin margin_horizontal($margin){
+    margin-left: calc($margin / 2);
+    margin-right: calc($margin / 2);
+    &:first-child {
+        margin-left: 0;
+    }
+    &:last-child {
+        margin-right: 0;
+    }
+}
+
+
+body {
+    --scale: 1;
+    @include display_flex(row, space-between, stretch, nowrap);
+    &>*{
+        @include margin_horizontal(20px);
+    }
+    margin: 20px;
+    font-family: Verdana, sans-serif;
+    * {
+        box-sizing: border-box;
+    }
+}
+
+#root {
+    @include display_flex(row, space-between, stretch, nowrap);
+  }
+
+.inputs, .year-wheel-wrapper {
+    @include margin_vertical(10px); // This ensures there's some space between the two main sections
+    @include margin_horizontal(30px);
+}
+
+.year-wheel-wrapper {
+    @include display_flex(row, center, center, nowrap);
+    flex: 2; // Adjust this value based on how much space you want the wheel to take relative to the settings
+    // Additional styling
+}
+
+
+
+label {
+    font-size: small;
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+button, input[type="button"], a.button {
+    cursor: pointer;
+}
+
+button, input, select, textarea, a.button {
+    font-family: inherit;
+}
+input, select {
+    width: 300px;
+    height: 40px;
+}
+input, select, textarea {
+    border: 1px solid lightgray;
+    padding: 12px;
+    font-size: 12px;
+    &:focus {
+        border: 1px solid gray;
+        outline: none;
+    }
+}
+textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+section {
+    padding: 20px 0;
+}
+button, a.button {
+    border: none;
+    background-color: lightgrey;
+    padding: 12px 24px;
+}
+a.button {
+    color: inherit;
+    text-decoration: none;
+}
+
+.inputs {
+    flex: 1;
+    height: 100%;
+    @include display_flex(column, stretch, stretch, nowrap);
+}
+
+.divider {
+    background-color: transparent;
+    &.row {
+        height: 10px;
+    }
+    &.column {
+        width: 1px;
+    }
+}
+
+.general-inputs {
+    &>* {
+        @include margin_vertical(40px);
+    } 
+    [type="checkbox"] {
+        height: 15px;
+        width: auto;
+    }
+}
+
+.color-input {
+    width: 30px;
+    height: 30px;
+    box-sizing: border-box;
+    &.selected {
+        box-shadow: 0 0 0 4px white inset;
+    }
+}
+
+.action-inputs {
+    @include display_flex(row, space-between, flex-start, nowrap)
+}
+
+
+.ring-inputs {
+    grid-row: 3fr;
+    grid-column: 1/4;
+
+    display: flex;
+    flex: 1;
+    .rings-sidebar {
+        min-width: 140px;
+        height: 100%;
+        border-right: 1px solid lightgray;
+        padding: 20px 0;
+        .rings {
+            .ring-button {
+                width: 100%;
+                background-color: white;
+                border: 1px solid white;
+                border-right: none;
+                outline: none;
+                display: block;
+                &.selected {
+                    border: 1px solid lightgray;
+                    border-right: 1px solid white;
+                    margin-right: -2px;
+                }
+            }
+        }
+        .add-ring-button, .delete-ring-button {
+            display: block;
+            margin-top: 12px;
+        }
+    }
+    .ring-textareas-wrapper {
+        flex: 1;
+        overflow: auto;
+        margin-left: 12px;
+        display: flex;
+        position: relative;
+        .ring-textareas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            min-height: min-content; /* needs vendor prefixes */
+            .ring-textarea {
+                margin: 12px;
+                width: 100%;
+                textarea{
+                    height: 4em;
+                    width: 100%
+                }
+            }
+        }
+    }
+}
+
+
+
+.year-wheel-wrapper {
+    @include display_flex(row, center, center, nowrap);
+    flex: 2;
+    position: relative;
+    width: 840px;
+    height: 100%;
+    border: 1px solid lightgray;
+    .year-wheel {
+        overflow: scroll;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .zoom-buttons {
+        position: absolute;
+        right: 20px;
+        bottom: 20px;
+        z-index: 1;
+        margin: -12px 0;
+
+    }
+}
+
+.zoom-button {
+    width: 32px;
+    height: 32px;
+    margin: 12px 0;
+    padding: 0;
+    display: block;
+    background-color: white;
+    border: 1px solid lightgray;
+    border-radius: 50%;
+    outline: none;
+}
+
+
+// canvas {
+//     transform: scale(var(--scale));
+// }
+canvas {
+    display: block;
+    margin: auto;
+    // position: absolute;
+    // transform: translate(-50%, -50%);
+    // left: 50%;
+    // right: 50%;
+    // top: 50%;
+    image-rendering: optimizeSpeed;             // Older versions of FF
+    image-rendering: -moz-crisp-edges;          // FF 6.0+
+    image-rendering: -webkit-optimize-contrast; // Webkit (non standard naming)
+    image-rendering: -o-crisp-edges;            // OS X & Windows Opera (12.02+)
+    image-rendering: crisp-edges;               // Possible future browsers.
+    -ms-interpolation-mode: nearest-neighbor;   // IE (non standard naming)
+}

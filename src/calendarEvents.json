@@ -1,0 +1,67 @@
+{
+  "2024": [
+    {
+      "startDate": "2023-12-31",
+      "endDate": "2024-01-01",
+      "name": "Nyårshelg"
+    },
+    {
+      "startDate": "2024-04-05",
+      "endDate": "2024-04-08",
+      "name": "Påsk"
+    },
+    
+    {
+      "startDate": "2024-05-01",
+      "endDate": "2024-05-01",
+      "name": "Första maj"
+    },
+    {
+      "startDate": "2024-05-09",
+      "endDate": "2024-05-09",
+      "name": "Kristi himmelsfärdsdag"
+    },
+    {
+      "startDate": "2024-05-18",
+      "endDate": "2024-05-19",
+      "name": "Pingsthelgen"
+    },
+    {
+      "startDate": "2024-06-06",
+      "endDate": "2024-06-06",
+      "name": "Sveriges nationaldag"
+    },
+    {
+      "startDate": "2024-06-21",
+      "endDate": "2024-06-21",
+      "name": "Midsommarafton"
+    },
+    {
+      "startDate": "2024-12-24",
+      "endDate": "2024-12-26",
+      "name": "Julhelgen"
+    },
+ 
+    {
+      "startDate": "2024-03-02",
+      "endDate": "2024-05-31",
+      "name": "Vår"
+    },
+    {
+      "startDate": "2024-06-01",
+      "endDate": "2024-08-31",
+      "name": "Sommar"
+    },
+    {
+      "startDate": "2024-09-01",
+      "endDate": "2024-11-30",
+      "name": "Höst"
+    },
+    {
+      "startDate": "2024-12-01",
+      "endDate": "2025-02-29",
+      "name": "Vinter"
+    }
+  ],
+  "2023": []
+}
