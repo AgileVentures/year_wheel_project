@@ -17,7 +17,8 @@ function App() {
     [[], [], [], [], [], [], [], [], [], [], [], []],
   ]);
   const [selectedRingIndex, setSelectedRingIndex] = useState(0);
-  const [showYearEvents, setShowYearEvents] = useState(true);
+  const [showYearEvents, setShowYearEvents] = useState(false);
+  const [yearEventsCollection, setYearEventsCollection] = useState([])
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("yearWheelData"));
@@ -30,7 +31,7 @@ function App() {
 
   useEffect(() => {
     const yearEvents = calendarEvents[year] || [];
-    setShowYearEvents(yearEvents.length > 0);
+    setYearEventsCollection(yearEvents);
   }, [year]);
 
   const handleTitleChange = (newTitle) => setTitle(newTitle);
@@ -87,7 +88,7 @@ function App() {
             colors={colors}
             ringsData={ringsData}
             showYearEvents={showYearEvents}
-            yearEventsCollection={calendarEvents}
+            yearEventsCollection={yearEventsCollection}
           />
         </div>
       </div>

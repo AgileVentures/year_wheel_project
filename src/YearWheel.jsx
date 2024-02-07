@@ -1,18 +1,26 @@
 /* eslint-disable react/prop-types */
 import { useRef, useEffect, useState } from "react";
-import createYearWheel from "./year-wheel";
+import createYearWheel from "./year-wheel-refactored";
+// import YearWheelClass from "./YearWheel";
 
-function YearWheel({ ringsData, title, year, colors, showYearEvents, yearEventsCollection }) {
+function YearWheel({
+  ringsData,
+  title,
+  year,
+  colors,
+  showYearEvents,
+  yearEventsCollection,
+}) {
   const canvasRef = useRef(null);
   const [scale, setScale] = useState(1); // Start with no scaling
   const [events, setEvents] = useState([]);
-
+  
   const size = 800;
-
+  
   useEffect(() => {
-    const yearEvents = yearEventsCollection[year] || [];
+    const yearEvents = yearEventsCollection || [];
     setEvents(yearEvents);
-  }, [year]);
+  }, [year, yearEventsCollection]);
 
   useEffect(() => {
     if (canvasRef.current && events.length > 0) {
@@ -28,8 +36,19 @@ function YearWheel({ ringsData, title, year, colors, showYearEvents, yearEventsC
         events,
         {showYearEvents: showYearEvents}
       ); // Pass events here
+      // const yearWheel = new YearWheelClass(
+      //   canvas,
+      //   ringsData,
+      //   title,
+      //   year,
+      //   colors,
+      //   canvas.width,
+      //   events,
+      //   { showYearEvents: showYearEvents }
+      // );
+      // yearWheel.create();
     }
-  }, [ringsData, title, year, colors, events, scale, showYearEvents]); // Include events in the dependency array
+  }, [ringsData, title, year, colors, events, scale, showYearEvents]);
 
   const zoomIn = () => {
     setScale((prevScale) => (prevScale < 1.5 ? prevScale * 1.1 : prevScale));
