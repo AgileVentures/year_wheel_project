@@ -1,6 +1,8 @@
 
 # Year Wheel POC README
 
+This is edited online!
+
 ## Overview
 Year Wheel POC (Proof of Concept) is a straightforward planning tool designed to present activities and events in an easily understandable format. Developed using React with Vite as the foundation, it primarily expands upon a vanilla JavaScript solution available at [kirkby's year-wheel GitHub repository](https://github.com/kirkby/year-wheel).
 
