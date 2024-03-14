@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState } from "react";
-import { Input, Select } from '@chakra-ui/react';
+import { Input, Select, Checkbox } from '@chakra-ui/react';
 
 function GeneralInputs({
   onTitleChange,
@@ -15,16 +15,10 @@ function GeneralInputs({
     <div className="general-inputs">
       <div className="general-input">
         <label>Titel</label>
-        {/* <input
-          className="title-input"
-          onChange={(e) => {
-            setTitle(e.target.value);
-            onTitleChange(e.target.value);
-          }}
-          value={title}
-        /> */}
         <Input 
           className="title-input"
+          bg='white'
+          color='black'
           onChange={(e) => {
             setTitle(e.target.value);
             onTitleChange(e.target.value);
@@ -36,19 +30,9 @@ function GeneralInputs({
       </div>
       <div className="general-input">
         <label>År</label>
-        {/* <select
-          className="year-select"
-          value={year}
-          onChange={(e) => {
-            setYear(e.target.value);
-            onYearChange(e.target.value);
-          }}
-        >
-          <option value="2022">2022</option>
-          <option value="2023">2023</option>
-          <option value="2024">2024</option>
-        </select> */}
         <Select
+        bg='white'
+        color='black'
         placeholder='Select option'
         className="year-select"
         value={year}
@@ -56,28 +40,23 @@ function GeneralInputs({
           setYear(e.target.value);
           onYearChange(e.target.value);
         }}>
-        <option value="2022">2022</option>
+          <option value="2022">2022</option>
           <option value="2023">2023</option>
           <option value="2024">2024</option>
         </Select>
       </div>
       <div className="general-input">
-        <label>
+        <label >
           Visa årstider och helger
-          <input
-            type="checkbox"
-            onChange={(e) => {
+        </label>
+        <Checkbox
+          isInvalid
+          size='md'
+          colorScheme='orange'
+          onChange={(e) => {
               setShowEvents(e.target.checked);
               onShowYearEventsChange(e.target.checked);
-            }}
-          />
-          {/* <Input
-           type="checkbox"
-           onChange={(e) => {
-             setShowEvents(e.target.checked);
-             onShowYearEventsChange(e.target.checked);
-           }}/> */}
-        </label>
+            }} />
       </div>
     </div>
   );

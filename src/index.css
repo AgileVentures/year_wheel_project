@@ -150,6 +150,7 @@ a.button {
           align-items: flex-start;
   -ms-flex-wrap: nowrap;
       flex-wrap: nowrap;
+  /* margin: 20px 0; */
 }
 
 .ring-inputs {
@@ -164,6 +165,7 @@ a.button {
   -webkit-box-flex: 1;
       -ms-flex: 1;
           flex: 1;
+          color: black;
 }
 
 .ring-inputs .rings-sidebar {
@@ -240,6 +242,7 @@ a.button {
 .ring-inputs .ring-textareas-wrapper .ring-textareas .ring-textarea textarea {
   height: 4em;
   width: 100%;
+  overflow: hidden;
 }
 
 .year-wheel-wrapper {

@@ -66,7 +66,7 @@ function App() {
 
   return (
     <>
-      <Container className="inputs"  maxW='md' bg='blue.600' color='white'>
+      <Container className="inputs"  maxW='xxl' bg='brand.100' color='white'>
         {/* Place your settings components here */}
         <GeneralInputs
           onTitleChange={handleTitleChange}
@@ -80,7 +80,7 @@ function App() {
         <div className="divider row"></div>
         <ActionInputs onSave={handleSave} onReset={handleReset} />
       </Container>
-      <Container>
+      <Container >
         <div className="year-wheel-wrapper">
           {/* Insert your wheel component here */}
           <YearWheel

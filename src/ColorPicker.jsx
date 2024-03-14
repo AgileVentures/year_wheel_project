@@ -17,14 +17,8 @@ function ColorPicker({ onColorSelect }) {
   return (
     <div className="color-inputs">
       {colors.map((color, index) => (
-        // <button
-        //   key={index}
-        //   className={`color-input ${selectedColors.includes(color) ? 'selected' : ''}`}
-        //   style={{ backgroundColor: color }}
-        //   onClick={() => toggleColor(color)}
-        // />
         <Button 
-        key={index}
+          key={index}
           className={`color-input ${selectedColors.includes(color) ? 'selected' : ''}`}
           style={{ backgroundColor: color }}
           onClick={() => toggleColor(color)}/>

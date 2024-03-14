@@ -57,15 +57,13 @@ function Ring({ ringData, onMonthChange }) {
 
 const RingButton = ({ index, isSelected, setRingSelected }) => {
   return (
-    // <button
-    //   onClick={() => setRingSelected(index)}
-    //   className={`ring-button${isSelected ? " selected" : ""}`}
-    // >
-    //   Ring {index + 1}
-    // </button>
-
-<Button colorScheme='purple' onClick={() => setRingSelected(index)}
-      className={`ring-button${isSelected ? " selected" : ""}`}>Ring {index + 1}</Button>
+      <Button
+        colorScheme='white'
+        onClick={() => setRingSelected(index)}
+        className={`ring-button${isSelected ? " selected" : ""}`}
+      >
+        Ring {index + 1}
+      </Button>
   );
 };
 
@@ -135,26 +133,21 @@ function RingManager({ ringsData, onRingsChange }) {
               setRingSelected={() => selectRing(index)}
             />
           ))}
-          {/* <button className="add-ring-button" onClick={addRing}>
+          <Button
+            className="add-ring-button"
+            onClick={addRing}
+            variant='primary'
+          >
             Add ring
-          </button> */}
-          {/* <button
+          </Button>
+          <Button
             className="delete-ring-button"
+            variant='primary'
             onClick={() => deleteRing(ringSelected)}
             disabled={ringsData.length <= 1} // Prevent deletion if only one ring exists
           >
             Delete ring
-          </button> */}
-          <Button
-            colorScheme='purple'
-            className="add-ring-button" onClick={addRing}
-          >Add ring</Button>
-          <Button
-            colorScheme='purple'
-            className="delete-ring-button"
-            onClick={() => deleteRing(ringSelected)}
-            disabled={ringsData.length <= 1} // Prevent deletion if only one ring exists
-          >Delete ring</Button>
+          </Button>
         </div>
       </div>
       {ringsData[ringSelected] && (
