@@ -2,6 +2,7 @@
 import { useRef, useEffect, useState } from "react";
 import createYearWheel from "./year-wheel-refactored";
 // import YearWheelClass from "./YearWheel";
+import { Button, ButtonGroup, Container } from '@chakra-ui/react'
 
 function YearWheel({
   ringsData,
@@ -59,7 +60,7 @@ function YearWheel({
   };
 
   return (
-    <div className="year-wheel">
+    <Container className="year-wheel" maxW='xxl' bg='brand.100' color='white'>
       <canvas
         ref={canvasRef}
         width={size * scale} // Adjust base size as needed
@@ -69,15 +70,19 @@ function YearWheel({
           height: `${(size / 4 + size) * scale}px`,
         }}
       />
-      <div className="zoom-buttons">
-        <button className="zoom-button" onClick={zoomIn}>
-          +
-        </button>
-        <button className="zoom-button" onClick={zoomOut}>
-          -
-        </button>
-      </div>
-    </div>
+      <ButtonGroup spacing='1rem' className="zoom-buttons" centerContent>
+        <Button
+          className="zoom-button"
+          variant='primaryOutline'
+          onClick={zoomIn}
+        >+</Button>
+        <Button
+          className="zoom-button"
+          variant='primaryOutline'
+          onClick={zoomOut}
+        >-</Button>
+      </ButtonGroup>
+    </Container>
   );
 }
 

@@ -7,6 +7,7 @@ import YearWheel from "./YearWheel";
 import RingManager from "./RingManager";
 import ActionInputs from "./ActionInputs";
 import calendarEvents from "./calendarEvents.json";
+import { Container } from '@chakra-ui/react'
 
 
 function App() {
@@ -65,7 +66,7 @@ function App() {
 
   return (
     <>
-      <div className="inputs">
+      <Container className="inputs"  maxW='xxl' bg='brand.100' color='white'>
         {/* Place your settings components here */}
         <GeneralInputs
           onTitleChange={handleTitleChange}
@@ -78,8 +79,8 @@ function App() {
         <RingManager ringsData={ringsData} onRingsChange={onRingsChange} />
         <div className="divider row"></div>
         <ActionInputs onSave={handleSave} onReset={handleReset} />
-      </div>
-      <div>
+      </Container>
+      <Container >
         <div className="year-wheel-wrapper">
           {/* Insert your wheel component here */}
           <YearWheel
@@ -91,7 +92,7 @@ function App() {
             yearEventsCollection={yearEventsCollection}
           />
         </div>
-      </div>
+      </Container>
     </>
   );
 }

@@ -3,6 +3,8 @@
 // RingManager.jsx
 import { useState } from "react";
 import MonthTextarea from "./MonthTextarea";
+import { Button } from "@chakra-ui/react";
+
 
 // Ring.jsx
 const months = [
@@ -55,12 +57,13 @@ function Ring({ ringData, onMonthChange }) {
 
 const RingButton = ({ index, isSelected, setRingSelected }) => {
   return (
-    <button
-      onClick={() => setRingSelected(index)}
-      className={`ring-button${isSelected ? " selected" : ""}`}
-    >
-      Ring {index + 1}
-    </button>
+      <Button
+        colorScheme='white'
+        onClick={() => setRingSelected(index)}
+        className={`ring-button${isSelected ? " selected" : ""}`}
+      >
+        Ring {index + 1}
+      </Button>
   );
 };
 
@@ -130,16 +133,21 @@ function RingManager({ ringsData, onRingsChange }) {
               setRingSelected={() => selectRing(index)}
             />
           ))}
-          <button className="add-ring-button" onClick={addRing}>
+          <Button
+            className="add-ring-button"
+            onClick={addRing}
+            variant='primary'
+          >
             Add ring
-          </button>
-          <button
+          </Button>
+          <Button
             className="delete-ring-button"
+            variant='primary'
             onClick={() => deleteRing(ringSelected)}
             disabled={ringsData.length <= 1} // Prevent deletion if only one ring exists
           >
             Delete ring
-          </button>
+          </Button>
         </div>
       </div>
       {ringsData[ringSelected] && (

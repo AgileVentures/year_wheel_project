@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import{ useState } from 'react';
+import { Button } from "@chakra-ui/react";
 
 function ColorPicker({ onColorSelect }) {
   const colors = ["#000000", "#999999", "#CC3333", "#F89933", "#FFCC00", "#669933", "#006699", "#663399"];
@@ -16,12 +17,11 @@ function ColorPicker({ onColorSelect }) {
   return (
     <div className="color-inputs">
       {colors.map((color, index) => (
-        <button
+        <Button 
           key={index}
           className={`color-input ${selectedColors.includes(color) ? 'selected' : ''}`}
           style={{ backgroundColor: color }}
-          onClick={() => toggleColor(color)}
-        />
+          onClick={() => toggleColor(color)}/>
       ))}
     </div>
   );
