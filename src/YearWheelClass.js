@@ -242,6 +242,7 @@ class YearWheel {
     let eventRadius = this.minRadius;
 
     for (let i = 0; i < numberOfEvents; i++) {
+      const ring = this.options.ringsData[i];
       const percentage = (1 / (numberOfEvents - i)) * 1.1;
       const newEventWidth = i !== numberOfEvents - 1
         ? remainingEventWidth * percentage
@@ -254,7 +255,7 @@ class YearWheel {
         0.4,
         null,
         this.setCircleSectionTexts,
-        this.options.ringsData[i],
+        ring.data,  // Updated to correctly pass ring.data to the function
         this.size / 150,
         this.colors
       );

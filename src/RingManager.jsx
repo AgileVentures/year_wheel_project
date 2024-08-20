@@ -54,26 +54,26 @@ function RingManager({ ringsData = [], onRingsChange }) {
 
   const handleMonthChange = (ringIndex, monthName, value) => {
     const monthIndex = monthNameToIndex[monthName];
-  
+
     if (monthIndex === undefined) {
-      console.error("Invalid month name:", monthName);
-      return;
+        console.error("Invalid month name:", monthName);
+        return;
     }
-  
+
     const updatedRings = ringsData.map((ring, index) => {
-      if (index === ringIndex) {
-        const updatedRing = { ...ring };
-        updatedRing.data[monthIndex] = value.split("\n"); // Splitting the user input by line
-        return updatedRing;
-      }
-      return ring;
+        if (index === ringIndex) {
+            const updatedRing = { ...ring };
+            // Ensure data is an array, not an object with numeric keys
+            const updatedData = [...updatedRing.data]; // Clone the data array
+            updatedData[monthIndex] = value.split("\n"); // Update the correct month
+            updatedRing.data = updatedData; // Assign the updated data back to the ring
+            return updatedRing;
+        }
+        return ring;
     });
-  
-    onRingsChange(updatedRings); // Passing the updated rings back up
-  };
-  
-  
-  
+
+    onRingsChange(updatedRings);
+};
 
   const handleOrientationChange = (ringIndex, orientation) => {
     const updatedRings = ringsData.map((ring, index) => {
@@ -125,7 +125,7 @@ function RingManager({ ringsData = [], onRingsChange }) {
       </div>
       <div className="ring-content">
         <Ring
-          ringData={selectedRing}
+          ringData={selectedRing} // Passing the entire selected ring object
           onMonthChange={(month, value) =>
             handleMonthChange(ringSelected, month, value)
           }

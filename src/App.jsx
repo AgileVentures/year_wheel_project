@@ -11,7 +11,10 @@ function App() {
   const [year, setYear] = useState("2024");
   const [colors, setColors] = useState(["#663399", "#CC3333", "#669933"]);
   const [ringsData, setRingsData] = useState([
-    { data: Array.from({ length: 12 }, () => [""]), orientation: "vertical" },
+    {
+      data: Array.from({ length: 12 }, () => [""]),
+      orientation: "vertical"
+    }
   ]);
   const [selectedRingIndex, setSelectedRingIndex] = useState(0);
   const [showYearEvents, setShowYearEvents] = useState(false);
@@ -54,7 +57,10 @@ function App() {
     setYear("2024");
     setColors(["#663399", "#CC3333", "#669933"]); // Reset to initial colors
     setRingsData([
-      { data: Array.from({ length: 12 }, () => [""]), orientation: "vertical" },
+      {
+        data: Array.from({ length: 12 }, () => [""]),
+        orientation: "vertical"
+      }
     ]);
   }
 

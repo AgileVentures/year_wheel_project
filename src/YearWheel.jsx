@@ -1,12 +1,14 @@
 /* eslint-disable react/prop-types */
 import { useRef, useEffect, useState } from "react";
-import YearWheelClass from "./YearWheelClass"
+import YearWheelClass from "./YearWheelClass";
 
 function useZoom(initialScale = 1, maxScale = 1.5, minScale = 0.1) {
   const [scale, setScale] = useState(initialScale);
 
-  const zoomIn = () => setScale((prevScale) => Math.min(prevScale * 1.1, maxScale));
-  const zoomOut = () => setScale((prevScale) => Math.max(prevScale / 1.1, minScale));
+  const zoomIn = () =>
+    setScale((prevScale) => Math.min(prevScale * 1.1, maxScale));
+  const zoomOut = () =>
+    setScale((prevScale) => Math.max(prevScale / 1.1, minScale));
   const resetZoom = () => setScale(initialScale);
 
   return { scale, zoomIn, zoomOut, resetZoom };
@@ -46,13 +48,10 @@ function YearWheel({
           events,
           {
             showYearEvents,
-            ringsData: ringsData.map((ring) => ({
-              ...ring.data,
-              orientation: ring.orientation,
-            })),
+            ringsData: ringsData,
           }
         );
-       setYearWheel(newYearWheel.create());
+        setYearWheel(newYearWheel.create());
       } else {
         // If the yearWheel instance already exists, update it
         yearWheel.canvas = canvas;
@@ -65,7 +64,16 @@ function YearWheel({
         yearWheel.create();
       }
     }
-  }, [ringsData, title, year, colors, events, showYearEvents, scale, yearWheel]);
+  }, [
+    ringsData,
+    title,
+    year,
+    colors,
+    events,
+    showYearEvents,
+    scale,
+    yearWheel,
+  ]);
 
   const downloadPNG = () => {
     if (yearWheel) {
