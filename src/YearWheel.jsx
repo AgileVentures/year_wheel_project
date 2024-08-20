@@ -1,7 +1,16 @@
 /* eslint-disable react/prop-types */
 import { useRef, useEffect, useState } from "react";
-import createYearWheel from "./year-wheel-refactored";
-// import YearWheelClass from "./YearWheel";
+import YearWheelClass from "./YearWheelClass"
+
+function useZoom(initialScale = 1, maxScale = 1.5, minScale = 0.1) {
+  const [scale, setScale] = useState(initialScale);
+
+  const zoomIn = () => setScale((prevScale) => Math.min(prevScale * 1.1, maxScale));
+  const zoomOut = () => setScale((prevScale) => Math.max(prevScale / 1.1, minScale));
+  const resetZoom = () => setScale(initialScale);
+
+  return { scale, zoomIn, zoomOut, resetZoom };
+}
 
 function YearWheel({
   ringsData,
@@ -12,61 +21,65 @@ function YearWheel({
   yearEventsCollection,
 }) {
   const canvasRef = useRef(null);
-  const [scale, setScale] = useState(1); // Start with no scaling
+  const { scale, zoomIn, zoomOut } = useZoom();
   const [events, setEvents] = useState([]);
-  
-  const size = 800;
-  
+  const [yearWheel, setYearWheel] = useState(null);
+
   useEffect(() => {
-    const yearEvents = yearEventsCollection || [];
-    setEvents(yearEvents);
+    setEvents(yearEventsCollection || []);
   }, [year, yearEventsCollection]);
 
   useEffect(() => {
     if (canvasRef.current && events.length > 0) {
-      // Make sure there are events to draw
       const canvas = canvasRef.current;
-      createYearWheel(
-        canvas,
-        ringsData,
-        title,
-        year,
-        colors,
-        canvas.width,
-        events,
-        {showYearEvents: showYearEvents}
-      ); // Pass events here
-      // const yearWheel = new YearWheelClass(
-      //   canvas,
-      //   ringsData,
-      //   title,
-      //   year,
-      //   colors,
-      //   canvas.width,
-      //   events,
-      //   { showYearEvents: showYearEvents }
-      // );
-      // yearWheel.create();
+      canvas.width = 800 * scale; // Set canvas width according to scale
+      canvas.height = (800 / 4 + 800) * scale; // Set canvas height according to scale
+
+      // Create a new YearWheel instance if it doesn't exist
+      if (!yearWheel) {
+        const newYearWheel = new YearWheelClass(
+          canvas,
+          year,
+          title,
+          colors,
+          canvas.width,
+          events,
+          {
+            showYearEvents,
+            ringsData: ringsData.map((ring) => ({
+              ...ring.data,
+              orientation: ring.orientation,
+            })),
+          }
+        );
+       setYearWheel(newYearWheel.create());
+      } else {
+        // If the yearWheel instance already exists, update it
+        yearWheel.canvas = canvas;
+        yearWheel.year = year;
+        yearWheel.title = title;
+        yearWheel.colors = colors;
+        yearWheel.size = canvas.width;
+        yearWheel.events = events;
+        yearWheel.options = { showYearEvents, ringsData };
+        yearWheel.create();
+      }
     }
-  }, [ringsData, title, year, colors, events, scale, showYearEvents]);
+  }, [ringsData, title, year, colors, events, showYearEvents, scale, yearWheel]);
 
-  const zoomIn = () => {
-    setScale((prevScale) => (prevScale < 1.5 ? prevScale * 1.1 : prevScale));
-  };
-
-  const zoomOut = () => {
-    setScale((prevScale) => (prevScale > 0.1 ? prevScale / 1.1 : prevScale));
+  const downloadPNG = () => {
+    if (yearWheel) {
+      yearWheel.downloadAsPNG();
+    }
   };
 
   return (
     <div className="year-wheel">
       <canvas
         ref={canvasRef}
-        width={size * scale} // Adjust base size as needed
-        height={(size / 4 + size) * scale} // Adjust base size as needed
         style={{
-          width: `${size * scale}px`,
-          height: `${(size / 4 + size) * scale}px`,
+          width: `${800 * scale}px`, // Adjust display size based on scale
+          height: `${(800 / 4 + 800) * scale}px`,
         }}
       />
       <div className="zoom-buttons">
@@ -75,6 +88,9 @@ function YearWheel({
         </button>
         <button className="zoom-button" onClick={zoomOut}>
           -
+        </button>
+        <button className="download-button" onClick={downloadPNG}>
+          Download as PNG
         </button>
       </div>
     </div>

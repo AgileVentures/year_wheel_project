@@ -1,24 +1,6 @@
-/* eslint-disable no-debugger */
-/* eslint-disable react/prop-types */
-// RingManager.jsx
-import { useState } from "react";
-import MonthTextarea from "./MonthTextarea";
-
-// Ring.jsx
-const months = [
-  "Januari",
-  "Februari",
-  "Mars",
-  "April",
-  "Maj",
-  "Juni",
-  "Juli",
-  "Augusti",
-  "September",
-  "Oktober",
-  "November",
-  "December",
-];
+import React, { useState, useEffect } from 'react';
+import Ring from './Ring';
+import RingButton from './RingButton';
 
 const monthNameToIndex = {
   Januari: 0,
@@ -35,65 +17,41 @@ const monthNameToIndex = {
   December: 11,
 };
 
-// Ring.jsx
-function Ring({ ringData, onMonthChange }) {
-  return (
-    <div className="ring-textareas-wrapper">
-      <div className="ring-textareas">
-        {months.map((month) => (
-          <MonthTextarea
-            key={month}
-            month={month}
-            value={ringData[monthNameToIndex[month]].join("\n")} // Converts the array to a string
-            onChange={onMonthChange}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const RingButton = ({ index, isSelected, setRingSelected }) => {
-  return (
-    <button
-      onClick={() => setRingSelected(index)}
-      className={`ring-button${isSelected ? " selected" : ""}`}
-    >
-      Ring {index + 1}
-    </button>
-  );
-};
-
-// RingManager.jsx
-function RingManager({ ringsData, onRingsChange }) {
-  // const [ringsData, onRingsChange] = useState([initialRing]);
+function RingManager({ ringsData = [], onRingsChange }) {
   const [ringSelected, setRingSelected] = useState(0);
 
-  // Add ring function
+  useEffect(() => {
+    if (ringsData.length === 0) {
+      const initialRing = {
+        data: Array.from({ length: 12 }, () => [""]),
+        orientation: "vertical",
+      };
+      onRingsChange([initialRing]);
+      setRingSelected(0);
+    }
+  }, [ringsData, onRingsChange]);
+
   const addRing = () => {
-    // Create a new ring with 12 empty arrays, one for each month
-    const newRing = Array.from({ length: 12 }, () => [""]);
+    const newRing = {
+      data: Array.from({ length: 12 }, () => [""]),
+      orientation: "vertical",
+    };
 
-    // Add the new ring to the existing rings data
     const newRings = [...ringsData, newRing];
-
-    // Call the onRingsChange function to update the parent component
     onRingsChange(newRings);
+    setRingSelected(newRings.length - 1);
   };
 
-  // Delete ring function
   const deleteRing = (index) => {
     if (ringsData.length > 1) {
       const newRings = ringsData.filter((_, i) => i !== index);
       onRingsChange(newRings);
-      // onRingsChange(newRings); // Update parent component
       setRingSelected((prev) =>
         prev === index ? 0 : prev > index ? prev - 1 : prev
       );
     }
   };
 
-  // Handle month change function
   const handleMonthChange = (ringIndex, monthName, value) => {
     const monthIndex = monthNameToIndex[monthName];
 
@@ -105,8 +63,22 @@ function RingManager({ ringsData, onRingsChange }) {
     const updatedRings = ringsData.map((ring, index) => {
       if (index === ringIndex) {
         const updatedRing = { ...ring };
-        updatedRing[monthIndex] = value.split("\n");
+        updatedRing.data[monthIndex] = value.split("\n");
         return updatedRing;
+      }
+      return ring;
+    });
+
+    onRingsChange(updatedRings);
+  };
+
+  const handleOrientationChange = (ringIndex, orientation) => {
+    const updatedRings = ringsData.map((ring, index) => {
+      if (index === ringIndex) {
+        return {
+          ...ring,
+          orientation,
+        };
       }
       return ring;
     });
@@ -117,6 +89,12 @@ function RingManager({ ringsData, onRingsChange }) {
   const selectRing = (index) => {
     setRingSelected(index);
   };
+
+  const selectedRing = ringsData[ringSelected];
+
+  if (!selectedRing || !selectedRing.data) {
+    return null; // Do not render if selectedRing or its data is undefined
+  }
 
   return (
     <div className="ring-inputs">
@@ -136,20 +114,24 @@ function RingManager({ ringsData, onRingsChange }) {
           <button
             className="delete-ring-button"
             onClick={() => deleteRing(ringSelected)}
-            disabled={ringsData.length <= 1} // Prevent deletion if only one ring exists
+            disabled={ringsData.length <= 1}
           >
             Delete ring
           </button>
         </div>
       </div>
-      {ringsData[ringSelected] && (
+      <div className="ring-content">
         <Ring
-          ringData={ringsData[ringSelected]}
+          ringData={selectedRing.data}
+          orientation={selectedRing.orientation}
           onMonthChange={(month, value) =>
             handleMonthChange(ringSelected, month, value)
           }
+          onOrientationChange={(orientation) =>
+            handleOrientationChange(ringSelected, orientation)
+          }
         />
-      )}
+      </div>
     </div>
   );
 }

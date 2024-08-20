@@ -43,6 +43,7 @@ function GeneralInputs({
           Visa årstider och helger
           <input
             type="checkbox"
+            checked={showEvents}
             onChange={(e) => {
               setShowEvents(e.target.checked);
               onShowYearEventsChange(e.target.checked);

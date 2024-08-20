@@ -1,89 +1,45 @@
-/* eslint-disable no-debugger */
-class YearWheelClass {
-  constructor(canvas, ringsData, title, year, colors, size, events, options) {
+class YearWheel {
+  constructor(canvas, year, title, colors, size, events, options) {
     this.canvas = canvas;
+    this.context = canvas.getContext("2d");
     this.year = year;
     this.title = title;
     this.colors = colors;
     this.size = size;
     this.events = events;
-    this.rings = ringsData;
     this.options = options;
-    this.context = canvas.getContext("2d");
     this.textColor = "#333333";
     this.center = { x: size / 2, y: size / 5 + size / 2 };
     this.initAngle = -15 - 90;
-  }
-
-  create() {
-    this.setupCanvas();
-    this.drawTitle();
-    this.drawYear();
-    this.drawEvents();
+    this.minRadius = size / 15;
+    this.maxRadius = size / 2 - size / 30;
+    this.monthNames = [
+      "Januari", "Februari", "Mars", "April", "Maj", "Juni",
+      "Juli", "Augusti", "September", "Oktober", "November", "December"
+    ];
   }
 
   toRadians(deg) {
     return (deg * Math.PI) / 180;
   }
 
-  moveToAngle(radius, angle) {
-    const x = this.center.x + radius * Math.cos(angle);
-    const y = this.center.y + radius * Math.sin(angle);
+  moveToAngle(center, radius, angle) {
+    const x = center.x + radius * Math.cos(angle);
+    const y = center.y + radius * Math.sin(angle);
     return { x, y };
   }
 
-  setupCanvas() {
-    this.canvas.width = this.size;
-    this.canvas.height = this.size / 4 + this.size;
-    this.canvas.style.height = `100%`;
-  }
-
-  drawTitle() {
-    this.context.fillStyle = this.textColor;
-    this.context.font = `bold ${this.size / 20}px Arial`;
-    this.context.textAlign = "center";
+  drawTextOnCircle(text, radius, angle, fontSize, color, textAlign = "center", rotationDivider = 2) {
+    const coord = this.moveToAngle(this.center, radius, angle);
+    this.context.save();
+    this.context.font = `bold ${fontSize}px Arial`;
+    this.context.fillStyle = color;
+    this.context.textAlign = textAlign;
     this.context.textBaseline = "middle";
-    this.context.fillText(this.title, this.size / 2, this.size / 9, this.size);
-  }
-
-  drawYear() {
-    this.context.font = `bold ${this.size / 30}px Arial`;
-    this.context.fillText(
-      this.year,
-      this.center.x,
-      this.center.y + this.size / 500,
-      this.size
-    );
-  }
-
-  drawEvents() {
-    const minDate = new Date(this.year, 0, 1);
-    const maxDate = new Date(this.year, 11, 31);
-    const calendarEventWidth = this.size / 40;
-    const calendarEventStartRadius =
-      this.size / 2 - this.size / 30 - calendarEventWidth;
-
-    this.events
-      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-      .forEach((event, i) => {
-        const startAngle = Math.round(
-          ((new Date(event.startDate) - minDate) / (maxDate - minDate)) * 360
-        );
-        const endAngle = Math.round(
-          ((new Date(event.endDate) - minDate) / (maxDate - minDate)) * 360
-        );
-        this.addCircleSection({
-          spacingAngle: 0,
-          startRadius: calendarEventStartRadius,
-          width: calendarEventWidth,
-          startAngle,
-          endAngle,
-          color: this.colors[i % this.colors.length],
-          textFunction: "setCircleSectionTitle", // Assuming this is correctly implemented to handle text
-          text: event.name,
-          fontSize: this.size / 90,
-        });
-      });
+    this.context.translate(coord.x, coord.y);
+    this.context.rotate(angle + Math.PI / rotationDivider);
+    this.context.fillText(text.toUpperCase(), 0, 0);
+    this.context.restore();
   }
 
   setCircleSectionHTML({
@@ -96,250 +52,238 @@ class YearWheelClass {
     text,
     fontSize,
   }) {
-    debugger
-    // Convert angles from degrees to radians for drawing
+    const endRadius = startRadius + width;
     const calculatedStartAngle = this.toRadians(startAngle);
     const calculatedEndAngle = this.toRadians(endAngle);
 
-    // Calculate coordinates for the start and end points of the inner and outer arcs
-    const innerStartCoords = this.moveToAngle(
-      startRadius,
-      calculatedStartAngle
-    );
-    const outerStartCoords = this.moveToAngle(
-      startRadius + width,
-      calculatedStartAngle
-    );
-    // const innerEndCoords = this.moveToAngle(startRadius, calculatedEndAngle);
-    const outerEndCoords = this.moveToAngle(
-      startRadius + width,
-      calculatedEndAngle
-    );
+    const innerStartCoords = this.moveToAngle(this.center, startRadius, calculatedStartAngle);
+    const outerStartCoords = this.moveToAngle(this.center, endRadius, calculatedStartAngle);
+    const innerEndCoords = this.moveToAngle(this.center, startRadius, calculatedEndAngle);
+    const outerEndCoords = this.moveToAngle(this.center, endRadius, calculatedEndAngle);
+    const angleLength = Math.abs(calculatedEndAngle - calculatedStartAngle);
 
-    // Begin path for the circle section
     this.context.beginPath();
     this.context.fillStyle = color;
-
-    // Move to the start of the outer arc
     this.context.moveTo(outerStartCoords.x, outerStartCoords.y);
-
-    // Line to the start of the inner arc
     this.context.lineTo(innerStartCoords.x, innerStartCoords.y);
-
-    // Draw the inner arc
-    this.context.arc(
-      this.center.x,
-      this.center.y,
-      startRadius,
-      calculatedStartAngle,
-      calculatedEndAngle,
-      false
-    );
-
-    // Line to the start of the outer arc
+    this.context.arc(this.center.x, this.center.y, startRadius, calculatedStartAngle, calculatedEndAngle, false);
     this.context.lineTo(outerEndCoords.x, outerEndCoords.y);
-
-    // Draw the outer arc (in reverse)
-    this.context.arc(
-      this.center.x,
-      this.center.y,
-      startRadius + width,
-      calculatedEndAngle,
-      calculatedStartAngle,
-      true
-    );
-
-    // Fill the path
+    this.context.arc(this.center.x, this.center.y, startRadius + width, calculatedEndAngle, calculatedStartAngle, true);
     this.context.fill();
-
-    // Optionally add text
-    if (text !== undefined && textFunction) {
-      const angleLength = Math.abs(calculatedEndAngle - calculatedStartAngle);
-      textFunction.bind(this)({
-        text,
-        startRadius,
-        width,
-        calculatedStartAngle,
-        calculatedEndAngle,
-        angleLength,
-        fontSize,
-      });
-    }
-
-    // Close the path
     this.context.closePath();
+
+    if (text !== undefined) {
+      textFunction(this.context, text, this.center, startRadius, width, calculatedStartAngle, calculatedEndAngle, angleLength, fontSize);
+    }
   }
 
-  addMonthlyCircleSection({
-    startRadius,
-    width,
-    spacingAngle,
-    color,
-    textFunction,
-    texts,
-    fontSize,
-  }) {
-    const numberOfIntervals = 12;
-    this.addRegularCircleSections({
-      numberOfIntervals,
-      spacingAngle,
-      startRadius,
-      width,
-      color,
-      textFunction,
-      texts,
-      fontSize,
-    });
+  setCircleSectionSmallTitle(context, text, center, startRadius, width, startAngle, endAngle, angleLength, fontSize) {
+    const angle = (startAngle + endAngle) / 2;
+    const middleRadius = startRadius + width / 2.2;
+    const circleSectionLength = startRadius * 2 * Math.PI * (angleLength / (Math.PI * 2));
+    const textWidth = context.measureText(text).width;
+
+    const radius = textWidth < circleSectionLength ? middleRadius : middleRadius + width;
+    const rotationDivider = textWidth < circleSectionLength ? 2.06 : 1;
+    const color = textWidth < circleSectionLength ? "#ffffff" : this.textColor;
+
+    this.drawTextOnCircle(text, radius, angle, fontSize, color, "right", rotationDivider);
   }
 
-  addCircleSection({
-    spacingAngle,
-    startRadius,
-    width,
-    startAngle,
-    endAngle,
-    color,
-    textFunction,
-    text,
-    fontSize,
-  }) {
-    // Adjust start and end angles based on the initial angle and spacing
+  setCircleSectionTitle(context, text, center, startRadius, width, startAngle, endAngle, angleLength, fontSize) {
+    const angle = (startAngle + endAngle) / 2;
+    const middleRadius = startRadius + width / 2.2;
+    const circleSectionLength = startRadius * 2 * Math.PI * (angleLength / (Math.PI * 2));
+    const textWidth = context.measureText(text).width;
+
+    const radius = textWidth < circleSectionLength ? middleRadius : middleRadius + width;
+    const color = textWidth < circleSectionLength ? "#ffffff" : this.textColor;
+
+    this.drawTextOnCircle(text, radius, angle, fontSize, color, "center");
+  }
+
+  setCircleSectionTexts(context, texts, center, startRadius, width, startAngle, endAngle, angleLength) {
+    const radius = startRadius + width / 2;
+    const angleDifference = angleLength / (texts.length + 1);
+
+    context.fillStyle = "#ffffff";
+    for (let i = 0; i < texts.length; i++) {
+      const text = texts[i];
+      const angle = startAngle + angleDifference + i * angleDifference;
+      const coord = this.moveToAngle(center, startRadius + width / 10, angle);
+
+      context.save();
+      context.font = `bold ${10}px Arial`;
+      context.textAlign = "start";
+      context.textBaseline = "middle";
+      context.translate(coord.x, coord.y);
+      context.rotate(angle);
+      context.fillText(text, -5, 0, width - width * 0.5);
+      context.restore();
+    }
+  }
+
+  addCircleSection(spacingAngle, startRadius, width, startAngle, endAngle, color, textFunction, text, fontSize) {
     const newStartAngle = this.initAngle + startAngle + spacingAngle;
     const newEndAngle = this.initAngle + endAngle - spacingAngle;
-debugger
-    // Now calling setCircleSectionHTML as a class method
+
     this.setCircleSectionHTML({
+      center: this.center,
       startRadius,
       width,
       startAngle: newStartAngle,
       endAngle: newEndAngle,
       color,
-      textFunction: this[textFunction], // Assuming textFunction is a method name passed as a string
+      textFunction,
       text,
       fontSize,
     });
   }
 
-  addRegularCircleSections({
-    numberOfIntervals,
-    spacingAngle,
-    startRadius,
-    width,
-    color,
-    textFunction,
-    texts,
-    fontSize,
-  }) {
+  addRegularCircleSections(numberOfIntervals, spacingAngle, startRadius, width, color, textFunction, texts, fontSize, colors) {
     const intervalAngle = 360 / numberOfIntervals;
     for (let i = 0; i < numberOfIntervals; i++) {
       const text = texts[i];
-      this.addCircleSection({
+      this.addCircleSection(
         spacingAngle,
         startRadius,
         width,
-        startAngle: i * intervalAngle,
-        endAngle: i * intervalAngle + intervalAngle,
-        color: color ? color : this.colors[i % this.colors.length],
+        i * intervalAngle,
+        i * intervalAngle + intervalAngle,
+        color ? color : colors[i % colors.length],
         textFunction,
         text,
-        fontSize,
-      });
+        fontSize
+      );
     }
   }
 
-  setCircleSectionTitle({
-    text,
-    startRadius,
-    width,
-    startAngle,
-    endAngle,
-    angleLength,
-    textAlign = "center", // Default alignment
-    textBaseline = "middle", // Default baseline
-    rotationAngleDivider = 2, // Default divider for rotation
-    textColor = "#ffffff", // Default text color, assuming textColor is a property of the class
-    isSmallTitle = false, // Additional parameter to handle small title specific logic
-  }) {
-    const angle = (startAngle + endAngle) / 2;
-    const middleRadius = startRadius + width / 2.2;
-    let radius;
-
-    const circleSectionLength =
-      startRadius * 2 * Math.PI * (angleLength / (Math.PI * 2));
-    const textWidth = this.context.measureText(text).width;
-
-    if (textWidth < circleSectionLength) {
-      radius = middleRadius;
-      this.context.fillStyle = textColor;
-      if (isSmallTitle) rotationAngleDivider = 2.06; // Adjust for small titles if needed
-    } else {
-      radius = middleRadius + width;
-      this.context.fillStyle = this.textColor; // Use class's textColor for overflow
-    }
-
-    const coord = this.moveToAngle(radius, this.toRadians(angle));
-debugger
-    this.context.save();
-    this.context.textAlign = textAlign; // Use specified textAlign
-    this.context.textBaseline = textBaseline; // Use specified textBaseline
-    this.context.translate(coord.x, coord.y);
-    this.context.rotate(this.toRadians(angle) + Math.PI / rotationAngleDivider);
-    this.context.fillText(text.toUpperCase(), 0, 0);
-    this.context.restore();
+  addMonthlyCircleSection(startRadius, width, spacingAngle, color, textFunction, texts, fontSize, colors) {
+    const numberOfIntervals = 12;
+    this.addRegularCircleSections(numberOfIntervals, spacingAngle, startRadius, width, color, textFunction, texts, fontSize, colors);
   }
 
-  setCircleSectionTexts({
-    texts,
-    startRadius,
-    width,
-    startAngle,
-    endAngle,
-    angleLength,
-  }) {
-    const radius = startRadius + width / 2;
-    // Ensure angleLength is calculated within the method if not provided
-    angleLength =
-      angleLength ||
-      Math.abs(this.toRadians(endAngle) - this.toRadians(startAngle));
-    // const averageAngle = this.toRadians((startAngle + endAngle) / 2);
-    const angleDifference = angleLength / (texts.length + 1);
+  create() {
+    this.canvas.width = this.size;
+    this.canvas.height = this.size / 4 + this.size;
+    this.canvas.style.height = `100%`;
 
-    this.context.fillStyle = "#ffffff";
-    for (let i = 0; i < texts.length; i++) {
-      const text = texts[i];
-      // Calculate the angle for each text based on its position in the sequence
-      const angle = this.toRadians(startAngle) + angleDifference * (i + 1);
+    // Draw title and year
+    this.context.fillStyle = this.textColor;
+    this.context.font = `bold ${this.size / 20}px Arial`;
+    this.context.textAlign = "center";
+    this.context.textBaseline = "middle";
+    this.context.fillText(this.title, this.size / 2, this.size / 9, this.size);
 
-      // Use moveToAngle to calculate the position for each piece of text
-      const coord = this.moveToAngle(radius, angle);
+    this.context.font = `bold ${this.size / 30}px Arial`;
+    this.context.fillText(this.year, this.center.x, this.center.y + this.size / 500, this.size);
 
-      this.context.save();
-      this.context.font = `bold ${10}px Arial`; // Maintain the font size as in the original function
-      this.context.textAlign = "start"; // Maintain text alignment as in the original function
-      this.context.textBaseline = "middle"; // Keep the baseline as in the original function
+    const minDate = new Date(this.year, 0, 1);
+    const maxDate = new Date(this.year, 11, 31);
 
-      // Translate and rotate context for text drawing
-      this.context.translate(coord.x, coord.y);
-      this.context.rotate(angle); // Keep the rotation as in the original function
+    // Draw calendar events
+    const sortedCalenderEvents = this.events.sort(
+      (a, b) => new Date(a.startDate) - new Date(b.startDate)
+    );
 
-      // Draw the text with the original offset and width adjustments
-      this.context.fillText(text, -5, 0, width - width * 0.5); // Keep the original text drawing logic
+    const calendarEventWidth = this.size / 40;
+    const calendarEventStartRadius = this.maxRadius - calendarEventWidth;
 
-      this.context.restore();
+    for (let i = 0; i < sortedCalenderEvents.length; i++) {
+      const calendarEvent = sortedCalenderEvents[i];
+      const eventStartDate = new Date(calendarEvent.startDate);
+      const eventEndDate = new Date(calendarEvent.endDate);
+
+      let startAngle = Math.round(
+        ((eventStartDate - minDate) / (maxDate - minDate)) * 360
+      );
+      let endAngle = Math.round(
+        ((eventEndDate - minDate) / (maxDate - minDate)) * 360
+      );
+
+      if (Math.abs(startAngle - endAngle) < 3) {
+        const averageAngle = (startAngle + endAngle) / 2;
+        startAngle = averageAngle - 1.5;
+        endAngle = averageAngle + 1.5;
+      }
+
+      if (this.options.showYearEvents) {
+        this.addCircleSection(
+          0,
+          calendarEventStartRadius,
+          calendarEventWidth,
+          startAngle,
+          endAngle,
+          this.colors[i % this.colors.length],
+          this.setCircleSectionSmallTitle.bind(this),
+          calendarEvent.name,
+          this.size / 90
+        );
+      }
     }
+
+    // Draw month names
+    const monthColor = this.colors[0];
+    const monthNameWidth = this.size / 25;
+    const monthNameStartRadius = calendarEventStartRadius - monthNameWidth - this.size / 200;
+    this.addMonthlyCircleSection(
+      monthNameStartRadius,
+      monthNameWidth,
+      0.5,
+      monthColor,
+      this.setCircleSectionTitle.bind(this),
+      this.monthNames,
+      this.size / 60,
+      this.colors
+    );
+
+    // Draw monthly events
+    const eventSpacing = this.size / 300;
+    const numberOfEvents = this.options.ringsData.length;
+    const eventWidth = monthNameStartRadius - this.minRadius - this.size / 30 - eventSpacing * (numberOfEvents - 1);
+    let remainingEventWidth = eventWidth;
+    let eventRadius = this.minRadius;
+
+    for (let i = 0; i < numberOfEvents; i++) {
+      const percentage = (1 / (numberOfEvents - i)) * 1.1;
+      const newEventWidth = i !== numberOfEvents - 1
+        ? remainingEventWidth * percentage
+        : remainingEventWidth;
+      remainingEventWidth -= newEventWidth;
+
+      this.addMonthlyCircleSection(
+        eventRadius,
+        newEventWidth,
+        0.4,
+        null,
+        this.setCircleSectionTexts.bind(this),
+        this.options.ringsData[i],
+        this.size / 150,
+        this.colors
+      );
+      eventRadius += newEventWidth + eventSpacing;
+    }
+  }
+
+  downloadAsPNG() {
+    const pngCanvas = this.copyCanvas();
+    const link = document.createElement("a");
+    link.download = "year-wheel.png";
+    link.href = pngCanvas.toDataURL("image/png");
+    link.click();
+  }
+
+  copyCanvas() {
+    const $copiedCanvas = this.canvas.cloneNode();
+    $copiedCanvas.width = this.canvas.width;
+    $copiedCanvas.height = this.canvas.height;
+    const copiedContext = $copiedCanvas.getContext("2d");
+    copiedContext.drawImage(this.canvas, 0, 0);
+    copiedContext.webkitImageSmoothingEnabled = false;
+    copiedContext.mozImageSmoothingEnabled = false;
+    copiedContext.imageSmoothingEnabled = false;
+    return $copiedCanvas;
   }
 }
 
-export default YearWheelClass;
-
-// Usage:
-// const yearWheel = new YearWheel(
-//   canvas,
-//   year,
-//   title,
-//   colors,
-//   size,
-//   events,
-//   options
-// );
-// yearWheel.create();
+export default YearWheel;

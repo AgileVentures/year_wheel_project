@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-debugger */
 import { useState, useEffect } from "react";
 import GeneralInputs from "./GeneralInputs";
 import ColorPicker from "./ColorPicker";
@@ -8,17 +6,16 @@ import RingManager from "./RingManager";
 import ActionInputs from "./ActionInputs";
 import calendarEvents from "./calendarEvents.json";
 
-
 function App() {
   const [title, setTitle] = useState("");
   const [year, setYear] = useState("2024");
   const [colors, setColors] = useState(["#663399", "#CC3333", "#669933"]);
   const [ringsData, setRingsData] = useState([
-    [[], [], [], [], [], [], [], [], [], [], [], []],
+    { data: Array.from({ length: 12 }, () => [""]), orientation: "vertical" },
   ]);
   const [selectedRingIndex, setSelectedRingIndex] = useState(0);
   const [showYearEvents, setShowYearEvents] = useState(false);
-  const [yearEventsCollection, setYearEventsCollection] = useState([])
+  const [yearEventsCollection, setYearEventsCollection] = useState([]);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("yearWheelData"));
@@ -45,7 +42,7 @@ function App() {
       year,
       colors,
       ringsData,
-      selectedRingIndex: selectedRingIndex,
+      selectedRingIndex,
       selectedColorIndexes: colors.map((_, index) => index),
     };
 
@@ -56,7 +53,9 @@ function App() {
     setTitle("");
     setYear("2024");
     setColors(["#663399", "#CC3333", "#669933"]); // Reset to initial colors
-    setRingsData([[[], [], [], [], [], [], [], [], [], [], [], []]]);
+    setRingsData([
+      { data: Array.from({ length: 12 }, () => [""]), orientation: "vertical" },
+    ]);
   }
 
   const onRingsChange = (newRings) => {
@@ -66,7 +65,6 @@ function App() {
   return (
     <>
       <div className="inputs">
-        {/* Place your settings components here */}
         <GeneralInputs
           onTitleChange={handleTitleChange}
           onYearChange={handleYearChange}
@@ -79,18 +77,15 @@ function App() {
         <div className="divider row"></div>
         <ActionInputs onSave={handleSave} onReset={handleReset} />
       </div>
-      <div>
-        <div className="year-wheel-wrapper">
-          {/* Insert your wheel component here */}
-          <YearWheel
-            title={title}
-            year={year}
-            colors={colors}
-            ringsData={ringsData}
-            showYearEvents={showYearEvents}
-            yearEventsCollection={yearEventsCollection}
-          />
-        </div>
+      <div className="year-wheel-wrapper">
+        <YearWheel
+          title={title}
+          year={year}
+          colors={colors}
+          ringsData={ringsData}
+          showYearEvents={showYearEvents}
+          yearEventsCollection={yearEventsCollection}
+        />
       </div>
     </>
   );

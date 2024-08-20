@@ -28,11 +28,10 @@
     }
 }
 
-
 body {
     --scale: 1;
     @include display_flex(row, space-between, stretch, nowrap);
-    &>*{
+    & > * {
         @include margin_horizontal(20px);
     }
     margin: 20px;
@@ -44,7 +43,7 @@ body {
 
 #root {
     @include display_flex(row, space-between, stretch, nowrap);
-  }
+}
 
 .inputs, .year-wheel-wrapper {
     @include margin_vertical(10px); // This ensures there's some space between the two main sections
@@ -56,8 +55,6 @@ body {
     flex: 2; // Adjust this value based on how much space you want the wheel to take relative to the settings
     // Additional styling
 }
-
-
 
 label {
     font-size: small;
@@ -75,8 +72,9 @@ button, input, select, textarea, a.button {
     font-family: inherit;
 }
 input, select {
-    width: 300px;
+    width: 100%;
     height: 40px;
+    margin-bottom: 12px;
 }
 input, select, textarea {
     border: 1px solid lightgray;
@@ -122,7 +120,7 @@ a.button {
 }
 
 .general-inputs {
-    &>* {
+    & > * {
         @include margin_vertical(40px);
     } 
     [type="checkbox"] {
@@ -144,15 +142,12 @@ a.button {
     @include display_flex(row, space-between, flex-start, nowrap)
 }
 
-
 .ring-inputs {
-    grid-row: 3fr;
-    grid-column: 1/4;
-
     display: flex;
-    flex: 1;
+    flex-direction: row;
+    width: 100%;
     .rings-sidebar {
-        min-width: 140px;
+        width: 200px;
         height: 100%;
         border-right: 1px solid lightgray;
         padding: 20px 0;
@@ -176,36 +171,44 @@ a.button {
             margin-top: 12px;
         }
     }
+    .ring-content {
+        flex-grow: 1;
+        padding-left: 10px;
+    }
     .ring-textareas-wrapper {
         flex: 1;
-        overflow: auto;
+        overflow-y: auto; /* Enable vertical scrolling if necessary */
         margin-left: 12px;
         display: flex;
-        position: relative;
+        flex-direction: column;
         .ring-textareas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             display: flex;
-            flex-direction: row;
-            justify-content: flex-start;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            min-height: min-content; /* needs vendor prefixes */
+            flex-direction: column;
+            gap: 12px; /* Space between each textarea */
+            width: 100%;
             .ring-textarea {
-                margin: 12px;
                 width: 100%;
-                textarea{
-                    height: 4em;
-                    width: 100%
+                textarea {
+                    height: 40px;
+                    width: 100%;
                 }
+            }
+        }
+        .ring-orientation {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            label {
+                margin-right: 10px;
+                white-space: nowrap;
+            }
+            select {
+                flex: 1;
             }
         }
     }
 }
-
 
 
 .year-wheel-wrapper {
@@ -227,7 +230,6 @@ a.button {
         bottom: 20px;
         z-index: 1;
         margin: -12px 0;
-
     }
 }
 
@@ -243,18 +245,9 @@ a.button {
     outline: none;
 }
 
-
-// canvas {
-//     transform: scale(var(--scale));
-// }
 canvas {
     display: block;
     margin: auto;
-    // position: absolute;
-    // transform: translate(-50%, -50%);
-    // left: 50%;
-    // right: 50%;
-    // top: 50%;
     image-rendering: optimizeSpeed;             // Older versions of FF
     image-rendering: -moz-crisp-edges;          // FF 6.0+
     image-rendering: -webkit-optimize-contrast; // Webkit (non standard naming)
