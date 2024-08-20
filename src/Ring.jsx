@@ -17,7 +17,7 @@ const months = [
 ];
 
 function Ring({ ringData, onMonthChange, onOrientationChange, orientation }) {
-  if (!Array.isArray(ringData) || ringData.length !== 12) {
+  if (!Array.isArray(ringData.data) || ringData.data.length !== 12) {
     console.error("ringData is not properly structured:", ringData);
     return null; // Return null if ringData is not valid
   }
@@ -27,14 +27,14 @@ function Ring({ ringData, onMonthChange, onOrientationChange, orientation }) {
       <div className="ring-textareas">
         {months.map((month) => {
           const monthIndex = months.indexOf(month);
-          const monthData = ringData[monthIndex] || [""];
+          const monthData = ringData.data[monthIndex] || [""];
 
           return (
             <MonthTextarea
               key={month}
-              month={month}
-              value={monthData.join("\n")}
-              onChange={onMonthChange}
+              month={month} // This should just be the month name for identification
+              value={monthData.join("\n")} // This is the actual content for that month
+              onChange={onMonthChange} // Handler to update the data
             />
           );
         })}

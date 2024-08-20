@@ -23,14 +23,14 @@ class YearWheel {
     return (deg * Math.PI) / 180;
   }
 
-  moveToAngle(center, radius, angle) {
-    const x = center.x + radius * Math.cos(angle);
-    const y = center.y + radius * Math.sin(angle);
+  moveToAngle(radius, angle) {
+    const x = this.center.x + radius * Math.cos(angle);
+    const y = this.center.y + radius * Math.sin(angle);
     return { x, y };
   }
 
   drawTextOnCircle(text, radius, angle, fontSize, color, textAlign = "center", rotationDivider = 2) {
-    const coord = this.moveToAngle(this.center, radius, angle);
+    const coord = this.moveToAngle(radius, angle);
     this.context.save();
     this.context.font = `bold ${fontSize}px Arial`;
     this.context.fillStyle = color;
@@ -56,32 +56,29 @@ class YearWheel {
     const calculatedStartAngle = this.toRadians(startAngle);
     const calculatedEndAngle = this.toRadians(endAngle);
 
-    const innerStartCoords = this.moveToAngle(this.center, startRadius, calculatedStartAngle);
-    const outerStartCoords = this.moveToAngle(this.center, endRadius, calculatedStartAngle);
-    const innerEndCoords = this.moveToAngle(this.center, startRadius, calculatedEndAngle);
-    const outerEndCoords = this.moveToAngle(this.center, endRadius, calculatedEndAngle);
+    const outerStartCoords = this.moveToAngle(endRadius, calculatedStartAngle);
+    const outerEndCoords = this.moveToAngle(endRadius, calculatedEndAngle);
     const angleLength = Math.abs(calculatedEndAngle - calculatedStartAngle);
 
     this.context.beginPath();
     this.context.fillStyle = color;
-    this.context.moveTo(outerStartCoords.x, outerStartCoords.y);
-    this.context.lineTo(innerStartCoords.x, innerStartCoords.y);
     this.context.arc(this.center.x, this.center.y, startRadius, calculatedStartAngle, calculatedEndAngle, false);
     this.context.lineTo(outerEndCoords.x, outerEndCoords.y);
     this.context.arc(this.center.x, this.center.y, startRadius + width, calculatedEndAngle, calculatedStartAngle, true);
+    this.context.lineTo(outerStartCoords.x, outerStartCoords.y);
     this.context.fill();
     this.context.closePath();
 
     if (text !== undefined) {
-      textFunction(this.context, text, this.center, startRadius, width, calculatedStartAngle, calculatedEndAngle, angleLength, fontSize);
+      textFunction.call(this, text, startRadius, width, calculatedStartAngle, calculatedEndAngle, angleLength, fontSize);
     }
   }
 
-  setCircleSectionSmallTitle(context, text, center, startRadius, width, startAngle, endAngle, angleLength, fontSize) {
+  setCircleSectionSmallTitle(text, startRadius, width, startAngle, endAngle, angleLength, fontSize) {
     const angle = (startAngle + endAngle) / 2;
     const middleRadius = startRadius + width / 2.2;
     const circleSectionLength = startRadius * 2 * Math.PI * (angleLength / (Math.PI * 2));
-    const textWidth = context.measureText(text).width;
+    const textWidth = this.context.measureText(text).width;
 
     const radius = textWidth < circleSectionLength ? middleRadius : middleRadius + width;
     const rotationDivider = textWidth < circleSectionLength ? 2.06 : 1;
@@ -90,36 +87,34 @@ class YearWheel {
     this.drawTextOnCircle(text, radius, angle, fontSize, color, "right", rotationDivider);
   }
 
-  setCircleSectionTitle(context, text, center, startRadius, width, startAngle, endAngle, angleLength, fontSize) {
+  setCircleSectionTitle(text, startRadius, width, startAngle, endAngle, angleLength, fontSize) {
     const angle = (startAngle + endAngle) / 2;
     const middleRadius = startRadius + width / 2.2;
-    const circleSectionLength = startRadius * 2 * Math.PI * (angleLength / (Math.PI * 2));
-    const textWidth = context.measureText(text).width;
-
-    const radius = textWidth < circleSectionLength ? middleRadius : middleRadius + width;
-    const color = textWidth < circleSectionLength ? "#ffffff" : this.textColor;
+    const textWidth = this.context.measureText(text).width;
+    const radius = textWidth < middleRadius ? middleRadius : middleRadius + width;
+    const color = "#ffffff";
 
     this.drawTextOnCircle(text, radius, angle, fontSize, color, "center");
   }
 
-  setCircleSectionTexts(context, texts, center, startRadius, width, startAngle, endAngle, angleLength) {
+  setCircleSectionTexts(texts, startRadius, width, startAngle, endAngle, angleLength) {
     const radius = startRadius + width / 2;
     const angleDifference = angleLength / (texts.length + 1);
 
-    context.fillStyle = "#ffffff";
+    this.context.fillStyle = "#ffffff";
     for (let i = 0; i < texts.length; i++) {
       const text = texts[i];
       const angle = startAngle + angleDifference + i * angleDifference;
-      const coord = this.moveToAngle(center, startRadius + width / 10, angle);
+      const coord = this.moveToAngle(startRadius + width / 10, angle);
 
-      context.save();
-      context.font = `bold ${10}px Arial`;
-      context.textAlign = "start";
-      context.textBaseline = "middle";
-      context.translate(coord.x, coord.y);
-      context.rotate(angle);
-      context.fillText(text, -5, 0, width - width * 0.5);
-      context.restore();
+      this.context.save();
+      this.context.font = `bold ${10}px Arial`;
+      this.context.textAlign = "start";
+      this.context.textBaseline = "middle";
+      this.context.translate(coord.x, coord.y);
+      this.context.rotate(angle);
+      this.context.fillText(text, -5, 0, width - width * 0.5);
+      this.context.restore();
     }
   }
 
@@ -128,7 +123,6 @@ class YearWheel {
     const newEndAngle = this.initAngle + endAngle - spacingAngle;
 
     this.setCircleSectionHTML({
-      center: this.center,
       startRadius,
       width,
       startAngle: newStartAngle,
@@ -140,17 +134,20 @@ class YearWheel {
     });
   }
 
-  addRegularCircleSections(numberOfIntervals, spacingAngle, startRadius, width, color, textFunction, texts, fontSize, colors) {
+  addRegularCircleSections(numberOfIntervals, spacingAngle, startRadius, width, color, textFunction, texts = [], fontSize, colors = []) {
     const intervalAngle = 360 / numberOfIntervals;
+
     for (let i = 0; i < numberOfIntervals; i++) {
-      const text = texts[i];
+      const text = texts[i] || ""; // Default to an empty string if undefined
+      const sectionColor = color ? color : colors[i % colors.length] || "#000000"; // Default to black if undefined
+
       this.addCircleSection(
         spacingAngle,
         startRadius,
         width,
         i * intervalAngle,
         i * intervalAngle + intervalAngle,
-        color ? color : colors[i % colors.length],
+        sectionColor,
         textFunction,
         text,
         fontSize
@@ -215,7 +212,7 @@ class YearWheel {
           startAngle,
           endAngle,
           this.colors[i % this.colors.length],
-          this.setCircleSectionSmallTitle.bind(this),
+          this.setCircleSectionSmallTitle,
           calendarEvent.name,
           this.size / 90
         );
@@ -231,7 +228,7 @@ class YearWheel {
       monthNameWidth,
       0.5,
       monthColor,
-      this.setCircleSectionTitle.bind(this),
+      this.setCircleSectionTitle,
       this.monthNames,
       this.size / 60,
       this.colors
@@ -256,7 +253,7 @@ class YearWheel {
         newEventWidth,
         0.4,
         null,
-        this.setCircleSectionTexts.bind(this),
+        this.setCircleSectionTexts,
         this.options.ringsData[i],
         this.size / 150,
         this.colors
@@ -274,15 +271,15 @@ class YearWheel {
   }
 
   copyCanvas() {
-    const $copiedCanvas = this.canvas.cloneNode();
-    $copiedCanvas.width = this.canvas.width;
-    $copiedCanvas.height = this.canvas.height;
-    const copiedContext = $copiedCanvas.getContext("2d");
+    const copiedCanvas = this.canvas.cloneNode();
+    copiedCanvas.width = this.canvas.width;
+    copiedCanvas.height = this.canvas.height;
+    const copiedContext = copiedCanvas.getContext("2d");
     copiedContext.drawImage(this.canvas, 0, 0);
     copiedContext.webkitImageSmoothingEnabled = false;
     copiedContext.mozImageSmoothingEnabled = false;
     copiedContext.imageSmoothingEnabled = false;
-    return $copiedCanvas;
+    return copiedCanvas;
   }
 }
 
