@@ -179,12 +179,11 @@ class YearWheel {
     initAngle,
     isVertical
   ) {
-    console.log("isVertical in setCircleSectionTexts:", isVertical);
-  
     const radius = startRadius + width / 2;
     const angleDifference = angleLength / (texts.length + 1);
   
     this.context.fillStyle = "#ffffff";
+    const fontSize = 10; // Fixed font size
   
     if (isVertical) {
       for (let i = 0; i < texts.length; i++) {
@@ -193,7 +192,7 @@ class YearWheel {
         const coord = this.moveToAngle(startRadius + width / 10, angle);
   
         this.context.save();
-        this.context.font = `bold ${10}px Arial`;
+        this.context.font = `bold ${fontSize}px Arial`;
         this.context.textAlign = "start";
         this.context.textBaseline = "middle";
         this.context.translate(coord.x, coord.y);
@@ -202,29 +201,29 @@ class YearWheel {
         this.context.restore();
       }
     } else {
-      // This section is for rendering text horizontally (without rotating the context)
-      let lineHeight = 10; // Adjust based on font size
-      let currentY = radius;
+      const angle = (startAngle + endAngle) / 2;
+      const coord = this.moveToAngle(radius, angle);
+  
+      this.context.save();
+      this.context.translate(coord.x, coord.y);
+      this.context.rotate(angle + Math.PI / 2); // Align text horizontally to the section's angle
+      this.context.font = `bold ${fontSize}px Arial`; // Re-apply the font size after transformation
+  
+      let lineHeight = 14; // Adjust based on font size
+      let currentY = -(texts.length - 1) * lineHeight / 2; // Center the text vertically
   
       for (let i = 0; i < texts.length; i++) {
         const text = texts[i];
-        const angle = startAngle + angleDifference + i * angleDifference;
-        const coord = this.moveToAngle(radius, angle);
-  
-        this.context.save();
-        this.context.font = `bold ${10}px Arial`;
-        this.context.textAlign = "center";
-        this.context.textBaseline = "middle";
-  
-        // Translate to the calculated position and draw text without rotation
-        this.context.translate(coord.x, coord.y);
-        this.context.fillText(text, 0, 0, width - width * 0.5);
-  
-        this.context.restore();
+        this.context.fillText(text, 0, currentY);
         currentY += lineHeight;
       }
+  
+      this.context.restore();
     }
   }
+  
+  
+  
   
   addCircleSection({
     spacingAngle,
