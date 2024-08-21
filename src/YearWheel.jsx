@@ -27,6 +27,7 @@ function YearWheel({
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
   const [downloadFormat, setDownloadFormat] = useState("png");
+  const [isSpinning, setIsSpinning] = useState(false); // State to track spinning
 
   useEffect(() => {
     setEvents(yearEventsCollection || []);
@@ -51,14 +52,30 @@ function YearWheel({
           ringsData,
         }
       );
-      setYearWheel(newYearWheel); 
+      setYearWheel(newYearWheel);
       newYearWheel.create();
     }
-  }, [canvasRef, ringsData, title, year, colors, showYearEvents, yearEventsCollection]);
-
+  }, [
+    canvasRef,
+    ringsData,
+    title,
+    year,
+    colors,
+    showYearEvents,
+    yearEventsCollection,
+  ]);
 
   const downloadImage = () => {
     yearWheel.downloadImage(downloadFormat);
+  };
+
+  const toggleSpinning = () => {
+    if (isSpinning) {
+      yearWheel.stopSpinning();
+    } else {
+      yearWheel.startSpinning();
+    }
+    setIsSpinning(!isSpinning); // Toggle spinning state
   };
 
   return (
@@ -66,7 +83,7 @@ function YearWheel({
       <canvas
         ref={canvasRef}
         style={{
-          width: `${800 * scale}px`, 
+          width: `${800 * scale}px`,
           height: `${(800 / 4 + 800) * scale}px`,
         }}
       />
@@ -77,21 +94,29 @@ function YearWheel({
         <button className="zoom-button" onClick={zoomOut}>
           -
         </button>
+
         <div>
-          <label>Download Format:</label>
-          <select
-            value={downloadFormat}
-            onChange={(e) => setDownloadFormat(e.target.value)}
-          >
-            <option value="png">PNG (Transparent)</option>
-            <option value="png-white">PNG (White Background)</option>
-            <option value="jpeg">JPEG</option>
-            <option value="svg">SVG</option>
-          </select>
+          <div>
+            <button onClick={toggleSpinning}>
+              {isSpinning ? "Stop" : "Rotate"}
+            </button>
+          </div>
+          <div>
+            <label>Download Format:</label>
+            <select
+              value={downloadFormat}
+              onChange={(e) => setDownloadFormat(e.target.value)}
+            >
+              <option value="png">PNG (Transparent)</option>
+              <option value="png-white">PNG (White Background)</option>
+              <option value="jpeg">JPEG</option>
+              <option value="svg">SVG</option>
+            </select>
+            <button className="download-button" onClick={downloadImage}>
+              Download
+            </button>
+          </div>
         </div>
-        <button className="download-button" onClick={downloadImage}>
-          Download
-        </button>
       </div>
     </div>
   );

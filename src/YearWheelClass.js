@@ -29,6 +29,17 @@ class YearWheel {
       "November",
       "December",
     ];
+    this.rotationAngle = 0; // Initial rotation angle
+    this.isAnimating = false;
+    this.isDragging = false; // Track dragging state
+    this.lastMouseAngle = 0; // Track the last mouse angle
+    this.dragStartAngle = 0; // Track the starting angle for dragging
+
+    // Add event listeners
+    this.canvas.addEventListener("mousedown", this.startDrag.bind(this));
+    this.canvas.addEventListener("mousemove", this.drag.bind(this));
+    this.canvas.addEventListener("mouseup", this.stopDrag.bind(this));
+    this.canvas.addEventListener("mouseleave", this.stopDrag.bind(this));
   }
 
   toRadians(deg) {
@@ -209,8 +220,9 @@ class YearWheel {
       this.context.save();
       this.context.translate(coord.x, coord.y);
       this.context.rotate(angle + Math.PI / 2); // Align text horizontally to the section's angle
-      this.context.font = `bold ${fontSize}px Arial`; // Re-apply the font size after transformation
-
+      this.context.font = ` ${fontSize}px Arial`; // Re-apply the font size after transformation
+      this.context.textAlign = "center";
+      this.context.textBaseline = "middle";
       let lineHeight = 14; // Adjust based on font size
       let currentY = (-(texts.length - 1) * lineHeight) / 2; // Center the text vertically
 
@@ -313,12 +325,79 @@ class YearWheel {
     });
   }
 
+  animateWheel() {
+    if (!this.isAnimating) return; // If animation is stopped, don't animate
+  
+    this.rotationAngle += 0.01; // Adjust rotation speed
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear the canvas
+  
+    // Redraw everything
+    this.drawStaticElements();
+    this.drawRotatingElements();
+  
+    requestAnimationFrame(this.animateWheel.bind(this)); // Loop the animation
+  }
+  
+  startSpinning() {
+    if (this.isAnimating) return; // Prevent multiple animations
+  
+    this.isAnimating = true;
+    this.animateWheel(); // Start the animation loop
+  }
+  
+  stopSpinning() {
+    this.isAnimating = false; // Stop the animation
+  }
+
+  startDrag(event) {
+    this.isDragging = true;
+    this.lastMouseAngle = this.getMouseAngle(event);
+    this.dragStartAngle = this.rotationAngle;
+  }
+
+  drag(event) {
+    if (!this.isDragging) return;
+
+    const currentMouseAngle = this.getMouseAngle(event);
+    const angleDifference = currentMouseAngle - this.lastMouseAngle;
+
+    // Update the rotation angle based on the difference in angles
+    this.rotationAngle = this.dragStartAngle + angleDifference;
+
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.drawStaticElements();
+    this.drawRotatingElements();
+  }
+
+  stopDrag(event) {
+    if (!this.isDragging) return;
+    this.isDragging = false;
+  }
+
+  getMouseAngle(event) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left - this.center.x;
+    const y = event.clientY - rect.top - this.center.y;
+    return Math.atan2(y, x);
+  }
+
   create() {
     this.canvas.width = this.size;
     this.canvas.height = this.size / 4 + this.size;
     this.canvas.style.height = `100%`;
 
-    // Draw title and year
+    // Draw static elements (title and year)
+    this.drawStaticElements();
+
+    // Apply rotation and draw rotating elements (months, events)
+    this.drawRotatingElements();
+  }
+
+  // Function to draw static elements
+  drawStaticElements() {
+    this.context.save();
+
+    // Draw title and year (no rotation applied)
     this.context.fillStyle = this.textColor;
     this.context.font = `bold ${this.size / 20}px Arial`;
     this.context.textAlign = "center";
@@ -332,6 +411,18 @@ class YearWheel {
       this.center.y + this.size / 500,
       this.size
     );
+
+    this.context.restore();
+  }
+
+  // Function to draw rotating elements
+  drawRotatingElements() {
+    this.context.save();
+
+    // Apply rotation
+    this.context.translate(this.center.x, this.center.y);
+    this.context.rotate(this.rotationAngle); // Use the rotationAngle to rotate the canvas
+    this.context.translate(-this.center.x, -this.center.y);
 
     const minDate = new Date(this.year, 0, 1);
     const maxDate = new Date(this.year, 11, 31);
@@ -428,7 +519,12 @@ class YearWheel {
       });
       eventRadius += newEventWidth + eventSpacing;
     }
+
+    // Restore the context to remove rotation
+    this.context.restore();
   }
+
+  // DOWNLOAD FUNCTIONALITY
 
   downloadImage(format) {
     switch (format) {
@@ -451,8 +547,8 @@ class YearWheel {
 
   generateFileName(extension) {
     const today = new Date();
-    const dateStr = today.toISOString().split('T')[0]; 
-    const titlePart = this.title ? `${this.title.replace(/\s+/g, '_')}_` : '';
+    const dateStr = today.toISOString().split("T")[0];
+    const titlePart = this.title ? `${this.title.replace(/\s+/g, "_")}_` : "";
     return `YearWheel_${titlePart}${dateStr}.${extension}`;
   }
 
@@ -470,7 +566,7 @@ class YearWheel {
   downloadAsPNG(whiteBackground = false) {
     const pngCanvas = this.copyCanvas(whiteBackground);
     pngCanvas.toBlob((blob) => {
-      const fileName = this.generateFileName('png');
+      const fileName = this.generateFileName("png");
       this.downloadFile(blob, fileName, "image/png");
     });
   }
@@ -479,7 +575,7 @@ class YearWheel {
     const jpegCanvas = this.copyCanvas(true); // Always use white background for JPEG
     jpegCanvas.toBlob(
       (blob) => {
-        const fileName = this.generateFileName('jpg');
+        const fileName = this.generateFileName("jpg");
         this.downloadFile(blob, fileName, "image/jpeg");
       },
       "image/jpeg",
@@ -494,7 +590,7 @@ class YearWheel {
     this.create();
     this.context = originalContext;
     const svgData = svgContext.getSerializedSvg();
-    const fileName = this.generateFileName('svg');
+    const fileName = this.generateFileName("svg");
     this.downloadFile(svgData, fileName, "image/svg+xml");
   }
 
