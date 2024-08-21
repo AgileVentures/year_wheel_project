@@ -26,59 +26,39 @@ function YearWheel({
   const { scale, zoomIn, zoomOut } = useZoom();
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
+  const [downloadFormat, setDownloadFormat] = useState("png");
 
   useEffect(() => {
     setEvents(yearEventsCollection || []);
   }, [year, yearEventsCollection]);
 
   useEffect(() => {
-    if (canvasRef.current && events.length > 0) {
+    if (canvasRef.current) {
       const canvas = canvasRef.current;
-      canvas.width = 800 * scale; // Set canvas width according to scale
-      canvas.height = (800 / 4 + 800) * scale; // Set canvas height according to scale
+      canvas.width = 800; // Set canvas width according to scale
+      canvas.height = 800 / 4 + 800; // Set canvas height according to scale
 
-      // Create a new YearWheel instance if it doesn't exist
-      if (!yearWheel) {
-        const newYearWheel = new YearWheelClass(
-          canvas,
-          year,
-          title,
-          colors,
-          canvas.width,
-          events,
-          {
-            showYearEvents,
-            ringsData: ringsData,
-          }
-        );
-        setYearWheel(newYearWheel.create());
-      } else {
-        // If the yearWheel instance already exists, update it
-        yearWheel.canvas = canvas;
-        yearWheel.year = year;
-        yearWheel.title = title;
-        yearWheel.colors = colors;
-        yearWheel.size = canvas.width;
-        yearWheel.events = events;
-        yearWheel.options = { showYearEvents, ringsData };
-        yearWheel.create();
-      }
+      // Create the YearWheel instance
+      const newYearWheel = new YearWheelClass(
+        canvas,
+        year,
+        title,
+        colors,
+        canvas.width,
+        yearEventsCollection,
+        {
+          showYearEvents,
+          ringsData,
+        }
+      );
+      setYearWheel(newYearWheel); 
+      newYearWheel.create();
     }
-  }, [
-    ringsData,
-    title,
-    year,
-    colors,
-    events,
-    showYearEvents,
-    scale,
-    yearWheel,
-  ]);
+  }, [canvasRef, ringsData, title, year, colors, showYearEvents, yearEventsCollection]);
 
-  const downloadPNG = () => {
-    if (yearWheel) {
-      yearWheel.downloadAsPNG();
-    }
+
+  const downloadImage = () => {
+    yearWheel.downloadImage(downloadFormat);
   };
 
   return (
@@ -86,7 +66,7 @@ function YearWheel({
       <canvas
         ref={canvasRef}
         style={{
-          width: `${800 * scale}px`, // Adjust display size based on scale
+          width: `${800 * scale}px`, 
           height: `${(800 / 4 + 800) * scale}px`,
         }}
       />
@@ -97,8 +77,20 @@ function YearWheel({
         <button className="zoom-button" onClick={zoomOut}>
           -
         </button>
-        <button className="download-button" onClick={downloadPNG}>
-          Download as PNG
+        <div>
+          <label>Download Format:</label>
+          <select
+            value={downloadFormat}
+            onChange={(e) => setDownloadFormat(e.target.value)}
+          >
+            <option value="png">PNG (Transparent)</option>
+            <option value="png-white">PNG (White Background)</option>
+            <option value="jpeg">JPEG</option>
+            <option value="svg">SVG</option>
+          </select>
+        </div>
+        <button className="download-button" onClick={downloadImage}>
+          Download
         </button>
       </div>
     </div>
