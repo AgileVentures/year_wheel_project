@@ -37,7 +37,7 @@ function YearWheel({
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       canvas.width = 800; // Set canvas width according to scale
-      canvas.height = 800 / 4 + 800; // Set canvas height according to scale
+      canvas.height = 600 / 4 + 600; // Set canvas height according to scale
 
       // Create the YearWheel instance
       const newYearWheel = new YearWheelClass(
@@ -45,7 +45,7 @@ function YearWheel({
         year,
         title,
         colors,
-        canvas.width,
+        canvas.width * 2,
         yearEventsCollection,
         {
           showYearEvents,
@@ -83,8 +83,8 @@ function YearWheel({
       <canvas
         ref={canvasRef}
         style={{
-          width: `${800 * scale}px`,
-          height: `${(800 / 4 + 800) * scale}px`,
+          width: `${1000 * scale}px`,
+          height: `${(1000 / 4 + 900) * scale}px`,
         }}
       />
       <div className="zoom-buttons">

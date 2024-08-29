@@ -15,7 +15,7 @@ class YearWheel {
     this.center = { x: size / 2, y: size / 5 + size / 2 };
     this.initAngle = -15 - 90;
     this.minRadius = size / 15;
-    this.maxRadius = size / 1.9 - size / 30;
+    this.maxRadius = size / 2 - size / 30;
     this.monthNames = [
       "Januari",
       "Februari",
@@ -62,11 +62,13 @@ class YearWheel {
       currentDate.setDate(currentDate.getDate() + 6); // Move to Sunday
       const weekEnd = new Date(currentDate);
 
-      weeks.push({
-        week: weekNumber,
-        startDate: `${weekStart.getDate()}/${weekStart.getMonth() + 1}`,
-        endDate: `${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
-      });
+      // weeks.push({
+      //   week: weekNumber,
+      //   startDate: `${weekStart.getDate()}/${weekStart.getMonth() + 1}`,
+      //   endDate: `${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
+      // });
+
+      weeks.push(weekNumber.toString())
 
       // Move to the next Monday
       currentDate.setDate(currentDate.getDate() + 1);
@@ -239,13 +241,13 @@ class YearWheel {
     angleLength,
     initAngle,
     isVertical,
-    lineHeight = 14
+    lineHeight = 24
   ) {
     const radius = startRadius + width / 2;
     const angleDifference = angleLength / (texts.length + 1);
 
     this.context.fillStyle = "#ffffff";
-    const fontSize = 10; // Fixed font size
+    const fontSize = 20; // Fixed font size
 
     if (isVertical) {
       for (let i = 0; i < texts.length; i++) {
@@ -492,14 +494,13 @@ class YearWheel {
       monthNameStartRadius - weekRingWidth - this.size / 170;
 
     const numberOfWeeks = weekData.length;
-    debugger
     this.addMonthlyCircleSection({
       startRadius: weekStartRadius,
       width: weekRingWidth,
       spacingAngle: 0.25,
       color: this.outerRingColor,
       textFunction: this.setCircleSectionTitle.bind(this),
-      texts: ["1", "2", "3", "4"],
+      texts: weekData,
       fontSize: this.size / 80,
       colors: this.sectionColors,
       isVertical: true,

@@ -52,7 +52,7 @@ body {
 
 .year-wheel-wrapper {
     @include display_flex(row, center, center, nowrap);
-    flex: 2; // Adjust this value based on how much space you want the wheel to take relative to the settings
+    flex: 1; // Adjust this value based on how much space you want the wheel to take relative to the settings
     // Additional styling
 }
 
@@ -215,23 +215,31 @@ a.button {
     @include display_flex(row, center, center, nowrap);
     flex: 2;
     position: relative;
-    width: auto;
-    height: 100%;
+    width: 100%; /* Ensure full width */
+    height: auto; /* Adjust height */
     border: 1px solid lightgray;
-    .year-wheel {
-        overflow: scroll;
-        width: 100%;
-        height: auto;
-    }
+    padding: 20px; /* Add padding to ensure the canvas isn’t cut off */
     
-    .zoom-buttons {
-        position: absolute;
-        right: 20px;
-        bottom: 20px;
-        z-index: 1;
-        margin: -12px 0;
+    .year-wheel {
+        width: 100%; /* Use full available width */
+        height: auto; /* Maintain aspect ratio */
+        overflow: hidden; /* Prevent overflow issues */
     }
 }
+
+canvas {
+    display: block;
+    margin: auto;
+    width: 100%; /* Ensure it scales within the container */
+    height: auto; /* Maintain aspect ratio */
+    image-rendering: optimizeSpeed;             
+    image-rendering: -moz-crisp-edges;          
+    image-rendering: -webkit-optimize-contrast; 
+    image-rendering: -o-crisp-edges;            
+    image-rendering: crisp-edges;               
+    -ms-interpolation-mode: nearest-neighbor;   
+}
+
 
 .zoom-button {
     width: 32px;
@@ -245,13 +253,4 @@ a.button {
     outline: none;
 }
 
-canvas {
-    display: block;
-    margin: auto;
-    image-rendering: optimizeSpeed;             // Older versions of FF
-    image-rendering: -moz-crisp-edges;          // FF 6.0+
-    image-rendering: -webkit-optimize-contrast; // Webkit (non standard naming)
-    image-rendering: -o-crisp-edges;            // OS X & Windows Opera (12.02+)
-    image-rendering: crisp-edges;               // Possible future browsers.
-    -ms-interpolation-mode: nearest-neighbor;   // IE (non standard naming)
-}
+

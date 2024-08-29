@@ -69,7 +69,7 @@ function App() {
   };
 
   return (
-    <>
+    <div style={{width: '90vw',  display: "flex"}}>
       <div className="inputs">
         <GeneralInputs
           onTitleChange={handleTitleChange}
@@ -93,7 +93,7 @@ function App() {
           yearEventsCollection={yearEventsCollection}
         />
       </div>
-    </>
+    </div>
   );
 }
 
