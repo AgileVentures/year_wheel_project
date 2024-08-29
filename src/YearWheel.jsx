@@ -2,7 +2,7 @@
 import { useRef, useEffect, useState } from "react";
 import YearWheelClass from "./YearWheelClass";
 
-function useZoom(initialScale = 1, maxScale = 1.5, minScale = 0.1) {
+function useZoom(initialScale = 0.9, maxScale = 2, minScale = 0.1) {
   const [scale, setScale] = useState(initialScale);
 
   const zoomIn = () =>
@@ -84,7 +84,7 @@ function YearWheel({
         ref={canvasRef}
         style={{
           width: `${1000 * scale}px`,
-          height: `${(1000 / 4 + 900) * scale}px`,
+          height: `${(1000 / 4 + 1000) * scale}px`,
         }}
       />
       <div className="zoom-buttons">
