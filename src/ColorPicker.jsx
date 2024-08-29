@@ -2,7 +2,7 @@
 import{ useState } from 'react';
 
 function ColorPicker({ onColorSelect }) {
-  const colors = ["#000000", "#999999", "#CC3333", "#F89933", "#FFCC00", "#669933", "#006699", "#663399"];
+  const colors = ["#7E57C2", "#42A5F5", "#66BB6A", "#FFCA28", "#FFCC00", "#BDBDBD", "#006699", "#663399"];
   const [selectedColors, setSelectedColors] = useState([]);
 
   const toggleColor = (color) => {

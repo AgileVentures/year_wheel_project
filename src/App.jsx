@@ -9,7 +9,7 @@ import calendarEvents from "./calendarEvents.json";
 function App() {
   const [title, setTitle] = useState("");
   const [year, setYear] = useState("2024");
-  const [colors, setColors] = useState(["#663399", "#CC3333", "#669933"]);
+  const [colors, setColors] = useState(["#0D4D73", "#42A5F5", "#BDBDBD", "#FFCA28"]);
   const [ringsData, setRingsData] = useState([
     {
       data: Array.from({ length: 12 }, () => [""]),
