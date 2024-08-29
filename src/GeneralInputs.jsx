@@ -38,7 +38,7 @@ function GeneralInputs({
           <option value="2025">2025</option>
         </select>
       </div>
-      <div className="general-input">
+      {/* <div className="general-input">
         <label>
           Visa årstider och helger
           <input
@@ -50,7 +50,7 @@ function GeneralInputs({
             }}
           />
         </label>
-      </div>
+      </div> */}
     </div>
   );
 }
