@@ -1,3 +1,6 @@
+/* eslint-disable no-unused-vars */
+// Based on the original/legacy from kirkby's year-wheel project
+// See the YearWheelClassRedefined.js file for an attempt to make this more concise and readable
 import C2S from "canvas2svg";
 
 class YearWheel {
@@ -58,9 +61,11 @@ class YearWheel {
     let weekNumber = 1;
 
     while (currentDate.getFullYear() === year) {
-      const weekStart = new Date(currentDate);
       currentDate.setDate(currentDate.getDate() + 6); // Move to Sunday
-      const weekEnd = new Date(currentDate);
+
+      // We are only using week numbers for now. There's a use case for week start date and week end date that can come into play
+      // const weekStart = new Date(currentDate);
+      // const weekEnd = new Date(currentDate);
 
       // weeks.push({
       //   week: weekNumber,

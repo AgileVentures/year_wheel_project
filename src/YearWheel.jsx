@@ -1,5 +1,5 @@
-/* eslint-disable react/prop-types */
-import { useRef, useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/prop-types */import { useRef, useEffect, useState } from "react";
 import YearWheelClass from "./YearWheelClass";
 
 function useZoom(initialScale = 0.9, maxScale = 2, minScale = 0.1) {

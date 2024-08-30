@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable no-unused-vars */
+/* eslint-disable react/prop-types */import { useState, useEffect } from "react";
 import GeneralInputs from "./GeneralInputs";
 import ColorPicker from "./ColorPicker";
 import YearWheel from "./YearWheel";
