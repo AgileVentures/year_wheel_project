@@ -1,6 +1,6 @@
-import { Save, RotateCcw, Menu, X } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload } from 'lucide-react';
 
-function Header({ onSave, onReset, isSidebarOpen, onToggleSidebar }) {
+function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, onToggleSidebar }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-4">
@@ -33,8 +33,27 @@ function Header({ onSave, onReset, isSidebarOpen, onToggleSidebar }) {
         </button>
         
         <button
+          onClick={onLoadFromFile}
+          className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-sm transition-colors duration-200 font-medium"
+          title="Ladda årshjul från fil (.yrw)"
+        >
+          <Upload size={18} />
+          <span>Ladda fil</span>
+        </button>
+        
+        <button
+          onClick={onSaveToFile}
+          className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-sm transition-colors duration-200 font-medium"
+          title="Spara årshjul till fil (.yrw)"
+        >
+          <Download size={18} />
+          <span>Spara fil</span>
+        </button>
+        
+        <button
           onClick={onSave}
           className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded-sm transition-colors duration-200 font-medium shadow-sm"
+          title="Spara i webbläsaren (localStorage)"
         >
           <Save size={18} />
           <span>Spara</span>

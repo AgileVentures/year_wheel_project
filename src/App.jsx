@@ -91,10 +91,94 @@ function App() {
     localStorage.removeItem("yearWheelData");
   };
 
+  const handleSaveToFile = () => {
+    const dataToSave = {
+      version: "1.0",
+      createdAt: new Date().toISOString(),
+      title,
+      year,
+      colors,
+      ringsData,
+      showWeekRing,
+      showMonthRing,
+      showYearEvents,
+      showSeasonRing,
+    };
+
+    const jsonString = JSON.stringify(dataToSave, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const fileName = title.trim() ? title.replace(/\s+/g, '_') : 'Untitled';
+    link.download = `${fileName}_${year}.yrw`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // Show success feedback
+    const event = new CustomEvent('showToast', { 
+      detail: { message: 'Filen har sparats!', type: 'success' } 
+    });
+    window.dispatchEvent(event);
+  };
+
+  const handleLoadFromFile = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.yrw,.json';
+    
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (readerEvent) => {
+        try {
+          const data = JSON.parse(readerEvent.target.result);
+          
+          // Validate the data structure (allow empty title)
+          if (data.title === undefined || !data.year || !data.ringsData) {
+            throw new Error('Ogiltig filformat');
+          }
+
+          // Load the data
+          setTitle(data.title);
+          setYear(data.year);
+          if (data.colors) setColors(data.colors);
+          setRingsData(data.ringsData);
+          if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
+          if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
+          if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
+          if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
+
+          // Show success feedback
+          const toastEvent = new CustomEvent('showToast', { 
+            detail: { message: 'Filen har laddats!', type: 'success' } 
+          });
+          window.dispatchEvent(toastEvent);
+        } catch (error) {
+          console.error('Error loading file:', error);
+          const toastEvent = new CustomEvent('showToast', { 
+            detail: { message: 'Fel vid laddning av fil', type: 'error' } 
+          });
+          window.dispatchEvent(toastEvent);
+        }
+      };
+
+      reader.readAsText(file);
+    };
+
+    input.click();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header 
-        onSave={handleSave} 
+        onSave={handleSave}
+        onSaveToFile={handleSaveToFile}
+        onLoadFromFile={handleLoadFromFile}
         onReset={handleReset}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}

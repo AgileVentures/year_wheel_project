@@ -82,8 +82,8 @@ function YearWheel({
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center gap-6 w-full h-full">
-      <div className="flex-1 flex items-center justify-center w-full overflow-auto">
+    <div ref={containerRef} className="relative flex flex-col w-full h-full">
+      <div className="flex-1 flex items-center justify-center w-full overflow-auto pb-24">
         <canvas
           ref={canvasRef}
           style={{
@@ -94,7 +94,7 @@ function YearWheel({
           className="drop-shadow-xl"
         />
       </div>
-      <div className="flex gap-4 items-center bg-white p-4 rounded-sm shadow-lg border border-gray-200 flex-wrap justify-center">
+      <div className="sticky bottom-0 left-0 right-0 z-10 flex gap-4 items-center bg-white p-4 rounded-sm shadow-lg border border-gray-200 border-t-2 flex-wrap justify-center">
         {/* Zoom Controls */}
         <div className="flex gap-2 items-center border-r border-gray-200 pr-4">
           <button

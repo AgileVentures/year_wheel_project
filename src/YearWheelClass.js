@@ -289,14 +289,16 @@ class YearWheel {
       for (let i = 0; i < texts.length; i++) {
         const text = texts[i];
         const angle = startAngle + angleDifference + i * angleDifference;
-        const coord = this.moveToAngle(startRadius + width / 10, angle);
+        // Position text in the middle of the ring, not at the outer edge
+        const textRadius = startRadius + width / 2;
+        const coord = this.moveToAngle(textRadius, angle);
         this.context.save();
         this.context.font = `bold ${fontSize}px Arial`;
         this.context.textAlign = "center";
         this.context.textBaseline = "middle";
         this.context.translate(coord.x, coord.y);
         this.context.rotate(angle);
-        this.context.fillText(text, -5, 0, width - width * 0.5);
+        this.context.fillText(text, 0, 0, width * 0.8);
         this.context.restore();
       }
     } else {
@@ -682,13 +684,24 @@ class YearWheel {
     }
 
     // Draw monthly events (inner sections) - they expand to fill available space
-    const eventSpacing = this.size / 300;
+    const baseEventSpacing = this.size / 300;
     const numberOfEvents = this.options.ringsData.length;
+    
+    // Calculate total spacing needed (more for vertical text rings)
+    let totalSpacing = 0;
+    for (let i = 0; i < numberOfEvents - 1; i++) {
+      const currentRing = this.options.ringsData[i];
+      const nextRing = this.options.ringsData[i + 1];
+      // Add extra spacing if either ring has vertical text
+      const spacingMultiplier = (currentRing.orientation === "vertical" || nextRing.orientation === "vertical") ? 2.5 : 1;
+      totalSpacing += baseEventSpacing * spacingMultiplier;
+    }
+    
     const eventWidth =
       currentMaxRadius -
       this.minRadius -
       this.size / 140 -
-      eventSpacing * (numberOfEvents - 1);
+      totalSpacing;
     let remainingEventWidth = eventWidth;
     let eventRadius = this.minRadius;
 
@@ -712,7 +725,13 @@ class YearWheel {
         colors: this.sectionColors,
         isVertical: ring.orientation === "vertical",
       });
-      eventRadius += newEventWidth + eventSpacing;
+      
+      // Calculate spacing for next ring
+      if (i < numberOfEvents - 1) {
+        const nextRing = this.options.ringsData[i + 1];
+        const spacingMultiplier = (ring.orientation === "vertical" || nextRing.orientation === "vertical") ? 2.5 : 1;
+        eventRadius += newEventWidth + (baseEventSpacing * spacingMultiplier);
+      }
     }
 
     this.context.restore();
