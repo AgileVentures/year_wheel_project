@@ -43,42 +43,67 @@ class YearWheel {
     this.canvas.addEventListener("mousemove", this.drag.bind(this));
     this.canvas.addEventListener("mouseup", this.stopDrag.bind(this));
     this.canvas.addEventListener("mouseleave", this.stopDrag.bind(this));
-    console.table(this.generateWeeks());
   }
 
   generateWeeks() {
     const weeks = [];
-    const year = parseInt(this.year); // Convert year to integer
-    let currentDate = new Date(year, 0, 1); // Start from January 1st of the given year
+    const year = parseInt(this.year);
 
-    // Adjust to the first Monday of the year
-    if (currentDate.getDay() !== 1) {
-      while (currentDate.getDay() !== 1) {
-        currentDate.setDate(currentDate.getDate() + 1);
+    // Helper function to get ISO week number
+    const getISOWeek = (date) => {
+      const tempDate = new Date(date.getTime());
+      tempDate.setHours(0, 0, 0, 0);
+      // Set to nearest Thursday: current date + 4 - current day number
+      // Make Sunday's day number 7
+      tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+      // Get first day of year
+      const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+      // Calculate full weeks to nearest Thursday
+      const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+      return weekNo;
+    };
+
+    // Helper function to get the year that the ISO week belongs to
+    const getISOWeekYear = (date) => {
+      const tempDate = new Date(date.getTime());
+      tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+      return tempDate.getFullYear();
+    };
+
+    // Start from January 1st
+    let currentDate = new Date(year, 0, 1);
+    
+    // Find the first Monday of the calendar (might be in previous year)
+    while (currentDate.getDay() !== 1) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    const seenWeeks = new Set();
+    
+    // Iterate through all Mondays in the year
+    while (currentDate.getFullYear() <= year) {
+      const isoWeek = getISOWeek(currentDate);
+      const isoYear = getISOWeekYear(currentDate);
+      
+      // Only include weeks that belong to the current year or overlap significantly
+      if (isoYear === year || currentDate.getFullYear() === year) {
+        // Use just the week number for uniqueness check
+        if (!seenWeeks.has(isoWeek) && weeks.length < 53) {
+          seenWeeks.add(isoWeek);
+          // Return just the number without "W" prefix (Swedish interface)
+          weeks.push(isoWeek.toString());
+        }
+      }
+      
+      // Move to next Monday
+      currentDate.setDate(currentDate.getDate() + 7);
+      
+      // Stop if we've moved too far into the next year
+      if (currentDate.getFullYear() > year && currentDate.getMonth() > 0) {
+        break;
       }
     }
 
-    let weekNumber = 1;
-
-    while (currentDate.getFullYear() === year) {
-      currentDate.setDate(currentDate.getDate() + 6); // Move to Sunday
-
-      // We are only using week numbers for now. There's a use case for week start date and week end date that can come into play
-      // const weekStart = new Date(currentDate);
-      // const weekEnd = new Date(currentDate);
-
-      // weeks.push({
-      //   week: weekNumber,
-      //   startDate: `${weekStart.getDate()}/${weekStart.getMonth() + 1}`,
-      //   endDate: `${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`,
-      // });
-
-      weeks.push(weekNumber.toString())
-
-      // Move to the next Monday
-      currentDate.setDate(currentDate.getDate() + 1);
-      weekNumber++;
-    }
     return weeks;
   }
 
