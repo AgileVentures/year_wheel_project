@@ -1,108 +1,166 @@
 {
-  "2024": [
+  "events": [
     {
-      "startDate": "2023-12-31",
-      "endDate": "2024-01-01",
-      "name": "Nyårshelg"
+      "startDate": "2023-01-01",
+      "endDate": "2023-02-28",
+      "name": "Vinter",
+      "type": "season"
     },
-    {
-      "startDate": "2024-04-05",
-      "endDate": "2024-04-08",
-      "name": "Påsk"
-    },
-    {
-      "startDate": "2024-05-01",
-      "endDate": "2024-05-01",
-      "name": "Första maj"
-    },
-    {
-      "startDate": "2024-05-09",
-      "endDate": "2024-05-09",
-      "name": "Kristi himmelsfärdsdag"
-    },
-    {
-      "startDate": "2024-05-18",
-      "endDate": "2024-05-19",
-      "name": "Pingsthelgen"
-    },
-    {
-      "startDate": "2024-06-06",
-      "endDate": "2024-06-06",
-      "name": "Sveriges nationaldag"
-    },
-    {
-      "startDate": "2024-06-21",
-      "endDate": "2024-06-21",
-      "name": "Midsommarafton"
-    },
-    {
-      "startDate": "2024-12-24",
-      "endDate": "2024-12-26",
-      "name": "Julhelgen"
-    },
-    {
-      "startDate": "2024-03-02",
-      "endDate": "2024-05-31",
-      "name": "Vår"
-    },
-    {
-      "startDate": "2024-06-01",
-      "endDate": "2024-08-31",
-      "name": "Sommar"
-    },
-    {
-      "startDate": "2024-09-01",
-      "endDate": "2024-11-30",
-      "name": "Höst"
-    },
-    {
-      "startDate": "2024-12-01",
-      "endDate": "2025-02-29",
-      "name": "Vinter"
-    }
-  ],
-  "2023": [
     {
       "startDate": "2023-03-02",
       "endDate": "2023-05-31",
-      "name": "Vår"
+      "name": "Vår",
+      "type": "season"
     },
     {
       "startDate": "2023-06-01",
       "endDate": "2023-08-31",
-      "name": "Sommar"
+      "name": "Sommar",
+      "type": "season"
     },
     {
       "startDate": "2023-09-01",
       "endDate": "2023-11-30",
-      "name": "Höst"
+      "name": "Höst",
+      "type": "season"
     },
     {
       "startDate": "2023-12-01",
+      "endDate": "2023-12-31",
+      "name": "Vinter",
+      "type": "season"
+    },
+    {
+      "startDate": "2023-12-31",
+      "endDate": "2024-01-01",
+      "name": "Nyårshelg",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-01-01",
       "endDate": "2024-02-29",
-      "name": "Vinter"
-    }
-  ],
-  "2025": [
+      "name": "Vinter",
+      "type": "season"
+    },
+    {
+      "startDate": "2024-03-02",
+      "endDate": "2024-05-31",
+      "name": "Vår",
+      "type": "season"
+    },
+    {
+      "startDate": "2024-04-05",
+      "endDate": "2024-04-08",
+      "name": "Påsk",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-05-01",
+      "endDate": "2024-05-01",
+      "name": "Första maj",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-05-09",
+      "endDate": "2024-05-09",
+      "name": "Kristi himmelsfärdsdag",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-05-18",
+      "endDate": "2024-05-19",
+      "name": "Pingsthelgen",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-06-01",
+      "endDate": "2024-08-31",
+      "name": "Sommar",
+      "type": "season"
+    },
+    {
+      "startDate": "2024-06-06",
+      "endDate": "2024-06-06",
+      "name": "Sveriges nationaldag",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-06-21",
+      "endDate": "2024-06-21",
+      "name": "Midsommarafton",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-09-01",
+      "endDate": "2024-11-30",
+      "name": "Höst",
+      "type": "season"
+    },
+    {
+      "startDate": "2024-12-01",
+      "endDate": "2024-12-31",
+      "name": "Vinter",
+      "type": "season"
+    },
+    {
+      "startDate": "2024-12-24",
+      "endDate": "2024-12-26",
+      "name": "Julhelgen",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2024-12-31",
+      "endDate": "2025-01-01",
+      "name": "Nyårshelg",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2025-01-01",
+      "endDate": "2025-02-28",
+      "name": "Vinter",
+      "type": "season"
+    },
     {
       "startDate": "2025-03-02",
       "endDate": "2025-05-30",
-      "name": "Vår"
+      "name": "Vår",
+      "type": "season"
+    },
+    {
+      "startDate": "2025-06-01",
+      "endDate": "2025-08-31",
+      "name": "Sommar",
+      "type": "season"
     },
     {
       "startDate": "2025-06-03",
-      "endDate": "2025-08-31",
-      "name": "Sommar"
+      "endDate": "2025-06-03",
+      "name": "Sveriges nationaldag",
+      "type": "holiday"
     },
     {
       "startDate": "2025-09-01",
       "endDate": "2025-11-30",
-      "name": "Höst"
+      "name": "Höst",
+      "type": "season"
     },
     {
       "startDate": "2025-12-01",
-      "endDate": "2026-02-29",
-      "name": "Vinter"
+      "endDate": "2025-12-31",
+      "name": "Vinter",
+      "type": "season"
+    },
+    {
+      "startDate": "2025-12-31",
+      "endDate": "2026-01-01",
+      "name": "Nyårshelg",
+      "type": "holiday"
+    },
+    {
+      "startDate": "2026-01-01",
+      "endDate": "2026-02-28",
+      "name": "Vinter",
+      "type": "season"
     }
   ]
 }

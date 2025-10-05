@@ -14,6 +14,9 @@ class YearWheel {
     this.size = size;
     this.events = events;
     this.options = options;
+    this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
+    this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
+    this.showSeasonRing = options.showSeasonRing !== undefined ? options.showSeasonRing : true;
     this.textColor = "#333333";
     this.center = { x: size / 2, y: size / 5 + size / 2 };
     this.initAngle = -15 - 90;
@@ -180,16 +183,19 @@ class YearWheel {
     this.context.fill();
     this.context.closePath();
 
-    // Drawing the separating lines
+    // Drawing the separating lines (from minRadius outward, not from center)
+    const innerStartCoords = this.moveToAngle(this.minRadius, calculatedStartAngle);
+    const innerEndCoords = this.moveToAngle(this.minRadius, calculatedEndAngle);
+    
     this.context.beginPath();
-    this.context.moveTo(this.center.x, this.center.y);
+    this.context.moveTo(innerStartCoords.x, innerStartCoords.y);
     this.context.lineTo(outerStartCoords.x, outerStartCoords.y);
     this.context.lineWidth = 3; // Set line width
     this.context.strokeStyle = "#FFFFFF"; // Set line color
     this.context.stroke();
 
     this.context.beginPath();
-    this.context.moveTo(this.center.x, this.center.y);
+    this.context.moveTo(innerEndCoords.x, innerEndCoords.y);
     this.context.lineTo(outerEndCoords.x, outerEndCoords.y);
     this.context.lineWidth = 3; // Set line width
     this.context.strokeStyle = "#FFFFFF"; // Set line color
@@ -476,18 +482,31 @@ class YearWheel {
   drawStaticElements() {
     this.context.save();
 
+    // Draw solid center circle
+    this.context.beginPath();
+    this.context.arc(this.center.x, this.center.y, this.minRadius, 0, Math.PI * 2);
+    this.context.fillStyle = "#FFFFFF";
+    this.context.fill();
+    this.context.closePath();
+
     // Draw title and year (no rotation applied)
+    if (this.title && this.title.trim() !== '') {
+      this.context.fillStyle = this.textColor;
+      this.context.font = `bold ${this.size / 20}px Arial`;
+      this.context.textAlign = "center";
+      this.context.textBaseline = "middle";
+      this.context.fillText(this.title, this.size / 2, this.size / 15, this.size);
+    }
+
+    // Draw year text in center
     this.context.fillStyle = this.textColor;
-    this.context.font = `bold ${this.size / 20}px Arial`;
+    this.context.font = `bold ${this.size / 30}px Arial`;
     this.context.textAlign = "center";
     this.context.textBaseline = "middle";
-    this.context.fillText(this.title, this.size / 2, this.size / 9, this.size);
-
-    this.context.font = `bold ${this.size / 30}px Arial`;
     this.context.fillText(
       this.year,
       this.center.x,
-      this.center.y + this.size / 500,
+      this.center.y,
       this.size
     );
 
@@ -501,48 +520,172 @@ class YearWheel {
     this.context.rotate(this.rotationAngle);
     this.context.translate(-this.center.x, -this.center.y);
 
-    // Draw month names (outer ring)
+    // Calculate available space based on what rings are visible
+    let currentMaxRadius = this.maxRadius;
+    
+    // Helper function to convert a date to angular position
+    // This aligns with the month ring where each month is 30 degrees (360/12)
+    const dateToAngle = (date) => {
+      const month = date.getMonth(); // 0-11
+      const dayOfMonth = date.getDate(); // 1-31
+      const daysInMonth = new Date(date.getFullYear(), month + 1, 0).getDate();
+      
+      // Each month gets exactly 30 degrees regardless of actual day count
+      const monthAngle = month * 30;
+      const dayAngle = (dayOfMonth - 1) / daysInMonth * 30; // Proportional within the month
+      
+      return monthAngle + dayAngle;
+    };
+    
+    const minDate = new Date(this.year, 0, 1);
+    const maxDate = new Date(this.year, 11, 31, 23, 59, 59);
+    
+    // Draw season ring if enabled (outermost)
+    if (this.showSeasonRing && this.events && this.events.length > 0) {
+      const seasonRingWidth = this.size / 35;
+      const seasonRingStartRadius = currentMaxRadius - seasonRingWidth - this.size / 400;
+      
+      const seasons = this.events.filter(event => event.type === 'season');
+      
+      for (let i = 0; i < seasons.length; i++) {
+        const event = seasons[i];
+        let eventStartDate = new Date(event.startDate);
+        let eventEndDate = new Date(event.endDate);
+        
+        // Skip events that end before the current year
+        if (eventEndDate < minDate) continue;
+        
+        // Skip events that start after the current year
+        if (eventStartDate > maxDate) continue;
+        
+        // Clip event dates to year boundaries
+        if (eventStartDate < minDate) eventStartDate = minDate;
+        if (eventEndDate > maxDate) eventEndDate = maxDate;
+        
+        // Calculate angles
+        let startAngle = dateToAngle(eventStartDate);
+        let endAngle = dateToAngle(eventEndDate);
+        
+        // Apply the initAngle offset to align with the month ring
+        const adjustedStartAngle = this.initAngle + startAngle;
+        const adjustedEndAngle = this.initAngle + endAngle;
+        
+        this.setCircleSectionHTML({
+          startRadius: seasonRingStartRadius,
+          width: seasonRingWidth,
+          startAngle: adjustedStartAngle,
+          endAngle: adjustedEndAngle,
+          color: this.sectionColors[i % this.sectionColors.length],
+          textFunction: this.setCircleSectionSmallTitle.bind(this),
+          text: event.name,
+          fontSize: this.size / 90,
+          isVertical: false,
+        });
+      }
+      
+      currentMaxRadius = seasonRingStartRadius - this.size / 200;
+    }
+    
+    // Draw calendar events ring if enabled (holidays/special days)
+    if (this.options.showYearEvents && this.events && this.events.length > 0) {
+      const calendarEventWidth = this.size / 40;
+      const calendarEventStartRadius = currentMaxRadius - calendarEventWidth - this.size / 400;
+      
+      const holidays = this.events.filter(event => event.type === 'holiday');
+      
+      for (let i = 0; i < holidays.length; i++) {
+        const event = holidays[i];
+        let eventStartDate = new Date(event.startDate);
+        let eventEndDate = new Date(event.endDate);
+        
+        // Skip events that end before the current year
+        if (eventEndDate < minDate) continue;
+        
+        // Skip events that start after the current year
+        if (eventStartDate > maxDate) continue;
+        
+        // Clip event dates to year boundaries
+        if (eventStartDate < minDate) eventStartDate = minDate;
+        if (eventEndDate > maxDate) eventEndDate = maxDate;
+        
+        // Calculate angles
+        let startAngle = dateToAngle(eventStartDate);
+        let endAngle = dateToAngle(eventEndDate);
+        
+        // Ensure minimum visibility for single-day events
+        if (Math.abs(startAngle - endAngle) < 3) {
+          const averageAngle = (startAngle + endAngle) / 2;
+          startAngle = averageAngle - 1.5;
+          endAngle = averageAngle + 1.5;
+        }
+        
+        // Apply the initAngle offset to align with the month ring
+        const adjustedStartAngle = this.initAngle + startAngle;
+        const adjustedEndAngle = this.initAngle + endAngle;
+        
+        this.setCircleSectionHTML({
+          startRadius: calendarEventStartRadius,
+          width: calendarEventWidth,
+          startAngle: adjustedStartAngle,
+          endAngle: adjustedEndAngle,
+          color: this.sectionColors[i % this.sectionColors.length],
+          textFunction: this.setCircleSectionSmallTitle.bind(this),
+          text: event.name,
+          fontSize: this.size / 90,
+          isVertical: false,
+        });
+      }
+      
+      currentMaxRadius = calendarEventStartRadius - this.size / 200;
+    }
+    
+    // Draw month names ring if enabled
     const monthNameWidth = this.size / 25;
-    const monthNameStartRadius =
-      this.maxRadius - monthNameWidth - this.size / 400;
-    this.addMonthlyCircleSection({
-      startRadius: monthNameStartRadius,
-      width: monthNameWidth,
-      spacingAngle: 0.25,
-      color: this.outerRingColor,
-      textFunction: this.setCircleSectionTitle.bind(this),
-      texts: this.monthNames,
-      fontSize: this.size / 60,
-      colors: this.sectionColors,
-      isVertical: true,
-    });
+    let monthNameStartRadius = currentMaxRadius - monthNameWidth - this.size / 400;
+    
+    if (this.showMonthRing) {
+      this.addMonthlyCircleSection({
+        startRadius: monthNameStartRadius,
+        width: monthNameWidth,
+        spacingAngle: 0.25,
+        color: this.outerRingColor,
+        textFunction: this.setCircleSectionTitle.bind(this),
+        texts: this.monthNames,
+        fontSize: this.size / 60,
+        colors: this.sectionColors,
+        isVertical: true,
+      });
+      currentMaxRadius = monthNameStartRadius;
+    }
 
-    // Draw week ring using addCircleSection
-    const weekData = this.generateWeeks();
+    // Draw week ring if enabled
     const weekRingWidth = this.size / 30;
-    const weekStartRadius =
-      monthNameStartRadius - weekRingWidth - this.size / 170;
+    let weekStartRadius = currentMaxRadius - weekRingWidth - this.size / 170;
+    
+    if (this.showWeekRing) {
+      const weekData = this.generateWeeks();
+      const numberOfWeeks = weekData.length;
+      this.addMonthlyCircleSection({
+        startRadius: weekStartRadius,
+        width: weekRingWidth,
+        spacingAngle: 0.25,
+        color: this.outerRingColor,
+        textFunction: this.setCircleSectionTitle.bind(this),
+        texts: weekData,
+        fontSize: this.size / 80,
+        colors: this.sectionColors,
+        isVertical: true,
+        lineHeight: this.lineHeight,
+        numberOfIntervals: numberOfWeeks,
+      });
+      currentMaxRadius = weekStartRadius;
+    }
 
-    const numberOfWeeks = weekData.length;
-    this.addMonthlyCircleSection({
-      startRadius: weekStartRadius,
-      width: weekRingWidth,
-      spacingAngle: 0.25,
-      color: this.outerRingColor,
-      textFunction: this.setCircleSectionTitle.bind(this),
-      texts: weekData,
-      fontSize: this.size / 80,
-      colors: this.sectionColors,
-      isVertical: true,
-      lineHeight: this.lineHeight,
-      numberOfIntervals: numberOfWeeks,
-    });
-
-    // Draw monthly events (inner sections)
+    // Draw monthly events (inner sections) - they expand to fill available space
     const eventSpacing = this.size / 300;
     const numberOfEvents = this.options.ringsData.length;
     const eventWidth =
-      weekStartRadius -
+      currentMaxRadius -
       this.minRadius -
       this.size / 140 -
       eventSpacing * (numberOfEvents - 1);

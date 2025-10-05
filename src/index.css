@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Custom component styles */
+.input-field {
+  @apply w-full px-4 py-2.5 border border-gray-300 rounded-sm 
+         focus:ring-2 focus:ring-primary-500 focus:border-transparent 
+         outline-none transition-all duration-200
+         hover:border-gray-400 bg-white;
+}
+
+.input-field:focus {
+  @apply shadow-md;
+}
+
+textarea.input-field {
+  @apply font-mono text-sm leading-relaxed;
+}
+
+.card {
+  @apply bg-white rounded-sm p-5 border border-gray-200 shadow-sm;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
