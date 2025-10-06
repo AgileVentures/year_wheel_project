@@ -1,0 +1,202 @@
+{
+  "rings": [
+    {
+      "id": "campaigns",
+      "name": "Campaigns",
+      "color": "#F5E6D3",
+      "visible": true
+    },
+    {
+      "id": "digital",
+      "name": "Digital marketing",
+      "color": "#A8DCD1",
+      "visible": true
+    }
+  ],
+  "activities": [
+    {
+      "id": "digital-marketing",
+      "name": "Digital marketing",
+      "color": "#A8DCD1",
+      "visible": true
+    },
+    {
+      "id": "campaigns",
+      "name": "Campaigns",
+      "color": "#F5E6D3",
+      "visible": true
+    },
+    {
+      "id": "printed-media",
+      "name": "Printed media",
+      "color": "#B8D4E8",
+      "visible": true
+    },
+    {
+      "id": "meetings",
+      "name": "Meetings",
+      "color": "#A8DCD1",
+      "visible": true
+    }
+  ],
+  "labels": [
+    {
+      "id": "responsible-paul",
+      "name": "Responsible: Paul",
+      "color": "#8B7FD8",
+      "visible": true
+    },
+    {
+      "id": "responsible-amber",
+      "name": "Responsible: Amber",
+      "color": "#F4A896",
+      "visible": true
+    },
+    {
+      "id": "no-label",
+      "name": "Ingen label",
+      "color": "#F5F5F5",
+      "visible": true
+    }
+  ],
+  "items": [
+    {
+      "id": "item1",
+      "name": "Christmas campaign",
+      "ringId": "campaigns",
+      "activityId": "campaigns",
+      "labelId": "responsible-paul",
+      "startDate": "2025-12-01",
+      "endDate": "2025-12-26"
+    },
+    {
+      "id": "item2",
+      "name": "New years sale",
+      "ringId": "campaigns",
+      "activityId": "campaigns",
+      "labelId": "responsible-paul",
+      "startDate": "2025-01-02",
+      "endDate": "2025-01-15"
+    },
+    {
+      "id": "item3",
+      "name": "Launch",
+      "ringId": "digital",
+      "activityId": "digital-marketing",
+      "labelId": "no-label",
+      "startDate": "2025-05-01",
+      "endDate": "2025-05-15"
+    },
+    {
+      "id": "item4",
+      "name": "Trend",
+      "ringId": "digital",
+      "activityId": "digital-marketing",
+      "labelId": "no-label",
+      "startDate": "2025-04-15",
+      "endDate": "2025-04-30"
+    },
+    {
+      "id": "item5",
+      "name": "Pre-ap",
+      "ringId": "digital",
+      "activityId": "digital-marketing",
+      "labelId": "no-label",
+      "startDate": "2025-04-20",
+      "endDate": "2025-05-05"
+    },
+    {
+      "id": "item6",
+      "name": "Facebook advert",
+      "ringId": "digital",
+      "activityId": "digital-marketing",
+      "labelId": "responsible-paul",
+      "startDate": "2025-02-01",
+      "endDate": "2025-02-28"
+    },
+    {
+      "id": "item7",
+      "name": "Overview",
+      "ringId": "digital",
+      "activityId": "digital-marketing",
+      "labelId": "no-label",
+      "startDate": "2025-02-10",
+      "endDate": "2025-02-20"
+    },
+    {
+      "id": "item8",
+      "name": "Digital marketing",
+      "ringId": "digital",
+      "activityId": "digital-marketing",
+      "labelId": "no-label",
+      "startDate": "2025-11-01",
+      "endDate": "2025-11-30"
+    },
+    {
+      "id": "item9",
+      "name": "Event",
+      "ringId": "campaigns",
+      "activityId": "campaigns",
+      "labelId": "no-label",
+      "startDate": "2025-02-10",
+      "endDate": "2025-02-15"
+    },
+    {
+      "id": "item10",
+      "name": "Trend meeting",
+      "ringId": "digital",
+      "activityId": "meetings",
+      "labelId": "responsible-amber",
+      "startDate": "2025-10-07",
+      "endDate": "2025-10-07",
+      "time": "13:00 - 14:00"
+    },
+    {
+      "id": "item11",
+      "name": "Pre-approval",
+      "ringId": "digital",
+      "activityId": "meetings",
+      "labelId": "responsible-amber",
+      "startDate": "2025-10-11",
+      "endDate": "2025-10-11",
+      "time": "08:00 - 12:00"
+    },
+    {
+      "id": "item12",
+      "name": "Launch",
+      "ringId": "campaigns",
+      "activityId": "campaigns",
+      "labelId": "no-label",
+      "startDate": "2025-10-13",
+      "endDate": "2025-10-13",
+      "time": "08:00 - 09:00"
+    },
+    {
+      "id": "item13",
+      "name": "Crazy-sale campaign",
+      "ringId": "campaigns",
+      "activityId": "campaigns",
+      "labelId": "no-label",
+      "startDate": "2025-10-18",
+      "endDate": "2025-10-28"
+    },
+    {
+      "id": "item14",
+      "name": "Crazy-sale campaign",
+      "ringId": "campaigns",
+      "activityId": "campaigns",
+      "labelId": "no-label",
+      "startDate": "2025-10-19",
+      "endDate": "2025-10-28"
+    },
+    {
+      "id": "item15",
+      "name": "Crazy-sale campaign",
+      "ringId": "campaigns",
+      "activityId": "campaigns",
+      "labelId": "no-label",
+      "startDate": "2025-10-20",
+      "endDate": "2025-10-28"
+    }
+  ]
+}

@@ -4,28 +4,37 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #1f2937;
 }
 
 /* Custom component styles */
 .input-field {
-  @apply w-full px-4 py-2.5 border border-gray-300 rounded-sm 
-         focus:ring-2 focus:ring-primary-500 focus:border-transparent 
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg
+         focus:ring-2 focus:ring-blue-500 focus:border-transparent 
          outline-none transition-all duration-200
-         hover:border-gray-400 bg-white;
+         hover:border-gray-400 bg-white text-sm;
 }
 
 .input-field:focus {
-  @apply shadow-md;
+  @apply shadow-sm;
 }
 
 textarea.input-field {
-  @apply font-mono text-sm leading-relaxed;
+  @apply font-mono text-xs leading-relaxed;
 }
 
 .card {
-  @apply bg-white rounded-sm p-5 border border-gray-200 shadow-sm;
+  @apply bg-white rounded-lg p-4 border border-gray-200;
 }
 
 @keyframes slide-in-right {
@@ -41,4 +50,23 @@ textarea.input-field {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
+}
+
+/* Range slider styling */
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
 }

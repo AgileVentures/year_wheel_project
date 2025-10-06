@@ -1,14 +1,21 @@
 import { useState, useEffect } from "react";
 import YearWheel from "./YearWheel";
-import EditorPanel from "./components/EditorPanel";
+import OrganizationPanel from "./components/OrganizationPanel";
+import CalendarSidebar from "./components/CalendarSidebar";
 import Header from "./components/Header";
 import Toast from "./components/Toast";
 import calendarEvents from "./calendarEvents.json";
+import sampleOrgData from "./sampleOrganizationData.json";
 
 function App() {
-  const [title, setTitle] = useState("Kampanjplanering");
+  const [title, setTitle] = useState("Organization");
   const [year, setYear] = useState("2025");
-  const [colors, setColors] = useState(["#0D4D73", "#42A5F5", "#BDBDBD", "#FFCA28"]);
+  // Plandisc color scheme from screenshot: beige/cream, mint green, coral, light blue
+  const [colors, setColors] = useState(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+  
+  // New organization data structure with sample data
+  const [organizationData, setOrganizationData] = useState(sampleOrgData);
+  
   const [ringsData, setRingsData] = useState([
     {
       data: Array.from({ length: 12 }, () => [""]),
@@ -19,6 +26,7 @@ function App() {
   const [showSeasonRing, setShowSeasonRing] = useState(true);
   const [yearEventsCollection, setYearEventsCollection] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(true);
   const [showWeekRing, setShowWeekRing] = useState(true);
   const [showMonthRing, setShowMonthRing] = useState(true);
 
@@ -29,10 +37,10 @@ function App() {
       setTitle(data.title);
       setYear(data.year);
       if (data.colors) setColors(data.colors);
+      if (data.organizationData) setOrganizationData(data.organizationData);
       if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
       if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
       if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
-      if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
       if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
     }
   }, []);
@@ -59,6 +67,7 @@ function App() {
       year,
       colors,
       ringsData,
+      organizationData,
       showWeekRing,
       showMonthRing,
       showYearEvents,
@@ -68,17 +77,18 @@ function App() {
     
     // Show success feedback
     const event = new CustomEvent('showToast', { 
-      detail: { message: 'Årshjulet har sparats!', type: 'success' } 
+      detail: { message: 'Data has been saved!', type: 'success' } 
     });
     window.dispatchEvent(event);
   };
 
   const handleReset = () => {
-    if (!confirm('Är du säker på att du vill återställa allt?')) return;
+    if (!confirm('Are you sure you want to reset everything?')) return;
     
-    setTitle("Kampanjplanering");
+    setTitle("Organization");
     setYear("2025");
-    setColors(["#0D4D73", "#42A5F5", "#BDBDBD", "#FFCA28"]);
+    setColors(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+    setOrganizationData(sampleOrgData);
     setRingsData([
       {
         data: Array.from({ length: 12 }, () => [""]),
@@ -99,6 +109,7 @@ function App() {
       year,
       colors,
       ringsData,
+      organizationData,
       showWeekRing,
       showMonthRing,
       showYearEvents,
@@ -119,7 +130,7 @@ function App() {
 
     // Show success feedback
     const event = new CustomEvent('showToast', { 
-      detail: { message: 'Filen har sparats!', type: 'success' } 
+      detail: { message: 'File saved successfully!', type: 'success' } 
     });
     window.dispatchEvent(event);
   };
@@ -140,13 +151,14 @@ function App() {
           
           // Validate the data structure (allow empty title)
           if (data.title === undefined || !data.year || !data.ringsData) {
-            throw new Error('Ogiltig filformat');
+            throw new Error('Invalid file format');
           }
 
           // Load the data
           setTitle(data.title);
           setYear(data.year);
           if (data.colors) setColors(data.colors);
+          if (data.organizationData) setOrganizationData(data.organizationData);
           setRingsData(data.ringsData);
           if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
           if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
@@ -155,13 +167,13 @@ function App() {
 
           // Show success feedback
           const toastEvent = new CustomEvent('showToast', { 
-            detail: { message: 'Filen har laddats!', type: 'success' } 
+            detail: { message: 'File loaded successfully!', type: 'success' } 
           });
           window.dispatchEvent(toastEvent);
         } catch (error) {
           console.error('Error loading file:', error);
           const toastEvent = new CustomEvent('showToast', { 
-            detail: { message: 'Fel vid laddning av fil', type: 'error' } 
+            detail: { message: 'Error loading file', type: 'error' } 
           });
           window.dispatchEvent(toastEvent);
         }
@@ -174,7 +186,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-white">
       <Header 
         onSave={handleSave}
         onSaveToFile={handleSaveToFile}
@@ -184,43 +196,28 @@ function App() {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
-      <div className="flex h-[calc(100vh-4rem)]">
-        {/* Editor Sidebar */}
+      <div className="flex h-[calc(100vh-3.5rem)]">
+        {/* Organization Sidebar */}
         <div className={`
-          ${isSidebarOpen ? 'w-96' : 'w-0'}
+          ${isSidebarOpen ? 'w-80' : 'w-0'}
           transition-all duration-300 ease-in-out
-          bg-white border-r border-gray-200 overflow-hidden
+          border-r border-gray-200 overflow-hidden
         `}>
-          <div className="h-full overflow-y-auto">
-            <EditorPanel
-              title={title}
-              year={year}
-              colors={colors}
-              ringsData={ringsData}
-              showYearEvents={showYearEvents}
-              showSeasonRing={showSeasonRing}
-              showWeekRing={showWeekRing}
-              showMonthRing={showMonthRing}
-              onTitleChange={setTitle}
-              onYearChange={setYear}
-              onColorChange={setColors}
-              onRingsChange={setRingsData}
-              onShowYearEventsChange={setShowYearEvents}
-              onShowSeasonRingChange={setShowSeasonRing}
-              onShowWeekRingChange={setShowWeekRing}
-              onShowMonthRingChange={setShowMonthRing}
-            />
-          </div>
+          <OrganizationPanel
+            organizationData={organizationData}
+            onOrganizationChange={setOrganizationData}
+          />
         </div>
 
         {/* Main Canvas Area */}
-        <div className="flex-1 flex items-center justify-start p-8 overflow-auto">
-          <div className="w-full flex flex-col items-center justify-start">
+        <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
+          <div className="w-full h-full flex items-center justify-center">
             <YearWheel
               title={title}
               year={year}
               colors={colors}
               ringsData={ringsData}
+              organizationData={organizationData}
               showYearEvents={showYearEvents}
               showSeasonRing={showSeasonRing}
               yearEventsCollection={yearEventsCollection}
@@ -229,6 +226,15 @@ function App() {
             />
           </div>
         </div>
+
+        {/* Calendar Sidebar */}
+        {isCalendarOpen && (
+          <CalendarSidebar
+            year={year}
+            organizationData={organizationData}
+            onClose={() => setIsCalendarOpen(false)}
+          />
+        )}
       </div>
       
       <Toast />

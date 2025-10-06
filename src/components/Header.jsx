@@ -2,61 +2,57 @@ import { Save, RotateCcw, Menu, X, Download, Upload } from 'lucide-react';
 
 function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, onToggleSidebar }) {
   return (
-    <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-4">
+    <header className="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-gray-100 rounded-sm transition-colors duration-200"
-          aria-label={isSidebarOpen ? "Stäng panelen" : "Öppna panelen"}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label={isSidebarOpen ? "Close panel" : "Open panel"}
         >
-          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
         
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-sm flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-lg">Å</span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Årshjul</h1>
-            <p className="text-xs text-gray-500">Planera ditt år visuellt</p>
+        <div className="flex items-center gap-2">
+          <div className="text-2xl font-bold text-gray-900">
+            YearWheel
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           onClick={onReset}
-          className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-sm transition-colors duration-200 font-medium"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <RotateCcw size={18} />
-          <span>Återställ</span>
+          <RotateCcw size={16} />
+          <span>Reset</span>
         </button>
         
         <button
           onClick={onLoadFromFile}
-          className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-sm transition-colors duration-200 font-medium"
-          title="Ladda årshjul från fil (.yrw)"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Load from file (.yrw)"
         >
-          <Upload size={18} />
-          <span>Ladda fil</span>
+          <Upload size={16} />
+          <span>Load</span>
         </button>
         
         <button
           onClick={onSaveToFile}
-          className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-sm transition-colors duration-200 font-medium"
-          title="Spara årshjul till fil (.yrw)"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Save to file (.yrw)"
         >
-          <Download size={18} />
-          <span>Spara fil</span>
+          <Download size={16} />
+          <span>Export</span>
         </button>
         
         <button
           onClick={onSave}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded-sm transition-colors duration-200 font-medium shadow-sm"
-          title="Spara i webbläsaren (localStorage)"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
+          title="Save to browser storage"
         >
-          <Save size={18} />
-          <span>Spara</span>
+          <Save size={16} />
+          <span>Save</span>
         </button>
       </div>
     </header>

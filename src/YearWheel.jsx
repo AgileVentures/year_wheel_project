@@ -7,6 +7,7 @@ function YearWheel({
   title,
   year,
   colors,
+  organizationData,
   showYearEvents,
   showSeasonRing,
   yearEventsCollection,
@@ -15,7 +16,7 @@ function YearWheel({
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const [zoomLevel, setZoomLevel] = useState(100); // Percentage: 50% to 200%
+  const [zoomLevel, setZoomLevel] = useState(90); // Percentage: 50% to 200%, default 90% for better fit
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
   const [downloadFormat, setDownloadFormat] = useState("png");
@@ -23,6 +24,24 @@ function YearWheel({
 
   const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
   const zoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 50));
+  
+  const fitToScreen = () => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    // Base canvas size is 1000px width, 1250px height
+    const baseWidth = 1000;
+    const baseHeight = 1250;
+    
+    // Calculate zoom to fit (with some padding)
+    const widthZoom = (containerWidth * 0.9 / baseWidth) * 100;
+    const heightZoom = ((containerHeight - 80) * 0.9 / baseHeight) * 100; // 80px for toolbar
+    
+    const optimalZoom = Math.min(widthZoom, heightZoom, 100);
+    setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
+  };
 
   useEffect(() => {
     setEvents(yearEventsCollection || []);
@@ -50,6 +69,7 @@ function YearWheel({
         showYearEvents,
         showSeasonRing,
         ringsData,
+        organizationData,
         showWeekRing,
         showMonthRing,
       }
@@ -61,6 +81,7 @@ function YearWheel({
     title,
     year,
     colors,
+    organizationData,
     showYearEvents,
     showSeasonRing,
     yearEventsCollection,
@@ -83,7 +104,7 @@ function YearWheel({
 
   return (
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
-      <div className="flex-1 flex items-center justify-center w-full overflow-auto pb-24">
+      <div className="flex-1 flex items-center justify-center w-full overflow-auto pb-20 bg-white">
         <canvas
           ref={canvasRef}
           style={{
@@ -91,61 +112,84 @@ function YearWheel({
             height: `${1250 * (zoomLevel / 100)}px`,
             maxWidth: 'none',
           }}
-          className="drop-shadow-xl"
+          className="drop-shadow-2xl"
         />
       </div>
-      <div className="sticky bottom-0 left-0 right-0 z-10 flex gap-4 items-center bg-white p-4 rounded-sm shadow-lg border border-gray-200 border-t-2 flex-wrap justify-center">
-        {/* Zoom Controls */}
-        <div className="flex gap-2 items-center border-r border-gray-200 pr-4">
-          <button
-            onClick={zoomOut}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
-            title="Zooma ut"
-          >
-            −
-          </button>
-          <span className="text-sm font-medium text-gray-600 min-w-[60px] text-center">
-            {zoomLevel}%
-          </span>
-          <button
-            onClick={zoomIn}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
-            title="Zooma in"
-          >
-            +
-          </button>
-        </div>
+      <div className="sticky bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-200 shadow-lg">
+        <div className="flex gap-3 items-center p-3 flex-wrap justify-center">
+          {/* Zoom Controls */}
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={zoomOut}
+              className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded text-lg font-semibold transition-colors"
+              title="Zooma ut"
+            >
+              −
+            </button>
+            <input
+              type="range"
+              min="50"
+              max="200"
+              value={zoomLevel}
+              onChange={(e) => setZoomLevel(parseInt(e.target.value))}
+              className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              title={`${zoomLevel}%`}
+            />
+            <button
+              onClick={zoomIn}
+              className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded text-lg font-semibold transition-colors"
+              title="Zooma in"
+            >
+              +
+            </button>
+            <span className="text-xs font-medium text-gray-600 min-w-[45px] text-center">
+              {zoomLevel}%
+            </span>
+          </div>
 
-        {/* Rotation Control */}
-        <button
-          onClick={toggleSpinning}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            isSpinning
-              ? 'bg-red-100 text-red-700 hover:bg-red-200'
-              : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
-          }`}
-        >
-          {isSpinning ? 'Stoppa rotation' : 'Rotera hjul'}
-        </button>
+          {/* View Controls */}
+          <div className="flex gap-2 items-center border-l border-gray-200 pl-3">
+            <button
+              onClick={fitToScreen}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium transition-colors"
+              title="Anpassa till skärm"
+            >
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+              Anpassa
+            </button>
+            <button
+              onClick={toggleSpinning}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                isSpinning
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+              }`}
+            >
+              {isSpinning ? 'Stoppa' : 'Rotera'}
+            </button>
+          </div>
 
-        {/* Download Controls */}
-        <div className="flex gap-2 items-center border-l border-gray-200 pl-4">
-          <select
-            value={downloadFormat}
-            onChange={(e) => setDownloadFormat(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-          >
-            <option value="png">PNG (Transparent)</option>
-            <option value="png-white">PNG (Vit bakgrund)</option>
-            <option value="jpeg">JPEG</option>
-            <option value="svg">SVG</option>
-          </select>
-          <button
-            onClick={downloadImage}
-            className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg font-medium transition-colors"
-          >
-            Ladda ner
-          </button>
+          {/* Download Controls */}
+          <div className="flex gap-2 items-center border-l border-gray-200 pl-3">
+            <select
+              value={downloadFormat}
+              onChange={(e) => setDownloadFormat(e.target.value)}
+              className="px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+            >
+              <option value="png">PNG (Transparent)</option>
+              <option value="png-white">PNG (Vit bakgrund)</option>
+              <option value="jpeg">JPEG</option>
+              <option value="svg">SVG</option>
+            </select>
+            <button
+              onClick={downloadImage}
+              className="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded text-xs font-medium transition-colors"
+            >
+              Ladda ner
+            </button>
+          </div>
         </div>
       </div>
     </div>

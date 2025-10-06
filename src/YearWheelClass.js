@@ -10,14 +10,15 @@ class YearWheel {
     this.year = year;
     this.title = title;
     this.outerRingColor = colors[0]; // Use the first color for the outer ring
-    this.sectionColors = colors.slice(1); // Use the remaining colors for sections
+    this.sectionColors = colors; // Use all colors for sections (plandisc style)
     this.size = size;
     this.events = events;
     this.options = options;
+    this.organizationData = options.organizationData || { items: [], rings: [], activities: [] };
     this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showSeasonRing = options.showSeasonRing !== undefined ? options.showSeasonRing : true;
-    this.textColor = "#333333";
+    this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 5 + size / 2 };
     this.initAngle = -15 - 90;
     this.minRadius = size / 15;
@@ -639,6 +640,67 @@ class YearWheel {
       }
       
       currentMaxRadius = calendarEventStartRadius - this.size / 200;
+    }
+    
+    // Draw organization data items (from sidebar) if available
+    if (this.organizationData && this.organizationData.items && this.organizationData.items.length > 0) {
+      const visibleRings = this.organizationData.rings.filter(r => r.visible);
+      
+      if (visibleRings.length > 0) {
+        const orgDataWidth = this.size / 35; // Width for organization items ring
+        const orgDataStartRadius = currentMaxRadius - orgDataWidth - this.size / 400;
+        
+        visibleRings.forEach((ring, ringIndex) => {
+          // Filter items for this ring
+          const ringItems = this.organizationData.items.filter(item => item.ringId === ring.id);
+          
+          ringItems.forEach((item) => {
+            let itemStartDate = new Date(item.startDate);
+            let itemEndDate = new Date(item.endDate);
+            
+            // Skip items outside the current year
+            if (itemEndDate < minDate || itemStartDate > maxDate) return;
+            
+            // Clip item dates to year boundaries
+            if (itemStartDate < minDate) itemStartDate = minDate;
+            if (itemEndDate > maxDate) itemEndDate = maxDate;
+            
+            // Calculate angles
+            let startAngle = dateToAngle(itemStartDate);
+            let endAngle = dateToAngle(itemEndDate);
+            
+            // Ensure minimum visibility for short duration items
+            if (Math.abs(startAngle - endAngle) < 2) {
+              const averageAngle = (startAngle + endAngle) / 2;
+              startAngle = averageAngle - 1;
+              endAngle = averageAngle + 1;
+            }
+            
+            // Apply the initAngle offset to align with the month ring
+            const adjustedStartAngle = this.initAngle + startAngle;
+            const adjustedEndAngle = this.initAngle + endAngle;
+            
+            // Get color from activity
+            const activity = this.organizationData.activities.find(a => a.id === item.activityId);
+            const itemColor = activity ? activity.color : ring.color;
+            
+            // Draw the item block
+            this.setCircleSectionHTML({
+              startRadius: orgDataStartRadius - (ringIndex * (orgDataWidth * 0.3)), // Stack rings slightly
+              width: orgDataWidth * 0.25, // Thinner blocks
+              startAngle: adjustedStartAngle,
+              endAngle: adjustedEndAngle,
+              color: itemColor,
+              textFunction: this.setCircleSectionSmallTitle.bind(this),
+              text: item.name,
+              fontSize: this.size / 100,
+              isVertical: false,
+            });
+          });
+        });
+        
+        currentMaxRadius = orgDataStartRadius - (visibleRings.length * (orgDataWidth * 0.3)) - this.size / 200;
+      }
     }
     
     // Draw month names ring if enabled
