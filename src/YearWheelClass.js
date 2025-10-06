@@ -588,7 +588,7 @@ class YearWheel {
 
   create() {
     this.canvas.width = this.size;
-    this.canvas.height = this.size / 4 + this.size;
+    this.canvas.height = this.size; // Square canvas (title removed)
     this.canvas.style.height = `100%`;
 
     // Apply rotation and draw rotating elements (months, events)
