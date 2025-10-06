@@ -78,15 +78,15 @@ function App() {
     
     // Show success feedback
     const event = new CustomEvent('showToast', { 
-      detail: { message: 'Data has been saved!', type: 'success' } 
+      detail: { message: 'Data har sparats!', type: 'success' } 
     });
     window.dispatchEvent(event);
   };
 
   const handleReset = () => {
-    if (!confirm('Are you sure you want to reset everything?')) return;
+    if (!confirm('Är du säker på att du vill återställa allt?')) return;
     
-    setTitle("Organization");
+    setTitle("Organisation");
     setYear("2025");
     setColors(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
     setOrganizationData(sampleOrgData);
@@ -131,7 +131,7 @@ function App() {
 
     // Show success feedback
     const event = new CustomEvent('showToast', { 
-      detail: { message: 'File saved successfully!', type: 'success' } 
+      detail: { message: 'Fil sparad!', type: 'success' } 
     });
     window.dispatchEvent(event);
   };
@@ -168,13 +168,13 @@ function App() {
 
           // Show success feedback
           const toastEvent = new CustomEvent('showToast', { 
-            detail: { message: 'File loaded successfully!', type: 'success' } 
+            detail: { message: 'Fil laddad!', type: 'success' } 
           });
           window.dispatchEvent(toastEvent);
         } catch (error) {
           console.error('Error loading file:', error);
           const toastEvent = new CustomEvent('showToast', { 
-            detail: { message: 'Error loading file', type: 'error' } 
+            detail: { message: 'Fel vid laddning av fil', type: 'error' } 
           });
           window.dispatchEvent(toastEvent);
         }
@@ -207,6 +207,10 @@ function App() {
           <OrganizationPanel
             organizationData={organizationData}
             onOrganizationChange={setOrganizationData}
+            title={title}
+            onTitleChange={setTitle}
+            colors={colors}
+            onColorsChange={setColors}
           />
         </div>
 

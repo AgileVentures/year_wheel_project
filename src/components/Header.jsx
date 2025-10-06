@@ -25,34 +25,34 @@ function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, 
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <RotateCcw size={16} />
-          <span>Reset</span>
+          <span>Återställ</span>
         </button>
         
         <button
           onClick={onLoadFromFile}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Load from file (.yrw)"
+          title="Ladda från fil (.yrw)"
         >
           <Upload size={16} />
-          <span>Load</span>
+          <span>Ladda</span>
         </button>
         
         <button
           onClick={onSaveToFile}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Save to file (.yrw)"
+          title="Spara till fil (.yrw)"
         >
           <Download size={16} />
-          <span>Export</span>
+          <span>Exportera</span>
         </button>
         
         <button
           onClick={onSave}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-          title="Save to browser storage"
+          title="Spara till webbläsarlagring"
         >
           <Save size={16} />
-          <span>Save</span>
+          <span>Spara</span>
         </button>
       </div>
     </header>

@@ -156,6 +156,7 @@ class YearWheel {
     fontSize,
     isVertical,
     opacity,
+    highlight,
   }) {
     const endRadius = startRadius + width; // Properly define endRadius
     const calculatedStartAngle = this.toRadians(startAngle);
@@ -211,6 +212,31 @@ class YearWheel {
     this.context.lineWidth = 3; // Set line width
     this.context.strokeStyle = "#FFFFFF"; // Set line color
     this.context.stroke();
+
+    // Draw highlight border if this section is highlighted (zoomed month)
+    if (highlight) {
+      this.context.beginPath();
+      this.context.arc(
+        this.center.x,
+        this.center.y,
+        startRadius,
+        calculatedStartAngle,
+        calculatedEndAngle,
+        false
+      );
+      this.context.arc(
+        this.center.x,
+        this.center.y,
+        startRadius + width,
+        calculatedEndAngle,
+        calculatedStartAngle,
+        true
+      );
+      this.context.lineWidth = 4;
+      this.context.strokeStyle = "#3B82F6"; // Blue highlight
+      this.context.stroke();
+      this.context.closePath();
+    }
 
     if (text !== undefined) {
       textFunction.call(
@@ -350,6 +376,7 @@ class YearWheel {
     fontSize,
     isVertical,
     opacity,
+    highlight,
   }) {
     const newStartAngle = this.initAngle + startAngle;
     const newEndAngle = this.initAngle + endAngle;
@@ -366,6 +393,7 @@ class YearWheel {
       fontSize,
       isVertical,
       opacity,
+      highlight,
     });
   }
 
@@ -390,9 +418,11 @@ class YearWheel {
 
       // Calculate opacity based on zoomedMonth
       let opacity = 1;
+      let isZoomedMonth = false;
       if (this.zoomedMonth !== null && numberOfIntervals === 12) {
         // This is likely a month ring, apply fade effect
-        opacity = i === this.zoomedMonth ? 1 : 0.2;
+        isZoomedMonth = i === this.zoomedMonth;
+        opacity = isZoomedMonth ? 1 : 0.15;
       }
 
       this.addCircleSection({
@@ -401,6 +431,7 @@ class YearWheel {
         width,
         startAngle: i * intervalAngle,
         endAngle: (i + 1) * intervalAngle,
+        highlight: isZoomedMonth,
         color: sectionColor,
         textFunction,
         text,
@@ -577,16 +608,7 @@ class YearWheel {
     this.context.fill();
     this.context.closePath();
 
-    // Draw title and year (no rotation applied)
-    if (this.title && this.title.trim() !== '') {
-      this.context.fillStyle = this.textColor;
-      this.context.font = `bold ${this.size / 20}px Arial`;
-      this.context.textAlign = "center";
-      this.context.textBaseline = "middle";
-      this.context.fillText(this.title, this.size / 2, this.size / 15, this.size);
-    }
-
-    // Draw year text in center
+    // Draw year text in center (title removed from canvas)
     this.context.fillStyle = this.textColor;
     this.context.font = `bold ${this.size / 30}px Arial`;
     this.context.textAlign = "center";

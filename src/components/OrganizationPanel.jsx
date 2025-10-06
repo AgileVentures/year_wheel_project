@@ -5,7 +5,11 @@ import EditItemModal from './EditItemModal';
 
 function OrganizationPanel({ 
   organizationData,
-  onOrganizationChange
+  onOrganizationChange,
+  title,
+  onTitleChange,
+  colors,
+  onColorsChange
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
@@ -937,6 +941,87 @@ function OrganizationPanel({
               </button>
             </div>
             <div className="p-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Titel</h3>
+                <input
+                  type="text"
+                  value={title || ''}
+                  onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
+                  placeholder="Ange titel..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Färgpalett</h3>
+                <div className="space-y-2">
+                  <div 
+                    onClick={() => onColorsChange && onColorsChange(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"])}
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                  >
+                    <div className="flex gap-2 mb-1">
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#F5E6D3' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#A8DCD1' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#F4A896' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#B8D4E8' }}></div>
+                    </div>
+                    <p className="text-xs text-gray-600">Pastell (standard)</p>
+                  </div>
+
+                  <div 
+                    onClick={() => onColorsChange && onColorsChange(["#3B82F6", "#EF4444", "#10B981", "#F59E0B"])}
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                  >
+                    <div className="flex gap-2 mb-1">
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#EF4444' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#10B981' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#F59E0B' }}></div>
+                    </div>
+                    <p className="text-xs text-gray-600">Livlig</p>
+                  </div>
+
+                  <div 
+                    onClick={() => onColorsChange && onColorsChange(["#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"])}
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                  >
+                    <div className="flex gap-2 mb-1">
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#8B5CF6' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#EC4899' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#06B6D4' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#84CC16' }}></div>
+                    </div>
+                    <p className="text-xs text-gray-600">Modern</p>
+                  </div>
+
+                  <div 
+                    onClick={() => onColorsChange && onColorsChange(["#1E3A8A", "#7C2D12", "#065F46", "#78350F"])}
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                  >
+                    <div className="flex gap-2 mb-1">
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#1E3A8A' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#7C2D12' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#065F46' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#78350F' }}></div>
+                    </div>
+                    <p className="text-xs text-gray-600">Klassisk</p>
+                  </div>
+
+                  <div 
+                    onClick={() => onColorsChange && onColorsChange(["#475569", "#64748B", "#94A3B8", "#CBD5E1"])}
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                  >
+                    <div className="flex gap-2 mb-1">
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#475569' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#64748B' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#94A3B8' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#CBD5E1' }}></div>
+                    </div>
+                    <p className="text-xs text-gray-600">Grayscale</p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Organisation</h3>
                 <div className="space-y-2 text-sm text-gray-600">
