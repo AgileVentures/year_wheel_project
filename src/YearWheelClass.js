@@ -587,9 +587,12 @@ class YearWheel {
   }
 
   create() {
+    // Ensure perfect square canvas
     this.canvas.width = this.size;
-    this.canvas.height = this.size; // Square canvas (title removed)
-    this.canvas.style.height = `100%`;
+    this.canvas.height = this.size; 
+    this.canvas.style.width = `${this.size}px`;
+    this.canvas.style.height = `${this.size}px`;
+    this.canvas.style.aspectRatio = '1 / 1';
 
     // Apply rotation and draw rotating elements (months, events)
     this.drawRotatingElements();

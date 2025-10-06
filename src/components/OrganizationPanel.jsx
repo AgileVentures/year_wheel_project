@@ -22,6 +22,7 @@ function OrganizationPanel({
   const [selectedYear, setSelectedYear] = useState(2025);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isZoomedToMonth, setIsZoomedToMonth] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     rings: true,
     activities: true,
@@ -337,10 +338,7 @@ function OrganizationPanel({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-              <ChevronLeft size={18} className="text-gray-600" />
-            </button>
-            <h1 className="text-base font-normal text-gray-900">Marketing department</h1>
+            <h1 className="text-base font-semibold text-gray-900">{title || 'Organisation'}</h1>
           </div>
           <div className="flex items-center gap-1">
             <button 
@@ -974,9 +972,19 @@ function OrganizationPanel({
 
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Färgpalett</h3>
+                <p className="text-xs text-gray-500 mb-2">Ändrar färger för månader och aktiviteter</p>
                 <div className="space-y-2">
                   <div 
-                    onClick={() => onColorsChange && onColorsChange(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"])}
+                    onClick={() => {
+                      const newColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+                      if (onColorsChange) onColorsChange(newColors);
+                      // Update activity colors to match palette
+                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                        ...act,
+                        color: newColors[index % newColors.length]
+                      }));
+                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                    }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
@@ -989,7 +997,15 @@ function OrganizationPanel({
                   </div>
 
                   <div 
-                    onClick={() => onColorsChange && onColorsChange(["#3B82F6", "#EF4444", "#10B981", "#F59E0B"])}
+                    onClick={() => {
+                      const newColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"];
+                      if (onColorsChange) onColorsChange(newColors);
+                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                        ...act,
+                        color: newColors[index % newColors.length]
+                      }));
+                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                    }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
@@ -1002,7 +1018,15 @@ function OrganizationPanel({
                   </div>
 
                   <div 
-                    onClick={() => onColorsChange && onColorsChange(["#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"])}
+                    onClick={() => {
+                      const newColors = ["#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
+                      if (onColorsChange) onColorsChange(newColors);
+                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                        ...act,
+                        color: newColors[index % newColors.length]
+                      }));
+                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                    }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
@@ -1015,7 +1039,15 @@ function OrganizationPanel({
                   </div>
 
                   <div 
-                    onClick={() => onColorsChange && onColorsChange(["#1E3A8A", "#7C2D12", "#065F46", "#78350F"])}
+                    onClick={() => {
+                      const newColors = ["#1E3A8A", "#7C2D12", "#065F46", "#78350F"];
+                      if (onColorsChange) onColorsChange(newColors);
+                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                        ...act,
+                        color: newColors[index % newColors.length]
+                      }));
+                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                    }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
@@ -1028,7 +1060,15 @@ function OrganizationPanel({
                   </div>
 
                   <div 
-                    onClick={() => onColorsChange && onColorsChange(["#475569", "#64748B", "#94A3B8", "#CBD5E1"])}
+                    onClick={() => {
+                      const newColors = ["#475569", "#64748B", "#94A3B8", "#CBD5E1"];
+                      if (onColorsChange) onColorsChange(newColors);
+                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                        ...act,
+                        color: newColors[index % newColors.length]
+                      }));
+                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                    }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
                     <div className="flex gap-2 mb-1">

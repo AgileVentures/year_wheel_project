@@ -141,6 +141,7 @@ function YearWheel({
             width: `${1000 * (zoomLevel / 100)}px`,
             height: `${1000 * (zoomLevel / 100)}px`,
             maxWidth: 'none',
+            aspectRatio: '1 / 1',
           }}
           className="drop-shadow-2xl"
         />

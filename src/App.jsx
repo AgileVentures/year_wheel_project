@@ -7,7 +7,7 @@ import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
 function App() {
-  const [title, setTitle] = useState("Organization");
+  const [title, setTitle] = useState("Organisation");
   const [year, setYear] = useState("2025");
   // Plandisc color scheme from screenshot: beige/cream, mint green, coral, light blue
   const [colors, setColors] = useState(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
@@ -86,7 +86,8 @@ function App() {
     
     setTitle("Organisation");
     setYear("2025");
-    setColors(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+    const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+    setColors(defaultColors);
     setOrganizationData(sampleOrgData);
     setRingsData([
       {
