@@ -1,6 +1,8 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */import { useRef, useEffect, useState } from "react";
 import YearWheelClass from "./YearWheelClass";
+import ItemTooltip from "./components/ItemTooltip";
+import EditItemModal from "./components/EditItemModal";
 
 function YearWheel({
   ringsData,
@@ -13,6 +15,9 @@ function YearWheel({
   yearEventsCollection,
   showWeekRing,
   showMonthRing,
+  zoomedMonth,
+  onUpdateItem,
+  onDeleteItem,
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -21,6 +26,9 @@ function YearWheel({
   const [yearWheel, setYearWheel] = useState(null);
   const [downloadFormat, setDownloadFormat] = useState("png");
   const [isSpinning, setIsSpinning] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
 
   const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
   const zoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 50));
@@ -41,6 +49,25 @@ function YearWheel({
     
     const optimalZoom = Math.min(widthZoom, heightZoom, 100);
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
+  };
+
+  const handleItemClick = (item, position) => {
+    setSelectedItem(item);
+    setTooltipPosition(position);
+  };
+
+  const handleUpdateItem = (updatedItem) => {
+    // This will be passed from App.jsx through props
+    if (onUpdateItem) {
+      onUpdateItem(updatedItem);
+    }
+  };
+
+  const handleDeleteItem = (itemId) => {
+    // This will be passed from App.jsx through props
+    if (onDeleteItem) {
+      onDeleteItem(itemId);
+    }
   };
 
   useEffect(() => {
@@ -72,6 +99,8 @@ function YearWheel({
         organizationData,
         showWeekRing,
         showMonthRing,
+        zoomedMonth,
+        onItemClick: handleItemClick,
       }
     );
     setYearWheel(newYearWheel);
@@ -87,6 +116,7 @@ function YearWheel({
     yearEventsCollection,
     showWeekRing,
     showMonthRing,
+    zoomedMonth,
   ]);
 
   const downloadImage = () => {
@@ -192,6 +222,32 @@ function YearWheel({
           </div>
         </div>
       </div>
+
+      {/* Item Tooltip */}
+      {selectedItem && tooltipPosition && (
+        <ItemTooltip
+          item={selectedItem}
+          organizationData={organizationData}
+          position={tooltipPosition}
+          onEdit={setEditingItem}
+          onDelete={handleDeleteItem}
+          onClose={() => {
+            setSelectedItem(null);
+            setTooltipPosition(null);
+          }}
+        />
+      )}
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          organizationData={organizationData}
+          onUpdateItem={handleUpdateItem}
+          onDeleteItem={handleDeleteItem}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
     </div>
   );
 }

@@ -2,10 +2,11 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
 import EditItemModal from './EditItemModal';
 
-function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose }) {
+function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose, onZoomToMonth }) {
   const [currentMonth, setCurrentMonth] = useState(9); // October (0-indexed)
   const [selectedYear, setSelectedYear] = useState(parseInt(year));
   const [editingItem, setEditingItem] = useState(null);
+  const [isZoomedToMonth, setIsZoomedToMonth] = useState(false);
 
   const months = [
     'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
@@ -119,9 +120,16 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
             <input
               type="checkbox"
               id="zoom-toggle"
+              checked={isZoomedToMonth}
+              onChange={(e) => {
+                setIsZoomedToMonth(e.target.checked);
+                if (onZoomToMonth) {
+                  onZoomToMonth(e.target.checked ? currentMonth : null);
+                }
+              }}
               className="w-4 h-4 rounded border-gray-300"
             />
-            <label htmlFor="zoom-toggle" className="text-xs text-gray-600">
+            <label htmlFor="zoom-toggle" className="text-xs text-gray-600 cursor-pointer">
               Zooma in månad
             </label>
           </div>

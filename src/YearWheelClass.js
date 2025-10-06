@@ -18,6 +18,7 @@ class YearWheel {
     this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showSeasonRing = options.showSeasonRing !== undefined ? options.showSeasonRing : true;
+    this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 5 + size / 2 };
     this.initAngle = -15 - 90;
@@ -42,11 +43,13 @@ class YearWheel {
     this.isDragging = false;
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
+    this.clickableItems = []; // Store clickable item regions
 
     this.canvas.addEventListener("mousedown", this.startDrag.bind(this));
     this.canvas.addEventListener("mousemove", this.drag.bind(this));
     this.canvas.addEventListener("mouseup", this.stopDrag.bind(this));
     this.canvas.addEventListener("mouseleave", this.stopDrag.bind(this));
+    this.canvas.addEventListener("click", this.handleClick.bind(this));
   }
 
   generateWeeks() {
@@ -152,6 +155,7 @@ class YearWheel {
     text,
     fontSize,
     isVertical,
+    opacity,
   }) {
     const endRadius = startRadius + width; // Properly define endRadius
     const calculatedStartAngle = this.toRadians(startAngle);
@@ -160,6 +164,12 @@ class YearWheel {
     const outerStartCoords = this.moveToAngle(endRadius, calculatedStartAngle);
     const outerEndCoords = this.moveToAngle(endRadius, calculatedEndAngle);
     const angleLength = Math.abs(calculatedEndAngle - calculatedStartAngle);
+
+    // Apply opacity if provided
+    if (opacity !== undefined && opacity < 1) {
+      this.context.save();
+      this.context.globalAlpha = opacity;
+    }
 
     this.context.beginPath();
     this.context.fillStyle = color;
@@ -214,6 +224,11 @@ class YearWheel {
         fontSize,
         isVertical // Pass isVertical as it is, don't default it to true
       );
+    }
+
+    // Restore opacity if it was changed
+    if (opacity !== undefined && opacity < 1) {
+      this.context.restore();
     }
   }
 
@@ -334,6 +349,7 @@ class YearWheel {
     text,
     fontSize,
     isVertical,
+    opacity,
   }) {
     const newStartAngle = this.initAngle + startAngle;
     const newEndAngle = this.initAngle + endAngle;
@@ -349,6 +365,7 @@ class YearWheel {
       text,
       fontSize,
       isVertical,
+      opacity,
     });
   }
 
@@ -371,6 +388,13 @@ class YearWheel {
         ? color
         : colors[i % colors.length] || "#000000"; // Default to black if undefined
 
+      // Calculate opacity based on zoomedMonth
+      let opacity = 1;
+      if (this.zoomedMonth !== null && numberOfIntervals === 12) {
+        // This is likely a month ring, apply fade effect
+        opacity = i === this.zoomedMonth ? 1 : 0.2;
+      }
+
       this.addCircleSection({
         spacingAngle, // This should now be 0 to avoid gaps
         startRadius,
@@ -382,6 +406,7 @@ class YearWheel {
         text,
         fontSize,
         isVertical,
+        opacity,
       });
     }
   }
@@ -470,6 +495,66 @@ class YearWheel {
     return Math.atan2(y, x);
   }
 
+  handleClick(event) {
+    if (this.isDragging) return; // Don't handle clicks if we were dragging
+
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+
+    // Check if click is on any item
+    for (const itemRegion of this.clickableItems) {
+      if (this.isPointInItemRegion(x, y, itemRegion)) {
+        if (this.options.onItemClick) {
+          // Pass client coordinates for tooltip positioning
+          this.options.onItemClick(itemRegion.item, {
+            x: event.clientX,
+            y: event.clientY
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  isPointInItemRegion(x, y, region) {
+    // Calculate distance from center
+    const dx = x - this.center.x;
+    const dy = y - this.center.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Check if within radius range
+    if (distance < region.startRadius || distance > region.endRadius) {
+      return false;
+    }
+
+    // Calculate angle (accounting for rotation)
+    let angle = Math.atan2(dy, dx) - this.toRadians(this.rotationAngle);
+    
+    // Normalize angle to 0-2π range
+    while (angle < 0) angle += Math.PI * 2;
+    while (angle >= Math.PI * 2) angle -= Math.PI * 2;
+
+    // Check if within angle range
+    let startAngle = region.startAngle;
+    let endAngle = region.endAngle;
+    
+    // Normalize angles
+    while (startAngle < 0) startAngle += Math.PI * 2;
+    while (endAngle < 0) endAngle += Math.PI * 2;
+    while (startAngle >= Math.PI * 2) startAngle -= Math.PI * 2;
+    while (endAngle >= Math.PI * 2) endAngle -= Math.PI * 2;
+
+    // Handle wraparound
+    if (startAngle < endAngle) {
+      return angle >= startAngle && angle <= endAngle;
+    } else {
+      return angle >= startAngle || angle <= endAngle;
+    }
+  }
+
   create() {
     this.canvas.width = this.size;
     this.canvas.height = this.size / 4 + this.size;
@@ -518,6 +603,9 @@ class YearWheel {
 
   // Function to draw rotating elements
   drawRotatingElements() {
+    // Clear clickable items before redrawing
+    this.clickableItems = [];
+    
     this.context.save();
     this.context.translate(this.center.x, this.center.y);
     this.context.rotate(this.rotationAngle);
@@ -690,10 +778,13 @@ class YearWheel {
             const activity = this.organizationData.activities.find(a => a.id === item.activityId);
             const itemColor = activity ? activity.color : ring.color;
             
+            const itemStartRadius = orgDataStartRadius - (ringIndex * (orgDataWidth * 0.3));
+            const itemWidth = orgDataWidth * 0.25;
+            
             // Draw the item block
             this.setCircleSectionHTML({
-              startRadius: orgDataStartRadius - (ringIndex * (orgDataWidth * 0.3)), // Stack rings slightly
-              width: orgDataWidth * 0.25, // Thinner blocks
+              startRadius: itemStartRadius,
+              width: itemWidth,
               startAngle: adjustedStartAngle,
               endAngle: adjustedEndAngle,
               color: itemColor,
@@ -701,6 +792,15 @@ class YearWheel {
               text: item.name,
               fontSize: this.size / 100,
               isVertical: false,
+            });
+            
+            // Store clickable region for this item
+            this.clickableItems.push({
+              item: item,
+              startRadius: itemStartRadius,
+              endRadius: itemStartRadius + itemWidth,
+              startAngle: this.toRadians(adjustedStartAngle),
+              endAngle: this.toRadians(adjustedEndAngle)
             });
           });
         });

@@ -15,6 +15,7 @@ function App() {
   
   // New organization data structure with sample data
   const [organizationData, setOrganizationData] = useState(sampleOrgData);
+  const [zoomedMonth, setZoomedMonth] = useState(null);
   
   const [ringsData, setRingsData] = useState([
     {
@@ -223,6 +224,17 @@ function App() {
               yearEventsCollection={yearEventsCollection}
               showWeekRing={showWeekRing}
               showMonthRing={showMonthRing}
+              zoomedMonth={zoomedMonth}
+              onUpdateItem={(updatedItem) => {
+                const updatedItems = organizationData.items.map(item =>
+                  item.id === updatedItem.id ? updatedItem : item
+                );
+                setOrganizationData({ ...organizationData, items: updatedItems });
+              }}
+              onDeleteItem={(itemId) => {
+                const updatedItems = organizationData.items.filter(item => item.id !== itemId);
+                setOrganizationData({ ...organizationData, items: updatedItems });
+              }}
             />
           </div>
         </div>
@@ -234,6 +246,7 @@ function App() {
             organizationData={organizationData}
             onOrganizationChange={setOrganizationData}
             onClose={() => setIsCalendarOpen(false)}
+            onZoomToMonth={setZoomedMonth}
           />
         )}
       </div>

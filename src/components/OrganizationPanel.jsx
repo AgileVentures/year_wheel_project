@@ -39,6 +39,21 @@ function OrganizationPanel({
     return day === 0 ? 6 : day - 1; // Convert Sunday=0 to Monday=0
   };
 
+  // Search filter - must be defined before calendar days
+  const searchLower = searchQuery.toLowerCase();
+  const filteredRings = organizationData.rings.filter(ring =>
+    ring.name.toLowerCase().includes(searchLower)
+  );
+  const filteredActivities = organizationData.activities.filter(activity =>
+    activity.name.toLowerCase().includes(searchLower)
+  );
+  const filteredLabels = organizationData.labels.filter(label =>
+    label.name.toLowerCase().includes(searchLower)
+  );
+  const filteredItems = organizationData.items?.filter(item =>
+    item.name.toLowerCase().includes(searchLower)
+  ) || [];
+
   // Generate calendar days
   const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
   const firstDay = getFirstDayOfMonth(selectedYear, selectedMonth);
@@ -113,21 +128,6 @@ function OrganizationPanel({
     );
     onOrganizationChange({ ...organizationData, labels: updatedLabels });
   };
-
-  // Search filter
-  const searchLower = searchQuery.toLowerCase();
-  const filteredRings = organizationData.rings.filter(ring =>
-    ring.name.toLowerCase().includes(searchLower)
-  );
-  const filteredActivities = organizationData.activities.filter(activity =>
-    activity.name.toLowerCase().includes(searchLower)
-  );
-  const filteredLabels = organizationData.labels.filter(label =>
-    label.name.toLowerCase().includes(searchLower)
-  );
-  const filteredItems = organizationData.items?.filter(item =>
-    item.name.toLowerCase().includes(searchLower)
-  ) || [];
 
   // Count items
   const countRingItems = (ringId) => {
