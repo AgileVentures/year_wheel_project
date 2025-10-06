@@ -21,7 +21,7 @@ function YearWheel({
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const [zoomLevel, setZoomLevel] = useState(90); // Percentage: 50% to 200%, default 90% for better fit
+  const [zoomLevel, setZoomLevel] = useState(70); // Percentage: 50% to 200%, default 70% for better fit
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
   const [downloadFormat, setDownloadFormat] = useState("png");

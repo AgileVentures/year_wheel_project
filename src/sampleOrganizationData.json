@@ -1,68 +1,67 @@
 {
+  "title": "Marknadsavdelningen",
+  "year": "2025",
+  "colors": ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"],
   "rings": [
     {
       "id": "campaigns",
-      "name": "Campaigns",
-      "color": "#F5E6D3",
+      "name": "Kampanjer",
       "visible": true
     },
     {
       "id": "digital",
-      "name": "Digital marketing",
-      "color": "#A8DCD1",
+      "name": "Digital marknadsföring",
+      "visible": true
+    },
+    {
+      "id": "content",
+      "name": "Innehållsproduktion",
       "visible": true
     }
   ],
   "activities": [
     {
       "id": "digital-marketing",
-      "name": "Digital marketing",
-      "color": "#A8DCD1",
+      "name": "Digital marknadsföring",
       "visible": true
     },
     {
       "id": "campaigns",
-      "name": "Campaigns",
-      "color": "#F5E6D3",
+      "name": "Kampanjer",
       "visible": true
     },
     {
       "id": "printed-media",
-      "name": "Printed media",
-      "color": "#B8D4E8",
+      "name": "Tryckt media",
       "visible": true
     },
     {
       "id": "meetings",
-      "name": "Meetings",
-      "color": "#A8DCD1",
+      "name": "Möten",
       "visible": true
     }
   ],
   "labels": [
     {
       "id": "responsible-paul",
-      "name": "Responsible: Paul",
-      "color": "#8B7FD8",
+      "name": "Ansvarig: Paul",
       "visible": true
     },
     {
       "id": "responsible-amber",
-      "name": "Responsible: Amber",
-      "color": "#F4A896",
+      "name": "Ansvarig: Amber",
       "visible": true
     },
     {
       "id": "no-label",
-      "name": "Ingen label",
-      "color": "#F5F5F5",
+      "name": "Ingen etikett",
       "visible": true
     }
   ],
   "items": [
     {
       "id": "item1",
-      "name": "Christmas campaign",
+      "name": "Julkampanj",
       "ringId": "campaigns",
       "activityId": "campaigns",
       "labelId": "responsible-paul",
@@ -71,7 +70,7 @@
     },
     {
       "id": "item2",
-      "name": "New years sale",
+      "name": "Nyårsrea",
       "ringId": "campaigns",
       "activityId": "campaigns",
       "labelId": "responsible-paul",
@@ -80,7 +79,7 @@
     },
     {
       "id": "item3",
-      "name": "Launch",
+      "name": "Lansering",
       "ringId": "digital",
       "activityId": "digital-marketing",
       "labelId": "no-label",
@@ -89,7 +88,7 @@
     },
     {
       "id": "item4",
-      "name": "Trend",
+      "name": "Trendanalys",
       "ringId": "digital",
       "activityId": "digital-marketing",
       "labelId": "no-label",
@@ -98,7 +97,7 @@
     },
     {
       "id": "item5",
-      "name": "Pre-ap",
+      "name": "Förberedelse",
       "ringId": "digital",
       "activityId": "digital-marketing",
       "labelId": "no-label",
@@ -107,7 +106,7 @@
     },
     {
       "id": "item6",
-      "name": "Facebook advert",
+      "name": "Facebook-annons",
       "ringId": "digital",
       "activityId": "digital-marketing",
       "labelId": "responsible-paul",
@@ -116,7 +115,7 @@
     },
     {
       "id": "item7",
-      "name": "Overview",
+      "name": "Översikt",
       "ringId": "digital",
       "activityId": "digital-marketing",
       "labelId": "no-label",
@@ -125,7 +124,7 @@
     },
     {
       "id": "item8",
-      "name": "Digital marketing",
+      "name": "Digital marknadsföring",
       "ringId": "digital",
       "activityId": "digital-marketing",
       "labelId": "no-label",
@@ -134,7 +133,7 @@
     },
     {
       "id": "item9",
-      "name": "Event",
+      "name": "Evenemang",
       "ringId": "campaigns",
       "activityId": "campaigns",
       "labelId": "no-label",
@@ -143,7 +142,7 @@
     },
     {
       "id": "item10",
-      "name": "Trend meeting",
+      "name": "Trendmöte",
       "ringId": "digital",
       "activityId": "meetings",
       "labelId": "responsible-amber",
@@ -153,7 +152,7 @@
     },
     {
       "id": "item11",
-      "name": "Pre-approval",
+      "name": "Godkännande",
       "ringId": "digital",
       "activityId": "meetings",
       "labelId": "responsible-amber",
@@ -163,7 +162,7 @@
     },
     {
       "id": "item12",
-      "name": "Launch",
+      "name": "Lansering",
       "ringId": "campaigns",
       "activityId": "campaigns",
       "labelId": "no-label",
@@ -173,7 +172,7 @@
     },
     {
       "id": "item13",
-      "name": "Crazy-sale campaign",
+      "name": "Storrea-kampanj",
       "ringId": "campaigns",
       "activityId": "campaigns",
       "labelId": "no-label",
@@ -182,21 +181,51 @@
     },
     {
       "id": "item14",
-      "name": "Crazy-sale campaign",
-      "ringId": "campaigns",
-      "activityId": "campaigns",
-      "labelId": "no-label",
-      "startDate": "2025-10-19",
-      "endDate": "2025-10-28"
+      "name": "Innehållsproduktion",
+      "ringId": "content",
+      "activityId": "printed-media",
+      "labelId": "responsible-amber",
+      "startDate": "2025-03-01",
+      "endDate": "2025-03-15"
     },
     {
       "id": "item15",
-      "name": "Crazy-sale campaign",
-      "ringId": "campaigns",
-      "activityId": "campaigns",
+      "name": "Tryckproduktion",
+      "ringId": "content",
+      "activityId": "printed-media",
       "labelId": "no-label",
-      "startDate": "2025-10-20",
-      "endDate": "2025-10-28"
+      "startDate": "2025-06-10",
+      "endDate": "2025-06-25"
+    }
+  ],
+  "ringsData": [
+    {
+      "text": "Q1: Planering & Strategi",
+      "fontSize": 24,
+      "radius": 0.85,
+      "startAngle": 0,
+      "endAngle": 90
+    },
+    {
+      "text": "Q2: Kampanjperiod",
+      "fontSize": 24,
+      "radius": 0.85,
+      "startAngle": 90,
+      "endAngle": 180
+    },
+    {
+      "text": "Q3: Sommarkampanjer",
+      "fontSize": 24,
+      "radius": 0.85,
+      "startAngle": 180,
+      "endAngle": 270
+    },
+    {
+      "text": "Q4: Högsäsong & Jul",
+      "fontSize": 24,
+      "radius": 0.85,
+      "startAngle": 270,
+      "endAngle": 360
     }
   ]
 }

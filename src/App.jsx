@@ -7,10 +7,10 @@ import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
 function App() {
-  const [title, setTitle] = useState("Organisation");
-  const [year, setYear] = useState("2025");
+  const [title, setTitle] = useState(sampleOrgData.title || "Organisation");
+  const [year, setYear] = useState(sampleOrgData.year || "2025");
   // Plandisc color scheme from screenshot: beige/cream, mint green, coral, light blue
-  const [colors, setColors] = useState(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+  const [colors, setColors] = useState(sampleOrgData.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
   
   // New organization data structure with sample data
   const [organizationData, setOrganizationData] = useState(sampleOrgData);
@@ -43,6 +43,20 @@ function App() {
       if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
     }
   }, []);
+
+  // Ensure activities always have colors assigned from the palette
+  useEffect(() => {
+    if (organizationData?.activities) {
+      const needsColors = organizationData.activities.some(activity => !activity.color);
+      if (needsColors) {
+        const activitiesWithColors = organizationData.activities.map((activity, index) => ({
+          ...activity,
+          color: colors[index % colors.length]
+        }));
+        setOrganizationData({ ...organizationData, activities: activitiesWithColors });
+      }
+    }
+  }, [organizationData, colors]);
 
   useEffect(() => {
     // Filter events that overlap with the selected year
@@ -84,9 +98,9 @@ function App() {
   const handleReset = () => {
     if (!confirm('Är du säker på att du vill återställa allt?')) return;
     
-    setTitle("Organisation");
-    setYear("2025");
-    const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+    setTitle(sampleOrgData.title || "Organisation");
+    setYear(sampleOrgData.year || "2025");
+    const defaultColors = sampleOrgData.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     setColors(defaultColors);
     setOrganizationData(sampleOrgData);
     setRingsData([
