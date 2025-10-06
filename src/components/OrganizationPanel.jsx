@@ -1,6 +1,7 @@
-import { Search, Settings, RefreshCw, ChevronLeft, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { Search, Settings, RefreshCw, ChevronLeft, ChevronDown, Plus, Trash2, Edit2 } from 'lucide-react';
 import { useState } from 'react';
 import AddItemModal from './AddItemModal';
+import EditItemModal from './EditItemModal';
 
 function OrganizationPanel({ 
   organizationData,
@@ -9,6 +10,9 @@ function OrganizationPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [sortBy, setSortBy] = useState('startDate'); // startDate, name, ring
+  const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
   const [expandedSections, setExpandedSections] = useState({
     rings: true,
     activities: true,
@@ -69,6 +73,21 @@ function OrganizationPanel({
     onOrganizationChange({ ...organizationData, labels: updatedLabels });
   };
 
+  // Search filter
+  const searchLower = searchQuery.toLowerCase();
+  const filteredRings = organizationData.rings.filter(ring =>
+    ring.name.toLowerCase().includes(searchLower)
+  );
+  const filteredActivities = organizationData.activities.filter(activity =>
+    activity.name.toLowerCase().includes(searchLower)
+  );
+  const filteredLabels = organizationData.labels.filter(label =>
+    label.name.toLowerCase().includes(searchLower)
+  );
+  const filteredItems = organizationData.items?.filter(item =>
+    item.name.toLowerCase().includes(searchLower)
+  ) || [];
+
   // Count items
   const countRingItems = (ringId) => {
     return organizationData.items?.filter(item => item.ringId === ringId).length || 0;
@@ -86,6 +105,61 @@ function OrganizationPanel({
   const handleAddItem = (newItem) => {
     const updatedItems = [...(organizationData.items || []), newItem];
     onOrganizationChange({ ...organizationData, items: updatedItems });
+  };
+
+  // Update item
+  const handleUpdateItem = (updatedItem) => {
+    const updatedItems = organizationData.items.map(item =>
+      item.id === updatedItem.id ? updatedItem : item
+    );
+    onOrganizationChange({ ...organizationData, items: updatedItems });
+  };
+
+  // Delete item
+  const handleDeleteItem = (itemId) => {
+    const updatedItems = organizationData.items.filter(item => item.id !== itemId);
+    onOrganizationChange({ ...organizationData, items: updatedItems });
+  };
+
+  // Sort items for list view
+  const getSortedItems = () => {
+    const items = [...filteredItems];
+    items.sort((a, b) => {
+      let compareA, compareB;
+      
+      switch (sortBy) {
+        case 'name':
+          compareA = a.name.toLowerCase();
+          compareB = b.name.toLowerCase();
+          break;
+        case 'ring':
+          const ringA = organizationData.rings.find(r => r.id === a.ringId);
+          const ringB = organizationData.rings.find(r => r.id === b.ringId);
+          compareA = ringA?.name.toLowerCase() || '';
+          compareB = ringB?.name.toLowerCase() || '';
+          break;
+        case 'startDate':
+        default:
+          compareA = new Date(a.startDate);
+          compareB = new Date(b.startDate);
+          break;
+      }
+      
+      if (compareA < compareB) return sortOrder === 'asc' ? -1 : 1;
+      if (compareA > compareB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return items;
+  };
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
   };
 
   // Ring management
@@ -118,6 +192,70 @@ function OrganizationPanel({
       ring.id === ringId ? { ...ring, color: newColor } : ring
     );
     onOrganizationChange({ ...organizationData, rings: updatedRings });
+  };
+
+  // Activity management
+  const handleAddActivity = () => {
+    const newActivity = {
+      id: `activity-${Date.now()}`,
+      name: `Aktivitet ${organizationData.activities.length + 1}`,
+      color: '#' + Math.floor(Math.random()*16777215).toString(16),
+      visible: true
+    };
+    const updatedActivities = [...organizationData.activities, newActivity];
+    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+  };
+
+  const handleRemoveActivity = (activityId) => {
+    if (organizationData.activities.length <= 1) return;
+    const updatedActivities = organizationData.activities.filter(a => a.id !== activityId);
+    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+  };
+
+  const handleActivityNameChange = (activityId, newName) => {
+    const updatedActivities = organizationData.activities.map(activity =>
+      activity.id === activityId ? { ...activity, name: newName } : activity
+    );
+    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+  };
+
+  const handleActivityColorChange = (activityId, newColor) => {
+    const updatedActivities = organizationData.activities.map(activity =>
+      activity.id === activityId ? { ...activity, color: newColor } : activity
+    );
+    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+  };
+
+  // Label management
+  const handleAddLabel = () => {
+    const newLabel = {
+      id: `label-${Date.now()}`,
+      name: `Etikett ${organizationData.labels.length + 1}`,
+      color: '#' + Math.floor(Math.random()*16777215).toString(16),
+      visible: true
+    };
+    const updatedLabels = [...organizationData.labels, newLabel];
+    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+  };
+
+  const handleRemoveLabel = (labelId) => {
+    if (organizationData.labels.length <= 1) return;
+    const updatedLabels = organizationData.labels.filter(l => l.id !== labelId);
+    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+  };
+
+  const handleLabelNameChange = (labelId, newName) => {
+    const updatedLabels = organizationData.labels.map(label =>
+      label.id === labelId ? { ...label, name: newName } : label
+    );
+    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+  };
+
+  const handleLabelColorChange = (labelId, newColor) => {
+    const updatedLabels = organizationData.labels.map(label =>
+      label.id === labelId ? { ...label, color: newColor } : label
+    );
+    onOrganizationChange({ ...organizationData, labels: updatedLabels });
   };
 
   return (
@@ -211,6 +349,110 @@ function OrganizationPanel({
 
       {/* Content Sections */}
       <div className="flex-1 overflow-y-auto">
+        {activeView === 'liste' && (
+          <div className="p-4">
+            {/* List Header */}
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-700">
+                {filteredItems.length} händelse{filteredItems.length !== 1 ? 'r' : ''}
+              </h3>
+            </div>
+
+            {/* List Table */}
+            {filteredItems.length > 0 ? (
+              <div className="space-y-1">
+                {getSortedItems().map((item) => {
+                  const ring = organizationData.rings.find(r => r.id === item.ringId);
+                  const activity = organizationData.activities.find(a => a.id === item.activityId);
+                  const label = organizationData.labels.find(l => l.id === item.labelId);
+                  const startDate = new Date(item.startDate);
+                  const endDate = new Date(item.endDate);
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className="group bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div
+                              className="w-3 h-3 rounded flex-shrink-0"
+                              style={{ backgroundColor: activity?.color || '#D1D5DB' }}
+                            />
+                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                              {item.name}
+                            </h4>
+                          </div>
+                          <div className="text-xs text-gray-600 space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">Ring:</span>
+                              <span>{ring?.name || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">Aktivitet:</span>
+                              <span>{activity?.name || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500">Datum:</span>
+                              <span>
+                                {startDate.toLocaleDateString('sv-SE')} - {endDate.toLocaleDateString('sv-SE')}
+                              </span>
+                            </div>
+                            {item.time && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-500">Tid:</span>
+                                <span>{item.time}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setEditingItem(item)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Redigera"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Radera "${item.name}"?`)) {
+                                handleDeleteItem(item.id);
+                              }
+                            }}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Radera"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-sm text-gray-500 mb-4">
+                  {searchQuery ? 'Inga händelser matchar din sökning' : 'Inga händelser ännu'}
+                </p>
+                {!searchQuery && (
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    <Plus size={16} />
+                    <span>Lägg till händelse</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeView === 'disc' && (
+        <>
         {/* RINGE Section */}
         <div className="px-4 py-3 border-b border-gray-200">
           <button
@@ -229,7 +471,7 @@ function OrganizationPanel({
           {expandedSections.rings && (
             <>
               <div className="space-y-1 mb-2">
-                {organizationData.rings.map((ring) => (
+                {filteredRings.map((ring) => (
                   <div
                     key={ring.id}
                     className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
@@ -311,42 +553,67 @@ function OrganizationPanel({
           {expandedSections.activities && (
             <>
               <div className="space-y-1 mb-2">
-                {organizationData.activities.map((activity) => (
-                  <button
+                {filteredActivities.map((activity) => (
+                  <div
                     key={activity.id}
-                    onClick={() => toggleActivity(activity.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors ${
-                      activity.visible ? 'bg-gray-50' : ''
-                    }`}
+                    className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
                   >
-                    <div
-                      className="w-3 h-3 rounded flex-shrink-0 border border-gray-200"
-                      style={{ backgroundColor: activity.color }}
+                    <input
+                      type="checkbox"
+                      checked={activity.visible}
+                      onChange={() => toggleActivity(activity.id)}
+                      className="w-3 h-3 rounded"
                     />
-                    <span className="flex-1 text-left text-xs text-gray-700">
-                      {activity.name}
-                    </span>
+                    <input
+                      type="color"
+                      value={activity.color}
+                      onChange={(e) => handleActivityColorChange(activity.id, e.target.value)}
+                      className="w-4 h-4 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={activity.name}
+                      onChange={(e) => handleActivityNameChange(activity.id, e.target.value)}
+                      className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
+                    />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                       {countActivityItems(activity.id)}
                     </span>
-                  </button>
+                    {organizationData.activities.length > 1 && (
+                      <button
+                        onClick={() => handleRemoveActivity(activity.id)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-gray-500">Visa:</span>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">Visa:</span>
+                  <button
+                    onClick={() => handleShowActivities(true)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    Alla
+                  </button>
+                  <span className="text-gray-400">|</span>
+                  <button
+                    onClick={() => handleShowActivities(false)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    Ingen
+                  </button>
+                </div>
                 <button
-                  onClick={() => handleShowActivities(true)}
-                  className="text-blue-600 hover:text-blue-700"
+                  onClick={handleAddActivity}
+                  className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
-                  Alla
-                </button>
-                <span className="text-gray-400">|</span>
-                <button
-                  onClick={() => handleShowActivities(false)}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  Ingen
+                  <Plus size={12} />
+                  <span>Lägg till</span>
                 </button>
               </div>
             </>
@@ -371,47 +638,74 @@ function OrganizationPanel({
           {expandedSections.labels && (
             <>
               <div className="space-y-1 mb-2">
-                {organizationData.labels.map((label) => (
-                  <button
+                {filteredLabels.map((label) => (
+                  <div
                     key={label.id}
-                    onClick={() => toggleLabel(label.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors ${
-                      label.visible ? 'bg-gray-50' : ''
-                    }`}
+                    className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
                   >
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0 border border-gray-200"
-                      style={{ backgroundColor: label.color }}
+                    <input
+                      type="checkbox"
+                      checked={label.visible}
+                      onChange={() => toggleLabel(label.id)}
+                      className="w-3 h-3 rounded"
                     />
-                    <span className="flex-1 text-left text-xs text-gray-700">
-                      {label.name}
-                    </span>
+                    <input
+                      type="color"
+                      value={label.color}
+                      onChange={(e) => handleLabelColorChange(label.id, e.target.value)}
+                      className="w-4 h-4 rounded-full cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={label.name}
+                      onChange={(e) => handleLabelNameChange(label.id, e.target.value)}
+                      className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
+                    />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                       {countLabelItems(label.id)}
                     </span>
-                  </button>
+                    {organizationData.labels.length > 1 && (
+                      <button
+                        onClick={() => handleRemoveLabel(label.id)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-gray-500">Visa:</span>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">Visa:</span>
+                  <button
+                    onClick={() => handleShowLabels(true)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    Alla
+                  </button>
+                  <span className="text-gray-400">|</span>
+                  <button
+                    onClick={() => handleShowLabels(false)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    Ingen
+                  </button>
+                </div>
                 <button
-                  onClick={() => handleShowLabels(true)}
-                  className="text-blue-600 hover:text-blue-700"
+                  onClick={handleAddLabel}
+                  className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
-                  Alla
-                </button>
-                <span className="text-gray-400">|</span>
-                <button
-                  onClick={() => handleShowLabels(false)}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  Ingen
+                  <Plus size={12} />
+                  <span>Lägg till</span>
                 </button>
               </div>
             </>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Footer Branding */}
@@ -427,6 +721,17 @@ function OrganizationPanel({
           organizationData={organizationData}
           onAddItem={handleAddItem}
           onClose={() => setIsAddModalOpen(false)}
+        />
+      )}
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          organizationData={organizationData}
+          onUpdateItem={handleUpdateItem}
+          onDeleteItem={handleDeleteItem}
+          onClose={() => setEditingItem(null)}
         />
       )}
     </div>

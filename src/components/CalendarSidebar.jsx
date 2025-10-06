@@ -1,9 +1,11 @@
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
+import EditItemModal from './EditItemModal';
 
-function CalendarSidebar({ year, organizationData, onClose }) {
+function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose }) {
   const [currentMonth, setCurrentMonth] = useState(9); // October (0-indexed)
   const [selectedYear, setSelectedYear] = useState(parseInt(year));
+  const [editingItem, setEditingItem] = useState(null);
 
   const months = [
     'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
@@ -74,6 +76,20 @@ function CalendarSidebar({ year, organizationData, onClose }) {
   const getActivityColor = (activityId) => {
     const activity = organizationData?.activities?.find(a => a.id === activityId);
     return activity?.color || '#D1D5DB';
+  };
+
+  // Handle update item
+  const handleUpdateItem = (updatedItem) => {
+    const updatedItems = organizationData.items.map(item =>
+      item.id === updatedItem.id ? updatedItem : item
+    );
+    onOrganizationChange({ ...organizationData, items: updatedItems });
+  };
+
+  // Handle delete item
+  const handleDeleteItem = (itemId) => {
+    const updatedItems = organizationData.items.filter(item => item.id !== itemId);
+    onOrganizationChange({ ...organizationData, items: updatedItems });
   };
 
   return (
@@ -180,9 +196,13 @@ function CalendarSidebar({ year, organizationData, onClose }) {
                           }
                         </div>
                       </div>
-                      <button className="p-1 hover:bg-gray-100 rounded">
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-gray-400">
-                          <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      <button 
+                        onClick={() => setEditingItem(event)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                        title="Redigera"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-gray-400">
+                          <path d="M11.333 2A1.886 1.886 0 0 1 14 4.667l-9 9-3.667 1 1-3.667 9-9Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </button>
                     </div>
@@ -197,6 +217,17 @@ function CalendarSidebar({ year, organizationData, onClose }) {
           </div>
         )}
       </div>
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          organizationData={organizationData}
+          onUpdateItem={handleUpdateItem}
+          onDeleteItem={handleDeleteItem}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
     </div>
   );
 }

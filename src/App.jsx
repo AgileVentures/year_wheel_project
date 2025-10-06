@@ -232,6 +232,7 @@ function App() {
           <CalendarSidebar
             year={year}
             organizationData={organizationData}
+            onOrganizationChange={setOrganizationData}
             onClose={() => setIsCalendarOpen(false)}
           />
         )}
