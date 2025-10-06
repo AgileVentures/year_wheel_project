@@ -79,10 +79,10 @@ function YearWheel({
     if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
-    // Fixed render size at 2000px for high quality
+    // Fixed render size at 2000px for high quality (square canvas)
     const renderSize = 2000;
     canvas.width = renderSize;
-    canvas.height = renderSize * 1.25;
+    canvas.height = renderSize;
 
     // Create the YearWheel instance
     const newYearWheel = new YearWheelClass(

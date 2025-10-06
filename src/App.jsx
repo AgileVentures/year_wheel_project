@@ -157,7 +157,8 @@ function App() {
           setTitle(data.title);
           setYear(data.year);
           if (data.colors) setColors(data.colors);
-          if (data.organizationData) setOrganizationData(data.organizationData);
+          // Always set organizationData, use empty structure if not present
+          setOrganizationData(data.organizationData || { rings: [], activities: [], labels: [], items: [] });
           setRingsData(data.ringsData);
           if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
           if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);

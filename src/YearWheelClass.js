@@ -759,7 +759,7 @@ class YearWheel {
       const visibleLabels = this.organizationData.labels.filter(l => l.visible);
       
       if (visibleRings.length > 0) {
-        const orgDataWidth = this.size / 35; // Width for organization items ring
+        const orgDataWidth = this.size / 25; // Width for organization items ring (increased for visibility)
         const orgDataStartRadius = currentMaxRadius - orgDataWidth - this.size / 400;
         
         visibleRings.forEach((ring, ringIndex) => {
@@ -800,8 +800,8 @@ class YearWheel {
             const activity = this.organizationData.activities.find(a => a.id === item.activityId);
             const itemColor = activity ? activity.color : ring.color;
             
-            const itemStartRadius = orgDataStartRadius - (ringIndex * (orgDataWidth * 0.3));
-            const itemWidth = orgDataWidth * 0.25;
+            const itemStartRadius = orgDataStartRadius - (ringIndex * (orgDataWidth * 0.4));
+            const itemWidth = orgDataWidth * 0.35; // Increased from 0.25 for better visibility
             
             // Draw the item block
             this.setCircleSectionHTML({
@@ -812,7 +812,7 @@ class YearWheel {
               color: itemColor,
               textFunction: this.setCircleSectionSmallTitle.bind(this),
               text: item.name,
-              fontSize: this.size / 100,
+              fontSize: this.size / 80, // Increased from /100 for better readability
               isVertical: false,
             });
             
