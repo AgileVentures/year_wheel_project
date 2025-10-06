@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
-import CalendarSidebar from "./components/CalendarSidebar";
 import Header from "./components/Header";
 import Toast from "./components/Toast";
 import calendarEvents from "./calendarEvents.json";
@@ -27,7 +26,6 @@ function App() {
   const [showSeasonRing, setShowSeasonRing] = useState(true);
   const [yearEventsCollection, setYearEventsCollection] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(true);
   const [showWeekRing, setShowWeekRing] = useState(true);
   const [showMonthRing, setShowMonthRing] = useState(true);
 
@@ -211,6 +209,7 @@ function App() {
             onTitleChange={setTitle}
             colors={colors}
             onColorsChange={setColors}
+            onZoomToMonth={setZoomedMonth}
           />
         </div>
 
@@ -243,16 +242,6 @@ function App() {
           </div>
         </div>
 
-        {/* Calendar Sidebar */}
-        {isCalendarOpen && (
-          <CalendarSidebar
-            year={year}
-            organizationData={organizationData}
-            onOrganizationChange={setOrganizationData}
-            onClose={() => setIsCalendarOpen(false)}
-            onZoomToMonth={setZoomedMonth}
-          />
-        )}
       </div>
       
       <Toast />

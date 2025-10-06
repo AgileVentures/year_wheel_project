@@ -20,7 +20,7 @@ class YearWheel {
     this.showSeasonRing = options.showSeasonRing !== undefined ? options.showSeasonRing : true;
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.textColor = "#374151"; // Darker gray for better readability
-    this.center = { x: size / 2, y: size / 5 + size / 2 };
+    this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
     this.initAngle = -15 - 90;
     this.minRadius = size / 15;
     this.maxRadius = size / 2 - size / 30;

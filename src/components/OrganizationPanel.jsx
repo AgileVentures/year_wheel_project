@@ -9,7 +9,8 @@ function OrganizationPanel({
   title,
   onTitleChange,
   colors,
-  onColorsChange
+  onColorsChange,
+  onZoomToMonth
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
@@ -600,8 +601,27 @@ function OrganizationPanel({
               </div>
             </div>
 
+            {/* Zoom to Month Toggle */}
+            <div className="flex items-center gap-2 py-3 border-y border-gray-200">
+              <input
+                type="checkbox"
+                id="zoom-toggle-kalender"
+                checked={isZoomedToMonth}
+                onChange={(e) => {
+                  setIsZoomedToMonth(e.target.checked);
+                  if (onZoomToMonth) {
+                    onZoomToMonth(e.target.checked ? selectedMonth : null);
+                  }
+                }}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <label htmlFor="zoom-toggle-kalender" className="text-xs text-gray-600 cursor-pointer">
+                Zooma in månad på hjulet
+              </label>
+            </div>
+
             {/* Events List for Selected Month */}
-            <div className="border-t border-gray-200 pt-4">
+            <div className="pt-4">
               <h4 className="text-xs font-semibold text-gray-700 mb-3">
                 Händelser denna månad ({eventsForMonth.length})
               </h4>

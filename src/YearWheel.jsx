@@ -134,12 +134,12 @@ function YearWheel({
 
   return (
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
-      <div className="flex-1 flex items-center justify-center w-full overflow-auto pb-20 bg-white">
+      <div className="flex-1 flex items-center justify-center w-full overflow-auto bg-white">
         <canvas
           ref={canvasRef}
           style={{
             width: `${1000 * (zoomLevel / 100)}px`,
-            height: `${1250 * (zoomLevel / 100)}px`,
+            height: `${1000 * (zoomLevel / 100)}px`,
             maxWidth: 'none',
           }}
           className="drop-shadow-2xl"
