@@ -1,4 +1,4 @@
-import { Search, Settings, RefreshCw, ChevronLeft, ChevronDown, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { useState } from 'react';
 import AddItemModal from './AddItemModal';
 import EditItemModal from './EditItemModal';
@@ -13,10 +13,51 @@ function OrganizationPanel({
   const [editingItem, setEditingItem] = useState(null);
   const [sortBy, setSortBy] = useState('startDate'); // startDate, name, ring
   const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
+  const [selectedMonth, setSelectedMonth] = useState(9); // October (0-indexed)
+  const [selectedYear, setSelectedYear] = useState(2025);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     rings: true,
     activities: true,
     labels: true
+  });
+
+  // Calendar helpers
+  const monthNames = [
+    'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
+    'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
+  ];
+  const daysOfWeek = ['må', 'ti', 'on', 'to', 'fr', 'lö', 'sö'];
+
+  const getDaysInMonth = (year, month) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (year, month) => {
+    const day = new Date(year, month, 1).getDay();
+    return day === 0 ? 6 : day - 1; // Convert Sunday=0 to Monday=0
+  };
+
+  // Generate calendar days
+  const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
+  const firstDay = getFirstDayOfMonth(selectedYear, selectedMonth);
+  const calendarDays = [];
+  
+  for (let i = 0; i < firstDay; i++) {
+    calendarDays.push(null);
+  }
+  for (let day = 1; day <= daysInMonth; day++) {
+    calendarDays.push(day);
+  }
+
+  // Get events for selected month
+  const eventsForMonth = filteredItems.filter(item => {
+    const monthStart = new Date(selectedYear, selectedMonth, 1);
+    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
+    const itemStart = new Date(item.startDate);
+    const itemEnd = new Date(item.endDate);
+    return itemEnd >= monthStart && itemStart <= monthEnd;
   });
 
   const toggleSection = (section) => {
@@ -162,6 +203,33 @@ function OrganizationPanel({
     }
   };
 
+  // Refresh functionality
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    
+    // Reload data from localStorage
+    const storedData = localStorage.getItem("yearWheelData");
+    if (storedData) {
+      try {
+        const data = JSON.parse(storedData);
+        if (data.organizationData) {
+          onOrganizationChange(data.organizationData);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    }
+    
+    // Reset search and filters
+    setSearchQuery('');
+    setActiveView('disc');
+    
+    // Stop spinning after animation
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 500);
+  };
+
   // Ring management
   const handleAddRing = () => {
     const newRing = {
@@ -270,10 +338,21 @@ function OrganizationPanel({
             <h1 className="text-base font-normal text-gray-900">Marketing department</h1>
           </div>
           <div className="flex items-center gap-1">
-            <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
-              <RefreshCw size={16} className="text-gray-600" />
+            <button 
+              onClick={handleRefresh}
+              className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+              title="Uppdatera"
+            >
+              <RefreshCw 
+                size={16} 
+                className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+              />
             </button>
-            <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+              title="Inställningar"
+            >
               <Settings size={16} className="text-gray-600" />
             </button>
           </div>
@@ -448,6 +527,115 @@ function OrganizationPanel({
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {activeView === 'kalender' && (
+          <div className="p-4">
+            {/* Calendar Header */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => {
+                  const newDate = new Date(selectedYear, selectedMonth - 1, 1);
+                  setSelectedMonth(newDate.getMonth());
+                  setSelectedYear(newDate.getFullYear());
+                }}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <ChevronLeft size={18} className="text-gray-600" />
+              </button>
+              <h3 className="text-sm font-semibold text-gray-900">
+                {monthNames[selectedMonth]} {selectedYear}
+              </h3>
+              <button
+                onClick={() => {
+                  const newDate = new Date(selectedYear, selectedMonth + 1, 1);
+                  setSelectedMonth(newDate.getMonth());
+                  setSelectedYear(newDate.getFullYear());
+                }}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <ChevronRight size={18} className="text-gray-600" />
+              </button>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="mb-4">
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {daysOfWeek.map(day => (
+                  <div key={day} className="text-center text-xs text-gray-500 font-medium">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map((day, index) => {
+                  const hasEvents = day && eventsForMonth.some(event => {
+                    const startDate = new Date(event.startDate);
+                    const endDate = new Date(event.endDate);
+                    const currentDate = new Date(selectedYear, selectedMonth, day);
+                    return currentDate >= startDate && currentDate <= endDate;
+                  });
+
+                  return (
+                    <div
+                      key={index}
+                      className={`aspect-square flex items-center justify-center text-xs relative ${
+                        day
+                          ? 'text-gray-900 hover:bg-gray-100 rounded cursor-pointer'
+                          : ''
+                      }`}
+                    >
+                      {day || ''}
+                      {hasEvents && (
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Events List for Selected Month */}
+            <div className="border-t border-gray-200 pt-4">
+              <h4 className="text-xs font-semibold text-gray-700 mb-3">
+                Händelser denna månad ({eventsForMonth.length})
+              </h4>
+              {eventsForMonth.length > 0 ? (
+                <div className="space-y-2">
+                  {eventsForMonth.map(event => {
+                    const activity = organizationData.activities.find(a => a.id === event.activityId);
+                    const startDate = new Date(event.startDate);
+                    const endDate = new Date(event.endDate);
+                    
+                    return (
+                      <div
+                        key={event.id}
+                        className="group flex items-start gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                        onClick={() => setEditingItem(event)}
+                      >
+                        <div
+                          className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
+                          style={{ backgroundColor: activity?.color || '#D1D5DB' }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-gray-900 truncate">
+                            {event.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {startDate.getDate()} - {endDate.getDate()} {monthNames[selectedMonth].slice(0, 3)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 text-center py-4">
+                  Inga händelser denna månad
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -733,6 +921,59 @@ function OrganizationPanel({
           onDeleteItem={handleDeleteItem}
           onClose={() => setEditingItem(null)}
         />
+      )}
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Inställningar</h2>
+              <button
+                onClick={() => setIsSettingsOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Organisation</h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Ringar:</span>
+                    <span className="font-medium">{organizationData.rings.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Aktiviteter:</span>
+                    <span className="font-medium">{organizationData.activities.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Etiketter:</span>
+                    <span className="font-medium">{organizationData.labels.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Händelser:</span>
+                    <span className="font-medium">{organizationData.items?.length || 0}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Åtgärder</h3>
+                <button
+                  onClick={() => {
+                    handleRefresh();
+                    setIsSettingsOpen(false);
+                  }}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  Ladda om data
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

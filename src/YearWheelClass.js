@@ -645,14 +645,20 @@ class YearWheel {
     // Draw organization data items (from sidebar) if available
     if (this.organizationData && this.organizationData.items && this.organizationData.items.length > 0) {
       const visibleRings = this.organizationData.rings.filter(r => r.visible);
+      const visibleActivities = this.organizationData.activities.filter(a => a.visible);
+      const visibleLabels = this.organizationData.labels.filter(l => l.visible);
       
       if (visibleRings.length > 0) {
         const orgDataWidth = this.size / 35; // Width for organization items ring
         const orgDataStartRadius = currentMaxRadius - orgDataWidth - this.size / 400;
         
         visibleRings.forEach((ring, ringIndex) => {
-          // Filter items for this ring
-          const ringItems = this.organizationData.items.filter(item => item.ringId === ring.id);
+          // Filter items for this ring that also have visible activity and label
+          const ringItems = this.organizationData.items.filter(item => {
+            const hasVisibleActivity = visibleActivities.some(a => a.id === item.activityId);
+            const hasVisibleLabel = visibleLabels.some(l => l.id === item.labelId);
+            return item.ringId === ring.id && hasVisibleActivity && hasVisibleLabel;
+          });
           
           ringItems.forEach((item) => {
             let itemStartDate = new Date(item.startDate);
