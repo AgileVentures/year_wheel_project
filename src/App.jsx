@@ -9,8 +9,8 @@ import sampleOrgData from "./sampleOrganizationData.json";
 function App() {
   const [title, setTitle] = useState("Organisation");
   const [year, setYear] = useState("2025");
-  // Plandisc color scheme from screenshot: beige/cream, mint green, coral, light blue
-  const [colors, setColors] = useState(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+  // Grayscale color scheme (improved contrast)
+  const [colors, setColors] = useState(["#334155", "#475569", "#64748B", "#94A3B8"]);
   
   // Start with one initial inner ring and default activity group
   const [organizationData, setOrganizationData] = useState({
@@ -19,16 +19,14 @@ function App() {
         id: "ring-1",
         name: "Ring 1",
         type: "inner", // inner = between center and month ring, outer = outside month ring
-        visible: true,
-        data: Array.from({ length: 12 }, () => [""]), // For inner rings: free text per month
-        orientation: "vertical" // For inner rings: text orientation
+        visible: true
       }
     ],
     activityGroups: [
       {
         id: "group-1",
         name: "Aktivitetsgrupp 1",
-        color: "#F5E6D3",
+        color: "#334155",
         visible: true
       }
     ],
@@ -50,6 +48,7 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showWeekRing, setShowWeekRing] = useState(true);
   const [showMonthRing, setShowMonthRing] = useState(true);
+  const [showRingNames, setShowRingNames] = useState(true);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("yearWheelData"));
@@ -201,6 +200,7 @@ function App() {
       showMonthRing,
       showYearEvents,
       showSeasonRing,
+      showRingNames,
     };
 
     const jsonString = JSON.stringify(dataToSave, null, 2);
@@ -253,6 +253,7 @@ function App() {
           if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
           if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
           if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
+          if (data.showRingNames !== undefined) setShowRingNames(data.showRingNames);
 
           // Show success feedback
           const toastEvent = new CustomEvent('showToast', { 
@@ -283,6 +284,8 @@ function App() {
         onReset={handleReset}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        year={year}
+        onYearChange={setYear}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -300,6 +303,8 @@ function App() {
             colors={colors}
             onColorsChange={setColors}
             onZoomToMonth={setZoomedMonth}
+            showRingNames={showRingNames}
+            onShowRingNamesChange={setShowRingNames}
           />
         </div>
 
@@ -317,6 +322,7 @@ function App() {
               yearEventsCollection={yearEventsCollection}
               showWeekRing={showWeekRing}
               showMonthRing={showMonthRing}
+              showRingNames={showRingNames}
               zoomedMonth={zoomedMonth}
               onUpdateAktivitet={(updatedItem) => {
                 const updatedItems = organizationData.items.map(item =>

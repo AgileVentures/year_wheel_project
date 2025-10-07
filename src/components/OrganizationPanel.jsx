@@ -10,7 +10,9 @@ function OrganizationPanel({
   onTitleChange,
   colors,
   onColorsChange,
-  onZoomToMonth
+  onZoomToMonth,
+  showRingNames,
+  onShowRingNamesChange
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
@@ -431,7 +433,7 @@ function OrganizationPanel({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Liste
+            Lista
             {activeView === 'liste' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
             )}
@@ -728,79 +730,83 @@ function OrganizationPanel({
           {expandedSections.innerRings && (
             <>
               <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                Innerringar visas mellan centrum och månaderna. Använd dem för kvartalstexter, mål eller annan fri text.
+                Innerringar visas mellan centrum och månaderna. Lägg till aktiviteter för att visualisera händelser på dessa ringar.
               </p>
 
-              <div className="space-y-2 mb-2">
+              <div className="space-y-1 mb-2">
                 {filteredInnerRings.map((ring) => (
-                  <div key={ring.id} className="border border-gray-200 rounded-lg">
-                    <div className="group flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-t-lg">
+                  <div
+                    key={ring.id}
+                    className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={ring.visible}
+                      onChange={() => toggleRing(ring.id)}
+                      className="w-3 h-3 rounded"
+                    />
+                    <input
+                      type="color"
+                      value={ring.color || '#cccccc'}
+                      onChange={(e) => handleRingColorChange(ring.id, e.target.value)}
+                      className="w-4 h-4 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={ring.name}
+                      onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
+                      className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
+                    />
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {countRingItems(ring.id)}
+                    </span>
+                    {innerRings.length > 1 && (
                       <button
-                        onClick={() => toggleInnerRingExpanded(ring.id)}
-                        className="p-0.5 hover:bg-gray-200 rounded transition-colors"
+                        onClick={() => handleRemoveRing(ring.id)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
                       >
-                        <ChevronDown 
-                          size={14} 
-                          className={`text-gray-600 transition-transform ${expandedInnerRings[ring.id] ? 'rotate-180' : ''}`}
-                        />
+                        <Trash2 size={12} />
                       </button>
-                      <input
-                        type="checkbox"
-                        checked={ring.visible}
-                        onChange={() => toggleRing(ring.id)}
-                        className="w-3 h-3 rounded"
-                      />
-                      <input
-                        type="text"
-                        value={ring.name}
-                        onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
-                        className="flex-1 text-xs text-gray-700 font-medium bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
-                      />
-                      <select
-                        value={ring.orientation || 'vertical'}
-                        onChange={(e) => handleInnerRingOrientationChange(ring.id, e.target.value)}
-                        className="text-xs border border-gray-300 rounded px-1 py-0.5"
-                      >
-                        <option value="vertical">Vertikal</option>
-                        <option value="horizontal">Horisontell</option>
-                      </select>
-                      {innerRings.length > 1 && (
-                        <button
-                          onClick={() => handleRemoveRing(ring.id)}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      )}
-                    </div>
-
-                    {expandedInnerRings[ring.id] && (
-                      <div className="p-2 space-y-2 bg-white">
-                        {monthNames.map((monthName, index) => (
-                          <div key={index} className="flex items-start gap-2">
-                            <span className="text-xs text-gray-500 w-16 pt-1">{monthName}:</span>
-                            <textarea
-                              value={(ring.data && ring.data[index] && ring.data[index][0]) || ''}
-                              onChange={(e) => handleInnerRingTextChange(ring.id, index, e.target.value)}
-                              placeholder="Fri text..."
-                              className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 resize-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                              rows="1"
-                            />
-                          </div>
-                        ))}
-                      </div>
                     )}
                   </div>
                 ))}
               </div>
 
-              <button
-                onClick={handleAddInnerRing}
-                className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"
-              >
-                <Plus size={12} />
-                <span>Lägg till innerring</span>
-              </button>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">Visa:</span>
+                  <button
+                    onClick={() => {
+                      const updatedRings = organizationData.rings.map(ring =>
+                        ring.type === 'inner' ? { ...ring, visible: true } : ring
+                      );
+                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                    }}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    Alla
+                  </button>
+                  <span className="text-gray-400">|</span>
+                  <button
+                    onClick={() => {
+                      const updatedRings = organizationData.rings.map(ring =>
+                        ring.type === 'inner' ? { ...ring, visible: false } : ring
+                      );
+                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                    }}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    Ingen
+                  </button>
+                </div>
+                <button
+                  onClick={handleAddInnerRing}
+                  className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                >
+                  <Plus size={12} />
+                  <span>Lägg till</span>
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -1224,7 +1230,7 @@ function OrganizationPanel({
 
                   <div 
                     onClick={() => {
-                      const newColors = ["#475569", "#64748B", "#94A3B8", "#CBD5E1"];
+                      const newColors = ["#334155", "#475569", "#64748B", "#94A3B8"];
                       if (onColorsChange) onColorsChange(newColors);
                       const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
@@ -1235,10 +1241,10 @@ function OrganizationPanel({
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#334155' }}></div>
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#475569' }}></div>
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#64748B' }}></div>
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#94A3B8' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#CBD5E1' }}></div>
                     </div>
                     <p className="text-xs text-gray-600">Grayscale</p>
                   </div>
@@ -1264,6 +1270,21 @@ function OrganizationPanel({
                     <span>Aktiviteter:</span>
                     <span className="font-medium">{organizationData.items?.length || 0}</span>
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Visningsalternativ</h3>
+                <div className="space-y-2">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span className="text-sm text-gray-600">Visa ringnamn</span>
+                    <input
+                      type="checkbox"
+                      checked={showRingNames}
+                      onChange={(e) => onShowRingNamesChange && onShowRingNamesChange(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
                 </div>
               </div>
               

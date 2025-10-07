@@ -15,6 +15,7 @@ function YearWheel({
   yearEventsCollection,
   showWeekRing,
   showMonthRing,
+  showRingNames,
   zoomedMonth,
   onUpdateAktivitet,
   onDeleteAktivitet,
@@ -111,6 +112,7 @@ function YearWheel({
         organizationData,
         showWeekRing,
         showMonthRing,
+        showRingNames,
         zoomedMonth,
         onItemClick: handleItemClick,
       }
@@ -128,6 +130,7 @@ function YearWheel({
     yearEventsCollection,
     showWeekRing,
     showMonthRing,
+    showRingNames,
     zoomedMonth,
   ]);
 

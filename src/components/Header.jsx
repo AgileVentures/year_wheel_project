@@ -1,6 +1,6 @@
-import { Save, RotateCcw, Menu, X, Download, Upload } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar } from 'lucide-react';
 
-function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, onToggleSidebar }) {
+function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, onToggleSidebar, year = "2025", onYearChange }) {
   return (
     <header className="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -12,9 +12,23 @@ function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, 
           {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <div className="text-2xl font-bold text-gray-900">
             YearWheel
+          </div>
+          
+          {/* Year selector */}
+          <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
+            <Calendar size={18} className="text-gray-500" />
+            <input
+              type="number"
+              value={year || "2025"}
+              onChange={(e) => onYearChange(e.target.value)}
+              min="1900"
+              max="2100"
+              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="År"
+            />
           </div>
         </div>
       </div>
