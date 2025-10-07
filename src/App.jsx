@@ -12,15 +12,25 @@ function App() {
   // Plandisc color scheme from screenshot: beige/cream, mint green, coral, light blue
   const [colors, setColors] = useState(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
   
-  // Start with empty organization data (no sample data on initial load)
+  // Start with one initial inner ring for users to begin planning
   const [organizationData, setOrganizationData] = useState({
-    rings: [],
+    rings: [
+      {
+        id: "ring-1",
+        name: "Ring 1",
+        type: "inner", // inner = between center and month ring, outer = outside month ring
+        visible: true,
+        data: Array.from({ length: 12 }, () => [""]), // For inner rings: free text per month
+        orientation: "vertical" // For inner rings: text orientation
+      }
+    ],
     activities: [],
     labels: [],
     items: []
   });
   const [zoomedMonth, setZoomedMonth] = useState(null);
   
+  // Keep ringsData for backward compatibility when loading old files
   const [ringsData, setRingsData] = useState([
     {
       data: Array.from({ length: 12 }, () => [""]),
@@ -103,21 +113,30 @@ function App() {
   const handleReset = () => {
     if (!confirm('Är du säker på att du vill återställa allt? All data kommer att raderas.')) return;
     
-    // Reset to completely empty state
+    // Reset to clean state with one initial inner ring
     setTitle("Organisation");
     setYear("2025");
     const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     setColors(defaultColors);
     
-    // Empty organization data - no sample items
+    // Reset with one initial inner ring for planning
     setOrganizationData({
-      rings: [],
+      rings: [
+        {
+          id: "ring-1",
+          name: "Ring 1",
+          type: "inner",
+          visible: true,
+          data: Array.from({ length: 12 }, () => [""]),
+          orientation: "vertical"
+        }
+      ],
       activities: [],
       labels: [],
       items: []
     });
     
-    // Empty rings data
+    // Keep backward compatibility
     setRingsData([
       {
         data: Array.from({ length: 12 }, () => [""]),
