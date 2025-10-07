@@ -15,6 +15,19 @@ class YearWheel {
     this.events = events;
     this.options = options;
     this.organizationData = options.organizationData || { items: [], rings: [], activities: [] };
+    // For backward compatibility: merge old ringsData into organizationData.rings if needed
+    if (options.ringsData && options.ringsData.length > 0 && !this.organizationData.rings.some(r => r.type === 'inner')) {
+      // Convert old ringsData format to new ring structure
+      const innerRingsFromOldData = options.ringsData.map((ring, index) => ({
+        id: ring.id || `inner-ring-${index + 1}`,
+        name: ring.name || `Ring ${index + 1}`,
+        type: 'inner',
+        visible: true,
+        data: ring.data,
+        orientation: ring.orientation || 'vertical'
+      }));
+      this.organizationData.rings = [...innerRingsFromOldData, ...this.organizationData.rings];
+    }
     this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showSeasonRing = options.showSeasonRing !== undefined ? options.showSeasonRing : true;
@@ -755,7 +768,7 @@ class YearWheel {
     
     // Draw organization data items (from sidebar) if available
     if (this.organizationData && this.organizationData.items && this.organizationData.items.length > 0) {
-      const visibleRings = this.organizationData.rings.filter(r => r.visible);
+      const visibleRings = this.organizationData.rings.filter(r => r.visible && r.type === 'outer');
       const visibleActivities = this.organizationData.activities.filter(a => a.visible);
       const visibleLabels = this.organizationData.labels.filter(l => l.visible);
       
@@ -876,13 +889,14 @@ class YearWheel {
 
     // Draw monthly events (inner sections) - they expand to fill available space
     const baseEventSpacing = this.size / 300;
-    const numberOfEvents = this.options.ringsData.length;
+    const innerRings = this.organizationData.rings.filter(r => r.type === 'inner' && r.visible);
+    const numberOfEvents = innerRings.length;
     
     // Calculate total spacing needed (more for vertical text rings)
     let totalSpacing = 0;
     for (let i = 0; i < numberOfEvents - 1; i++) {
-      const currentRing = this.options.ringsData[i];
-      const nextRing = this.options.ringsData[i + 1];
+      const currentRing = innerRings[i];
+      const nextRing = innerRings[i + 1];
       // Add extra spacing if either ring has vertical text
       const spacingMultiplier = (currentRing.orientation === "vertical" || nextRing.orientation === "vertical") ? 2.5 : 1;
       totalSpacing += baseEventSpacing * spacingMultiplier;
@@ -897,7 +911,7 @@ class YearWheel {
     let eventRadius = this.minRadius;
 
     for (let i = 0; i < numberOfEvents; i++) {
-      const ring = this.options.ringsData[i];
+      const ring = innerRings[i];
       const percentage = (1 / (numberOfEvents - i)) * 1.1;
       const newEventWidth =
         i !== numberOfEvents - 1
@@ -919,7 +933,7 @@ class YearWheel {
       
       // Calculate spacing for next ring
       if (i < numberOfEvents - 1) {
-        const nextRing = this.options.ringsData[i + 1];
+        const nextRing = innerRings[i + 1];
         const spacingMultiplier = (ring.orientation === "vertical" || nextRing.orientation === "vertical") ? 2.5 : 1;
         eventRadius += newEventWidth + (baseEventSpacing * spacingMultiplier);
       }
