@@ -12,7 +12,7 @@ function App() {
   // Plandisc color scheme from screenshot: beige/cream, mint green, coral, light blue
   const [colors, setColors] = useState(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
   
-  // Start with one initial inner ring for users to begin planning
+  // Start with one initial inner ring and default activity group
   const [organizationData, setOrganizationData] = useState({
     rings: [
       {
@@ -24,7 +24,14 @@ function App() {
         orientation: "vertical" // For inner rings: text orientation
       }
     ],
-    activities: [],
+    activityGroups: [
+      {
+        id: "group-1",
+        name: "Aktivitetsgrupp 1",
+        color: "#F5E6D3",
+        visible: true
+      }
+    ],
     labels: [],
     items: []
   });
@@ -51,7 +58,24 @@ function App() {
       setTitle(data.title);
       setYear(data.year);
       if (data.colors) setColors(data.colors);
-      if (data.organizationData) setOrganizationData(data.organizationData);
+      if (data.organizationData) {
+        // Backward compatibility: convert old 'activities' to 'activityGroups'
+        const orgData = data.organizationData;
+        if (orgData.activities && !orgData.activityGroups) {
+          orgData.activityGroups = orgData.activities;
+          delete orgData.activities;
+        }
+        // Ensure at least one activity group exists
+        if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
+          orgData.activityGroups = [{
+            id: "group-1",
+            name: "Aktivitetsgrupp 1",
+            color: data.colors?.[0] || "#F5E6D3",
+            visible: true
+          }];
+        }
+        setOrganizationData(orgData);
+      }
       if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
       if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
       if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
@@ -59,16 +83,16 @@ function App() {
     }
   }, []);
 
-  // Ensure activities always have colors assigned from the palette
+  // Ensure activity groups always have colors assigned from the palette
   useEffect(() => {
-    if (organizationData?.activities) {
-      const needsColors = organizationData.activities.some(activity => !activity.color);
+    if (organizationData?.activityGroups) {
+      const needsColors = organizationData.activityGroups.some(group => !group.color);
       if (needsColors) {
-        const activitiesWithColors = organizationData.activities.map((activity, index) => ({
-          ...activity,
+        const groupsWithColors = organizationData.activityGroups.map((group, index) => ({
+          ...group,
           color: colors[index % colors.length]
         }));
-        setOrganizationData({ ...organizationData, activities: activitiesWithColors });
+        setOrganizationData({ ...organizationData, activityGroups: groupsWithColors });
       }
     }
   }, [organizationData, colors]);
@@ -119,7 +143,7 @@ function App() {
     const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     setColors(defaultColors);
     
-    // Reset with one initial inner ring for planning
+    // Reset with one initial inner ring and default activity group for planning
     setOrganizationData({
       rings: [
         {
@@ -131,7 +155,14 @@ function App() {
           orientation: "vertical"
         }
       ],
-      activities: [],
+      activityGroups: [
+        {
+          id: "group-1",
+          name: "Aktivitetsgrupp 1",
+          color: defaultColors[0],
+          visible: true
+        }
+      ],
       labels: [],
       items: []
     });
@@ -287,13 +318,13 @@ function App() {
               showWeekRing={showWeekRing}
               showMonthRing={showMonthRing}
               zoomedMonth={zoomedMonth}
-              onUpdateItem={(updatedItem) => {
+              onUpdateAktivitet={(updatedItem) => {
                 const updatedItems = organizationData.items.map(item =>
                   item.id === updatedItem.id ? updatedItem : item
                 );
                 setOrganizationData({ ...organizationData, items: updatedItems });
               }}
-              onDeleteItem={(itemId) => {
+              onDeleteAktivitet={(itemId) => {
                 const updatedItems = organizationData.items.filter(item => item.id !== itemId);
                 setOrganizationData({ ...organizationData, items: updatedItems });
               }}

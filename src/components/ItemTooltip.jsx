@@ -4,7 +4,7 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
   if (!item) return null;
 
   const ring = organizationData.rings.find(r => r.id === item.ringId);
-  const activity = organizationData.activities.find(a => a.id === item.activityId);
+  const activity = organizationData.activityGroups.find(a => a.id === item.activityId);
   const label = organizationData.labels.find(l => l.id === item.labelId);
   const startDate = new Date(item.startDate);
   const endDate = new Date(item.endDate);

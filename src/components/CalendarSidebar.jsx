@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
-import EditItemModal from './EditItemModal';
+import EditAktivitetModal from './EditAktivitetModal';
 
 function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose, onZoomToMonth }) {
   const [currentMonth, setCurrentMonth] = useState(9); // October (0-indexed)
   const [selectedYear, setSelectedYear] = useState(parseInt(year));
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingAktivitet, setEditingAktivitet] = useState(null);
   const [isZoomedToMonth, setIsZoomedToMonth] = useState(false);
 
   const months = [
@@ -75,21 +75,21 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
 
   // Get activity color
   const getActivityColor = (activityId) => {
-    const activity = organizationData?.activities?.find(a => a.id === activityId);
+    const activity = organizationData?.activityGroups?.find(a => a.id === activityId);
     return activity?.color || '#D1D5DB';
   };
 
-  // Handle update item
-  const handleUpdateItem = (updatedItem) => {
+  // Handle update aktivitet
+  const handleUpdateAktivitet = (updatedAktivitet) => {
     const updatedItems = organizationData.items.map(item =>
-      item.id === updatedItem.id ? updatedItem : item
+      item.id === updatedAktivitet.id ? updatedAktivitet : item
     );
     onOrganizationChange({ ...organizationData, items: updatedItems });
   };
 
-  // Handle delete item
-  const handleDeleteItem = (itemId) => {
-    const updatedItems = organizationData.items.filter(item => item.id !== itemId);
+  // Handle delete aktivitet
+  const handleDeleteAktivitet = (aktivitetId) => {
+    const updatedItems = organizationData.items.filter(item => item.id !== aktivitetId);
     onOrganizationChange({ ...organizationData, items: updatedItems });
   };
 
@@ -205,7 +205,7 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
                         </div>
                       </div>
                       <button 
-                        onClick={() => setEditingItem(event)}
+                        onClick={() => setEditingAktivitet(event)}
                         className="p-1 hover:bg-gray-100 rounded"
                         title="Redigera"
                       >
@@ -221,19 +221,19 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
           </div>
         ) : (
           <div className="text-center text-sm text-gray-400 py-8">
-            Inga händelser denna månad
+            Inga aktiviteter denna månad
           </div>
         )}
       </div>
 
-      {/* Edit Item Modal */}
-      {editingItem && (
-        <EditItemModal
-          item={editingItem}
+      {/* Edit Aktivitet Modal */}
+      {editingAktivitet && (
+        <EditAktivitetModal
+          aktivitet={editingAktivitet}
           organizationData={organizationData}
-          onUpdateItem={handleUpdateItem}
-          onDeleteItem={handleDeleteItem}
-          onClose={() => setEditingItem(null)}
+          onUpdateAktivitet={handleUpdateAktivitet}
+          onDeleteAktivitet={handleDeleteAktivitet}
+          onClose={() => setEditingAktivitet(null)}
         />
       )}
     </div>

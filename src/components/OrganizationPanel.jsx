@@ -1,7 +1,7 @@
 import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X } from 'lucide-react';
 import { useState } from 'react';
-import AddItemModal from './AddItemModal';
-import EditItemModal from './EditItemModal';
+import AddAktivitetModal from './AddAktivitetModal';
+import EditAktivitetModal from './EditAktivitetModal';
 
 function OrganizationPanel({ 
   organizationData,
@@ -15,7 +15,7 @@ function OrganizationPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingAktivitet, setEditingAktivitet] = useState(null);
   const [sortBy, setSortBy] = useState('startDate'); // startDate, name, ring
   const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
   const [selectedMonth, setSelectedMonth] = useState(9); // October (0-indexed)
@@ -26,7 +26,7 @@ function OrganizationPanel({
   const [expandedSections, setExpandedSections] = useState({
     innerRings: true,
     outerRings: true,
-    activities: true,
+    activityGroups: true,
     labels: true
   });
   const [expandedInnerRings, setExpandedInnerRings] = useState({});
@@ -57,13 +57,13 @@ function OrganizationPanel({
   const filteredOuterRings = outerRings.filter(ring =>
     ring.name.toLowerCase().includes(searchLower)
   );
-  const filteredActivities = organizationData.activities.filter(activity =>
-    activity.name.toLowerCase().includes(searchLower)
+  const filteredActivityGroups = (organizationData.activityGroups || []).filter(group =>
+    group.name.toLowerCase().includes(searchLower)
   );
   const filteredLabels = organizationData.labels.filter(label =>
     label.name.toLowerCase().includes(searchLower)
   );
-  const filteredItems = organizationData.items?.filter(item =>
+  const filteredAktiviteter = organizationData.items?.filter(item =>
     item.name.toLowerCase().includes(searchLower)
   ) || [];
 
@@ -79,8 +79,8 @@ function OrganizationPanel({
     calendarDays.push(day);
   }
 
-  // Get events for selected month
-  const eventsForMonth = filteredItems.filter(item => {
+  // Get aktiviteter for selected month
+  const aktiviteterForMonth = filteredAktiviteter.filter(item => {
     const monthStart = new Date(selectedYear, selectedMonth, 1);
     const monthEnd = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
     const itemStart = new Date(item.startDate);
@@ -104,12 +104,12 @@ function OrganizationPanel({
     onOrganizationChange({ ...organizationData, rings: updatedRings });
   };
 
-  const handleShowActivities = (show) => {
-    const updatedActivities = organizationData.activities.map(activity => ({
-      ...activity,
+  const handleShowActivityGroups = (show) => {
+    const updatedGroups = (organizationData.activityGroups || []).map(group => ({
+      ...group,
       visible: show
     }));
-    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
   };
 
   const handleShowLabels = (show) => {
@@ -128,11 +128,11 @@ function OrganizationPanel({
     onOrganizationChange({ ...organizationData, rings: updatedRings });
   };
 
-  const toggleActivity = (activityId) => {
-    const updatedActivities = organizationData.activities.map(activity =>
-      activity.id === activityId ? { ...activity, visible: !activity.visible } : activity
+  const toggleActivityGroup = (groupId) => {
+    const updatedGroups = (organizationData.activityGroups || []).map(group =>
+      group.id === groupId ? { ...group, visible: !group.visible } : group
     );
-    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
   };
 
   const toggleLabel = (labelId) => {
@@ -147,37 +147,37 @@ function OrganizationPanel({
     return organizationData.items?.filter(item => item.ringId === ringId).length || 0;
   };
 
-  const countActivityItems = (activityId) => {
-    return organizationData.items?.filter(item => item.activityId === activityId).length || 0;
+  const countActivityGroupItems = (groupId) => {
+    return organizationData.items?.filter(item => item.activityId === groupId).length || 0;
   };
 
   const countLabelItems = (labelId) => {
     return organizationData.items?.filter(item => item.labelId === labelId).length || 0;
   };
 
-  // Add new item
-  const handleAddItem = (newItem) => {
-    const updatedItems = [...(organizationData.items || []), newItem];
+  // Add new aktivitet
+  const handleAddAktivitet = (newAktivitet) => {
+    const updatedItems = [...(organizationData.items || []), newAktivitet];
     onOrganizationChange({ ...organizationData, items: updatedItems });
   };
 
-  // Update item
-  const handleUpdateItem = (updatedItem) => {
+  // Update aktivitet
+  const handleUpdateAktivitet = (updatedAktivitet) => {
     const updatedItems = organizationData.items.map(item =>
-      item.id === updatedItem.id ? updatedItem : item
+      item.id === updatedAktivitet.id ? updatedAktivitet : item
     );
     onOrganizationChange({ ...organizationData, items: updatedItems });
   };
 
-  // Delete item
-  const handleDeleteItem = (itemId) => {
-    const updatedItems = organizationData.items.filter(item => item.id !== itemId);
+  // Delete aktivitet
+  const handleDeleteAktivitet = (aktivitetId) => {
+    const updatedItems = organizationData.items.filter(item => item.id !== aktivitetId);
     onOrganizationChange({ ...organizationData, items: updatedItems });
   };
 
-  // Sort items for list view
-  const getSortedItems = () => {
-    const items = [...filteredItems];
+  // Sort aktiviteter for list view
+  const getSortedAktiviteter = () => {
+    const items = [...filteredAktiviteter];
     items.sort((a, b) => {
       let compareA, compareB;
       
@@ -315,36 +315,36 @@ function OrganizationPanel({
     }));
   };
 
-  // Activity management
-  const handleAddActivity = () => {
-    const newActivity = {
-      id: `activity-${Date.now()}`,
-      name: `Aktivitet ${organizationData.activities.length + 1}`,
+  // Activity Group management
+  const handleAddActivityGroup = () => {
+    const newGroup = {
+      id: `group-${Date.now()}`,
+      name: `Aktivitetsgrupp ${(organizationData.activityGroups || []).length + 1}`,
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       visible: true
     };
-    const updatedActivities = [...organizationData.activities, newActivity];
-    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+    const updatedGroups = [...(organizationData.activityGroups || []), newGroup];
+    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
   };
 
-  const handleRemoveActivity = (activityId) => {
-    if (organizationData.activities.length <= 1) return;
-    const updatedActivities = organizationData.activities.filter(a => a.id !== activityId);
-    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+  const handleRemoveActivityGroup = (groupId) => {
+    if ((organizationData.activityGroups || []).length <= 1) return;
+    const updatedGroups = (organizationData.activityGroups || []).filter(g => g.id !== groupId);
+    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
   };
 
-  const handleActivityNameChange = (activityId, newName) => {
-    const updatedActivities = organizationData.activities.map(activity =>
-      activity.id === activityId ? { ...activity, name: newName } : activity
+  const handleActivityGroupNameChange = (groupId, newName) => {
+    const updatedGroups = (organizationData.activityGroups || []).map(group =>
+      group.id === groupId ? { ...group, name: newName } : group
     );
-    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
   };
 
-  const handleActivityColorChange = (activityId, newColor) => {
-    const updatedActivities = organizationData.activities.map(activity =>
-      activity.id === activityId ? { ...activity, color: newColor } : activity
+  const handleActivityGroupColorChange = (groupId, newColor) => {
+    const updatedGroups = (organizationData.activityGroups || []).map(group =>
+      group.id === groupId ? { ...group, color: newColor } : group
     );
-    onOrganizationChange({ ...organizationData, activities: updatedActivities });
+    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
   };
 
   // Label management
@@ -471,7 +471,7 @@ function OrganizationPanel({
             className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
           >
             <Plus size={14} />
-            <span>Add Item</span>
+            <span>Lägg till</span>
           </button>
         </div>
       </div>
@@ -483,16 +483,16 @@ function OrganizationPanel({
             {/* List Header */}
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-700">
-                {filteredItems.length} händelse{filteredItems.length !== 1 ? 'r' : ''}
+                {filteredAktiviteter.length} aktivitet{filteredAktiviteter.length !== 1 ? 'er' : ''}
               </h3>
             </div>
 
             {/* List Table */}
-            {filteredItems.length > 0 ? (
+            {filteredAktiviteter.length > 0 ? (
               <div className="space-y-1">
-                {getSortedItems().map((item) => {
+                {getSortedAktiviteter().map((item) => {
                   const ring = organizationData.rings.find(r => r.id === item.ringId);
-                  const activity = organizationData.activities.find(a => a.id === item.activityId);
+                  const activityGroup = (organizationData.activityGroups || []).find(a => a.id === item.activityId);
                   const label = organizationData.labels.find(l => l.id === item.labelId);
                   const startDate = new Date(item.startDate);
                   const endDate = new Date(item.endDate);
@@ -507,7 +507,7 @@ function OrganizationPanel({
                           <div className="flex items-center gap-2 mb-1">
                             <div
                               className="w-3 h-3 rounded flex-shrink-0"
-                              style={{ backgroundColor: activity?.color || '#D1D5DB' }}
+                              style={{ backgroundColor: activityGroup?.color || '#D1D5DB' }}
                             />
                             <h4 className="text-sm font-medium text-gray-900 truncate">
                               {item.name}
@@ -520,7 +520,7 @@ function OrganizationPanel({
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-gray-500">Aktivitet:</span>
-                              <span>{activity?.name || 'N/A'}</span>
+                              <span>{activityGroup?.name || 'N/A'}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-gray-500">Datum:</span>
@@ -538,7 +538,7 @@ function OrganizationPanel({
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => setEditingItem(item)}
+                            onClick={() => setEditingAktivitet(item)}
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                             title="Redigera"
                           >
@@ -547,7 +547,7 @@ function OrganizationPanel({
                           <button
                             onClick={() => {
                               if (confirm(`Radera "${item.name}"?`)) {
-                                handleDeleteItem(item.id);
+                                handleDeleteAktivitet(item.id);
                               }
                             }}
                             className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
@@ -564,7 +564,7 @@ function OrganizationPanel({
             ) : (
               <div className="text-center py-12">
                 <p className="text-sm text-gray-500 mb-4">
-                  {searchQuery ? 'Inga händelser matchar din sökning' : 'Inga händelser ännu'}
+                  {searchQuery ? 'Inga aktiviteter matchar din sökning' : 'Inga aktiviteter ännu'}
                 </p>
                 {!searchQuery && (
                   <button
@@ -572,7 +572,7 @@ function OrganizationPanel({
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     <Plus size={16} />
-                    <span>Lägg till händelse</span>
+                    <span>Lägg till aktivitet</span>
                   </button>
                 )}
               </div>
@@ -668,12 +668,12 @@ function OrganizationPanel({
             {/* Events List for Selected Month */}
             <div className="pt-4">
               <h4 className="text-xs font-semibold text-gray-700 mb-3">
-                Händelser denna månad ({eventsForMonth.length})
+                Aktiviteter denna månad ({aktiviteterForMonth.length})
               </h4>
-              {eventsForMonth.length > 0 ? (
+              {aktiviteterForMonth.length > 0 ? (
                 <div className="space-y-2">
-                  {eventsForMonth.map(event => {
-                    const activity = organizationData.activities.find(a => a.id === event.activityId);
+                  {aktiviteterForMonth.map(event => {
+                    const activityGroup = (organizationData.activityGroups || []).find(a => a.id === event.activityId);
                     const startDate = new Date(event.startDate);
                     const endDate = new Date(event.endDate);
                     
@@ -681,11 +681,11 @@ function OrganizationPanel({
                       <div
                         key={event.id}
                         className="group flex items-start gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-                        onClick={() => setEditingItem(event)}
+                        onClick={() => setEditingAktivitet(event)}
                       >
                         <div
                           className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
-                          style={{ backgroundColor: activity?.color || '#D1D5DB' }}
+                          style={{ backgroundColor: activityGroup?.color || '#D1D5DB' }}
                         />
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium text-gray-900 truncate">
@@ -701,7 +701,7 @@ function OrganizationPanel({
                 </div>
               ) : (
                 <p className="text-xs text-gray-500 text-center py-4">
-                  Inga händelser denna månad
+                  Inga aktiviteter denna månad
                 </p>
               )}
             </div>
@@ -904,53 +904,57 @@ function OrganizationPanel({
           )}
         </div>
 
-        {/* AKTIVITETER Section */}
+        {/* AKTIVITETSGRUPPER Section */}
         <div className="px-4 py-3 border-b border-gray-200">
           <button
-            onClick={() => toggleSection('activities')}
+            onClick={() => toggleSection('activityGroups')}
             className="w-full flex items-center justify-between mb-2"
           >
             <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              AKTIVITETER
+              AKTIVITETSGRUPPER
             </h2>
             <ChevronDown 
               size={14} 
-              className={`text-gray-400 transition-transform ${expandedSections.activities ? 'rotate-180' : ''}`}
+              className={`text-gray-400 transition-transform ${expandedSections.activityGroups ? 'rotate-180' : ''}`}
             />
           </button>
 
-          {expandedSections.activities && (
+          {expandedSections.activityGroups && (
             <>
+              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                Aktivitetsgrupper används för att färgkoda aktiviteter på hjulet. Varje aktivitet måste tillhöra en grupp.
+              </p>
+
               <div className="space-y-1 mb-2">
-                {filteredActivities.map((activity) => (
+                {filteredActivityGroups.map((group) => (
                   <div
-                    key={activity.id}
+                    key={group.id}
                     className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
                   >
                     <input
                       type="checkbox"
-                      checked={activity.visible}
-                      onChange={() => toggleActivity(activity.id)}
+                      checked={group.visible}
+                      onChange={() => toggleActivityGroup(group.id)}
                       className="w-3 h-3 rounded"
                     />
                     <input
                       type="color"
-                      value={activity.color}
-                      onChange={(e) => handleActivityColorChange(activity.id, e.target.value)}
+                      value={group.color}
+                      onChange={(e) => handleActivityGroupColorChange(group.id, e.target.value)}
                       className="w-4 h-4 rounded cursor-pointer"
                     />
                     <input
                       type="text"
-                      value={activity.name}
-                      onChange={(e) => handleActivityNameChange(activity.id, e.target.value)}
+                      value={group.name}
+                      onChange={(e) => handleActivityGroupNameChange(group.id, e.target.value)}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                      {countActivityItems(activity.id)}
+                      {countActivityGroupItems(group.id)}
                     </span>
-                    {organizationData.activities.length > 1 && (
+                    {(organizationData.activityGroups || []).length > 1 && (
                       <button
-                        onClick={() => handleRemoveActivity(activity.id)}
+                        onClick={() => handleRemoveActivityGroup(group.id)}
                         className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
                       >
                         <Trash2 size={12} />
@@ -964,21 +968,21 @@ function OrganizationPanel({
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">Visa:</span>
                   <button
-                    onClick={() => handleShowActivities(true)}
+                    onClick={() => handleShowActivityGroups(true)}
                     className="text-blue-600 hover:text-blue-700"
                   >
                     Alla
                   </button>
                   <span className="text-gray-400">|</span>
                   <button
-                    onClick={() => handleShowActivities(false)}
+                    onClick={() => handleShowActivityGroups(false)}
                     className="text-blue-600 hover:text-blue-700"
                   >
                     Ingen
                   </button>
                 </div>
                 <button
-                  onClick={handleAddActivity}
+                  onClick={handleAddActivityGroup}
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
@@ -1086,21 +1090,21 @@ function OrganizationPanel({
 
       {/* Add Item Modal */}
       {isAddModalOpen && (
-        <AddItemModal
+        <AddAktivitetModal
           organizationData={organizationData}
-          onAddItem={handleAddItem}
+          onAddAktivitet={handleAddAktivitet}
           onClose={() => setIsAddModalOpen(false)}
         />
       )}
 
       {/* Edit Item Modal */}
-      {editingItem && (
-        <EditItemModal
-          item={editingItem}
+      {editingAktivitet && (
+        <EditAktivitetModal
+          aktivitet={editingAktivitet}
           organizationData={organizationData}
-          onUpdateItem={handleUpdateItem}
-          onDeleteItem={handleDeleteItem}
-          onClose={() => setEditingItem(null)}
+          onUpdateAktivitet={handleUpdateAktivitet}
+          onDeleteAktivitet={handleDeleteAktivitet}
+          onClose={() => setEditingAktivitet(null)}
         />
       )}
 
@@ -1138,11 +1142,11 @@ function OrganizationPanel({
                       const newColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
                       if (onColorsChange) onColorsChange(newColors);
                       // Update activity colors to match palette
-                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
@@ -1159,11 +1163,11 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"];
                       if (onColorsChange) onColorsChange(newColors);
-                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
@@ -1180,11 +1184,11 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
                       if (onColorsChange) onColorsChange(newColors);
-                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
@@ -1201,11 +1205,11 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#1E3A8A", "#7C2D12", "#065F46", "#78350F"];
                       if (onColorsChange) onColorsChange(newColors);
-                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
@@ -1222,11 +1226,11 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#475569", "#64748B", "#94A3B8", "#CBD5E1"];
                       if (onColorsChange) onColorsChange(newColors);
-                      const updatedActivities = organizationData.activities.map((act, index) => ({
+                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activities: updatedActivities });
+                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
                   >
@@ -1250,14 +1254,14 @@ function OrganizationPanel({
                   </div>
                   <div className="flex justify-between">
                     <span>Aktiviteter:</span>
-                    <span className="font-medium">{organizationData.activities.length}</span>
+                    <span className="font-medium">{(organizationData.activityGroups || []).length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Etiketter:</span>
                     <span className="font-medium">{organizationData.labels.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Händelser:</span>
+                    <span>Aktiviteter:</span>
                     <span className="font-medium">{organizationData.items?.length || 0}</span>
                   </div>
                 </div>

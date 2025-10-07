@@ -2,7 +2,7 @@
 /* eslint-disable react/prop-types */import { useRef, useEffect, useState } from "react";
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
-import EditItemModal from "./components/EditItemModal";
+import EditAktivitetModal from "./components/EditAktivitetModal";
 
 function YearWheel({
   ringsData,
@@ -16,8 +16,8 @@ function YearWheel({
   showWeekRing,
   showMonthRing,
   zoomedMonth,
-  onUpdateItem,
-  onDeleteItem,
+  onUpdateAktivitet,
+  onDeleteAktivitet,
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -55,17 +55,17 @@ function YearWheel({
     setTooltipPosition(position);
   };
 
-  const handleUpdateItem = (updatedItem) => {
+  const handleUpdateAktivitet = (updatedItem) => {
     // This will be passed from App.jsx through props
-    if (onUpdateItem) {
-      onUpdateItem(updatedItem);
+    if (onUpdateAktivitet) {
+      onUpdateAktivitet(updatedItem);
     }
   };
 
-  const handleDeleteItem = (itemId) => {
+  const handleDeleteAktivitet = (itemId) => {
     // This will be passed from App.jsx through props
-    if (onDeleteItem) {
-      onDeleteItem(itemId);
+    if (onDeleteAktivitet) {
+      onDeleteAktivitet(itemId);
     }
   };
 
@@ -243,7 +243,7 @@ function YearWheel({
           organizationData={organizationData}
           position={tooltipPosition}
           onEdit={setEditingItem}
-          onDelete={handleDeleteItem}
+          onDelete={handleDeleteAktivitet}
           onClose={() => {
             setSelectedItem(null);
             setTooltipPosition(null);
@@ -251,13 +251,13 @@ function YearWheel({
         />
       )}
 
-      {/* Edit Item Modal */}
+      {/* Edit Aktivitet Modal */}
       {editingItem && (
-        <EditItemModal
-          item={editingItem}
+        <EditAktivitetModal
+          aktivitet={editingItem}
           organizationData={organizationData}
-          onUpdateItem={handleUpdateItem}
-          onDeleteItem={handleDeleteItem}
+          onUpdateAktivitet={handleUpdateAktivitet}
+          onDeleteAktivitet={handleDeleteAktivitet}
           onClose={() => setEditingItem(null)}
         />
       )}

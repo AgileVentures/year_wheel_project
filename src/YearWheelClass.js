@@ -14,7 +14,12 @@ class YearWheel {
     this.size = size;
     this.events = events;
     this.options = options;
-    this.organizationData = options.organizationData || { items: [], rings: [], activities: [] };
+    this.organizationData = options.organizationData || { items: [], rings: [], activityGroups: [] };
+    // Backward compatibility: convert old 'activities' to 'activityGroups'
+    if (this.organizationData.activities && !this.organizationData.activityGroups) {
+      this.organizationData.activityGroups = this.organizationData.activities;
+      delete this.organizationData.activities;
+    }
     // For backward compatibility: merge old ringsData into organizationData.rings if needed
     if (options.ringsData && options.ringsData.length > 0 && !this.organizationData.rings.some(r => r.type === 'inner')) {
       // Convert old ringsData format to new ring structure
@@ -30,7 +35,6 @@ class YearWheel {
     }
     this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
-    this.showSeasonRing = options.showSeasonRing !== undefined ? options.showSeasonRing : true;
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
@@ -667,109 +671,10 @@ class YearWheel {
     const minDate = new Date(this.year, 0, 1);
     const maxDate = new Date(this.year, 11, 31, 23, 59, 59);
     
-    // Draw season ring if enabled (outermost)
-    if (this.showSeasonRing && this.events && this.events.length > 0) {
-      const seasonRingWidth = this.size / 35;
-      const seasonRingStartRadius = currentMaxRadius - seasonRingWidth - this.size / 400;
-      
-      const seasons = this.events.filter(event => event.type === 'season');
-      
-      for (let i = 0; i < seasons.length; i++) {
-        const event = seasons[i];
-        let eventStartDate = new Date(event.startDate);
-        let eventEndDate = new Date(event.endDate);
-        
-        // Skip events that end before the current year
-        if (eventEndDate < minDate) continue;
-        
-        // Skip events that start after the current year
-        if (eventStartDate > maxDate) continue;
-        
-        // Clip event dates to year boundaries
-        if (eventStartDate < minDate) eventStartDate = minDate;
-        if (eventEndDate > maxDate) eventEndDate = maxDate;
-        
-        // Calculate angles
-        let startAngle = dateToAngle(eventStartDate);
-        let endAngle = dateToAngle(eventEndDate);
-        
-        // Apply the initAngle offset to align with the month ring
-        const adjustedStartAngle = this.initAngle + startAngle;
-        const adjustedEndAngle = this.initAngle + endAngle;
-        
-        this.setCircleSectionHTML({
-          startRadius: seasonRingStartRadius,
-          width: seasonRingWidth,
-          startAngle: adjustedStartAngle,
-          endAngle: adjustedEndAngle,
-          color: this.sectionColors[i % this.sectionColors.length],
-          textFunction: this.setCircleSectionSmallTitle.bind(this),
-          text: event.name,
-          fontSize: this.size / 90,
-          isVertical: false,
-        });
-      }
-      
-      currentMaxRadius = seasonRingStartRadius - this.size / 200;
-    }
-    
-    // Draw calendar events ring if enabled (holidays/special days)
-    if (this.options.showYearEvents && this.events && this.events.length > 0) {
-      const calendarEventWidth = this.size / 40;
-      const calendarEventStartRadius = currentMaxRadius - calendarEventWidth - this.size / 400;
-      
-      const holidays = this.events.filter(event => event.type === 'holiday');
-      
-      for (let i = 0; i < holidays.length; i++) {
-        const event = holidays[i];
-        let eventStartDate = new Date(event.startDate);
-        let eventEndDate = new Date(event.endDate);
-        
-        // Skip events that end before the current year
-        if (eventEndDate < minDate) continue;
-        
-        // Skip events that start after the current year
-        if (eventStartDate > maxDate) continue;
-        
-        // Clip event dates to year boundaries
-        if (eventStartDate < minDate) eventStartDate = minDate;
-        if (eventEndDate > maxDate) eventEndDate = maxDate;
-        
-        // Calculate angles
-        let startAngle = dateToAngle(eventStartDate);
-        let endAngle = dateToAngle(eventEndDate);
-        
-        // Ensure minimum visibility for single-day events
-        if (Math.abs(startAngle - endAngle) < 3) {
-          const averageAngle = (startAngle + endAngle) / 2;
-          startAngle = averageAngle - 1.5;
-          endAngle = averageAngle + 1.5;
-        }
-        
-        // Apply the initAngle offset to align with the month ring
-        const adjustedStartAngle = this.initAngle + startAngle;
-        const adjustedEndAngle = this.initAngle + endAngle;
-        
-        this.setCircleSectionHTML({
-          startRadius: calendarEventStartRadius,
-          width: calendarEventWidth,
-          startAngle: adjustedStartAngle,
-          endAngle: adjustedEndAngle,
-          color: this.sectionColors[i % this.sectionColors.length],
-          textFunction: this.setCircleSectionSmallTitle.bind(this),
-          text: event.name,
-          fontSize: this.size / 90,
-          isVertical: false,
-        });
-      }
-      
-      currentMaxRadius = calendarEventStartRadius - this.size / 200;
-    }
-    
     // Draw organization data items (from sidebar) if available
     if (this.organizationData && this.organizationData.items && this.organizationData.items.length > 0) {
       const visibleRings = this.organizationData.rings.filter(r => r.visible && r.type === 'outer');
-      const visibleActivities = this.organizationData.activities.filter(a => a.visible);
+      const visibleActivityGroups = this.organizationData.activityGroups.filter(a => a.visible);
       const visibleLabels = this.organizationData.labels.filter(l => l.visible);
       
       if (visibleRings.length > 0) {
@@ -777,11 +682,12 @@ class YearWheel {
         const orgDataStartRadius = currentMaxRadius - orgDataWidth - this.size / 400;
         
         visibleRings.forEach((ring, ringIndex) => {
-          // Filter items for this ring that also have visible activity and label
+          // Filter items for this ring that also have visible activity group (label is optional)
           const ringItems = this.organizationData.items.filter(item => {
-            const hasVisibleActivity = visibleActivities.some(a => a.id === item.activityId);
-            const hasVisibleLabel = visibleLabels.some(l => l.id === item.labelId);
-            return item.ringId === ring.id && hasVisibleActivity && hasVisibleLabel;
+            const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
+            // Label is optional - only filter by label if item has one
+            const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
+            return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
           });
           
           ringItems.forEach((item) => {
@@ -810,9 +716,9 @@ class YearWheel {
             const adjustedStartAngle = this.initAngle + startAngle;
             const adjustedEndAngle = this.initAngle + endAngle;
             
-            // Get color from activity
-            const activity = this.organizationData.activities.find(a => a.id === item.activityId);
-            const itemColor = activity ? activity.color : ring.color;
+            // Get color from activity group
+            const activityGroup = this.organizationData.activityGroups.find(a => a.id === item.activityId);
+            const itemColor = activityGroup ? activityGroup.color : ring.color;
             
             const itemStartRadius = orgDataStartRadius - (ringIndex * (orgDataWidth * 0.4));
             const itemWidth = orgDataWidth * 0.35; // Increased from 0.25 for better visibility
