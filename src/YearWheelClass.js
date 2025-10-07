@@ -438,94 +438,59 @@ class YearWheel {
     isVertical,
     backgroundColor
   ) {
-    // DYNAMIC ORIENTATION: Like design draft - short text = vertical/radial, long text = horizontal
-    let angle = (startAngle + endAngle) / 2;
+    // Calculate center angle and radius
+    const centerAngle = (startAngle + endAngle) / 2;
     const middleRadius = startRadius + width / 2;
     const arcLength = middleRadius * angleLength;
     
-    // Determine text color
+    // Determine text color with strong contrast
     const textColor = backgroundColor ? this.getContrastColor(backgroundColor) : "#FFFFFF";
     
-    // Smaller font size (normal weight, not bold)
-    const smallerFontSize = fontSize * 0.7;
+    // Use normal weight font, 70% of base size
+    const activityFontSize = fontSize * 0.7;
     
     this.context.save();
-    this.context.font = `400 ${smallerFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`; // Normal weight
-    let textWidth = this.context.measureText(text).width;
+    this.context.font = `400 ${activityFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+    const textWidth = this.context.measureText(text).width;
     
-    const coord = this.moveToAngle(middleRadius, angle);
+    // Position at center of the ring segment
+    const coord = this.moveToAngle(middleRadius, centerAngle);
     this.context.fillStyle = textColor;
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
     this.context.translate(coord.x, coord.y);
     
     // Normalize angle to 0-2π
-    let normalizedAngle = angle;
+    let normalizedAngle = centerAngle;
     while (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
     while (normalizedAngle >= Math.PI * 2) normalizedAngle -= Math.PI * 2;
     
-    // DECISION: Vertical (radial) if text fits within ring width, otherwise horizontal
-    const useVertical = textWidth < width * 0.8;
+    // VERTICAL text - perpendicular to the arc (90 degrees from horizontal)
+    // Determine if we're on the left side (90° to 270°)
+    const isLeftSide = normalizedAngle > Math.PI / 2 && normalizedAngle < Math.PI * 1.5;
     
-    if (useVertical) {
-      // VERTICAL/RADIAL: Text points toward center (like "Projekt", "Tea" in design draft)
-      // All text faces INWARD toward center for easy reading
-      let rotation;
-      if (normalizedAngle >= 0 && normalizedAngle < Math.PI) {
-        // Bottom half: point inward (toward center)
-        rotation = angle - Math.PI / 2;
-      } else {
-        // Top half: point inward (toward center) 
-        rotation = angle + Math.PI / 2;
+    // Text is perpendicular to arc (radial direction)
+    let rotation = centerAngle;
+    
+    // Flip on left side so text is readable from outside
+    if (isLeftSide) {
+      rotation += Math.PI;
+    }
+    
+    this.context.rotate(rotation);
+    
+    // Draw text vertically (perpendicular to arc)
+    // Truncate if too long to fit in ring width
+    const maxWidth = width * 0.85;
+    if (textWidth > maxWidth) {
+      // Truncate with ellipsis
+      let truncated = text;
+      while (this.context.measureText(truncated + '…').width > maxWidth && truncated.length > 3) {
+        truncated = truncated.slice(0, -1);
       }
-      
-      this.context.rotate(rotation);
-      this.context.fillText(text, 0, 0);
-      
+      this.context.fillText(truncated + '…', 0, 0);
     } else {
-      // HORIZONTAL: Text tangent to circle (like "Interna aktiviteter" in design draft)
-      // Try to wrap text if too long
-      const words = text.split(' ');
-      const lines = [];
-      let currentLine = '';
-      
-      for (let word of words) {
-        const testLine = currentLine ? currentLine + ' ' + word : word;
-        const testWidth = this.context.measureText(testLine).width;
-        
-        if (testWidth > arcLength * 0.85 && currentLine) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
-      
-      // Limit to 2 lines
-      if (lines.length > 2) {
-        lines[1] = lines[1].substring(0, 15) + '…';
-        lines.splice(2);
-      }
-      
-      let rotation;
-      if (normalizedAngle > Math.PI / 2 && normalizedAngle < Math.PI * 1.5) {
-        // Left side: rotate + flip to keep text upright
-        rotation = angle + Math.PI / 2 + Math.PI;
-      } else {
-        // Right side: rotate normally
-        rotation = angle + Math.PI / 2;
-      }
-      
-      this.context.rotate(rotation);
-      
-      // Draw lines
-      const lineHeight = smallerFontSize * 1.2;
-      const startY = -(lines.length - 1) * lineHeight / 2;
-      
-      for (let i = 0; i < lines.length; i++) {
-        this.context.fillText(lines[i], 0, startY + i * lineHeight);
-      }
+      this.context.fillText(text, 0, 0);
     }
     
     this.context.restore();
@@ -567,22 +532,24 @@ class YearWheel {
   drawRingNameBand(ringName, startRadius, bandWidth) {
     if (!ringName) return bandWidth;
     
-    // Draw the separator ring with LIGHT background
+    // Draw the separator ring with PROMINENT background
     this.context.beginPath();
     this.context.arc(this.center.x, this.center.y, startRadius, 0, Math.PI * 2);
     this.context.arc(this.center.x, this.center.y, startRadius + bandWidth, 0, Math.PI * 2, true);
-    this.context.fillStyle = '#E2E8F0'; // Light slate/gray background
+    this.context.fillStyle = '#FFFFFF'; // White background for maximum visibility
     this.context.fill();
     this.context.closePath();
     
+    // No border - clean look
+    
     // Draw ring name 4 times around the circle (at quarters)
     const textToShow = ringName;
-    const fontSize = this.size / 70; // Smaller for repeated text
+    const fontSize = this.size / 75; // Much smaller as requested
     const textRadius = startRadius + bandWidth / 2;
     
     this.context.save();
-    this.context.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
-    this.context.fillStyle = '#475569'; // Dark text on light background
+    this.context.font = `400 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`; // Normal weight (not bold)
+    this.context.fillStyle = '#0F172A'; // Very dark for maximum contrast
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
     
@@ -591,13 +558,14 @@ class YearWheel {
     
     for (let position of positions) {
       const centerAngle = this.toRadians(position);
+      const displayText = textToShow;
       
       // NATURAL letter spacing - measure each character individually
       const charWidths = [];
       let totalWidth = 0;
       
-      for (let i = 0; i < textToShow.length; i++) {
-        const charWidth = this.context.measureText(textToShow[i]).width;
+      for (let i = 0; i < displayText.length; i++) {
+        const charWidth = this.context.measureText(displayText[i]).width;
         charWidths.push(charWidth);
         totalWidth += charWidth;
       }
@@ -608,10 +576,11 @@ class YearWheel {
       const scaledTotalWidth = totalWidth * scale;
       const totalAngleSpan = scaledTotalWidth / textRadius;
       
+      // Start angle for text (centered at position)
       let currentAngle = centerAngle - totalAngleSpan / 2;
       
-      for (let i = 0; i < textToShow.length; i++) {
-        const char = textToShow[i];
+      for (let i = 0; i < displayText.length; i++) {
+        const char = displayText[i];
         const scaledCharWidth = charWidths[i] * scale;
         const charAngleSpan = scaledCharWidth / textRadius;
         
@@ -620,7 +589,12 @@ class YearWheel {
         
         this.context.save();
         this.context.translate(coord.x, coord.y);
-        this.context.rotate(charAngle + Math.PI / 2);
+        
+        // ALL characters point TOWARD center (inward)
+        // Rotation: perpendicular to radius, pointing inward
+        const rotation = charAngle + Math.PI / 2;
+        
+        this.context.rotate(rotation);
         this.context.fillText(char, 0, 0);
         this.context.restore();
         
@@ -989,52 +963,63 @@ class YearWheel {
     this.context.closePath();
 
     if (this.hoveredItem) {
-      // Show hovered activity info with clean spacing
+      // Show hovered activity info - cleaner, less cluttered
       const ring = this.organizationData.rings.find(r => r.id === this.hoveredItem.ringId);
-      const activityGroup = this.organizationData.activityGroups.find(a => a.id === this.hoveredItem.activityId);
       
-      const lineHeight = this.size / 40; // Better spacing
-      const startY = this.center.y - lineHeight * 1.8;
+      const lineHeight = this.size / 45;
+      const maxWidth = this.minRadius * 1.7;
       
-      // Activity name (bold, larger)
+      // Activity name (bold, larger) - with text wrapping
       this.context.fillStyle = '#1E293B';
       this.context.textAlign = "center";
-      this.context.font = `700 ${this.size / 50}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+      this.context.font = `700 ${this.size / 52}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
       this.context.textBaseline = "middle";
-      this.context.fillText(
-        this.hoveredItem.name,
-        this.center.x,
-        startY,
-        this.minRadius * 1.8
-      );
       
-      // Date range (medium weight)
-      this.context.fillStyle = '#475569';
-      this.context.font = `500 ${this.size / 65}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+      // Simple text wrapping for activity name
+      const words = this.hoveredItem.name.split(' ');
+      const lines = [];
+      let currentLine = '';
+      
+      for (let word of words) {
+        const testLine = currentLine ? currentLine + ' ' + word : word;
+        const metrics = this.context.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      
+      const startY = this.center.y - (lines.length * lineHeight) / 2;
+      
+      // Draw wrapped activity name
+      for (let i = 0; i < lines.length; i++) {
+        this.context.fillText(
+          lines[i],
+          this.center.x,
+          startY + i * lineHeight
+        );
+      }
+      
+      // Date range (smaller, less prominent)
+      this.context.fillStyle = '#64748B';
+      this.context.font = `500 ${this.size / 75}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
       const startDate = new Date(this.hoveredItem.startDate).toLocaleDateString('sv-SE');
       const endDate = new Date(this.hoveredItem.endDate).toLocaleDateString('sv-SE');
       this.context.fillText(
         `${startDate} - ${endDate}`,
         this.center.x,
-        startY + lineHeight * 1.2
+        startY + lines.length * lineHeight + lineHeight * 0.6
       );
       
-      // Activity group (smaller, gray)
-      this.context.font = `500 ${this.size / 72}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
-      this.context.fillStyle = '#64748B';
-      if (activityGroup) {
-        this.context.fillText(
-          activityGroup.name,
-          this.center.x,
-          startY + lineHeight * 2.3
-        );
-      }
-      // Ring name
+      // Ring name only (skip activity group - too much info)
       if (ring) {
         this.context.fillText(
           ring.name,
           this.center.x,
-          startY + lineHeight * 3.2
+          startY + lines.length * lineHeight + lineHeight * 1.4
         );
       }
     } else {
@@ -1095,30 +1080,25 @@ class YearWheel {
       
       if (visibleRings.length > 0) {
         const orgDataWidth = this.size / 23; // Ring width
-        const ringNameBandWidth = this.size / 48; // Ring name band width (slightly wider)
-        const ringSpacing = this.size / 200; // Better spacing between elements
+        const ringNameBandWidth = this.size / 80; // Thinner ring name band
+        const gapBetweenRings = this.size / 200; // Minimal gap between rings
         let currentRadius = currentMaxRadius;
         
         visibleRings.forEach((ring, ringIndex) => {
-          // Simplified: name band → gap → ring
+          // Reserve space for ring name band ABOVE the ring
           if (this.showRingNames) {
             currentRadius -= ringNameBandWidth;
-            this.drawRingNameBand(ring.name, currentRadius, ringNameBandWidth);
-            currentRadius -= ringSpacing; // Gap after name band
+            currentRadius -= gapBetweenRings;
+            // Add extra gap between ring name and activities for better spacing
+            currentRadius -= this.size / 250;
           }
           
-          // Draw ring
+          // Draw the actual ring
           currentRadius -= orgDataWidth;
           const ringStartRadius = currentRadius;
           
-          // Draw light background for this outer ring (design draft style)
-          this.context.beginPath();
-          this.context.arc(this.center.x, this.center.y, ringStartRadius, 0, Math.PI * 2);
-          this.context.arc(this.center.x, this.center.y, ringStartRadius + orgDataWidth, 0, Math.PI * 2, true);
-          const bgColors = ['#F8FAFC', '#F1F5F9', '#E2E8F0'];
-          this.context.fillStyle = bgColors[ringIndex % bgColors.length];
-          this.context.fill();
-          this.context.closePath();
+          // Ring name band will be drawn at the OUTER edge (above ring)
+          const nameBandRadius = ringStartRadius + orgDataWidth;
           
           // Filter items for this ring that also have visible activity group (label is optional)
           const ringItems = this.organizationData.items.filter(item => {
@@ -1127,6 +1107,18 @@ class YearWheel {
             const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
             return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
           });
+          
+          // Only draw background if ring has visible items
+          if (ringItems.length > 0) {
+            // Draw light background for this outer ring (design draft style)
+            this.context.beginPath();
+            this.context.arc(this.center.x, this.center.y, ringStartRadius, 0, Math.PI * 2);
+            this.context.arc(this.center.x, this.center.y, ringStartRadius + orgDataWidth, 0, Math.PI * 2, true);
+            const bgColors = ['#F8FAFC', '#F1F5F9', '#E2E8F0'];
+            this.context.fillStyle = bgColors[ringIndex % bgColors.length];
+            this.context.fill();
+            this.context.closePath();
+          }
           
           ringItems.forEach((item) => {
             let itemStartDate = new Date(item.startDate);
@@ -1178,7 +1170,7 @@ class YearWheel {
               color: itemColor,
               textFunction: this.setCircleSectionAktivitetTitle.bind(this),
               text: item.name,
-              fontSize: this.size / 58, // Optimized for readability
+              fontSize: this.size / 48, // Larger so text fits without truncation
               isVertical: false,
               highlight: isHovered,
             });
@@ -1193,8 +1185,10 @@ class YearWheel {
             });
           });
           
-          // Add gap after ring (before next name band)
-          currentRadius -= ringSpacing;
+          // Draw ring name band AFTER items so it's visible on top
+          if (this.showRingNames) {
+            this.drawRingNameBand(ring.name, nameBandRadius, ringNameBandWidth);
+          }
         });
         
         // Set currentMaxRadius to current position
@@ -1202,87 +1196,55 @@ class YearWheel {
       }
     }
     
-    // Draw month names ring if enabled - with refined styling
-    const monthNameWidth = this.size / 22; // Slightly wider for better prominence
-    const monthRingGap = this.size / 200; // Consistent with other spacing
-    let monthNameStartRadius = currentMaxRadius - monthNameWidth - monthRingGap;
+    // Reserve space for month and week rings (draw them LATER after inner rings)
+    const monthNameWidth = this.size / 30;
+    const weekRingWidth = this.size / 35;
     
+    // Calculate positions - NO GAPS between month and week rings
+    let monthNameStartRadius = currentMaxRadius - monthNameWidth;
+    let weekStartRadius = monthNameStartRadius - weekRingWidth;
+    
+    // Reduce currentMaxRadius to leave space for BOTH rings
     if (this.showMonthRing) {
-      // Enhanced color palette with better contrast and visual appeal
-      const enhancedMonthColors = [
-        '#334155', // Deep slate
-        '#3B4252', // Darker blue-gray
-        '#334155', // Deep slate
-        '#3B4252', // Darker blue-gray
-        '#334155', // Deep slate
-        '#3B4252', // Darker blue-gray
-        '#334155', // Deep slate
-        '#3B4252', // Darker blue-gray
-        '#334155', // Deep slate
-        '#3B4252', // Darker blue-gray
-        '#334155', // Deep slate
-        '#3B4252', // Darker blue-gray
-      ];
-      
-      this.addMonthlyCircleSection({
-        startRadius: monthNameStartRadius,
-        width: monthNameWidth,
-        spacingAngle: 0, // Remove spacing for seamless look
-        color: null,
-        textFunction: this.setCircleSectionTitle.bind(this),
-        texts: this.monthNames,
-        fontSize: this.size / 55, // Larger font for better readability
-        colors: enhancedMonthColors,
-        isVertical: true,
-      });
-      currentMaxRadius = monthNameStartRadius - monthRingGap;
+      currentMaxRadius -= monthNameWidth;
     }
-
-    // Draw week ring if enabled - subtle and clean
-    const weekRingWidth = this.size / 35; // Slightly narrower
-    const weekRingGap = this.size / 200; // Match other spacing
-    let weekStartRadius = currentMaxRadius - weekRingWidth - weekRingGap;
-    
     if (this.showWeekRing) {
-      const weekData = this.generateWeeks();
-      const numberOfWeeks = weekData.length;
-      
-      // Very subtle color for week numbers
-      const weekColors = Array(numberOfWeeks).fill('#94A3B8'); // Lighter gray
-      
-      this.addMonthlyCircleSection({
-        startRadius: weekStartRadius,
-        width: weekRingWidth,
-        spacingAngle: 0, // Seamless
-        color: null,
-        textFunction: this.setCircleSectionSmallTitle.bind(this), // Use smaller text function
-        texts: weekData,
-        fontSize: this.size / 85, // Smaller, more subtle
-        colors: weekColors,
-        isVertical: true,
-        lineHeight: this.lineHeight,
-        numberOfIntervals: numberOfWeeks,
-      });
-      currentMaxRadius = weekStartRadius - this.size / 250;
+      currentMaxRadius -= weekRingWidth;
+    }
+    
+    // Add gap after week ring before inner rings start
+    const gapAfterWeekRing = this.size / 200;
+    if (this.showWeekRing) {
+      currentMaxRadius -= gapAfterWeekRing;
     }
 
     // Draw monthly events (inner sections) - they expand to fill available space
-    const baseEventSpacing = this.size / 400; // Tighter spacing for cleaner look
-    const ringNameBandWidth = this.size / 50; // Match outer ring band width
-    const innerRings = this.organizationData.rings.filter(r => r.type === 'inner' && r.visible);
+    const ringNameBandWidth = this.size / 65; // Slightly THICKER ring name bands
+    const ringNamePadding = this.size / 120; // MORE padding around ring name bands
+    const ringPadding = this.size / 300; // Small padding between rings for visual separation
+    
+    // Filter out EMPTY rings (rings with no items)
+    const innerRings = this.organizationData.rings.filter(r => {
+      if (r.type !== 'inner' || !r.visible) return false;
+      // Only include rings that have at least one visible item
+      const hasItems = this.organizationData.items.some(item => {
+        const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
+        const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
+        return item.ringId === r.id && hasVisibleActivityGroup && labelOk;
+      });
+      return hasItems;
+    });
     const numberOfEvents = innerRings.length;
     
-    // Calculate total spacing needed (including ring name bands)
+    // Calculate total spacing needed (ring name bands with padding + ring separation)
     let totalSpacing = 0;
-    for (let i = 0; i < numberOfEvents - 1; i++) {
-      const currentRing = innerRings[i];
-      const nextRing = innerRings[i + 1];
-      // Add spacing between rings
-      const spacingMultiplier = (currentRing.orientation === "vertical" || nextRing.orientation === "vertical") ? 2.5 : 1;
-      totalSpacing += baseEventSpacing * spacingMultiplier;
-      // Add space for ring name band between rings
+    if (numberOfEvents > 1) {
+      // Add small padding between rings for visual separation
+      totalSpacing += (numberOfEvents - 1) * ringPadding;
+      
+      // Add space for ring name bands between rings (band + padding on each side)
       if (this.showRingNames) {
-        totalSpacing += ringNameBandWidth;
+        totalSpacing += (numberOfEvents - 1) * (ringNameBandWidth + ringNamePadding * 2);
       }
     }
     
@@ -1296,22 +1258,14 @@ class YearWheel {
 
     for (let i = 0; i < numberOfEvents; i++) {
       const ring = innerRings[i];
-      const percentage = (1 / (numberOfEvents - i)) * 1.1;
+      // Make inner rings slightly smaller (reduce from 1.1 to 1.05)
+      const percentage = (1 / (numberOfEvents - i)) * 1.05;
       const newEventWidth =
         i !== numberOfEvents - 1
           ? remainingEventWidth * percentage
           : remainingEventWidth;
       remainingEventWidth -= newEventWidth;
 
-      // Draw light background for this inner ring (design draft style)
-      this.context.beginPath();
-      this.context.arc(this.center.x, this.center.y, eventRadius, 0, Math.PI * 2);
-      this.context.arc(this.center.x, this.center.y, eventRadius + newEventWidth, 0, Math.PI * 2, true);
-      const bgColors = ['#FEF9F3', '#FEF3F2', '#F0FDF4', '#EFF6FF'];
-      this.context.fillStyle = bgColors[i % bgColors.length];
-      this.context.fill();
-      this.context.closePath();
-      
       // Draw aktiviteter across the full ring width
       if (visibleInnerRings.length > 0) {
         const ringItems = this.organizationData.items.filter(item => {
@@ -1319,6 +1273,18 @@ class YearWheel {
           const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
           return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
         });
+        
+        // Only draw background if ring has visible items
+        if (ringItems.length > 0) {
+          // Draw light background for this inner ring (design draft style)
+          this.context.beginPath();
+          this.context.arc(this.center.x, this.center.y, eventRadius, 0, Math.PI * 2);
+          this.context.arc(this.center.x, this.center.y, eventRadius + newEventWidth, 0, Math.PI * 2, true);
+          const bgColors = ['#FEF9F3', '#FEF3F2', '#F0FDF4', '#EFF6FF'];
+          this.context.fillStyle = bgColors[i % bgColors.length];
+          this.context.fill();
+          this.context.closePath();
+        }
         
         ringItems.forEach((item) => {
           let itemStartDate = new Date(item.startDate);
@@ -1386,22 +1352,84 @@ class YearWheel {
         });
       }
       
-      // Draw ring name band after this ring
+      // Store ring name info for drawing LATER (after month/week rings)
       if (this.showRingNames) {
-        const nameBandStartRadius = eventRadius + newEventWidth;
-        this.drawRingNameBand(ring.name, nameBandStartRadius, ringNameBandWidth);
+        const ringNameRadius = eventRadius + newEventWidth;
+        if (!this.innerRingNamesToDraw) this.innerRingNamesToDraw = [];
+        this.innerRingNamesToDraw.push({
+          name: ring.name,
+          radius: ringNameRadius,
+          width: ringNameBandWidth
+        });
       }
       
-      // Calculate spacing for next ring
+      // Move eventRadius for next ring
+      eventRadius += newEventWidth;
+      
+      // Add spacing between rings for better visual separation
       if (i < numberOfEvents - 1) {
-        const nextRing = innerRings[i + 1];
-        const spacingMultiplier = (ring.orientation === "vertical" || nextRing.orientation === "vertical") ? 2.5 : 1;
-        let spacing = baseEventSpacing * spacingMultiplier;
+        eventRadius += ringPadding; // Small padding between rings
+        
         if (this.showRingNames) {
-          spacing += ringNameBandWidth;
+          eventRadius += ringNamePadding; // Padding before ring name
+          eventRadius += ringNameBandWidth; // Ring name band
+          eventRadius += ringNamePadding; // Padding after ring name
         }
-        eventRadius += newEventWidth + spacing;
       }
+    }
+
+    // NOW draw month ring AFTER inner rings (so it's on top)
+    if (this.showMonthRing) {
+      // Enhanced color palette
+      const enhancedMonthColors = [
+        '#334155', '#3B4252', '#334155', '#3B4252',
+        '#334155', '#3B4252', '#334155', '#3B4252',
+        '#334155', '#3B4252', '#334155', '#3B4252',
+      ];
+      
+      this.addMonthlyCircleSection({
+        startRadius: monthNameStartRadius,
+        width: monthNameWidth,
+        spacingAngle: 0,
+        color: null,
+        textFunction: this.setCircleSectionTitle.bind(this),
+        texts: this.monthNames,
+        fontSize: this.size / 70, // Much smaller font
+        colors: enhancedMonthColors,
+        isVertical: true,
+      });
+    }
+
+    // NOW draw week ring AFTER inner rings (so it's on top)
+    if (this.showWeekRing) {
+      const weekData = this.generateWeeks();
+      const numberOfWeeks = weekData.length;
+      
+      // Very subtle color for week numbers
+      const weekColors = Array(numberOfWeeks).fill('#94A3B8'); // Lighter gray
+      
+      this.addMonthlyCircleSection({
+        startRadius: weekStartRadius,
+        width: weekRingWidth,
+        spacingAngle: 0, // Seamless
+        color: null,
+        textFunction: this.setCircleSectionSmallTitle.bind(this), // Use smaller text function
+        texts: weekData,
+        fontSize: this.size / 85, // Smaller, more subtle
+        colors: weekColors,
+        isVertical: true,
+        lineHeight: this.lineHeight,
+        numberOfIntervals: numberOfWeeks,
+      });
+    }
+
+    // NOW draw inner ring names that were collected earlier
+    if (this.showRingNames && this.innerRingNamesToDraw && this.innerRingNamesToDraw.length > 0) {
+      for (const ringName of this.innerRingNamesToDraw) {
+        this.drawRingNameBand(ringName.name, ringName.radius, ringName.width);
+      }
+      // Clear the array for next render
+      this.innerRingNamesToDraw = [];
     }
 
     this.context.restore();

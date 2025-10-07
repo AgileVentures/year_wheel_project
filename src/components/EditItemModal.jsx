@@ -73,7 +73,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <div className="bg-white rounded-sm shadow-xl w-full max-w-md mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Redigera händelse</h2>
@@ -96,7 +96,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               type="text"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+              className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="t.ex., Julkampanj"
@@ -114,7 +114,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
             <select
               value={formData.ringId}
               onChange={(e) => handleChange('ringId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
               {organizationData.rings.map((ring) => (
                 <option key={ring.id} value={ring.id}>
@@ -132,7 +132,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
             <select
               value={formData.activityId}
               onChange={(e) => handleChange('activityId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
               {organizationData.activities.map((activity) => (
                 <option key={activity.id} value={activity.id}>
@@ -150,7 +150,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
             <select
               value={formData.labelId}
               onChange={(e) => handleChange('labelId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
               {organizationData.labels.map((label) => (
                 <option key={label.id} value={label.id}>
@@ -170,7 +170,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => handleChange('startDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                   errors.startDate ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
@@ -186,7 +186,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => handleChange('endDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                   errors.endDate ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
@@ -205,7 +205,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               type="text"
               value={formData.time}
               onChange={(e) => handleChange('time', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               placeholder="t.ex., 09:00 - 17:00"
             />
           </div>
@@ -215,7 +215,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium flex items-center gap-1"
+              className="px-4 py-2 border border-red-300 text-red-600 rounded-sm hover:bg-red-50 transition-colors text-sm font-medium flex items-center gap-1"
             >
               <Trash2 size={16} />
               <span>Radera</span>
@@ -224,13 +224,13 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
               >
                 Avbryt
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
               >
                 Spara
               </button>
@@ -242,7 +242,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+          <div className="bg-white rounded-sm shadow-xl p-6 max-w-sm mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Radera händelse?
             </h3>
@@ -252,13 +252,13 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
               >
                 Avbryt
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition-colors text-sm font-medium"
               >
                 Radera
               </button>

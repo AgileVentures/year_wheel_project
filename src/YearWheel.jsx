@@ -178,7 +178,7 @@ function YearWheel({
               max="200"
               value={zoomLevel}
               onChange={(e) => setZoomLevel(parseInt(e.target.value))}
-              className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              className="w-32 h-2 bg-gray-200 rounded-sm appearance-none cursor-pointer"
               title={`${zoomLevel}%`}
             />
             <button

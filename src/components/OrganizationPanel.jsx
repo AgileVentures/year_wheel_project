@@ -461,7 +461,7 @@ function OrganizationPanel({
             placeholder="Sök"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50"
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50"
           />
         </div>
 
@@ -502,7 +502,7 @@ function OrganizationPanel({
                   return (
                     <div
                       key={item.id}
-                      className="group bg-white border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow"
+                      className="group bg-white border border-gray-200 rounded-sm p-3 hover:shadow-sm transition-shadow"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -571,7 +571,7 @@ function OrganizationPanel({
                 {!searchQuery && (
                   <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     <Plus size={16} />
                     <span>Lägg till aktivitet</span>
@@ -1117,7 +1117,7 @@ function OrganizationPanel({
       {/* Settings Modal */}
       {isSettingsOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="bg-white rounded-sm shadow-xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Inställningar</h2>
               <button
@@ -1135,7 +1135,7 @@ function OrganizationPanel({
                   value={title || ''}
                   onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
                   placeholder="Ange titel..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
               </div>
 
@@ -1154,7 +1154,7 @@ function OrganizationPanel({
                       }));
                       onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#F5E6D3' }}></div>
@@ -1175,7 +1175,7 @@ function OrganizationPanel({
                       }));
                       onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
@@ -1196,7 +1196,7 @@ function OrganizationPanel({
                       }));
                       onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#8B5CF6' }}></div>
@@ -1217,7 +1217,7 @@ function OrganizationPanel({
                       }));
                       onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#1E3A8A' }}></div>
@@ -1238,7 +1238,7 @@ function OrganizationPanel({
                       }));
                       onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-lg transition-colors"
+                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
                       <div className="w-8 h-8 rounded" style={{ backgroundColor: '#334155' }}></div>
@@ -1295,7 +1295,7 @@ function OrganizationPanel({
                     handleRefresh();
                     setIsSettingsOpen(false);
                   }}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
                   Ladda om data
                 </button>

@@ -11,7 +11,7 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
 
   return (
     <div
-      className="fixed bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-64"
+      className="fixed bg-white rounded-sm shadow-xl border border-gray-200 z-50 w-64"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
