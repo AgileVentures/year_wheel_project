@@ -21,7 +21,7 @@ function YearWheel({
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const [zoomLevel, setZoomLevel] = useState(70); // Percentage: 50% to 200%, default 70% for better fit
+  const [zoomLevel, setZoomLevel] = useState(100); // Percentage: 50% to 200%, default 100%
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
   const [downloadFormat, setDownloadFormat] = useState("png");
@@ -39,14 +39,14 @@ function YearWheel({
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     
-    // Base canvas size is 2000px x 2000px (square)
-    const baseSize = 2000;
+    // Base display size at 100% zoom is 1000px
+    const baseDisplaySize = 1000;
     
     // Calculate zoom to fit (with some padding)
-    const widthZoom = (containerWidth * 0.9 / baseSize) * 100;
-    const heightZoom = ((containerHeight - 80) * 0.9 / baseSize) * 100; // 80px for toolbar
+    const widthZoom = (containerWidth * 0.9 / baseDisplaySize) * 100;
+    const heightZoom = ((containerHeight - 80) * 0.9 / baseDisplaySize) * 100; // 80px for toolbar
     
-    const optimalZoom = Math.min(widthZoom, heightZoom, 100);
+    const optimalZoom = Math.min(widthZoom, heightZoom, 200);
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
   };
 
@@ -74,10 +74,12 @@ function YearWheel({
   }, [year, yearEventsCollection]);
 
   // Apply zoom to canvas display size (separate from wheel creation)
+  // Base display size is 1000px at 100% zoom (50% of internal 2000px resolution)
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const displaySize = 2000 * (zoomLevel / 100);
+    const baseDisplaySize = 1000; // 100% zoom = 1000px display
+    const displaySize = baseDisplaySize * (zoomLevel / 100);
     canvas.style.width = `${displaySize}px`;
     canvas.style.height = `${displaySize}px`;
     canvas.style.maxWidth = 'none';
