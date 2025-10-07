@@ -39,13 +39,12 @@ function YearWheel({
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     
-    // Base canvas size is 1000px width, 1250px height
-    const baseWidth = 1000;
-    const baseHeight = 1250;
+    // Base canvas size is 2000px x 2000px (square)
+    const baseSize = 2000;
     
     // Calculate zoom to fit (with some padding)
-    const widthZoom = (containerWidth * 0.9 / baseWidth) * 100;
-    const heightZoom = ((containerHeight - 80) * 0.9 / baseHeight) * 100; // 80px for toolbar
+    const widthZoom = (containerWidth * 0.9 / baseSize) * 100;
+    const heightZoom = ((containerHeight - 80) * 0.9 / baseSize) * 100; // 80px for toolbar
     
     const optimalZoom = Math.min(widthZoom, heightZoom, 100);
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
@@ -138,8 +137,8 @@ function YearWheel({
         <canvas
           ref={canvasRef}
           style={{
-            width: `${1000 * (zoomLevel / 100)}px`,
-            height: `${1000 * (zoomLevel / 100)}px`,
+            width: `${2000 * (zoomLevel / 100)}px`,
+            height: `${2000 * (zoomLevel / 100)}px`,
             maxWidth: 'none',
             aspectRatio: '1 / 1',
           }}
