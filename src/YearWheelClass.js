@@ -587,12 +587,10 @@ class YearWheel {
   }
 
   create() {
-    // Ensure perfect square canvas
+    // Set canvas internal dimensions (for drawing resolution)
     this.canvas.width = this.size;
-    this.canvas.height = this.size; 
-    this.canvas.style.width = `${this.size}px`;
-    this.canvas.style.height = `${this.size}px`;
-    this.canvas.style.aspectRatio = '1 / 1';
+    this.canvas.height = this.size;
+    // Note: DO NOT set canvas.style here - let React component control display size for zoom
 
     // Apply rotation and draw rotating elements (months, events)
     this.drawRotatingElements();

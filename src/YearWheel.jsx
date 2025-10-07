@@ -73,6 +73,17 @@ function YearWheel({
     setEvents(yearEventsCollection || []);
   }, [year, yearEventsCollection]);
 
+  // Apply zoom to canvas display size (separate from wheel creation)
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const displaySize = 2000 * (zoomLevel / 100);
+    canvas.style.width = `${displaySize}px`;
+    canvas.style.height = `${displaySize}px`;
+    canvas.style.maxWidth = 'none';
+    canvas.style.aspectRatio = '1 / 1';
+  }, [zoomLevel]);
+
   // Create and render the wheel
   useEffect(() => {
     if (!canvasRef.current) return;
