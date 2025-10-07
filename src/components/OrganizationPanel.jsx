@@ -24,10 +24,12 @@ function OrganizationPanel({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isZoomedToMonth, setIsZoomedToMonth] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
-    rings: true,
+    innerRings: true,
+    outerRings: true,
     activities: true,
     labels: true
   });
+  const [expandedInnerRings, setExpandedInnerRings] = useState({});
 
   // Calendar helpers
   const monthNames = [
@@ -47,7 +49,12 @@ function OrganizationPanel({
 
   // Search filter - must be defined before calendar days
   const searchLower = searchQuery.toLowerCase();
-  const filteredRings = organizationData.rings.filter(ring =>
+  const innerRings = organizationData.rings.filter(ring => ring.type === 'inner');
+  const outerRings = organizationData.rings.filter(ring => ring.type === 'outer');
+  const filteredInnerRings = innerRings.filter(ring =>
+    ring.name.toLowerCase().includes(searchLower)
+  );
+  const filteredOuterRings = outerRings.filter(ring =>
     ring.name.toLowerCase().includes(searchLower)
   );
   const filteredActivities = organizationData.activities.filter(activity =>
@@ -237,10 +244,24 @@ function OrganizationPanel({
   };
 
   // Ring management
-  const handleAddRing = () => {
+  const handleAddInnerRing = () => {
     const newRing = {
       id: `ring-${Date.now()}`,
-      name: `Ring ${organizationData.rings.length + 1}`,
+      name: `Innerring ${innerRings.length + 1}`,
+      type: 'inner',
+      visible: true,
+      data: Array.from({ length: 12 }, () => [""]),
+      orientation: 'vertical'
+    };
+    const updatedRings = [...organizationData.rings, newRing];
+    onOrganizationChange({ ...organizationData, rings: updatedRings });
+  };
+
+  const handleAddOuterRing = () => {
+    const newRing = {
+      id: `ring-${Date.now()}`,
+      name: `Ytterring ${outerRings.length + 1}`,
+      type: 'outer',
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       visible: true
     };
@@ -266,6 +287,32 @@ function OrganizationPanel({
       ring.id === ringId ? { ...ring, color: newColor } : ring
     );
     onOrganizationChange({ ...organizationData, rings: updatedRings });
+  };
+
+  const handleInnerRingTextChange = (ringId, monthIndex, text) => {
+    const updatedRings = organizationData.rings.map(ring => {
+      if (ring.id === ringId && ring.type === 'inner') {
+        const newData = [...ring.data];
+        newData[monthIndex] = [text];
+        return { ...ring, data: newData };
+      }
+      return ring;
+    });
+    onOrganizationChange({ ...organizationData, rings: updatedRings });
+  };
+
+  const handleInnerRingOrientationChange = (ringId, orientation) => {
+    const updatedRings = organizationData.rings.map(ring =>
+      ring.id === ringId ? { ...ring, orientation } : ring
+    );
+    onOrganizationChange({ ...organizationData, rings: updatedRings });
+  };
+
+  const toggleInnerRingExpanded = (ringId) => {
+    setExpandedInnerRings(prev => ({
+      ...prev,
+      [ringId]: !prev[ringId]
+    }));
   };
 
   // Activity management
@@ -663,25 +710,124 @@ function OrganizationPanel({
 
         {activeView === 'disc' && (
         <>
-        {/* RINGE Section */}
+        {/* INNERRINGAR Section */}
         <div className="px-4 py-3 border-b border-gray-200">
           <button
-            onClick={() => toggleSection('rings')}
+            onClick={() => toggleSection('innerRings')}
             className="w-full flex items-center justify-between mb-2"
           >
             <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              RINGAR
+              INNERRINGAR
             </h2>
             <ChevronDown 
               size={14} 
-              className={`text-gray-400 transition-transform ${expandedSections.rings ? 'rotate-180' : ''}`}
+              className={`text-gray-400 transition-transform ${expandedSections.innerRings ? 'rotate-180' : ''}`}
             />
           </button>
 
-          {expandedSections.rings && (
+          {expandedSections.innerRings && (
             <>
+              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                Innerringar visas mellan centrum och månaderna. Använd dem för kvartalstexter, mål eller annan fri text.
+              </p>
+
+              <div className="space-y-2 mb-2">
+                {filteredInnerRings.map((ring) => (
+                  <div key={ring.id} className="border border-gray-200 rounded-lg">
+                    <div className="group flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-t-lg">
+                      <button
+                        onClick={() => toggleInnerRingExpanded(ring.id)}
+                        className="p-0.5 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        <ChevronDown 
+                          size={14} 
+                          className={`text-gray-600 transition-transform ${expandedInnerRings[ring.id] ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                      <input
+                        type="checkbox"
+                        checked={ring.visible}
+                        onChange={() => toggleRing(ring.id)}
+                        className="w-3 h-3 rounded"
+                      />
+                      <input
+                        type="text"
+                        value={ring.name}
+                        onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
+                        className="flex-1 text-xs text-gray-700 font-medium bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
+                      />
+                      <select
+                        value={ring.orientation || 'vertical'}
+                        onChange={(e) => handleInnerRingOrientationChange(ring.id, e.target.value)}
+                        className="text-xs border border-gray-300 rounded px-1 py-0.5"
+                      >
+                        <option value="vertical">Vertikal</option>
+                        <option value="horizontal">Horisontell</option>
+                      </select>
+                      {innerRings.length > 1 && (
+                        <button
+                          onClick={() => handleRemoveRing(ring.id)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {expandedInnerRings[ring.id] && (
+                      <div className="p-2 space-y-2 bg-white">
+                        {monthNames.map((monthName, index) => (
+                          <div key={index} className="flex items-start gap-2">
+                            <span className="text-xs text-gray-500 w-16 pt-1">{monthName}:</span>
+                            <textarea
+                              value={(ring.data && ring.data[index] && ring.data[index][0]) || ''}
+                              onChange={(e) => handleInnerRingTextChange(ring.id, index, e.target.value)}
+                              placeholder="Fri text..."
+                              className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 resize-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                              rows="1"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleAddInnerRing}
+                className="w-full flex items-center justify-center gap-1 px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors text-xs"
+              >
+                <Plus size={12} />
+                <span>Lägg till innerring</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* YTTERRINGAR Section */}
+        <div className="px-4 py-3 border-b border-gray-200">
+          <button
+            onClick={() => toggleSection('outerRings')}
+            className="w-full flex items-center justify-between mb-2"
+          >
+            <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+              YTTERRINGAR
+            </h2>
+            <ChevronDown 
+              size={14} 
+              className={`text-gray-400 transition-transform ${expandedSections.outerRings ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {expandedSections.outerRings && (
+            <>
+              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                Ytterringar visas utanför månaderna. Använd dem för att kategorisera händelser i avdelningar, team eller målgrupper.
+              </p>
+
               <div className="space-y-1 mb-2">
-                {filteredRings.map((ring) => (
+                {filteredOuterRings.map((ring) => (
                   <div
                     key={ring.id}
                     className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
@@ -694,7 +840,7 @@ function OrganizationPanel({
                     />
                     <input
                       type="color"
-                      value={ring.color}
+                      value={ring.color || '#cccccc'}
                       onChange={(e) => handleRingColorChange(ring.id, e.target.value)}
                       className="w-4 h-4 rounded cursor-pointer"
                     />
@@ -704,7 +850,10 @@ function OrganizationPanel({
                       onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
-                    {organizationData.rings.length > 1 && (
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {countRingItems(ring.id)}
+                    </span>
+                    {outerRings.length > 0 && (
                       <button
                         onClick={() => handleRemoveRing(ring.id)}
                         className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
@@ -720,21 +869,31 @@ function OrganizationPanel({
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">Visa:</span>
                   <button
-                    onClick={() => handleShowRings(true)}
+                    onClick={() => {
+                      const updatedRings = organizationData.rings.map(ring =>
+                        ring.type === 'outer' ? { ...ring, visible: true } : ring
+                      );
+                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                    }}
                     className="text-blue-600 hover:text-blue-700"
                   >
                     Alla
                   </button>
                   <span className="text-gray-400">|</span>
                   <button
-                    onClick={() => handleShowRings(false)}
+                    onClick={() => {
+                      const updatedRings = organizationData.rings.map(ring =>
+                        ring.type === 'outer' ? { ...ring, visible: false } : ring
+                      );
+                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                    }}
                     className="text-blue-600 hover:text-blue-700"
                   >
                     Ingen
                   </button>
                 </div>
                 <button
-                  onClick={handleAddRing}
+                  onClick={handleAddOuterRing}
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
