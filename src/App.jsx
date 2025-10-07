@@ -7,13 +7,18 @@ import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
 function App() {
-  const [title, setTitle] = useState(sampleOrgData.title || "Organisation");
-  const [year, setYear] = useState(sampleOrgData.year || "2025");
+  const [title, setTitle] = useState("Organisation");
+  const [year, setYear] = useState("2025");
   // Plandisc color scheme from screenshot: beige/cream, mint green, coral, light blue
-  const [colors, setColors] = useState(sampleOrgData.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+  const [colors, setColors] = useState(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
   
-  // New organization data structure with sample data
-  const [organizationData, setOrganizationData] = useState(sampleOrgData);
+  // Start with empty organization data (no sample data on initial load)
+  const [organizationData, setOrganizationData] = useState({
+    rings: [],
+    activities: [],
+    labels: [],
+    items: []
+  });
   const [zoomedMonth, setZoomedMonth] = useState(null);
   
   const [ringsData, setRingsData] = useState([
@@ -96,23 +101,41 @@ function App() {
   };
 
   const handleReset = () => {
-    if (!confirm('Är du säker på att du vill återställa allt?')) return;
+    if (!confirm('Är du säker på att du vill återställa allt? All data kommer att raderas.')) return;
     
-    setTitle(sampleOrgData.title || "Organisation");
-    setYear(sampleOrgData.year || "2025");
-    const defaultColors = sampleOrgData.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+    // Reset to completely empty state
+    setTitle("Organisation");
+    setYear("2025");
+    const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     setColors(defaultColors);
-    setOrganizationData(sampleOrgData);
+    
+    // Empty organization data - no sample items
+    setOrganizationData({
+      rings: [],
+      activities: [],
+      labels: [],
+      items: []
+    });
+    
+    // Empty rings data
     setRingsData([
       {
         data: Array.from({ length: 12 }, () => [""]),
         orientation: "vertical"
       }
     ]);
+    
     setShowYearEvents(false);
     setShowWeekRing(true);
     setShowMonthRing(true);
+    setShowSeasonRing(true);
     localStorage.removeItem("yearWheelData");
+    
+    // Show success feedback
+    const event = new CustomEvent('showToast', { 
+      detail: { message: 'Allt har återställts!', type: 'success' } 
+    });
+    window.dispatchEvent(event);
   };
 
   const handleSaveToFile = () => {
