@@ -37,6 +37,7 @@ class YearWheel {
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showRingNames = options.showRingNames !== undefined ? options.showRingNames : true;
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
+    this.zoomedQuarter = options.zoomedQuarter !== undefined && options.zoomedQuarter !== null ? options.zoomedQuarter : null;
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
     this.initAngle = -15 - 90;
@@ -184,6 +185,102 @@ class YearWheel {
     }
 
     return weeks;
+  }
+
+  // Get month names for the current zoom level
+  getMonthsForZoom() {
+    if (this.zoomedMonth !== null) {
+      // Single month view - return just that month
+      return [this.monthNames[this.zoomedMonth]];
+    } else if (this.zoomedQuarter !== null) {
+      // Quarter view - return 3 months for that quarter
+      const quarterStartMonth = this.zoomedQuarter * 3;
+      return [
+        this.monthNames[quarterStartMonth],
+        this.monthNames[quarterStartMonth + 1],
+        this.monthNames[quarterStartMonth + 2],
+      ];
+    } else {
+      // Full year view - return all 12 months
+      return this.monthNames;
+    }
+  }
+
+  // Get the date range for current zoom level
+  getDateRangeForZoom() {
+    const year = parseInt(this.year);
+    
+    if (this.zoomedMonth !== null) {
+      // Single month view
+      const startDate = new Date(year, this.zoomedMonth, 1);
+      const endDate = new Date(year, this.zoomedMonth + 1, 0, 23, 59, 59);
+      return { startDate, endDate, months: [this.zoomedMonth] };
+    } else if (this.zoomedQuarter !== null) {
+      // Quarter view (Q1: 0-2, Q2: 3-5, Q3: 6-8, Q4: 9-11)
+      const quarterStartMonth = this.zoomedQuarter * 3;
+      const startDate = new Date(year, quarterStartMonth, 1);
+      const endDate = new Date(year, quarterStartMonth + 3, 0, 23, 59, 59);
+      return { 
+        startDate, 
+        endDate, 
+        months: [quarterStartMonth, quarterStartMonth + 1, quarterStartMonth + 2] 
+      };
+    } else {
+      // Full year view
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+      return { 
+        startDate, 
+        endDate, 
+        months: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] 
+      };
+    }
+  }
+
+  // Get weeks for the current zoom level
+  getWeeksForZoom() {
+    const year = parseInt(this.year);
+    const { startDate, endDate } = this.getDateRangeForZoom();
+    
+    // Generate all weeks for the year
+    const allWeeks = this.generateWeeks();
+    
+    // If not zoomed, return all weeks
+    if (this.zoomedMonth === null && this.zoomedQuarter === null) {
+      return allWeeks;
+    }
+    
+    // Filter weeks that fall within the zoomed date range
+    const filteredWeeks = [];
+    const weekIndices = [];
+    
+    // For each week, check if it overlaps with the zoomed range
+    let currentDate = new Date(year, 0, 1);
+    while (currentDate.getDay() !== 1) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+    
+    let weekIndex = 0;
+    while (weekIndex < allWeeks.length) {
+      const weekStart = new Date(currentDate);
+      const weekEnd = new Date(currentDate);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      // Check if week overlaps with zoomed range
+      if (weekEnd >= startDate && weekStart <= endDate) {
+        filteredWeeks.push(allWeeks[weekIndex]);
+        weekIndices.push(weekIndex);
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 7);
+      weekIndex++;
+      
+      if (currentDate.getFullYear() > year && currentDate.getMonth() > 0) {
+        break;
+      }
+    }
+    
+    return filteredWeeks;
   }
 
   // Check if two date ranges overlap
@@ -1097,28 +1194,19 @@ class YearWheel {
         ? color
         : colors[i % colors.length] || "#000000"; // Default to black if undefined
 
-      // Calculate opacity based on zoomedMonth
-      let opacity = 1;
-      let isZoomedMonth = false;
-      if (this.zoomedMonth !== null && numberOfIntervals === 12) {
-        // This is likely a month ring, apply fade effect
-        isZoomedMonth = i === this.zoomedMonth;
-        opacity = isZoomedMonth ? 1 : 0.15;
-      }
-
       this.addCircleSection({
         spacingAngle, // This should now be 0 to avoid gaps
         startRadius,
         width,
         startAngle: i * intervalAngle,
         endAngle: (i + 1) * intervalAngle,
-        highlight: isZoomedMonth,
+        highlight: false,
         color: sectionColor,
         textFunction,
         text,
         fontSize,
         isVertical,
-        opacity,
+        opacity: 1,
       });
     }
   }
@@ -1740,21 +1828,46 @@ class YearWheel {
     let currentMaxRadius = this.maxRadius;
     
     // Helper function to convert a date to angular position
+    // Get date range for current zoom level
+    const { startDate: zoomStartDate, endDate: zoomEndDate, months: zoomMonths } = this.getDateRangeForZoom();
+    
     // This aligns with the month ring where each month is 30 degrees (360/12)
+    // When zoomed, the entire zoomed range spans 360 degrees
     const dateToAngle = (date) => {
-      const month = date.getMonth(); // 0-11
-      const dayOfMonth = date.getDate(); // 1-31
-      const daysInMonth = new Date(date.getFullYear(), month + 1, 0).getDate();
-      
-      // Each month gets exactly 30 degrees regardless of actual day count
-      const monthAngle = month * 30;
-      const dayAngle = (dayOfMonth - 1) / daysInMonth * 30; // Proportional within the month
-      
-      return monthAngle + dayAngle;
+      if (this.zoomedMonth !== null) {
+        // Single month zoom: Map this month to 360 degrees
+        const dayOfMonth = date.getDate(); // 1-31
+        const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+        // Day 1 = 0°, last day = 360°
+        return ((dayOfMonth - 1) / daysInMonth) * 360;
+      } else if (this.zoomedQuarter !== null) {
+        // Quarter zoom: Map 3 months to 360 degrees (each month gets 120°)
+        const month = date.getMonth();
+        const quarterStartMonth = this.zoomedQuarter * 3;
+        const monthInQuarter = month - quarterStartMonth; // 0, 1, or 2
+        const dayOfMonth = date.getDate();
+        const daysInMonth = new Date(date.getFullYear(), month + 1, 0).getDate();
+        
+        // Each of 3 months gets 120 degrees
+        const monthAngle = monthInQuarter * 120;
+        const dayAngle = ((dayOfMonth - 1) / daysInMonth) * 120;
+        return monthAngle + dayAngle;
+      } else {
+        // Full year view: Each month gets 30 degrees (360/12)
+        const month = date.getMonth(); // 0-11
+        const dayOfMonth = date.getDate(); // 1-31
+        const daysInMonth = new Date(date.getFullYear(), month + 1, 0).getDate();
+        
+        const monthAngle = month * 30;
+        const dayAngle = (dayOfMonth - 1) / daysInMonth * 30;
+        
+        return monthAngle + dayAngle;
+      }
     };
     
-    const minDate = new Date(this.year, 0, 1);
-    const maxDate = new Date(this.year, 11, 31, 23, 59, 59);
+    // Use zoomed date range or full year
+    const minDate = zoomStartDate;
+    const maxDate = zoomEndDate;
     
     // Define visibility filters at higher scope for use in both outer and inner ring drawing
     const visibleRings = this.organizationData.rings.filter(r => r.visible && r.type === 'outer');
@@ -2075,14 +2188,17 @@ class YearWheel {
 
     // NOW draw month ring AFTER inner rings (so it's on top)
     if (this.showMonthRing) {
+      // Get months for current zoom level
+      const monthsToDisplay = this.getMonthsForZoom();
+      const numberOfMonths = monthsToDisplay.length;
+      
       // Use template colors alternating between first two colors for month ring
       const color1 = this.sectionColors[0];
       const color2 = this.sectionColors[1] || this.sectionColors[0]; // Fallback to first if only one color
-      const monthColors = [
-        color1, color2, color1, color2,
-        color1, color2, color1, color2,
-        color1, color2, color1, color2,
-      ];
+      const monthColors = [];
+      for (let i = 0; i < numberOfMonths; i++) {
+        monthColors.push(i % 2 === 0 ? color1 : color2);
+      }
       
       this.addMonthlyCircleSection({
         startRadius: monthNameStartRadius,
@@ -2090,16 +2206,18 @@ class YearWheel {
         spacingAngle: 0,
         color: null,
         textFunction: this.setCircleSectionTitle.bind(this),
-        texts: this.monthNames,
+        texts: monthsToDisplay,
         fontSize: this.size / 70, // Much smaller font
         colors: monthColors,
         isVertical: true,
+        numberOfIntervals: numberOfMonths,
       });
     }
 
     // NOW draw week ring AFTER inner rings (so it's on top)
     if (this.showWeekRing) {
-      const weekData = this.generateWeeks();
+      // Get weeks for current zoom level
+      const weekData = this.getWeeksForZoom();
       const numberOfWeeks = weekData.length;
       
       // Use lighter version of third template color (or second if only 2 colors)

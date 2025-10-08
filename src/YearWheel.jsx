@@ -17,19 +17,29 @@ function YearWheel({
   showMonthRing,
   showRingNames,
   zoomedMonth,
+  zoomedQuarter,
+  onSetZoomedMonth,
+  onSetZoomedQuarter,
+  onWheelReady,
   onUpdateAktivitet,
   onDeleteAktivitet,
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const notifiedWheelRef = useRef(null); // Track which wheel instance was notified
   const [zoomLevel, setZoomLevel] = useState(100); // Percentage: 50% to 200%, default 100%
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
-  const [downloadFormat, setDownloadFormat] = useState("png");
   const [isSpinning, setIsSpinning] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
+  
+  const monthNames = [
+    'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
+    'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
+  ];
 
   const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
   const zoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 50));
@@ -73,6 +83,16 @@ function YearWheel({
   useEffect(() => {
     setEvents(yearEventsCollection || []);
   }, [year, yearEventsCollection]);
+  
+  // Sync selectedMonthIndex with zoomedMonth prop (only when prop changes from outside)
+  useEffect(() => {
+    // Only update if the change came from outside (e.g., from calendar sidebar)
+    if (zoomedMonth !== null) {
+      setSelectedMonthIndex(zoomedMonth);
+    } else if (zoomedMonth === null && zoomedQuarter === null) {
+      setSelectedMonthIndex(null);
+    }
+  }, [zoomedMonth, zoomedQuarter]);
 
   // Apply zoom to canvas display size (separate from wheel creation)
   // Base display size is 1000px at 100% zoom (50% of internal 2000px resolution)
@@ -114,6 +134,7 @@ function YearWheel({
         showMonthRing,
         showRingNames,
         zoomedMonth,
+        zoomedQuarter,
         onItemClick: handleItemClick,
         onUpdateAktivitet: handleUpdateAktivitet,
       }
@@ -139,6 +160,7 @@ function YearWheel({
     showMonthRing,
     showRingNames,
     zoomedMonth,
+    zoomedQuarter,
     handleItemClick,
     handleUpdateAktivitet,
   ]);
@@ -149,10 +171,16 @@ function YearWheel({
       yearWheel.updateOrganizationData(organizationData);
     }
   }, [organizationData, yearWheel]);
-
-  const downloadImage = () => {
-    yearWheel.downloadImage(downloadFormat);
-  };
+  
+  // Notify parent when wheel instance changes (only once per instance)
+  useEffect(() => {
+    if (yearWheel && yearWheel !== notifiedWheelRef.current) {
+      notifiedWheelRef.current = yearWheel;
+      if (onWheelReady) {
+        onWheelReady(yearWheel);
+      }
+    }
+  }, [yearWheel, onWheelReady]);
 
   const toggleSpinning = () => {
     if (isSpinning) {
@@ -233,24 +261,60 @@ function YearWheel({
             </button>
           </div>
 
-          {/* Download Controls */}
+          {/* Date Zoom Controls */}
           <div className="flex gap-2 items-center border-l border-gray-200 pl-3">
+            <span className="text-xs font-medium text-gray-600">Zooma:</span>
             <select
-              value={downloadFormat}
-              onChange={(e) => setDownloadFormat(e.target.value)}
-              className="px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+              value={selectedMonthIndex !== null ? selectedMonthIndex : ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '') {
+                  setSelectedMonthIndex(null);
+                  if (onSetZoomedMonth) onSetZoomedMonth(null);
+                  if (onSetZoomedQuarter) onSetZoomedQuarter(null);
+                } else {
+                  const monthIndex = parseInt(value);
+                  setSelectedMonthIndex(monthIndex);
+                  if (onSetZoomedMonth) onSetZoomedMonth(monthIndex);
+                  if (onSetZoomedQuarter) onSetZoomedQuarter(null);
+                }
+              }}
+              className="px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white min-w-[110px]"
             >
-              <option value="png">PNG (Transparent)</option>
-              <option value="png-white">PNG (Vit bakgrund)</option>
-              <option value="jpeg">JPEG</option>
-              <option value="svg">SVG</option>
+              <option value="">Hela året</option>
+              {monthNames.map((month, index) => (
+                <option key={index} value={index}>{month}</option>
+              ))}
             </select>
-            <button
-              onClick={downloadImage}
-              className="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded text-xs font-medium transition-colors"
-            >
-              Ladda ner
-            </button>
+            
+            <div className="flex gap-1">
+              {[1, 2, 3, 4].map((quarter) => (
+                <button
+                  key={quarter}
+                  onClick={() => {
+                    const quarterIndex = quarter - 1;
+                    if (zoomedQuarter === quarterIndex) {
+                      // Toggle off
+                      if (onSetZoomedQuarter) onSetZoomedQuarter(null);
+                      setSelectedMonthIndex(null);
+                    } else {
+                      // Set quarter
+                      if (onSetZoomedQuarter) onSetZoomedQuarter(quarterIndex);
+                      if (onSetZoomedMonth) onSetZoomedMonth(null);
+                      setSelectedMonthIndex(null);
+                    }
+                  }}
+                  className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                    zoomedQuarter === (quarter - 1)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  title={`Kvartal ${quarter}`}
+                >
+                  Q{quarter}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

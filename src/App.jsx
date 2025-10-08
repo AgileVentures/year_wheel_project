@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
@@ -34,6 +34,7 @@ function App() {
     items: []
   });
   const [zoomedMonth, setZoomedMonth] = useState(null);
+  const [zoomedQuarter, setZoomedQuarter] = useState(null);
   
   // Keep ringsData for backward compatibility when loading old files
   const [ringsData, setRingsData] = useState([
@@ -49,6 +50,8 @@ function App() {
   const [showWeekRing, setShowWeekRing] = useState(true);
   const [showMonthRing, setShowMonthRing] = useState(true);
   const [showRingNames, setShowRingNames] = useState(true);
+  const [downloadFormat, setDownloadFormat] = useState("png");
+  const [yearWheelRef, setYearWheelRef] = useState(null);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem("yearWheelData"));
@@ -219,6 +222,23 @@ function App() {
     window.dispatchEvent(event);
   };
 
+  // Memoize callbacks to prevent infinite loops
+  const handleUpdateAktivitet = useCallback((updatedItem) => {
+    setOrganizationData(prevData => ({
+      ...prevData,
+      items: prevData.items.map(item =>
+        item.id === updatedItem.id ? updatedItem : item
+      )
+    }));
+  }, []);
+
+  const handleDeleteAktivitet = useCallback((itemId) => {
+    setOrganizationData(prevData => ({
+      ...prevData,
+      items: prevData.items.filter(item => item.id !== itemId)
+    }));
+  }, []);
+
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -283,6 +303,9 @@ function App() {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         year={year}
         onYearChange={setYear}
+        onDownloadImage={() => yearWheelRef && yearWheelRef.downloadImage(downloadFormat)}
+        downloadFormat={downloadFormat}
+        onDownloadFormatChange={setDownloadFormat}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -300,6 +323,7 @@ function App() {
             colors={colors}
             onColorsChange={setColors}
             onZoomToMonth={setZoomedMonth}
+            onZoomToQuarter={setZoomedQuarter}
             showRingNames={showRingNames}
             onShowRingNamesChange={setShowRingNames}
           />
@@ -321,16 +345,12 @@ function App() {
               showMonthRing={showMonthRing}
               showRingNames={showRingNames}
               zoomedMonth={zoomedMonth}
-              onUpdateAktivitet={(updatedItem) => {
-                const updatedItems = organizationData.items.map(item =>
-                  item.id === updatedItem.id ? updatedItem : item
-                );
-                setOrganizationData({ ...organizationData, items: updatedItems });
-              }}
-              onDeleteAktivitet={(itemId) => {
-                const updatedItems = organizationData.items.filter(item => item.id !== itemId);
-                setOrganizationData({ ...organizationData, items: updatedItems });
-              }}
+              zoomedQuarter={zoomedQuarter}
+              onSetZoomedMonth={setZoomedMonth}
+              onSetZoomedQuarter={setZoomedQuarter}
+              onWheelReady={setYearWheelRef}
+              onUpdateAktivitet={handleUpdateAktivitet}
+              onDeleteAktivitet={handleDeleteAktivitet}
             />
           </div>
         </div>

@@ -11,6 +11,7 @@ function OrganizationPanel({
   colors,
   onColorsChange,
   onZoomToMonth,
+  onZoomToQuarter,
   showRingNames,
   onShowRingNamesChange
 }) {
@@ -24,7 +25,6 @@ function OrganizationPanel({
   const [selectedYear, setSelectedYear] = useState(2025);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isZoomedToMonth, setIsZoomedToMonth] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     innerRings: true,
     outerRings: true,
@@ -39,6 +39,9 @@ function OrganizationPanel({
     'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
   ];
   const daysOfWeek = ['må', 'ti', 'on', 'to', 'fr', 'lö', 'sö'];
+  
+  // Calculate current quarter (0-3) from selected month
+  const currentQuarter = Math.floor(selectedMonth / 3);
 
   const getDaysInMonth = (year, month) => {
     return new Date(year, month + 1, 0).getDate();
@@ -622,7 +625,7 @@ function OrganizationPanel({
               </div>
               <div className="grid grid-cols-7 gap-1">
                 {calendarDays.map((day, index) => {
-                  const hasEvents = day && eventsForMonth.some(event => {
+                  const hasEvents = day && aktiviteterForMonth.some(event => {
                     const startDate = new Date(event.startDate);
                     const endDate = new Date(event.endDate);
                     const currentDate = new Date(selectedYear, selectedMonth, day);
@@ -646,25 +649,6 @@ function OrganizationPanel({
                   );
                 })}
               </div>
-            </div>
-
-            {/* Zoom to Month Toggle */}
-            <div className="flex items-center gap-2 py-3 border-y border-gray-200">
-              <input
-                type="checkbox"
-                id="zoom-toggle-kalender"
-                checked={isZoomedToMonth}
-                onChange={(e) => {
-                  setIsZoomedToMonth(e.target.checked);
-                  if (onZoomToMonth) {
-                    onZoomToMonth(e.target.checked ? selectedMonth : null);
-                  }
-                }}
-                className="w-4 h-4 rounded border-gray-300"
-              />
-              <label htmlFor="zoom-toggle-kalender" className="text-xs text-gray-600 cursor-pointer">
-                Zooma in månad på hjulet
-              </label>
             </div>
 
             {/* Events List for Selected Month */}

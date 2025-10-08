@@ -1,6 +1,18 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image } from 'lucide-react';
 
-function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, onToggleSidebar, year = "2025", onYearChange }) {
+function Header({ 
+  onSave, 
+  onSaveToFile, 
+  onLoadFromFile, 
+  onReset, 
+  isSidebarOpen, 
+  onToggleSidebar, 
+  year = "2025", 
+  onYearChange,
+  onDownloadImage,
+  downloadFormat = "png",
+  onDownloadFormatChange
+}) {
   return (
     <header className="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -42,13 +54,15 @@ function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, 
           <span>Återställ</span>
         </button>
         
+        <div className="w-px h-6 bg-gray-300"></div>
+        
         <button
           onClick={onLoadFromFile}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
           title="Ladda från fil (.yrw)"
         >
           <Upload size={16} />
-          <span>Ladda</span>
+          <span>Importera</span>
         </button>
         
         <button
@@ -59,6 +73,32 @@ function Header({ onSave, onSaveToFile, onLoadFromFile, onReset, isSidebarOpen, 
           <Download size={16} />
           <span>Exportera</span>
         </button>
+        
+        <div className="w-px h-6 bg-gray-300"></div>
+        
+        {/* Download Image Controls */}
+        <select
+          value={downloadFormat}
+          onChange={(e) => onDownloadFormatChange && onDownloadFormatChange(e.target.value)}
+          className="px-2 py-1.5 border border-gray-300 rounded-sm text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+          title="Bildformat"
+        >
+          <option value="png">PNG (Transparent)</option>
+          <option value="png-white">PNG (Vit bakgrund)</option>
+          <option value="jpeg">JPEG</option>
+          <option value="svg">SVG</option>
+        </select>
+        
+        <button
+          onClick={onDownloadImage}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+          title="Ladda ner bild"
+        >
+          <Image size={16} />
+          <span>Ladda ner bild</span>
+        </button>
+        
+        <div className="w-px h-6 bg-gray-300"></div>
         
         <button
           onClick={onSave}
