@@ -1072,10 +1072,12 @@ function OrganizationPanel({
       </div>
 
       {/* Footer Branding */}
-      <div className="p-4 border-t border-gray-200 mt-auto">
-        <div className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'system-ui, sans-serif' }}>
-          YearWheel
-        </div>
+      <div className="p-6 border-t border-gray-200 mt-auto flex items-center justify-center">
+        <img 
+          src="/year_wheel_logo.svg" 
+          alt="YearWheel" 
+          className="w-44 hover:scale-105 transition-transform"
+        />
       </div>
 
       {/* Add Item Modal */}

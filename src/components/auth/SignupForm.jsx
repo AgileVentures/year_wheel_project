@@ -64,10 +64,10 @@ function SignupForm({ onToggleMode }) {
     <div className="w-full">
       <div>
         <h2 className="text-3xl font-bold mb-2 text-gray-900">
-          Kom igång
+          Skapa konto
         </h2>
-        <p className="text-gray-600 mb-8">
-          Skapa ditt konto och börja planera
+        <p className="text-gray-600 mb-6">
+          Inget kreditkort behövs • Kom igång på 30 sekunder
         </p>
 
         {error && (
@@ -125,9 +125,39 @@ function SignupForm({ onToggleMode }) {
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Skapar konto...' : 'Skapa konto'}
+            {loading ? 'Skapar konto...' : 'Skapa gratis konto'}
           </button>
         </form>
+
+        {/* Subtle benefits after signup */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <p className="text-xs text-gray-500 text-center mb-3">
+            Ingår i den kostnadsfria versionen:
+          </p>
+          <ul className="space-y-2 text-xs text-gray-600">
+            <li className="flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Upp till 2 årshjul
+            </li>
+            <li className="flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              1 team med upp till 3 medlemmar
+            </li>
+            <li className="flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Export som PNG och SVG
+            </li>
+          </ul>
+          <p className="text-xs text-gray-500 text-center mt-4">
+            Uppgradera när som helst för obegränsade hjul och team
+          </p>
+        </div>
 
         <div className="mt-6 text-center">
           <button

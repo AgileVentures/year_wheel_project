@@ -58,14 +58,25 @@ function ProfilePage({ onBack }) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Tillbaka till mina hjul</span>
-          </button>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+              title="Tillbaka"
+            >
+              <ArrowLeft size={22} />
+            </button>
+            <img 
+              src="/year_wheel_symbol.svg" 
+              alt="YearWheel" 
+              className="w-10 h-10"
+            />
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Min profil</h1>
+              <p className="text-xs text-gray-600">Kontoinställningar</p>
+            </div>
+          </div>
         </div>
       </header>
 

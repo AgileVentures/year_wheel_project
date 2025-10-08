@@ -161,84 +161,98 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex justify-between items-center">
+            {/* Left: Symbol & Navigation */}
+            <div className="flex items-center gap-8">
               <img 
-                src="/year_wheel_logo.svg" 
+                src="/year_wheel_symbol.svg" 
                 alt="YearWheel" 
-                className="w-16 h-16"
+                className="w-12 h-12 hover:scale-110 transition-transform"
               />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {currentView === 'wheels' && 'Mina hjul'}
-                  {currentView === 'teams' && 'Mina team'}
-                  {currentView === 'invitations' && 'Inbjudningar'}
-                </h1>
-                {currentView === 'wheels' && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    {wheels.length} {wheels.length === 1 ? 'hjul' : 'hjul'}
-                  </p>
-                )}
-              </div>
+              
+              {/* Icon-based Navigation */}
+              <nav className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentView('wheels')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-sm font-medium transition-all ${
+                    currentView === 'wheels'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  title="Mina hjul"
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                  <span className="text-sm">Hjul</span>
+                  {currentView === 'wheels' && wheels.length > 0 && (
+                    <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
+                      {wheels.length}
+                    </span>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setCurrentView('teams')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-sm font-medium transition-all ${
+                    currentView === 'teams'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  title="Mina team"
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-sm">Team</span>
+                </button>
+                
+                <button
+                  onClick={() => setCurrentView('invitations')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-sm font-medium transition-all relative ${
+                    currentView === 'invitations'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  title="Inbjudningar"
+                >
+                  <Mail className="w-5 h-5" />
+                  <span className="text-sm">Inbjudningar</span>
+                  {invitationCount > 0 && (
+                    <span className={`text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold ${
+                      currentView === 'invitations' 
+                        ? 'bg-white text-blue-600' 
+                        : 'bg-red-500 text-white'
+                    }`}>
+                      {invitationCount}
+                    </span>
+                  )}
+                </button>
+              </nav>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">{user?.email}</span>
+            
+            {/* Right: User Menu */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-600 hidden sm:inline">{user?.email}</span>
               <button
                 onClick={onShowProfile}
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
+                title="Min profil"
               >
-                Min profil
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
               </button>
               <button
                 onClick={handleSignOut}
-                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
+                title="Logga ut"
               >
-                Logga ut
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
               </button>
             </div>
-          </div>
-          
-          {/* Navigation Tabs */}
-          <div className="flex gap-2 border-b border-gray-200 -mb-px">
-            <button
-              onClick={() => setCurrentView('wheels')}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
-                currentView === 'wheels'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Hjul
-            </button>
-            <button
-              onClick={() => setCurrentView('teams')}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
-                currentView === 'teams'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              Team
-            </button>
-            <button
-              onClick={() => setCurrentView('invitations')}
-              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors relative ${
-                currentView === 'invitations'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <Mail className="w-4 h-4" />
-              Inbjudningar
-              {invitationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {invitationCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </header>

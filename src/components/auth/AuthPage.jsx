@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 
@@ -10,48 +10,53 @@ function AuthPage() {
   // Default logic:
   // - If invite for NEW user → signup
   // - If invite for EXISTING user → login
-  // - No invite → login
+  // - No invite → signup (default)
   const getDefaultMode = () => {
-    if (hasInviteToken && inviteIsNewUser === 'true') {
-      return 'signup';
+    if (hasInviteToken && inviteIsNewUser === 'false') {
+      return 'login';
     }
-    return 'login';
+    return 'signup';
   };
   
   const [mode, setMode] = useState(getDefaultMode());
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-6xl mx-auto">
-        {/* Large Logo Above Everything */}
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      {/* Hero Section with Logo */}
+      <div className="pt-12 pb-6 px-4">
+        <div className="max-w-7xl mx-auto text-center">
           <img 
             src="/year_wheel_logo.svg" 
-            alt="YearWheel Logo" 
-            className="w-32 h-32 mx-auto mb-4"
+            alt="YearWheel" 
+            className="w-80 h-auto md:w-96 md:h-auto mx-auto drop-shadow-2xl hover:scale-105 transition-transform duration-500 ease-out"
           />
-          <p className="text-xl text-gray-700 font-light">
-            Visualisera ditt år i ett cirkulärt format
-          </p>
+          <div className="mt-6">
+            <p className="text-base md:text-lg text-gray-600 font-medium">
+              Gratis att testa • Uppgradera för fler funktioner
+            </p>
+          </div>
         </div>
+      </div>
 
-        <div className="bg-white rounded-sm shadow-2xl overflow-hidden">
-          <div className="grid md:grid-cols-2 gap-0">
-            {/* Left Column - Marketing Content */}
-            <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-12 text-white flex flex-col justify-center">
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 pb-20">
+        <div className="bg-white rounded-sm shadow-2xl overflow-hidden border border-gray-100">
+          <div className="grid lg:grid-cols-5 gap-0">
+            {/* Left Column - Marketing Content (3/5 width) */}
+            <div className="lg:col-span-3 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-8 md:p-16 text-white flex flex-col justify-center">
               <div className="space-y-8">
-                {/* Main Description */}
+                {/* Main Headline */}
                 <div>
-                  <h2 className="text-3xl font-bold mb-4">
-                    Din årsplanering i ett ögonkast
-                  </h2>
-                  <p className="text-lg text-blue-100 leading-relaxed">
-                    YearWheel är ett visuellt verktyg som hjälper dig och ditt team att planera, 
-                    organisera och följa upp hela årets aktiviteter i ett intuitivt cirkelformat. 
-                    Från projektmilstolpar till kampanjer och events - allt på ett ställe.
+                  <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+                    Året i en bild – fatta beslut snabbare
+                  </h1>
+                  <p className="text-base md:text-lg text-blue-50 leading-relaxed">
+                    YearWheel gör din årsplanering tydlig, samlad och lätt att agera på. Du ser hela året på en gång, 
+                    hittar luckor och krockar direkt och får ett gemensamt språk för planering i teamet.
                   </p>
                 </div>
 
+                {/* Features */}
                 <div className="space-y-5">
                   <div className="flex items-start gap-4">
                     <div className="bg-white/20 rounded-sm p-3 backdrop-blur-sm flex-shrink-0">
@@ -61,10 +66,10 @@ function AuthPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">Cirkulär tidsvisualisering</h3>
+                      <h3 className="text-lg font-semibold mb-2">Cirkulär överblick som avslöjar mönster</h3>
                       <p className="text-blue-100 text-sm leading-relaxed">
-                        Se hela året i ett enda hjul där varje månad, vecka och dag är tydligt markerad. 
-                        Upptäck mönster och samband som är svåra att se i traditionella kalendrar.
+                        Se månader, veckor och dagar i ett intuitivt hjul. Upptäck säsongstoppar, kampanjfönster 
+                        och resurstoppar som lätt försvinner i traditionella kalendrar.
                       </p>
                     </div>
                   </div>
@@ -79,10 +84,10 @@ function AuthPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">Teamsamarbete i realtid</h3>
+                      <h3 className="text-lg font-semibold mb-2">Samarbete som håller farten uppe</h3>
                       <p className="text-blue-100 text-sm leading-relaxed">
-                        Skapa team, dela hjul och samarbeta med kollegor. Bjud in teammedlemmar med 
-                        en enkel länk och ge alla tillgång till samma översikt.
+                        Skapa team, dela hjul och arbeta i realtid. Bjud in med länk och ge alla samma uppdaterade 
+                        översikt – inga fler utdaterade filer eller parallella planer.
                       </p>
                     </div>
                   </div>
@@ -96,10 +101,10 @@ function AuthPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">Flexibla ringar & kategorier</h3>
+                      <h3 className="text-lg font-semibold mb-2">Smarta ringar som speglar din strategi</h3>
                       <p className="text-blue-100 text-sm leading-relaxed">
-                        Organisera aktiviteter i anpassade ringar - exempelvis inre ringar för strategiska 
-                        mål och yttre för operativa aktiviteter. Färgkoda med aktivitetsgrupper för bättre överblick.
+                        Ordna aktiviteter i egna ringar. Lägg mål och initiativ i de inre ringarna och dagliga 
+                        aktiviteter i de yttre. Färgkoda kategorier så att fokus och ansvar blir tydligt på en sekund.
                       </p>
                     </div>
                   </div>
@@ -113,25 +118,52 @@ function AuthPage() {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">Exportera & presentera</h3>
+                      <h3 className="text-lg font-semibold mb-2">Klart att dela och presentera</h3>
                       <p className="text-blue-100 text-sm leading-relaxed">
-                        Ladda ner ditt årshjul som högupplöst PNG eller SVG. Perfekt för presentationer, 
-                        styrelsemöten eller att skriva ut och sätta på väggen.
+                        Exportera som PNG eller SVG i hög upplösning. Använd direkt i presentationer, styrgrupper 
+                        och månadsmöten eller skriv ut och sätt på väggen.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-6 border-t border-white/20">
-                  <p className="text-sm text-blue-100 font-medium">
-                    ✨ Perfekt för strategisk planering, projektledning, marknadsföring, event och mycket mer
+                {/* Use Cases */}
+                <div className="bg-white/10 rounded-sm p-5 backdrop-blur-sm">
+                  <h3 className="text-lg font-semibold mb-3">Passar perfekt för</h3>
+                  <ul className="space-y-2 text-sm text-blue-100">
+                    <li className="flex items-center gap-2">
+                      <span className="text-white">•</span>
+                      Strategisk planering och kvartalsmål
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-white">•</span>
+                      Projektledning och resurssättning
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-white">•</span>
+                      Marknadsplaner och kampanjkalendrar
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-white">•</span>
+                      Event, lanseringar och utbildningar
+                    </li>
+                  </ul>
+                </div>
+
+                {/* CTA */}
+                <div className="pt-4 border-t border-white/20">
+                  <p className="text-base font-semibold">
+                    Kom igång på några minuter
+                  </p>
+                  <p className="text-sm text-blue-100 mt-2">
+                    Skapa ditt första hjul, bjud in teamet och få en gemensam bild av året som alla förstår – och vill följa.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Right Column - Login/Signup Form */}
-            <div className="p-12 flex items-center justify-center bg-gray-50">
+            {/* Right Column - Login/Signup Form (2/5 width) */}
+            <div className="lg:col-span-2 p-8 md:p-12 bg-gradient-to-br from-gray-50 to-white">
               <div className="w-full max-w-md">
                 {mode === 'login' ? (
                   <LoginForm onToggleMode={() => setMode('signup')} />
@@ -144,9 +176,9 @@ function AuthPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-sm text-gray-600">
-            © 2025 CommunitasLabs Inc. <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">communitaslabs.io</a>
+        <div className="text-center mt-12">
+          <p className="text-sm text-gray-500">
+            YearWheel Planner is a SaaS service created and operated by CommunitasLabs Inc. • <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors">communitaslabs.io</a>
           </p>
         </div>
       </div>
