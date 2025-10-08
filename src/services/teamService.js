@@ -304,18 +304,6 @@ export async function declineInvitation(invitationId) {
   if (error) throw error;
 }
 
-/**
- * Cancel/delete invitation (by team owner/admin)
- */
-export async function cancelInvitation(invitationId) {
-  const { error } = await supabase
-    .from('team_invitations')
-    .delete()
-    .eq('id', invitationId);
-
-  if (error) throw error;
-}
-
 // =============================================
 // WHEEL-TEAM ASSOCIATION
 // =============================================
