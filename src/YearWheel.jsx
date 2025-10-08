@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-/* eslint-disable react/prop-types */import { useRef, useEffect, useState } from "react";
+/* eslint-disable react/prop-types */import { useRef, useEffect, useState, useCallback } from "react";
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
 import EditAktivitetModal from "./components/EditAktivitetModal";
@@ -51,24 +51,24 @@ function YearWheel({
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
   };
 
-  const handleItemClick = (item, position) => {
+  const handleItemClick = useCallback((item, position) => {
     setSelectedItem(item);
     setTooltipPosition(position);
-  };
+  }, []);
 
-  const handleUpdateAktivitet = (updatedItem) => {
+  const handleUpdateAktivitet = useCallback((updatedItem) => {
     // This will be passed from App.jsx through props
     if (onUpdateAktivitet) {
       onUpdateAktivitet(updatedItem);
     }
-  };
+  }, [onUpdateAktivitet]);
 
-  const handleDeleteAktivitet = (itemId) => {
+  const handleDeleteAktivitet = useCallback((itemId) => {
     // This will be passed from App.jsx through props
     if (onDeleteAktivitet) {
       onDeleteAktivitet(itemId);
     }
-  };
+  }, [onDeleteAktivitet]);
 
   useEffect(() => {
     setEvents(yearEventsCollection || []);
@@ -115,16 +115,23 @@ function YearWheel({
         showRingNames,
         zoomedMonth,
         onItemClick: handleItemClick,
+        onUpdateAktivitet: handleUpdateAktivitet,
       }
     );
     setYearWheel(newYearWheel);
     newYearWheel.create();
+
+    // Cleanup function to remove event listeners from old instance
+    return () => {
+      if (newYearWheel && newYearWheel.cleanup) {
+        newYearWheel.cleanup();
+      }
+    };
   }, [
     ringsData,
     title,
     year,
     colors,
-    organizationData,
     showYearEvents,
     showSeasonRing,
     yearEventsCollection,
@@ -132,7 +139,16 @@ function YearWheel({
     showMonthRing,
     showRingNames,
     zoomedMonth,
+    handleItemClick,
+    handleUpdateAktivitet,
   ]);
+
+  // Separate effect to update organizationData without recreating the wheel
+  useEffect(() => {
+    if (yearWheel && yearWheel.updateOrganizationData) {
+      yearWheel.updateOrganizationData(organizationData);
+    }
+  }, [organizationData, yearWheel]);
 
   const downloadImage = () => {
     yearWheel.downloadImage(downloadFormat);

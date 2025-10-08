@@ -192,6 +192,7 @@ function EditAktivitetModal({ aktivitet, organizationData, onUpdateAktivitet, on
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => handleChange('endDate', e.target.value)}
+                min={formData.startDate}
                 className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                   errors.endDate ? 'border-red-500' : 'border-gray-300'
                 }`}
