@@ -3,10 +3,15 @@ import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
 import Toast from "./components/Toast";
+import { AuthProvider } from "./contexts/AuthContext.jsx";
+import { useAuth } from "./hooks/useAuth.jsx";
+import AuthPage from "./components/auth/AuthPage";
+import Dashboard from "./components/dashboard/Dashboard";
+import { fetchWheel, saveWheelData, updateWheel } from "./services/wheelService";
 import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
-function App() {
+function WheelEditor({ wheelId, onBackToDashboard }) {
   const [title, setTitle] = useState("Organisation");
   const [year, setYear] = useState("2025");
   // Grayscale color scheme (improved contrast)
@@ -52,8 +57,77 @@ function App() {
   const [showRingNames, setShowRingNames] = useState(true);
   const [downloadFormat, setDownloadFormat] = useState("png");
   const [yearWheelRef, setYearWheelRef] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
+  // Load wheel data from database
   useEffect(() => {
+    if (!wheelId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadWheel = async () => {
+      setIsLoading(true);
+      try {
+        const wheelData = await fetchWheel(wheelId);
+        
+        if (wheelData) {
+          setTitle(wheelData.title || "Organisation");
+          setYear(String(wheelData.year || new Date().getFullYear()));
+          
+          if (wheelData.colors) setColors(wheelData.colors);
+          
+          // Load organization data
+          if (wheelData.organizationData) {
+            const orgData = wheelData.organizationData;
+            
+            // Backward compatibility: convert old 'activities' to 'activityGroups'
+            if (orgData.activities && !orgData.activityGroups) {
+              orgData.activityGroups = orgData.activities;
+              delete orgData.activities;
+            }
+            
+            // Ensure at least one activity group exists
+            if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
+              orgData.activityGroups = [{
+                id: "group-1",
+                name: "Aktivitetsgrupp 1",
+                color: wheelData.colors?.[0] || "#334155",
+                visible: true
+              }];
+            }
+            
+            setOrganizationData(orgData);
+          }
+          
+          // Load other settings
+          if (wheelData.settings) {
+            if (wheelData.settings.showWeekRing !== undefined) setShowWeekRing(wheelData.settings.showWeekRing);
+            if (wheelData.settings.showMonthRing !== undefined) setShowMonthRing(wheelData.settings.showMonthRing);
+            if (wheelData.settings.showYearEvents !== undefined) setShowYearEvents(wheelData.settings.showYearEvents);
+            if (wheelData.settings.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
+            if (wheelData.settings.showRingNames !== undefined) setShowRingNames(wheelData.settings.showRingNames);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading wheel:', error);
+        const event = new CustomEvent('showToast', { 
+          detail: { message: 'Kunde inte ladda hjul', type: 'error' } 
+        });
+        window.dispatchEvent(event);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWheel();
+  }, [wheelId]);
+
+  // Fallback: Load from localStorage if no wheelId (backward compatibility)
+  useEffect(() => {
+    if (wheelId) return; // Skip if we have a wheelId
+    
     const data = JSON.parse(localStorage.getItem("yearWheelData"));
     if (data) {
       setRingsData(data.ringsData);
@@ -83,18 +157,22 @@ function App() {
       if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
       if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
     }
-  }, []);
+    
+    setIsLoading(false);
+  }, [wheelId]);
 
   // Ensure activity groups always have colors assigned from the palette
   useEffect(() => {
     if (organizationData?.activityGroups) {
       const needsColors = organizationData.activityGroups.some(group => !group.color);
       if (needsColors) {
-        const groupsWithColors = organizationData.activityGroups.map((group, index) => ({
-          ...group,
-          color: colors[index % colors.length]
-        }));
-        setOrganizationData({ ...organizationData, activityGroups: groupsWithColors });
+        setOrganizationData(prevData => {
+          const groupsWithColors = prevData.activityGroups.map((group, index) => ({
+            ...group,
+            color: colors[index % colors.length]
+          }));
+          return { ...prevData, activityGroups: groupsWithColors };
+        });
       }
     }
   }, [organizationData, colors]);
@@ -115,24 +193,73 @@ function App() {
     setYearEventsCollection(yearEvents);
   }, [year]);
 
-  const handleSave = () => {
-    const dataToSave = {
-      title,
-      year,
-      colors,
-      ringsData,
-      organizationData,
-      showWeekRing,
-      showMonthRing,
-      showRingNames,
-    };
-    localStorage.setItem("yearWheelData", JSON.stringify(dataToSave));
-    
-    // Show success feedback
-    const event = new CustomEvent('showToast', { 
-      detail: { message: 'Data har sparats!', type: 'success' } 
-    });
-    window.dispatchEvent(event);
+  const handleSave = async () => {
+    // If we have a wheelId, save to database
+    if (wheelId) {
+      setIsSaving(true);
+      try {
+        console.log('Saving wheel data...', {
+          wheelId,
+          title,
+          year,
+          organizationData: {
+            rings: organizationData.rings?.length || 0,
+            activityGroups: organizationData.activityGroups?.length || 0,
+            labels: organizationData.labels?.length || 0,
+            items: organizationData.items?.length || 0,
+          }
+        });
+        console.log('Full organizationData:', organizationData);
+        
+        // First, update wheel metadata (title, year, colors, settings)
+        await updateWheel(wheelId, {
+          title,
+          year: parseInt(year),
+          colors,
+          showWeekRing,
+          showMonthRing,
+          showRingNames,
+        });
+        
+        // Then, save organization data (rings, activity groups, labels, items)
+        await saveWheelData(wheelId, organizationData);
+        
+        console.log('Wheel data saved successfully');
+        
+        // Show success feedback
+        const event = new CustomEvent('showToast', { 
+          detail: { message: 'Data har sparats!', type: 'success' } 
+        });
+        window.dispatchEvent(event);
+      } catch (error) {
+        console.error('Error saving wheel:', error);
+        const event = new CustomEvent('showToast', { 
+          detail: { message: 'Kunde inte spara', type: 'error' } 
+        });
+        window.dispatchEvent(event);
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      // Fallback to localStorage for backward compatibility
+      const dataToSave = {
+        title,
+        year,
+        colors,
+        ringsData,
+        organizationData,
+        showWeekRing,
+        showMonthRing,
+        showRingNames,
+      };
+      localStorage.setItem("yearWheelData", JSON.stringify(dataToSave));
+      
+      // Show success feedback
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Data har sparats!', type: 'success' } 
+      });
+      window.dispatchEvent(event);
+    }
   };
 
   const handleReset = () => {
@@ -264,8 +391,41 @@ function App() {
           if (data.colors) setColors(data.colors);
           // Set ringsData first (for backward compatibility with old format)
           if (data.ringsData) setRingsData(data.ringsData);
-          // Then set organizationData (use empty structure if not present in file)
-          setOrganizationData(data.organizationData || { rings: [], activities: [], labels: [], items: [] });
+          
+          // Handle organizationData with backward compatibility
+          if (data.organizationData) {
+            const orgData = { ...data.organizationData };
+            
+            // Backward compatibility: convert old 'activities' to 'activityGroups'
+            if (orgData.activities && !orgData.activityGroups) {
+              orgData.activityGroups = orgData.activities;
+              delete orgData.activities;
+            }
+            
+            // Ensure required arrays exist
+            orgData.rings = orgData.rings || [];
+            orgData.activityGroups = orgData.activityGroups || [];
+            orgData.labels = orgData.labels || [];
+            orgData.items = orgData.items || [];
+            
+            console.log('Loaded organization data from file:', {
+              rings: orgData.rings.length,
+              activityGroups: orgData.activityGroups.length,
+              labels: orgData.labels.length,
+              items: orgData.items.length,
+            });
+            
+            setOrganizationData(orgData);
+          } else {
+            // Use default structure if not present in file
+            setOrganizationData({ 
+              rings: [], 
+              activityGroups: [], 
+              labels: [], 
+              items: [] 
+            });
+          }
+          
           if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
           if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
           if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
@@ -292,10 +452,20 @@ function App() {
     input.click();
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Laddar hjul...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
         onSave={handleSave}
+        isSaving={isSaving}
+        onBackToDashboard={wheelId ? onBackToDashboard : null}
         onSaveToFile={handleSaveToFile}
         onLoadFromFile={handleLoadFromFile}
         onReset={handleReset}
@@ -359,6 +529,49 @@ function App() {
       
       <Toast />
     </div>
+  );
+}
+
+function AppContent() {
+  const { user, loading } = useAuth();
+  const [selectedWheelId, setSelectedWheelId] = useState(null);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Laddar...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  // If a wheel is selected, show the editor
+  if (selectedWheelId) {
+    return (
+      <WheelEditor 
+        wheelId={selectedWheelId} 
+        onBackToDashboard={() => setSelectedWheelId(null)} 
+      />
+    );
+  }
+
+  // Otherwise show the dashboard
+  return (
+    <>
+      <Dashboard onSelectWheel={(wheelId) => setSelectedWheelId(wheelId)} />
+      <Toast />
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

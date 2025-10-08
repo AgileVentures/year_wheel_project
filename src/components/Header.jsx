@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft } from 'lucide-react';
 
 function Header({ 
   onSave, 
@@ -11,18 +11,31 @@ function Header({
   onYearChange,
   onDownloadImage,
   downloadFormat = "png",
-  onDownloadFormatChange
+  onDownloadFormatChange,
+  onBackToDashboard,
+  isSaving = false
 }) {
   return (
     <header className="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <button
-          onClick={onToggleSidebar}
-          className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
-          aria-label={isSidebarOpen ? "Close panel" : "Open panel"}
-        >
-          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {onBackToDashboard ? (
+          <button
+            onClick={onBackToDashboard}
+            className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-sm transition-colors text-gray-700"
+            aria-label="Back to dashboard"
+          >
+            <ArrowLeft size={20} />
+            <span className="text-sm font-medium">Mina hjul</span>
+          </button>
+        ) : (
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
+            aria-label={isSidebarOpen ? "Close panel" : "Open panel"}
+          >
+            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        )}
         
         <div className="flex items-center gap-4">
           <div className="text-2xl font-bold text-gray-900">
@@ -102,11 +115,12 @@ function Header({
         
         <button
           onClick={onSave}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors"
-          title="Spara till webbläsarlagring"
+          disabled={isSaving}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={onBackToDashboard ? "Spara till databas" : "Spara till webbläsarlagring"}
         >
           <Save size={16} />
-          <span>Spara</span>
+          <span>{isSaving ? 'Sparar...' : 'Spara'}</span>
         </button>
       </div>
     </header>
