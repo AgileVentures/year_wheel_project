@@ -1,4 +1,6 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen } from 'lucide-react';
+import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
+import { useState } from 'react';
 
 function Header({ 
   onSave, 
@@ -59,57 +61,80 @@ function Header({
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          onClick={onReset}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+        {/* File Operations Dropdown */}
+        <Dropdown
+          trigger={
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors">
+              <FolderOpen size={16} />
+              <span>Fil</span>
+              <ChevronDown size={14} />
+            </button>
+          }
         >
-          <RotateCcw size={16} />
-          <span>Återställ</span>
-        </button>
+          <DropdownItem
+            icon={Upload}
+            label="Importera (.yrw)"
+            onClick={onLoadFromFile}
+          />
+          <DropdownItem
+            icon={Download}
+            label="Exportera (.yrw)"
+            onClick={onSaveToFile}
+          />
+          <DropdownDivider />
+          <DropdownItem
+            icon={RotateCcw}
+            label="Återställ allt"
+            onClick={onReset}
+            variant="danger"
+          />
+        </Dropdown>
         
         <div className="w-px h-6 bg-gray-300"></div>
         
-        <button
-          onClick={onLoadFromFile}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-          title="Ladda från fil (.yrw)"
+        {/* Download Image Dropdown */}
+        <Dropdown
+          trigger={
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors">
+              <Image size={16} />
+              <span>Ladda ner bild</span>
+              <ChevronDown size={14} />
+            </button>
+          }
         >
-          <Upload size={16} />
-          <span>Importera</span>
-        </button>
-        
-        <button
-          onClick={onSaveToFile}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-          title="Spara till fil (.yrw)"
-        >
-          <Download size={16} />
-          <span>Exportera</span>
-        </button>
-        
-        <div className="w-px h-6 bg-gray-300"></div>
-        
-        {/* Download Image Controls */}
-        <select
-          value={downloadFormat}
-          onChange={(e) => onDownloadFormatChange && onDownloadFormatChange(e.target.value)}
-          className="px-2 py-1.5 border border-gray-300 rounded-sm text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-          title="Bildformat"
-        >
-          <option value="png">PNG (Transparent)</option>
-          <option value="png-white">PNG (Vit bakgrund)</option>
-          <option value="jpeg">JPEG</option>
-          <option value="svg">SVG</option>
-        </select>
-        
-        <button
-          onClick={onDownloadImage}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-          title="Ladda ner bild"
-        >
-          <Image size={16} />
-          <span>Ladda ner bild</span>
-        </button>
+          <DropdownItem
+            icon={FileDown}
+            label="PNG (Transparent)"
+            onClick={() => {
+              onDownloadFormatChange && onDownloadFormatChange('png');
+              onDownloadImage && onDownloadImage();
+            }}
+          />
+          <DropdownItem
+            icon={FileDown}
+            label="PNG (Vit bakgrund)"
+            onClick={() => {
+              onDownloadFormatChange && onDownloadFormatChange('png-white');
+              onDownloadImage && onDownloadImage();
+            }}
+          />
+          <DropdownItem
+            icon={FileDown}
+            label="JPEG"
+            onClick={() => {
+              onDownloadFormatChange && onDownloadFormatChange('jpeg');
+              onDownloadImage && onDownloadImage();
+            }}
+          />
+          <DropdownItem
+            icon={FileDown}
+            label="SVG"
+            onClick={() => {
+              onDownloadFormatChange && onDownloadFormatChange('svg');
+              onDownloadImage && onDownloadImage();
+            }}
+          />
+        </Dropdown>
         
         <div className="w-px h-6 bg-gray-300"></div>
         

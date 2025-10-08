@@ -1,17 +1,73 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { fetchUserWheels, createWheel, deleteWheel, duplicateWheel } from '../../services/wheelService';
+import { getMyInvitations } from '../../services/teamService';
 import WheelCard from './WheelCard';
+import CreateWheelModal from './CreateWheelModal';
+import ProfilePage from '../ProfilePage';
+import TeamList from '../teams/TeamList';
+import MyInvitations from '../teams/MyInvitations';
+import { Users, Mail, LayoutGrid } from 'lucide-react';
 
 function Dashboard({ onSelectWheel }) {
+  const [showProfile, setShowProfile] = useState(false);
+  
+  // Check URL params for initial view
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialView = urlParams.get('view') || 'wheels';
+  const [currentView, setCurrentView] = useState(initialView); // 'wheels', 'teams', 'invitations'
+  const [invitationCount, setInvitationCount] = useState(0);
+
+  // Load invitation count
+  useEffect(() => {
+    loadInvitationCount();
+  }, []);
+
+  const loadInvitationCount = async () => {
+    try {
+      const invitations = await getMyInvitations();
+      setInvitationCount(invitations.length);
+    } catch (err) {
+      console.error('Error loading invitations:', err);
+    }
+  };
+
+  const handleInvitationAccepted = () => {
+    // Refresh invitation count
+    loadInvitationCount();
+    // Switch to teams view
+    setCurrentView('teams');
+  };
+  
+  if (showProfile) {
+    return <ProfilePage onBack={() => setShowProfile(false)} />;
+  }
+  
+  return (
+    <DashboardContent 
+      onSelectWheel={onSelectWheel} 
+      onShowProfile={() => setShowProfile(true)}
+      currentView={currentView}
+      setCurrentView={setCurrentView}
+      invitationCount={invitationCount}
+      onInvitationAccepted={handleInvitationAccepted}
+      refreshInvitations={loadInvitationCount}
+    />
+  );
+}
+
+function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurrentView, invitationCount, onInvitationAccepted, refreshInvitations }) {
   const { user, signOut } = useAuth();
   const [wheels, setWheels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
-    loadWheels();
-  }, []);
+    if (currentView === 'wheels') {
+      loadWheels();
+    }
+  }, [currentView]);
 
   const loadWheels = async () => {
     setLoading(true);
@@ -27,13 +83,11 @@ function Dashboard({ onSelectWheel }) {
     }
   };
 
-  const handleCreateWheel = async () => {
+  const handleCreateWheel = async (wheelData) => {
     try {
-      const newWheelId = await createWheel({
-        title: 'Nytt hjul',
-        year: new Date().getFullYear(),
-      });
+      const newWheelId = await createWheel(wheelData);
       await loadWheels();
+      setShowCreateModal(false);
       // Show success feedback
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Nytt hjul skapat!', type: 'success' } 
@@ -45,6 +99,7 @@ function Dashboard({ onSelectWheel }) {
         detail: { message: 'Kunde inte skapa hjul', type: 'error' } 
       });
       window.dispatchEvent(event);
+      throw err;
     }
   };
 
@@ -106,20 +161,76 @@ function Dashboard({ onSelectWheel }) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Mina hjul</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {wheels.length} {wheels.length === 1 ? 'hjul' : 'hjul'}
-            </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {currentView === 'wheels' && 'Mina hjul'}
+                {currentView === 'teams' && 'Mina team'}
+                {currentView === 'invitations' && 'Inbjudningar'}
+              </h1>
+              {currentView === 'wheels' && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {wheels.length} {wheels.length === 1 ? 'hjul' : 'hjul'}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">{user?.email}</span>
+              <button
+                onClick={onShowProfile}
+                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              >
+                Min profil
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              >
+                Logga ut
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">{user?.email}</span>
+          
+          {/* Navigation Tabs */}
+          <div className="flex gap-2 border-b border-gray-200 -mb-px">
             <button
-              onClick={handleSignOut}
-              className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+              onClick={() => setCurrentView('wheels')}
+              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+                currentView === 'wheels'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+              }`}
             >
-              Logga ut
+              <LayoutGrid className="w-4 h-4" />
+              Hjul
+            </button>
+            <button
+              onClick={() => setCurrentView('teams')}
+              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+                currentView === 'teams'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Team
+            </button>
+            <button
+              onClick={() => setCurrentView('invitations')}
+              className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors relative ${
+                currentView === 'invitations'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              Inbjudningar
+              {invitationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {invitationCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -133,49 +244,80 @@ function Dashboard({ onSelectWheel }) {
           </div>
         )}
 
-        <div className="mb-6">
-          <button
-            onClick={handleCreateWheel}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Skapa nytt hjul
-          </button>
-        </div>
+        {/* Wheels View */}
+        {currentView === 'wheels' && (
+          <>
+            <div className="mb-6">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Skapa nytt hjul
+              </button>
+            </div>
 
-        {wheels.length === 0 ? (
-          <div className="text-center py-12">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-gray-600 mb-4 mt-4">Du har inga hjul ännu</p>
-            <button
-              onClick={handleCreateWheel}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Skapa ditt första hjul
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {wheels.map((wheel) => (
-              <WheelCard
-                key={wheel.id}
-                wheel={wheel}
-                onSelect={() => onSelectWheel(wheel.id)}
-                onDelete={() => handleDeleteWheel(wheel.id, wheel.title)}
-              />
-            ))}
-          </div>
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="mt-2 text-gray-600">Laddar hjul...</p>
+              </div>
+            ) : wheels.length === 0 ? (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-gray-600 mb-4 mt-4">Du har inga hjul ännu</p>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 inline-flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Skapa ditt första hjul
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {wheels.map((wheel) => (
+                  <WheelCard
+                    key={wheel.id}
+                    wheel={wheel}
+                    onSelect={() => onSelectWheel(wheel.id)}
+                    onDelete={() => handleDeleteWheel(wheel.id, wheel.title)}
+                    onUpdate={loadWheels}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Teams View */}
+        {currentView === 'teams' && (
+          <TeamList />
+        )}
+
+        {/* Invitations View */}
+        {currentView === 'invitations' && (
+          <MyInvitations 
+            onInvitationAccepted={onInvitationAccepted}
+          />
         )}
       </main>
+
+      {/* Create Wheel Modal */}
+      {showCreateModal && (
+        <CreateWheelModal
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateWheel}
+        />
+      )}
     </div>
   );
 }

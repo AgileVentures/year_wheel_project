@@ -1,14 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 
 function AuthPage() {
-  const [mode, setMode] = useState('login'); // 'login' or 'signup'
+  // Check if coming from an invite link and whether it's a new user
+  const hasInviteToken = sessionStorage.getItem('pendingInviteToken');
+  const inviteIsNewUser = sessionStorage.getItem('inviteIsNewUser');
+  
+  // Default logic:
+  // - If invite for NEW user → signup
+  // - If invite for EXISTING user → login
+  // - No invite → login
+  const getDefaultMode = () => {
+    if (hasInviteToken && inviteIsNewUser === 'true') {
+      return 'signup';
+    }
+    return 'login';
+  };
+  
+  const [mode, setMode] = useState(getDefaultMode());
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-sm shadow-2xl overflow-hidden">
           <div className="grid md:grid-cols-2 gap-0">
             {/* Left Column - Marketing Content */}
             <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-12 text-white flex flex-col justify-center">
@@ -24,7 +39,7 @@ function AuthPage() {
 
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
-                    <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
+                    <div className="bg-white/20 rounded-sm p-3 backdrop-blur-sm">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
@@ -39,7 +54,7 @@ function AuthPage() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
+                    <div className="bg-white/20 rounded-sm p-3 backdrop-blur-sm">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 20h9"></path>
                         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
@@ -54,7 +69,7 @@ function AuthPage() {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
+                    <div className="bg-white/20 rounded-sm p-3 backdrop-blur-sm">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>

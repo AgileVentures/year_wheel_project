@@ -161,6 +161,7 @@ export const createWheel = async (wheelData) => {
       show_week_ring: wheelData.showWeekRing !== undefined ? wheelData.showWeekRing : true,
       show_month_ring: wheelData.showMonthRing !== undefined ? wheelData.showMonthRing : true,
       show_ring_names: wheelData.showRingNames !== undefined ? wheelData.showRingNames : true,
+      team_id: wheelData.team_id || null,
     })
     .select()
     .single();

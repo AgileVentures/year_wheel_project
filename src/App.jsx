@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
@@ -7,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import AuthPage from "./components/auth/AuthPage";
 import Dashboard from "./components/dashboard/Dashboard";
+import InviteAcceptPage from "./components/InviteAcceptPage";
 import { fetchWheel, saveWheelData, updateWheel } from "./services/wheelService";
 import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
@@ -532,9 +534,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   );
 }
 
-function AppContent() {
+// Protected route wrapper
+function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  const [selectedWheelId, setSelectedWheelId] = useState(null);
 
   if (loading) {
     return (
@@ -545,33 +547,93 @@ function AppContent() {
   }
 
   if (!user) {
-    return <AuthPage />;
+    return <Navigate to="/auth" replace />;
   }
 
-  // If a wheel is selected, show the editor
-  if (selectedWheelId) {
-    return (
-      <WheelEditor 
-        wheelId={selectedWheelId} 
-        onBackToDashboard={() => setSelectedWheelId(null)} 
-      />
-    );
-  }
+  return children;
+}
 
-  // Otherwise show the dashboard
+// Wheel Editor Route Wrapper
+function WheelEditorRoute() {
+  const { wheelId } = useParams();
+  const navigate = useNavigate();
+
+  return (
+    <WheelEditor 
+      wheelId={wheelId} 
+      onBackToDashboard={() => navigate('/dashboard')} 
+    />
+  );
+}
+
+// Dashboard Route Wrapper
+function DashboardRoute() {
+  const navigate = useNavigate();
+
   return (
     <>
-      <Dashboard onSelectWheel={(wheelId) => setSelectedWheelId(wheelId)} />
+      <Dashboard onSelectWheel={(wheelId) => navigate(`/wheel/${wheelId}`)} />
       <Toast />
     </>
   );
 }
 
+function AppContent() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Laddar...</div>
+      </div>
+    );
+  }
+
+  // Check where to redirect authenticated users on /auth
+  const getAuthRedirect = () => {
+    const pendingToken = sessionStorage.getItem('pendingInviteToken');
+    console.log('getAuthRedirect - pendingToken:', pendingToken);
+    if (pendingToken) {
+      console.log('Redirecting to invite page:', `/invite/${pendingToken}`);
+      return `/invite/${pendingToken}`;
+    }
+    return '/dashboard';
+  };
+
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
+      <Route path="/invite/:token" element={<InviteAcceptPage />} />
+
+      {/* Protected routes */}
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <DashboardRoute />
+        </ProtectedRoute>
+      } />
+      <Route path="/wheel/:wheelId" element={
+        <ProtectedRoute>
+          <WheelEditorRoute />
+        </ProtectedRoute>
+      } />
+
+      {/* Redirect root to dashboard or auth */}
+      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/auth"} replace />} />
+      
+      {/* 404 redirect */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

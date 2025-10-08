@@ -45,13 +45,13 @@ function SignupForm({ onToggleMode }) {
           <h2 className="text-3xl font-bold mb-2 text-gray-900">
             Konto skapat!
           </h2>
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-sm">
             <p className="font-semibold mb-1">Bekräfta din e-post</p>
             <p className="text-sm">Vi har skickat ett bekräftelsemail till dig. Klicka på länken i mailet för att aktivera ditt konto.</p>
           </div>
           <button
             onClick={onToggleMode}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-sm transition-colors"
           >
             Gå till inloggning
           </button>
@@ -123,7 +123,7 @@ function SignupForm({ onToggleMode }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Skapar konto...' : 'Skapa konto'}
           </button>

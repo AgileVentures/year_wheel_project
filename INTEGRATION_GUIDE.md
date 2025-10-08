@@ -140,7 +140,7 @@ function LoginForm({ onToggleMode }) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+      <div className="bg-white shadow-md rounded-sm px-8 pt-6 pb-8 mb-4">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">
           Logga in
         </h2>
@@ -253,7 +253,7 @@ function SignupForm({ onToggleMode }) {
   if (success) {
     return (
       <div className="w-full max-w-md mx-auto">
-        <div className="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+        <div className="bg-white shadow-md rounded-sm px-8 pt-6 pb-8 mb-4">
           <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">
             Konto skapat!
           </h2>
@@ -273,7 +273,7 @@ function SignupForm({ onToggleMode }) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+      <div className="bg-white shadow-md rounded-sm px-8 pt-6 pb-8 mb-4">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">
           Skapa konto
         </h2>
@@ -517,7 +517,7 @@ function Dashboard() {
         <div className="mb-6">
           <button
             onClick={handleCreateWheel}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 font-medium"
           >
             + Skapa nytt hjul
           </button>
@@ -528,7 +528,7 @@ function Dashboard() {
             <p className="text-gray-600 mb-4">Du har inga hjul ännu</p>
             <button
               onClick={handleCreateWheel}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
             >
               Skapa ditt första hjul
             </button>
@@ -564,7 +564,7 @@ function WheelCard({ wheel, onSelect, onDelete }) {
   const formattedDate = new Date(wheel.updated_at).toLocaleDateString('sv-SE');
 
   return (
-    <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden">
+    <div className="bg-white rounded-sm shadow hover:shadow-md transition-shadow overflow-hidden">
       <div className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           {wheel.title}
