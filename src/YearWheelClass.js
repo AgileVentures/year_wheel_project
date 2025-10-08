@@ -216,6 +216,20 @@ class YearWheel {
     return luminance > 0.5 ? '#1F2937' : '#FFFFFF';
   }
 
+  // Create very light background color from template color for ring backgrounds
+  getLightBackgroundColor(hexColor) {
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    // Mix with white (75% white, 25% original color) for visible but subtle tint
+    const newR = Math.floor(r * 0.25 + 255 * 0.75);
+    const newG = Math.floor(g * 0.25 + 255 * 0.75);
+    const newB = Math.floor(b * 0.25 + 255 * 0.75);
+    
+    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  }
+
   // Adjust color on hover: darken light colors, lighten dark colors
   getHoverColor(hexColor) {
     const r = parseInt(hexColor.slice(1, 3), 16);
@@ -1020,8 +1034,10 @@ class YearWheel {
     for (const itemRegion of this.clickableItems) {
       if (this.isPointInItemRegion(x, y, itemRegion)) {
         if (this.options.onItemClick) {
+          // Look up fresh item data from organizationData instead of using cached snapshot
+          const freshItem = this.organizationData.items.find(i => i.id === itemRegion.item.id);
           // Pass client coordinates for tooltip positioning
-          this.options.onItemClick(itemRegion.item, {
+          this.options.onItemClick(freshItem || itemRegion.item, {
             x: event.clientX,
             y: event.clientY
           });
@@ -1243,12 +1259,13 @@ class YearWheel {
           
           // Only draw background if ring has visible items
           if (ringItems.length > 0) {
-            // Draw light background for this outer ring (design draft style)
+            // Draw light background for this outer ring using template colors
             this.context.beginPath();
             this.context.arc(this.center.x, this.center.y, ringStartRadius, 0, Math.PI * 2);
             this.context.arc(this.center.x, this.center.y, ringStartRadius + outerRingContentHeight, 0, Math.PI * 2, true);
-            const bgColors = ['#F8FAFC', '#F1F5F9', '#E2E8F0'];
-            this.context.fillStyle = bgColors[ringIndex % bgColors.length];
+            // Use template colors with very light tint for backgrounds
+            const templateColor = this.sectionColors[ringIndex % this.sectionColors.length];
+            this.context.fillStyle = this.getLightBackgroundColor(templateColor);
             this.context.fill();
             this.context.closePath();
           }
@@ -1521,11 +1538,13 @@ class YearWheel {
 
     // NOW draw month ring AFTER inner rings (so it's on top)
     if (this.showMonthRing) {
-      // Enhanced color palette
-      const enhancedMonthColors = [
-        '#334155', '#3B4252', '#334155', '#3B4252',
-        '#334155', '#3B4252', '#334155', '#3B4252',
-        '#334155', '#3B4252', '#334155', '#3B4252',
+      // Use template colors alternating between first two colors for month ring
+      const color1 = this.sectionColors[0];
+      const color2 = this.sectionColors[1] || this.sectionColors[0]; // Fallback to first if only one color
+      const monthColors = [
+        color1, color2, color1, color2,
+        color1, color2, color1, color2,
+        color1, color2, color1, color2,
       ];
       
       this.addMonthlyCircleSection({
@@ -1536,7 +1555,7 @@ class YearWheel {
         textFunction: this.setCircleSectionTitle.bind(this),
         texts: this.monthNames,
         fontSize: this.size / 70, // Much smaller font
-        colors: enhancedMonthColors,
+        colors: monthColors,
         isVertical: true,
       });
     }
@@ -1546,8 +1565,9 @@ class YearWheel {
       const weekData = this.generateWeeks();
       const numberOfWeeks = weekData.length;
       
-      // Very subtle color for week numbers
-      const weekColors = Array(numberOfWeeks).fill('#94A3B8'); // Lighter gray
+      // Use lighter version of third template color (or second if only 2 colors)
+      const weekBaseColor = this.sectionColors[2] || this.sectionColors[1] || this.sectionColors[0];
+      const weekColors = Array(numberOfWeeks).fill(weekBaseColor);
       
       this.addMonthlyCircleSection({
         startRadius: weekStartRadius,

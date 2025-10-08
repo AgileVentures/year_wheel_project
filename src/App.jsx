@@ -121,8 +121,7 @@ function App() {
       organizationData,
       showWeekRing,
       showMonthRing,
-      showYearEvents,
-      showSeasonRing,
+      showRingNames,
     };
     localStorage.setItem("yearWheelData", JSON.stringify(dataToSave));
     
@@ -198,8 +197,6 @@ function App() {
       organizationData,
       showWeekRing,
       showMonthRing,
-      showYearEvents,
-      showSeasonRing,
       showRingNames,
     };
 
