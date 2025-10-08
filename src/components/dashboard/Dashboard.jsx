@@ -163,17 +163,24 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {currentView === 'wheels' && 'Mina hjul'}
-                {currentView === 'teams' && 'Mina team'}
-                {currentView === 'invitations' && 'Inbjudningar'}
-              </h1>
-              {currentView === 'wheels' && (
-                <p className="text-sm text-gray-600 mt-1">
-                  {wheels.length} {wheels.length === 1 ? 'hjul' : 'hjul'}
-                </p>
-              )}
+            <div className="flex items-center gap-4">
+              <img 
+                src="/year_wheel_logo.svg" 
+                alt="YearWheel" 
+                className="w-16 h-16"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {currentView === 'wheels' && 'Mina hjul'}
+                  {currentView === 'teams' && 'Mina team'}
+                  {currentView === 'invitations' && 'Inbjudningar'}
+                </h1>
+                {currentView === 'wheels' && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {wheels.length} {wheels.length === 1 ? 'hjul' : 'hjul'}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">{user?.email}</span>
