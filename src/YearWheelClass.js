@@ -134,6 +134,64 @@ class YearWheel {
     return weeks;
   }
 
+  // Check if two date ranges overlap
+  dateRangesOverlap(start1, end1, start2, end2) {
+    return start1 <= end2 && start2 <= end1;
+  }
+
+  // Assign activities to non-overlapping tracks using greedy interval scheduling
+  assignActivitiesToTracks(items) {
+    if (items.length === 0) return { tracks: [], maxTracks: 0 };
+
+    // Sort items by start date
+    const sortedItems = [...items].sort((a, b) => 
+      new Date(a.startDate) - new Date(b.startDate)
+    );
+
+    // Track assignment: tracks[trackIndex] = array of items in that track
+    const tracks = [];
+    const itemToTrack = new Map(); // Store which track each item is assigned to
+
+    sortedItems.forEach(item => {
+      const itemStart = new Date(item.startDate);
+      const itemEnd = new Date(item.endDate);
+      
+      // Find the first available track for this item
+      let assignedTrack = -1;
+      for (let trackIndex = 0; trackIndex < tracks.length; trackIndex++) {
+        const track = tracks[trackIndex];
+        
+        // Check if this track has space (no overlaps with existing items)
+        const hasOverlap = track.some(existingItem => {
+          const existingStart = new Date(existingItem.startDate);
+          const existingEnd = new Date(existingItem.endDate);
+          return this.dateRangesOverlap(itemStart, itemEnd, existingStart, existingEnd);
+        });
+        
+        if (!hasOverlap) {
+          assignedTrack = trackIndex;
+          break;
+        }
+      }
+      
+      // If no available track found, create a new one
+      if (assignedTrack === -1) {
+        assignedTrack = tracks.length;
+        tracks.push([]);
+      }
+      
+      // Assign item to track
+      tracks[assignedTrack].push(item);
+      itemToTrack.set(item.id, assignedTrack);
+    });
+
+    return {
+      tracks,
+      maxTracks: tracks.length,
+      itemToTrack
+    };
+  }
+
   toRadians(deg) {
     return (deg * Math.PI) / 180;
   }
@@ -910,7 +968,8 @@ class YearWheel {
     }
 
     // Calculate angle (accounting for rotation)
-    let angle = Math.atan2(dy, dx) - this.toRadians(this.rotationAngle);
+    // this.rotationAngle is already in radians, no need to convert
+    let angle = Math.atan2(dy, dx) - this.rotationAngle;
     
     // Normalize angle to 0-2π range
     while (angle < 0) angle += Math.PI * 2;
@@ -1079,26 +1138,20 @@ class YearWheel {
     if (this.organizationData && this.organizationData.items && this.organizationData.items.length > 0) {
       
       if (visibleRings.length > 0) {
-        const orgDataWidth = this.size / 23; // Ring width
-        const ringNameBandWidth = this.size / 80; // Thinner ring name band
-        const gapBetweenRings = this.size / 200; // Minimal gap between rings
+        const ringNameBandWidth = this.size / 70; // CONSISTENT ring name band width
+        const standardGap = 0; // NO GAP - for testing
+        
+        // Each outer ring = content area + name band (same as inner rings)
+        const outerRingTotalHeight = this.size / 23; // Total height per outer ring
+        const outerRingContentHeight = this.showRingNames ? outerRingTotalHeight - ringNameBandWidth : outerRingTotalHeight;
+        
         let currentRadius = currentMaxRadius;
         
         visibleRings.forEach((ring, ringIndex) => {
-          // Reserve space for ring name band ABOVE the ring
-          if (this.showRingNames) {
-            currentRadius -= ringNameBandWidth;
-            currentRadius -= gapBetweenRings;
-            // Add extra gap between ring name and activities for better spacing
-            currentRadius -= this.size / 250;
-          }
-          
-          // Draw the actual ring
-          currentRadius -= orgDataWidth;
+          // Each ring = content area + name band as one unit
+          // Start by moving down for the entire ring (content + name band)
+          currentRadius -= outerRingTotalHeight; // Reserve space for whole ring
           const ringStartRadius = currentRadius;
-          
-          // Ring name band will be drawn at the OUTER edge (above ring)
-          const nameBandRadius = ringStartRadius + orgDataWidth;
           
           // Filter items for this ring that also have visible activity group (label is optional)
           const ringItems = this.organizationData.items.filter(item => {
@@ -1108,12 +1161,17 @@ class YearWheel {
             return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
           });
           
+          // Assign items to tracks to handle overlaps
+          const { maxTracks, itemToTrack } = this.assignActivitiesToTracks(ringItems);
+          const trackHeight = maxTracks > 0 ? outerRingContentHeight / maxTracks : outerRingContentHeight;
+          const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
+          
           // Only draw background if ring has visible items
           if (ringItems.length > 0) {
             // Draw light background for this outer ring (design draft style)
             this.context.beginPath();
             this.context.arc(this.center.x, this.center.y, ringStartRadius, 0, Math.PI * 2);
-            this.context.arc(this.center.x, this.center.y, ringStartRadius + orgDataWidth, 0, Math.PI * 2, true);
+            this.context.arc(this.center.x, this.center.y, ringStartRadius + outerRingContentHeight, 0, Math.PI * 2, true);
             const bgColors = ['#F8FAFC', '#F1F5F9', '#E2E8F0'];
             this.context.fillStyle = bgColors[ringIndex % bgColors.length];
             this.context.fill();
@@ -1157,9 +1215,10 @@ class YearWheel {
               itemColor = this.getHoverColor(itemColor);
             }
             
-            // DESIGN DRAFT: Position at ring start and use full ring width
-            const itemStartRadius = ringStartRadius;
-            const itemWidth = orgDataWidth; // Use full width
+            // Get track assignment for this item
+            const trackIndex = itemToTrack.get(item.id) || 0;
+            const itemStartRadius = ringStartRadius + (trackIndex * trackHeight);
+            const itemWidth = trackHeight - trackGap; // Subtract tiny gap between tracks
             
             // Draw the item block
             this.setCircleSectionHTML({
@@ -1185,43 +1244,42 @@ class YearWheel {
             });
           });
           
-          // Draw ring name band AFTER items so it's visible on top
+          // Name band is drawn at the outer edge of content area (no gap)
           if (this.showRingNames) {
-            this.drawRingNameBand(ring.name, nameBandRadius, ringNameBandWidth);
+            const ringNameRadius = ringStartRadius + outerRingContentHeight;
+            this.drawRingNameBand(ring.name, ringNameRadius, ringNameBandWidth);
           }
+          // currentRadius is already at the correct position (bottom of entire ring including name band)
         });
         
-        // Set currentMaxRadius to current position
+        // Set currentMaxRadius - month ring starts right after outer rings (including name bands)
         currentMaxRadius = currentRadius;
       }
     }
+    
+    // STANDARDIZED spacing constants - used consistently throughout
+    const standardGap = this.size / 1000; // Ultra-minimal gap - 2-3px
+    const ringNameBandWidth = this.size / 70; // CONSISTENT ring name band width (same as outer)
     
     // Reserve space for month and week rings (draw them LATER after inner rings)
     const monthNameWidth = this.size / 30;
     const weekRingWidth = this.size / 35;
     
-    // Calculate positions - NO GAPS between month and week rings
+    // Calculate positions with NO gaps between month and week rings (space preservation)
     let monthNameStartRadius = currentMaxRadius - monthNameWidth;
-    let weekStartRadius = monthNameStartRadius - weekRingWidth;
+    let weekStartRadius = monthNameStartRadius - weekRingWidth; // NO gap between month and week
     
-    // Reduce currentMaxRadius to leave space for BOTH rings
+    // Reduce currentMaxRadius to leave space for rings PLUS a gap before inner rings
     if (this.showMonthRing) {
       currentMaxRadius -= monthNameWidth;
     }
     if (this.showWeekRing) {
       currentMaxRadius -= weekRingWidth;
     }
-    
-    // Add gap after week ring before inner rings start
-    const gapAfterWeekRing = this.size / 200;
-    if (this.showWeekRing) {
-      currentMaxRadius -= gapAfterWeekRing;
-    }
+    // Add gap between week ring and inner rings to prevent overlap
+    currentMaxRadius -= standardGap;
 
     // Draw monthly events (inner sections) - they expand to fill available space
-    const ringNameBandWidth = this.size / 65; // Slightly THICKER ring name bands
-    const ringNamePadding = this.size / 120; // MORE padding around ring name bands
-    const ringPadding = this.size / 300; // Small padding between rings for visual separation
     
     // Filter out EMPTY rings (rings with no items)
     const innerRings = this.organizationData.rings.filter(r => {
@@ -1236,37 +1294,36 @@ class YearWheel {
     });
     const numberOfEvents = innerRings.length;
     
-    // Calculate total spacing needed (ring name bands with padding + ring separation)
-    let totalSpacing = 0;
-    if (numberOfEvents > 1) {
-      // Add small padding between rings for visual separation
-      totalSpacing += (numberOfEvents - 1) * ringPadding;
-      
-      // Add space for ring name bands between rings (band + padding on each side)
-      if (this.showRingNames) {
-        totalSpacing += (numberOfEvents - 1) * (ringNameBandWidth + ringNamePadding * 2);
-      }
-    }
-    
-    const eventWidth =
+    // Calculate total available space for inner rings
+    // Each ring = content area + name band (treated as single unit)
+    const totalAvailableSpace =
       currentMaxRadius -
       this.minRadius -
-      this.size / 140 -
-      totalSpacing;
-    let remainingEventWidth = eventWidth;
+      this.size / 1000; // Minimal buffer space
+    
+    // Calculate spacing between rings (only gaps, name bands are part of each ring)
+    let totalGapSpacing = 0;
+    if (numberOfEvents > 1) {
+      // Only gaps between rings, no gaps around name bands
+      totalGapSpacing = (numberOfEvents - 1) * standardGap;
+    }
+    
+    // Each ring gets equal total height (including its name band)
+    const totalRingSpace = totalAvailableSpace - totalGapSpacing;
+    const equalRingHeight = totalRingSpace / numberOfEvents;
+    
+    // Within each ring: content area + name band
+    const contentAreaHeight = this.showRingNames ? equalRingHeight - ringNameBandWidth : equalRingHeight;
+    
     let eventRadius = this.minRadius;
 
     for (let i = 0; i < numberOfEvents; i++) {
       const ring = innerRings[i];
-      // Make inner rings slightly smaller (reduce from 1.1 to 1.05)
-      const percentage = (1 / (numberOfEvents - i)) * 1.05;
-      const newEventWidth =
-        i !== numberOfEvents - 1
-          ? remainingEventWidth * percentage
-          : remainingEventWidth;
-      remainingEventWidth -= newEventWidth;
-
-      // Draw aktiviteter across the full ring width
+      
+      // Each ring has two parts: content area (for activities) + name band
+      const ringContentHeight = contentAreaHeight;
+      
+      // Draw activities in the content area
       if (visibleInnerRings.length > 0) {
         const ringItems = this.organizationData.items.filter(item => {
           const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
@@ -1274,17 +1331,10 @@ class YearWheel {
           return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
         });
         
-        // Only draw background if ring has visible items
-        if (ringItems.length > 0) {
-          // Draw light background for this inner ring (design draft style)
-          this.context.beginPath();
-          this.context.arc(this.center.x, this.center.y, eventRadius, 0, Math.PI * 2);
-          this.context.arc(this.center.x, this.center.y, eventRadius + newEventWidth, 0, Math.PI * 2, true);
-          const bgColors = ['#FEF9F3', '#FEF3F2', '#F0FDF4', '#EFF6FF'];
-          this.context.fillStyle = bgColors[i % bgColors.length];
-          this.context.fill();
-          this.context.closePath();
-        }
+        // Assign items to tracks to handle overlaps
+        const { maxTracks, itemToTrack } = this.assignActivitiesToTracks(ringItems);
+        const trackHeight = maxTracks > 0 ? ringContentHeight / maxTracks : ringContentHeight;
+        const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
         
         ringItems.forEach((item) => {
           let itemStartDate = new Date(item.startDate);
@@ -1323,9 +1373,10 @@ class YearWheel {
             itemColor = this.getHoverColor(itemColor);
           }
           
-          // DESIGN DRAFT: Activities fill FULL ring height (100%)
-          const itemWidth = newEventWidth; // Use full width
-          const itemStartRadius = eventRadius; // Start at ring edge
+          // Get track assignment for this item
+          const trackIndex = itemToTrack.get(item.id) || 0;
+          const itemStartRadius = eventRadius + (trackIndex * trackHeight);
+          const itemWidth = trackHeight - trackGap; // Subtract tiny gap between tracks
           
           // Draw the item block with modern styling
           this.setCircleSectionHTML({
@@ -1352,9 +1403,9 @@ class YearWheel {
         });
       }
       
-      // Store ring name info for drawing LATER (after month/week rings)
+      // Name band is drawn at the outer edge of the content area (no gap)
       if (this.showRingNames) {
-        const ringNameRadius = eventRadius + newEventWidth;
+        const ringNameRadius = eventRadius + ringContentHeight;
         if (!this.innerRingNamesToDraw) this.innerRingNamesToDraw = [];
         this.innerRingNamesToDraw.push({
           name: ring.name,
@@ -1363,18 +1414,15 @@ class YearWheel {
         });
       }
       
-      // Move eventRadius for next ring
-      eventRadius += newEventWidth;
+      // Move to next ring: current position + content area + name band + gap
+      eventRadius += ringContentHeight;
+      if (this.showRingNames) {
+        eventRadius += ringNameBandWidth; // Name band (part of this ring)
+      }
       
-      // Add spacing between rings for better visual separation
+      // Add gap before next ring (only between rings, not before first or after last)
       if (i < numberOfEvents - 1) {
-        eventRadius += ringPadding; // Small padding between rings
-        
-        if (this.showRingNames) {
-          eventRadius += ringNamePadding; // Padding before ring name
-          eventRadius += ringNameBandWidth; // Ring name band
-          eventRadius += ringNamePadding; // Padding after ring name
-        }
+        eventRadius += standardGap;
       }
     }
 
