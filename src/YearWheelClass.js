@@ -419,7 +419,7 @@ class YearWheel {
     fontSize,
     isVertical
   ) {
-    // NATURAL letter spacing - measure each character individually
+    // NATURAL letter spacing - no stretching, just center the text
     const middleRadius = startRadius + width / 2;
     const color = "#ffffff";
     
@@ -429,45 +429,33 @@ class YearWheel {
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
     
-    // Measure total text width to determine scale
-    const totalTextWidth = this.context.measureText(text).width;
-    
-    // Dynamic arc percentage: longer names get more space (30-50% range)
-    // Short names (3-5 chars): 30%, Medium (6-8 chars): 40%, Long (9+ chars): 50%
-    const textLength = text.length;
-    let arcPercentage;
-    if (textLength <= 5) {
-      arcPercentage = 0.30; // Short names like "Maj", "Juni"
-    } else if (textLength <= 8) {
-      arcPercentage = 0.40; // Medium names like "Januari", "Augusti"
-    } else {
-      arcPercentage = 0.50; // Long names like "September", "December"
-    }
-    
-    const availableArcLength = middleRadius * angleLength * arcPercentage;
-    
-    // Calculate positions for each character based on their actual widths
-    let currentAngle = startAngle;
+    // Measure each character's natural width
     const charWidths = [];
     let totalWidth = 0;
-    
-    // Measure each character
     for (let i = 0; i < text.length; i++) {
       const charWidth = this.context.measureText(text[i]).width;
       charWidths.push(charWidth);
       totalWidth += charWidth;
     }
     
-    // Scale to fit available arc
-    const scale = availableArcLength / totalWidth;
-    const startOffset = (angleLength - (totalWidth * scale / middleRadius)) / 2;
-    currentAngle = startAngle + startOffset;
+    // Add natural spacing between characters (10% of average char width)
+    const avgCharWidth = totalWidth / text.length;
+    const letterSpacing = avgCharWidth * 0.1;
+    const totalSpacing = letterSpacing * (text.length - 1);
+    const totalTextWidth = totalWidth + totalSpacing;
     
-    // Draw each character at its natural position
+    // Calculate the angular span this text would naturally occupy
+    const textAngleSpan = totalTextWidth / middleRadius;
+    
+    // Center the text within the available angle
+    const startOffset = (angleLength - textAngleSpan) / 2;
+    let currentAngle = startAngle + startOffset;
+    
+    // Draw each character with natural spacing
     for (let i = 0; i < text.length; i++) {
       const char = text[i];
-      const scaledCharWidth = charWidths[i] * scale;
-      const charAngleSpan = scaledCharWidth / middleRadius;
+      const charWidth = charWidths[i];
+      const charAngleSpan = charWidth / middleRadius;
       
       // Position at center of character's arc span
       const charAngle = currentAngle + charAngleSpan / 2;
@@ -479,7 +467,8 @@ class YearWheel {
       this.context.fillText(char, 0, 0);
       this.context.restore();
       
-      currentAngle += charAngleSpan;
+      // Move to next character (char width + spacing)
+      currentAngle += charAngleSpan + (letterSpacing / middleRadius);
     }
     
     this.context.restore();
@@ -554,7 +543,67 @@ class YearWheel {
     this.context.restore();
   }
 
-  // Draw text following the arc character by character with optimal spacing
+  // Decide whether to use vertical or horizontal text based on activity dimensions
+  chooseTextOrientation(angularWidth, radialHeight, textLength) {
+    // Convert angular width from radians to degrees for easier thresholds
+    const angularDegrees = (angularWidth * 180) / Math.PI;
+    
+    // Simplified heuristics:
+    // - If angular width >= 25 degrees (reasonably wide), use HORIZONTAL text along arc
+    // - If angular width < 25 degrees (narrow), use VERTICAL text (perpendicular/radial)
+    // This ensures consistent, readable text across all activity sizes
+    
+    // Use HORIZONTAL (along arc) for wider activities
+    return angularDegrees >= 25 ? 'horizontal' : 'vertical';
+  }
+
+  // Wrapper to adapt drawTextAlongArc to match setCircleSectionAktivitetTitle signature
+  // This allows both functions to be called the same way from setCircleSectionHTML
+  drawTextAlongArcAdapter(
+    text,
+    startRadius,
+    width,
+    startAngle,
+    endAngle,
+    angleLength,
+    fontSize,
+    isVertical,
+    backgroundColor
+  ) {
+    // Calculate middle radius for text placement
+    const middleRadius = startRadius + width / 2;
+    
+    // Get text color with contrast
+    const textColor = backgroundColor ? this.getContrastColor(backgroundColor) : "#FFFFFF";
+    
+    // Use smaller font size for horizontal text (70% like vertical text does)
+    const adjustedFontSize = fontSize * 0.7;
+    
+    // Measure text and truncate if needed to fit available arc length
+    this.context.save();
+    this.context.font = `500 ${adjustedFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+    
+    // Calculate available arc length (use 90% for comfortable spacing)
+    const availableArcLength = middleRadius * angleLength * 0.9;
+    let displayText = text;
+    let textWidth = this.context.measureText(displayText).width;
+    
+    // Truncate with "..." if text is too long
+    if (textWidth > availableArcLength) {
+      while (displayText.length > 0 && textWidth > availableArcLength) {
+        displayText = displayText.slice(0, -1);
+        textWidth = this.context.measureText(displayText + '...').width;
+      }
+      displayText = displayText + '...';
+    }
+    
+    this.context.restore();
+    
+    // Call the actual drawTextAlongArc with adapted parameters
+    this.drawTextAlongArc(displayText, middleRadius, startAngle, endAngle, adjustedFontSize, textColor);
+  }
+
+  // Draw text following the arc character by character with natural spacing
   drawTextAlongArc(text, radius, startAngle, endAngle, fontSize, color) {
     this.context.save();
     this.context.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`; // Medium weight, modern font
@@ -563,17 +612,37 @@ class YearWheel {
     this.context.textBaseline = "middle";
     
     const angleSpan = endAngle - startAngle;
-    const textLength = text.length;
     
-    // Calculate character spacing with slight padding on edges
-    const usableSpan = angleSpan * 0.95; // Use 95% of span for better margins
-    const charSpacing = usableSpan / (textLength + 0.5);
-    const startOffset = (angleSpan - usableSpan) / 2;
+    // Measure each character's natural width
+    const charWidths = [];
+    let totalWidth = 0;
+    for (let i = 0; i < text.length; i++) {
+      const charWidth = this.context.measureText(text[i]).width;
+      charWidths.push(charWidth);
+      totalWidth += charWidth;
+    }
     
-    // Draw each character along the arc with even spacing
-    for (let i = 0; i < textLength; i++) {
+    // Add natural spacing between characters (10% of average char width)
+    const avgCharWidth = totalWidth / text.length;
+    const letterSpacing = avgCharWidth * 0.1;
+    const totalSpacing = letterSpacing * (text.length - 1);
+    const totalTextWidth = totalWidth + totalSpacing;
+    
+    // Calculate the angular span this text would naturally occupy
+    const textAngleSpan = totalTextWidth / radius;
+    
+    // Center the text within the available angle
+    const startOffset = (angleSpan - textAngleSpan) / 2;
+    let currentAngle = startAngle + startOffset;
+    
+    // Draw each character with natural spacing
+    for (let i = 0; i < text.length; i++) {
       const char = text[i];
-      const charAngle = startAngle + startOffset + charSpacing * (i + 0.5);
+      const charWidth = charWidths[i];
+      const charAngleSpan = charWidth / radius;
+      
+      // Position at the center of this character's arc span
+      const charAngle = currentAngle + charAngleSpan / 2;
       const coord = this.moveToAngle(radius, charAngle);
       
       this.context.save();
@@ -581,6 +650,9 @@ class YearWheel {
       this.context.rotate(charAngle + Math.PI / 2); // Rotate to follow arc
       this.context.fillText(char, 0, 0);
       this.context.restore();
+      
+      // Move to next character (char width + spacing)
+      currentAngle += charAngleSpan + (letterSpacing / radius);
     }
     
     this.context.restore();
@@ -618,29 +690,31 @@ class YearWheel {
       const centerAngle = this.toRadians(position);
       const displayText = textToShow;
       
-      // NATURAL letter spacing - measure each character individually
+      // Measure each character's natural width
       const charWidths = [];
       let totalWidth = 0;
-      
       for (let i = 0; i < displayText.length; i++) {
         const charWidth = this.context.measureText(displayText[i]).width;
         charWidths.push(charWidth);
         totalWidth += charWidth;
       }
       
-      // Scale text to fit comfortably (use 10% of circle for tighter spacing)
-      const maxArcLength = textRadius * Math.PI * 0.10;
-      const scale = Math.min(1, maxArcLength / totalWidth);
-      const scaledTotalWidth = totalWidth * scale;
-      const totalAngleSpan = scaledTotalWidth / textRadius;
+      // Add natural spacing between characters (10% of average char width)
+      const avgCharWidth = totalWidth / displayText.length;
+      const letterSpacing = avgCharWidth * 0.1;
+      const totalSpacing = letterSpacing * (displayText.length - 1);
+      const totalTextWidth = totalWidth + totalSpacing;
+      
+      // Calculate the angular span this text would naturally occupy
+      const totalAngleSpan = totalTextWidth / textRadius;
       
       // Start angle for text (centered at position)
       let currentAngle = centerAngle - totalAngleSpan / 2;
       
       for (let i = 0; i < displayText.length; i++) {
         const char = displayText[i];
-        const scaledCharWidth = charWidths[i] * scale;
-        const charAngleSpan = scaledCharWidth / textRadius;
+        const charWidth = charWidths[i];
+        const charAngleSpan = charWidth / textRadius;
         
         const charAngle = currentAngle + charAngleSpan / 2;
         const coord = this.moveToAngle(textRadius, charAngle);
@@ -656,7 +730,8 @@ class YearWheel {
         this.context.fillText(char, 0, 0);
         this.context.restore();
         
-        currentAngle += charAngleSpan;
+        // Move to next character (char width + spacing)
+        currentAngle += charAngleSpan + (letterSpacing / textRadius);
       }
     }
     
@@ -1220,6 +1295,15 @@ class YearWheel {
             const itemStartRadius = ringStartRadius + (trackIndex * trackHeight);
             const itemWidth = trackHeight - trackGap; // Subtract tiny gap between tracks
             
+            // Decide text orientation based on activity dimensions
+            const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));
+            const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name.length);
+            
+            // Choose appropriate text drawing function (use adapter for horizontal text)
+            const textFunction = textOrientation === 'vertical' 
+              ? this.setCircleSectionAktivitetTitle.bind(this)
+              : this.drawTextAlongArcAdapter.bind(this);
+            
             // Draw the item block
             this.setCircleSectionHTML({
               startRadius: itemStartRadius,
@@ -1227,10 +1311,10 @@ class YearWheel {
               startAngle: adjustedStartAngle,
               endAngle: adjustedEndAngle,
               color: itemColor,
-              textFunction: this.setCircleSectionAktivitetTitle.bind(this),
+              textFunction: textFunction,
               text: item.name,
-              fontSize: this.size / 48, // Larger so text fits without truncation
-              isVertical: false,
+              fontSize: this.size / 48,
+              isVertical: textOrientation === 'vertical',
               highlight: isHovered,
             });
             
@@ -1378,6 +1462,15 @@ class YearWheel {
           const itemStartRadius = eventRadius + (trackIndex * trackHeight);
           const itemWidth = trackHeight - trackGap; // Subtract tiny gap between tracks
           
+          // Decide text orientation based on activity dimensions
+          const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));
+          const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name.length);
+          
+          // Choose appropriate text drawing function (use adapter for horizontal text)
+          const textFunction = textOrientation === 'vertical' 
+            ? this.setCircleSectionAktivitetTitle.bind(this)
+            : this.drawTextAlongArcAdapter.bind(this);
+          
           // Draw the item block with modern styling
           this.setCircleSectionHTML({
             startRadius: itemStartRadius,
@@ -1385,10 +1478,10 @@ class YearWheel {
             startAngle: adjustedStartAngle,
             endAngle: adjustedEndAngle,
             color: itemColor,
-            textFunction: this.setCircleSectionAktivitetTitle.bind(this),
+            textFunction: textFunction,
             text: item.name,
-            fontSize: this.size / 62, // Optimized for readability
-            isVertical: false,
+            fontSize: this.size / 62,
+            isVertical: textOrientation === 'vertical',
             highlight: isHovered,
           });
           
