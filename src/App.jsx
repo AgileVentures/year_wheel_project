@@ -462,7 +462,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       });
       setPages([]);
       setCurrentPageId(null);
-      setTitle("Organisation");
+      // DON'T reset title - let new wheel data overwrite it to avoid flicker
+      // setTitle("Organisation"); 
       setYear(String(new Date().getFullYear()));
       setColors(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
       setShowWeekRing(true);

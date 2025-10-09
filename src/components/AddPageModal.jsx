@@ -55,7 +55,7 @@ export default function AddPageModal({
           <h2 className="text-xl font-semibold text-gray-900">Lägg till ny sida</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -76,14 +76,14 @@ export default function AddPageModal({
                 key={option.id}
                 onClick={() => handleOptionClick(option)}
                 className={`
-                  w-full flex items-start gap-4 p-4 rounded-lg border-2 transition-all
+                  w-full flex items-start gap-4 p-4 rounded-sm border-2 transition-all
                   hover:shadow-md group
                   ${colorClasses[option.color]}
                 `}
               >
                 {/* Icon */}
                 <div className={`
-                  flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center
+                  flex-shrink-0 w-12 h-12 rounded-sm flex items-center justify-center
                   bg-white shadow-sm group-hover:scale-110 transition-transform
                 `}>
                   <Icon size={24} />
@@ -112,7 +112,7 @@ export default function AddPageModal({
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
+            className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-sm transition-colors font-medium"
           >
             Avbryt
           </button>

@@ -54,7 +54,7 @@ export default function PageNavigator({
         <button
           onClick={() => setShowDropdown(!showDropdown)}
           disabled={disabled}
-          className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:border-blue-400 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+          className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-sm hover:border-blue-400 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
           title="Välj år"
         >
           <Calendar size={16} className="text-gray-500" />
@@ -74,7 +74,7 @@ export default function PageNavigator({
             ></div>
 
             {/* Dropdown menu */}
-            <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+            <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
               {pages.map((page, index) => {
                 const isActive = page.id === currentPageId;
                 return (

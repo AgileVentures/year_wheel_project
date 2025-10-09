@@ -874,16 +874,53 @@ class YearWheel {
     
     this.context.rotate(rotation);
     
-    // Draw text vertically (perpendicular to arc)
-    // Truncate if too long to fit in ring width
+    // Draw text vertically (perpendicular to arc) with word wrapping
     const maxWidth = width * 0.85;
+    
     if (textWidth > maxWidth) {
-      // Truncate with ellipsis
-      let truncated = text;
-      while (this.context.measureText(truncated + '…').width > maxWidth && truncated.length > 3) {
-        truncated = truncated.slice(0, -1);
+      // Try to wrap text on hyphen or space
+      const words = text.split(/(-|\s+)/); // Split on hyphen or space, keep delimiters
+      let lines = [];
+      let currentLine = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine + words[i];
+        const testWidth = this.context.measureText(testLine).width;
+        
+        if (testWidth > maxWidth && currentLine.length > 0) {
+          lines.push(currentLine);
+          currentLine = words[i];
+        } else {
+          currentLine = testLine;
+        }
       }
-      this.context.fillText(truncated + '…', 0, 0);
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      // Limit to 2 lines max, truncate if needed
+      if (lines.length > 2) {
+        lines = lines.slice(0, 2);
+        const lastLine = lines[1];
+        if (this.context.measureText(lastLine + '…').width > maxWidth) {
+          let truncated = lastLine;
+          while (this.context.measureText(truncated + '…').width > maxWidth && truncated.length > 1) {
+            truncated = truncated.slice(0, -1);
+          }
+          lines[1] = truncated + '…';
+        } else {
+          lines[1] = lastLine + '…';
+        }
+      }
+      
+      // Draw multiple lines with spacing
+      const lineHeight = activityFontSize * 1.1;
+      const totalHeight = lines.length * lineHeight;
+      const startY = -totalHeight / 2 + lineHeight / 2;
+      
+      lines.forEach((line, index) => {
+        this.context.fillText(line.trim(), 0, startY + index * lineHeight);
+      });
     } else {
       this.context.fillText(text, 0, 0);
     }
