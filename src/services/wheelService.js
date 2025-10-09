@@ -356,10 +356,16 @@ const syncActivityGroups = async (wheelId, activityGroups) => {
 
   // Upsert
   for (const group of activityGroups) {
+    // Skip groups with empty or missing names
+    if (!group.name || group.name.trim() === '') {
+      console.warn('[wheelService] Skipping activity group with empty name:', group);
+      continue;
+    }
+    
     const isNew = !group.id || group.id.startsWith('group-') || !existingIds.has(group.id);
     const groupData = {
       wheel_id: wheelId,
-      name: group.name,
+      name: group.name.trim(),
       color: group.color,
       visible: group.visible !== undefined ? group.visible : true,
     };
@@ -411,10 +417,16 @@ const syncLabels = async (wheelId, labels) => {
 
   // Upsert
   for (const label of labels) {
+    // Skip labels with empty or missing names
+    if (!label.name || label.name.trim() === '') {
+      console.warn('[wheelService] Skipping label with empty name:', label);
+      continue;
+    }
+    
     const isNew = !label.id || label.id.startsWith('label-') || !existingIds.has(label.id);
     const labelData = {
       wheel_id: wheelId,
-      name: label.name,
+      name: label.name.trim(),
       color: label.color,
       visible: label.visible !== undefined ? label.visible : true,
     };
