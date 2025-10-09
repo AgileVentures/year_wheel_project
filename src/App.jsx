@@ -543,7 +543,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           
           // CRITICAL: Mark as loading to prevent realtime from overwriting
           isLoadingData.current = true;
-          isRealtimeUpdate.current = true; // Also mark as realtime update to block auto-save during import
+          isRealtimeUpdate.current = true;
 
           // Process organization data BEFORE setting state
           let processedOrgData;
@@ -579,6 +579,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           }
 
           // If wheelId exists, save IMMEDIATELY (before setting state)
+          let saveFailed = false;
           if (wheelId) {
             try {
               console.log('[FileImport] Saving imported data to database...');
@@ -605,19 +606,16 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
               window.dispatchEvent(toastEvent);
             } catch (saveError) {
               console.error('[FileImport] Error saving to database:', saveError);
+              saveFailed = true;
               const errorEvent = new CustomEvent('showToast', { 
                 detail: { message: 'Fil laddad men kunde inte sparas', type: 'error' } 
               });
               window.dispatchEvent(errorEvent);
-              
-              // Don't update state if save failed
-              isLoadingData.current = false;
-              isRealtimeUpdate.current = false;
-              return;
+              // Continue to update state even if save failed (user can see data, try to save manually)
             }
           }
 
-          // NOW update state AFTER successful save (or if no wheelId)
+          // Update state AFTER save attempt (always update so user can see the data)
           setTitle(data.title);
           setYear(data.year);
           if (data.colors) setColors(data.colors);
@@ -647,6 +645,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           }, 1000);
         } catch (error) {
           console.error('Error loading file:', error);
+          
+          // Make sure to reset flags on error
+          isLoadingData.current = false;
+          isRealtimeUpdate.current = false;
+          
           const toastEvent = new CustomEvent('showToast', { 
             detail: { message: 'Fel vid laddning av fil', type: 'error' } 
           });
