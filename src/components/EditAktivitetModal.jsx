@@ -77,10 +77,10 @@ function EditAktivitetModal({ aktivitet, organizationData, onUpdateAktivitet, on
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-sm shadow-xl w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-sm shadow-xl w-full max-w-md my-8">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
           <h2 className="text-lg font-semibold text-gray-900">Redigera aktivitet</h2>
           <button
             onClick={onClose}
@@ -91,7 +91,7 @@ function EditAktivitetModal({ aktivitet, organizationData, onUpdateAktivitet, on
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -437,8 +437,8 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted }) => {
       )}
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-sm max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-sm max-w-md w-full p-6 my-8">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Ta bort team?</h3>
             <p className="text-gray-700 mb-6">
               Är du säker på att du vill ta bort <strong>{team?.name}</strong>? 
@@ -497,9 +497,9 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-sm max-w-md w-full p-6">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-sm max-w-md w-full my-8">
+        <div className="flex justify-between items-center p-6 pb-4 sticky top-0 bg-white rounded-t-sm z-10">
           <h3 className="text-xl font-bold text-gray-900">Redigera team</h3>
           <button
             onClick={onClose}
@@ -509,6 +509,7 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
           </button>
         </div>
 
+        <div className="px-6 pb-6 max-h-[calc(100vh-200px)] overflow-y-auto">
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
             {error}
@@ -562,6 +563,7 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

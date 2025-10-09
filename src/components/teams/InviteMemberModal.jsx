@@ -52,9 +52,9 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-sm max-w-md w-full p-6">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-sm max-w-md w-full my-8">
+        <div className="flex justify-between items-center p-6 pb-4 sticky top-0 bg-white rounded-t-sm z-10">
           <h3 className="text-xl font-bold text-gray-900">Bjud in medlem</h3>
           <button
             onClick={onClose}
@@ -65,6 +65,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
           </button>
         </div>
 
+        <div className="px-6 pb-6 max-h-[calc(100vh-200px)] overflow-y-auto">
         {success ? (
           <div className="py-4">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -186,6 +187,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
             </form>
           </>
         )}
+        </div>
       </div>
     </div>
   );
