@@ -63,7 +63,6 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const [downloadFormat, setDownloadFormat] = useState("png");
   const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   
   // Track if we're currently loading data to prevent auto-save during load
@@ -72,6 +71,10 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const isInitialLoad = useRef(true);
   // Track if data came from realtime update to prevent save loop
   const isRealtimeUpdate = useRef(false);
+  // Track recent save timestamp to ignore own broadcasts (within 3 seconds)
+  const lastSaveTimestamp = useRef(0);
+  // Track if we're currently saving to prevent realtime reload during save
+  const isSavingRef = useRef(false);
 
   // Load wheel data function (memoized to avoid recreating)
   const loadWheelData = useCallback(async () => {
@@ -140,16 +143,26 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     console.log('[Realtime] Reloading wheel data due to remote changes');
     loadWheelData();
     
-    // Show subtle notification
-    const event = new CustomEvent('showToast', { 
-      detail: { message: 'Hjulet uppdaterades', type: 'info' } 
-    });
-    window.dispatchEvent(event);
+    // NO TOAST - too many notifications annoy users
+    // Users will see the changes appear on the wheel directly
   }, 1000);
 
   // Handle realtime data changes from other users
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
     console.log(`[Realtime] ${tableName} ${eventType}:`, payload);
+    
+    // Ignore broadcasts from our own recent saves (within 3 seconds)
+    const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
+    if (timeSinceLastSave < 3000) {
+      console.log('[Realtime] Ignoring own broadcast (saved', timeSinceLastSave, 'ms ago)');
+      return;
+    }
+    
+    // Don't reload during active save operation
+    if (isSavingRef.current) {
+      console.log('[Realtime] Ignoring update during active save');
+      return;
+    }
     
     // Mark as realtime update to prevent auto-save loop
     // This flag will be reset in loadWheelData's finally block
@@ -186,6 +199,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     try {
       console.log('[AutoSave] Saving changes...');
       
+      // Mark as saving to prevent realtime interference
+      isSavingRef.current = true;
+      
       // Update wheel metadata
       await updateWheel(wheelId, {
         title,
@@ -199,6 +215,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       // Save organization data
       await saveWheelData(wheelId, organizationData);
       
+      // Mark the save timestamp to ignore our own broadcasts
+      lastSaveTimestamp.current = Date.now();
+      
       console.log('[AutoSave] Changes saved successfully');
       
       // Show subtle success feedback
@@ -210,6 +229,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       console.error('[AutoSave] Error:', error);
       // Don't show error toast for auto-save to avoid annoying users
       // They can always manually save
+    } finally {
+      // Re-enable realtime after save completes
+      isSavingRef.current = false;
     }
   }, 2000); // Wait 2 seconds after last change before saving
 
@@ -315,10 +337,10 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const handleSave = async () => {
     // If we have a wheelId, save to database
     if (wheelId) {
-      setIsSaving(true);
       // Temporarily disable auto-save during manual save
       const wasAutoSaveEnabled = autoSaveEnabled;
       setAutoSaveEnabled(false);
+      isSavingRef.current = true;
       
       try {
         console.log('[ManualSave] Saving wheel data...', {
@@ -347,6 +369,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         // Then, save organization data (rings, activity groups, labels, items)
         await saveWheelData(wheelId, organizationData);
         
+        // Mark the save timestamp to ignore our own broadcasts
+        lastSaveTimestamp.current = Date.now();
+        
         console.log('[ManualSave] Wheel data saved successfully');
         
         // Show success feedback
@@ -361,7 +386,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         });
         window.dispatchEvent(event);
       } finally {
-        setIsSaving(false);
+        isSavingRef.current = false;
         // Re-enable auto-save
         setAutoSaveEnabled(wasAutoSaveEnabled);
       }
@@ -496,12 +521,12 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     input.type = 'file';
     input.accept = '.yrw,.json';
     
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (readerEvent) => {
+      reader.onload = async (readerEvent) => {
         try {
           const data = JSON.parse(readerEvent.target.result);
           
@@ -509,6 +534,12 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           if (data.title === undefined || !data.year || !data.ringsData) {
             throw new Error('Invalid file format');
           }
+
+          console.log('[FileImport] Starting file import...');
+          
+          // CRITICAL: Mark as loading to prevent realtime from overwriting
+          isLoadingData.current = true;
+          isRealtimeUpdate.current = true; // Also mark as realtime update to block auto-save during import
 
           // Load the data
           setTitle(data.title);
@@ -533,7 +564,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
             orgData.labels = orgData.labels || [];
             orgData.items = orgData.items || [];
             
-            console.log('Loaded organization data from file:', {
+            console.log('[FileImport] Loaded organization data from file:', {
               rings: orgData.rings.length,
               activityGroups: orgData.activityGroups.length,
               labels: orgData.labels.length,
@@ -557,18 +588,61 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
           if (data.showRingNames !== undefined) setShowRingNames(data.showRingNames);
 
-          // Show success feedback
-          const toastEvent = new CustomEvent('showToast', { 
-            detail: { message: 'Fil laddad! Sparar automatiskt...', type: 'success' } 
-          });
-          window.dispatchEvent(toastEvent);
-          
-          // Trigger auto-save after file import if wheelId exists
+          // If wheelId exists, save IMMEDIATELY (don't wait for debounced auto-save)
           if (wheelId) {
-            // Wait a bit for state to settle, then trigger auto-save
-            setTimeout(() => {
-              autoSave();
-            }, 500);
+            try {
+              console.log('[FileImport] Saving imported data to database...');
+              
+              // Save immediately to prevent realtime from overwriting
+              await updateWheel(wheelId, {
+                title: data.title,
+                year: parseInt(data.year),
+                colors: data.colors || colors,
+                showWeekRing: data.showWeekRing ?? showWeekRing,
+                showMonthRing: data.showMonthRing ?? showMonthRing,
+                showRingNames: data.showRingNames ?? showRingNames,
+              });
+              
+              // Save organization data
+              const orgDataToSave = data.organizationData || { 
+                rings: [], 
+                activityGroups: [], 
+                labels: [], 
+                items: [] 
+              };
+              await saveWheelData(wheelId, orgDataToSave);
+              
+              console.log('[FileImport] Successfully saved to database');
+              
+              // Show success feedback
+              const toastEvent = new CustomEvent('showToast', { 
+                detail: { message: 'Fil laddad och sparad!', type: 'success' } 
+              });
+              window.dispatchEvent(toastEvent);
+            } catch (saveError) {
+              console.error('[FileImport] Error saving to database:', saveError);
+              const errorEvent = new CustomEvent('showToast', { 
+                detail: { message: 'Fil laddad men kunde inte sparas', type: 'error' } 
+              });
+              window.dispatchEvent(errorEvent);
+            } finally {
+              // Re-enable realtime and auto-save after a short delay
+              setTimeout(() => {
+                isLoadingData.current = false;
+                isRealtimeUpdate.current = false;
+                console.log('[FileImport] Import complete, realtime re-enabled');
+              }, 1000);
+            }
+          } else {
+            // localStorage mode - just show success
+            const toastEvent = new CustomEvent('showToast', { 
+              detail: { message: 'Fil laddad!', type: 'success' } 
+            });
+            window.dispatchEvent(toastEvent);
+            
+            // Re-enable flags immediately
+            isLoadingData.current = false;
+            isRealtimeUpdate.current = false;
           }
         } catch (error) {
           console.error('Error loading file:', error);
