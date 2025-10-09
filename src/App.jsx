@@ -69,7 +69,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   
   // Wrapper functions for setting undo-tracked state
   const setTitle = useCallback((value) => {
-    setUndoableStates({ title: typeof value === 'function' ? value(title) : value });
+    const newTitle = typeof value === 'function' ? value(title) : value;
+    console.log('[SetTitle] Setting title:', newTitle, '(previous:', title, ')');
+    setUndoableStates({ title: newTitle });
   }, [setUndoableStates, title]);
   
   const setYear = useCallback((value) => {
@@ -138,10 +140,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       const wheelData = await fetchWheel(wheelId);
       
       if (wheelData) {
-        // IMPORTANT: Only use default if title is truly empty/null/undefined
-        if (wheelData.title) {
-          setTitle(wheelData.title);
-        }
+        // IMPORTANT: Always set title from database, never use default
+        console.log('[WheelEditor] Setting title from database:', wheelData.title);
+        setTitle(wheelData.title || 'Nytt hjul');
         setIsPublic(wheelData.is_public || false);
         
         if (wheelData.colors) setColors(wheelData.colors);
