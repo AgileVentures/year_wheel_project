@@ -37,34 +37,25 @@ function Header({
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-6">
-        {/* Symbol & Back/Menu */}
+        {/* Symbol & Toggle Menu */}
         <div className="flex items-center gap-4">
-          {onBackToDashboard ? (
-            <button
-              onClick={onBackToDashboard}
-              className="p-2.5 hover:bg-gray-100 rounded-sm transition-colors text-gray-700"
-              aria-label="Back to dashboard"
-              title="Tillbaka till mina hjul"
-            >
-              <ArrowLeft size={24} />
-            </button>
-          ) : (
-            <button
-              onClick={onToggleSidebar}
-              className="p-2.5 hover:bg-gray-100 rounded-sm transition-colors text-gray-700"
-              aria-label={isSidebarOpen ? "Close panel" : "Open panel"}
-              title={isSidebarOpen ? "Stäng panel" : "Öppna panel"}
-            >
-              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          )}
+          {/* Always show toggle button */}
+          <button
+            onClick={onToggleSidebar}
+            className="p-2.5 hover:bg-gray-100 rounded-sm transition-colors text-gray-700"
+            aria-label={isSidebarOpen ? "Close panel" : "Open panel"}
+            title={isSidebarOpen ? "Stäng panel" : "Öppna panel"}
+          >
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
           
+          {/* Logo - click to go back to dashboard if available */}
           <img 
             src="/year_wheel_symbol.svg" 
             alt="YearWheel" 
-            className="w-12 h-12 hover:scale-110 transition-transform cursor-pointer"
+            className={`w-12 h-12 transition-transform ${onBackToDashboard ? 'hover:scale-110 cursor-pointer' : ''}`}
             onClick={onBackToDashboard}
-            title="YearWheel"
+            title={onBackToDashboard ? "Tillbaka till mina hjul" : "YearWheel"}
           />
         </div>
         
