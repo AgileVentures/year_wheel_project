@@ -16,6 +16,18 @@
 -- Add tables to the realtime publication
 -- This tells Supabase to broadcast INSERT, UPDATE, and DELETE events
 
+-- Note: These commands will fail if tables are already in the publication
+-- If you see "relation is already member of publication" errors, that's good!
+-- It means realtime is already enabled. Just skip to STEP 2.
+
+-- Safe way: Drop first if exists (requires DROP privilege)
+-- alter publication supabase_realtime drop table if exists public.year_wheels;
+-- alter publication supabase_realtime drop table if exists public.wheel_rings;
+-- alter publication supabase_realtime drop table if exists public.activity_groups;
+-- alter publication supabase_realtime drop table if exists public.labels;
+-- alter publication supabase_realtime drop table if exists public.items;
+
+-- Then add them
 alter publication supabase_realtime add table public.year_wheels;
 alter publication supabase_realtime add table public.wheel_rings;
 alter publication supabase_realtime add table public.activity_groups;
@@ -23,7 +35,7 @@ alter publication supabase_realtime add table public.labels;
 alter publication supabase_realtime add table public.items;
 
 -- =============================================
--- STEP 2: Verify Realtime is Enabled
+-- STEP 2: Verify Realtime is Enabled (RUN THIS!)
 -- =============================================
 
 -- Check which tables are in the realtime publication
@@ -34,6 +46,13 @@ select
 from pg_publication_tables
 where pubname = 'supabase_realtime'
 order by tablename;
+
+-- ✅ Expected results: You should see at least these tables:
+-- - activity_groups
+-- - items
+-- - labels
+-- - wheel_rings
+-- - year_wheels
 
 -- =============================================
 -- STEP 3: Optional - Enable Realtime for ring_data

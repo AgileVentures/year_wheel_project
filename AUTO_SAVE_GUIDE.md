@@ -1,5 +1,7 @@
 # Auto-Save Implementation
 
+> **⚠️ IMPORTANT**: If you're experiencing save loops with multiple users, see [SAVE_LOOP_FIX.md](./SAVE_LOOP_FIX.md)
+
 ## Problem Fixed
 
 **Original Issue**: Team member imports file → sees changes briefly → data reverts to DB state → can't save
@@ -127,16 +129,23 @@ setTimeout(() => {
 
 **Problem**: Auto-save → DB update → Realtime → loadWheelData() → State change → Auto-save...
 
-**Solution**:
+**Solution**: See [SAVE_LOOP_FIX.md](./SAVE_LOOP_FIX.md) for complete documentation.
+
+**Summary**:
 ```javascript
 const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
   isRealtimeUpdate.current = true;  // Disable auto-save
   throttledReload();                // Load new data
-  
-  setTimeout(() => {
-    isRealtimeUpdate.current = false; // Re-enable after 1s
-  }, 1000);
+  // Flag reset in loadWheelData()'s finally block (not setTimeout!)
 }, [throttledReload]);
+
+const loadWheelData = useCallback(async () => {
+  // ...
+  } finally {
+    isLoadingData.current = false;
+    isRealtimeUpdate.current = false; // ← Reset here
+  }
+}, [wheelId]);
 ```
 
 ## Testing
@@ -236,12 +245,22 @@ const autoSave = useDebouncedCallback(async () => {
 ```
 
 ### "Save loop detected"
-Check `isRealtimeUpdate` flag is working:
+See [SAVE_LOOP_FIX.md](./SAVE_LOOP_FIX.md) for complete troubleshooting.
+
+Quick check - healthy console pattern:
 ```javascript
-// Should see in console:
-[Realtime] Reloading wheel data due to remote changes
-// But NOT followed immediately by:
+[Realtime] wheel_rings UPDATE: {...}
+[AutoSave] Skipped - realtime: true
+[WheelEditor] Load complete, flags reset
+```
+
+**Broken pattern** (loop):
+```javascript
+[Realtime] ...
 [AutoSave] Saving changes...
+[Realtime] ...
+[AutoSave] Saving changes...
+...infinite repetition...
 ```
 
 ## Future Enhancements

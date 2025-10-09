@@ -128,7 +128,10 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     } finally {
-      isLoadingData.current = false; // Re-enable auto-save
+      // Reset flags after load completes
+      isLoadingData.current = false;
+      isRealtimeUpdate.current = false;
+      console.log('[WheelEditor] Load complete, flags reset');
     }
   }, [wheelId]);
 
@@ -149,16 +152,12 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     console.log(`[Realtime] ${tableName} ${eventType}:`, payload);
     
     // Mark as realtime update to prevent auto-save loop
+    // This flag will be reset in loadWheelData's finally block
     isRealtimeUpdate.current = true;
     
     // Reload the wheel data when any change occurs
     // Throttled to prevent too many reloads
     throttledReload();
-    
-    // Reset flag after a short delay
-    setTimeout(() => {
-      isRealtimeUpdate.current = false;
-    }, 1000);
   }, [throttledReload]);
 
   // Enable realtime sync for this wheel
@@ -176,6 +175,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     // 4. Data came from realtime update
     // 5. Auto-save is disabled
     if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
+      console.log('[AutoSave] Skipped - wheelId:', !!wheelId, 
+                  'loading:', isLoadingData.current, 
+                  'initial:', isInitialLoad.current,
+                  'realtime:', isRealtimeUpdate.current,
+                  'enabled:', autoSaveEnabled);
       return;
     }
 
