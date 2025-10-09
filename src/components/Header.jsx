@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo } from 'lucide-react';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
@@ -22,7 +22,11 @@ function Header({
   isPublic = false,
   wheelId = null,
   onTogglePublic,
-  onVersionHistory
+  onVersionHistory,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false
 }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
@@ -74,6 +78,31 @@ function Header({
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Undo/Redo Buttons */}
+        {onUndo && onRedo && (
+          <>
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Ångra (Ctrl+Z)"
+              aria-label="Ångra"
+            >
+              <Undo size={20} />
+            </button>
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Gör om (Ctrl+Shift+Z)"
+              aria-label="Gör om"
+            >
+              <Redo size={20} />
+            </button>
+            <div className="w-px h-8 bg-gray-300"></div>
+          </>
+        )}
+        
         {/* File Operations Dropdown */}
         <Dropdown
           trigger={

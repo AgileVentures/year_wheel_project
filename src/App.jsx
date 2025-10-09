@@ -15,36 +15,73 @@ import { fetchWheel, saveWheelData, updateWheel, createVersion } from "./service
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
+import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
 import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
 function WheelEditor({ wheelId, onBackToDashboard }) {
-  const [title, setTitle] = useState("Organisation");
-  const [year, setYear] = useState("2025");
-  // Grayscale color scheme (improved contrast)
-  const [colors, setColors] = useState(["#334155", "#475569", "#64748B", "#94A3B8"]);
-  
-  // Start with one initial inner ring and default activity group
-  const [organizationData, setOrganizationData] = useState({
-    rings: [
-      {
-        id: "ring-1",
-        name: "Ring 1",
-        type: "inner", // inner = between center and month ring, outer = outside month ring
-        visible: true
-      }
-    ],
-    activityGroups: [
-      {
-        id: "group-1",
-        name: "Aktivitetsgrupp 1",
-        color: "#334155",
-        visible: true
-      }
-    ],
-    labels: [],
-    items: []
+  // Undo/Redo for main editable states
+  const {
+    states: undoableStates,
+    setStates: setUndoableStates,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    clear: clearHistory
+  } = useMultiStateUndoRedo({
+    title: "Organisation",
+    year: "2025",
+    colors: ["#334155", "#475569", "#64748B", "#94A3B8"],
+    organizationData: {
+      rings: [
+        {
+          id: "ring-1",
+          name: "Ring 1",
+          type: "inner",
+          visible: true
+        }
+      ],
+      activityGroups: [
+        {
+          id: "ag-1",
+          name: "Planering",
+          color: "#3B82F6",
+          visible: true
+        }
+      ],
+      labels: [],
+      items: []
+    }
+  }, {
+    limit: 100, // Keep 100 undo steps
+    debounceMs: 500 // Group rapid changes
   });
+
+  // Extract states from undo-managed object
+  const title = undoableStates.title;
+  const year = undoableStates.year;
+  const colors = undoableStates.colors;
+  const organizationData = undoableStates.organizationData;
+  
+  // Wrapper functions for setting undo-tracked state
+  const setTitle = useCallback((value) => {
+    setUndoableStates({ title: typeof value === 'function' ? value(title) : value });
+  }, [setUndoableStates, title]);
+  
+  const setYear = useCallback((value) => {
+    setUndoableStates({ year: typeof value === 'function' ? value(year) : value });
+  }, [setUndoableStates, year]);
+  
+  const setColors = useCallback((value) => {
+    setUndoableStates({ colors: typeof value === 'function' ? value(colors) : value });
+  }, [setUndoableStates, colors]);
+  
+  const setOrganizationData = useCallback((value) => {
+    setUndoableStates({ organizationData: typeof value === 'function' ? value(organizationData) : value });
+  }, [setUndoableStates, organizationData]);
+  
+  // Other non-undoable states
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
   
@@ -790,6 +827,10 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         wheelId={wheelId}
         onTogglePublic={handleTogglePublic}
         onVersionHistory={wheelId ? () => setShowVersionHistory(true) : null}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
