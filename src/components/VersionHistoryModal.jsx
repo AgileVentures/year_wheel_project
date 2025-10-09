@@ -156,7 +156,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 bg-blue-100 rounded-sm">
               <History className="w-5 h-5 text-blue-600" />
             </div>
             <div>
@@ -168,7 +168,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -186,7 +186,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
               <p className="text-gray-600">{error}</p>
               <button
                 onClick={loadVersions}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
               >
                 Försök igen
               </button>
@@ -204,7 +204,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
               {versions.map((version, index) => (
                 <div
                   key={version.id}
-                  className="group relative border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+                  className="group relative border border-gray-200 rounded-sm p-4 hover:border-blue-300 hover:shadow-md transition-all duration-200"
                 >
                   {/* Timeline connector */}
                   {index < versions.length - 1 && (
@@ -262,7 +262,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handlePreview(version)}
-                            className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-2 hover:bg-blue-50 rounded-sm transition-colors"
                             title="Förhandsgranska"
                           >
                             <Eye className="w-4 h-4 text-blue-600" />
@@ -272,14 +272,14 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                               <button
                                 onClick={() => handleRestore(version)}
                                 disabled={isRestoring}
-                                className="p-2 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                                className="p-2 hover:bg-green-50 rounded-sm transition-colors disabled:opacity-50"
                                 title="Återställ denna version"
                               >
                                 <RotateCcw className="w-4 h-4 text-green-600" />
                               </button>
                               <button
                                 onClick={() => handleDelete(version)}
-                                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2 hover:bg-red-50 rounded-sm transition-colors"
                                 title="Radera version"
                               >
                                 <Trash2 className="w-4 h-4 text-red-600" />
@@ -302,7 +302,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
             <p>Versioner sparas automatiskt och behålls i 100 dagar</p>
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
+              className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-sm transition-colors font-medium"
             >
               Stäng
             </button>
@@ -320,13 +320,13 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
               </h3>
               <button
                 onClick={() => setPreviewVersion(null)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <div className="flex-1 overflow-auto p-6 bg-gray-50">
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="bg-white rounded-sm p-6 border border-gray-200">
                 <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto max-h-96">
                   {JSON.stringify(previewVersion.snapshot_data, null, 2)}
                 </pre>
@@ -335,7 +335,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
             <div className="px-6 py-4 border-t border-gray-200 flex gap-3 justify-end">
               <button
                 onClick={() => setPreviewVersion(null)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               >
                 Stäng
               </button>
@@ -344,7 +344,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                   setPreviewVersion(null);
                   handleRestore(previewVersion);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
                 Återställ denna version

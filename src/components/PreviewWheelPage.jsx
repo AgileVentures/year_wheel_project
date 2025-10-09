@@ -112,7 +112,7 @@ function PreviewWheelPage() {
 
       {/* Wheel Display */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
           <YearWheel
             year={wheelData.year}
             title={wheelData.title}
