@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchWheel } from '../services/wheelService';
-import YearWheel from './YearWheel';
+import YearWheel from '../YearWheel';
 import { Eye, Lock } from 'lucide-react';
 
 /**
