@@ -14,6 +14,7 @@ import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import PreviewWheelPage from "./components/PreviewWheelPage";
 import { fetchWheel, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
+import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
@@ -136,33 +137,74 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       const wheelData = await fetchWheel(wheelId);
       
       if (wheelData) {
-        setTitle(wheelData.title || "Organisation");
-        setYear(String(wheelData.year || new Date().getFullYear()));
+        // IMPORTANT: Only use default if title is truly empty/null/undefined
+        if (wheelData.title) {
+          setTitle(wheelData.title);
+        }
         setIsPublic(wheelData.is_public || false);
         
         if (wheelData.colors) setColors(wheelData.colors);
         
-        // Load organization data
-        if (wheelData.organizationData) {
-          const orgData = wheelData.organizationData;
+        // Load pages for this wheel
+        const pagesData = await fetchPages(wheelId);
+        setPages(pagesData);
+        
+        // If we have pages, load data from first page (or current page if set)
+        if (pagesData.length > 0) {
+          const pageToLoad = currentPageId 
+            ? pagesData.find(p => p.id === currentPageId) || pagesData[0]
+            : pagesData[0];
           
-          // Backward compatibility: convert old 'activities' to 'activityGroups'
-          if (orgData.activities && !orgData.activityGroups) {
-            orgData.activityGroups = orgData.activities;
-            delete orgData.activities;
+          setCurrentPageId(pageToLoad.id);
+          setYear(String(pageToLoad.year || new Date().getFullYear()));
+          
+          if (pageToLoad.organization_data) {
+            const orgData = pageToLoad.organization_data;
+            
+            // Backward compatibility: convert old 'activities' to 'activityGroups'
+            if (orgData.activities && !orgData.activityGroups) {
+              orgData.activityGroups = orgData.activities;
+              delete orgData.activities;
+            }
+            
+            // Ensure at least one activity group exists
+            if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
+              orgData.activityGroups = [{
+                id: "group-1",
+                name: "Aktivitetsgrupp 1",
+                color: wheelData.colors?.[0] || "#334155",
+                visible: true
+              }];
+            }
+            
+            setOrganizationData(orgData);
           }
+        } else {
+          // Fallback: Load from wheel's organization data (legacy support)
+          setYear(String(wheelData.year || new Date().getFullYear()));
           
-          // Ensure at least one activity group exists
-          if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
-            orgData.activityGroups = [{
-              id: "group-1",
-              name: "Aktivitetsgrupp 1",
-              color: wheelData.colors?.[0] || "#334155",
-              visible: true
-            }];
+          // Load organization data
+          if (wheelData.organizationData) {
+            const orgData = wheelData.organizationData;
+            
+            // Backward compatibility: convert old 'activities' to 'activityGroups'
+            if (orgData.activities && !orgData.activityGroups) {
+              orgData.activityGroups = orgData.activities;
+              delete orgData.activities;
+            }
+            
+            // Ensure at least one activity group exists
+            if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
+              orgData.activityGroups = [{
+                id: "group-1",
+                name: "Aktivitetsgrupp 1",
+                color: wheelData.colors?.[0] || "#334155",
+                visible: true
+              }];
+            }
+            
+            setOrganizationData(orgData);
           }
-          
-          setOrganizationData(orgData);
         }
         
         // Load other settings
@@ -226,6 +268,81 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   // Enable realtime sync for this wheel
   useRealtimeWheel(wheelId, handleRealtimeChange);
 
+  // Handle realtime page changes
+  const handlePageRealtimeChange = useCallback((eventType, payload) => {
+    console.log(`[Realtime] wheel_pages ${eventType}:`, payload);
+    
+    // Ignore our own recent changes
+    const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
+    if (timeSinceLastSave < 3000) {
+      console.log('[Realtime] Ignoring own page broadcast');
+      return;
+    }
+    
+    if (eventType === 'INSERT') {
+      // New page added by another user
+      setPages(prevPages => {
+        const exists = prevPages.some(p => p.id === payload.new.id);
+        if (!exists) {
+          return [...prevPages, payload.new].sort((a, b) => a.page_order - b.page_order);
+        }
+        return prevPages;
+      });
+    } else if (eventType === 'UPDATE') {
+      // Page updated by another user
+      setPages(prevPages => 
+        prevPages.map(p => p.id === payload.new.id ? payload.new : p)
+          .sort((a, b) => a.page_order - b.page_order)
+      );
+      
+      // If this is the current page, reload its data
+      if (payload.new.id === currentPageId) {
+        setOrganizationData(payload.new.organization_data);
+        setYear(String(payload.new.year));
+      }
+    } else if (eventType === 'DELETE') {
+      // Page deleted by another user
+      setPages(prevPages => {
+        const filtered = prevPages.filter(p => p.id !== payload.old.id);
+        
+        // If deleted current page, switch to first remaining page
+        if (payload.old.id === currentPageId && filtered.length > 0) {
+          const newCurrentPage = filtered[0];
+          setCurrentPageId(newCurrentPage.id);
+          setOrganizationData(newCurrentPage.organization_data);
+          setYear(String(newCurrentPage.year));
+        }
+        
+        return filtered;
+      });
+    }
+  }, [currentPageId, lastSaveTimestamp]);
+
+  // Subscribe to wheel_pages changes
+  useEffect(() => {
+    if (!wheelId) return;
+
+    const channel = supabase
+      .channel(`wheel_pages:${wheelId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wheel_pages',
+          filter: `wheel_id=eq.${wheelId}`
+        },
+        (payload) => {
+          handlePageRealtimeChange(payload.eventType, payload);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [wheelId, handlePageRealtimeChange]);
+
   // Track active users viewing this wheel
   const activeUsers = useWheelPresence(wheelId);
 
@@ -253,18 +370,25 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       // NOTE: Don't update isSaving state - auto-save should be invisible
       isSavingRef.current = true;
       
-      // Update wheel metadata
+      // Update wheel metadata (NOT including year - it's per-page now)
       await updateWheel(wheelId, {
         title,
-        year: parseInt(year),
         colors,
         showWeekRing,
         showMonthRing,
         showRingNames,
       });
       
-      // Save organization data
-      await saveWheelData(wheelId, organizationData);
+      // Save current page data if we have pages
+      if (currentPageId) {
+        await updatePage(currentPageId, {
+          organization_data: organizationData,
+          year: parseInt(year)
+        });
+      } else {
+        // Fallback: save organization data to wheel (legacy)
+        await saveWheelData(wheelId, organizationData);
+      }
       
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
@@ -298,7 +422,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     }
   }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
 
-  // Initial load on mount
+  // Initial load on mount AND cleanup on unmount
   useEffect(() => {
     if (!wheelId) {
       setIsLoading(false);
@@ -314,6 +438,33 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         isInitialLoad.current = false;
       }, 500);
     });
+
+    // CLEANUP: Reset all state when leaving this wheel
+    return () => {
+      console.log('[WheelEditor] Cleanup - resetting state for wheel:', wheelId);
+      
+      // Reset to default values
+      setOrganizationData({
+        rings: [],
+        activityGroups: [],
+        labels: [],
+        items: []
+      });
+      setPages([]);
+      setCurrentPageId(null);
+      setTitle("Organisation");
+      setYear(String(new Date().getFullYear()));
+      setColors(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+      setShowWeekRing(true);
+      setShowMonthRing(true);
+      setShowRingNames(true);
+      
+      // Reset flags
+      isInitialLoad.current = true;
+      isLoadingData.current = false;
+      isRealtimeUpdate.current = false;
+      isSavingRef.current = false;
+    };
   }, [wheelId, loadWheelData]);
 
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
@@ -353,21 +504,54 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     setIsLoading(false);
   }, [wheelId]);
 
-  // Ensure activity groups always have colors assigned from the palette
+  // Apply template colors to activity groups AND rings when colors change
   useEffect(() => {
-    if (organizationData?.activityGroups) {
-      const needsColors = organizationData.activityGroups.some(group => !group.color);
-      if (needsColors) {
-        setOrganizationData(prevData => {
-          const groupsWithColors = prevData.activityGroups.map((group, index) => ({
-            ...group,
-            color: colors[index % colors.length]
-          }));
-          return { ...prevData, activityGroups: groupsWithColors };
-        });
+    if (!organizationData) return;
+    
+    let needsUpdate = false;
+    const updatedData = { ...organizationData };
+    
+    // Apply colors to activity groups
+    if (organizationData.activityGroups) {
+      const groupsWithColors = organizationData.activityGroups.map((group, index) => ({
+        ...group,
+        color: colors[index % colors.length]
+      }));
+      
+      // Check if any colors changed
+      const colorsChanged = groupsWithColors.some((group, index) => 
+        group.color !== organizationData.activityGroups[index]?.color
+      );
+      
+      if (colorsChanged) {
+        updatedData.activityGroups = groupsWithColors;
+        needsUpdate = true;
       }
     }
-  }, [organizationData, colors]);
+    
+    // Apply colors to rings
+    if (organizationData.rings) {
+      const ringsWithColors = organizationData.rings.map((ring, index) => ({
+        ...ring,
+        color: colors[index % colors.length]
+      }));
+      
+      // Check if any colors changed
+      const colorsChanged = ringsWithColors.some((ring, index) => 
+        ring.color !== organizationData.rings[index]?.color
+      );
+      
+      if (colorsChanged) {
+        updatedData.rings = ringsWithColors;
+        needsUpdate = true;
+      }
+    }
+    
+    if (needsUpdate) {
+      console.log('[Colors] Applying template colors to rings and activity groups');
+      setOrganizationData(updatedData);
+    }
+  }, [colors]); // Only trigger when colors change, NOT when organizationData changes
 
   useEffect(() => {
     // Filter events that overlap with the selected year
@@ -408,18 +592,25 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         });
         console.log('Full organizationData:', organizationData);
         
-        // First, update wheel metadata (title, year, colors, settings)
+        // First, update wheel metadata (title, colors, settings)
         await updateWheel(wheelId, {
           title,
-          year: parseInt(year),
           colors,
           showWeekRing,
           showMonthRing,
           showRingNames,
         });
         
-        // Then, save organization data (rings, activity groups, labels, items)
-        await saveWheelData(wheelId, organizationData);
+        // Save current page data if we have pages
+        if (currentPageId) {
+          await updatePage(currentPageId, {
+            organization_data: organizationData,
+            year: parseInt(year)
+          });
+        } else {
+          // Fallback: save organization data directly to wheel (legacy support)
+          await saveWheelData(wheelId, organizationData);
+        }
         
         // Create version snapshot after successful save
         try {
@@ -515,6 +706,208 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       window.dispatchEvent(event);
     }
   };
+
+  // ========== PAGE MANAGEMENT FUNCTIONS ==========
+  
+  // Load all pages for current wheel
+  const loadPages = useCallback(async () => {
+    if (!wheelId) return;
+    
+    try {
+      const pagesData = await fetchPages(wheelId);
+      setPages(pagesData);
+      
+      // Set current page to first page if none selected
+      if (pagesData.length > 0 && !currentPageId) {
+        setCurrentPageId(pagesData[0].id);
+        // Load first page's data
+        if (pagesData[0].organization_data) {
+          setOrganizationData(pagesData[0].organization_data);
+        }
+        if (pagesData[0].year) {
+          setYear(String(pagesData[0].year));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading pages:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte ladda sidor', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [wheelId, currentPageId]);
+
+  // Switch to a different page
+  const handlePageChange = async (pageId) => {
+    if (pageId === currentPageId) return;
+    
+    try {
+      // Save current page data before switching
+      if (currentPageId) {
+        await updatePage(currentPageId, {
+          organization_data: organizationData,
+          year: parseInt(year)
+        });
+      }
+      
+      // Load new page data
+      const newPage = pages.find(p => p.id === pageId);
+      if (newPage) {
+        setCurrentPageId(pageId);
+        if (newPage.organization_data) {
+          setOrganizationData(newPage.organization_data);
+        }
+        if (newPage.year) {
+          setYear(String(newPage.year));
+        }
+      }
+    } catch (error) {
+      console.error('Error changing page:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte byta sida', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  // Show add page modal
+  const handleAddPage = () => {
+    setShowAddPageModal(true);
+  };
+
+  // Create a blank page
+  const handleCreateBlankPage = async () => {
+    if (!wheelId) return;
+    
+    try {
+      const currentYear = parseInt(year);
+      const newPage = await createPage(wheelId, {
+        year: currentYear,
+        title: `Sida ${pages.length + 1}`,
+        organization_data: {
+          rings: [],
+          activityGroups: [{
+            id: "group-1",
+            name: "Aktivitetsgrupp 1",
+            color: colors[0] || "#334155",
+            visible: true
+          }],
+          labels: [],
+          items: []
+        }
+      });
+      
+      setPages([...pages, newPage]);
+      setShowAddPageModal(false);
+      
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Ny sida skapad!', type: 'success' }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error creating blank page:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte skapa sida', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  // Create a page for next year
+  const handleCreateNextYear = async () => {
+    if (!wheelId) return;
+    
+    try {
+      const currentYear = parseInt(year);
+      const nextYear = currentYear + 1;
+      
+      // Duplicate current structure but with next year
+      const newPage = await createPage(wheelId, {
+        year: nextYear,
+        title: `${nextYear}`,
+        organization_data: organizationData // Copy current structure
+      });
+      
+      setPages([...pages, newPage]);
+      setShowAddPageModal(false);
+      
+      const event = new CustomEvent('showToast', {
+        detail: { message: `Ny sida för ${nextYear} skapad!`, type: 'success' }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error creating next year page:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte skapa nästa års sida', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  // Duplicate a page
+  const handleDuplicatePage = async (pageId) => {
+    if (!wheelId) return;
+    
+    try {
+      const duplicatedPage = await duplicatePage(pageId);
+      setPages([...pages, duplicatedPage]);
+      
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Sida duplicerad!', type: 'success' }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error duplicating page:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte duplicera sida', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  // Delete a page
+  const handleDeletePage = async (pageId) => {
+    if (pages.length <= 1) {
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kan inte radera sista sidan', type: 'error' }
+      });
+      window.dispatchEvent(event);
+      return;
+    }
+    
+    if (!confirm('Är du säker på att du vill radera denna sida?')) return;
+    
+    try {
+      await deletePage(pageId);
+      const updatedPages = pages.filter(p => p.id !== pageId);
+      setPages(updatedPages);
+      
+      // If deleted current page, switch to another
+      if (pageId === currentPageId && updatedPages.length > 0) {
+        const newCurrentPage = updatedPages[0];
+        setCurrentPageId(newCurrentPage.id);
+        if (newCurrentPage.organization_data) {
+          setOrganizationData(newCurrentPage.organization_data);
+        }
+        if (newCurrentPage.year) {
+          setYear(String(newCurrentPage.year));
+        }
+      }
+      
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Sida raderad', type: 'success' }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error deleting page:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte radera sida', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  // ========== END PAGE MANAGEMENT ==========
 
   const handleRestoreVersion = async (versionData) => {
     try {
@@ -897,6 +1290,30 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           wheelId={wheelId}
           onRestore={handleRestoreVersion}
           onClose={() => setShowVersionHistory(false)}
+        />
+      )}
+
+      {/* Page Navigator */}
+      {wheelId && pages.length > 0 && (
+        <PageNavigator
+          pages={pages}
+          currentPageId={currentPageId}
+          onPageChange={handlePageChange}
+          onAddPage={handleAddPage}
+          onDeletePage={handleDeletePage}
+          onDuplicatePage={handleDuplicatePage}
+          disabled={isSaving}
+        />
+      )}
+
+      {/* Add Page Modal */}
+      {showAddPageModal && (
+        <AddPageModal
+          currentPage={pages.find(p => p.id === currentPageId)}
+          onClose={() => setShowAddPageModal(false)}
+          onCreateBlank={handleCreateBlankPage}
+          onDuplicate={() => handleDuplicatePage(currentPageId)}
+          onCreateNextYear={handleCreateNextYear}
         />
       )}
     </div>
