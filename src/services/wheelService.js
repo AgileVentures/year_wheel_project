@@ -586,3 +586,182 @@ export const fetchWheelByShareToken = async (token) => {
   if (error) throw error;
   return fetchWheel(wheel.id);
 };
+
+// =============================================
+// VERSION CONTROL FUNCTIONS
+// =============================================
+
+/**
+ * Create a new version snapshot of a wheel
+ */
+export const createVersion = async (wheelId, snapshotData, description = null, isAutoSave = false) => {
+  try {
+    // Get next version number
+    const { data: versionNumber, error: versionError } = await supabase
+      .rpc('get_next_version_number', { p_wheel_id: wheelId });
+
+    if (versionError) throw versionError;
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Create version
+    const { data, error } = await supabase
+      .from('wheel_versions')
+      .insert({
+        wheel_id: wheelId,
+        version_number: versionNumber,
+        snapshot_data: snapshotData,
+        change_description: description,
+        is_auto_save: isAutoSave,
+        created_by: user?.id,
+        metadata: {
+          user_agent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        }
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Cleanup old versions (keep last 100)
+    await supabase.rpc('cleanup_old_versions', { 
+      p_wheel_id: wheelId, 
+      p_keep_count: 100 
+    });
+
+    return data;
+  } catch (error) {
+    console.error('Error creating version:', error);
+    throw error;
+  }
+};
+
+/**
+ * List all versions for a wheel
+ */
+export const listVersions = async (wheelId, limit = 50) => {
+  try {
+    const { data, error } = await supabase
+      .from('wheel_versions')
+      .select(`
+        id,
+        version_number,
+        created_at,
+        change_description,
+        is_auto_save,
+        created_by,
+        metadata
+      `)
+      .eq('wheel_id', wheelId)
+      .order('version_number', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    // Fetch user details for each version
+    const userIds = [...new Set(data.map(v => v.created_by).filter(Boolean))];
+    
+    if (userIds.length > 0) {
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (!usersError && users) {
+        // Map user data to versions
+        const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+        return data.map(version => ({
+          ...version,
+          user: version.created_by ? userMap[version.created_by] : null
+        }));
+      }
+    }
+
+    return data.map(v => ({ ...v, user: null }));
+  } catch (error) {
+    console.error('Error listing versions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a specific version's snapshot data
+ */
+export const getVersion = async (versionId) => {
+  try {
+    const { data, error } = await supabase
+      .from('wheel_versions')
+      .select('*')
+      .eq('id', versionId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error getting version:', error);
+    throw error;
+  }
+};
+
+/**
+ * Restore a wheel to a previous version
+ * Returns the snapshot data to be applied
+ */
+export const restoreVersion = async (wheelId, versionId) => {
+  try {
+    // Get the version snapshot
+    const { data: version, error } = await supabase
+      .from('wheel_versions')
+      .select('snapshot_data, version_number')
+      .eq('id', versionId)
+      .eq('wheel_id', wheelId)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      data: version.snapshot_data,
+      versionNumber: version.version_number
+    };
+  } catch (error) {
+    console.error('Error restoring version:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a specific version
+ */
+export const deleteVersion = async (versionId) => {
+  try {
+    const { error } = await supabase
+      .from('wheel_versions')
+      .delete()
+      .eq('id', versionId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting version:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get version count for a wheel
+ */
+export const getVersionCount = async (wheelId) => {
+  try {
+    const { count, error } = await supabase
+      .from('wheel_versions')
+      .select('*', { count: 'exact', head: true })
+      .eq('wheel_id', wheelId);
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting version count:', error);
+    return 0;
+  }
+};

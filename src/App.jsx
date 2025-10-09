@@ -4,13 +4,14 @@ import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
 import Toast from "./components/Toast";
+import VersionHistoryModal from "./components/VersionHistoryModal";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import AuthPage from "./components/auth/AuthPage";
 import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import PreviewWheelPage from "./components/PreviewWheelPage";
-import { fetchWheel, saveWheelData, updateWheel } from "./services/wheelService";
+import { fetchWheel, saveWheelData, updateWheel, createVersion } from "./services/wheelService";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
@@ -67,6 +68,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isPublic, setIsPublic] = useState(false); // Public sharing toggle
+  const [showVersionHistory, setShowVersionHistory] = useState(false); // Version history modal
   
   // Track if we're currently loading data to prevent auto-save during load
   const isLoadingData = useRef(false);
@@ -375,6 +377,28 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         // Then, save organization data (rings, activity groups, labels, items)
         await saveWheelData(wheelId, organizationData);
         
+        // Create version snapshot after successful save
+        try {
+          await createVersion(
+            wheelId,
+            {
+              title,
+              year,
+              colors,
+              showWeekRing,
+              showMonthRing,
+              showRingNames,
+              organizationData
+            },
+            null, // No manual description
+            false // Not an auto-save
+          );
+          console.log('[ManualSave] Version snapshot created');
+        } catch (versionError) {
+          console.error('[ManualSave] Error creating version:', versionError);
+          // Don't fail the save if version creation fails
+        }
+        
         // Mark the save timestamp to ignore our own broadcasts
         lastSaveTimestamp.current = Date.now();
         
@@ -443,6 +467,48 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Kunde inte uppdatera delningsinställning', type: 'error' } 
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  const handleRestoreVersion = async (versionData) => {
+    try {
+      // Create a version snapshot of current state before restoring
+      if (wheelId) {
+        await createVersion(
+          wheelId,
+          {
+            title,
+            year,
+            colors,
+            showWeekRing,
+            showMonthRing,
+            showRingNames,
+            organizationData
+          },
+          'Före återställning',
+          false
+        );
+      }
+
+      // Apply the restored data
+      if (versionData.title) setTitle(versionData.title);
+      if (versionData.year) setYear(versionData.year.toString());
+      if (versionData.colors) setColors(versionData.colors);
+      if (typeof versionData.showWeekRing === 'boolean') setShowWeekRing(versionData.showWeekRing);
+      if (typeof versionData.showMonthRing === 'boolean') setShowMonthRing(versionData.showMonthRing);
+      if (typeof versionData.showRingNames === 'boolean') setShowRingNames(versionData.showRingNames);
+      if (versionData.organizationData) setOrganizationData(versionData.organizationData);
+
+      // Save the restored state
+      await handleSave();
+      
+      setShowVersionHistory(false);
+    } catch (error) {
+      console.error('Error restoring version:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte återställa version', type: 'error' }
       });
       window.dispatchEvent(event);
     }
@@ -723,6 +789,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         isPublic={isPublic}
         wheelId={wheelId}
         onTogglePublic={handleTogglePublic}
+        onVersionHistory={wheelId ? () => setShowVersionHistory(true) : null}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -775,6 +842,15 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       </div>
       
       <Toast />
+      
+      {/* Version History Modal */}
+      {showVersionHistory && wheelId && (
+        <VersionHistoryModal
+          wheelId={wheelId}
+          onRestore={handleRestoreVersion}
+          onClose={() => setShowVersionHistory(false)}
+        />
+      )}
     </div>
   );
 }

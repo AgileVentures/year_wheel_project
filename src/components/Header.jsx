@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History } from 'lucide-react';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
@@ -21,7 +21,8 @@ function Header({
   activeUsers = [],
   isPublic = false,
   wheelId = null,
-  onTogglePublic
+  onTogglePublic,
+  onVersionHistory
 }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
@@ -165,6 +166,21 @@ function Header({
               wheelId={wheelId}
               onTogglePublic={onTogglePublic}
             />
+          </>
+        )}
+        
+        {/* Version History (only show for database wheels) */}
+        {wheelId && onVersionHistory && (
+          <>
+            <div className="w-px h-8 bg-gray-300"></div>
+            <button
+              onClick={onVersionHistory}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+              title="Visa versionshistorik"
+            >
+              <History size={18} />
+              <span>Historik</span>
+            </button>
           </>
         )}
         
