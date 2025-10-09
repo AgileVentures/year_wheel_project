@@ -245,9 +245,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
     console.log(`[Realtime] ${tableName} ${eventType}:`, payload);
     
-    // Ignore broadcasts from our own recent saves (within 3 seconds)
+    // Ignore broadcasts from our own recent saves (within 10 seconds - increased to prevent reload loop)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
-    if (timeSinceLastSave < 3000) {
+    if (timeSinceLastSave < 10000) {
       console.log('[Realtime] Ignoring own broadcast (saved', timeSinceLastSave, 'ms ago)');
       return;
     }
@@ -270,47 +270,13 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   // Enable realtime sync for this wheel
   useRealtimeWheel(wheelId, handleRealtimeChange);
 
-  // Helper function to apply template colors to organization data
-  // MUST be defined BEFORE handlePageRealtimeChange since it uses this function
-  const applyTemplateColors = useCallback((data) => {
-    if (!data) return data;
-    
-    const updatedData = { ...data };
-    
-    // Apply colors to activity groups
-    if (data.activityGroups && data.activityGroups.length > 0) {
-      updatedData.activityGroups = data.activityGroups.map((group, index) => ({
-        ...group,
-        color: colors[index % colors.length]
-      }));
-    }
-    
-    // Apply colors to OUTER rings only (inner rings don't use template colors)
-    if (data.rings && data.rings.length > 0) {
-      updatedData.rings = data.rings.map((ring) => {
-        // Only apply template colors to outer rings
-        if (ring.type === 'outer') {
-          const outerRings = data.rings.filter(r => r.type === 'outer');
-          const outerIndex = outerRings.findIndex(r => r.id === ring.id);
-          return {
-            ...ring,
-            color: colors[outerIndex % colors.length]
-          };
-        }
-        return ring; // Keep inner rings as-is
-      });
-    }
-    
-    return updatedData;
-  }, [colors]);
-
   // Handle realtime page changes
   const handlePageRealtimeChange = useCallback((eventType, payload) => {
     console.log(`[Realtime] wheel_pages ${eventType}:`, payload);
     
-    // Ignore our own recent changes
+    // Ignore our own recent changes (increased to 10 seconds to prevent reload loop)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
-    if (timeSinceLastSave < 3000) {
+    if (timeSinceLastSave < 10000) {
       console.log('[Realtime] Ignoring own page broadcast');
       return;
     }
@@ -331,11 +297,10 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           .sort((a, b) => a.page_order - b.page_order)
       );
       
-      // If this is the current page, reload its data and apply template colors
+      // If this is the current page, reload its data (colors already set by user)
       if (payload.new.id === currentPageId) {
-        const dataWithColors = applyTemplateColors(payload.new.organization_data);
-        console.log('[Realtime] Applying template colors to updated page data');
-        setOrganizationData(dataWithColors);
+        console.log('[Realtime] Loading updated page data');
+        setOrganizationData(payload.new.organization_data);
         setYear(String(payload.new.year));
       }
     } else if (eventType === 'DELETE') {
@@ -343,20 +308,19 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       setPages(prevPages => {
         const filtered = prevPages.filter(p => p.id !== payload.old.id);
         
-        // If deleted current page, switch to first remaining page and apply colors
+        // If deleted current page, switch to first remaining page
         if (payload.old.id === currentPageId && filtered.length > 0) {
           const newCurrentPage = filtered[0];
           setCurrentPageId(newCurrentPage.id);
-          const dataWithColors = applyTemplateColors(newCurrentPage.organization_data);
-          console.log('[Realtime] Applying template colors after page deletion');
-          setOrganizationData(dataWithColors);
+          console.log('[Realtime] Loading first remaining page after deletion');
+          setOrganizationData(newCurrentPage.organization_data);
           setYear(String(newCurrentPage.year));
         }
         
         return filtered;
       });
     }
-  }, [currentPageId, lastSaveTimestamp, applyTemplateColors]);
+  }, [currentPageId, lastSaveTimestamp]);
 
   // Subscribe to wheel_pages changes
   useEffect(() => {
@@ -386,7 +350,21 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   // Track active users viewing this wheel
   const activeUsers = useWheelPresence(wheelId);
 
+  // Store latest values in refs so autoSave always reads current state
+  const latestValuesRef = useRef({});
+  latestValuesRef.current = {
+    title,
+    colors,
+    showWeekRing,
+    showMonthRing,
+    showRingNames,
+    organizationData,
+    year,
+    currentPageId
+  };
+
   // Auto-save function (debounced to prevent excessive saves)
+  // Uses refs to always read the latest state values
   const autoSave = useDebouncedCallback(async () => {
     // Don't auto-save if:
     // 1. No wheelId (localStorage mode)
@@ -403,8 +381,20 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       return;
     }
 
+    // Get latest values from ref (not from closure)
+    const {
+      title: currentTitle,
+      colors: currentColors,
+      showWeekRing: currentShowWeekRing,
+      showMonthRing: currentShowMonthRing,
+      showRingNames: currentShowRingNames,
+      organizationData: currentOrganizationData,
+      year: currentYear,
+      currentPageId: currentCurrentPageId
+    } = latestValuesRef.current;
+
     try {
-      console.log('[AutoSave] Saving changes...');
+      console.log('[AutoSave] Saving changes... title:', currentTitle);
       
       // Mark as saving to prevent realtime interference
       // NOTE: Don't update isSaving state - auto-save should be invisible
@@ -412,22 +402,22 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       
       // Update wheel metadata (NOT including year - it's per-page now)
       await updateWheel(wheelId, {
-        title,
-        colors,
-        showWeekRing,
-        showMonthRing,
-        showRingNames,
+        title: currentTitle,
+        colors: currentColors,
+        showWeekRing: currentShowWeekRing,
+        showMonthRing: currentShowMonthRing,
+        showRingNames: currentShowRingNames,
       });
       
       // Save current page data if we have pages
-      if (currentPageId) {
-        await updatePage(currentPageId, {
-          organization_data: organizationData,
-          year: parseInt(year)
+      if (currentCurrentPageId) {
+        await updatePage(currentCurrentPageId, {
+          organization_data: currentOrganizationData,
+          year: parseInt(currentYear)
         });
       } else {
         // Fallback: save organization data to wheel (legacy)
-        await saveWheelData(wheelId, organizationData);
+        await saveWheelData(wheelId, currentOrganizationData);
       }
       
       // Mark the save timestamp to ignore our own broadcasts
@@ -450,17 +440,18 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     }
   }, 2000); // Wait 2 seconds after last change before saving
 
-  // Auto-save when organizationData changes
-  useEffect(() => {
-    autoSave();
-  }, [organizationData, autoSave]);
+  // DISABLED auto-save on organizationData changes - was causing realtime loops
+  // User must click Save button to persist changes
+  // useEffect(() => {
+  //   autoSave();
+  // }, [organizationData, autoSave]);
 
-  // Auto-save when wheel settings change
-  useEffect(() => {
-    if (!isInitialLoad.current) {
-      autoSave();
-    }
-  }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
+  // DISABLED auto-save on settings changes - was causing realtime loops
+  // useEffect(() => {
+  //   if (!isInitialLoad.current) {
+  //     autoSave();
+  //   }
+  // }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
 
   // Initial load on mount AND cleanup when wheelId changes
   useEffect(() => {
@@ -557,22 +548,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     setIsLoading(false);
   }, [wheelId]);
 
-  // Apply template colors when colors change
-  useEffect(() => {
-    if (!organizationData || isLoadingData.current || isInitialLoad.current) return;
-    
-    const updatedData = applyTemplateColors(organizationData);
-    
-    // Only update if colors actually changed
-    const hasChanges = 
-      JSON.stringify(updatedData.activityGroups) !== JSON.stringify(organizationData.activityGroups) ||
-      JSON.stringify(updatedData.rings) !== JSON.stringify(organizationData.rings);
-    
-    if (hasChanges) {
-      console.log('[Colors] Applying template colors to rings and activity groups');
-      setOrganizationData(updatedData);
-    }
-  }, [colors]); // Only trigger when colors array changes
+  // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
+  // DO NOT automatically apply colors here - it causes unwanted data overwrites and save loops
 
   useEffect(() => {
     // Filter events that overlap with the selected year
@@ -743,11 +720,10 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       // Set current page to first page if none selected
       if (sortedPages.length > 0 && !currentPageId) {
         setCurrentPageId(sortedPages[0].id);
-        // Load first page's data and apply template colors
+        // Load first page's data (with user's saved colors)
         if (sortedPages[0].organization_data) {
-          const dataWithColors = applyTemplateColors(sortedPages[0].organization_data);
-          console.log('[LoadPages] Applying template colors to loaded page data');
-          setOrganizationData(dataWithColors);
+          console.log('[LoadPages] Loading page data from database');
+          setOrganizationData(sortedPages[0].organization_data);
         }
         if (sortedPages[0].year) {
           setYear(String(sortedPages[0].year));
@@ -760,7 +736,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     }
-  }, [wheelId, currentPageId, applyTemplateColors]);
+  }, [wheelId, currentPageId]);
 
   // Switch to a different page
   const handlePageChange = async (pageId) => {
@@ -780,9 +756,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       if (newPage) {
         setCurrentPageId(pageId);
         if (newPage.organization_data) {
-          const dataWithColors = applyTemplateColors(newPage.organization_data);
-          console.log('[PageChange] Applying template colors to page data');
-          setOrganizationData(dataWithColors);
+          console.log('[PageChange] Loading page data');
+          setOrganizationData(newPage.organization_data);
         }
         if (newPage.year) {
           setYear(String(newPage.year));

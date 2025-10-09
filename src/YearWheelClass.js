@@ -1779,17 +1779,18 @@ class YearWheel {
       this.context.font = `700 ${this.size / 65}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
       this.context.textBaseline = "middle";
       
-      // Simple text wrapping for activity name
-      const words = this.hoveredItem.name.split(' ');
+      // Text wrapping for activity name - split on spaces and hyphens
+      const parts = this.hoveredItem.name.split(/(-|\s+)/); // Split on hyphens and spaces, keep delimiters
       const lines = [];
       let currentLine = '';
       
-      for (let word of words) {
-        const testLine = currentLine ? currentLine + ' ' + word : word;
+      for (let part of parts) {
+        if (!part) continue; // Skip empty strings
+        const testLine = currentLine + part;
         const metrics = this.context.measureText(testLine);
         if (metrics.width > maxWidth && currentLine) {
           lines.push(currentLine);
-          currentLine = word;
+          currentLine = part;
         } else {
           currentLine = testLine;
         }
