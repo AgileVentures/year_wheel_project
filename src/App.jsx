@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
 import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
@@ -12,7 +12,7 @@ import InviteAcceptPage from "./components/InviteAcceptPage";
 import { fetchWheel, saveWheelData, updateWheel } from "./services/wheelService";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
-import { useThrottledCallback } from "./hooks/useCallbackUtils";
+import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
 import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
@@ -64,10 +64,20 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  
+  // Track if we're currently loading data to prevent auto-save during load
+  const isLoadingData = useRef(false);
+  // Track if this is the initial load to prevent auto-save on mount
+  const isInitialLoad = useRef(true);
+  // Track if data came from realtime update to prevent save loop
+  const isRealtimeUpdate = useRef(false);
 
   // Load wheel data function (memoized to avoid recreating)
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
+    
+    isLoadingData.current = true; // Prevent auto-save during load
     
     try {
       console.log('[WheelEditor] Loading wheel data:', wheelId);
@@ -117,6 +127,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         detail: { message: 'Kunde inte ladda hjul', type: 'error' } 
       });
       window.dispatchEvent(event);
+    } finally {
+      isLoadingData.current = false; // Re-enable auto-save
     }
   }, [wheelId]);
 
@@ -136,9 +148,17 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
     console.log(`[Realtime] ${tableName} ${eventType}:`, payload);
     
+    // Mark as realtime update to prevent auto-save loop
+    isRealtimeUpdate.current = true;
+    
     // Reload the wheel data when any change occurs
     // Throttled to prevent too many reloads
     throttledReload();
+    
+    // Reset flag after a short delay
+    setTimeout(() => {
+      isRealtimeUpdate.current = false;
+    }, 1000);
   }, [throttledReload]);
 
   // Enable realtime sync for this wheel
@@ -147,16 +167,75 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   // Track active users viewing this wheel
   const activeUsers = useWheelPresence(wheelId);
 
+  // Auto-save function (debounced to prevent excessive saves)
+  const autoSave = useDebouncedCallback(async () => {
+    // Don't auto-save if:
+    // 1. No wheelId (localStorage mode)
+    // 2. Currently loading data
+    // 3. This is the initial load
+    // 4. Data came from realtime update
+    // 5. Auto-save is disabled
+    if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
+      return;
+    }
+
+    try {
+      console.log('[AutoSave] Saving changes...');
+      
+      // Update wheel metadata
+      await updateWheel(wheelId, {
+        title,
+        year: parseInt(year),
+        colors,
+        showWeekRing,
+        showMonthRing,
+        showRingNames,
+      });
+      
+      // Save organization data
+      await saveWheelData(wheelId, organizationData);
+      
+      console.log('[AutoSave] Changes saved successfully');
+      
+      // Show subtle success feedback
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Automatiskt sparat', type: 'success' } 
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('[AutoSave] Error:', error);
+      // Don't show error toast for auto-save to avoid annoying users
+      // They can always manually save
+    }
+  }, 2000); // Wait 2 seconds after last change before saving
+
+  // Auto-save when organizationData changes
+  useEffect(() => {
+    autoSave();
+  }, [organizationData, autoSave]);
+
+  // Auto-save when wheel settings change
+  useEffect(() => {
+    if (!isInitialLoad.current) {
+      autoSave();
+    }
+  }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
+
   // Initial load on mount
   useEffect(() => {
     if (!wheelId) {
       setIsLoading(false);
+      isInitialLoad.current = false; // Not initial load anymore
       return;
     }
 
     setIsLoading(true);
     loadWheelData().finally(() => {
       setIsLoading(false);
+      // After initial load completes, enable auto-save
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 500);
     });
   }, [wheelId, loadWheelData]);
 
@@ -233,8 +312,12 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     // If we have a wheelId, save to database
     if (wheelId) {
       setIsSaving(true);
+      // Temporarily disable auto-save during manual save
+      const wasAutoSaveEnabled = autoSaveEnabled;
+      setAutoSaveEnabled(false);
+      
       try {
-        console.log('Saving wheel data...', {
+        console.log('[ManualSave] Saving wheel data...', {
           wheelId,
           title,
           year,
@@ -260,7 +343,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         // Then, save organization data (rings, activity groups, labels, items)
         await saveWheelData(wheelId, organizationData);
         
-        console.log('Wheel data saved successfully');
+        console.log('[ManualSave] Wheel data saved successfully');
         
         // Show success feedback
         const event = new CustomEvent('showToast', { 
@@ -268,13 +351,15 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         });
         window.dispatchEvent(event);
       } catch (error) {
-        console.error('Error saving wheel:', error);
+        console.error('[ManualSave] Error saving wheel:', error);
         const event = new CustomEvent('showToast', { 
           detail: { message: 'Kunde inte spara', type: 'error' } 
         });
         window.dispatchEvent(event);
       } finally {
         setIsSaving(false);
+        // Re-enable auto-save
+        setAutoSaveEnabled(wasAutoSaveEnabled);
       }
     } else {
       // Fallback to localStorage for backward compatibility
@@ -470,9 +555,17 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
 
           // Show success feedback
           const toastEvent = new CustomEvent('showToast', { 
-            detail: { message: 'Fil laddad!', type: 'success' } 
+            detail: { message: 'Fil laddad! Sparar automatiskt...', type: 'success' } 
           });
           window.dispatchEvent(toastEvent);
+          
+          // Trigger auto-save after file import if wheelId exists
+          if (wheelId) {
+            // Wait a bit for state to settle, then trigger auto-save
+            setTimeout(() => {
+              autoSave();
+            }, 500);
+          }
         } catch (error) {
           console.error('Error loading file:', error);
           const toastEvent = new CustomEvent('showToast', { 
