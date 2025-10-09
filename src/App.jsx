@@ -33,7 +33,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     canRedo,
     clear: clearHistory
   } = useMultiStateUndoRedo({
-    title: "Organisation",
+    title: "Nytt hjul",
     year: "2025",
     colors: ["#334155", "#475569", "#64748B", "#94A3B8"],
     organizationData: {
@@ -994,7 +994,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     if (!confirm('Är du säker på att du vill återställa allt? All data kommer att raderas.')) return;
     
     // Reset to clean state with one initial inner ring
-    setTitle("Organisation");
+    setTitle("Nytt hjul");
     setYear("2025");
     const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     setColors(defaultColors);

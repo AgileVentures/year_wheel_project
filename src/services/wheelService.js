@@ -155,7 +155,7 @@ export const createWheel = async (wheelData) => {
     .from('year_wheels')
     .insert({
       user_id: user.id,
-      title: wheelData.title || 'Organisation',
+      title: wheelData.title || 'Nytt hjul',
       year: parseInt(wheelData.year) || new Date().getFullYear(),
       colors: wheelData.colors || ['#334155', '#475569', '#64748B', '#94A3B8'],
       show_week_ring: wheelData.showWeekRing !== undefined ? wheelData.showWeekRing : true,
