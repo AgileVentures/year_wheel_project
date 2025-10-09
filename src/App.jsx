@@ -5,13 +5,15 @@ import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
 import Toast from "./components/Toast";
 import VersionHistoryModal from "./components/VersionHistoryModal";
+import PageNavigator from "./components/PageNavigator";
+import AddPageModal from "./components/AddPageModal";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import AuthPage from "./components/auth/AuthPage";
 import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import PreviewWheelPage from "./components/PreviewWheelPage";
-import { fetchWheel, saveWheelData, updateWheel, createVersion } from "./services/wheelService";
+import { fetchWheel, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
@@ -106,6 +108,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isPublic, setIsPublic] = useState(false); // Public sharing toggle
   const [showVersionHistory, setShowVersionHistory] = useState(false); // Version history modal
+  
+  // Multi-page state
+  const [pages, setPages] = useState([]);
+  const [currentPageId, setCurrentPageId] = useState(null);
+  const [showAddPageModal, setShowAddPageModal] = useState(false);
   
   // Track if we're currently loading data to prevent auto-save during load
   const isLoadingData = useRef(false);

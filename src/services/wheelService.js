@@ -753,7 +753,7 @@ export const deleteVersion = async (versionId) => {
  */
 export const getVersionCount = async (wheelId) => {
   try {
-    const { count, error } = await supabase
+    const { count, error} = await supabase
       .from('wheel_versions')
       .select('*', { count: 'exact', head: true })
       .eq('wheel_id', wheelId);
@@ -762,6 +762,193 @@ export const getVersionCount = async (wheelId) => {
     return count || 0;
   } catch (error) {
     console.error('Error getting version count:', error);
+    return 0;
+  }
+};
+
+// =============================================
+// MULTI-PAGE WHEEL FUNCTIONS
+// =============================================
+
+/**
+ * Fetch all pages for a wheel
+ */
+export const fetchPages = async (wheelId) => {
+  try {
+    const { data, error } = await supabase
+      .from('wheel_pages')
+      .select('*')
+      .eq('wheel_id', wheelId)
+      .order('page_order', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching pages:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch a single page
+ */
+export const fetchPage = async (pageId) => {
+  try {
+    const { data, error } = await supabase
+      .from('wheel_pages')
+      .select('*')
+      .eq('id', pageId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching page:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new page
+ */
+export const createPage = async (wheelId, pageData) => {
+  try {
+    // Get next page order
+    const { data: nextOrder, error: orderError } = await supabase
+      .rpc('get_next_page_order', { p_wheel_id: wheelId });
+
+    if (orderError) throw orderError;
+
+    // Create page
+    const { data, error } = await supabase
+      .from('wheel_pages')
+      .insert({
+        wheel_id: wheelId,
+        page_order: nextOrder,
+        year: pageData.year || new Date().getFullYear(),
+        title: pageData.title || `Sida ${nextOrder}`,
+        organization_data: pageData.organizationData || {
+          rings: [],
+          activityGroups: [],
+          labels: [],
+          items: []
+        },
+        override_colors: pageData.overrideColors || null,
+        override_show_week_ring: pageData.overrideShowWeekRing || null,
+        override_show_month_ring: pageData.overrideShowMonthRing || null,
+        override_show_ring_names: pageData.overrideShowRingNames || null
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error creating page:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a page
+ */
+export const updatePage = async (pageId, updates) => {
+  try {
+    const { data, error } = await supabase
+      .from('wheel_pages')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', pageId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating page:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a page
+ */
+export const deletePage = async (pageId) => {
+  try {
+    const { error } = await supabase
+      .from('wheel_pages')
+      .delete()
+      .eq('id', pageId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting page:', error);
+    throw error;
+  }
+};
+
+/**
+ * Duplicate a page using the database function
+ */
+export const duplicatePage = async (pageId) => {
+  try {
+    const { data: newPageId, error } = await supabase
+      .rpc('duplicate_wheel_page', { p_page_id: pageId });
+
+    if (error) throw error;
+
+    // Fetch the newly created page
+    return await fetchPage(newPageId);
+  } catch (error) {
+    console.error('Error duplicating page:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reorder pages
+ */
+export const reorderPages = async (wheelId, pageOrders) => {
+  try {
+    // Update each page's order
+    const updates = pageOrders.map(({ id, page_order }) => 
+      supabase
+        .from('wheel_pages')
+        .update({ page_order })
+        .eq('id', id)
+    );
+
+    const results = await Promise.all(updates);
+    
+    // Check for errors
+    const errors = results.filter(r => r.error);
+    if (errors.length > 0) {
+      throw errors[0].error;
+    }
+
+    return await fetchPages(wheelId);
+  } catch (error) {
+    console.error('Error reordering pages:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get page count for a wheel
+ */
+export const getPageCount = async (wheelId) => {
+  try {
+    const { count, error } = await supabase
+      .from('wheel_pages')
+      .select('*', { count: 'exact', head: true })
+      .eq('wheel_id', wheelId);
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting page count:', error);
     return 0;
   }
 };
