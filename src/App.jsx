@@ -296,9 +296,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           .sort((a, b) => a.page_order - b.page_order)
       );
       
-      // If this is the current page, reload its data
+      // If this is the current page, reload its data and apply template colors
       if (payload.new.id === currentPageId) {
-        setOrganizationData(payload.new.organization_data);
+        const dataWithColors = applyTemplateColors(payload.new.organization_data);
+        console.log('[Realtime] Applying template colors to updated page data');
+        setOrganizationData(dataWithColors);
         setYear(String(payload.new.year));
       }
     } else if (eventType === 'DELETE') {
@@ -306,18 +308,20 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       setPages(prevPages => {
         const filtered = prevPages.filter(p => p.id !== payload.old.id);
         
-        // If deleted current page, switch to first remaining page
+        // If deleted current page, switch to first remaining page and apply colors
         if (payload.old.id === currentPageId && filtered.length > 0) {
           const newCurrentPage = filtered[0];
           setCurrentPageId(newCurrentPage.id);
-          setOrganizationData(newCurrentPage.organization_data);
+          const dataWithColors = applyTemplateColors(newCurrentPage.organization_data);
+          console.log('[Realtime] Applying template colors after page deletion');
+          setOrganizationData(dataWithColors);
           setYear(String(newCurrentPage.year));
         }
         
         return filtered;
       });
     }
-  }, [currentPageId, lastSaveTimestamp]);
+  }, [currentPageId, lastSaveTimestamp, applyTemplateColors]);
 
   // Subscribe to wheel_pages changes
   useEffect(() => {
@@ -517,54 +521,55 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     setIsLoading(false);
   }, [wheelId]);
 
-  // Apply template colors to activity groups AND rings when colors change
-  useEffect(() => {
-    if (!organizationData) return;
+  // Helper function to apply template colors to organization data
+  const applyTemplateColors = useCallback((data) => {
+    if (!data) return data;
     
-    let needsUpdate = false;
-    const updatedData = { ...organizationData };
+    const updatedData = { ...data };
     
     // Apply colors to activity groups
-    if (organizationData.activityGroups) {
-      const groupsWithColors = organizationData.activityGroups.map((group, index) => ({
+    if (data.activityGroups && data.activityGroups.length > 0) {
+      updatedData.activityGroups = data.activityGroups.map((group, index) => ({
         ...group,
         color: colors[index % colors.length]
       }));
-      
-      // Check if any colors changed
-      const colorsChanged = groupsWithColors.some((group, index) => 
-        group.color !== organizationData.activityGroups[index]?.color
-      );
-      
-      if (colorsChanged) {
-        updatedData.activityGroups = groupsWithColors;
-        needsUpdate = true;
-      }
     }
     
-    // Apply colors to rings
-    if (organizationData.rings) {
-      const ringsWithColors = organizationData.rings.map((ring, index) => ({
-        ...ring,
-        color: colors[index % colors.length]
-      }));
-      
-      // Check if any colors changed
-      const colorsChanged = ringsWithColors.some((ring, index) => 
-        ring.color !== organizationData.rings[index]?.color
-      );
-      
-      if (colorsChanged) {
-        updatedData.rings = ringsWithColors;
-        needsUpdate = true;
-      }
+    // Apply colors to OUTER rings only (inner rings don't use template colors)
+    if (data.rings && data.rings.length > 0) {
+      updatedData.rings = data.rings.map((ring) => {
+        // Only apply template colors to outer rings
+        if (ring.type === 'outer') {
+          const outerRings = data.rings.filter(r => r.type === 'outer');
+          const outerIndex = outerRings.findIndex(r => r.id === ring.id);
+          return {
+            ...ring,
+            color: colors[outerIndex % colors.length]
+          };
+        }
+        return ring; // Keep inner rings as-is
+      });
     }
     
-    if (needsUpdate) {
+    return updatedData;
+  }, [colors]);
+
+  // Apply template colors when colors change
+  useEffect(() => {
+    if (!organizationData || isLoadingData.current || isInitialLoad.current) return;
+    
+    const updatedData = applyTemplateColors(organizationData);
+    
+    // Only update if colors actually changed
+    const hasChanges = 
+      JSON.stringify(updatedData.activityGroups) !== JSON.stringify(organizationData.activityGroups) ||
+      JSON.stringify(updatedData.rings) !== JSON.stringify(organizationData.rings);
+    
+    if (hasChanges) {
       console.log('[Colors] Applying template colors to rings and activity groups');
       setOrganizationData(updatedData);
     }
-  }, [colors]); // Only trigger when colors change, NOT when organizationData changes
+  }, [colors]); // Only trigger when colors array changes
 
   useEffect(() => {
     // Filter events that overlap with the selected year
@@ -735,9 +740,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       // Set current page to first page if none selected
       if (sortedPages.length > 0 && !currentPageId) {
         setCurrentPageId(sortedPages[0].id);
-        // Load first page's data
+        // Load first page's data and apply template colors
         if (sortedPages[0].organization_data) {
-          setOrganizationData(sortedPages[0].organization_data);
+          const dataWithColors = applyTemplateColors(sortedPages[0].organization_data);
+          console.log('[LoadPages] Applying template colors to loaded page data');
+          setOrganizationData(dataWithColors);
         }
         if (sortedPages[0].year) {
           setYear(String(sortedPages[0].year));
@@ -750,7 +757,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     }
-  }, [wheelId, currentPageId]);
+  }, [wheelId, currentPageId, applyTemplateColors]);
 
   // Switch to a different page
   const handlePageChange = async (pageId) => {
@@ -765,12 +772,14 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         });
       }
       
-      // Load new page data
+      // Load new page data and apply template colors
       const newPage = pages.find(p => p.id === pageId);
       if (newPage) {
         setCurrentPageId(pageId);
         if (newPage.organization_data) {
-          setOrganizationData(newPage.organization_data);
+          const dataWithColors = applyTemplateColors(newPage.organization_data);
+          console.log('[PageChange] Applying template colors to page data');
+          setOrganizationData(dataWithColors);
         }
         if (newPage.year) {
           setYear(String(newPage.year));
