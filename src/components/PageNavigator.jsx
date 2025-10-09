@@ -1,58 +1,36 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Copy, Trash2, GripVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar } from 'lucide-react';
 
 /**
  * PageNavigator Component
  * 
- * Bottom navigation bar for multi-page wheels (Canva-style)
- * Shows thumbnails of all pages with navigation controls
+ * Compact horizontal navigation for multi-page wheels
+ * Shows year-based page navigation in header
  */
 export default function PageNavigator({ 
   pages = [], 
   currentPageId, 
   onPageChange, 
   onAddPage,
-  onDeletePage,
-  onDuplicatePage,
   disabled = false
 }) {
-  const [hoveredPageId, setHoveredPageId] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
   
   const currentIndex = pages.findIndex(p => p.id === currentPageId);
+  const currentPage = pages[currentIndex];
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < pages.length - 1;
 
   const handlePrevPage = () => {
-    if (canGoPrev) {
+    if (canGoPrev && !disabled) {
       onPageChange(pages[currentIndex - 1].id);
     }
   };
 
   const handleNextPage = () => {
-    if (canGoNext) {
+    if (canGoNext && !disabled) {
       onPageChange(pages[currentIndex + 1].id);
     }
-  };
-
-  const handleDeletePage = (pageId, e) => {
-    e.stopPropagation();
-    
-    if (pages.length === 1) {
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kan inte radera sista sidan', type: 'error' }
-      });
-      window.dispatchEvent(event);
-      return;
-    }
-
-    if (confirm('Är du säker på att du vill radera denna sida?')) {
-      onDeletePage(pageId);
-    }
-  };
-
-  const handleDuplicatePage = (pageId, e) => {
-    e.stopPropagation();
-    onDuplicatePage(pageId);
   };
 
   if (!pages || pages.length === 0) {
@@ -60,127 +38,98 @@ export default function PageNavigator({
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
-      <div className="max-w-full px-4 py-3">
-        <div className="flex items-center justify-center gap-3">
-          {/* Previous button */}
-          <button
-            onClick={handlePrevPage}
-            disabled={!canGoPrev || disabled}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Föregående sida"
-          >
-            <ChevronLeft size={20} className="text-gray-600" />
-          </button>
+    <div className="relative flex items-center gap-2">
+      {/* Previous year button */}
+      <button
+        onClick={handlePrevPage}
+        disabled={!canGoPrev || disabled}
+        className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        title="Föregående år"
+      >
+        <ChevronLeft size={18} className="text-gray-600" />
+      </button>
 
-          {/* Page thumbnails */}
-          <div className="flex items-center gap-2 overflow-x-auto max-w-4xl px-2">
-            {pages.map((page, index) => {
-              const isActive = page.id === currentPageId;
-              const isHovered = page.id === hoveredPageId;
-              
-              return (
-                <div
-                  key={page.id}
-                  className="relative flex-shrink-0 group"
-                  onMouseEnter={() => setHoveredPageId(page.id)}
-                  onMouseLeave={() => setHoveredPageId(null)}
-                >
-                  {/* Page thumbnail */}
+      {/* Current year dropdown */}
+      <div className="relative">
+        <button
+          onClick={() => setShowDropdown(!showDropdown)}
+          disabled={disabled}
+          className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:border-blue-400 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+          title="Välj år"
+        >
+          <Calendar size={16} className="text-gray-500" />
+          <span className="font-semibold text-gray-900">{currentPage?.year || '2025'}</span>
+          <span className="text-xs text-gray-500 ml-auto">
+            {currentIndex + 1}/{pages.length}
+          </span>
+        </button>
+
+        {/* Dropdown with all years */}
+        {showDropdown && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setShowDropdown(false)}
+            ></div>
+
+            {/* Dropdown menu */}
+            <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+              {pages.map((page, index) => {
+                const isActive = page.id === currentPageId;
+                return (
                   <button
-                    onClick={() => onPageChange(page.id)}
-                    disabled={disabled}
+                    key={page.id}
+                    onClick={() => {
+                      onPageChange(page.id);
+                      setShowDropdown(false);
+                    }}
                     className={`
-                      relative w-24 h-24 rounded-lg border-2 transition-all
-                      ${isActive 
-                        ? 'border-blue-500 shadow-lg scale-105' 
-                        : 'border-gray-300 hover:border-blue-300 hover:shadow-md'
-                      }
-                      ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                      bg-gradient-to-br from-gray-50 to-gray-100
-                      flex flex-col items-center justify-center
-                      overflow-hidden
+                      w-full px-4 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-center justify-between
+                      ${isActive ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'}
+                      border-b border-gray-100 last:border-b-0
                     `}
                   >
-                    {/* Year badge */}
-                    <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded">
-                      {page.year}
-                    </div>
-
-                    {/* Page number */}
-                    <div className="text-2xl font-bold text-gray-400">
-                      {index + 1}
-                    </div>
-                    
-                    {/* Page title */}
-                    <div className="text-xs text-gray-600 mt-1 px-1 truncate max-w-full">
-                      {page.title || `Sida ${index + 1}`}
-                    </div>
-
-                    {/* Active indicator */}
-                    {isActive && (
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500"></div>
-                    )}
-                  </button>
-
-                  {/* Hover actions */}
-                  {(isHovered || isActive) && !disabled && (
-                    <div className="absolute -top-9 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-white border border-gray-200 rounded-lg shadow-lg px-1 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => handleDuplicatePage(page.id, e)}
-                        className="p-1 hover:bg-blue-50 rounded text-blue-600 transition-colors"
-                        title="Duplicera sida"
-                      >
-                        <Copy size={14} />
-                      </button>
-                      {pages.length > 1 && (
-                        <button
-                          onClick={(e) => handleDeletePage(page.id, e)}
-                          className="p-1 hover:bg-red-50 rounded text-red-600 transition-colors"
-                          title="Radera sida"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold">{page.year}</span>
+                      {page.title && (
+                        <span className="text-xs text-gray-500 truncate max-w-[150px]">
+                          {page.title}
+                        </span>
                       )}
                     </div>
-                  )}
-
-                  {/* Drag handle (for future drag-to-reorder) */}
-                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-50 transition-opacity cursor-move">
-                    <GripVertical size={16} className="text-gray-400" />
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Add page button */}
-            <button
-              onClick={onAddPage}
-              disabled={disabled}
-              className="flex-shrink-0 w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Lägg till ny sida"
-            >
-              <Plus size={24} />
-              <span className="text-xs font-medium">Ny sida</span>
-            </button>
-          </div>
-
-          {/* Next button */}
-          <button
-            onClick={handleNextPage}
-            disabled={!canGoNext || disabled}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Nästa sida"
-          >
-            <ChevronRight size={20} className="text-gray-600" />
-          </button>
-        </div>
-
-        {/* Page indicator */}
-        <div className="text-center mt-2 text-sm text-gray-500">
-          Sida {currentIndex + 1} av {pages.length}
-        </div>
+                    {isActive && (
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    )}
+                  </button>
+                );
+              })}
+              
+              {/* Add new page option */}
+              <button
+                onClick={() => {
+                  onAddPage();
+                  setShowDropdown(false);
+                }}
+                className="w-full px-4 py-2.5 text-left hover:bg-green-50 transition-colors flex items-center gap-2 text-green-700 font-medium border-t-2 border-gray-200"
+              >
+                <Plus size={16} />
+                <span>Nytt år</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Next year button */}
+      <button
+        onClick={handleNextPage}
+        disabled={!canGoNext || disabled}
+        className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        title="Nästa år"
+      >
+        <ChevronRight size={18} className="text-gray-600" />
+      </button>
     </div>
   );
 }

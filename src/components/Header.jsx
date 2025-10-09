@@ -2,6 +2,7 @@ import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft,
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
+import PageNavigator from './PageNavigator';
 import { useState } from 'react';
 
 function Header({ 
@@ -26,7 +27,12 @@ function Header({
   onUndo,
   onRedo,
   canUndo = false,
-  canRedo = false
+  canRedo = false,
+  // Page navigation props
+  pages = [],
+  currentPageId,
+  onPageChange,
+  onAddPage
 }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
@@ -62,19 +68,29 @@ function Header({
           />
         </div>
         
-        {/* Year selector */}
-        <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-sm border border-gray-200">
-          <Calendar size={20} className="text-gray-600" />
-          <input
-            type="number"
-            value={year || "2025"}
-            onChange={(e) => onYearChange(e.target.value)}
-            min="1900"
-            max="2100"
-            className="w-20 px-2 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="År"
+        {/* Page Navigator (if multi-page) or Year selector (legacy) */}
+        {pages && pages.length > 0 ? (
+          <PageNavigator
+            pages={pages}
+            currentPageId={currentPageId}
+            onPageChange={onPageChange}
+            onAddPage={onAddPage}
+            disabled={isSaving}
           />
-        </div>
+        ) : (
+          <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-sm border border-gray-200">
+            <Calendar size={20} className="text-gray-600" />
+            <input
+              type="number"
+              value={year || "2025"}
+              onChange={(e) => onYearChange(e.target.value)}
+              min="1900"
+              max="2100"
+              className="w-20 px-2 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="År"
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-3">

@@ -130,10 +130,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
     
+    console.log('[WheelEditor] Starting loadWheelData for wheel:', wheelId);
     isLoadingData.current = true; // Prevent auto-save during load
     
     try {
-      console.log('[WheelEditor] Loading wheel data:', wheelId);
+      console.log('[WheelEditor] Fetching wheel data:', wheelId);
       const wheelData = await fetchWheel(wheelId);
       
       if (wheelData) {
@@ -228,7 +229,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       isRealtimeUpdate.current = false;
       console.log('[WheelEditor] Load complete, flags reset');
     }
-  }, [wheelId]);
+  }, [wheelId]); // Only depend on wheelId - NOT on currentPageId
 
   // Throttled reload for realtime updates (max once per second)
   const throttledReload = useThrottledCallback(() => {
@@ -422,15 +423,20 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     }
   }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
 
-  // Initial load on mount AND cleanup on unmount
+  // Initial load on mount AND cleanup when wheelId changes
   useEffect(() => {
+    console.log('[WheelEditor] useEffect triggered, wheelId:', wheelId);
+    
     if (!wheelId) {
       setIsLoading(false);
       isInitialLoad.current = false; // Not initial load anymore
       return;
     }
 
+    // IMPORTANT: Set initial load flag BEFORE loading data
+    isInitialLoad.current = true;
     setIsLoading(true);
+    
     loadWheelData().finally(() => {
       setIsLoading(false);
       // After initial load completes, enable auto-save
@@ -439,11 +445,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       }, 500);
     });
 
-    // CLEANUP: Reset all state when leaving this wheel
+    // CLEANUP: Reset all state when wheelId changes or component unmounts
     return () => {
-      console.log('[WheelEditor] Cleanup - resetting state for wheel:', wheelId);
+      console.log('[WheelEditor] CLEANUP - Leaving wheel:', wheelId, '- Resetting all state');
       
-      // Reset to default values
+      // Reset ALL state to defaults to prevent data leakage between wheels
       setOrganizationData({
         rings: [],
         activityGroups: [],
@@ -458,14 +464,21 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       setShowWeekRing(true);
       setShowMonthRing(true);
       setShowRingNames(true);
+      setRingsData([]);
       
-      // Reset flags
+      // Reset ALL flags
       isInitialLoad.current = true;
       isLoadingData.current = false;
       isRealtimeUpdate.current = false;
       isSavingRef.current = false;
+      lastSaveTimestamp.current = 0;
+      
+      // Clear undo/redo history
+      clearHistory();
+      
+      console.log('[WheelEditor] CLEANUP complete - State and history cleared');
     };
-  }, [wheelId, loadWheelData]);
+  }, [wheelId, clearHistory]); // Depend on wheelId and clearHistory
 
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
@@ -715,17 +728,19 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     
     try {
       const pagesData = await fetchPages(wheelId);
-      setPages(pagesData);
+      // Sort pages by year
+      const sortedPages = pagesData.sort((a, b) => a.year - b.year);
+      setPages(sortedPages);
       
       // Set current page to first page if none selected
-      if (pagesData.length > 0 && !currentPageId) {
-        setCurrentPageId(pagesData[0].id);
+      if (sortedPages.length > 0 && !currentPageId) {
+        setCurrentPageId(sortedPages[0].id);
         // Load first page's data
-        if (pagesData[0].organization_data) {
-          setOrganizationData(pagesData[0].organization_data);
+        if (sortedPages[0].organization_data) {
+          setOrganizationData(sortedPages[0].organization_data);
         }
-        if (pagesData[0].year) {
-          setYear(String(pagesData[0].year));
+        if (sortedPages[0].year) {
+          setYear(String(sortedPages[0].year));
         }
       }
     } catch (error) {
@@ -780,10 +795,15 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     if (!wheelId) return;
     
     try {
-      const currentYear = parseInt(year);
+      // Find highest year from existing pages and add 1
+      const maxYear = pages.length > 0 
+        ? Math.max(...pages.map(p => p.year))
+        : parseInt(year);
+      const newYear = maxYear + 1;
+      
       const newPage = await createPage(wheelId, {
-        year: currentYear,
-        title: `Sida ${pages.length + 1}`,
+        year: newYear,
+        title: `${newYear}`,
         organization_data: {
           rings: [],
           activityGroups: [{
@@ -797,11 +817,13 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         }
       });
       
-      setPages([...pages, newPage]);
+      // Sort pages by year after adding
+      const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
+      setPages(updatedPages);
       setShowAddPageModal(false);
       
       const event = new CustomEvent('showToast', {
-        detail: { message: 'Ny sida skapad!', type: 'success' }
+        detail: { message: `Ny sida för ${newYear} skapad!`, type: 'success' }
       });
       window.dispatchEvent(event);
     } catch (error) {
@@ -818,8 +840,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     if (!wheelId) return;
     
     try {
-      const currentYear = parseInt(year);
-      const nextYear = currentYear + 1;
+      // Find highest year from existing pages and add 1
+      const maxYear = pages.length > 0 
+        ? Math.max(...pages.map(p => p.year))
+        : parseInt(year);
+      const nextYear = maxYear + 1;
       
       // Duplicate current structure but with next year
       const newPage = await createPage(wheelId, {
@@ -828,7 +853,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         organization_data: organizationData // Copy current structure
       });
       
-      setPages([...pages, newPage]);
+      // Sort pages by year after adding
+      const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
+      setPages(updatedPages);
       setShowAddPageModal(false);
       
       const event = new CustomEvent('showToast', {
@@ -850,7 +877,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     
     try {
       const duplicatedPage = await duplicatePage(pageId);
-      setPages([...pages, duplicatedPage]);
+      // Sort pages by year after adding
+      const updatedPages = [...pages, duplicatedPage].sort((a, b) => a.year - b.year);
+      setPages(updatedPages);
       
       const event = new CustomEvent('showToast', {
         detail: { message: 'Sida duplicerad!', type: 'success' }
@@ -1231,6 +1260,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         onRedo={redo}
         canUndo={canUndo}
         canRedo={canRedo}
+        // Page navigation props
+        pages={pages}
+        currentPageId={currentPageId}
+        onPageChange={handlePageChange}
+        onAddPage={handleAddPage}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -1290,19 +1324,6 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           wheelId={wheelId}
           onRestore={handleRestoreVersion}
           onClose={() => setShowVersionHistory(false)}
-        />
-      )}
-
-      {/* Page Navigator */}
-      {wheelId && pages.length > 0 && (
-        <PageNavigator
-          pages={pages}
-          currentPageId={currentPageId}
-          onPageChange={handlePageChange}
-          onAddPage={handleAddPage}
-          onDeletePage={handleDeletePage}
-          onDuplicatePage={handleDuplicatePage}
-          disabled={isSaving}
         />
       )}
 

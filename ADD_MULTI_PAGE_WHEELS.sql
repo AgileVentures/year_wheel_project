@@ -41,13 +41,28 @@ CREATE INDEX IF NOT EXISTS idx_wheel_pages_wheel_id
 CREATE INDEX IF NOT EXISTS idx_wheel_pages_year 
   ON public.wheel_pages(year);
 
--- Step 3: Enable realtime for page updates
-ALTER PUBLICATION supabase_realtime ADD TABLE public.wheel_pages;
+-- Step 3: Enable realtime for page updates (skip if already added)
+DO $$
+BEGIN
+  -- Try to add table to publication, ignore if already exists
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.wheel_pages;
+  EXCEPTION 
+    WHEN duplicate_object THEN
+      RAISE NOTICE 'Table wheel_pages already in supabase_realtime publication, skipping';
+  END;
+END $$;
 
 -- Step 4: RLS Policies for wheel_pages
 
 -- Enable RLS
 ALTER TABLE public.wheel_pages ENABLE ROW LEVEL SECURITY;
+
+-- DROP existing policies if they exist
+DROP POLICY IF EXISTS "Users can view pages of accessible wheels" ON public.wheel_pages;
+DROP POLICY IF EXISTS "Users can create pages for their wheels" ON public.wheel_pages;
+DROP POLICY IF EXISTS "Users can update pages of their wheels" ON public.wheel_pages;
+DROP POLICY IF EXISTS "Users can delete pages of their wheels" ON public.wheel_pages;
 
 -- SELECT: Users can view pages of wheels they have access to
 CREATE POLICY "Users can view pages of accessible wheels"
