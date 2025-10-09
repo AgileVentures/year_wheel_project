@@ -269,6 +269,40 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   // Enable realtime sync for this wheel
   useRealtimeWheel(wheelId, handleRealtimeChange);
 
+  // Helper function to apply template colors to organization data
+  // MUST be defined BEFORE handlePageRealtimeChange since it uses this function
+  const applyTemplateColors = useCallback((data) => {
+    if (!data) return data;
+    
+    const updatedData = { ...data };
+    
+    // Apply colors to activity groups
+    if (data.activityGroups && data.activityGroups.length > 0) {
+      updatedData.activityGroups = data.activityGroups.map((group, index) => ({
+        ...group,
+        color: colors[index % colors.length]
+      }));
+    }
+    
+    // Apply colors to OUTER rings only (inner rings don't use template colors)
+    if (data.rings && data.rings.length > 0) {
+      updatedData.rings = data.rings.map((ring) => {
+        // Only apply template colors to outer rings
+        if (ring.type === 'outer') {
+          const outerRings = data.rings.filter(r => r.type === 'outer');
+          const outerIndex = outerRings.findIndex(r => r.id === ring.id);
+          return {
+            ...ring,
+            color: colors[outerIndex % colors.length]
+          };
+        }
+        return ring; // Keep inner rings as-is
+      });
+    }
+    
+    return updatedData;
+  }, [colors]);
+
   // Handle realtime page changes
   const handlePageRealtimeChange = useCallback((eventType, payload) => {
     console.log(`[Realtime] wheel_pages ${eventType}:`, payload);
@@ -521,39 +555,6 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     
     setIsLoading(false);
   }, [wheelId]);
-
-  // Helper function to apply template colors to organization data
-  const applyTemplateColors = useCallback((data) => {
-    if (!data) return data;
-    
-    const updatedData = { ...data };
-    
-    // Apply colors to activity groups
-    if (data.activityGroups && data.activityGroups.length > 0) {
-      updatedData.activityGroups = data.activityGroups.map((group, index) => ({
-        ...group,
-        color: colors[index % colors.length]
-      }));
-    }
-    
-    // Apply colors to OUTER rings only (inner rings don't use template colors)
-    if (data.rings && data.rings.length > 0) {
-      updatedData.rings = data.rings.map((ring) => {
-        // Only apply template colors to outer rings
-        if (ring.type === 'outer') {
-          const outerRings = data.rings.filter(r => r.type === 'outer');
-          const outerIndex = outerRings.findIndex(r => r.id === ring.id);
-          return {
-            ...ring,
-            color: colors[outerIndex % colors.length]
-          };
-        }
-        return ring; // Keep inner rings as-is
-      });
-    }
-    
-    return updatedData;
-  }, [colors]);
 
   // Apply template colors when colors change
   useEffect(() => {
