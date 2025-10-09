@@ -9,6 +9,7 @@ import { useAuth } from "./hooks/useAuth.jsx";
 import AuthPage from "./components/auth/AuthPage";
 import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
+import PreviewWheelPage from "./components/PreviewWheelPage";
 import { fetchWheel, saveWheelData, updateWheel } from "./services/wheelService";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
@@ -65,6 +66,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [isPublic, setIsPublic] = useState(false); // Public sharing toggle
   
   // Track if we're currently loading data to prevent auto-save during load
   const isLoadingData = useRef(false);
@@ -90,6 +92,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       if (wheelData) {
         setTitle(wheelData.title || "Organisation");
         setYear(String(wheelData.year || new Date().getFullYear()));
+        setIsPublic(wheelData.is_public || false);
         
         if (wheelData.colors) setColors(wheelData.colors);
         
@@ -416,6 +419,35 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     }
   };
 
+  const handleTogglePublic = async () => {
+    if (!wheelId) return;
+    
+    try {
+      const newIsPublic = !isPublic;
+      setIsPublic(newIsPublic);
+      
+      // Update in database
+      await updateWheel(wheelId, { is_public: newIsPublic });
+      
+      const message = newIsPublic 
+        ? 'Hjulet är nu publikt delat!' 
+        : 'Hjulet är nu privat';
+      
+      const event = new CustomEvent('showToast', { 
+        detail: { message, type: 'success' } 
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error toggling public status:', error);
+      setIsPublic(!isPublic); // Revert on error
+      
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Kunde inte uppdatera delningsinställning', type: 'error' } 
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   const handleReset = () => {
     if (!confirm('Är du säker på att du vill återställa allt? All data kommer att raderas.')) return;
     
@@ -688,6 +720,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         downloadFormat={downloadFormat}
         onDownloadFormatChange={setDownloadFormat}
         activeUsers={activeUsers}
+        isPublic={isPublic}
+        wheelId={wheelId}
+        onTogglePublic={handleTogglePublic}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -815,6 +850,7 @@ function AppContent() {
       {/* Public routes */}
       <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
       <Route path="/invite/:token" element={<InviteAcceptPage />} />
+      <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
 
       {/* Protected routes */}
       <Route path="/dashboard" element={

@@ -1,6 +1,7 @@
 import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen } from 'lucide-react';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
+import PublicShareButton from './PublicShareButton';
 import { useState } from 'react';
 
 function Header({ 
@@ -17,7 +18,10 @@ function Header({
   onDownloadFormatChange,
   onBackToDashboard,
   isSaving = false,
-  activeUsers = []
+  activeUsers = [],
+  isPublic = false,
+  wheelId = null,
+  onTogglePublic
 }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
@@ -149,6 +153,18 @@ function Header({
           <>
             <div className="w-px h-8 bg-gray-300"></div>
             <PresenceIndicator activeUsers={activeUsers} />
+          </>
+        )}
+        
+        {/* Public Share Toggle (only show for database wheels) */}
+        {wheelId && onTogglePublic && (
+          <>
+            <div className="w-px h-8 bg-gray-300"></div>
+            <PublicShareButton 
+              isPublic={isPublic}
+              wheelId={wheelId}
+              onTogglePublic={onTogglePublic}
+            />
           </>
         )}
         
