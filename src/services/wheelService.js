@@ -229,7 +229,18 @@ const syncRings = async (wheelId, rings) => {
     .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existingRings?.map(r => r.id) || []);
-  const currentIds = new Set(rings.map(r => r.id).filter(id => id && id.startsWith ? !id.startsWith('ring-') : true));
+  // Only include IDs that are actual database UUIDs (not temporary client IDs)
+  const currentIds = new Set(
+    rings
+      .map(r => r.id)
+      .filter(id => 
+        id && 
+        !id.startsWith('ring-') && 
+        !id.startsWith('inner-ring-') && 
+        !id.startsWith('outer-ring-') &&
+        existingIds.has(id) // Must exist in database
+      )
+  );
 
   // Delete removed rings
   const toDelete = [...existingIds].filter(id => !currentIds.has(id));
@@ -240,7 +251,12 @@ const syncRings = async (wheelId, rings) => {
   // Upsert rings
   for (let i = 0; i < rings.length; i++) {
     const ring = rings[i];
-    const isNew = !ring.id || ring.id.startsWith('ring-');
+    // Check if this is a new ring (no ID, or has a temporary/non-UUID ID)
+    const isNew = !ring.id || 
+                  ring.id.startsWith('ring-') || 
+                  ring.id.startsWith('inner-ring-') || 
+                  ring.id.startsWith('outer-ring-') ||
+                  !existingIds.has(ring.id); // Not in database
     
     const ringData = {
       wheel_id: wheelId,
@@ -325,7 +341,12 @@ const syncActivityGroups = async (wheelId, activityGroups) => {
     .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existing?.map(a => a.id) || []);
-  const currentIds = new Set(activityGroups.map(a => a.id).filter(id => id && !id.startsWith('group-')));
+  // Only include IDs that are actual database UUIDs
+  const currentIds = new Set(
+    activityGroups
+      .map(a => a.id)
+      .filter(id => id && !id.startsWith('group-') && existingIds.has(id))
+  );
 
   // Delete removed
   const toDelete = [...existingIds].filter(id => !currentIds.has(id));
@@ -335,7 +356,7 @@ const syncActivityGroups = async (wheelId, activityGroups) => {
 
   // Upsert
   for (const group of activityGroups) {
-    const isNew = !group.id || group.id.startsWith('group-');
+    const isNew = !group.id || group.id.startsWith('group-') || !existingIds.has(group.id);
     const groupData = {
       wheel_id: wheelId,
       name: group.name,
@@ -375,7 +396,12 @@ const syncLabels = async (wheelId, labels) => {
     .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existing?.map(l => l.id) || []);
-  const currentIds = new Set(labels.map(l => l.id).filter(id => id && !id.startsWith('label-')));
+  // Only include IDs that are actual database UUIDs
+  const currentIds = new Set(
+    labels
+      .map(l => l.id)
+      .filter(id => id && !id.startsWith('label-') && existingIds.has(id))
+  );
 
   // Delete removed
   const toDelete = [...existingIds].filter(id => !currentIds.has(id));
@@ -385,7 +411,7 @@ const syncLabels = async (wheelId, labels) => {
 
   // Upsert
   for (const label of labels) {
-    const isNew = !label.id || label.id.startsWith('label-');
+    const isNew = !label.id || label.id.startsWith('label-') || !existingIds.has(label.id);
     const labelData = {
       wheel_id: wheelId,
       name: label.name,
