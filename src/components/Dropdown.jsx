@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, cloneElement, Children } from 'react';
 
 function Dropdown({ trigger, children }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +17,14 @@ function Dropdown({ trigger, children }) {
     }
   }, [isOpen]);
 
+  // Clone children and inject closeDropdown function
+  const childrenWithClose = Children.map(children, child => {
+    if (child?.type === DropdownItem) {
+      return cloneElement(child, { closeDropdown: () => setIsOpen(false) });
+    }
+    return child;
+  });
+
   return (
     <div className="relative" ref={dropdownRef}>
       <div onClick={() => setIsOpen(!isOpen)}>
@@ -25,22 +33,27 @@ function Dropdown({ trigger, children }) {
       
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white rounded-sm shadow-lg border border-gray-200 py-1 z-50">
-          {children}
+          {childrenWithClose}
         </div>
       )}
     </div>
   );
 }
 
-export function DropdownItem({ icon: Icon, label, onClick, variant = 'default' }) {
+export function DropdownItem({ icon: Icon, label, onClick, variant = 'default', closeDropdown }) {
   const variants = {
     default: 'text-gray-700 hover:bg-gray-50',
     danger: 'text-red-600 hover:bg-red-50',
   };
 
+  const handleClick = () => {
+    onClick?.();
+    closeDropdown?.();
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className={`w-full flex items-center gap-3 px-4 py-2 text-sm text-left transition-colors ${variants[variant]}`}
     >
       {Icon && <Icon size={16} />}
