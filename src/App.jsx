@@ -478,7 +478,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       
       console.log('[WheelEditor] CLEANUP complete - State and history cleared');
     };
-  }, [wheelId, clearHistory]); // Depend on wheelId and clearHistory
+  }, [wheelId]); // Only depend on wheelId - clearHistory is stable but we don't need it here
 
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
