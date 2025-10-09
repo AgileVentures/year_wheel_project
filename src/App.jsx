@@ -201,8 +201,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       console.log('[AutoSave] Saving changes...');
       
       // Mark as saving to prevent realtime interference
+      // NOTE: Don't update isSaving state - auto-save should be invisible
       isSavingRef.current = true;
-      setIsSaving(true); // Update UI
       
       // Update wheel metadata
       await updateWheel(wheelId, {
@@ -220,21 +220,20 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
       
-      console.log('[AutoSave] Changes saved successfully');
+      console.log('[AutoSave] Changes saved successfully (silent)');
       
-      // Show subtle success feedback
-      const event = new CustomEvent('showToast', { 
-        detail: { message: 'Automatiskt sparat', type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      // NO TOAST - auto-save should be completely invisible to user
     } catch (error) {
       console.error('[AutoSave] Error:', error);
-      // Don't show error toast for auto-save to avoid annoying users
-      // They can always manually save
+      // Show error toast only on failure (user needs to know about problems)
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Auto-sparning misslyckades', type: 'error' } 
+      });
+      window.dispatchEvent(event);
     } finally {
       // Re-enable realtime after save completes
       isSavingRef.current = false;
-      setIsSaving(false); // Update UI
+      // Don't update isSaving state - keep UI unchanged
     }
   }, 2000); // Wait 2 seconds after last change before saving
 
@@ -546,54 +545,40 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           isLoadingData.current = true;
           isRealtimeUpdate.current = true; // Also mark as realtime update to block auto-save during import
 
-          // Load the data
-          setTitle(data.title);
-          setYear(data.year);
-          if (data.colors) setColors(data.colors);
-          // Set ringsData first (for backward compatibility with old format)
-          if (data.ringsData) setRingsData(data.ringsData);
-          
-          // Handle organizationData with backward compatibility
+          // Process organization data BEFORE setting state
+          let processedOrgData;
           if (data.organizationData) {
-            const orgData = { ...data.organizationData };
+            processedOrgData = { ...data.organizationData };
             
             // Backward compatibility: convert old 'activities' to 'activityGroups'
-            if (orgData.activities && !orgData.activityGroups) {
-              orgData.activityGroups = orgData.activities;
-              delete orgData.activities;
+            if (processedOrgData.activities && !processedOrgData.activityGroups) {
+              processedOrgData.activityGroups = processedOrgData.activities;
+              delete processedOrgData.activities;
             }
             
             // Ensure required arrays exist
-            orgData.rings = orgData.rings || [];
-            orgData.activityGroups = orgData.activityGroups || [];
-            orgData.labels = orgData.labels || [];
-            orgData.items = orgData.items || [];
+            processedOrgData.rings = processedOrgData.rings || [];
+            processedOrgData.activityGroups = processedOrgData.activityGroups || [];
+            processedOrgData.labels = processedOrgData.labels || [];
+            processedOrgData.items = processedOrgData.items || [];
             
-            console.log('[FileImport] Loaded organization data from file:', {
-              rings: orgData.rings.length,
-              activityGroups: orgData.activityGroups.length,
-              labels: orgData.labels.length,
-              items: orgData.items.length,
+            console.log('[FileImport] Processed organization data from file:', {
+              rings: processedOrgData.rings.length,
+              activityGroups: processedOrgData.activityGroups.length,
+              labels: processedOrgData.labels.length,
+              items: processedOrgData.items.length,
             });
-            
-            setOrganizationData(orgData);
           } else {
             // Use default structure if not present in file
-            setOrganizationData({ 
+            processedOrgData = { 
               rings: [], 
               activityGroups: [], 
               labels: [], 
               items: [] 
-            });
+            };
           }
-          
-          if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
-          if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
-          if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
-          if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
-          if (data.showRingNames !== undefined) setShowRingNames(data.showRingNames);
 
-          // If wheelId exists, save IMMEDIATELY (don't wait for debounced auto-save)
+          // If wheelId exists, save IMMEDIATELY (before setting state)
           if (wheelId) {
             try {
               console.log('[FileImport] Saving imported data to database...');
@@ -608,14 +593,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
                 showRingNames: data.showRingNames ?? showRingNames,
               });
               
-              // Save organization data
-              const orgDataToSave = data.organizationData || { 
-                rings: [], 
-                activityGroups: [], 
-                labels: [], 
-                items: [] 
-              };
-              await saveWheelData(wheelId, orgDataToSave);
+              // Save organization data using the PROCESSED data
+              await saveWheelData(wheelId, processedOrgData);
               
               console.log('[FileImport] Successfully saved to database');
               
@@ -630,25 +609,42 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
                 detail: { message: 'Fil laddad men kunde inte sparas', type: 'error' } 
               });
               window.dispatchEvent(errorEvent);
-            } finally {
-              // Re-enable realtime and auto-save after a short delay
-              setTimeout(() => {
-                isLoadingData.current = false;
-                isRealtimeUpdate.current = false;
-                console.log('[FileImport] Import complete, realtime re-enabled');
-              }, 1000);
+              
+              // Don't update state if save failed
+              isLoadingData.current = false;
+              isRealtimeUpdate.current = false;
+              return;
             }
-          } else {
-            // localStorage mode - just show success
+          }
+
+          // NOW update state AFTER successful save (or if no wheelId)
+          setTitle(data.title);
+          setYear(data.year);
+          if (data.colors) setColors(data.colors);
+          // Set ringsData first (for backward compatibility with old format)
+          if (data.ringsData) setRingsData(data.ringsData);
+          setOrganizationData(processedOrgData);
+          
+          if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
+          if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
+          if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
+          if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
+          if (data.showRingNames !== undefined) setShowRingNames(data.showRingNames);
+
+          if (!wheelId) {
+            // localStorage mode - show success after state update
             const toastEvent = new CustomEvent('showToast', { 
               detail: { message: 'Fil laddad!', type: 'success' } 
             });
             window.dispatchEvent(toastEvent);
-            
-            // Re-enable flags immediately
+          }
+          
+          // Re-enable realtime and auto-save after a short delay
+          setTimeout(() => {
             isLoadingData.current = false;
             isRealtimeUpdate.current = false;
-          }
+            console.log('[FileImport] Import complete, realtime re-enabled');
+          }, 1000);
         } catch (error) {
           console.error('Error loading file:', error);
           const toastEvent = new CustomEvent('showToast', { 
