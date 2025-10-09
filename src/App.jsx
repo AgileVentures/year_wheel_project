@@ -63,6 +63,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const [downloadFormat, setDownloadFormat] = useState("png");
   const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   
   // Track if we're currently loading data to prevent auto-save during load
@@ -73,7 +74,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const isRealtimeUpdate = useRef(false);
   // Track recent save timestamp to ignore own broadcasts (within 3 seconds)
   const lastSaveTimestamp = useRef(0);
-  // Track if we're currently saving to prevent realtime reload during save
+  // Track if we're currently saving to prevent realtime reload during save (ref for logic, state for UI)
   const isSavingRef = useRef(false);
 
   // Load wheel data function (memoized to avoid recreating)
@@ -201,6 +202,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       
       // Mark as saving to prevent realtime interference
       isSavingRef.current = true;
+      setIsSaving(true); // Update UI
       
       // Update wheel metadata
       await updateWheel(wheelId, {
@@ -232,6 +234,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     } finally {
       // Re-enable realtime after save completes
       isSavingRef.current = false;
+      setIsSaving(false); // Update UI
     }
   }, 2000); // Wait 2 seconds after last change before saving
 
@@ -341,6 +344,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       const wasAutoSaveEnabled = autoSaveEnabled;
       setAutoSaveEnabled(false);
       isSavingRef.current = true;
+      setIsSaving(true); // Update UI
       
       try {
         console.log('[ManualSave] Saving wheel data...', {
@@ -387,6 +391,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         window.dispatchEvent(event);
       } finally {
         isSavingRef.current = false;
+        setIsSaving(false); // Update UI
         // Re-enable auto-save
         setAutoSaveEnabled(wasAutoSaveEnabled);
       }
