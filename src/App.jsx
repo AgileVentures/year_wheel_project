@@ -10,6 +10,9 @@ import AuthPage from "./components/auth/AuthPage";
 import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import { fetchWheel, saveWheelData, updateWheel } from "./services/wheelService";
+import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
+import { useWheelPresence } from "./hooks/useWheelPresence";
+import { useThrottledCallback } from "./hooks/useCallbackUtils";
 import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
@@ -62,69 +65,100 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load wheel data from database
+  // Load wheel data function (memoized to avoid recreating)
+  const loadWheelData = useCallback(async () => {
+    if (!wheelId) return;
+    
+    try {
+      console.log('[WheelEditor] Loading wheel data:', wheelId);
+      const wheelData = await fetchWheel(wheelId);
+      
+      if (wheelData) {
+        setTitle(wheelData.title || "Organisation");
+        setYear(String(wheelData.year || new Date().getFullYear()));
+        
+        if (wheelData.colors) setColors(wheelData.colors);
+        
+        // Load organization data
+        if (wheelData.organizationData) {
+          const orgData = wheelData.organizationData;
+          
+          // Backward compatibility: convert old 'activities' to 'activityGroups'
+          if (orgData.activities && !orgData.activityGroups) {
+            orgData.activityGroups = orgData.activities;
+            delete orgData.activities;
+          }
+          
+          // Ensure at least one activity group exists
+          if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
+            orgData.activityGroups = [{
+              id: "group-1",
+              name: "Aktivitetsgrupp 1",
+              color: wheelData.colors?.[0] || "#334155",
+              visible: true
+            }];
+          }
+          
+          setOrganizationData(orgData);
+        }
+        
+        // Load other settings
+        if (wheelData.settings) {
+          if (wheelData.settings.showWeekRing !== undefined) setShowWeekRing(wheelData.settings.showWeekRing);
+          if (wheelData.settings.showMonthRing !== undefined) setShowMonthRing(wheelData.settings.showMonthRing);
+          if (wheelData.settings.showYearEvents !== undefined) setShowYearEvents(wheelData.settings.showYearEvents);
+          if (wheelData.settings.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
+          if (wheelData.settings.showRingNames !== undefined) setShowRingNames(wheelData.settings.showRingNames);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading wheel:', error);
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Kunde inte ladda hjul', type: 'error' } 
+      });
+      window.dispatchEvent(event);
+    }
+  }, [wheelId]);
+
+  // Throttled reload for realtime updates (max once per second)
+  const throttledReload = useThrottledCallback(() => {
+    console.log('[Realtime] Reloading wheel data due to remote changes');
+    loadWheelData();
+    
+    // Show subtle notification
+    const event = new CustomEvent('showToast', { 
+      detail: { message: 'Hjulet uppdaterades', type: 'info' } 
+    });
+    window.dispatchEvent(event);
+  }, 1000);
+
+  // Handle realtime data changes from other users
+  const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
+    console.log(`[Realtime] ${tableName} ${eventType}:`, payload);
+    
+    // Reload the wheel data when any change occurs
+    // Throttled to prevent too many reloads
+    throttledReload();
+  }, [throttledReload]);
+
+  // Enable realtime sync for this wheel
+  useRealtimeWheel(wheelId, handleRealtimeChange);
+
+  // Track active users viewing this wheel
+  const activeUsers = useWheelPresence(wheelId);
+
+  // Initial load on mount
   useEffect(() => {
     if (!wheelId) {
       setIsLoading(false);
       return;
     }
 
-    const loadWheel = async () => {
-      setIsLoading(true);
-      try {
-        const wheelData = await fetchWheel(wheelId);
-        
-        if (wheelData) {
-          setTitle(wheelData.title || "Organisation");
-          setYear(String(wheelData.year || new Date().getFullYear()));
-          
-          if (wheelData.colors) setColors(wheelData.colors);
-          
-          // Load organization data
-          if (wheelData.organizationData) {
-            const orgData = wheelData.organizationData;
-            
-            // Backward compatibility: convert old 'activities' to 'activityGroups'
-            if (orgData.activities && !orgData.activityGroups) {
-              orgData.activityGroups = orgData.activities;
-              delete orgData.activities;
-            }
-            
-            // Ensure at least one activity group exists
-            if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
-              orgData.activityGroups = [{
-                id: "group-1",
-                name: "Aktivitetsgrupp 1",
-                color: wheelData.colors?.[0] || "#334155",
-                visible: true
-              }];
-            }
-            
-            setOrganizationData(orgData);
-          }
-          
-          // Load other settings
-          if (wheelData.settings) {
-            if (wheelData.settings.showWeekRing !== undefined) setShowWeekRing(wheelData.settings.showWeekRing);
-            if (wheelData.settings.showMonthRing !== undefined) setShowMonthRing(wheelData.settings.showMonthRing);
-            if (wheelData.settings.showYearEvents !== undefined) setShowYearEvents(wheelData.settings.showYearEvents);
-            if (wheelData.settings.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
-            if (wheelData.settings.showRingNames !== undefined) setShowRingNames(wheelData.settings.showRingNames);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading wheel:', error);
-        const event = new CustomEvent('showToast', { 
-          detail: { message: 'Kunde inte ladda hjul', type: 'error' } 
-        });
-        window.dispatchEvent(event);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadWheel();
-  }, [wheelId]);
+    setIsLoading(true);
+    loadWheelData().finally(() => {
+      setIsLoading(false);
+    });
+  }, [wheelId, loadWheelData]);
 
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
@@ -478,6 +512,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         onDownloadImage={() => yearWheelRef && yearWheelRef.downloadImage(downloadFormat)}
         downloadFormat={downloadFormat}
         onDownloadFormatChange={setDownloadFormat}
+        activeUsers={activeUsers}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">

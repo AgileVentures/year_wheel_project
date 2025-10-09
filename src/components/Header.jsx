@@ -1,5 +1,6 @@
 import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen } from 'lucide-react';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
+import PresenceIndicator from './PresenceIndicator';
 import { useState } from 'react';
 
 function Header({ 
@@ -15,7 +16,8 @@ function Header({
   downloadFormat = "png",
   onDownloadFormatChange,
   onBackToDashboard,
-  isSaving = false
+  isSaving = false,
+  activeUsers = []
 }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
@@ -141,6 +143,14 @@ function Header({
             }}
           />
         </Dropdown>
+        
+        {/* Presence Indicator */}
+        {activeUsers.length > 0 && (
+          <>
+            <div className="w-px h-8 bg-gray-300"></div>
+            <PresenceIndicator activeUsers={activeUsers} />
+          </>
+        )}
         
         <div className="w-px h-8 bg-gray-300"></div>
         
