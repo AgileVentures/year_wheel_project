@@ -24,8 +24,8 @@ export const fetchUserWheels = async () => {
  * Fetch a single wheel with all related data
  */
 export const fetchWheel = async (wheelId) => {
-  console.log('=== fetchWheel SERVICE CALLED ===');
-  console.log('[wheelService] Fetching wheel:', wheelId);
+  // console.log('=== fetchWheel SERVICE CALLED ===');
+  // console.log('[wheelService] Fetching wheel:', wheelId);
   
   // Fetch wheel
   const { data: wheel, error: wheelError } = await supabase
@@ -39,12 +39,12 @@ export const fetchWheel = async (wheelId) => {
     throw wheelError;
   }
   
-  console.log('[wheelService] Fetched wheel data:', {
-    id: wheel.id,
-    title: wheel.title,
-    colors: wheel.colors,
-    year: wheel.year
-  });
+  // console.log('[wheelService] Fetched wheel data:', {
+  //   id: wheel.id,
+  //   title: wheel.title,
+  //   colors: wheel.colors,
+  //   year: wheel.year
+  // });
 
   // Fetch rings
   const { data: rings, error: ringsError } = await supabase
@@ -196,9 +196,9 @@ export const createWheel = async (wheelData) => {
  * Update wheel metadata (title, year, colors, etc.)
  */
 export const updateWheel = async (wheelId, updates) => {
-  console.log('=== updateWheel SERVICE CALLED ===');
-  console.log('[wheelService] wheelId:', wheelId);
-  console.log('[wheelService] updates:', updates);
+  // console.log('=== updateWheel SERVICE CALLED ===');
+  // console.log('[wheelService] wheelId:', wheelId);
+  // console.log('[wheelService] updates:', updates);
   
   const updateData = {};
   
@@ -210,7 +210,7 @@ export const updateWheel = async (wheelId, updates) => {
   if (updates.showRingNames !== undefined) updateData.show_ring_names = updates.showRingNames;
   if (updates.is_public !== undefined) updateData.is_public = updates.is_public;
 
-  console.log('[wheelService] Final updateData being sent to DB:', updateData);
+  // console.log('[wheelService] Final updateData being sent to DB:', updateData);
 
   const { error } = await supabase
     .from('year_wheels')
@@ -222,7 +222,7 @@ export const updateWheel = async (wheelId, updates) => {
     throw error;
   }
   
-  console.log('[wheelService] ✓ Wheel updated successfully in database');
+  // console.log('[wheelService] ✓ Wheel updated successfully in database');
 };
 
 /**

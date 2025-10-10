@@ -28,7 +28,7 @@ export function useWheelPresence(wheelId) {
       return;
     }
 
-    console.log(`[Presence] Joining wheel: ${wheelId} as ${user.email}`);
+    // console.log(`[Presence] Joining wheel: ${wheelId} as ${user.email}`);
 
     // Create a presence channel for this wheel
     const channel = supabase.channel(`presence:wheel:${wheelId}`, {
@@ -51,18 +51,18 @@ export function useWheelPresence(wheelId) {
           .flat()
           .filter((u) => u.user_id !== user.id); // Exclude current user
 
-        console.log(`[Presence] ${users.length} other users online:`, users);
+        // console.log(`[Presence] ${users.length} other users online:`, users);
         setActiveUsers(users);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log(`[Presence] User joined:`, newPresences);
+        // console.log(`[Presence] User joined:`, newPresences);
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log(`[Presence] User left:`, leftPresences);
+        // console.log(`[Presence] User left:`, leftPresences);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          console.log(`[Presence] Subscribed to wheel: ${wheelId}`);
+          // console.log(`[Presence] Subscribed to wheel: ${wheelId}`);
           
           // Track this user's presence
           await channel.track({
@@ -78,7 +78,7 @@ export function useWheelPresence(wheelId) {
 
     // Cleanup on unmount
     return () => {
-      console.log(`[Presence] Leaving wheel: ${wheelId}`);
+      // console.log(`[Presence] Leaving wheel: ${wheelId}`);
       if (channelRef.current) {
         channelRef.current.untrack();
         supabase.removeChannel(channelRef.current);
@@ -123,7 +123,7 @@ export function useWheelActivity(wheelId) {
       ...metadata,
     };
 
-    console.log('[Activity] Broadcasting:', activityData);
+    // console.log('[Activity] Broadcasting:', activityData);
     await channelRef.current.track(activityData);
   }, [user]);
 
@@ -133,7 +133,7 @@ export function useWheelActivity(wheelId) {
       return;
     }
 
-    console.log(`[Activity] Setting up activity tracking for wheel: ${wheelId}`);
+    // console.log(`[Activity] Setting up activity tracking for wheel: ${wheelId}`);
 
     const channel = supabase.channel(`activity:wheel:${wheelId}`, {
       config: {
@@ -150,7 +150,7 @@ export function useWheelActivity(wheelId) {
           .flat()
           .filter((u) => u.user_id !== user.id && u.activity !== 'idle');
 
-        console.log(`[Activity] Active editors:`, editors);
+        // console.log(`[Activity] Active editors:`, editors);
         setActiveEditors(editors);
       })
       .subscribe(async (status) => {
@@ -168,7 +168,7 @@ export function useWheelActivity(wheelId) {
     channelRef.current = channel;
 
     return () => {
-      console.log(`[Activity] Cleaning up activity tracking`);
+      // console.log(`[Activity] Cleaning up activity tracking`);
       if (channelRef.current) {
         channelRef.current.untrack();
         supabase.removeChannel(channelRef.current);

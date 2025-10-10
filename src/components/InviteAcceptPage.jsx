@@ -17,7 +17,7 @@ export default function InviteAcceptPage() {
 
   const checkAndRedirect = async () => {
     try {
-      console.log('User not logged in, checking if email exists and redirecting to /auth');
+      // console.log('User not logged in, checking if email exists and redirecting to /auth');
       
       // Store invite token
       sessionStorage.setItem('pendingInviteToken', token);
@@ -32,14 +32,14 @@ export default function InviteAcceptPage() {
       if (inviteData) {
         // Check if this email has any accepted invitations (means they're registered)
         const emailExists = await checkEmailExists(inviteData.email);
-        console.log('Email exists check:', inviteData.email, '→', emailExists);
+        // console.log('Email exists check:', inviteData.email, '→', emailExists);
         
         // Store whether this is a new user (for AuthPage to use)
         sessionStorage.setItem('inviteIsNewUser', emailExists ? 'false' : 'true');
       }
       
-      console.log('Stored token:', sessionStorage.getItem('pendingInviteToken'));
-      console.log('Performing hard redirect to /auth');
+      // console.log('Stored token:', sessionStorage.getItem('pendingInviteToken'));
+      // console.log('Performing hard redirect to /auth');
       window.location.href = '/auth';
     } catch (error) {
       console.error('Error checking email:', error);
@@ -50,7 +50,7 @@ export default function InviteAcceptPage() {
   };
 
   useEffect(() => {
-    console.log('InviteAcceptPage useEffect - user:', user, 'token:', token, 'hasProcessed:', hasProcessed.current);
+    // console.log('InviteAcceptPage useEffect - user:', user, 'token:', token, 'hasProcessed:', hasProcessed.current);
     
     if (!token) {
       navigate('/dashboard');
@@ -59,7 +59,7 @@ export default function InviteAcceptPage() {
 
     if (user && !hasProcessed.current) {
       // User is logged in, process invitation
-      console.log('User is logged in, processing invitation');
+      // console.log('User is logged in, processing invitation');
       hasProcessed.current = true;
       handleInvitation();
     } else if (!user) {
@@ -75,7 +75,7 @@ export default function InviteAcceptPage() {
 
       // Clear the pending token from sessionStorage
       sessionStorage.removeItem('pendingInviteToken');
-      console.log('Cleared pendingInviteToken from sessionStorage');
+      // console.log('Cleared pendingInviteToken from sessionStorage');
 
       // Get invitation details (check both pending and accepted status)
       const { data: inviteData, error: inviteError } = await supabase
@@ -104,7 +104,7 @@ export default function InviteAcceptPage() {
 
       // If already a member, just show success and redirect
       if (existingMember) {
-        console.log('User is already a member, skipping insert');
+        // console.log('User is already a member, skipping insert');
         const { data: teamData } = await supabase
           .from('teams')
           .select('name, description')

@@ -34,11 +34,11 @@ export function useRealtimeWheel(wheelId, onDataChange) {
     return (payload) => {
       const eventType = payload.eventType; // 'INSERT', 'UPDATE', 'DELETE'
       
-      console.log(`[Realtime] ${tableName} ${eventType}`, {
-        old: payload.old,
-        new: payload.new,
-        wheelId: wheelIdRef.current
-      });
+      // console.log(`[Realtime] ${tableName} ${eventType}`, {
+      //   old: payload.old,
+      //   new: payload.new,
+      //   wheelId: wheelIdRef.current
+      // });
 
       // Call the user's callback
       if (onDataChange) {
@@ -50,11 +50,11 @@ export function useRealtimeWheel(wheelId, onDataChange) {
   useEffect(() => {
     // Don't subscribe if no wheelId
     if (!wheelId) {
-      console.log('[Realtime] No wheelId, skipping subscription');
+      // console.log('[Realtime] No wheelId, skipping subscription');
       return;
     }
 
-    console.log(`[Realtime] Setting up subscriptions for wheel: ${wheelId}`);
+    // console.log(`[Realtime] Setting up subscriptions for wheel: ${wheelId}`);
 
     // Create a unique channel for this wheel
     const channel = supabase.channel(`wheel:${wheelId}`);
@@ -111,13 +111,13 @@ export function useRealtimeWheel(wheelId, onDataChange) {
     channel
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log(`[Realtime] Successfully subscribed to wheel: ${wheelId}`);
+          // console.log(`[Realtime] Successfully subscribed to wheel: ${wheelId}`);
         } else if (status === 'CHANNEL_ERROR') {
           console.error('[Realtime] Subscription error:', status);
         } else if (status === 'TIMED_OUT') {
           console.error('[Realtime] Subscription timed out');
         } else if (status === 'CLOSED') {
-          console.log('[Realtime] Channel closed');
+          // console.log('[Realtime] Channel closed');
         }
       });
 
@@ -126,7 +126,7 @@ export function useRealtimeWheel(wheelId, onDataChange) {
 
     // Cleanup function
     return () => {
-      console.log(`[Realtime] Cleaning up subscriptions for wheel: ${wheelId}`);
+      // console.log(`[Realtime] Cleaning up subscriptions for wheel: ${wheelId}`);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -151,14 +151,14 @@ export function useRealtimeWheels(onWheelChange) {
   const channelRef = useRef(null);
 
   const handleChange = useCallback((payload) => {
-    console.log('[Realtime] Wheel metadata changed:', payload);
+    // console.log('[Realtime] Wheel metadata changed:', payload);
     if (onWheelChange) {
       onWheelChange(payload.eventType, payload);
     }
   }, [onWheelChange]);
 
   useEffect(() => {
-    console.log('[Realtime] Setting up wheel metadata subscription');
+    // console.log('[Realtime] Setting up wheel metadata subscription');
 
     const channel = supabase
       .channel('wheels-all')
@@ -173,14 +173,14 @@ export function useRealtimeWheels(onWheelChange) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('[Realtime] Subscribed to wheels metadata');
+          // console.log('[Realtime] Subscribed to wheels metadata');
         }
       });
 
     channelRef.current = channel;
 
     return () => {
-      console.log('[Realtime] Cleaning up wheels metadata subscription');
+      // console.log('[Realtime] Cleaning up wheels metadata subscription');
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }
