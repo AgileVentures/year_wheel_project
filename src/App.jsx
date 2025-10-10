@@ -742,12 +742,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     try {
       const pagesData = await fetchPages(wheelId);
       // Sort pages by year
-      const sortedPages = pagesData.sort((a, b) => a.year - b.year);
+      let sortedPages = pagesData.sort((a, b) => a.year - b.year);
       
       // If no pages exist (legacy wheel), create the first page automatically
       if (sortedPages.length === 0) {
-        const firstPage = await createPage(wheelId, parseInt(year) || 2025, organizationData);
-        sortedPages.push(firstPage);
+        // Get current state for creating first page
+        const currentYear = parseInt(year) || 2025;
+        const currentOrgData = organizationData;
+        
+        const firstPage = await createPage(wheelId, currentYear, currentOrgData);
+        sortedPages = [firstPage];
       }
       
       setPages(sortedPages);
@@ -771,7 +775,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     }
-  }, [wheelId, currentPageId, year, organizationData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wheelId, currentPageId]);
 
   // Switch to a different page
   const handlePageChange = async (pageId) => {
@@ -1185,10 +1190,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 showRingNames: data.showRingNames ?? showRingNames,
               });
               
-              // Save organization data using the PROCESSED data
+              // CRITICAL: Also update the current page with imported data
+              if (currentPageId) {
+                await updatePage(currentPageId, {
+                  organization_data: processedOrgData,
+                  year: parseInt(data.year)
+                });
+              }
+              
+              // Save organization data using the PROCESSED data (for backward compatibility)
               await saveWheelData(wheelId, processedOrgData);
               
-              // console.log('[FileImport] Successfully saved to database');
+              // console.log('[FileImport] Successfully saved to database and current page');
               
               // Show success feedback
               const toastEvent = new CustomEvent('showToast', { 

@@ -391,7 +391,7 @@ function OrganizationPanel({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-semibold text-gray-900">{title || 'New wheel'}</h1>
+            <h1 className="text-base font-semibold text-gray-900">Hantera</h1>
           </div>
           <div className="flex items-center gap-1">
             <button 
@@ -407,11 +407,26 @@ function OrganizationPanel({
             <button 
               onClick={() => setIsSettingsOpen(true)}
               className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-              title="Inställningar"
+              title="Färgpalett och visning"
             >
               <Settings size={16} className="text-gray-600" />
             </button>
           </div>
+        </div>
+        
+        {/* Title Input - Always visible */}
+        <div className="mb-3">
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            Titel
+          </label>
+          <input
+            type="text"
+            value={title || ''}
+            onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
+            placeholder="Namnge ditt hjul..."
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <p className="text-xs text-gray-400 mt-1 italic">Sparas automatiskt</p>
         </div>
 
         {/* View Tabs */}
@@ -1104,7 +1119,7 @@ function OrganizationPanel({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-sm shadow-xl w-full max-w-md my-8">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
-              <h2 className="text-lg font-semibold text-gray-900">Inställningar</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Färgpalett och visning</h2>
               <button
                 onClick={() => setIsSettingsOpen(false)}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -1112,21 +1127,10 @@ function OrganizationPanel({
                 <X size={20} className="text-gray-600" />
               </button>
             </div>
-            <div className="p-4 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Titel</h3>
-                <input
-                  type="text"
-                  value={title || ''}
-                  onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
-                  placeholder="Ange titel..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-              </div>
-
+            <div className="p-4 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Färgpalett</h3>
-                <p className="text-xs text-gray-500 mb-2">Ändrar färger för månader och aktiviteter</p>
+                <p className="text-xs text-gray-500 mb-3">Välj en färgpalett för aktiviteter och ringar</p>
                 <div className="space-y-2">
                   <div 
                     onClick={() => {
@@ -1155,18 +1159,16 @@ function OrganizationPanel({
                         if (onColorsChange) onColorsChange(newColors);
                         onOrganizationChange(newOrganizationData);
                       }
-                      
-                      setIsSettingsOpen(false);
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
+                    className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#F5E6D3' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#A8DCD1' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#F4A896' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#B8D4E8' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#F5E6D3' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#A8DCD1' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#F4A896' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#B8D4E8' }}></div>
                     </div>
-                    <p className="text-xs text-gray-600">Pastell (standard)</p>
+                    <p className="text-xs text-gray-700 font-medium">Pastell (standard)</p>
                   </div>
 
                   <div 
@@ -1191,26 +1193,22 @@ function OrganizationPanel({
                       
                       const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
                       
-                      // Use combined callback to update BOTH colors and organizationData in ONE state update
                       if (onPaletteChange) {
                         onPaletteChange(newColors, newOrganizationData);
                       } else {
-                        // Fallback to separate calls if combined callback not available
                         if (onColorsChange) onColorsChange(newColors);
                         onOrganizationChange(newOrganizationData);
                       }
-                      
-                      setIsSettingsOpen(false); // Close modal after palette selection
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
+                    className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#EF4444' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#10B981' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#F59E0B' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#EF4444' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#10B981' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#F59E0B' }}></div>
                     </div>
-                    <p className="text-xs text-gray-600">Livlig</p>
+                    <p className="text-xs text-gray-700 font-medium">Livlig</p>
                   </div>
 
                   <div 
@@ -1240,18 +1238,16 @@ function OrganizationPanel({
                         if (onColorsChange) onColorsChange(newColors);
                         onOrganizationChange(newOrganizationData);
                       }
-                      
-                      setIsSettingsOpen(false);
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
+                    className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#8B5CF6' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#EC4899' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#06B6D4' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#84CC16' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#8B5CF6' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#EC4899' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#06B6D4' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#84CC16' }}></div>
                     </div>
-                    <p className="text-xs text-gray-600">Modern</p>
+                    <p className="text-xs text-gray-700 font-medium">Modern</p>
                   </div>
 
                   <div 
@@ -1281,18 +1277,16 @@ function OrganizationPanel({
                         if (onColorsChange) onColorsChange(newColors);
                         onOrganizationChange(newOrganizationData);
                       }
-                      
-                      setIsSettingsOpen(false);
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
+                    className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#1E3A8A' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#7C2D12' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#065F46' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#78350F' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#1E3A8A' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#7C2D12' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#065F46' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#78350F' }}></div>
                     </div>
-                    <p className="text-xs text-gray-600">Klassisk</p>
+                    <p className="text-xs text-gray-700 font-medium">Klassisk</p>
                   </div>
 
                   <div 
@@ -1322,48 +1316,24 @@ function OrganizationPanel({
                         if (onColorsChange) onColorsChange(newColors);
                         onOrganizationChange(newOrganizationData);
                       }
-                      
-                      setIsSettingsOpen(false);
                     }}
-                    className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
+                    className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#4B5563' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#6B7280' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#9CA3AF' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#D1D5DB' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#4B5563' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#6B7280' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#9CA3AF' }}></div>
+                      <div className="w-10 h-10 rounded" style={{ backgroundColor: '#D1D5DB' }}></div>
                     </div>
-                    <p className="text-xs text-gray-600">Grayscale</p>
+                    <p className="text-xs text-gray-700 font-medium">Grayscale</p>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Organisation</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Ringar:</span>
-                    <span className="font-medium">{organizationData.rings.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Aktiviteter:</span>
-                    <span className="font-medium">{(organizationData.activityGroups || []).length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Etiketter:</span>
-                    <span className="font-medium">{organizationData.labels.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Aktiviteter:</span>
-                    <span className="font-medium">{organizationData.items?.length || 0}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Visningsalternativ</h3>
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Visningsalternativ</h3>
                 <div className="space-y-2">
-                  <label className="flex items-center justify-between cursor-pointer">
+                  <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors">
                     <span className="text-sm text-gray-600">Visa ringnamn</span>
                     <input
                       type="checkbox"
@@ -1373,12 +1343,6 @@ function OrganizationPanel({
                     />
                   </label>
                 </div>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-4">
-                <p className="text-xs text-gray-500 italic">
-                  Ändringar sparas automatiskt efter 2 sekunder
-                </p>
               </div>
             </div>
           </div>
