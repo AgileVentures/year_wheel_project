@@ -9,8 +9,8 @@ class YearWheel {
     this.context = canvas.getContext("2d");
     this.year = year;
     this.title = title;
-    this.outerRingColor = colors[0]; // Use the first color for the outer ring
-    this.sectionColors = colors; // Use all colors for sections (plandisc style)
+    this.outerRingColor = colors[0]; 
+    this.sectionColors = colors; 
     this.size = size;
     this.events = events;
     this.options = options;
@@ -1683,7 +1683,7 @@ class YearWheel {
     
     // Get activity group color
     const activityGroup = this.organizationData.activityGroups.find(a => a.id === item.activityId);
-    const itemColor = activityGroup ? activityGroup.color : '#94A3B8';
+    const itemColor = activityGroup ? activityGroup.color : '#B8D4E8';
     
     // Draw semi-transparent preview
     this.context.save();
@@ -1817,7 +1817,7 @@ class YearWheel {
       }
       
       // Date range (smaller, less prominent)
-      this.context.fillStyle = '#64748B';
+      this.context.fillStyle = '#F4A896';
       this.context.font = `500 ${this.size / 85}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
       const startDate = new Date(this.hoveredItem.startDate).toLocaleDateString('sv-SE');
       const endDate = new Date(this.hoveredItem.endDate).toLocaleDateString('sv-SE');
@@ -1947,12 +1947,13 @@ class YearWheel {
           
           // Only draw background if ring has visible items
           if (ringItems.length > 0) {
-            // Draw light background for this outer ring using template colors
+            // Draw light background for this outer ring using palette colors
             this.context.beginPath();
             this.context.arc(this.center.x, this.center.y, ringStartRadius, 0, Math.PI * 2);
             this.context.arc(this.center.x, this.center.y, ringStartRadius + outerRingContentHeight, 0, Math.PI * 2, true);
-            // Use template colors with very light tint for backgrounds
+            // ALWAYS use palette colors for ring backgrounds (ignore ring.color from database)
             const templateColor = this.sectionColors[ringIndex % this.sectionColors.length];
+            console.log(`[YearWheelClass] Drawing ring "${ring.name}" with palette color: ${templateColor} (palette index ${ringIndex % this.sectionColors.length})`);
             this.context.fillStyle = this.getLightBackgroundColor(templateColor);
             this.context.fill();
             this.context.closePath();
@@ -2231,8 +2232,10 @@ class YearWheel {
       const numberOfMonths = monthsToDisplay.length;
       
       // Use template colors alternating between first two colors for month ring
+      console.log('[YearWheelClass] 🟢 Drawing month ring with this.sectionColors:', this.sectionColors);
       const color1 = this.sectionColors[0];
       const color2 = this.sectionColors[1] || this.sectionColors[0]; // Fallback to first if only one color
+      console.log('[YearWheelClass] 🟢 Month ring color1:', color1, 'color2:', color2);
       const monthColors = [];
       for (let i = 0; i < numberOfMonths; i++) {
         monthColors.push(i % 2 === 0 ? color1 : color2);

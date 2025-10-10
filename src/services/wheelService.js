@@ -93,16 +93,18 @@ export const fetchWheel = async (wheelId) => {
   if (itemsError) throw itemsError;
 
   // Transform to match current app structure
+  const wheelColors = wheel.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8']; // Default to Pastell palette
+  
   return {
     id: wheel.id,
     title: wheel.title,
     year: wheel.year.toString(),
-    colors: wheel.colors,
+    colors: wheelColors,
     showWeekRing: wheel.show_week_ring,
     showMonthRing: wheel.show_month_ring,
     showRingNames: wheel.show_ring_names,
     organizationData: {
-      rings: rings.map(ring => {
+      rings: rings.map((ring, index) => {
         // For inner rings, attach the month data
         if (ring.type === 'inner') {
           const monthData = ringData
@@ -121,25 +123,26 @@ export const fetchWheel = async (wheelId) => {
           };
         }
         
-        // Outer rings
+        // Outer rings - use color from palette based on outer ring index
+        const outerRingIndex = rings.filter((r, i) => i < index && r.type === 'outer').length;
         return {
           id: ring.id,
           name: ring.name,
           type: ring.type,
-          color: ring.color,
+          color: ring.color || wheelColors[outerRingIndex % wheelColors.length],
           visible: ring.visible,
         };
       }),
-      activityGroups: activityGroups.map(ag => ({
+      activityGroups: activityGroups.map((ag, index) => ({
         id: ag.id,
         name: ag.name,
-        color: ag.color,
+        color: ag.color || wheelColors[index % wheelColors.length], // Derive from palette if not set
         visible: ag.visible,
       })),
-      labels: labels.map(l => ({
+      labels: labels.map((l, index) => ({
         id: l.id,
         name: l.name,
-        color: l.color,
+        color: l.color || wheelColors[index % wheelColors.length], // Derive from palette if not set
         visible: l.visible,
       })),
       items: items.map(i => ({
@@ -170,7 +173,7 @@ export const createWheel = async (wheelData) => {
       user_id: user.id,
       title: wheelData.title || 'Nytt hjul',
       year: parseInt(wheelData.year) || new Date().getFullYear(),
-      colors: wheelData.colors || ['#334155', '#475569', '#64748B', '#94A3B8'],
+      colors: wheelData.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8'],
       show_week_ring: wheelData.showWeekRing !== undefined ? wheelData.showWeekRing : true,
       show_month_ring: wheelData.showMonthRing !== undefined ? wheelData.showMonthRing : true,
       show_ring_names: wheelData.showRingNames !== undefined ? wheelData.showRingNames : true,
@@ -205,6 +208,7 @@ export const updateWheel = async (wheelId, updates) => {
   if (updates.showWeekRing !== undefined) updateData.show_week_ring = updates.showWeekRing;
   if (updates.showMonthRing !== undefined) updateData.show_month_ring = updates.showMonthRing;
   if (updates.showRingNames !== undefined) updateData.show_ring_names = updates.showRingNames;
+  if (updates.is_public !== undefined) updateData.is_public = updates.is_public;
 
   console.log('[wheelService] Final updateData being sent to DB:', updateData);
 
@@ -286,7 +290,7 @@ const syncRings = async (wheelId, rings) => {
       wheel_id: wheelId,
       name: ring.name,
       type: ring.type,
-      color: ring.color || null,
+      color: ring.color || '#F5E6D3', // Save the color from organizationData (includes palette-derived color)
       visible: ring.visible !== undefined ? ring.visible : true,
       ring_order: i,
       orientation: ring.orientation || null,
@@ -390,7 +394,7 @@ const syncActivityGroups = async (wheelId, activityGroups) => {
     const groupData = {
       wheel_id: wheelId,
       name: group.name.trim(),
-      color: group.color,
+      color: group.color || '#F5E6D3', // Save the color from organizationData (includes palette-derived color)
       visible: group.visible !== undefined ? group.visible : true,
     };
 
@@ -451,7 +455,7 @@ const syncLabels = async (wheelId, labels) => {
     const labelData = {
       wheel_id: wheelId,
       name: label.name.trim(),
-      color: label.color,
+      color: label.color || '#F5E6D3', // Save the color from organizationData (includes palette-derived color)
       visible: label.visible !== undefined ? label.visible : true,
     };
 

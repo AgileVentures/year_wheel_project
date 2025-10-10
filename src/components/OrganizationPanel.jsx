@@ -10,6 +10,7 @@ function OrganizationPanel({
   onTitleChange,
   colors,
   onColorsChange,
+  onPaletteChange,
   onZoomToMonth,
   onZoomToQuarter,
   showRingNames,
@@ -729,11 +730,10 @@ function OrganizationPanel({
                       onChange={() => toggleRing(ring.id)}
                       className="w-3 h-3 rounded"
                     />
-                    <input
-                      type="color"
-                      value={ring.color || '#cccccc'}
-                      onChange={(e) => handleRingColorChange(ring.id, e.target.value)}
-                      className="w-4 h-4 rounded cursor-pointer"
+                    <div
+                      className="w-4 h-4 rounded border border-gray-300"
+                      style={{ backgroundColor: ring.color || '#cccccc' }}
+                      title={`Färg: ${ring.color || '#cccccc'} (ändras via färgpalett i inställningar)`}
                     />
                     <input
                       type="text"
@@ -828,11 +828,10 @@ function OrganizationPanel({
                       onChange={() => toggleRing(ring.id)}
                       className="w-3 h-3 rounded"
                     />
-                    <input
-                      type="color"
-                      value={ring.color || '#cccccc'}
-                      onChange={(e) => handleRingColorChange(ring.id, e.target.value)}
-                      className="w-4 h-4 rounded cursor-pointer"
+                    <div
+                      className="w-4 h-4 rounded border border-gray-300"
+                      style={{ backgroundColor: ring.color || '#cccccc' }}
+                      title={`Färg: ${ring.color || '#cccccc'} (ändras via färgpalett i inställningar)`}
                     />
                     <input
                       type="text"
@@ -1132,13 +1131,32 @@ function OrganizationPanel({
                   <div 
                     onClick={() => {
                       const newColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
-                      if (onColorsChange) onColorsChange(newColors);
-                      // Update activity colors to match palette
+                      
                       const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
+                      
+                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                        if (ring.type === 'outer') {
+                          const ringIndex = outerRings.indexOf(ring);
+                          const newColor = newColors[ringIndex % newColors.length];
+                          return { ...ring, color: newColor };
+                        }
+                        return ring;
+                      });
+                      
+                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      
+                      if (onPaletteChange) {
+                        onPaletteChange(newColors, newOrganizationData);
+                      } else {
+                        if (onColorsChange) onColorsChange(newColors);
+                        onOrganizationChange(newOrganizationData);
+                      }
+                      
+                      setIsSettingsOpen(false);
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
@@ -1154,12 +1172,36 @@ function OrganizationPanel({
                   <div 
                     onClick={() => {
                       const newColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"];
-                      if (onColorsChange) onColorsChange(newColors);
+                      console.log('🔴🔴🔴 [OrganizationPanel] LIVLIG PALETTE CLICKED!', newColors);
+                      
                       const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
+                      
+                      // Update outer ring colors to match palette
+                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                        if (ring.type === 'outer') {
+                          const ringIndex = outerRings.indexOf(ring);
+                          const newColor = newColors[ringIndex % newColors.length];
+                          return { ...ring, color: newColor };
+                        }
+                        return ring;
+                      });
+                      
+                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      
+                      // Use combined callback to update BOTH colors and organizationData in ONE state update
+                      if (onPaletteChange) {
+                        onPaletteChange(newColors, newOrganizationData);
+                      } else {
+                        // Fallback to separate calls if combined callback not available
+                        if (onColorsChange) onColorsChange(newColors);
+                        onOrganizationChange(newOrganizationData);
+                      }
+                      
+                      setIsSettingsOpen(false); // Close modal after palette selection
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
@@ -1175,12 +1217,32 @@ function OrganizationPanel({
                   <div 
                     onClick={() => {
                       const newColors = ["#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
-                      if (onColorsChange) onColorsChange(newColors);
+                      
                       const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
+                      
+                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                        if (ring.type === 'outer') {
+                          const ringIndex = outerRings.indexOf(ring);
+                          const newColor = newColors[ringIndex % newColors.length];
+                          return { ...ring, color: newColor };
+                        }
+                        return ring;
+                      });
+                      
+                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      
+                      if (onPaletteChange) {
+                        onPaletteChange(newColors, newOrganizationData);
+                      } else {
+                        if (onColorsChange) onColorsChange(newColors);
+                        onOrganizationChange(newOrganizationData);
+                      }
+                      
+                      setIsSettingsOpen(false);
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
@@ -1196,12 +1258,32 @@ function OrganizationPanel({
                   <div 
                     onClick={() => {
                       const newColors = ["#1E3A8A", "#7C2D12", "#065F46", "#78350F"];
-                      if (onColorsChange) onColorsChange(newColors);
+                      
                       const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
+                      
+                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                        if (ring.type === 'outer') {
+                          const ringIndex = outerRings.indexOf(ring);
+                          const newColor = newColors[ringIndex % newColors.length];
+                          return { ...ring, color: newColor };
+                        }
+                        return ring;
+                      });
+                      
+                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      
+                      if (onPaletteChange) {
+                        onPaletteChange(newColors, newOrganizationData);
+                      } else {
+                        if (onColorsChange) onColorsChange(newColors);
+                        onOrganizationChange(newOrganizationData);
+                      }
+                      
+                      setIsSettingsOpen(false);
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
@@ -1216,21 +1298,41 @@ function OrganizationPanel({
 
                   <div 
                     onClick={() => {
-                      const newColors = ["#334155", "#475569", "#64748B", "#94A3B8"];
-                      if (onColorsChange) onColorsChange(newColors);
+                      const newColors = ["#4B5563", "#6B7280", "#9CA3AF", "#D1D5DB"];
+                      
                       const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
-                      onOrganizationChange({ ...organizationData, activityGroups: updatedActivities });
+                      
+                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                        if (ring.type === 'outer') {
+                          const ringIndex = outerRings.indexOf(ring);
+                          const newColor = newColors[ringIndex % newColors.length];
+                          return { ...ring, color: newColor };
+                        }
+                        return ring;
+                      });
+                      
+                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      
+                      if (onPaletteChange) {
+                        onPaletteChange(newColors, newOrganizationData);
+                      } else {
+                        if (onColorsChange) onColorsChange(newColors);
+                        onOrganizationChange(newOrganizationData);
+                      }
+                      
+                      setIsSettingsOpen(false);
                     }}
                     className="cursor-pointer p-2 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
                   >
                     <div className="flex gap-2 mb-1">
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#334155' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#475569' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#64748B' }}></div>
-                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#94A3B8' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#4B5563' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#6B7280' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#9CA3AF' }}></div>
+                      <div className="w-8 h-8 rounded" style={{ backgroundColor: '#D1D5DB' }}></div>
                     </div>
                     <p className="text-xs text-gray-600">Grayscale</p>
                   </div>
@@ -1275,16 +1377,9 @@ function OrganizationPanel({
               </div>
               
               <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Åtgärder</h3>
-                <button
-                  onClick={() => {
-                    handleRefresh();
-                    setIsSettingsOpen(false);
-                  }}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
-                >
-                  Ladda om data
-                </button>
+                <p className="text-xs text-gray-500 italic">
+                  Ändringar sparas automatiskt efter 2 sekunder
+                </p>
               </div>
             </div>
           </div>

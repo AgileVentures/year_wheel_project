@@ -35,7 +35,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   } = useMultiStateUndoRedo({
     title: "Nytt hjul",
     year: "2025",
-    colors: ["#334155", "#475569", "#64748B", "#94A3B8"],
+    colors: ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"], // Pastell palette
     organizationData: {
       rings: [
         {
@@ -79,11 +79,19 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   }, [setUndoableStates, year]);
   
   const setColors = useCallback((value) => {
-    setUndoableStates({ colors: typeof value === 'function' ? value(colors) : value });
+    const newColors = typeof value === 'function' ? value(colors) : value;
+    console.log('[App] 🟡 setColors called, updating from', colors, 'to', newColors);
+    console.log('[App] 🟡 Calling setUndoableStates with:', { colors: newColors });
+    setUndoableStates({ colors: newColors });
+    console.log('[App] 🟡 setUndoableStates returned');
   }, [setUndoableStates, colors]);
   
   const setOrganizationData = useCallback((value) => {
-    setUndoableStates({ organizationData: typeof value === 'function' ? value(organizationData) : value });
+    const newOrgData = typeof value === 'function' ? value(organizationData) : value;
+    const outerRingsReceived = newOrgData.rings?.filter(r => r.type === 'outer').map(r => ({ name: r.name, color: r.color }));
+    console.log('[App] setOrganizationData called with outer rings:', JSON.stringify(outerRingsReceived));
+    setUndoableStates({ organizationData: newOrgData });
+    console.log('[App] setUndoableStates called, state will update on next render');
   }, [setUndoableStates, organizationData]);
   
   // Other non-undoable states
@@ -182,9 +190,28 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
               orgData.activityGroups = [{
                 id: "group-1",
                 name: "Aktivitetsgrupp 1",
-                color: wheelData.colors?.[0] || "#334155",
+                color: wheelData.colors?.[0] || "#F5E6D3",
                 visible: true
               }];
+            }
+            
+            // Apply color fallback for outer rings (use wheel colors if ring has no color)
+            if (orgData.rings && orgData.rings.length > 0) {
+              console.log('[WheelEditor] PAGE: Before color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
+              console.log('[WheelEditor] PAGE: Using wheel colors for fallback:', wheelData.colors);
+              orgData.rings = orgData.rings.map((ring, index) => {
+                if (ring.type === 'outer' && !ring.color) {
+                  const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
+                  const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
+                  console.log(`[WheelEditor] PAGE: Applying fallback color ${fallbackColor} to outer ring "${ring.name}"`);
+                  return {
+                    ...ring,
+                    color: fallbackColor
+                  };
+                }
+                return ring;
+              });
+              console.log('[WheelEditor] PAGE: After color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
             }
             
             setOrganizationData(orgData);
@@ -208,9 +235,28 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
               orgData.activityGroups = [{
                 id: "group-1",
                 name: "Aktivitetsgrupp 1",
-                color: wheelData.colors?.[0] || "#334155",
+                color: wheelData.colors?.[0] || "#F5E6D3",
                 visible: true
               }];
+            }
+            
+            // Apply color fallback for outer rings (use wheel colors if ring has no color)
+            if (orgData.rings && orgData.rings.length > 0) {
+              console.log('[WheelEditor] WHEEL: Before color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
+              console.log('[WheelEditor] WHEEL: Using wheel colors for fallback:', wheelData.colors);
+              orgData.rings = orgData.rings.map((ring, index) => {
+                if (ring.type === 'outer' && !ring.color) {
+                  const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
+                  const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
+                  console.log(`[WheelEditor] WHEEL: Applying fallback color ${fallbackColor} to outer ring "${ring.name}"`);
+                  return {
+                    ...ring,
+                    color: fallbackColor
+                  };
+                }
+                return ring;
+              });
+              console.log('[WheelEditor] WHEEL: After color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
             }
             
             setOrganizationData(orgData);
@@ -260,14 +306,14 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       return;
     }
     
-    // Ignore broadcasts from our own recent saves (within 60 seconds to be VERY safe)
+    // Ignore broadcasts from our own recent saves (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
     console.log('[Realtime] Time since last save:', timeSinceLastSave, 'ms');
-    if (timeSinceLastSave < 60000) {
+    if (timeSinceLastSave < 5000) {
       console.log('[Realtime] ✓ IGNORING own broadcast (saved', timeSinceLastSave, 'ms ago)');
       return;
     }
-    console.log('[Realtime] ⚠️ Processing broadcast (> 60s since save) - will reload data');
+    console.log('[Realtime] ⚠️ Processing broadcast (> 5s since save) - will reload data');
     
     // Don't reload during active save operation
     if (isSavingRef.current) {
@@ -299,14 +345,14 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       return;
     }
     
-    // Ignore our own recent changes (60 seconds to be VERY safe)
+    // Ignore our own recent changes (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
     console.log('[Realtime] Time since last save:', timeSinceLastSave, 'ms');
-    if (timeSinceLastSave < 60000) {
+    if (timeSinceLastSave < 5000) {
       console.log('[Realtime] ✓ IGNORING own page broadcast (saved', timeSinceLastSave, 'ms ago)');
       return;
     }
-    console.log('[Realtime] ⚠️ Processing page broadcast (> 60s since save)');
+    console.log('[Realtime] ⚠️ Processing page broadcast (> 5s since save)');
     
     if (eventType === 'INSERT') {
       // New page added by another user
@@ -388,6 +434,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     year,
     currentPageId
   };
+  
+  // Debug: Log when colors change
+  useEffect(() => {
+    console.log('[App] 🟡🟡🟡 colors state updated to:', colors);
+  }, [colors]);
 
   // Auto-save function (debounced to prevent excessive saves)
   // Uses refs to always read the latest state values
@@ -427,6 +478,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       isSavingRef.current = true;
       
       // Update wheel metadata (NOT including year - it's per-page now)
+      console.log('[AutoSave] Updating wheel with colors:', currentColors);
       await updateWheel(wheelId, {
         title: currentTitle,
         colors: currentColors,
@@ -437,6 +489,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       
       // Save current page data if we have pages
       if (currentCurrentPageId) {
+        console.log('[AutoSave] Saving page organization_data with rings:');
+        console.table(currentOrganizationData.rings?.map(r => ({ name: r.name, type: r.type, color: r.color })));
         await updatePage(currentCurrentPageId, {
           organization_data: currentOrganizationData,
           year: parseInt(currentYear)
@@ -466,18 +520,23 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     }
   }, 2000); // Wait 2 seconds after last change before saving
 
-  // DISABLED auto-save on organizationData changes - was causing realtime loops
-  // User must click Save button to persist changes
-  // useEffect(() => {
-  //   autoSave();
-  // }, [organizationData, autoSave]);
+  // Auto-save on organizationData changes (with safeguards to prevent loops)
+  useEffect(() => {
+    // Skip if initial load, loading data, or data came from realtime
+    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+      return;
+    }
+    autoSave();
+  }, [organizationData, autoSave]);
 
-  // DISABLED auto-save on settings changes - was causing realtime loops
-  // useEffect(() => {
-  //   if (!isInitialLoad.current) {
-  //     autoSave();
-  //   }
-  // }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
+  // Auto-save on settings changes (with safeguards to prevent loops)
+  useEffect(() => {
+    // Skip if initial load, loading data, or data came from realtime
+    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+      return;
+    }
+    autoSave();
+  }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
 
   // Initial load on mount AND cleanup when wheelId changes
   useEffect(() => {
@@ -831,7 +890,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           activityGroups: [{
             id: "group-1",
             name: "Aktivitetsgrupp 1",
-            color: colors[0] || "#334155",
+            color: colors[0] || "#F5E6D3",
             visible: true
           }],
           labels: [],
@@ -1249,6 +1308,33 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     input.click();
   };
 
+  // Combined handler for palette changes - updates BOTH colors AND organizationData in ONE state update
+  const handlePaletteChange = useCallback((newColors, newOrganizationData) => {
+    console.log('[App] 🟡 handlePaletteChange called with colors:', newColors);
+    // Update BOTH colors and organizationData in a SINGLE setUndoableStates call
+    setUndoableStates({ 
+      colors: newColors,
+      organizationData: newOrganizationData
+    });
+    // Update refs for auto-save
+    latestValuesRef.current.colors = newColors;
+    latestValuesRef.current.organizationData = newOrganizationData;
+    // Update timestamp to ignore realtime events
+    lastSaveTimestamp.current = Date.now();
+  }, [setUndoableStates]);
+
+  // Wrapped color change handler that updates timestamp to prevent realtime overwrites
+  const handleColorsChange = useCallback((newColors) => {
+    console.log('[App] handleColorsChange called with:', newColors);
+    setColors(newColors);
+    // CRITICAL: Update ref immediately so auto-save uses new colors
+    latestValuesRef.current.colors = newColors;
+    console.log('[App] Updated latestValuesRef.current.colors to:', newColors);
+    // Update timestamp so realtime ignores events for next 5 seconds
+    lastSaveTimestamp.current = Date.now();
+    console.log('[App] Updated lastSaveTimestamp to prevent realtime overwrites');
+  }, [setColors]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1302,7 +1388,8 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
             title={title}
             onTitleChange={setTitle}
             colors={colors}
-            onColorsChange={setColors}
+            onColorsChange={handleColorsChange}
+            onPaletteChange={handlePaletteChange}
             onZoomToMonth={setZoomedMonth}
             onZoomToQuarter={setZoomedQuarter}
             showRingNames={showRingNames}
