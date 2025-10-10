@@ -596,16 +596,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       try {
         // console.log('[ManualSave] Saving wheel data...', {
-          wheelId,
-          title,
-          year,
-          organizationData: {
-            rings: organizationData.rings?.length || 0,
-            activityGroups: organizationData.activityGroups?.length || 0,
-            labels: organizationData.labels?.length || 0,
-            items: organizationData.items?.length || 0,
-          }
-        });
+        //   wheelId,
+        //   title,
+        //   year,
+        //   organizationData: {
+        //     rings: organizationData.rings?.length || 0,
+        //     activityGroups: organizationData.activityGroups?.length || 0,
+        //     labels: organizationData.labels?.length || 0,
+        //     items: organizationData.items?.length || 0,
+        //   }
+        // });
         // First, update wheel metadata (title, colors, settings)
         await updateWheel(wheelId, {
           title,
@@ -1135,11 +1135,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             processedOrgData.items = processedOrgData.items || [];
             
             // console.log('[FileImport] Processed organization data from file:', {
-              rings: processedOrgData.rings.length,
-              activityGroups: processedOrgData.activityGroups.length,
-              labels: processedOrgData.labels.length,
-              items: processedOrgData.items.length,
-            });
+            //   rings: processedOrgData.rings.length,
+            //   activityGroups: processedOrgData.activityGroups.length,
+            //   labels: processedOrgData.labels.length,
+            //   items: processedOrgData.items.length,
+            // });
           } else {
             // Use default structure if not present in file
             processedOrgData = { 
