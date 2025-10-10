@@ -37,7 +37,7 @@ export default function SubscriptionSettings({ onClose }) {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8">
+        <div className="bg-white rounded-sm p-8">
           <p className="text-gray-600">Laddar prenumeration...</p>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function SubscriptionSettings({ onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-sm shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Prenumeration</h2>
@@ -84,7 +84,7 @@ export default function SubscriptionSettings({ onClose }) {
         <div className="p-6 space-y-6">
           {/* Current Plan Card */}
           <div className={`
-            rounded-lg border-2 p-6
+            rounded-sm border-2 p-6
             ${isPremium ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50' : 'border-gray-200 bg-gray-50'}
           `}>
             <div className="flex items-start justify-between mb-4">
@@ -137,7 +137,7 @@ export default function SubscriptionSettings({ onClose }) {
                 <>
                   <button
                     onClick={handleManageBilling}
-                    className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
                   >
                     <CreditCard size={18} />
                     Hantera betalning
@@ -146,7 +146,7 @@ export default function SubscriptionSettings({ onClose }) {
                   {!subscription.cancel_at_period_end && (
                     <button
                       onClick={() => setShowCancelConfirm(true)}
-                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-semibold transition-colors"
+                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-sm font-semibold transition-colors"
                     >
                       Avbryt
                     </button>
@@ -157,7 +157,7 @@ export default function SubscriptionSettings({ onClose }) {
           </div>
 
           {/* Usage Stats */}
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-gray-50 rounded-sm p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">
               Din användning
             </h3>
@@ -206,7 +206,7 @@ export default function SubscriptionSettings({ onClose }) {
         {/* Cancel Confirmation Modal */}
         {showCancelConfirm && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md">
+            <div className="bg-white rounded-sm p-6 max-w-md">
               <h3 className="text-xl font-bold text-gray-900 mb-4">
                 Avbryt prenumeration?
               </h3>
@@ -218,14 +218,14 @@ export default function SubscriptionSettings({ onClose }) {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCancelConfirm(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-sm font-semibold text-gray-700 hover:bg-gray-50"
                   disabled={canceling}
                 >
                   Behåll prenumeration
                 </button>
                 <button
                   onClick={handleCancelSubscription}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold text-white"
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-sm font-semibold text-white"
                   disabled={canceling}
                 >
                   {canceling ? 'Avbryter...' : 'Ja, avbryt'}

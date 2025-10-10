@@ -214,6 +214,34 @@ export async function cancelSubscription() {
 }
 
 /**
+ * Check if user can access version control
+ * Version control is PREMIUM-ONLY
+ */
+export async function canUseVersionControl() {
+  try {
+    const isPremium = await isPremiumUser();
+    return isPremium;
+  } catch (error) {
+    console.error('Error checking version control permission:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if user can share wheels
+ * Sharing is PREMIUM-ONLY
+ */
+export async function canShareWheels() {
+  try {
+    const isPremium = await isPremiumUser();
+    return isPremium;
+  } catch (error) {
+    console.error('Error checking sharing permission:', error);
+    return false;
+  }
+}
+
+/**
  * Get usage limits for current plan
  */
 export function getUsageLimits(isPremium) {
@@ -222,13 +250,15 @@ export function getUsageLimits(isPremium) {
       maxWheels: Infinity,
       maxTeamMembers: Infinity,
       allowedExports: ['png', 'svg', 'pdf', 'jpg'],
+      canUseVersionControl: true,
+      canShareWheels: true,
       features: [
         'Obegränsade årshjul',
         'Obegränsade team och medlemmar',
         'Alla exportformat (PNG, SVG, PDF, JPG)',
-        'Prioriterad support',
-        'Versionshistorik',
-        'Delning och samarbete'
+        'Versionshistorik - se och återställ ändringar',
+        'Dela hjul och samarbeta i realtid',
+        'Prioriterad support'
       ]
     };
   }
@@ -237,6 +267,8 @@ export function getUsageLimits(isPremium) {
     maxWheels: 2,
     maxTeamMembers: 3,
     allowedExports: ['png', 'svg'],
+    canUseVersionControl: false,
+    canShareWheels: false,
     features: [
       'Upp till 2 årshjul',
       '1 team med upp till 3 medlemmar',

@@ -10,7 +10,7 @@ export default function UpgradePrompt({
 }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div className="bg-white rounded-sm shadow-xl max-w-md w-full p-6">
         {/* Icon */}
         <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-4">
           <AlertTriangle className="text-yellow-600" size={32} />
@@ -28,7 +28,7 @@ export default function UpgradePrompt({
 
         {/* Usage Stats */}
         {currentUsage !== undefined && limit !== undefined && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="bg-gray-50 rounded-sm p-4 mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
                 Nuvarande användning
@@ -47,7 +47,7 @@ export default function UpgradePrompt({
         )}
 
         {/* Premium Benefits */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-6">
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-sm p-4 mb-6">
           <div className="flex items-center mb-3">
             <Crown className="text-blue-600 mr-2" size={20} />
             <h3 className="font-bold text-gray-900">
@@ -65,7 +65,15 @@ export default function UpgradePrompt({
             </li>
             <li className="flex items-start">
               <span className="text-blue-600 mr-2">✓</span>
-              <span>Alla exportformat</span>
+              <span>Alla exportformat (PNG, SVG, PDF, JPG)</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-blue-600 mr-2">✓</span>
+              <span>Versionshistorik - se och återställ ändringar</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-blue-600 mr-2">✓</span>
+              <span>Dela hjul och samarbeta i realtid</span>
             </li>
             <li className="flex items-start">
               <span className="text-blue-600 mr-2">✓</span>
@@ -97,13 +105,13 @@ export default function UpgradePrompt({
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Inte nu
           </button>
           <button
             onClick={onUpgrade}
-            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-white transition-colors"
+            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-sm font-semibold text-white transition-colors"
           >
             Se planer
           </button>

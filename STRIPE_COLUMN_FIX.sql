@@ -49,5 +49,41 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to check if user can use version control (PREMIUM ONLY)
+CREATE OR REPLACE FUNCTION public.can_use_version_control(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- Version control is premium-only feature
+  RETURN public.is_premium_user(user_uuid);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if user can share wheels (PREMIUM ONLY)
+CREATE OR REPLACE FUNCTION public.can_share_wheels(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- Sharing is premium-only feature
+  RETURN public.is_premium_user(user_uuid);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check export format permission
+CREATE OR REPLACE FUNCTION public.can_export_format(user_uuid UUID, format TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  is_premium BOOLEAN;
+BEGIN
+  is_premium := public.is_premium_user(user_uuid);
+  
+  -- Premium users can export to all formats
+  IF is_premium THEN
+    RETURN TRUE;
+  END IF;
+  
+  -- Free users can only export to PNG and SVG
+  RETURN format IN ('png', 'svg');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Verify the fix
 SELECT 'Functions updated successfully!' as status;

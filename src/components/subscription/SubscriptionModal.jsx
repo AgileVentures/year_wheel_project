@@ -67,9 +67,9 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
         'Obegränsade årshjul',
         'Obegränsade team och medlemmar',
         'Alla exportformat (PNG, SVG, PDF, JPG)',
-        'Prioriterad support',
-        'Versionshistorik',
-        'Delning och samarbete'
+        'Versionshistorik - se och återställ ändringar',
+        'Dela hjul och samarbeta i realtid',
+        'Prioriterad support'
       ],
       highlighted: false,
       buttonText: 'Uppgradera nu',
@@ -87,9 +87,9 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
         'Obegränsade årshjul',
         'Obegränsade team och medlemmar',
         'Alla exportformat (PNG, SVG, PDF, JPG)',
-        'Prioriterad support',
-        'Versionshistorik',
-        'Delning och samarbete'
+        'Versionshistorik - se och återställ ändringar',
+        'Dela hjul och samarbeta i realtid',
+        'Prioriterad support'
       ],
       highlighted: true,
       buttonText: 'Uppgradera nu',
@@ -99,7 +99,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-sm shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
@@ -127,7 +127,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
                 <div
                   key={plan.id}
                   className={`
-                    relative rounded-lg border-2 p-6
+                    relative rounded-sm border-2 p-6
                     ${isHighlighted 
                       ? 'border-blue-500 shadow-lg scale-105' 
                       : 'border-gray-200'
@@ -196,7 +196,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
                     onClick={() => !plan.disabled && handleUpgrade(plan.id)}
                     disabled={plan.disabled || loading}
                     className={`
-                      w-full py-3 px-4 rounded-lg font-semibold transition-colors
+                      w-full py-3 px-4 rounded-sm font-semibold transition-colors
                       ${isHighlighted
                         ? 'bg-blue-600 hover:bg-blue-700 text-white'
                         : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
@@ -213,7 +213,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
           </div>
 
           {/* FAQ/Info Section */}
-          <div className="mt-12 bg-gray-50 rounded-lg p-6">
+          <div className="mt-12 bg-gray-50 rounded-sm p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">
               Vanliga frågor
             </h3>
@@ -224,16 +224,17 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
                 </h4>
                 <p className="text-sm text-gray-600">
                   Ja, du kan avbryta din prenumeration när som helst. 
-                  Du behåller åtkomst till premium-funktioner till periodens slut.
+                  Både månadsprenumerationen och årsprenumerationen löper till periodens slut. 
+                  Du behåller full åtkomst till premium-funktioner fram till slutdatumet.
                 </p>
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  Vad händer när jag avbryter?
+                  Vad händer när prenumerationen tar slut?
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Du återgår till gratisplanen. Dina hjul sparas, men du kan 
-                  bara ha 2 aktiva hjul och 3 teammedlemmar.
+                  Du återgår automatiskt till gratisplanen. Dina hjul sparas, men du kan 
+                  bara ha 2 aktiva hjul och 3 teammedlemmar. Ingen återbetalning sker för resterande tid.
                 </p>
               </div>
               <div>

@@ -208,7 +208,45 @@ CREATE TRIGGER on_auth_user_created_subscription
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user_subscription();
 
--- 14. Grant necessary permissions
+-- 14. Additional Premium-Only Feature Functions
+
+-- Function to check if user can use version control (PREMIUM ONLY)
+CREATE OR REPLACE FUNCTION public.can_use_version_control(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- Version control is premium-only feature
+  RETURN public.is_premium_user(user_uuid);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if user can share wheels (PREMIUM ONLY)
+CREATE OR REPLACE FUNCTION public.can_share_wheels(user_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+  -- Sharing is premium-only feature
+  RETURN public.is_premium_user(user_uuid);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check export format permission
+CREATE OR REPLACE FUNCTION public.can_export_format(user_uuid UUID, format TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  is_premium BOOLEAN;
+BEGIN
+  is_premium := public.is_premium_user(user_uuid);
+  
+  -- Premium users can export to all formats
+  IF is_premium THEN
+    RETURN TRUE;
+  END IF;
+  
+  -- Free users can only export to PNG and SVG
+  RETURN format IN ('png', 'svg');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 15. Grant necessary permissions
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON public.subscriptions TO authenticated;
 GRANT SELECT ON public.subscription_events TO authenticated;
@@ -217,6 +255,9 @@ GRANT EXECUTE ON FUNCTION public.get_user_wheel_count(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_team_member_count(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_create_wheel(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.can_add_team_member(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_use_version_control(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_share_wheels(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.can_export_format(UUID, TEXT) TO authenticated;
 
 -- =====================================================
 -- VERIFICATION QUERIES

@@ -94,7 +94,7 @@ function DashboardHeader() {
       <button
         onClick={() => isPremium ? setShowSettings(true) : setShowSubscriptionModal(true)}
         className={`
-          flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors
+          flex items-center gap-2 px-4 py-2 rounded-sm font-semibold transition-colors
           ${isPremium 
             ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700' 
             : 'bg-yellow-500 hover:bg-yellow-600 text-white'
