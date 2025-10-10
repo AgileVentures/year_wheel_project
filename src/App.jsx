@@ -7,6 +7,7 @@ import Toast from "./components/Toast";
 import VersionHistoryModal from "./components/VersionHistoryModal";
 import PageNavigator from "./components/PageNavigator";
 import AddPageModal from "./components/AddPageModal";
+import AIAssistant from "./components/AIAssistant";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import AuthPage from "./components/auth/AuthPage";
@@ -129,6 +130,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [currentPageId, setCurrentPageId] = useState(null);
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   
+  // AI Assistant state
+  const [isAIOpen, setIsAIOpen] = useState(false);
+  
   // Track if we're currently loading data to prevent auto-save during load
   const isLoadingData = useRef(false);
   // Track if this is the initial load to prevent auto-save on mount
@@ -144,10 +148,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
     
+    console.log('🔄 [App] loadWheelData called, wheelId:', wheelId);
+    
     isLoadingData.current = true; // Prevent auto-save during load
     
     try {
       const wheelData = await fetchWheel(wheelId);
+      console.log('📊 [App] Fetched wheel data, items count:', wheelData?.organizationData?.items?.length || 0);
       
       if (wheelData) {
         setIsPublic(wheelData.is_public || false);
@@ -1349,6 +1356,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onPageChange={handlePageChange}
         onAddPage={handleAddPage}
         onDeletePage={handleDeletePage}
+        // AI Assistant
+        onToggleAI={() => setIsAIOpen(!isAIOpen)}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -1370,7 +1379,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onZoomToQuarter={setZoomedQuarter}
             showRingNames={showRingNames}
             onShowRingNamesChange={setShowRingNames}
-            onBackToDashboard={onBackToDashboard}
           />
         </div>
 
@@ -1421,6 +1429,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           onCreateBlank={handleCreateBlankPage}
           onDuplicate={() => handleDuplicatePage(currentPageId)}
           onCreateNextYear={handleCreateNextYear}
+        />
+      )}
+
+      {/* AI Assistant (only for database wheels) */}
+      {wheelId && (
+        <AIAssistant
+          wheelId={wheelId}
+          onWheelUpdate={loadWheelData}
+          isOpen={isAIOpen}
+          onToggle={() => setIsAIOpen(!isAIOpen)}
         />
       )}
     </div>

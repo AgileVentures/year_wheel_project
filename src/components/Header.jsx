@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles } from 'lucide-react';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
@@ -33,7 +33,9 @@ function Header({
   currentPageId,
   onPageChange,
   onAddPage,
-  onDeletePage
+  onDeletePage,
+  // AI Assistant props
+  onToggleAI
 }) {
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
@@ -279,6 +281,17 @@ function Header({
               <span>Historik</span>
             </button>
           </>
+        )}
+
+        {/* AI Assistant Toggle (only show for database wheels) */}
+        {wheelId && onToggleAI && (
+          <button
+            onClick={onToggleAI}
+            className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+            title="AI Assistent"
+          >
+            <Sparkles size={14} className="text-amber-500" />
+          </button>
         )}
         
         <div className="w-px h-8 bg-gray-300"></div>

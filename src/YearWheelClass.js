@@ -1913,8 +1913,8 @@ class YearWheel {
       const lineHeight = this.size / 55; // Reduced line height
       const maxWidth = this.minRadius * 1.4; // Keep text well within circle (70% of diameter with padding)
       
-      // Activity name (bold) - smaller font, use first palette color
-      this.context.fillStyle = this.sectionColors[0] || '#1E293B';
+      // Activity name (bold) - smaller font
+      this.context.fillStyle = '#1E293B';
       this.context.textAlign = "center";
       this.context.font = `700 ${this.size / 65}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
       this.context.textBaseline = "middle";
@@ -1956,8 +1956,8 @@ class YearWheel {
         );
       }
       
-      // Date range (smaller, less prominent) - use second palette color
-      this.context.fillStyle = this.sectionColors[1] || '#94A3B8';
+      // Date range (smaller, less prominent)
+      this.context.fillStyle = '#F4A896';
       this.context.font = `500 ${this.size / 85}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
       const startDate = new Date(this.hoveredItem.startDate).toLocaleDateString('sv-SE');
       const endDate = new Date(this.hoveredItem.endDate).toLocaleDateString('sv-SE');
@@ -1967,9 +1967,8 @@ class YearWheel {
         startY + lines.length * lineHeight + lineHeight * 0.5
       );
       
-      // Ring name only (skip activity group - too much info) - use third palette color
+      // Ring name only (skip activity group - too much info)
       if (ring) {
-        this.context.fillStyle = this.sectionColors[2] || '#64748B';
         this.context.fillText(
           ring.name,
           this.center.x,
@@ -1977,8 +1976,8 @@ class YearWheel {
         );
       }
     } else {
-      // Draw year text in center (bold, large) - use first palette color
-      this.context.fillStyle = this.sectionColors[0] || '#1E293B';
+      // Draw year text in center (bold, large)
+      this.context.fillStyle = '#1E293B';
       this.context.font = `700 ${this.size / 30}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
       this.context.textAlign = "center";
       this.context.textBaseline = "middle";
