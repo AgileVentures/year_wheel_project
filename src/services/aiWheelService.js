@@ -44,7 +44,7 @@ export const getWheelContext = async (wheelId) => {
 /**
  * Create a new ring (inner or outer)
  */
-export const aiCreateRing = async (wheelId, { name, type, color, orientation }) => {
+export const aiCreateRing = async (wheelId, pageId, { name, type, color, orientation }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const orgData = wheelData.organizationData;
@@ -77,11 +77,11 @@ export const aiCreateRing = async (wheelId, { name, type, color, orientation }) 
     // Save to database
     await saveWheelData(wheelId, updatedOrgData);
     
-    // Also update wheel_pages.organization_data
+    // Also update wheel_pages.organization_data for THIS specific page
     await supabase
       .from('wheel_pages')
       .update({ organization_data: updatedOrgData })
-      .eq('wheel_id', wheelId);
+      .eq('id', pageId);  // Use pageId instead of wheelId
     
     return {
       success: true,
@@ -100,7 +100,7 @@ export const aiCreateRing = async (wheelId, { name, type, color, orientation }) 
 /**
  * Create a new activity group
  */
-export const aiCreateActivityGroup = async (wheelId, { name, color, visible = true }) => {
+export const aiCreateActivityGroup = async (wheelId, pageId, { name, color, visible = true }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const orgData = wheelData.organizationData;
@@ -121,11 +121,11 @@ export const aiCreateActivityGroup = async (wheelId, { name, color, visible = tr
     
     await saveWheelData(wheelId, updatedOrgData);
     
-    // Also update wheel_pages.organization_data
+    // Also update wheel_pages.organization_data for THIS specific page
     await supabase
       .from('wheel_pages')
       .update({ organization_data: updatedOrgData })
-      .eq('wheel_id', wheelId);
+      .eq('id', pageId);  // Use pageId instead of wheelId
     
     return {
       success: true,
@@ -182,10 +182,10 @@ export const aiCreateLabel = async (wheelId, { name, color, visible = true }) =>
 /**
  * Create a new item/activity
  */
-export const aiCreateItem = async (wheelId, { name, startDate, endDate, ringId, activityGroupId, labelId, time }) => {
+export const aiCreateItem = async (wheelId, pageId, { name, startDate, endDate, ringId, activityGroupId, labelId, time }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    let orgData = wheelData.organizationData;
     
     // Validate ring exists
     const ring = orgData.rings.find(r => r.id === ringId);
@@ -196,13 +196,40 @@ export const aiCreateItem = async (wheelId, { name, startDate, endDate, ringId, 
       };
     }
     
-    // Validate activity group exists
-    const activityGroup = orgData.activityGroups.find(ag => ag.id === activityGroupId);
-    if (!activityGroup) {
-      return {
-        success: false,
-        error: `Aktivitetsgrupp med ID ${activityGroupId} hittades inte`
-      };
+    // Auto-create default activity group if none provided or doesn't exist
+    let finalActivityGroupId = activityGroupId;
+    if (!activityGroupId || activityGroupId.trim() === '') {
+      // Check if a default "Allmän" group exists
+      let defaultGroup = orgData.activityGroups.find(ag => ag.name === 'Allmän' || ag.name === 'General');
+      
+      if (!defaultGroup) {
+        // Create default activity group
+        const defaultGroupId = `ag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        defaultGroup = {
+          id: defaultGroupId,
+          name: 'Allmän',
+          color: '#94A3B8', // Neutral gray color
+          visible: true
+        };
+        
+        orgData = {
+          ...orgData,
+          activityGroups: [...orgData.activityGroups, defaultGroup]
+        };
+        
+        console.log('🔧 [AI] Auto-created default activity group "Allmän":', defaultGroupId);
+      }
+      
+      finalActivityGroupId = defaultGroup.id;
+    } else {
+      // Validate provided activity group exists
+      const activityGroup = orgData.activityGroups.find(ag => ag.id === finalActivityGroupId);
+      if (!activityGroup) {
+        return {
+          success: false,
+          error: `Aktivitetsgrupp med ID ${finalActivityGroupId} hittades inte`
+        };
+      }
     }
     
     const itemId = `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -213,7 +240,7 @@ export const aiCreateItem = async (wheelId, { name, startDate, endDate, ringId, 
       startDate,
       endDate,
       ringId,
-      activityId: activityGroupId,
+      activityId: finalActivityGroupId,
       labelId: labelId || null,
       time: time || null
     };
@@ -226,12 +253,12 @@ export const aiCreateItem = async (wheelId, { name, startDate, endDate, ringId, 
     // Save to individual tables (items, rings, etc.)
     await saveWheelData(wheelId, updatedOrgData);
     
-    // Also update the wheel_pages.organization_data JSON column
+    // Also update the wheel_pages.organization_data JSON column for THIS specific page
     // This ensures the UI loads the latest data
     const { error: pageError } = await supabase
       .from('wheel_pages')
       .update({ organization_data: updatedOrgData })
-      .eq('wheel_id', wheelId);
+      .eq('id', pageId);  // Use pageId instead of wheelId
     
     if (pageError) {
       console.error('[aiWheelService] Error updating page organization_data:', pageError);
@@ -243,14 +270,14 @@ export const aiCreateItem = async (wheelId, { name, startDate, endDate, ringId, 
       startDate,
       endDate,
       ringId,
-      activityGroupId,
+      activityGroupId: finalActivityGroupId,
       itemId: newItem.id
     });
     
     return {
       success: true,
       item: newItem,
-      message: `✅ Aktivitet "${name}" skapad (${startDate} till ${endDate})`
+      message: `Aktivitet "${name}" skapad (${startDate} till ${endDate})`
     };
   } catch (error) {
     console.error('[aiWheelService] Error creating item:', error);
@@ -270,7 +297,7 @@ export const aiCreateItem = async (wheelId, { name, startDate, endDate, ringId, 
     return {
       success: false,
       error: userMessage,
-      message: `❌ Fel vid skapande av "${name}": ${userMessage}`
+      message: `Fel vid skapande av "${name}": ${userMessage}`
     };
   }
 };
@@ -348,9 +375,81 @@ export const aiCreatePage = async (wheelId, { year, copyStructure = false }) => 
 };
 
 /**
+ * Get current date information
+ */
+export const aiGetCurrentDate = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 1-12
+  const day = now.getDate();
+  const monthNames = ['januari', 'februari', 'mars', 'april', 'maj', 'juni', 
+                      'juli', 'augusti', 'september', 'oktober', 'november', 'december'];
+  const dayNames = ['söndag', 'måndag', 'tisdag', 'onsdag', 'torsdag', 'fredag', 'lördag'];
+  
+  return {
+    success: true,
+    date: {
+      full: now.toISOString().split('T')[0], // YYYY-MM-DD
+      year,
+      month,
+      day,
+      monthName: monthNames[month - 1],
+      dayName: dayNames[now.getDay()],
+      formatted: `${dayNames[now.getDay()]} ${day} ${monthNames[month - 1]} ${year}`
+    },
+    message: `Idag är det **${dayNames[now.getDay()]} ${day} ${monthNames[month - 1]} ${year}**`
+  };
+};
+
+/**
+ * List all available pages/years for this wheel
+ */
+export const aiGetAvailablePages = async (wheelId) => {
+  try {
+    // Fetch pages directly from Supabase
+    const { data: pages, error } = await supabase
+      .from('wheel_pages')
+      .select('*')
+      .eq('wheel_id', wheelId)
+      .order('year');
+    
+    if (error) throw error;
+    
+    const pageList = (pages || []).map(p => ({
+      id: p.id,
+      year: p.year,
+      title: p.title,
+      itemCount: p.organization_data?.items?.length || 0
+    }));
+    
+    let message = `**Tillgängliga sidor:**\n`;
+    if (pageList.length === 0) {
+      message += `Inga sidor hittades.\n`;
+    } else {
+      pageList.forEach(p => {
+        message += `- **${p.year}**${p.title ? ` - ${p.title}` : ''} (${p.itemCount} aktiviteter)\n`;
+      });
+    }
+    
+    return {
+      success: true,
+      pages: pageList,
+      message
+    };
+  } catch (error) {
+    console.error('[aiWheelService] Error getting pages:', error);
+    return {
+      success: false,
+      message: `Kunde inte hämta sidor: ${error.message}`,
+      error: error.message
+    };
+  }
+};
+
+/**
  * Delete a ring
  */
-export const aiDeleteRing = async (wheelId, { ringId }) => {
+export const aiDeleteRing = async (wheelId, pageId, { ringId }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const orgData = wheelData.organizationData;
@@ -375,11 +474,11 @@ export const aiDeleteRing = async (wheelId, { ringId }) => {
     
     await saveWheelData(wheelId, updatedOrgData);
     
-    // Also update wheel_pages.organization_data
+    // Also update wheel_pages.organization_data for THIS specific page
     await supabase
       .from('wheel_pages')
       .update({ organization_data: updatedOrgData })
-      .eq('wheel_id', wheelId);
+      .eq('id', pageId);  // Use pageId instead of wheelId
     
     return {
       success: true,
@@ -397,7 +496,7 @@ export const aiDeleteRing = async (wheelId, { ringId }) => {
 /**
  * Delete item(s) by name or ID
  */
-export const aiDeleteItems = async (wheelId, { itemName, itemIds }) => {
+export const aiDeleteItems = async (wheelId, pageId, { itemName, itemIds }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const orgData = wheelData.organizationData;
@@ -438,11 +537,11 @@ export const aiDeleteItems = async (wheelId, { itemName, itemIds }) => {
     
     await saveWheelData(wheelId, updatedOrgData);
     
-    // Also update wheel_pages.organization_data
+    // Also update wheel_pages.organization_data for THIS specific page
     await supabase
       .from('wheel_pages')
       .update({ organization_data: updatedOrgData })
-      .eq('wheel_id', wheelId);
+      .eq('id', pageId);  // Use pageId instead of wheelId
     
     console.log('🗑️ [AI] Items deleted:', itemsToDelete.map(i => i.name));
     
@@ -466,7 +565,7 @@ export const aiDeleteItems = async (wheelId, { itemName, itemIds }) => {
 /**
  * Delete all items from a specific ring
  */
-export const aiDeleteItemsByRing = async (wheelId, { ringName, ringId }) => {
+export const aiDeleteItemsByRing = async (wheelId, pageId, { ringName, ringId }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const orgData = wheelData.organizationData;
@@ -486,7 +585,7 @@ export const aiDeleteItemsByRing = async (wheelId, { ringName, ringId }) => {
       return {
         success: false,
         error: `Hittade ingen ring med namnet "${ringName || ringId}"`,
-        message: `⚠️ Hittade ingen ring med namnet "${ringName || ringId}"`
+        message: `Varning: Hittade ingen ring med namnet "${ringName || ringId}"`
       };
     }
     
@@ -497,7 +596,7 @@ export const aiDeleteItemsByRing = async (wheelId, { ringName, ringId }) => {
       return {
         success: false,
         error: `Ringen "${ring.name}" har inga aktiviteter`,
-        message: `⚠️ Ringen "${ring.name}" har inga aktiviteter att ta bort`
+        message: `Varning: Ringen "${ring.name}" har inga aktiviteter att ta bort`
       };
     }
     
@@ -509,11 +608,11 @@ export const aiDeleteItemsByRing = async (wheelId, { ringName, ringId }) => {
     
     await saveWheelData(wheelId, updatedOrgData);
     
-    // Also update wheel_pages.organization_data
+    // Also update wheel_pages.organization_data for THIS specific page
     await supabase
       .from('wheel_pages')
       .update({ organization_data: updatedOrgData })
-      .eq('wheel_id', wheelId);
+      .eq('id', pageId);  // Use pageId instead of wheelId
     
     console.log('🗑️ [AI] Deleted all items from ring:', ring.name, 'Count:', itemsToDelete.length);
     
@@ -521,14 +620,14 @@ export const aiDeleteItemsByRing = async (wheelId, { ringName, ringId }) => {
       success: true,
       deletedCount: itemsToDelete.length,
       deletedItems: itemsToDelete.map(i => ({ id: i.id, name: i.name })),
-      message: `✅ ${itemsToDelete.length} aktiviteter raderade från ringen "${ring.name}":\n${itemsToDelete.map(i => `- ${i.name}`).join('\n')}`
+      message: `${itemsToDelete.length} aktiviteter raderade från ringen "${ring.name}":\n${itemsToDelete.map(i => `- ${i.name}`).join('\n')}`
     };
   } catch (error) {
     console.error('[aiWheelService] Error deleting items by ring:', error);
     return {
       success: false,
       error: error.message,
-      message: `⚠️ Fel vid radering: ${error.message}`
+      message: `Fel vid radering: ${error.message}`
     };
   }
 };
@@ -536,7 +635,7 @@ export const aiDeleteItemsByRing = async (wheelId, { ringName, ringId }) => {
 /**
  * Delete activity group (warning: this will also delete all items in the group)
  */
-export const aiDeleteActivityGroup = async (wheelId, { activityGroupId }) => {
+export const aiDeleteActivityGroup = async (wheelId, pageId, { activityGroupId }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const orgData = wheelData.organizationData;
@@ -561,11 +660,11 @@ export const aiDeleteActivityGroup = async (wheelId, { activityGroupId }) => {
     
     await saveWheelData(wheelId, updatedOrgData);
     
-    // Also update wheel_pages.organization_data
+    // Also update wheel_pages.organization_data for THIS specific page
     await supabase
       .from('wheel_pages')
       .update({ organization_data: updatedOrgData })
-      .eq('wheel_id', wheelId);
+      .eq('id', pageId);  // Use pageId instead of wheelId
     
     return {
       success: true,

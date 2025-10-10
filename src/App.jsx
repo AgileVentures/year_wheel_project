@@ -753,12 +753,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // If no pages exist (legacy wheel), create the first page automatically
       if (sortedPages.length === 0) {
-        // Get current state for creating first page
-        const currentYear = parseInt(year) || 2025;
-        const currentOrgData = organizationData;
-        
-        const firstPage = await createPage(wheelId, currentYear, currentOrgData);
-        sortedPages = [firstPage];
+        try {
+          // Get current state for creating first page
+          const currentYear = parseInt(year) || 2025;
+          const currentOrgData = organizationData;
+          
+          const firstPage = await createPage(wheelId, {
+            year: currentYear,
+            organizationData: currentOrgData
+          });
+          sortedPages = [firstPage];
+        } catch (createError) {
+          // If duplicate key error (React StrictMode double-execution), fetch pages again
+          if (createError?.code === '23505') {
+            console.warn('⚠️ [LoadPages] Duplicate page creation detected (likely React StrictMode), refetching pages...');
+            const refetchedPages = await fetchPages(wheelId);
+            sortedPages = refetchedPages.sort((a, b) => a.year - b.year);
+          } else {
+            throw createError;
+          }
+        }
       }
       
       setPages(sortedPages);
@@ -1436,7 +1450,37 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       {wheelId && (
         <AIAssistant
           wheelId={wheelId}
+          currentPageId={currentPageId}
           onWheelUpdate={loadWheelData}
+          onPageChange={(pageId) => {
+            console.log('🔄 [App] AI requested page change to:', pageId);
+            // Update currentPageId and trigger a reload
+            // Use React's state callback to ensure we reload after state is set
+            setCurrentPageId(pageId);
+            // Force a fresh load by incrementing a counter or similar
+            // Better: directly load the specific page
+            (async () => {
+              try {
+                const pagesData = await fetchPages(wheelId);
+                const pageToLoad = pagesData.find(p => p.id === pageId);
+                if (pageToLoad && pageToLoad.organization_data) {
+                  setYear(String(pageToLoad.year || new Date().getFullYear()));
+                  
+                  const orgData = pageToLoad.organization_data;
+                  // Handle backward compatibility
+                  if (orgData.activities && !orgData.activityGroups) {
+                    orgData.activityGroups = orgData.activities;
+                    delete orgData.activities;
+                  }
+                  
+                  setOrganizationData(orgData);
+                  console.log('✅ [App] Successfully loaded page:', pageToLoad.year);
+                }
+              } catch (error) {
+                console.error('❌ [App] Error loading page:', error);
+              }
+            })();
+          }}
           isOpen={isAIOpen}
           onToggle={() => setIsAIOpen(!isAIOpen)}
         />

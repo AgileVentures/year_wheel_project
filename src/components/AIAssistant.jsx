@@ -11,6 +11,8 @@ import {
   aiCreateActivityGroup,
   aiCreateItem,
   aiCreatePage,
+  aiGetCurrentDate,
+  aiGetAvailablePages,
   aiAnalyzeWheel,
   aiSearchWheel,
   aiGetItemsByRing,
@@ -20,7 +22,7 @@ import {
   aiDeleteActivityGroup
 } from '../services/aiWheelService';
 
-function AIAssistant({ wheelId, onWheelUpdate, isOpen, onToggle }) {
+function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOpen, onToggle }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -94,10 +96,20 @@ function AIAssistant({ wheelId, onWheelUpdate, isOpen, onToggle }) {
   // Initial greeting message
   useEffect(() => {
     if (isOpen && messages.length === 0 && wheelContext) {
+      // Build rings list
+      const ringsList = wheelContext.organizationData.rings.length > 0
+        ? wheelContext.organizationData.rings.map(r => `  - **${r.name}** (${r.type})`).join('\n')
+        : '  - *Inga ringar ännu*';
+      
+      // Build activity groups list
+      const groupsList = wheelContext.organizationData.activityGroups.length > 0
+        ? wheelContext.organizationData.activityGroups.map(ag => `  - **${ag.name}**`).join('\n')
+        : '  - *Inga aktivitetsgrupper ännu*';
+      
       const greeting = {
         id: Date.now(),
         role: 'assistant',
-        content: `Hej! Jag kan hjälpa dig med ditt årshjul **"${wheelContext.title}"**.
+        content: `Hej! Jag kan hjälpa dig med ditt årshjul **"${wheelContext.title}"** (${wheelContext.year}).
 
 ## Jag kan:
 - **Skapa** ringar och aktivitetsgrupper
@@ -109,10 +121,17 @@ function AIAssistant({ wheelId, onWheelUpdate, isOpen, onToggle }) {
 
 **Kom igåg att jag är en AI och kan göra fel...**
 
-## Nuvarande status:
-- **${wheelContext.stats.rings} ringar** (${wheelContext.stats.innerRings} inner, ${wheelContext.stats.outerRings} outer)
-- **${wheelContext.stats.activityGroups} aktivitetsgrupper**
-- **${wheelContext.stats.items} aktiviteter**
+## Nuvarande struktur:
+
+**Ringar (${wheelContext.stats.rings}):**
+${ringsList}
+
+**Aktivitetsgrupper (${wheelContext.stats.activityGroups}):**
+${groupsList}
+
+**Aktiviteter:** ${wheelContext.stats.items}
+
+${wheelContext.stats.rings === 0 || wheelContext.stats.activityGroups === 0 ? '\n💡 *Tips: Berätta vad du vill använda hjulet till, så föreslår jag en struktur som passar!*' : ''}
 `
       };
       setMessages([greeting]);
@@ -140,13 +159,49 @@ function AIAssistant({ wheelId, onWheelUpdate, isOpen, onToggle }) {
 ABSOLUT REGEL - DU MÅSTE ALLTID SVARA MED TEXT:
 Efter varje verktygsanrop MÅSTE du skriva ett text-svar till användaren. Aldrig lämna tomt.
 
+VIKTIGT - NYA HJUL OCH STRUKTUR:
+När användaren beskriver ett sammanhang/projekt (t.ex. "planera en SaaS-lansering", "organisera ett evenemang"):
+1. **Föreslå struktur FÖRST**: Förklara vilka ringar, aktivitetsgrupper och aktiviteter som passar
+2. **Fråga om godkännande**: "Vill du att jag skapar denna struktur?"
+3. **Skapa i rätt ordning**: Ringar → Aktivitetsgrupper → Aktiviteter
+4. **Använd aktivitetsgrupper**: ALLTID tilldela aktiviteter till en relevant aktivitetsgrupp
+5. **Standardgrupp finns**: Om ingen aktivitetsgrupp anges skapas automatiskt gruppen "Allmän"
+
 VIKTIGT - Verktygsval:
+- "vilken dag är det" / "dagens datum" → Använd getCurrentDate
+- "vilka år finns" / "visa alla sidor" → Använd getAvailablePages
+- "byt till 2026" / "visa 2025" / "gå till nästa år" → Använd navigateToPage med year eller pageId
+- "skapa sida för 2026" → Använd createPage med year=2026, copyStructure=true för att kopiera struktur
 - "vilka aktiviteter på ring X" → Använd getItemsByRing med ringName
 - "ta bort alla aktiviteter på/från ring X" → Använd deleteItemsByRing med ringName (bekräfta FÖRST)
 - "sök efter aktivitet X" → Använd searchWheel med type="items"
 - "finns det en ring X" → Använd searchWheel med type="rings"
 - "hitta grupp X" → Använd searchWheel med type="activityGroups"
 - "ta bort alla" (efter att ha listat aktiviteter) → Använd deleteItemsByRing om det gäller en ring
+
+VECKONUMMER:
+- Användare använder ofta veckonummer (t.ex. "v45", "vecka 12", "v23-25") för att referera till datum
+- Du ska förstå och konvertera veckonummer till korrekta datum enligt ISO 8601-standarden
+- När användaren säger "skapa aktivitet v45" eller "semester vecka 23", tolka detta som veckonummer
+- Exempel: "v45" i 2025 = vecka 45, "v23-25" = från vecka 23 till vecka 25
+
+DATUM OCH TIDSPLANERING:
+- **Standard: Antag framtida datum** - Om användaren inte anger år, antag att aktiviteten är för framtiden
+- **Historiska datum: Bekräfta först** - Om en aktivitet ligger i det förflutna (före dagens datum), fråga användaren INNAN du skapar: "Vill du verkligen skapa en aktivitet som ligger i det förflutna? (från STARTDATUM till SLUTDATUM)"
+- Vänta på användarens bekräftelse ("ja", "ok", "bekräfta") innan du fortsätter med skapandet
+- Om användaren säger "nej" eller liknande, avbryt skapandet
+
+FRAMTIDA ÅR OCH SIDOR:
+- **Om aktivitet skapas för ett år som inte finns**: Skapa FÖRST en ny sida för det året med createPage (year=XXXX, copyStructure=true), SEDAN navigera till den med navigateToPage (year=XXXX), SEDAN skapa aktiviteten
+- **Om aktivitet skapas för ett år som redan finns**: Navigera FÖRST till det året med navigateToPage (year=XXXX), SEDAN skapa aktiviteten
+- **Kontrollera alltid tillgängliga år**: Använd getAvailablePages för att se vilka år som redan finns
+- **Exempel**: Användare vill skapa aktivitet i 2027, men endast 2025 och 2026 finns → Skapa 2027 → Navigera till 2027 → Skapa aktivitet
+
+FORMATERING:
+- Använd ALDRIG emojis i dina svar (inga checkmarks, varningar, raketer, etc.)
+- Använd istället tydlig text: "Klart", "Varning", "Fel", etc.
+- Använd markdown för formatering: **fetstil**, *kursiv*, listor, rubriker
+- Var koncis och professionell i dina svar
 
 DIN ROLL OCH BEGRÄNSNINGAR:
 - Du hjälper ENDAST med YearWheel-relaterade uppgifter: skapa/redigera/söka/radera ringar, aktivitetsgrupper och aktiviteter
@@ -156,6 +211,8 @@ DIN ROLL OCH BEGRÄNSNINGAR:
 Aktuellt hjul:
 - Titel: ${wheelContext?.title || 'Okänt'}
 - År: ${wheelContext?.year || 'Okänt'}
+- Sidor: ${wheelContext?.pages?.length || 0}
+- Dagens datum: ${new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 - Ringar: ${wheelContext?.stats.rings || 0}
 - Aktivitetsgrupper: ${wheelContext?.stats.activityGroups || 0}
 - Aktiviteter: ${wheelContext?.stats.items || 0}
@@ -179,8 +236,8 @@ VIKTIGT - Raderingsregler:
 ABSOLUT KRITISKT - Verktyg och Svar:
 - Du MÅSTE ALLTID skriva en text-respons efter att ha använt ett verktyg
 - searchWheel returnerar formaterad text i 'message' - KOPIERA denna text ordagrant i ditt svar
-- createItem/createRing/createActivityGroup - säg "✅ [Namn] har skapats!"
-- deleteItems/deleteRing/deleteActivityGroup - säg "🗑️ [Namn] har tagits bort!"
+- createItem/createRing/createActivityGroup - säg "Klart! [Namn] har skapats"
+- deleteItems/deleteRing/deleteActivityGroup - säg "Klart! [Namn] har tagits bort"
 - Om du inte skriver en respons kommer användaren INTE se något resultat
 - EXEMPEL: Om searchWheel returnerar message: "Sökresultat för X...", skriv EXAKT den texten
 
@@ -223,7 +280,7 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
               orientation: z.enum(['vertical', 'horizontal']).optional()
             }),
             execute: async ({ name, type, color, orientation }) => {
-              const result = await aiCreateRing(wheelId, { name, type, color, orientation });
+              const result = await aiCreateRing(wheelId, currentPageId, { name, type, color, orientation });
               if (result.success) {
                 await loadWheelContext(); // Refresh context
                 onWheelUpdate && onWheelUpdate();
@@ -239,7 +296,7 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
               color: z.string().optional().describe('Hexadecimal färgkod')
             }),
             execute: async ({ name, color }) => {
-              const result = await aiCreateActivityGroup(wheelId, { name, color });
+              const result = await aiCreateActivityGroup(wheelId, currentPageId, { name, color });
               if (result.success) {
                 await loadWheelContext();
                 onWheelUpdate && onWheelUpdate();
@@ -249,19 +306,19 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
           }),
 
           createItem: tool({
-            description: 'Skapa en ny aktivitet/händelse',
+            description: 'Skapa en ny aktivitet/händelse. Om ingen aktivitetsgrupp anges skapas automatiskt en standardgrupp.',
             inputSchema: z.object({
               name: z.string().describe('Namnet på aktiviteten'),
               startDate: z.string().describe('Startdatum (YYYY-MM-DD)'),
               endDate: z.string().describe('Slutdatum (YYYY-MM-DD)'),
               ringId: z.string().describe('Ring ID från kontext'),
-              activityGroupId: z.string().describe('Aktivitetsgrupp ID från kontext'),
+              activityGroupId: z.string().optional().describe('Aktivitetsgrupp ID från kontext (valfritt - skapas automatiskt om utelämnat)'),
               time: z.string().optional().describe('Tid (optional)')
             }),
             execute: async ({ name, startDate, endDate, ringId, activityGroupId, time }) => {
-              console.log('🤖 [AI Tool] createItem called with:', { name, startDate, endDate, ringId, activityGroupId });
+              console.log('🤖 [AI Tool] createItem called with:', { name, startDate, endDate, ringId, activityGroupId, currentPageId });
               
-              const result = await aiCreateItem(wheelId, {
+              const result = await aiCreateItem(wheelId, currentPageId, {
                 name,
                 startDate,
                 endDate,
@@ -283,10 +340,10 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
           }),
 
           createPage: tool({
-            description: 'Skapa en ny årssida',
+            description: 'Skapa en ny årssida. Använd copyStructure=true för att kopiera ringar och aktivitetsgrupper från nuvarande år.',
             inputSchema: z.object({
               year: z.number().describe('År för den nya sidan'),
-              copyStructure: z.boolean().optional().describe('Kopiera struktur från nuvarande sida')
+              copyStructure: z.boolean().optional().describe('Kopiera struktur (ringar och grupper) från nuvarande sida, men inga aktiviteter')
             }),
             execute: async ({ year, copyStructure = false }) => {
               const result = await aiCreatePage(wheelId, { year, copyStructure });
@@ -295,6 +352,72 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
                 onWheelUpdate && onWheelUpdate();
               }
               return result;
+            }
+          }),
+
+          getCurrentDate: tool({
+            description: 'Hämta dagens datum. Använd när användaren frågar "vilken dag är det", "vad är dagens datum", eller när du behöver veta aktuellt datum för att skapa aktiviteter.',
+            inputSchema: z.object({}),
+            execute: async () => {
+              return aiGetCurrentDate();
+            }
+          }),
+
+          getAvailablePages: tool({
+            description: 'Lista alla tillgängliga årssidor för detta hjul. Använd när användaren frågar "vilka år finns", "visa alla sidor", eller "kan jag se 2026".',
+            inputSchema: z.object({}),
+            execute: async () => {
+              return await aiGetAvailablePages(wheelId);
+            }
+          }),
+
+          navigateToPage: tool({
+            description: 'Byt till en annan årssida. Använd när användaren vill "byta till 2026", "visa 2025", "gå till nästa år". Efter navigering kommer hjulets kontext att uppdateras automatiskt.',
+            inputSchema: z.object({
+              pageId: z.string().optional().describe('ID för sidan att navigera till'),
+              year: z.number().optional().describe('År för sidan att navigera till (alternativ till pageId)')
+            }),
+            execute: async ({ pageId, year }) => {
+              console.log('🔄 [AI Tool] navigateToPage called with:', { pageId, year });
+              
+              // Get all available pages
+              const pagesResult = await aiGetAvailablePages(wheelId);
+              if (!pagesResult.success) {
+                return {
+                  success: false,
+                  message: 'Kunde inte hämta tillgängliga sidor.'
+                };
+              }
+
+              // Find the target page
+              let targetPage;
+              if (pageId) {
+                targetPage = pagesResult.pages.find(p => p.id === pageId);
+              } else if (year) {
+                targetPage = pagesResult.pages.find(p => p.year === year);
+              }
+
+              if (!targetPage) {
+                const availableYears = pagesResult.pages.map(p => p.year).join(', ');
+                return {
+                  success: false,
+                  message: `Kunde inte hitta sidan. Tillgängliga år: ${availableYears}`
+                };
+              }
+
+              // Navigate to the page
+              if (onPageChange) {
+                onPageChange(targetPage.id);
+              }
+
+              // Reload context after navigation
+              await loadWheelContext();
+
+              return {
+                success: true,
+                page: targetPage,
+                message: `Navigerade till **${targetPage.year}**${targetPage.title ? ` - ${targetPage.title}` : ''} (${targetPage.itemCount} aktiviteter)`
+              };
             }
           }),
 
@@ -389,9 +512,9 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
               itemIds: z.array(z.string()).optional().describe('Array av item IDs att ta bort')
             }),
             execute: async ({ itemName, itemIds }) => {
-              console.log('🗑️ [AI Tool] deleteItems called with:', { itemName, itemIds });
+              console.log('🗑️ [AI Tool] deleteItems called with:', { itemName, itemIds, currentPageId });
               
-              const result = await aiDeleteItems(wheelId, { itemName, itemIds });
+              const result = await aiDeleteItems(wheelId, currentPageId, { itemName, itemIds });
               
               if (result.success) {
                 console.log('🔄 [AI Tool] Items deleted, refreshing context and triggering wheel reload');
@@ -411,9 +534,9 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
               ringName: z.string().describe('Namnet på ringen (kan vara del av namnet, case-insensitive)')
             }),
             execute: async ({ ringName }) => {
-              console.log('🗑️ [AI Tool] deleteItemsByRing called with:', { ringName });
+              console.log('🗑️ [AI Tool] deleteItemsByRing called with:', { ringName, currentPageId });
               
-              const result = await aiDeleteItemsByRing(wheelId, { ringName });
+              const result = await aiDeleteItemsByRing(wheelId, currentPageId, { ringName });
               
               if (result.success) {
                 console.log('🔄 [AI Tool] Items from ring deleted, refreshing context and triggering wheel reload');
@@ -433,9 +556,9 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
               ringId: z.string().describe('Ring ID från kontext')
             }),
             execute: async ({ ringId }) => {
-              console.log('🗑️ [AI Tool] deleteRing called with:', { ringId });
+              console.log('🗑️ [AI Tool] deleteRing called with:', { ringId, currentPageId });
               
-              const result = await aiDeleteRing(wheelId, { ringId });
+              const result = await aiDeleteRing(wheelId, currentPageId, { ringId });
               
               if (result.success) {
                 console.log('🔄 [AI Tool] Ring deleted, refreshing context and triggering wheel reload');
@@ -455,9 +578,9 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
               activityGroupId: z.string().describe('Aktivitetsgrupp ID från kontext')
             }),
             execute: async ({ activityGroupId }) => {
-              console.log('🗑️ [AI Tool] deleteActivityGroup called with:', { activityGroupId });
+              console.log('🗑️ [AI Tool] deleteActivityGroup called with:', { activityGroupId, currentPageId });
               
-              const result = await aiDeleteActivityGroup(wheelId, { activityGroupId });
+              const result = await aiDeleteActivityGroup(wheelId, currentPageId, { activityGroupId });
               
               if (result.success) {
                 console.log('🔄 [AI Tool] Activity group deleted, refreshing context and triggering wheel reload');
@@ -471,7 +594,7 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
             }
           })
         },
-        maxSteps: 2, // Limit steps: 1 for tool call, 1 for text response
+        maxSteps: 12, // Allow complex workflows: propose structure → create rings → create groups → create multiple items, etc.
         onStepFinish: (step) => {
           console.log('🔄 [AI] Step finished:', step.stepType, 'has text:', !!step.text);
         }
@@ -535,18 +658,18 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
             // All successful
             const lastTool = toolResults[toolResults.length - 1];
             const toolResult = lastTool.output;
-            assistantMessage = toolResult && toolResult.message ? toolResult.message : '✅ Åtgärd genomförd!';
+            assistantMessage = toolResult && toolResult.message ? toolResult.message : 'Klart!';
           } else if (successCount > 0 && failureCount > 0) {
             // Mixed results
-            assistantMessage = `✅ ${successCount} åtgärd(er) genomförda.\n\n⚠️ ${failureCount} misslyckades:\n${failureMessages.slice(0, 3).map(m => `- ${m}`).join('\n')}`;
+            assistantMessage = `${successCount} åtgärd(er) genomförda.\n\nVarning: ${failureCount} misslyckades:\n${failureMessages.slice(0, 3).map(m => `- ${m}`).join('\n')}`;
             if (failureMessages.length > 3) {
               assistantMessage += `\n... och ${failureMessages.length - 3} fler`;
             }
           } else if (failureCount > 0) {
             // All failed
-            assistantMessage = `⚠️ ${failureCount} åtgärd(er) misslyckades:\n${failureMessages.slice(0, 3).map(m => `- ${m}`).join('\n')}`;
+            assistantMessage = `Varning: ${failureCount} åtgärd(er) misslyckades:\n${failureMessages.slice(0, 3).map(m => `- ${m}`).join('\n')}`;
           } else {
-            assistantMessage = '✅ Åtgärd genomförd!';
+            assistantMessage = 'Klart!';
           }
           
           console.log('✅ [AI] Using fallback message:', assistantMessage);
@@ -571,7 +694,7 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
       const errorMessage = {
         id: Date.now(),
         role: 'assistant',
-        content: `⚠️ Fel: ${error.message}. Försök igen eller kontakta support.`,
+        content: `Fel: ${error.message}. Försök igen eller kontakta support.`,
         isError: true
       };
       setMessages(prev => [...prev, errorMessage]);
