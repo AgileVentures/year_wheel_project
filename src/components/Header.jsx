@@ -32,7 +32,8 @@ function Header({
   pages = [],
   currentPageId,
   onPageChange,
-  onAddPage
+  onAddPage,
+  onDeletePage
 }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
@@ -66,6 +67,7 @@ function Header({
             currentPageId={currentPageId}
             onPageChange={onPageChange}
             onAddPage={onAddPage}
+            onDeletePage={onDeletePage}
             disabled={isSaving}
           />
         ) : (

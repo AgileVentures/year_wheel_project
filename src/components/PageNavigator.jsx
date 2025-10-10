@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2 } from 'lucide-react';
 
 /**
  * PageNavigator Component
@@ -12,6 +12,7 @@ export default function PageNavigator({
   currentPageId, 
   onPageChange, 
   onAddPage,
+  onDeletePage,
   disabled = false
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -85,34 +86,56 @@ export default function PageNavigator({
             ></div>
 
             {/* Dropdown menu */}
-            <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 min-w-[200px] max-h-[300px] overflow-y-auto">
+            <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 min-w-[240px] max-h-[300px] overflow-y-auto">
               {pages.map((page, index) => {
                 const isActive = page.id === currentPageId;
+                const canDelete = pages.length > 1;
                 return (
-                  <button
+                  <div
                     key={page.id}
-                    onClick={() => {
-                      onPageChange(page.id);
-                      setShowDropdown(false);
-                    }}
                     className={`
-                      w-full px-4 py-2.5 text-left hover:bg-blue-50 transition-colors flex items-center justify-between
-                      ${isActive ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'}
-                      border-b border-gray-100 last:border-b-0
+                      w-full flex items-center justify-between border-b border-gray-100 last:border-b-0
+                      ${isActive ? 'bg-blue-50' : 'hover:bg-gray-50'}
                     `}
                   >
-                    <div className="flex flex-col">
-                      <span className="text-lg font-bold">{page.year}</span>
-                      {page.title && (
-                        <span className="text-xs text-gray-500 truncate max-w-[150px]">
-                          {page.title}
-                        </span>
+                    <button
+                      onClick={() => {
+                        onPageChange(page.id);
+                        setShowDropdown(false);
+                      }}
+                      className={`
+                        flex-1 px-4 py-2.5 text-left transition-colors flex items-center justify-between
+                        ${isActive ? 'text-blue-700 font-semibold' : 'text-gray-700'}
+                      `}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-lg font-bold">{page.year}</span>
+                        {page.title && (
+                          <span className="text-xs text-gray-500 truncate max-w-[150px]">
+                            {page.title}
+                          </span>
+                        )}
+                      </div>
+                      {isActive && (
+                        <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
                       )}
-                    </div>
-                    {isActive && (
-                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    </button>
+                    
+                    {/* Delete button */}
+                    {canDelete && onDeletePage && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeletePage(page.id);
+                          setShowDropdown(false);
+                        }}
+                        className="p-2 mr-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Radera år"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     )}
-                  </button>
+                  </div>
                 );
               })}
               

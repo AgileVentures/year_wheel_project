@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchWheel } from '../services/wheelService';
+import { fetchWheel, fetchPages } from '../services/wheelService';
 import YearWheel from '../YearWheel';
-import { Eye, Lock } from 'lucide-react';
+import { Eye, Lock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -16,6 +16,8 @@ function PreviewWheelPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [wheelData, setWheelData] = useState(null);
+  const [pages, setPages] = useState([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
   useEffect(() => {
     const loadWheel = async () => {
@@ -32,6 +34,22 @@ function PreviewWheelPage() {
         }
 
         setWheelData(data);
+        
+        // Fetch all pages for this wheel
+        try {
+          const pagesData = await fetchPages(wheelId);
+          const sortedPages = pagesData.sort((a, b) => a.year - b.year);
+          setPages(sortedPages);
+          
+          // If we have pages, use the first page's data
+          if (sortedPages.length > 0) {
+            setCurrentPageIndex(0);
+          }
+        } catch (pageErr) {
+          console.error('Error loading pages:', pageErr);
+          // If pages fail to load, just use the main wheel data
+          setPages([]);
+        }
       } catch (err) {
         console.error('Error loading public wheel:', err);
         
@@ -84,6 +102,14 @@ function PreviewWheelPage() {
     return null;
   }
 
+  // Use current page data if available, otherwise fall back to wheel data
+  const currentPage = pages[currentPageIndex];
+  const displayYear = currentPage?.year || wheelData.year;
+  const displayOrgData = currentPage?.organization_data || wheelData.organizationData;
+  
+  const canGoPrev = currentPageIndex > 0;
+  const canGoNext = currentPageIndex < pages.length - 1;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -101,12 +127,45 @@ function PreviewWheelPage() {
             </div>
           </div>
           
-          <button
-            onClick={() => navigate('/')}
-            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-          >
-            Gå till startsidan
-          </button>
+          <div className="flex items-center gap-4">
+            {/* Page Navigator (only show if multiple pages) */}
+            {pages.length > 1 && (
+              <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
+                <button
+                  onClick={() => setCurrentPageIndex(currentPageIndex - 1)}
+                  disabled={!canGoPrev}
+                  className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Föregående år"
+                >
+                  <ChevronLeft size={18} className="text-gray-600" />
+                </button>
+                
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-sm min-w-[120px]">
+                  <Calendar size={16} className="text-gray-500" />
+                  <span className="font-semibold text-gray-900">{displayYear}</span>
+                  <span className="text-xs text-gray-500 ml-auto">
+                    {currentPageIndex + 1}/{pages.length}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPageIndex(currentPageIndex + 1)}
+                  disabled={!canGoNext}
+                  className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Nästa år"
+                >
+                  <ChevronRight size={18} className="text-gray-600" />
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+            >
+              Gå till startsidan
+            </button>
+          </div>
         </div>
       </div>
 
@@ -114,13 +173,13 @@ function PreviewWheelPage() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
           <YearWheel
-            year={wheelData.year}
+            year={String(displayYear)}
             title={wheelData.title}
             colors={wheelData.colors}
             showWeekRing={wheelData.show_week_ring}
             showMonthRing={wheelData.show_month_ring}
             showRingNames={wheelData.show_ring_names}
-            organizationData={wheelData.organizationData}
+            organizationData={displayOrgData}
             readonly={true}
           />
         </div>

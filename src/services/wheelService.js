@@ -13,8 +13,14 @@ import { supabase } from '../lib/supabase';
 export const fetchUserWheels = async () => {
   const { data, error } = await supabase
     .from('year_wheels')
-    .select('*')
-    .order('updated_at', { ascending: false });
+    .select(`
+      *,
+      teams (
+        id,
+        name
+      )
+    `)
+    .order('created_at', { ascending: false }); // Sort by creation date (newest first)
 
   if (error) throw error;
   return data;

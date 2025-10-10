@@ -873,11 +873,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         : parseInt(year);
       const nextYear = maxYear + 1;
       
-      // Duplicate current structure but with next year
+      // Copy ONLY rings and activityGroups (structure), NOT items (activities)
       const newPage = await createPage(wheelId, {
         year: nextYear,
         title: `${nextYear}`,
-        organization_data: organizationData // Copy current structure
+        organization_data: {
+          rings: organizationData.rings || [], // Copy rings structure
+          activityGroups: organizationData.activityGroups || [], // Copy activity groups
+          labels: organizationData.labels || [], // Copy labels
+          items: [] // Empty items - no activities copied
+        }
       });
       
       // Sort pages by year after adding
@@ -886,7 +891,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       setShowAddPageModal(false);
       
       const event = new CustomEvent('showToast', {
-        detail: { message: `Ny sida för ${nextYear} skapad!`, type: 'success' }
+        detail: { message: `Ny sida för ${nextYear} skapad med samma struktur!`, type: 'success' }
       });
       window.dispatchEvent(event);
     } catch (error) {
@@ -1334,6 +1339,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         currentPageId={currentPageId}
         onPageChange={handlePageChange}
         onAddPage={handleAddPage}
+        onDeletePage={handleDeletePage}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
