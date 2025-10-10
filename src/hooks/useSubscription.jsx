@@ -49,27 +49,44 @@ export function useSubscription() {
 
   // Subscribe to subscription changes
   useEffect(() => {
-    const { data: { user } } = supabase.auth.getUser();
+    let channel;
     
-    const channel = supabase
-      .channel('subscription-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'subscriptions',
-          filter: `user_id=eq.${user?.id}`
-        },
-        () => {
-          // Reload subscription when it changes
-          loadSubscription();
+    const setupRealtimeSubscription = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          console.warn('No user found for subscription realtime');
+          return;
         }
-      )
-      .subscribe();
+        
+        channel = supabase
+          .channel('subscription-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'subscriptions',
+              filter: `user_id=eq.${user.id}`
+            },
+            () => {
+              // Reload subscription when it changes
+              loadSubscription();
+            }
+          )
+          .subscribe();
+      } catch (error) {
+        console.error('Error setting up subscription realtime:', error);
+      }
+    };
+
+    setupRealtimeSubscription();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [loadSubscription]);
 

@@ -87,7 +87,7 @@ BEGIN
   RETURN (
     SELECT COUNT(*)
     FROM public.year_wheels
-    WHERE owner_id = user_uuid
+    WHERE user_id = user_uuid
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -105,17 +105,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 9. Create function to check if user can create wheel
+-- 9. Create function to check if user can create a wheel
 CREATE OR REPLACE FUNCTION public.can_create_wheel(user_uuid UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
   is_premium BOOLEAN;
   wheel_count INTEGER;
 BEGIN
-  -- Premium users can create unlimited wheels
+  -- Check if user is premium
   is_premium := public.is_premium_user(user_uuid);
+  
+  -- Premium users have unlimited wheels
   IF is_premium THEN
-    RETURN true;
+    RETURN TRUE;
   END IF;
   
   -- Free users limited to 2 wheels
@@ -123,6 +125,20 @@ BEGIN
   RETURN wheel_count < 2;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 10. Create function to check if user can add team member
+CREATE OR REPLACE FUNCTION public.can_add_team_member(wheel_uuid UUID, user_uuid UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  is_premium BOOLEAN;
+  member_count INTEGER;
+  is_owner BOOLEAN;
+BEGIN
+  -- Check if user is the owner of the wheel
+  is_owner := EXISTS (
+    SELECT 1 FROM public.year_wheels
+    WHERE id = wheel_uuid AND user_id = user_uuid
+  );
 
 -- 10. Create function to check if user can add team member
 CREATE OR REPLACE FUNCTION public.can_add_team_member(wheel_uuid UUID, user_uuid UUID)
