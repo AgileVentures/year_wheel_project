@@ -1,5 +1,6 @@
 import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import Fuse from 'fuse.js';
 import AddAktivitetModal from './AddAktivitetModal';
 import EditAktivitetModal from './EditAktivitetModal';
 
@@ -69,9 +70,31 @@ function OrganizationPanel({
   const filteredLabels = organizationData.labels.filter(label =>
     label.name.toLowerCase().includes(searchLower)
   );
-  const filteredAktiviteter = organizationData.items?.filter(item =>
-    item.name.toLowerCase().includes(searchLower)
-  ) || [];
+  
+  // Fuzzy search for activities (only in Liste view)
+  const filteredAktiviteter = useMemo(() => {
+    if (!organizationData.items) return [];
+    
+    // If no search query or not in Liste view, return all items
+    if (!searchQuery || activeView !== 'liste') {
+      return organizationData.items;
+    }
+    
+    // Configure Fuse.js for fuzzy search
+    const fuse = new Fuse(organizationData.items, {
+      keys: [
+        { name: 'name', weight: 2 }, // Activity name has highest weight
+        { name: 'time', weight: 0.5 }
+      ],
+      threshold: 0.4, // 0 = perfect match, 1 = match anything
+      includeScore: true,
+      minMatchCharLength: 2
+    });
+    
+    // Perform fuzzy search
+    const results = fuse.search(searchQuery);
+    return results.map(result => result.item);
+  }, [organizationData.items, searchQuery, activeView]);
 
   // Generate calendar days
   const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
@@ -472,17 +495,27 @@ function OrganizationPanel({
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Sök"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50"
-          />
-        </div>
+        {/* Search - Only show in Liste view */}
+        {activeView === 'liste' && (
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Sök aktiviteter..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Filter Visning & Add Button */}
         <div className="flex items-center justify-between mb-2">
