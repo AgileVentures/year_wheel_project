@@ -102,9 +102,23 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
+    console.log('[updateOrganizationData] Called with:', {
+      items: newOrganizationData?.items?.length,
+      activityGroups: newOrganizationData?.activityGroups?.length,
+      rings: newOrganizationData?.rings?.length,
+      isDragging: this.dragState?.isDragging
+    });
+    
     this.organizationData = newOrganizationData;
-    // Redraw with updated data
-    this.create();
+    
+    // DON'T redraw during drag - it will cause wheel to go blank
+    // The drag handler (dragActivity) already calls create() to show preview
+    if (!this.dragState || !this.dragState.isDragging) {
+      console.log('[updateOrganizationData] Calling create() - not dragging');
+      this.create();
+    } else {
+      console.log('[updateOrganizationData] SKIPPING create() - currently dragging');
+    }
   }
 
   // Cleanup method to remove event listeners
@@ -822,6 +836,11 @@ class YearWheel {
     this.context.restore();
   }
 
+  /**
+   * COMPLETELY REWRITTEN TEXT RENDERING
+   * Renders activity text perpendicular to the arc (radial direction)
+   * with proper word wrapping, truncation, and size constraints
+   */
   setCircleSectionAktivitetTitle(
     text,
     startRadius,
@@ -833,145 +852,229 @@ class YearWheel {
     isVertical,
     backgroundColor
   ) {
-    // Calculate center angle and radius
-    const centerAngle = (startAngle + endAngle) / 2;
+    // Angles are already in radians from setCircleSectionHTML
+    const startRad = startAngle;
+    const endRad = endAngle;
+    const centerAngle = (startRad + endRad) / 2;
     const middleRadius = startRadius + width / 2;
-    const arcLength = middleRadius * angleLength;
     
-    // Determine text color with strong contrast
-    const textColor = backgroundColor ? this.getContrastColor(backgroundColor) : "#FFFFFF";
+    // Calculate available space
+    const arcLength = middleRadius * Math.abs(angleLength); // Length along the arc
+    const radialWidth = width; // Width perpendicular to arc
     
-    // Use normal weight font, 70% of base size
-    // But scale down further for very narrow rings to ensure readability
-    let activityFontSize = fontSize * 0.7;
+    // Minimum thresholds - only skip EXTREMELY tiny segments
+    const MIN_ARC_LENGTH = this.size * 0.008; // 0.8% of canvas (very tiny)
+    const MIN_RADIAL_WIDTH = this.size * 0.005; // 0.5% of canvas (very tiny)
     
-    // If the radial width is very small, reduce font size to fit better
-    if (width < this.size / 35) {
-      activityFontSize = fontSize * 0.6;
+    if (arcLength < MIN_ARC_LENGTH || radialWidth < MIN_RADIAL_WIDTH) {
+      // Too small to render readable text - skip it
+      return;
     }
     
-    this.context.save();
-    this.context.font = `400 ${activityFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
-    const textWidth = this.context.measureText(text).width;
+    // Get text color with proper contrast
+    const textColor = backgroundColor ? this.getContrastColor(backgroundColor) : "#FFFFFF";
     
-    // Position at center of the ring segment
-    const coord = this.moveToAngle(middleRadius, centerAngle);
+    // Calculate appropriate font size - keep it readable
+    // Use 70% of base font as standard, limited by available space
+    let activityFontSize = Math.min(
+      fontSize * 0.7,  // 70% of base font for good readability
+      radialWidth * 0.4,  // Max 40% of radial width
+      this.size / 40  // Absolute maximum (slightly larger)
+    );
+    
+    // Set minimum font size - don't make text too tiny
+    const minFontSize = this.size / 120;
+    activityFontSize = Math.max(activityFontSize, minFontSize);
+    
+    this.context.save();
+    this.context.font = `500 ${activityFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif`;
     this.context.fillStyle = textColor;
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
+    
+    // Position at center of segment
+    const coord = this.moveToAngle(middleRadius, centerAngle);
     this.context.translate(coord.x, coord.y);
     
+    // Determine rotation for perpendicular text
     // Normalize angle to 0-2π
-    let normalizedAngle = centerAngle;
-    while (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
-    while (normalizedAngle >= Math.PI * 2) normalizedAngle -= Math.PI * 2;
+    let normalizedAngle = centerAngle % (Math.PI * 2);
+    if (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
     
-    // VERTICAL text - perpendicular to the arc (90 degrees from horizontal)
-    // Determine if we're on the left side (90° to 270°)
+    // Check if we're on left side (flip text to keep readable)
     const isLeftSide = normalizedAngle > Math.PI / 2 && normalizedAngle < Math.PI * 1.5;
-    
-    // Text is perpendicular to arc (radial direction)
     let rotation = centerAngle;
-    
-    // Flip on left side so text is readable from outside
     if (isLeftSide) {
-      rotation += Math.PI;
+      rotation += Math.PI;  // Flip 180° so text reads outward
     }
     
     this.context.rotate(rotation);
     
-    // Draw text vertically (perpendicular to arc) with improved wrapping
-    // Use more conservative width (80%) to ensure text doesn't clip at edges
-    const maxWidth = width * 0.80;
+    // Calculate constraints
+    const maxTextWidth = radialWidth * 0.75; // Use 75% of available width for padding
+    const lineHeight = activityFontSize * 1.2;
+    const maxLines = Math.max(1, Math.floor((arcLength * 0.9) / lineHeight));
     
-    // Calculate maximum number of lines that can fit in the arc length
-    const lineHeight = activityFontSize * 1.15; // Slightly more spacing for readability
-    const arcLengthPixels = arcLength;
-    const maxLines = Math.max(1, Math.floor(arcLengthPixels / lineHeight));
+    // Measure full text
+    const fullTextWidth = this.context.measureText(text).width;
     
-    if (textWidth > maxWidth) {
-      // Try to wrap text intelligently
-      const words = text.split(/(\s+|-)/); // Split on space or hyphen, keep delimiters
-      let lines = [];
-      let currentLine = '';
-      
-      for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        
-        // Skip pure whitespace delimiters unless it's the first word
-        if (word.match(/^\s+$/) && currentLine.length === 0) continue;
-        
-        const testLine = currentLine + word;
-        const testWidth = this.context.measureText(testLine).width;
-        
-        if (testWidth > maxWidth && currentLine.length > 0) {
-          // Current line is full, push it and start new line
-          lines.push(currentLine.trim());
-          // Don't include spaces at start of new line
-          currentLine = word.match(/^\s+$/) ? '' : word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      
-      // Add the last line
-      if (currentLine.trim()) {
-        lines.push(currentLine.trim());
-      }
-      
-      // Limit to available lines, truncate if needed
-      if (lines.length > maxLines) {
-        lines = lines.slice(0, maxLines);
-        let lastLine = lines[maxLines - 1];
-        
-        // Ensure the last line fits with ellipsis
-        const ellipsisWidth = this.context.measureText('…').width;
-        if (this.context.measureText(lastLine).width + ellipsisWidth > maxWidth) {
-          // Truncate character by character
-          while (lastLine.length > 0 && this.context.measureText(lastLine + '…').width > maxWidth) {
-            lastLine = lastLine.slice(0, -1);
-          }
-        }
-        lines[maxLines - 1] = lastLine + '…';
-      }
-      
-      // Center the text block vertically within the arc
-      const totalHeight = lines.length * lineHeight;
-      const startY = -totalHeight / 2 + lineHeight / 2;
-      
-      lines.forEach((line, index) => {
-        this.context.fillText(line, 0, startY + index * lineHeight);
-      });
-    } else {
+    if (fullTextWidth <= maxTextWidth) {
+      // Single line, fits completely
       this.context.fillText(text, 0, 0);
+    } else {
+      // Need to wrap or truncate
+      const lines = this.wrapText(text, maxTextWidth, maxLines);
+      
+      // Calculate vertical centering
+      const totalHeight = lines.length * lineHeight;
+      const startY = -(totalHeight / 2) + (lineHeight / 2);
+      
+      // Draw each line
+      lines.forEach((line, index) => {
+        this.context.fillText(line, 0, startY + (index * lineHeight));
+      });
     }
     
     this.context.restore();
   }
+  
+  /**
+   * Smart text wrapping with word boundaries and ellipsis
+   * Returns array of lines that fit within maxWidth and maxLines constraints
+   */
+  wrapText(text, maxWidth, maxLines) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let currentLine = '';
+    
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const wordWidth = this.context.measureText(word).width;
+      
+      // If a single word is too long, truncate it immediately
+      if (wordWidth > maxWidth) {
+        if (currentLine) {
+          lines.push(currentLine);
+          if (lines.length >= maxLines) {
+            return lines;
+          }
+        }
+        lines.push(this.truncateWithEllipsis(word, maxWidth));
+        if (lines.length >= maxLines) {
+          return lines;
+        }
+        currentLine = '';
+        continue;
+      }
+      
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = this.context.measureText(testLine).width;
+      
+      if (testWidth > maxWidth && currentLine) {
+        // Line is full, save current line and start new one
+        lines.push(currentLine);
+        
+        // If we've reached the line limit, truncate remaining text
+        if (lines.length >= maxLines) {
+          // Collect all remaining words including current word
+          const remaining = words.slice(i).join(' ');
+          const truncated = this.truncateWithEllipsis(remaining, maxWidth);
+          lines.push(truncated);
+          return lines;
+        }
+        
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    
+    // Add the last line if there's content
+    if (currentLine) {
+      if (lines.length < maxLines) {
+        lines.push(currentLine);
+      } else if (lines.length === maxLines) {
+        // Replace the last line with truncated version if we're at limit
+        lines[lines.length - 1] = this.truncateWithEllipsis(lines[lines.length - 1] + ' ' + currentLine, maxWidth);
+      }
+    }
+    
+    return lines.length > 0 ? lines : [this.truncateWithEllipsis(text, maxWidth)];
+  }
+  
+  /**
+   * Truncate text to fit width, adding ellipsis
+   */
+  truncateWithEllipsis(text, maxWidth) {
+    const ellipsis = '…';
+    const ellipsisWidth = this.context.measureText(ellipsis).width;
+    
+    if (this.context.measureText(text).width <= maxWidth) {
+      return text;
+    }
+    
+    // Binary search for optimal length
+    let left = 0;
+    let right = text.length;
+    let bestFit = '';
+    
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const candidate = text.substring(0, mid) + ellipsis;
+      const width = this.context.measureText(candidate).width;
+      
+      if (width <= maxWidth) {
+        bestFit = candidate;
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+    
+    return bestFit || ellipsis;
+  }
 
-  // Decide whether to use vertical or horizontal text based on activity dimensions
+  /**
+   * Smart text orientation decision based on segment dimensions
+   * Chooses between horizontal (along arc) and vertical (perpendicular) 
+   * based on what will give the best readability for the available space
+   */
   chooseTextOrientation(angularWidth, radialHeight, textLength) {
-    // Convert angular width from radians to degrees for easier thresholds
+    // Convert angular width from radians to degrees
     const angularDegrees = (angularWidth * 180) / Math.PI;
     
-    // Improved heuristics that consider both dimensions:
-    // 1. Very narrow activities (< 15°) -> Always vertical (perpendicular)
-    // 2. Medium width (15-30°) -> Vertical if radial height is decent, otherwise horizontal
-    // 3. Wide activities (> 30°) -> Horizontal along arc for better readability
+    // Calculate rough text-to-space ratio
+    const arcLengthRatio = textLength / angularDegrees; // chars per degree
+    const radialRatio = textLength * 8 / radialHeight; // rough char width estimate
     
-    if (angularDegrees < 15) {
-      // Very narrow - vertical is the only readable option
-      return 'vertical';
-    } else if (angularDegrees < 30) {
-      // Medium width - choose based on radial height
-      // If we have good radial height (relative to angular width), use vertical
-      // This prevents text from being too curved on small arcs
-      const aspectRatio = radialHeight / (angularWidth * 100); // Rough aspect ratio
-      return aspectRatio > 0.3 ? 'vertical' : 'horizontal';
-    } else {
-      // Wide enough - horizontal along arc works well
+    // Decision logic:
+    
+    // 1. Very wide segments (>60°) - prefer horizontal (along arc)
+    //    Text flows naturally around the circle
+    if (angularDegrees > 60) {
       return 'horizontal';
     }
+    
+    // 2. Wide radial height but narrow arc (<15°) - use vertical
+    //    Text fits better perpendicular
+    if (angularDegrees < 15 && radialHeight > this.size / 20) {
+      return 'vertical';
+    }
+    
+    // 3. Medium segments (15-60°) - decide based on text length
+    //    Short text: horizontal looks better
+    //    Long text: vertical uses space more efficiently
+    if (angularDegrees >= 15 && angularDegrees <= 60) {
+      // If text is short relative to arc length, use horizontal
+      if (textLength < 15 || arcLengthRatio < 0.8) {
+        return 'horizontal';
+      }
+      // Long text in medium segment: use vertical
+      return 'vertical';
+    }
+    
+    // 4. Very narrow segments (<15°, small radial) - vertical with truncation
+    return 'vertical';
   }
 
   // Wrapper to adapt drawTextAlongArc to match setCircleSectionAktivitetTitle signature
@@ -1416,6 +1519,8 @@ class YearWheel {
   dragActivity(event) {
     if (!this.dragState.isDragging) return;
 
+    console.log('[dragActivity] Dragging in progress');
+    
     const currentMouseAngle = this.getMouseAngle(event);
     this.dragState.currentMouseAngle = currentMouseAngle;
     
@@ -1491,6 +1596,8 @@ class YearWheel {
   stopActivityDrag() {
     if (!this.dragState.isDragging) return;
 
+    console.log('[stopActivityDrag] Drag ended, processing update');
+
     // Convert preview angles to dates
     let newStartDate = this.angleToDate(this.toDegrees(this.dragState.previewStartAngle));
     let newEndDate = this.angleToDate(this.toDegrees(this.dragState.previewEndAngle));
@@ -1527,12 +1634,10 @@ class YearWheel {
       updatedItem.ringId = this.dragState.targetRing.id;
     }
     
-    // Call update callback if provided
-    if (this.options.onUpdateAktivitet) {
-      this.options.onUpdateAktivitet(updatedItem);
-    }
+    console.log('[stopActivityDrag] Updated item:', updatedItem);
     
-    // Reset drag state
+    // CRITICAL: Reset drag state BEFORE calling callback
+    // This ensures updateOrganizationData can call create() to redraw
     this.dragState = {
       isDragging: false,
       dragMode: null,
@@ -1548,7 +1653,16 @@ class YearWheel {
       targetRingInfo: null,
     };
     
+    console.log('[stopActivityDrag] Drag state reset, isDragging:', this.dragState.isDragging);
+    
     this.canvas.style.cursor = 'default';
+    
+    // Call update callback AFTER resetting drag state
+    console.log('[stopActivityDrag] Calling onUpdateAktivitet callback');
+    if (this.options.onUpdateAktivitet) {
+      this.options.onUpdateAktivitet(updatedItem);
+    }
+    console.log('[stopActivityDrag] Callback completed');
   }
 
   getMouseAngle(event) {

@@ -83,9 +83,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   }, [setUndoableStates, colors]);
   
   const setOrganizationData = useCallback((value) => {
-    const newOrgData = typeof value === 'function' ? value(organizationData) : value;
-    setUndoableStates({ organizationData: newOrgData });
-  }, [setUndoableStates, organizationData]);
+    setUndoableStates(prevStates => {
+      const newOrgData = typeof value === 'function' ? value(prevStates.organizationData) : value;
+      return { organizationData: newOrgData };
+    });
+  }, [setUndoableStates]);
   
   // Other non-undoable states
   const [zoomedMonth, setZoomedMonth] = useState(null);
@@ -431,6 +433,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       year: currentYear,
       currentPageId: currentCurrentPageId
     } = latestValuesRef.current;
+
+    console.log('[AutoSave] Starting auto-save with organizationData:', {
+      items: currentOrganizationData?.items?.length,
+      activityGroups: currentOrganizationData?.activityGroups?.length
+    });
 
     try {
       // console.log('[AutoSave] Saving changes... title:', currentTitle);
@@ -1077,12 +1084,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    setOrganizationData(prevData => ({
-      ...prevData,
-      items: prevData.items.map(item =>
+    console.log('[App handleUpdateAktivitet] Updating item:', updatedItem.id);
+    setOrganizationData(prevData => {
+      console.log('[App handleUpdateAktivitet] prevData.items:', prevData.items?.length);
+      const updatedItems = prevData.items.map(item =>
         item.id === updatedItem.id ? updatedItem : item
-      )
-    }));
+      );
+      console.log('[App handleUpdateAktivitet] updatedItems:', updatedItems.length);
+      return {
+        ...prevData,
+        items: updatedItems
+      };
+    });
   }, []);
 
   const handleDeleteAktivitet = useCallback((itemId) => {

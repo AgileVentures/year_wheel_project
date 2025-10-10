@@ -61,24 +61,32 @@ function YearWheel({
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
   };
 
+  // Use refs to avoid recreating callbacks (which would destroy the wheel instance)
+  const onUpdateAktivitetRef = useRef(onUpdateAktivitet);
+  const onDeleteAktivitetRef = useRef(onDeleteAktivitet);
+
+  // Keep refs up to date
+  useEffect(() => {
+    onUpdateAktivitetRef.current = onUpdateAktivitet;
+    onDeleteAktivitetRef.current = onDeleteAktivitet;
+  }, [onUpdateAktivitet, onDeleteAktivitet]);
+
   const handleItemClick = useCallback((item, position) => {
     setSelectedItem(item);
     setTooltipPosition(position);
   }, []);
 
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    // This will be passed from App.jsx through props
-    if (onUpdateAktivitet) {
-      onUpdateAktivitet(updatedItem);
+    if (onUpdateAktivitetRef.current) {
+      onUpdateAktivitetRef.current(updatedItem);
     }
-  }, [onUpdateAktivitet]);
+  }, []); // Empty deps - uses ref
 
   const handleDeleteAktivitet = useCallback((itemId) => {
-    // This will be passed from App.jsx through props
-    if (onDeleteAktivitet) {
-      onDeleteAktivitet(itemId);
+    if (onDeleteAktivitetRef.current) {
+      onDeleteAktivitetRef.current(itemId);
     }
-  }, [onDeleteAktivitet]);
+  }, []); // Empty deps - uses ref
 
   useEffect(() => {
     setEvents(yearEventsCollection || []);
@@ -153,7 +161,6 @@ function YearWheel({
     title,
     year,
     colors,
-    organizationData,
     showYearEvents,
     showSeasonRing,
     yearEventsCollection,
@@ -164,7 +171,27 @@ function YearWheel({
     zoomedQuarter,
     handleItemClick,
     handleUpdateAktivitet,
+    // organizationData excluded - updated via updateOrganizationData to prevent wheel recreation during drag
   ]);
+
+  // Update organization data without recreating the wheel instance
+  // This preserves drag state and prevents wheel from going blank during drag
+  useEffect(() => {
+    console.log('[YearWheel useEffect] organizationData changed:', {
+      hasWheel: !!yearWheel,
+      items: organizationData?.items?.length,
+      activityGroups: organizationData?.activityGroups?.length
+    });
+    
+    if (organizationData?.items?.length === 0) {
+      console.error('[YearWheel useEffect] WARNING: organizationData has 0 items!');
+      console.trace();
+    }
+    
+    if (yearWheel && organizationData) {
+      yearWheel.updateOrganizationData(organizationData);
+    }
+  }, [organizationData, yearWheel]);
 
   // Notify parent when wheel instance changes (only once per instance)
   useEffect(() => {
