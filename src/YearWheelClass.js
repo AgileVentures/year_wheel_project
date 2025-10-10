@@ -842,7 +842,13 @@ class YearWheel {
     const textColor = backgroundColor ? this.getContrastColor(backgroundColor) : "#FFFFFF";
     
     // Use normal weight font, 70% of base size
-    const activityFontSize = fontSize * 0.7;
+    // But scale down further for very narrow rings to ensure readability
+    let activityFontSize = fontSize * 0.7;
+    
+    // If the radial width is very small, reduce font size to fit better
+    if (width < this.size / 35) {
+      activityFontSize = fontSize * 0.6;
+    }
     
     this.context.save();
     this.context.font = `400 ${activityFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
@@ -874,52 +880,67 @@ class YearWheel {
     
     this.context.rotate(rotation);
     
-    // Draw text vertically (perpendicular to arc) with word wrapping
-    const maxWidth = width * 0.85;
+    // Draw text vertically (perpendicular to arc) with improved wrapping
+    // Use more conservative width (80%) to ensure text doesn't clip at edges
+    const maxWidth = width * 0.80;
+    
+    // Calculate maximum number of lines that can fit in the arc length
+    const lineHeight = activityFontSize * 1.15; // Slightly more spacing for readability
+    const arcLengthPixels = arcLength;
+    const maxLines = Math.max(1, Math.floor(arcLengthPixels / lineHeight));
     
     if (textWidth > maxWidth) {
-      // Try to wrap text on hyphen or space
-      const words = text.split(/(-|\s+)/); // Split on hyphen or space, keep delimiters
+      // Try to wrap text intelligently
+      const words = text.split(/(\s+|-)/); // Split on space or hyphen, keep delimiters
       let lines = [];
       let currentLine = '';
       
       for (let i = 0; i < words.length; i++) {
-        const testLine = currentLine + words[i];
+        const word = words[i];
+        
+        // Skip pure whitespace delimiters unless it's the first word
+        if (word.match(/^\s+$/) && currentLine.length === 0) continue;
+        
+        const testLine = currentLine + word;
         const testWidth = this.context.measureText(testLine).width;
         
         if (testWidth > maxWidth && currentLine.length > 0) {
-          lines.push(currentLine);
-          currentLine = words[i];
+          // Current line is full, push it and start new line
+          lines.push(currentLine.trim());
+          // Don't include spaces at start of new line
+          currentLine = word.match(/^\s+$/) ? '' : word;
         } else {
           currentLine = testLine;
         }
       }
-      if (currentLine) {
-        lines.push(currentLine);
+      
+      // Add the last line
+      if (currentLine.trim()) {
+        lines.push(currentLine.trim());
       }
       
-      // Limit to 2 lines max, truncate if needed
-      if (lines.length > 2) {
-        lines = lines.slice(0, 2);
-        const lastLine = lines[1];
-        if (this.context.measureText(lastLine + '…').width > maxWidth) {
-          let truncated = lastLine;
-          while (this.context.measureText(truncated + '…').width > maxWidth && truncated.length > 1) {
-            truncated = truncated.slice(0, -1);
+      // Limit to available lines, truncate if needed
+      if (lines.length > maxLines) {
+        lines = lines.slice(0, maxLines);
+        let lastLine = lines[maxLines - 1];
+        
+        // Ensure the last line fits with ellipsis
+        const ellipsisWidth = this.context.measureText('…').width;
+        if (this.context.measureText(lastLine).width + ellipsisWidth > maxWidth) {
+          // Truncate character by character
+          while (lastLine.length > 0 && this.context.measureText(lastLine + '…').width > maxWidth) {
+            lastLine = lastLine.slice(0, -1);
           }
-          lines[1] = truncated + '…';
-        } else {
-          lines[1] = lastLine + '…';
         }
+        lines[maxLines - 1] = lastLine + '…';
       }
       
-      // Draw multiple lines with spacing
-      const lineHeight = activityFontSize * 1.1;
+      // Center the text block vertically within the arc
       const totalHeight = lines.length * lineHeight;
       const startY = -totalHeight / 2 + lineHeight / 2;
       
       lines.forEach((line, index) => {
-        this.context.fillText(line.trim(), 0, startY + index * lineHeight);
+        this.context.fillText(line, 0, startY + index * lineHeight);
       });
     } else {
       this.context.fillText(text, 0, 0);
@@ -933,13 +954,24 @@ class YearWheel {
     // Convert angular width from radians to degrees for easier thresholds
     const angularDegrees = (angularWidth * 180) / Math.PI;
     
-    // Simplified heuristics:
-    // - If angular width >= 25 degrees (reasonably wide), use HORIZONTAL text along arc
-    // - If angular width < 25 degrees (narrow), use VERTICAL text (perpendicular/radial)
-    // This ensures consistent, readable text across all activity sizes
+    // Improved heuristics that consider both dimensions:
+    // 1. Very narrow activities (< 15°) -> Always vertical (perpendicular)
+    // 2. Medium width (15-30°) -> Vertical if radial height is decent, otherwise horizontal
+    // 3. Wide activities (> 30°) -> Horizontal along arc for better readability
     
-    // Use HORIZONTAL (along arc) for wider activities
-    return angularDegrees >= 25 ? 'horizontal' : 'vertical';
+    if (angularDegrees < 15) {
+      // Very narrow - vertical is the only readable option
+      return 'vertical';
+    } else if (angularDegrees < 30) {
+      // Medium width - choose based on radial height
+      // If we have good radial height (relative to angular width), use vertical
+      // This prevents text from being too curved on small arcs
+      const aspectRatio = radialHeight / (angularWidth * 100); // Rough aspect ratio
+      return aspectRatio > 0.3 ? 'vertical' : 'horizontal';
+    } else {
+      // Wide enough - horizontal along arc works well
+      return 'horizontal';
+    }
   }
 
   // Wrapper to adapt drawTextAlongArc to match setCircleSectionAktivitetTitle signature
@@ -968,18 +1000,40 @@ class YearWheel {
     this.context.save();
     this.context.font = `500 ${adjustedFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
     
-    // Calculate available arc length (use 90% for comfortable spacing)
-    const availableArcLength = middleRadius * angleLength * 0.9;
+    // Calculate available arc length (use 88% for comfortable spacing)
+    const availableArcLength = middleRadius * angleLength * 0.88;
     let displayText = text;
-    let textWidth = this.context.measureText(displayText).width;
     
-    // Truncate with "..." if text is too long
-    if (textWidth > availableArcLength) {
-      while (displayText.length > 0 && textWidth > availableArcLength) {
-        displayText = displayText.slice(0, -1);
-        textWidth = this.context.measureText(displayText + '...').width;
+    // Try to intelligently truncate at word boundaries if possible
+    if (this.context.measureText(displayText).width > availableArcLength) {
+      // First, try to fit whole words
+      const words = displayText.split(/\s+/);
+      let truncated = '';
+      let i = 0;
+      
+      while (i < words.length) {
+        const testText = truncated + (truncated ? ' ' : '') + words[i];
+        const testWidth = this.context.measureText(testText + '…').width;
+        
+        if (testWidth <= availableArcLength) {
+          truncated = testText;
+          i++;
+        } else {
+          break;
+        }
       }
-      displayText = displayText + '...';
+      
+      // If we got at least one word, use it
+      if (truncated) {
+        displayText = truncated + '…';
+      } else {
+        // Fall back to character-by-character truncation
+        truncated = displayText;
+        while (truncated.length > 0 && this.context.measureText(truncated + '…').width > availableArcLength) {
+          truncated = truncated.slice(0, -1);
+        }
+        displayText = truncated ? truncated + '…' : '';
+      }
     }
     
     this.context.restore();
