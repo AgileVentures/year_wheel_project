@@ -47,7 +47,7 @@ function YearWheel({
   const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
   const zoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 50));
   
-  const fitToScreen = () => {
+  const fitToScreen = useCallback(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
     const containerWidth = container.clientWidth;
@@ -62,6 +62,52 @@ function YearWheel({
     
     const optimalZoom = Math.min(widthZoom, heightZoom, 200);
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
+    
+    // Reset pan offset when fitting to screen
+    setPanOffset({ x: 0, y: 0 });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft = 0;
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, []);
+  
+  // Auto-fit on initial load
+  useEffect(() => {
+    if (!hasAutoFittedRef.current && containerRef.current) {
+      // Small delay to ensure container has rendered with correct dimensions
+      const timer = setTimeout(() => {
+        fitToScreen();
+        hasAutoFittedRef.current = true;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [fitToScreen]);
+  
+  // Pan navigation functions
+  const panStep = 100; // pixels to move per arrow click
+  
+  const panUp = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop -= panStep;
+    }
+  };
+  
+  const panDown = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop += panStep;
+    }
+  };
+  
+  const panLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft -= panStep;
+    }
+  };
+  
+  const panRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft += panStep;
+    }
   };
 
   // Use refs to avoid recreating callbacks (which would destroy the wheel instance)
@@ -206,7 +252,10 @@ function YearWheel({
 
   return (
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
-      <div className="flex-1 flex items-center justify-center w-full overflow-auto bg-white">
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 flex items-center justify-center w-full overflow-auto bg-white"
+      >
         <canvas
           ref={canvasRef}
           style={{
@@ -218,6 +267,55 @@ function YearWheel({
           className="drop-shadow-2xl"
         />
       </div>
+      
+      {/* Navigation arrows - only show when zoomed in beyond fit */}
+      {zoomLevel > 100 && (
+        <div className="absolute top-4 right-4 flex flex-col gap-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-1 border border-gray-200">
+          <button
+            onClick={panUp}
+            className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
+            title="Flytta upp"
+            aria-label="Pan up"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={panLeft}
+              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
+              title="Flytta vänster"
+              aria-label="Pan left"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={panRight}
+              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
+              title="Flytta höger"
+              aria-label="Pan right"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+          <button
+            onClick={panDown}
+            className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
+            title="Flytta ner"
+            aria-label="Pan down"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+      )}
+      
       <div className="sticky bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-200 shadow-lg">
         <div className="flex gap-3 items-center p-3 flex-wrap justify-center">
           {/* Zoom Controls */}
