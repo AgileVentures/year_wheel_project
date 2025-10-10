@@ -867,17 +867,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!wheelId) return;
     
     try {
+      // First, save the current page to ensure we have the latest data
+      if (currentPageId) {
+        await updatePage(currentPageId, {
+          organization_data: organizationData,
+          year: parseInt(year)
+        });
+      }
+      
       // Find highest year from existing pages and add 1
       const maxYear = pages.length > 0 
         ? Math.max(...pages.map(p => p.year))
         : parseInt(year);
       const nextYear = maxYear + 1;
       
+      // Use current organizationData state (just saved above)
       // Copy ONLY rings and activityGroups (structure), NOT items (activities)
       const newPage = await createPage(wheelId, {
         year: nextYear,
         title: `${nextYear}`,
-        organization_data: {
+        organizationData: {  // NOTE: camelCase for service function!
           rings: organizationData.rings || [], // Copy rings structure
           activityGroups: organizationData.activityGroups || [], // Copy activity groups
           labels: organizationData.labels || [], // Copy labels
@@ -1322,7 +1331,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         year={year}
         onYearChange={setYear}
-        onDownloadImage={() => yearWheelRef && yearWheelRef.downloadImage(downloadFormat)}
+        onDownloadImage={(toClipboard = false) => yearWheelRef && yearWheelRef.downloadImage(downloadFormat, toClipboard)}
         downloadFormat={downloadFormat}
         onDownloadFormatChange={setDownloadFormat}
         activeUsers={activeUsers}

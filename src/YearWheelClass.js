@@ -521,16 +521,9 @@ class YearWheel {
 
     // Check inner rings (they expand to fill available space)
     if (visibleInnerRings.length > 0) {
+      // Show ALL visible inner rings, even if empty (no items)
       const innerRings = this.organizationData.rings.filter(r => {
-        if (r.type !== 'inner' || !r.visible) return false;
-        const visibleActivityGroups = this.organizationData.activityGroups.filter(a => a.visible);
-        const visibleLabels = this.organizationData.labels.filter(l => l.visible);
-        const hasItems = this.organizationData.items.some(item => {
-          const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
-          const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
-          return item.ringId === r.id && hasVisibleActivityGroup && labelOk;
-        });
-        return hasItems;
+        return r.type === 'inner' && r.visible;
       });
 
       const numberOfInnerRings = innerRings.length;
@@ -2092,19 +2085,17 @@ class YearWheel {
           const trackHeight = maxTracks > 0 ? outerRingContentHeight / maxTracks : outerRingContentHeight;
           const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
           
-          // Only draw background if ring has visible items
-          if (ringItems.length > 0) {
-            // Draw light background for this outer ring using palette colors
-            this.context.beginPath();
-            this.context.arc(this.center.x, this.center.y, ringStartRadius, 0, Math.PI * 2);
-            this.context.arc(this.center.x, this.center.y, ringStartRadius + outerRingContentHeight, 0, Math.PI * 2, true);
-            // ALWAYS use palette colors for ring backgrounds (ignore ring.color from database)
-            const templateColor = this.sectionColors[ringIndex % this.sectionColors.length];
-            // console.log(`[YearWheelClass] Drawing ring "${ring.name}" with palette color: ${templateColor} (palette index ${ringIndex % this.sectionColors.length})`);
-            this.context.fillStyle = this.getLightBackgroundColor(templateColor);
-            this.context.fill();
-            this.context.closePath();
-          }
+          // Always draw background for ALL outer rings using palette colors
+          this.context.beginPath();
+          this.context.arc(this.center.x, this.center.y, ringStartRadius, 0, Math.PI * 2);
+          this.context.arc(this.center.x, this.center.y, ringStartRadius + outerRingContentHeight, 0, Math.PI * 2, true);
+          // Use palette color (cycles through palette based on ring index)
+          const templateColor = this.sectionColors[ringIndex % this.sectionColors.length];
+          this.context.fillStyle = this.getLightBackgroundColor(templateColor);
+          this.context.globalAlpha = ringItems.length === 0 ? 0.3 : 0.15; // More subtle for rings with items
+          this.context.fill();
+          this.context.globalAlpha = 1.0; // Reset alpha
+          this.context.closePath();
           
           ringItems.forEach((item) => {
             let itemStartDate = new Date(item.startDate);
@@ -2218,16 +2209,9 @@ class YearWheel {
 
     // Draw monthly events (inner sections) - they expand to fill available space
     
-    // Filter out EMPTY rings (rings with no items)
+    // Show ALL visible inner rings, even if empty (no items)
     const innerRings = this.organizationData.rings.filter(r => {
-      if (r.type !== 'inner' || !r.visible) return false;
-      // Only include rings that have at least one visible item
-      const hasItems = this.organizationData.items.some(item => {
-        const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
-        const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
-        return item.ringId === r.id && hasVisibleActivityGroup && labelOk;
-      });
-      return hasItems;
+      return r.type === 'inner' && r.visible;
     });
     const numberOfEvents = innerRings.length;
     
@@ -2260,13 +2244,27 @@ class YearWheel {
       // Each ring has two parts: content area (for activities) + name band
       const ringContentHeight = contentAreaHeight;
       
+      // Get items for this ring
+      const ringItems = this.organizationData.items.filter(item => {
+        const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
+        const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
+        return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
+      });
+      
+      // Draw subtle background for ALL inner rings using palette color
+      this.context.beginPath();
+      this.context.arc(this.center.x, this.center.y, eventRadius, 0, Math.PI * 2);
+      this.context.arc(this.center.x, this.center.y, eventRadius + ringContentHeight, 0, Math.PI * 2, true);
+      // Use palette color (cycles through palette based on ring index)
+      const templateColor = this.sectionColors[i % this.sectionColors.length];
+      this.context.fillStyle = this.getLightBackgroundColor(templateColor);
+      this.context.globalAlpha = ringItems.length === 0 ? 0.3 : 0.15; // More subtle for rings with items
+      this.context.fill();
+      this.context.globalAlpha = 1.0; // Reset alpha
+      this.context.closePath();
+      
       // Draw activities in the content area
-      if (visibleInnerRings.length > 0) {
-        const ringItems = this.organizationData.items.filter(item => {
-          const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
-          const labelOk = !item.labelId || visibleLabels.some(l => l.id === item.labelId);
-          return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
-        });
+      if (visibleInnerRings.length > 0 && ringItems.length > 0) {
         
         // Assign items to tracks to handle overlaps
         const { maxTracks, itemToTrack } = this.assignActivitiesToTracks(ringItems);
@@ -2439,23 +2437,88 @@ class YearWheel {
 
   // DOWNLOAD FUNCTIONALITY
 
-  downloadImage(format) {
-    switch (format) {
-      case "png":
-        this.downloadAsPNG(false);
-        break;
-      case "png-white":
-        this.downloadAsPNG(true);
-        break;
-      case "jpeg":
-        this.downloadAsJPEG();
-        break;
-      case "svg":
-        this.downloadAsSVG();
-        break;
-      default:
-        console.error("Unsupported format");
+  downloadImage(format, toClipboard = false) {
+    if (toClipboard) {
+      this.copyToClipboard(format);
+    } else {
+      switch (format) {
+        case "png":
+          this.downloadAsPNG(false);
+          break;
+        case "png-white":
+          this.downloadAsPNG(true);
+          break;
+        case "jpeg":
+          this.downloadAsJPEG();
+          break;
+        case "svg":
+          this.downloadAsSVG();
+          break;
+        default:
+          console.error("Unsupported format");
+      }
     }
+  }
+
+  async copyToClipboard(format) {
+    try {
+      switch (format) {
+        case "png":
+        case "png-white":
+          await this.copyPNGToClipboard(format === "png-white");
+          break;
+        case "jpeg":
+          await this.copyJPEGToClipboard();
+          break;
+        case "svg":
+          await this.copySVGToClipboard();
+          break;
+        default:
+          console.error("Unsupported format for clipboard");
+      }
+      
+      // Show success feedback via toast
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Bild kopierad till urklipp!', type: 'success' }
+      });
+      window.dispatchEvent(event);
+    } catch (err) {
+      console.error('Error copying to clipboard:', err);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte kopiera till urklipp', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  }
+
+  async copyPNGToClipboard(whiteBackground = false) {
+    const pngCanvas = this.copyCanvas(whiteBackground);
+    const blob = await new Promise(resolve => pngCanvas.toBlob(resolve, 'image/png'));
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': blob })
+    ]);
+  }
+
+  async copyJPEGToClipboard() {
+    const jpegCanvas = this.copyCanvas(true);
+    const blob = await new Promise(resolve => jpegCanvas.toBlob(resolve, 'image/jpeg', 1.0));
+    // Convert JPEG to PNG for clipboard (clipboard doesn't support JPEG directly)
+    const pngBlob = await new Promise(resolve => jpegCanvas.toBlob(resolve, 'image/png'));
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': pngBlob })
+    ]);
+  }
+
+  async copySVGToClipboard() {
+    const svgContext = this.createSVGContext();
+    const originalContext = this.context;
+    this.context = svgContext;
+    this.create();
+    this.context = originalContext;
+    const svgData = svgContext.getSerializedSvg();
+    
+    // Copy as text
+    await navigator.clipboard.writeText(svgData);
   }
 
   generateFileName(extension) {

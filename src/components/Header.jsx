@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check } from 'lucide-react';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
@@ -35,6 +35,19 @@ function Header({
   onAddPage,
   onDeletePage
 }) {
+  const [showFormatDropdown, setShowFormatDropdown] = useState(false);
+  const [copiedFormat, setCopiedFormat] = useState(null);
+  
+  const handleCopyToClipboard = async (format) => {
+    onDownloadFormatChange && onDownloadFormatChange(format);
+    // Trigger the download which will now copy to clipboard
+    onDownloadImage && onDownloadImage(true); // Pass true to indicate clipboard
+    
+    // Show checkmark feedback
+    setCopiedFormat(format);
+    setTimeout(() => setCopiedFormat(null), 2000);
+  };
+  
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-6">
@@ -47,7 +60,7 @@ function Header({
             aria-label={isSidebarOpen ? "Close panel" : "Open panel"}
             title={isSidebarOpen ? "Stäng panel" : "Öppna panel"}
           >
-            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
           </button>
           
           {/* Logo - click to go back to dashboard if available */}
@@ -72,7 +85,7 @@ function Header({
           />
         ) : (
           <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-sm border border-gray-200">
-            <Calendar size={20} className="text-gray-600" />
+            <Calendar size={14} className="text-gray-600" />
             <input
               type="number"
               value={year || "2025"}
@@ -97,7 +110,7 @@ function Header({
               title="Ångra (Ctrl+Z)"
               aria-label="Ångra"
             >
-              <Undo size={20} />
+              <Undo size={14} />
             </button>
             <button
               onClick={onRedo}
@@ -106,7 +119,7 @@ function Header({
               title="Gör om (Ctrl+Shift+Z)"
               aria-label="Gör om"
             >
-              <Redo size={20} />
+              <Redo size={14} />
             </button>
             <div className="w-px h-8 bg-gray-300"></div>
           </>
@@ -119,7 +132,7 @@ function Header({
               className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               title="Filoperationer"
             >
-              <FolderOpen size={20} />
+              <FolderOpen size={14} />
             </button>
           }
         >
@@ -142,50 +155,96 @@ function Header({
           />
         </Dropdown>
         
-        {/* Download Image Dropdown */}
-        <Dropdown
-          trigger={
-            <button 
-              className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-              title="Ladda ner bild"
+        {/* Image Export with Format Selector */}
+        <div className="relative flex items-center gap-1">
+          {/* Format Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFormatDropdown(!showFormatDropdown)}
+              className="px-2.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors border border-gray-300 flex items-center gap-1.5"
+              title="Välj bildformat"
             >
-              <Image size={20} />
+              <Image size={14} />
+              <span className="uppercase">{downloadFormat || 'PNG'}</span>
+              <ChevronDown size={14} />
             </button>
-          }
-        >
-          <DropdownItem
-            icon={FileDown}
-            label="PNG (Transparent)"
+            
+            {showFormatDropdown && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowFormatDropdown(false)}
+                ></div>
+                <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 min-w-[180px]">
+                  <button
+                    onClick={() => {
+                      onDownloadFormatChange && onDownloadFormatChange('png');
+                      setShowFormatDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                  >
+                    <FileDown size={14} className="text-gray-500" />
+                    PNG (Transparent)
+                  </button>
+                  <button
+                    onClick={() => {
+                      onDownloadFormatChange && onDownloadFormatChange('png-white');
+                      setShowFormatDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                  >
+                    <FileDown size={14} className="text-gray-500" />
+                    PNG (Vit bakgrund)
+                  </button>
+                  <button
+                    onClick={() => {
+                      onDownloadFormatChange && onDownloadFormatChange('jpeg');
+                      setShowFormatDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                  >
+                    <FileDown size={14} className="text-gray-500" />
+                    JPEG
+                  </button>
+                  <button
+                    onClick={() => {
+                      onDownloadFormatChange && onDownloadFormatChange('svg');
+                      setShowFormatDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                  >
+                    <FileDown size={14} className="text-gray-500" />
+                    SVG
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Copy to Clipboard Button */}
+          <button
+            onClick={() => handleCopyToClipboard(downloadFormat)}
+            className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors relative"
+            title="Kopiera till urklipp"
+          >
+            {copiedFormat ? (
+              <Check size={14} className="text-green-600" />
+            ) : (
+              <Copy size={14} />
+            )}
+          </button>
+          
+          {/* Download Button */}
+          <button
             onClick={() => {
-              onDownloadFormatChange && onDownloadFormatChange('png');
-              onDownloadImage && onDownloadImage();
+              onDownloadImage && onDownloadImage(false);
             }}
-          />
-          <DropdownItem
-            icon={FileDown}
-            label="PNG (Vit bakgrund)"
-            onClick={() => {
-              onDownloadFormatChange && onDownloadFormatChange('png-white');
-              onDownloadImage && onDownloadImage();
-            }}
-          />
-          <DropdownItem
-            icon={FileDown}
-            label="JPEG"
-            onClick={() => {
-              onDownloadFormatChange && onDownloadFormatChange('jpeg');
-              onDownloadImage && onDownloadImage();
-            }}
-          />
-          <DropdownItem
-            icon={FileDown}
-            label="SVG"
-            onClick={() => {
-              onDownloadFormatChange && onDownloadFormatChange('svg');
-              onDownloadImage && onDownloadImage();
-            }}
-          />
-        </Dropdown>
+            className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+            title="Ladda ner bild"
+          >
+            <Download size={14} />
+          </button>
+        </div>
         
         {/* Presence Indicator */}
         {activeUsers.length > 0 && (
@@ -216,7 +275,7 @@ function Header({
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               title="Visa versionshistorik"
             >
-              <History size={18} />
+              <History size={14} />
               <span>Historik</span>
             </button>
           </>
@@ -230,7 +289,7 @@ function Header({
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           title={onBackToDashboard ? "Spara till databas" : "Spara till webbläsarlagring"}
         >
-          <Save size={18} />
+          <Save size={14} />
           <span>{isSaving ? 'Sparar...' : 'Spara'}</span>
         </button>
       </div>
