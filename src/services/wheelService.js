@@ -106,6 +106,7 @@ export const fetchWheel = async (wheelId) => {
     title: wheel.title,
     year: wheel.year.toString(),
     colors: wheelColors,
+    is_public: wheel.is_public,
     showWeekRing: wheel.show_week_ring,
     showMonthRing: wheel.show_month_ring,
     showRingNames: wheel.show_ring_names,
@@ -129,7 +130,7 @@ export const fetchWheel = async (wheelId) => {
           };
         }
         
-        // Outer rings - use color from palette based on outer ring index
+        // Outer rings - always derive color from current palette (colors saved as null in DB)
         const outerRingIndex = rings.filter((r, i) => i < index && r.type === 'outer').length;
         return {
           id: ring.id,
@@ -142,13 +143,13 @@ export const fetchWheel = async (wheelId) => {
       activityGroups: activityGroups.map((ag, index) => ({
         id: ag.id,
         name: ag.name,
-        color: ag.color || wheelColors[index % wheelColors.length], // Derive from palette if not set
+        color: ag.color || wheelColors[index % wheelColors.length], // Always derive from current palette (colors saved as null in DB)
         visible: ag.visible,
       })),
       labels: labels.map((l, index) => ({
         id: l.id,
         name: l.name,
-        color: l.color || wheelColors[index % wheelColors.length], // Derive from palette if not set
+        color: l.color || wheelColors[index % wheelColors.length], // Always derive from current palette (colors saved as null in DB)
         visible: l.visible,
       })),
       items: items.map(i => ({
@@ -296,7 +297,7 @@ const syncRings = async (wheelId, rings) => {
       wheel_id: wheelId,
       name: ring.name,
       type: ring.type,
-      color: ring.color || '#F5E6D3', // Save the color from organizationData (includes palette-derived color)
+      color: null, // Don't save color - let it derive from palette based on ring_order
       visible: ring.visible !== undefined ? ring.visible : true,
       ring_order: i,
       orientation: ring.orientation || null,
@@ -400,7 +401,7 @@ const syncActivityGroups = async (wheelId, activityGroups) => {
     const groupData = {
       wheel_id: wheelId,
       name: group.name.trim(),
-      color: group.color || '#F5E6D3', // Save the color from organizationData (includes palette-derived color)
+      color: null, // Don't save color - let it derive from palette based on index
       visible: group.visible !== undefined ? group.visible : true,
     };
 
@@ -461,7 +462,7 @@ const syncLabels = async (wheelId, labels) => {
     const labelData = {
       wheel_id: wheelId,
       name: label.name.trim(),
-      color: label.color || '#F5E6D3', // Save the color from organizationData (includes palette-derived color)
+      color: null, // Don't save color - let it derive from palette based on index
       visible: label.visible !== undefined ? label.visible : true,
     };
 

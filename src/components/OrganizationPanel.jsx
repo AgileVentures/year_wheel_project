@@ -14,7 +14,8 @@ function OrganizationPanel({
   onZoomToMonth,
   onZoomToQuarter,
   showRingNames,
-  onShowRingNamesChange
+  onShowRingNamesChange,
+  onBackToDashboard
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
@@ -1090,7 +1091,9 @@ function OrganizationPanel({
         <img 
           src="/year_wheel_logo.svg" 
           alt="YearWheel" 
-          className="w-44 hover:scale-105 transition-transform"
+          className={`w-44 hover:scale-105 transition-transform ${onBackToDashboard ? 'cursor-pointer' : ''}`}
+          onClick={onBackToDashboard}
+          title={onBackToDashboard ? "Tillbaka till mina hjul" : "YearWheel"}
         />
       </div>
 

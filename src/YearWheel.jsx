@@ -26,8 +26,11 @@ function YearWheel({
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const notifiedWheelRef = useRef(null); // Track which wheel instance was notified
+  const hasAutoFittedRef = useRef(false); // Track if we've done initial auto-fit
   const [zoomLevel, setZoomLevel] = useState(100); // Percentage: 50% to 200%, default 100%
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 }); // Pan offset in pixels
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);

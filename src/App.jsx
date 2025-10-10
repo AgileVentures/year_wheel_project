@@ -1370,6 +1370,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onZoomToQuarter={setZoomedQuarter}
             showRingNames={showRingNames}
             onShowRingNamesChange={setShowRingNames}
+            onBackToDashboard={onBackToDashboard}
           />
         </div>
 
