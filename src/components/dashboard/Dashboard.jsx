@@ -7,7 +7,11 @@ import CreateWheelModal from './CreateWheelModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
-import { Users, Mail, LayoutGrid } from 'lucide-react';
+import { Users, Mail, LayoutGrid, Crown } from 'lucide-react';
+import { useUsageLimits } from '../../hooks/useSubscription';
+import SubscriptionModal from '../subscription/SubscriptionModal';
+import UpgradePrompt from '../subscription/UpgradePrompt';
+import SubscriptionSettings from '../subscription/SubscriptionSettings';
 
 function Dashboard({ onSelectWheel }) {
   const [showProfile, setShowProfile] = useState(false);
@@ -62,6 +66,12 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Subscription state
+  const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading } = useUsageLimits();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
 
   useEffect(() => {
     if (currentView === 'wheels') {
@@ -81,6 +91,17 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreateWheelClick = () => {
+    // Check if user has reached wheel limit
+    if (hasReachedWheelLimit) {
+      setShowUpgradePrompt(true);
+      return;
+    }
+    
+    // Open create modal if within limits
+    setShowCreateModal(true);
   };
 
   const handleCreateWheel = async (wheelData) => {
@@ -228,8 +249,28 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
               </nav>
             </div>
             
-            {/* Right: User Menu */}
+            {/* Right: Subscription & User Menu */}
             <div className="flex items-center gap-3">
+              {/* Subscription Button */}
+              {!subscriptionLoading && (
+                <button
+                  onClick={() => isPremium ? setShowSubscriptionSettings(true) : setShowSubscriptionModal(true)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-sm font-semibold transition-all
+                    ${isPremium 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-md' 
+                      : 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-md hover:shadow-lg'
+                    }
+                  `}
+                  title={isPremium ? 'Hantera prenumeration' : 'Uppgradera till Premium'}
+                >
+                  <Crown size={18} className={isPremium ? 'animate-pulse' : ''} />
+                  <span className="text-sm hidden sm:inline">
+                    {isPremium ? 'Premium' : 'Uppgradera'}
+                  </span>
+                </button>
+              )}
+              
               <span className="text-sm text-gray-600 hidden sm:inline">{user?.email}</span>
               <button
                 onClick={onShowProfile}
@@ -268,9 +309,9 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
         {/* Wheels View */}
         {currentView === 'wheels' && (
           <>
-            <div className="mb-6">
+            <div className="mb-6 flex items-center justify-between">
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={handleCreateWheelClick}
                 className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -279,6 +320,20 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 </svg>
                 Skapa New wheel
               </button>
+              
+              {/* Usage indicator for free users */}
+              {!isPremium && !subscriptionLoading && (
+                <div className="text-sm text-gray-600">
+                  <span className={wheelCount >= maxWheels ? 'text-orange-600 font-semibold' : ''}>
+                    {wheelCount} / {maxWheels} hjul
+                  </span>
+                  {wheelCount >= maxWheels && (
+                    <span className="ml-2 text-orange-600">
+                      (uppgradera för fler)
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {loading ? (
@@ -293,7 +348,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 </svg>
                 <p className="text-gray-600 mb-4 mt-4">Du har inga hjul ännu</p>
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={handleCreateWheelClick}
                   className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 inline-flex items-center gap-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -337,6 +392,36 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
         <CreateWheelModal
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreateWheel}
+        />
+      )}
+
+      {/* Upgrade Prompt Modal */}
+      {showUpgradePrompt && (
+        <UpgradePrompt
+          title="Nått gränsen för hjul"
+          message={`Du har ${wheelCount} av ${maxWheels} tillåtna hjul på gratisplanen. Uppgradera till Premium för obegränsade hjul!`}
+          currentUsage={wheelCount}
+          limit={maxWheels}
+          onUpgrade={() => {
+            setShowUpgradePrompt(false);
+            setShowSubscriptionModal(true);
+          }}
+          onCancel={() => setShowUpgradePrompt(false)}
+        />
+      )}
+
+      {/* Subscription Modal */}
+      {showSubscriptionModal && (
+        <SubscriptionModal 
+          onClose={() => setShowSubscriptionModal(false)}
+          currentPlan={isPremium ? 'premium' : 'free'}
+        />
+      )}
+
+      {/* Subscription Settings Modal */}
+      {showSubscriptionSettings && (
+        <SubscriptionSettings 
+          onClose={() => setShowSubscriptionSettings(false)}
         />
       )}
     </div>
