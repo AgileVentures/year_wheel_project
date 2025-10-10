@@ -132,7 +132,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
     
+    console.log('=== LOAD WHEEL DATA CALLED ===');
     console.log('[WheelEditor] Starting loadWheelData for wheel:', wheelId);
+    console.log('[WheelEditor] Current state BEFORE load - title:', title, 'colors:', colors);
     isLoadingData.current = true; // Prevent auto-save during load
     
     try {
@@ -141,11 +143,17 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       
       if (wheelData) {
         // IMPORTANT: Always set title from database, never use default
-        console.log('[WheelEditor] Setting title from database:', wheelData.title);
+        console.log('=== DATA LOADED FROM DATABASE ===');
+        console.log('[WheelEditor] wheelData.title:', wheelData.title);
+        console.log('[WheelEditor] wheelData.colors:', wheelData.colors);
+        console.log('[WheelEditor] Setting title to:', wheelData.title || 'Nytt hjul');
         setTitle(wheelData.title || 'Nytt hjul');
         setIsPublic(wheelData.is_public || false);
         
-        if (wheelData.colors) setColors(wheelData.colors);
+        if (wheelData.colors) {
+          console.log('[WheelEditor] Setting colors to:', wheelData.colors);
+          setColors(wheelData.colors);
+        }
         
         // Load pages for this wheel
         const pagesData = await fetchPages(wheelId);
@@ -243,14 +251,23 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
 
   // Handle realtime data changes from other users
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
+    console.log('=== REALTIME EVENT ===');
     console.log(`[Realtime] ${tableName} ${eventType}:`, payload);
     
-    // Ignore broadcasts from our own recent saves (within 10 seconds - increased to prevent reload loop)
-    const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
-    if (timeSinceLastSave < 10000) {
-      console.log('[Realtime] Ignoring own broadcast (saved', timeSinceLastSave, 'ms ago)');
+    // COMPLETELY IGNORE all events if we're in the middle of saving
+    if (isSavingRef.current) {
+      console.log('[Realtime] ⚠️ IGNORING event - save in progress');
       return;
     }
+    
+    // Ignore broadcasts from our own recent saves (within 60 seconds to be VERY safe)
+    const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
+    console.log('[Realtime] Time since last save:', timeSinceLastSave, 'ms');
+    if (timeSinceLastSave < 60000) {
+      console.log('[Realtime] ✓ IGNORING own broadcast (saved', timeSinceLastSave, 'ms ago)');
+      return;
+    }
+    console.log('[Realtime] ⚠️ Processing broadcast (> 60s since save) - will reload data');
     
     // Don't reload during active save operation
     if (isSavingRef.current) {
@@ -272,14 +289,24 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
 
   // Handle realtime page changes
   const handlePageRealtimeChange = useCallback((eventType, payload) => {
+    console.log('=== REALTIME PAGE EVENT ===');
     console.log(`[Realtime] wheel_pages ${eventType}:`, payload);
     
-    // Ignore our own recent changes (increased to 10 seconds to prevent reload loop)
-    const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
-    if (timeSinceLastSave < 10000) {
-      console.log('[Realtime] Ignoring own page broadcast');
+    // COMPLETELY IGNORE all page updates if we're in the middle of saving
+    // This prevents the database's slightly-stale data from overwriting our local changes
+    if (isSavingRef.current) {
+      console.log('[Realtime] ⚠️ IGNORING page event - save in progress');
       return;
     }
+    
+    // Ignore our own recent changes (60 seconds to be VERY safe)
+    const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
+    console.log('[Realtime] Time since last save:', timeSinceLastSave, 'ms');
+    if (timeSinceLastSave < 60000) {
+      console.log('[Realtime] ✓ IGNORING own page broadcast (saved', timeSinceLastSave, 'ms ago)');
+      return;
+    }
+    console.log('[Realtime] ⚠️ Processing page broadcast (> 60s since save)');
     
     if (eventType === 'INSERT') {
       // New page added by another user
@@ -591,6 +618,14 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         console.log('Full organizationData:', organizationData);
         
         // First, update wheel metadata (title, colors, settings)
+        console.log('[ManualSave] Updating wheel metadata:', {
+          wheelId,
+          title,
+          colors,
+          showWeekRing,
+          showMonthRing,
+          showRingNames,
+        });
         await updateWheel(wheelId, {
           title,
           colors,
@@ -598,6 +633,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           showMonthRing,
           showRingNames,
         });
+        console.log('[ManualSave] Wheel metadata updated successfully');
         
         // Save current page data if we have pages
         if (currentPageId) {
