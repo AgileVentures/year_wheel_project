@@ -364,7 +364,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted }) => {
         ) : wheels.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <p>Inga hjul har tilldelats detta team än</p>
-            <p className="text-sm mt-1">Skapa ett nytt hjul och välj detta team för att börja</p>
+            <p className="text-sm mt-1">Skapa ett New wheel och välj detta team för att börja</p>
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">

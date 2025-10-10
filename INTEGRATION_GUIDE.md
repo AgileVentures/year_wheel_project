@@ -463,7 +463,7 @@ function Dashboard() {
   const handleCreateWheel = async () => {
     try {
       const newWheelId = await createWheel({
-        title: 'Nytt hjul',
+        title: 'New wheel',
         year: new Date().getFullYear(),
       });
       loadWheels();
@@ -519,7 +519,7 @@ function Dashboard() {
             onClick={handleCreateWheel}
             className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 font-medium"
           >
-            + Skapa nytt hjul
+            + Skapa New wheel
           </button>
         </div>
 

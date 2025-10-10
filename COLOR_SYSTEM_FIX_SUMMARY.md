@@ -155,7 +155,7 @@ Current system stores colors in 6 places (1 wheel level + 3 database tables + 1 
 
 ## Known Issues Remaining
 
-1. **Title Reset**: Title still resets to "Nytt hjul" - needs separate investigation
+1. **Title Reset**: Title still resets to "New wheel" - needs separate investigation
 2. **Browser Caching**: Vite HMR doesn't always reload changes - requires dev server restart
 3. **Inner Ring Colors**: Inner rings still have hardcoded colors in database (not critical)
 

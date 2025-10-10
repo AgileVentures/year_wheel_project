@@ -10,8 +10,8 @@
 
 **Root Cause**: Auto-save was completely disabled in `App.jsx` (lines 468-476). The `useEffect` hooks that trigger auto-save on `organizationData` and settings changes were commented out with the note "was causing realtime loops".
 
-### 2. Title Resetting to "Nytt hjul"
-**Symptom**: Title gets reset to "Nytt hjul" after saving or when viewing the wheel.
+### 2. Title Resetting to "New wheel"
+**Symptom**: Title gets reset to "New wheel" after saving or when viewing the wheel.
 
 **Root Cause**: Two issues:
 - Auto-save was disabled, so title changes weren't being saved
@@ -162,7 +162,7 @@ if (timeSinceLastSave < 3000) {
 - [ ] Change title in OrganizationPanel settings
 - [ ] Wait 3 seconds for auto-save
 - [ ] Refresh page
-- [ ] Title should persist (not "Nytt hjul")
+- [ ] Title should persist (not "New wheel")
 
 ### ✅ Ring and Activity Colors
 - [ ] Open a wheel with both outer rings and activities
@@ -245,7 +245,7 @@ if (timeSinceLastSave < 3000) {
 After this fix:
 - ✅ Color palettes persist across page reloads
 - ✅ Title changes are saved automatically
-- ✅ No more "Nytt hjul" appearing unexpectedly
+- ✅ No more "New wheel" appearing unexpectedly
 - ✅ Changes sync between tabs/users within 3-5 seconds
 - ✅ No save loops or infinite update cycles
 

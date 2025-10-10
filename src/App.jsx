@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from "react-router-dom";
 import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
@@ -22,7 +22,7 @@ import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
 import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
-function WheelEditor({ wheelId, onBackToDashboard }) {
+function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Undo/Redo for main editable states
   const {
     states: undoableStates,
@@ -33,7 +33,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     canRedo,
     clear: clearHistory
   } = useMultiStateUndoRedo({
-    title: "Nytt hjul",
+    title: "New wheel",
     year: "2025",
     colors: ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"], // Pastell palette
     organizationData: {
@@ -153,19 +153,16 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         // IMPORTANT: Always set title from database, never use default
         console.log('=== DATA LOADED FROM DATABASE ===');
         console.log('[WheelEditor] wheelData.title:', wheelData.title);
-        console.log('[WheelEditor] wheelData.colors:', wheelData.colors);
-        console.log('[WheelEditor] Setting title to:', wheelData.title || 'Nytt hjul');
-        setTitle(wheelData.title || 'Nytt hjul');
+        console.log('[WheelEditor] 🟡🟡🟡 wheelData.colors FROM DATABASE:', wheelData.colors);
+        // Don't set title yet - will batch it with colors and organizationData below
         setIsPublic(wheelData.is_public || false);
-        
-        if (wheelData.colors) {
-          console.log('[WheelEditor] Setting colors to:', wheelData.colors);
-          setColors(wheelData.colors);
-        }
         
         // Load pages for this wheel
         const pagesData = await fetchPages(wheelId);
         setPages(pagesData);
+        
+        // Prepare data to update
+        let orgDataToSet = null;
         
         // If we have pages, load data from first page (or current page if set)
         if (pagesData.length > 0) {
@@ -214,7 +211,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
               console.log('[WheelEditor] PAGE: After color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
             }
             
-            setOrganizationData(orgData);
+            orgDataToSet = orgData;
           }
         } else {
           // Fallback: Load from wheel's organization data (legacy support)
@@ -259,8 +256,28 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
               console.log('[WheelEditor] WHEEL: After color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
             }
             
-            setOrganizationData(orgData);
+            orgDataToSet = orgData;
           }
+        }
+        
+        // CRITICAL: Update title, colors AND organizationData together in ONE call to prevent race condition
+        const updates = {};
+        if (wheelData.title !== undefined) {
+          console.log('[WheelEditor] 🟡 Including title in batch:', wheelData.title);
+          updates.title = wheelData.title || 'New wheel';
+        }
+        if (wheelData.colors) {
+          console.log('[WheelEditor] 🟡 Including colors in batch:', wheelData.colors);
+          updates.colors = wheelData.colors;
+        }
+        if (orgDataToSet) {
+          console.log('[WheelEditor] Including organizationData in batch');
+          updates.organizationData = orgDataToSet;
+        }
+        
+        if (Object.keys(updates).length > 0) {
+          console.log('[WheelEditor] 🟡 Setting ALL updates together:', Object.keys(updates));
+          setUndoableStates(updates);
         }
         
         // Load other settings
@@ -435,6 +452,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     currentPageId
   };
   
+  // Debug: Log when latestValuesRef.current.colors changes
+  useEffect(() => {
+    console.log('[App] 🟡 latestValuesRef.current.colors updated to:', latestValuesRef.current.colors);
+  }, [colors]);
+  
   // Debug: Log when colors change
   useEffect(() => {
     console.log('[App] 🟡🟡🟡 colors state updated to:', colors);
@@ -538,9 +560,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     autoSave();
   }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
 
-  // Initial load on mount AND cleanup when wheelId changes
+  // Initial load on mount AND reload when reloadTrigger changes
   useEffect(() => {
-    console.log('[WheelEditor] useEffect triggered, wheelId:', wheelId);
+    console.log('[WheelEditor] 🟡🟡🟡 useEffect triggered, wheelId:', wheelId, 'reloadTrigger:', reloadTrigger);
     
     if (!wheelId) {
       setIsLoading(false);
@@ -552,6 +574,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     isInitialLoad.current = true;
     setIsLoading(true);
     
+    console.log('[WheelEditor] 🟡 Calling loadWheelData for wheel:', wheelId);
     loadWheelData().finally(() => {
       setIsLoading(false);
       // After initial load completes, enable auto-save
@@ -559,42 +582,19 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         isInitialLoad.current = false;
       }, 500);
     });
-
-    // CLEANUP: Reset all state when wheelId changes or component unmounts
+    
+    // NO CLEANUP - we don't want to reset state on reload
+    // State will be overwritten by loadWheelData
+  }, [wheelId, reloadTrigger]); // Depend on wheelId AND reloadTrigger
+  
+  // Separate cleanup effect that only runs on unmount
+  useEffect(() => {
     return () => {
-      console.log('[WheelEditor] CLEANUP - Leaving wheel:', wheelId, '- Resetting all state');
-      
-      // Reset ALL state to defaults to prevent data leakage between wheels
-      setOrganizationData({
-        rings: [],
-        activityGroups: [],
-        labels: [],
-        items: []
-      });
-      setPages([]);
-      setCurrentPageId(null);
-      // DON'T reset title - let new wheel data overwrite it to avoid flicker
-      // setTitle("Organisation"); 
-      setYear(String(new Date().getFullYear()));
-      setColors(["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
-      setShowWeekRing(true);
-      setShowMonthRing(true);
-      setShowRingNames(true);
-      setRingsData([]);
-      
-      // Reset ALL flags
-      isInitialLoad.current = true;
-      isLoadingData.current = false;
-      isRealtimeUpdate.current = false;
-      isSavingRef.current = false;
-      lastSaveTimestamp.current = 0;
-      
-      // Clear undo/redo history
-      clearHistory();
-      
-      console.log('[WheelEditor] CLEANUP complete - State and history cleared');
+      console.log('[WheelEditor] UNMOUNT CLEANUP - Component unmounting');
+      // This only runs when component is truly removed from DOM
+      // Not when reloadTrigger changes
     };
-  }, [wheelId]); // Only depend on wheelId - clearHistory is stable but we don't need it here
+  }, []); // Empty deps = only on mount/unmount
 
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
@@ -676,6 +676,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
         console.log('Full organizationData:', organizationData);
         
         // First, update wheel metadata (title, colors, settings)
+        console.log('[ManualSave] 🟡🟡🟡 Updating wheel metadata with colors:', colors);
         console.log('[ManualSave] Updating wheel metadata:', {
           wheelId,
           title,
@@ -691,7 +692,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           showMonthRing,
           showRingNames,
         });
-        console.log('[ManualSave] Wheel metadata updated successfully');
+        console.log('[ManualSave] 🟡 Wheel metadata updated successfully');
         
         // Save current page data if we have pages
         if (currentPageId) {
@@ -1040,13 +1041,18 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       }
 
       // Apply the restored data
-      if (versionData.title) setTitle(versionData.title);
+      // BATCH title, colors, and organizationData together to prevent race condition
+      const versionUpdates = {};
+      if (versionData.title) versionUpdates.title = versionData.title;
+      if (versionData.colors) versionUpdates.colors = versionData.colors;
+      if (versionData.organizationData) versionUpdates.organizationData = versionData.organizationData;
+      setUndoableStates(versionUpdates);
+      
+      // Set non-undoable states separately
       if (versionData.year) setYear(versionData.year.toString());
-      if (versionData.colors) setColors(versionData.colors);
       if (typeof versionData.showWeekRing === 'boolean') setShowWeekRing(versionData.showWeekRing);
       if (typeof versionData.showMonthRing === 'boolean') setShowMonthRing(versionData.showMonthRing);
       if (typeof versionData.showRingNames === 'boolean') setShowRingNames(versionData.showRingNames);
-      if (versionData.organizationData) setOrganizationData(versionData.organizationData);
 
       // Save the restored state
       await handleSave();
@@ -1065,7 +1071,7 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
     if (!confirm('Är du säker på att du vill återställa allt? All data kommer att raderas.')) return;
     
     // Reset to clean state with one initial inner ring
-    setTitle("Nytt hjul");
+    setTitle("New wheel");
     setYear("2025");
     const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     setColors(defaultColors);
@@ -1261,12 +1267,17 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           }
 
           // Update state AFTER save attempt (always update so user can see the data)
-          setTitle(data.title);
+          // BATCH title, colors, and organizationData together to prevent race condition
+          const fileUpdates = {};
+          if (data.title) fileUpdates.title = data.title;
+          if (data.colors) fileUpdates.colors = data.colors;
+          fileUpdates.organizationData = processedOrgData;
+          setUndoableStates(fileUpdates);
+          
+          // Set non-undoable states separately
           setYear(data.year);
-          if (data.colors) setColors(data.colors);
           // Set ringsData first (for backward compatibility with old format)
           if (data.ringsData) setRingsData(data.ringsData);
-          setOrganizationData(processedOrgData);
           
           if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
           if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
@@ -1316,11 +1327,9 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
       colors: newColors,
       organizationData: newOrganizationData
     });
-    // Update refs for auto-save
-    latestValuesRef.current.colors = newColors;
-    latestValuesRef.current.organizationData = newOrganizationData;
     // Update timestamp to ignore realtime events
     lastSaveTimestamp.current = Date.now();
+    // Note: latestValuesRef is automatically updated on next render (see lines 427-436)
   }, [setUndoableStates]);
 
   // Wrapped color change handler that updates timestamp to prevent realtime overwrites
@@ -1473,10 +1482,13 @@ function ProtectedRoute({ children }) {
 function WheelEditorRoute() {
   const { wheelId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
+  // Use location.key as a reloadTrigger without forcing full remount
   return (
     <WheelEditor 
-      wheelId={wheelId} 
+      wheelId={wheelId}
+      reloadTrigger={location.key} // Trigger reload without remounting
       onBackToDashboard={() => navigate('/dashboard')} 
     />
   );

@@ -172,7 +172,7 @@ All 6 layers now properly synchronized with Pastell as the default.
 ## Next Steps After Testing
 
 1. ✅ Verify colors work correctly
-2. 🔄 Address title reset issue ("Nytt hjul" problem)
+2. 🔄 Address title reset issue ("New wheel" problem)
 3. 💡 Consider implementing palette-based system (removes color duplication)
 4. 📝 Document user-facing features
 5. 🎨 Add more color palettes if needed

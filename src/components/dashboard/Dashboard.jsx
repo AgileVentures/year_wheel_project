@@ -90,7 +90,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       setShowCreateModal(false);
       // Show success feedback
       const event = new CustomEvent('showToast', { 
-        detail: { message: 'Nytt hjul skapat!', type: 'success' } 
+        detail: { message: 'New wheel skapat!', type: 'success' } 
       });
       window.dispatchEvent(event);
     } catch (err) {
@@ -277,7 +277,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                Skapa nytt hjul
+                Skapa New wheel
               </button>
             </div>
 
