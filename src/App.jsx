@@ -324,12 +324,11 @@ function WheelEditor({ wheelId, onBackToDashboard }) {
           .sort((a, b) => a.page_order - b.page_order)
       );
       
-      // If this is the current page, reload its data (colors already set by user)
-      if (payload.new.id === currentPageId) {
-        console.log('[Realtime] Loading updated page data');
-        setOrganizationData(payload.new.organization_data);
-        setYear(String(payload.new.year));
-      }
+      // DO NOT reload current page data from realtime!
+      // The page's organization_data doesn't contain wheel-level settings like colors and title
+      // Those are in year_wheels table, and reloading from page would use stale data
+      // User's local state is the source of truth
+      console.log('[Realtime] Page updated in pages list, but NOT reloading organizationData');
     } else if (eventType === 'DELETE') {
       // Page deleted by another user
       setPages(prevPages => {

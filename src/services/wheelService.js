@@ -24,6 +24,9 @@ export const fetchUserWheels = async () => {
  * Fetch a single wheel with all related data
  */
 export const fetchWheel = async (wheelId) => {
+  console.log('=== fetchWheel SERVICE CALLED ===');
+  console.log('[wheelService] Fetching wheel:', wheelId);
+  
   // Fetch wheel
   const { data: wheel, error: wheelError } = await supabase
     .from('year_wheels')
@@ -31,7 +34,17 @@ export const fetchWheel = async (wheelId) => {
     .eq('id', wheelId)
     .single();
 
-  if (wheelError) throw wheelError;
+  if (wheelError) {
+    console.error('[wheelService] ERROR fetching wheel:', wheelError);
+    throw wheelError;
+  }
+  
+  console.log('[wheelService] Fetched wheel data:', {
+    id: wheel.id,
+    title: wheel.title,
+    colors: wheel.colors,
+    year: wheel.year
+  });
 
   // Fetch rings
   const { data: rings, error: ringsError } = await supabase
@@ -180,6 +193,10 @@ export const createWheel = async (wheelData) => {
  * Update wheel metadata (title, year, colors, etc.)
  */
 export const updateWheel = async (wheelId, updates) => {
+  console.log('=== updateWheel SERVICE CALLED ===');
+  console.log('[wheelService] wheelId:', wheelId);
+  console.log('[wheelService] updates:', updates);
+  
   const updateData = {};
   
   if (updates.title !== undefined) updateData.title = updates.title;
@@ -189,12 +206,19 @@ export const updateWheel = async (wheelId, updates) => {
   if (updates.showMonthRing !== undefined) updateData.show_month_ring = updates.showMonthRing;
   if (updates.showRingNames !== undefined) updateData.show_ring_names = updates.showRingNames;
 
+  console.log('[wheelService] Final updateData being sent to DB:', updateData);
+
   const { error } = await supabase
     .from('year_wheels')
     .update(updateData)
     .eq('id', wheelId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('[wheelService] ERROR updating wheel:', error);
+    throw error;
+  }
+  
+  console.log('[wheelService] ✓ Wheel updated successfully in database');
 };
 
 /**

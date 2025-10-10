@@ -165,6 +165,11 @@ function YearWheel({
     handleUpdateAktivitet,
   ]);
 
+  // Log when colors change
+  useEffect(() => {
+    console.log('[YearWheel] Colors changed:', colors);
+  }, [colors]);
+
   // Separate effect to update organizationData without recreating the wheel
   useEffect(() => {
     if (yearWheel && yearWheel.updateOrganizationData) {
