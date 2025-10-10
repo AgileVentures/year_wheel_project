@@ -102,22 +102,11 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
-    console.log('[updateOrganizationData] Called with:', {
-      items: newOrganizationData?.items?.length,
-      activityGroups: newOrganizationData?.activityGroups?.length,
-      rings: newOrganizationData?.rings?.length,
-      isDragging: this.dragState?.isDragging
-    });
-    
     this.organizationData = newOrganizationData;
-    
     // DON'T redraw during drag - it will cause wheel to go blank
     // The drag handler (dragActivity) already calls create() to show preview
     if (!this.dragState || !this.dragState.isDragging) {
-      console.log('[updateOrganizationData] Calling create() - not dragging');
       this.create();
-    } else {
-      console.log('[updateOrganizationData] SKIPPING create() - currently dragging');
     }
   }
 
@@ -1519,8 +1508,6 @@ class YearWheel {
   dragActivity(event) {
     if (!this.dragState.isDragging) return;
 
-    console.log('[dragActivity] Dragging in progress');
-    
     const currentMouseAngle = this.getMouseAngle(event);
     this.dragState.currentMouseAngle = currentMouseAngle;
     
@@ -1596,8 +1583,6 @@ class YearWheel {
   stopActivityDrag() {
     if (!this.dragState.isDragging) return;
 
-    console.log('[stopActivityDrag] Drag ended, processing update');
-
     // Convert preview angles to dates
     let newStartDate = this.angleToDate(this.toDegrees(this.dragState.previewStartAngle));
     let newEndDate = this.angleToDate(this.toDegrees(this.dragState.previewEndAngle));
@@ -1634,8 +1619,6 @@ class YearWheel {
       updatedItem.ringId = this.dragState.targetRing.id;
     }
     
-    console.log('[stopActivityDrag] Updated item:', updatedItem);
-    
     // CRITICAL: Reset drag state BEFORE calling callback
     // This ensures updateOrganizationData can call create() to redraw
     this.dragState = {
@@ -1653,16 +1636,12 @@ class YearWheel {
       targetRingInfo: null,
     };
     
-    console.log('[stopActivityDrag] Drag state reset, isDragging:', this.dragState.isDragging);
-    
     this.canvas.style.cursor = 'default';
     
     // Call update callback AFTER resetting drag state
-    console.log('[stopActivityDrag] Calling onUpdateAktivitet callback');
     if (this.options.onUpdateAktivitet) {
       this.options.onUpdateAktivitet(updatedItem);
     }
-    console.log('[stopActivityDrag] Callback completed');
   }
 
   getMouseAngle(event) {

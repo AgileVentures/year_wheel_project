@@ -73,35 +73,48 @@ export function useUndoRedo(initialState, options = {}) {
    * Set state with debouncing
    */
   const setState = useCallback((newState) => {
-    // Support functional updates
-    const resolvedState = typeof newState === 'function' 
-      ? newState(state) 
-      : newState;
-    
-    // Update state immediately for UI responsiveness
-    setStateInternal(resolvedState);
-    
-    // Store pending state for debounced history addition
-    pendingState.current = resolvedState;
-    
-    // Clear existing timer
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    
-    // Set new timer
-    debounceTimer.current = setTimeout(() => {
-      if (pendingState.current !== null) {
-        addToHistory(pendingState.current);
-        pendingState.current = null;
+    // CRITICAL: Use setStateInternal's callback to get LATEST state
+    // This prevents stale closure issues when multiple state updates happen
+    setStateInternal(prevState => {
+      // Support functional updates with LATEST prevState
+      const resolvedState = typeof newState === 'function' 
+        ? newState(prevState) 
+        : newState;
+      
+      // Store pending state for debounced history addition
+      pendingState.current = resolvedState;
+      
+      // Clear existing timer
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
       }
-    }, debounceMs);
-  }, [state, addToHistory, debounceMs]);
+      
+      // Set new timer
+      debounceTimer.current = setTimeout(() => {
+        if (pendingState.current !== null) {
+          addToHistory(pendingState.current);
+          pendingState.current = null;
+        }
+      }, debounceMs);
+      
+      return resolvedState;
+    });
+  }, [addToHistory, debounceMs]);
 
   /**
    * Undo to previous state
    */
   const undo = useCallback(() => {
+    // CRITICAL: Flush any pending state to history before undoing
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    if (pendingState.current !== null) {
+      addToHistory(pendingState.current);
+      pendingState.current = null;
+    }
+    
     if (currentIndex > 0) {
       isUndoRedoAction.current = true;
       const newIndex = currentIndex - 1;
@@ -116,12 +129,22 @@ export function useUndoRedo(initialState, options = {}) {
       return true;
     }
     return false;
-  }, [currentIndex, history]);
+  }, [currentIndex, history, addToHistory]);
 
   /**
    * Redo to next state
    */
   const redo = useCallback(() => {
+    // CRITICAL: Flush any pending state to history before redoing
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    if (pendingState.current !== null) {
+      addToHistory(pendingState.current);
+      pendingState.current = null;
+    }
+    
     if (currentIndex < history.length - 1) {
       isUndoRedoAction.current = true;
       const newIndex = currentIndex + 1;
@@ -136,7 +159,7 @@ export function useUndoRedo(initialState, options = {}) {
       return true;
     }
     return false;
-  }, [currentIndex, history]);
+  }, [currentIndex, history, addToHistory]);
 
   /**
    * Clear history
@@ -249,12 +272,17 @@ export function useMultiStateUndoRedo(initialStates, options = {}) {
 
   /**
    * Set individual state property
+   * Supports both object updates and function callbacks
    */
   const setStates = useCallback((updates) => {
-    setState(prev => ({
-      ...prev,
-      ...updates
-    }));
+    setState(prev => {
+      // Support functional updates: updates can be a function that receives prevState
+      const resolvedUpdates = typeof updates === 'function' ? updates(prev) : updates;
+      return {
+        ...prev,
+        ...resolvedUpdates
+      };
+    });
   }, [setState]);
 
   return {

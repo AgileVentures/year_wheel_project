@@ -62,25 +62,34 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   });
 
   // Extract states from undo-managed object
-  const title = undoableStates.title;
-  const year = undoableStates.year;
-  const colors = undoableStates.colors;
-  const organizationData = undoableStates.organizationData;
+  const title = undoableStates?.title || "New wheel";
+  const year = undoableStates?.year || "2025";
+  const colors = undoableStates?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+  const organizationData = undoableStates?.organizationData || {
+    rings: [],
+    activityGroups: [],
+    labels: [],
+    items: []
+  };
   
   // Wrapper functions for setting undo-tracked state
   const setTitle = useCallback((value) => {
-    const newTitle = typeof value === 'function' ? value(title) : value;
-    setUndoableStates({ title: newTitle });
-  }, [setUndoableStates, title]);
+    setUndoableStates(prevStates => ({
+      title: typeof value === 'function' ? value(prevStates.title) : value
+    }));
+  }, [setUndoableStates]);
   
   const setYear = useCallback((value) => {
-    setUndoableStates({ year: typeof value === 'function' ? value(year) : value });
-  }, [setUndoableStates, year]);
+    setUndoableStates(prevStates => ({
+      year: typeof value === 'function' ? value(prevStates.year) : value
+    }));
+  }, [setUndoableStates]);
   
   const setColors = useCallback((value) => {
-    const newColors = typeof value === 'function' ? value(colors) : value;
-    setUndoableStates({ colors: newColors });
-  }, [setUndoableStates, colors]);
+    setUndoableStates(prevStates => ({
+      colors: typeof value === 'function' ? value(prevStates.colors) : value
+    }));
+  }, [setUndoableStates]);
   
   const setOrganizationData = useCallback((value) => {
     setUndoableStates(prevStates => {
@@ -434,20 +443,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       currentPageId: currentCurrentPageId
     } = latestValuesRef.current;
 
-    console.log('[AutoSave] Starting auto-save with organizationData:', {
-      items: currentOrganizationData?.items?.length,
-      activityGroups: currentOrganizationData?.activityGroups?.length
-    });
-
     try {
-      // console.log('[AutoSave] Saving changes... title:', currentTitle);
-      
       // Mark as saving to prevent realtime interference
       // NOTE: Don't update isSaving state - auto-save should be invisible
       isSavingRef.current = true;
       
       // Update wheel metadata (NOT including year - it's per-page now)
-      // console.log('[AutoSave] Updating wheel with colors:', currentColors);
       await updateWheel(wheelId, {
         title: currentTitle,
         colors: currentColors,
@@ -515,7 +516,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     isInitialLoad.current = true;
     setIsLoading(true);
     
-    loadWheelData().finally(() => {
+    // Load wheel data and pages in parallel
+    Promise.all([
+      loadWheelData(),
+      loadPages()
+    ]).finally(() => {
       setIsLoading(false);
       // After initial load completes, enable auto-save
       setTimeout(() => {
@@ -738,6 +743,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       const pagesData = await fetchPages(wheelId);
       // Sort pages by year
       const sortedPages = pagesData.sort((a, b) => a.year - b.year);
+      
+      // If no pages exist (legacy wheel), create the first page automatically
+      if (sortedPages.length === 0) {
+        const firstPage = await createPage(wheelId, parseInt(year) || 2025, organizationData);
+        sortedPages.push(firstPage);
+      }
+      
       setPages(sortedPages);
       
       // Set current page to first page if none selected
@@ -759,7 +771,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     }
-  }, [wheelId, currentPageId]);
+  }, [wheelId, currentPageId, year, organizationData]);
 
   // Switch to a different page
   const handlePageChange = async (pageId) => {
@@ -1084,18 +1096,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    console.log('[App handleUpdateAktivitet] Updating item:', updatedItem.id);
-    setOrganizationData(prevData => {
-      console.log('[App handleUpdateAktivitet] prevData.items:', prevData.items?.length);
-      const updatedItems = prevData.items.map(item =>
+    setOrganizationData(prevData => ({
+      ...prevData,
+      items: prevData.items.map(item => 
         item.id === updatedItem.id ? updatedItem : item
-      );
-      console.log('[App handleUpdateAktivitet] updatedItems:', updatedItems.length);
-      return {
-        ...prevData,
-        items: updatedItems
-      };
-    });
+      )
+    }));
   }, []);
 
   const handleDeleteAktivitet = useCallback((itemId) => {

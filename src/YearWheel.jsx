@@ -177,17 +177,6 @@ function YearWheel({
   // Update organization data without recreating the wheel instance
   // This preserves drag state and prevents wheel from going blank during drag
   useEffect(() => {
-    console.log('[YearWheel useEffect] organizationData changed:', {
-      hasWheel: !!yearWheel,
-      items: organizationData?.items?.length,
-      activityGroups: organizationData?.activityGroups?.length
-    });
-    
-    if (organizationData?.items?.length === 0) {
-      console.error('[YearWheel useEffect] WARNING: organizationData has 0 items!');
-      console.trace();
-    }
-    
     if (yearWheel && organizationData) {
       yearWheel.updateOrganizationData(organizationData);
     }

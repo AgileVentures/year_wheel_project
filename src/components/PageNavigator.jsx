@@ -33,8 +33,19 @@ export default function PageNavigator({
     }
   };
 
+  // If no pages exist, show just the add button
   if (!pages || pages.length === 0) {
-    return null;
+    return (
+      <button
+        onClick={onAddPage}
+        disabled={disabled}
+        className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 border border-green-300 rounded-sm hover:bg-green-100 hover:border-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Skapa första året"
+      >
+        <Plus size={16} />
+        <span className="font-medium">Skapa år</span>
+      </button>
+    );
   }
 
   return (
