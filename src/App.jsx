@@ -70,7 +70,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Wrapper functions for setting undo-tracked state
   const setTitle = useCallback((value) => {
     const newTitle = typeof value === 'function' ? value(title) : value;
-    console.log('[SetTitle] Setting title:', newTitle, '(previous:', title, ')');
     setUndoableStates({ title: newTitle });
   }, [setUndoableStates, title]);
   
@@ -80,18 +79,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
   const setColors = useCallback((value) => {
     const newColors = typeof value === 'function' ? value(colors) : value;
-    console.log('[App] 🟡 setColors called, updating from', colors, 'to', newColors);
-    console.log('[App] 🟡 Calling setUndoableStates with:', { colors: newColors });
     setUndoableStates({ colors: newColors });
-    console.log('[App] 🟡 setUndoableStates returned');
   }, [setUndoableStates, colors]);
   
   const setOrganizationData = useCallback((value) => {
     const newOrgData = typeof value === 'function' ? value(organizationData) : value;
-    const outerRingsReceived = newOrgData.rings?.filter(r => r.type === 'outer').map(r => ({ name: r.name, color: r.color }));
-    console.log('[App] setOrganizationData called with outer rings:', JSON.stringify(outerRingsReceived));
     setUndoableStates({ organizationData: newOrgData });
-    console.log('[App] setUndoableStates called, state will update on next render');
   }, [setUndoableStates, organizationData]);
   
   // Other non-undoable states
@@ -140,21 +133,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
     
-    console.log('=== LOAD WHEEL DATA CALLED ===');
-    console.log('[WheelEditor] Starting loadWheelData for wheel:', wheelId);
-    console.log('[WheelEditor] Current state BEFORE load - title:', title, 'colors:', colors);
     isLoadingData.current = true; // Prevent auto-save during load
     
     try {
-      console.log('[WheelEditor] Fetching wheel data:', wheelId);
       const wheelData = await fetchWheel(wheelId);
       
       if (wheelData) {
-        // IMPORTANT: Always set title from database, never use default
-        console.log('=== DATA LOADED FROM DATABASE ===');
-        console.log('[WheelEditor] wheelData.title:', wheelData.title);
-        console.log('[WheelEditor] 🟡🟡🟡 wheelData.colors FROM DATABASE:', wheelData.colors);
-        // Don't set title yet - will batch it with colors and organizationData below
         setIsPublic(wheelData.is_public || false);
         
         // Load pages for this wheel
@@ -194,13 +178,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             
             // Apply color fallback for outer rings (use wheel colors if ring has no color)
             if (orgData.rings && orgData.rings.length > 0) {
-              console.log('[WheelEditor] PAGE: Before color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
-              console.log('[WheelEditor] PAGE: Using wheel colors for fallback:', wheelData.colors);
               orgData.rings = orgData.rings.map((ring, index) => {
                 if (ring.type === 'outer' && !ring.color) {
                   const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
                   const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
-                  console.log(`[WheelEditor] PAGE: Applying fallback color ${fallbackColor} to outer ring "${ring.name}"`);
                   return {
                     ...ring,
                     color: fallbackColor
@@ -208,7 +189,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 }
                 return ring;
               });
-              console.log('[WheelEditor] PAGE: After color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
             }
             
             orgDataToSet = orgData;
@@ -239,13 +219,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             
             // Apply color fallback for outer rings (use wheel colors if ring has no color)
             if (orgData.rings && orgData.rings.length > 0) {
-              console.log('[WheelEditor] WHEEL: Before color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
-              console.log('[WheelEditor] WHEEL: Using wheel colors for fallback:', wheelData.colors);
               orgData.rings = orgData.rings.map((ring, index) => {
                 if (ring.type === 'outer' && !ring.color) {
                   const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
                   const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
-                  console.log(`[WheelEditor] WHEEL: Applying fallback color ${fallbackColor} to outer ring "${ring.name}"`);
                   return {
                     ...ring,
                     color: fallbackColor
@@ -253,7 +230,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 }
                 return ring;
               });
-              console.log('[WheelEditor] WHEEL: After color fallback, rings:', orgData.rings.map(r => ({ name: r.name, type: r.type, color: r.color })));
             }
             
             orgDataToSet = orgData;
@@ -263,20 +239,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // CRITICAL: Update title, colors AND organizationData together in ONE call to prevent race condition
         const updates = {};
         if (wheelData.title !== undefined) {
-          console.log('[WheelEditor] 🟡 Including title in batch:', wheelData.title);
           updates.title = wheelData.title || 'New wheel';
         }
         if (wheelData.colors) {
-          console.log('[WheelEditor] 🟡 Including colors in batch:', wheelData.colors);
           updates.colors = wheelData.colors;
         }
         if (orgDataToSet) {
-          console.log('[WheelEditor] Including organizationData in batch');
           updates.organizationData = orgDataToSet;
         }
         
         if (Object.keys(updates).length > 0) {
-          console.log('[WheelEditor] 🟡 Setting ALL updates together:', Object.keys(updates));
           setUndoableStates(updates);
         }
         
@@ -299,13 +271,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Reset flags after load completes
       isLoadingData.current = false;
       isRealtimeUpdate.current = false;
-      console.log('[WheelEditor] Load complete, flags reset');
     }
   }, [wheelId]); // Only depend on wheelId - NOT on currentPageId
 
   // Throttled reload for realtime updates (max once per second)
   const throttledReload = useThrottledCallback(() => {
-    console.log('[Realtime] Reloading wheel data due to remote changes');
     loadWheelData();
     
     // NO TOAST - too many notifications annoy users
@@ -314,27 +284,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle realtime data changes from other users
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
-    console.log('=== REALTIME EVENT ===');
-    console.log(`[Realtime] ${tableName} ${eventType}:`, payload);
-    
     // COMPLETELY IGNORE all events if we're in the middle of saving
     if (isSavingRef.current) {
-      console.log('[Realtime] ⚠️ IGNORING event - save in progress');
       return;
     }
     
     // Ignore broadcasts from our own recent saves (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
-    console.log('[Realtime] Time since last save:', timeSinceLastSave, 'ms');
     if (timeSinceLastSave < 5000) {
-      console.log('[Realtime] ✓ IGNORING own broadcast (saved', timeSinceLastSave, 'ms ago)');
       return;
     }
-    console.log('[Realtime] ⚠️ Processing broadcast (> 5s since save) - will reload data');
     
     // Don't reload during active save operation
     if (isSavingRef.current) {
-      console.log('[Realtime] Ignoring update during active save');
       return;
     }
     
@@ -352,24 +314,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle realtime page changes
   const handlePageRealtimeChange = useCallback((eventType, payload) => {
-    console.log('=== REALTIME PAGE EVENT ===');
-    console.log(`[Realtime] wheel_pages ${eventType}:`, payload);
-    
     // COMPLETELY IGNORE all page updates if we're in the middle of saving
     // This prevents the database's slightly-stale data from overwriting our local changes
     if (isSavingRef.current) {
-      console.log('[Realtime] ⚠️ IGNORING page event - save in progress');
       return;
     }
     
     // Ignore our own recent changes (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
-    console.log('[Realtime] Time since last save:', timeSinceLastSave, 'ms');
     if (timeSinceLastSave < 5000) {
-      console.log('[Realtime] ✓ IGNORING own page broadcast (saved', timeSinceLastSave, 'ms ago)');
       return;
     }
-    console.log('[Realtime] ⚠️ Processing page broadcast (> 5s since save)');
     
     if (eventType === 'INSERT') {
       // New page added by another user
@@ -391,7 +346,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // The page's organization_data doesn't contain wheel-level settings like colors and title
       // Those are in year_wheels table, and reloading from page would use stale data
       // User's local state is the source of truth
-      console.log('[Realtime] Page updated in pages list, but NOT reloading organizationData');
     } else if (eventType === 'DELETE') {
       // Page deleted by another user
       setPages(prevPages => {
@@ -401,7 +355,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (payload.old.id === currentPageId && filtered.length > 0) {
           const newCurrentPage = filtered[0];
           setCurrentPageId(newCurrentPage.id);
-          console.log('[Realtime] Loading first remaining page after deletion');
           setOrganizationData(newCurrentPage.organization_data);
           setYear(String(newCurrentPage.year));
         }
@@ -452,15 +405,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     currentPageId
   };
   
-  // Debug: Log when latestValuesRef.current.colors changes
-  useEffect(() => {
-    console.log('[App] 🟡 latestValuesRef.current.colors updated to:', latestValuesRef.current.colors);
-  }, [colors]);
-  
-  // Debug: Log when colors change
-  useEffect(() => {
-    console.log('[App] 🟡🟡🟡 colors state updated to:', colors);
-  }, [colors]);
+
 
   // Auto-save function (debounced to prevent excessive saves)
   // Uses refs to always read the latest state values
@@ -472,11 +417,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // 4. Data came from realtime update
     // 5. Auto-save is disabled
     if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
-      console.log('[AutoSave] Skipped - wheelId:', !!wheelId, 
-                  'loading:', isLoadingData.current, 
-                  'initial:', isInitialLoad.current,
-                  'realtime:', isRealtimeUpdate.current,
-                  'enabled:', autoSaveEnabled);
       return;
     }
 
@@ -493,14 +433,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     } = latestValuesRef.current;
 
     try {
-      console.log('[AutoSave] Saving changes... title:', currentTitle);
+      // console.log('[AutoSave] Saving changes... title:', currentTitle);
       
       // Mark as saving to prevent realtime interference
       // NOTE: Don't update isSaving state - auto-save should be invisible
       isSavingRef.current = true;
       
       // Update wheel metadata (NOT including year - it's per-page now)
-      console.log('[AutoSave] Updating wheel with colors:', currentColors);
+      // console.log('[AutoSave] Updating wheel with colors:', currentColors);
       await updateWheel(wheelId, {
         title: currentTitle,
         colors: currentColors,
@@ -511,8 +451,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // Save current page data if we have pages
       if (currentCurrentPageId) {
-        console.log('[AutoSave] Saving page organization_data with rings:');
-        console.table(currentOrganizationData.rings?.map(r => ({ name: r.name, type: r.type, color: r.color })));
         await updatePage(currentCurrentPageId, {
           organization_data: currentOrganizationData,
           year: parseInt(currentYear)
@@ -524,8 +462,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
-      
-      console.log('[AutoSave] Changes saved successfully (silent)');
       
       // NO TOAST - auto-save should be completely invisible to user
     } catch (error) {
@@ -562,8 +498,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Initial load on mount AND reload when reloadTrigger changes
   useEffect(() => {
-    console.log('[WheelEditor] 🟡🟡🟡 useEffect triggered, wheelId:', wheelId, 'reloadTrigger:', reloadTrigger);
-    
     if (!wheelId) {
       setIsLoading(false);
       isInitialLoad.current = false; // Not initial load anymore
@@ -574,7 +508,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     isInitialLoad.current = true;
     setIsLoading(true);
     
-    console.log('[WheelEditor] 🟡 Calling loadWheelData for wheel:', wheelId);
     loadWheelData().finally(() => {
       setIsLoading(false);
       // After initial load completes, enable auto-save
@@ -590,7 +523,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Separate cleanup effect that only runs on unmount
   useEffect(() => {
     return () => {
-      console.log('[WheelEditor] UNMOUNT CLEANUP - Component unmounting');
+      // console.log('[WheelEditor] UNMOUNT CLEANUP - Component unmounting');
       // This only runs when component is truly removed from DOM
       // Not when reloadTrigger changes
     };
@@ -662,7 +595,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       setIsSaving(true); // Update UI
       
       try {
-        console.log('[ManualSave] Saving wheel data...', {
+        // console.log('[ManualSave] Saving wheel data...', {
           wheelId,
           title,
           year,
@@ -673,18 +606,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             items: organizationData.items?.length || 0,
           }
         });
-        console.log('Full organizationData:', organizationData);
-        
         // First, update wheel metadata (title, colors, settings)
-        console.log('[ManualSave] 🟡🟡🟡 Updating wheel metadata with colors:', colors);
-        console.log('[ManualSave] Updating wheel metadata:', {
-          wheelId,
-          title,
-          colors,
-          showWeekRing,
-          showMonthRing,
-          showRingNames,
-        });
         await updateWheel(wheelId, {
           title,
           colors,
@@ -692,7 +614,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           showMonthRing,
           showRingNames,
         });
-        console.log('[ManualSave] 🟡 Wheel metadata updated successfully');
         
         // Save current page data if we have pages
         if (currentPageId) {
@@ -721,7 +642,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             null, // No manual description
             false // Not an auto-save
           );
-          console.log('[ManualSave] Version snapshot created');
+          // console.log('[ManualSave] Version snapshot created');
         } catch (versionError) {
           console.error('[ManualSave] Error creating version:', versionError);
           // Don't fail the save if version creation fails
@@ -730,7 +651,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Mark the save timestamp to ignore our own broadcasts
         lastSaveTimestamp.current = Date.now();
         
-        console.log('[ManualSave] Wheel data saved successfully');
+        // console.log('[ManualSave] Wheel data saved successfully');
         
         // Show success feedback
         const event = new CustomEvent('showToast', { 
@@ -817,7 +738,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         setCurrentPageId(sortedPages[0].id);
         // Load first page's data (with user's saved colors)
         if (sortedPages[0].organization_data) {
-          console.log('[LoadPages] Loading page data from database');
+          // console.log('[LoadPages] Loading page data from database');
           setOrganizationData(sortedPages[0].organization_data);
         }
         if (sortedPages[0].year) {
@@ -851,7 +772,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if (newPage) {
         setCurrentPageId(pageId);
         if (newPage.organization_data) {
-          console.log('[PageChange] Loading page data');
+          // console.log('[PageChange] Loading page data');
           setOrganizationData(newPage.organization_data);
         }
         if (newPage.year) {
@@ -1190,7 +1111,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             throw new Error('Invalid file format');
           }
 
-          console.log('[FileImport] Starting file import...');
+          // console.log('[FileImport] Starting file import...');
           
           // CRITICAL: Mark as loading to prevent realtime from overwriting
           isLoadingData.current = true;
@@ -1213,7 +1134,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             processedOrgData.labels = processedOrgData.labels || [];
             processedOrgData.items = processedOrgData.items || [];
             
-            console.log('[FileImport] Processed organization data from file:', {
+            // console.log('[FileImport] Processed organization data from file:', {
               rings: processedOrgData.rings.length,
               activityGroups: processedOrgData.activityGroups.length,
               labels: processedOrgData.labels.length,
@@ -1233,7 +1154,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           let saveFailed = false;
           if (wheelId) {
             try {
-              console.log('[FileImport] Saving imported data to database...');
+              // console.log('[FileImport] Saving imported data to database...');
               
               // Save immediately to prevent realtime from overwriting
               await updateWheel(wheelId, {
@@ -1248,7 +1169,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               // Save organization data using the PROCESSED data
               await saveWheelData(wheelId, processedOrgData);
               
-              console.log('[FileImport] Successfully saved to database');
+              // console.log('[FileImport] Successfully saved to database');
               
               // Show success feedback
               const toastEvent = new CustomEvent('showToast', { 
@@ -1297,7 +1218,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           setTimeout(() => {
             isLoadingData.current = false;
             isRealtimeUpdate.current = false;
-            console.log('[FileImport] Import complete, realtime re-enabled');
+            // console.log('[FileImport] Import complete, realtime re-enabled');
           }, 1000);
         } catch (error) {
           console.error('Error loading file:', error);
@@ -1321,7 +1242,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Combined handler for palette changes - updates BOTH colors AND organizationData in ONE state update
   const handlePaletteChange = useCallback((newColors, newOrganizationData) => {
-    console.log('[App] 🟡 handlePaletteChange called with colors:', newColors);
     // Update BOTH colors and organizationData in a SINGLE setUndoableStates call
     setUndoableStates({ 
       colors: newColors,
@@ -1334,14 +1254,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Wrapped color change handler that updates timestamp to prevent realtime overwrites
   const handleColorsChange = useCallback((newColors) => {
-    console.log('[App] handleColorsChange called with:', newColors);
+    // console.log('[App] handleColorsChange called with:', newColors);
     setColors(newColors);
     // CRITICAL: Update ref immediately so auto-save uses new colors
     latestValuesRef.current.colors = newColors;
-    console.log('[App] Updated latestValuesRef.current.colors to:', newColors);
+    // console.log('[App] Updated latestValuesRef.current.colors to:', newColors);
     // Update timestamp so realtime ignores events for next 5 seconds
     lastSaveTimestamp.current = Date.now();
-    console.log('[App] Updated lastSaveTimestamp to prevent realtime overwrites');
+    // console.log('[App] Updated lastSaveTimestamp to prevent realtime overwrites');
   }, [setColors]);
 
   if (isLoading) {
@@ -1520,9 +1440,9 @@ function AppContent() {
   // Check where to redirect authenticated users on /auth
   const getAuthRedirect = () => {
     const pendingToken = sessionStorage.getItem('pendingInviteToken');
-    console.log('getAuthRedirect - pendingToken:', pendingToken);
+    // console.log('getAuthRedirect - pendingToken:', pendingToken);
     if (pendingToken) {
-      console.log('Redirecting to invite page:', `/invite/${pendingToken}`);
+      // console.log('Redirecting to invite page:', `/invite/${pendingToken}`);
       return `/invite/${pendingToken}`;
     }
     return '/dashboard';

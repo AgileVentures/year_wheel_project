@@ -49,7 +49,7 @@ export default function AddPageModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="bg-white rounded-sm shadow-2xl w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Lägg till ny sida</h2>

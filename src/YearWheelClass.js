@@ -1953,7 +1953,7 @@ class YearWheel {
             this.context.arc(this.center.x, this.center.y, ringStartRadius + outerRingContentHeight, 0, Math.PI * 2, true);
             // ALWAYS use palette colors for ring backgrounds (ignore ring.color from database)
             const templateColor = this.sectionColors[ringIndex % this.sectionColors.length];
-            console.log(`[YearWheelClass] Drawing ring "${ring.name}" with palette color: ${templateColor} (palette index ${ringIndex % this.sectionColors.length})`);
+            // console.log(`[YearWheelClass] Drawing ring "${ring.name}" with palette color: ${templateColor} (palette index ${ringIndex % this.sectionColors.length})`);
             this.context.fillStyle = this.getLightBackgroundColor(templateColor);
             this.context.fill();
             this.context.closePath();
@@ -2232,10 +2232,8 @@ class YearWheel {
       const numberOfMonths = monthsToDisplay.length;
       
       // Use template colors alternating between first two colors for month ring
-      console.log('[YearWheelClass] 🟢 Drawing month ring with this.sectionColors:', this.sectionColors);
       const color1 = this.sectionColors[0];
       const color2 = this.sectionColors[1] || this.sectionColors[0]; // Fallback to first if only one color
-      console.log('[YearWheelClass] 🟢 Month ring color1:', color1, 'color2:', color2);
       const monthColors = [];
       for (let i = 0; i < numberOfMonths; i++) {
         monthColors.push(i % 2 === 0 ? color1 : color2);

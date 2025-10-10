@@ -1172,7 +1172,6 @@ function OrganizationPanel({
                   <div 
                     onClick={() => {
                       const newColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"];
-                      console.log('🔴🔴🔴 [OrganizationPanel] LIVLIG PALETTE CLICKED!', newColors);
                       
                       const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
                         ...act,

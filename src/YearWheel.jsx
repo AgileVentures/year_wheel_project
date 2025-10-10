@@ -111,12 +111,6 @@ function YearWheel({
   useEffect(() => {
     if (!canvasRef.current) return;
     
-    const outerRings = organizationData.rings?.filter(r => r.type === 'outer');
-    console.log('[YearWheel] 🔵🔵🔵 CREATING WHEEL');
-    console.log('[YearWheel] 🔵 colors prop:', JSON.stringify(colors));
-    console.log('[YearWheel] 🔵 organizationData outer rings:', JSON.stringify(outerRings?.map(r => ({ name: r.name, color: r.color }))));
-    console.log('[YearWheel] 🔵 DO THESE MATCH? Colors[0]:', colors[0], 'vs Händelser ring.color:', outerRings?.[0]?.color);
-    
     const canvas = canvasRef.current;
     // Fixed render size at 2000px for high quality (square canvas)
     const renderSize = 2000;
@@ -172,11 +166,6 @@ function YearWheel({
     handleUpdateAktivitet,
   ]);
 
-  // Log when colors change
-  useEffect(() => {
-    console.log('[YearWheel] Colors changed:', colors);
-  }, [colors]);
-  
   // Notify parent when wheel instance changes (only once per instance)
   useEffect(() => {
     if (yearWheel && yearWheel !== notifiedWheelRef.current) {
