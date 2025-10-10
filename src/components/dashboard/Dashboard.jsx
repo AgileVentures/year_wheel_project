@@ -7,8 +7,9 @@ import CreateWheelModal from './CreateWheelModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
-import { Users, Mail, LayoutGrid, Crown } from 'lucide-react';
+import { Users, Mail, LayoutGrid, Crown, Shield } from 'lucide-react';
 import { useUsageLimits } from '../../hooks/useSubscription';
+import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionModal from '../subscription/SubscriptionModal';
 import UpgradePrompt from '../subscription/UpgradePrompt';
 import SubscriptionSettings from '../subscription/SubscriptionSettings';
@@ -69,6 +70,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   
   // Subscription state
   const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading } = useUsageLimits();
+  const { isAdmin: isAdminUser } = useSubscription();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
@@ -251,8 +253,16 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
             
             {/* Right: Subscription & User Menu */}
             <div className="flex items-center gap-3">
+              {/* Admin Badge */}
+              {!subscriptionLoading && isAdminUser && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-sm font-semibold shadow-md">
+                  <Shield size={18} />
+                  <span className="text-sm hidden sm:inline">Admin</span>
+                </div>
+              )}
+              
               {/* Subscription Button */}
-              {!subscriptionLoading && (
+              {!subscriptionLoading && !isAdminUser && (
                 <button
                   onClick={() => isPremium ? setShowSubscriptionSettings(true) : setShowSubscriptionModal(true)}
                   className={`

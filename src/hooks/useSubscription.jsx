@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   getUserSubscription, 
-  isPremiumUser, 
+  isPremiumUser,
+  isAdmin,
   canCreateWheel,
   canAddTeamMember,
   getUserWheelCount,
@@ -16,6 +17,7 @@ import { supabase } from '../lib/supabase';
 export function useSubscription() {
   const [subscription, setSubscription] = useState(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [wheelCount, setWheelCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [limits, setLimits] = useState(null);
@@ -25,16 +27,18 @@ export function useSubscription() {
     try {
       setLoading(true);
       
-      const [subData, premiumStatus, count] = await Promise.all([
+      const [subData, premiumStatus, adminStatus, count] = await Promise.all([
         getUserSubscription(),
         isPremiumUser(),
+        isAdmin(),
         getUserWheelCount()
       ]);
 
       setSubscription(subData);
       setIsPremium(premiumStatus);
+      setIsAdminUser(adminStatus);
       setWheelCount(count);
-      setLimits(getUsageLimits(premiumStatus));
+      setLimits(getUsageLimits(premiumStatus, adminStatus));
     } catch (error) {
       console.error('Error loading subscription:', error);
     } finally {
@@ -108,6 +112,7 @@ export function useSubscription() {
   return {
     subscription,
     isPremium,
+    isAdmin: isAdminUser,
     wheelCount,
     limits,
     loading,

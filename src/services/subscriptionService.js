@@ -28,7 +28,28 @@ export async function getUserSubscription() {
 }
 
 /**
- * Check if user is premium
+ * Check if user is admin
+ */
+export async function isAdmin() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase.rpc('is_admin', {
+      user_uuid: user.id
+    });
+
+    if (error) throw error;
+    return data || false;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if user is premium (includes admins)
+ * Admins automatically get premium features without subscription
  */
 export async function isPremiumUser() {
   try {
@@ -243,8 +264,9 @@ export async function canShareWheels() {
 
 /**
  * Get usage limits for current plan
+ * Note: isPremium will be true for both paying premium users AND admins
  */
-export function getUsageLimits(isPremium) {
+export function getUsageLimits(isPremium, isAdminUser = false) {
   if (isPremium) {
     return {
       maxWheels: Infinity,
@@ -252,6 +274,7 @@ export function getUsageLimits(isPremium) {
       allowedExports: ['png', 'svg', 'pdf', 'jpg'],
       canUseVersionControl: true,
       canShareWheels: true,
+      isAdmin: isAdminUser,  // Flag to show admin badge
       features: [
         'Obegränsade årshjul',
         'Obegränsade team och medlemmar',
@@ -269,6 +292,7 @@ export function getUsageLimits(isPremium) {
     allowedExports: ['png', 'svg'],
     canUseVersionControl: false,
     canShareWheels: false,
+    isAdmin: false,
     features: [
       'Upp till 2 årshjul',
       '1 team med upp till 3 medlemmar',
