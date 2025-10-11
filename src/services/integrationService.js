@@ -82,12 +82,21 @@ export async function disconnectProvider(provider) {
  */
 export async function initiateGoogleOAuth(provider = 'google', scopes = []) {
   try {
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Du måste vara inloggad för att ansluta Google-konto');
+    }
+
     // Call Edge Function to get OAuth URL
     const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-init', {
       body: { provider, scopes }
     });
 
-    if (urlError) throw urlError;
+    if (urlError) {
+      console.error('OAuth init error:', urlError);
+      throw urlError;
+    }
 
     const { authUrl, state } = urlData;
 
