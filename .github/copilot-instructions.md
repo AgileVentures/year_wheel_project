@@ -162,3 +162,7 @@ When implementing auth or multi-user features, reference these documents for Pos
 - Center position: `{ x: size/2, y: size/2 }`
 - Rotation offset: `this.initAngle = -105°` aligns January to top
 - Month indices: 0=January, 11=December (JavaScript Date convention)
+
+
+## Workflow
+We do NOT need summary documents. We do NOT need partial implementation guides. We do NOT need debugging checklists. We do NOT need quick reference guides. We do NOT need piecemeal architecture notes. 

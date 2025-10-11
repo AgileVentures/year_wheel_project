@@ -182,11 +182,77 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           const pageItems = await fetchPageData(pageToLoad.id);
           console.log('📊 [App] Fetched page items:', pageItems?.length || 0);
           
+          // Fetch rings, activity groups, and labels from database tables
+          const { data: dbRings } = await supabase
+            .from('wheel_rings')
+            .select('*')
+            .eq('wheel_id', wheelId)
+            .order('ring_order');
+          
+          const { data: dbActivityGroups } = await supabase
+            .from('activity_groups')
+            .select('*')
+            .eq('wheel_id', wheelId);
+          
+          const { data: dbLabels } = await supabase
+            .from('labels')
+            .select('*')
+            .eq('wheel_id', wheelId);
+          
+          console.log('📊 [App] Fetched from DB - Rings:', dbRings?.length, 'Groups:', dbActivityGroups?.length, 'Labels:', dbLabels?.length);
+          console.log('📊 [App] DB Rings:', dbRings);
+          console.log('📊 [App] DB Activity Groups:', dbActivityGroups);
+          console.log('📊 [App] Page Items:', pageItems);
+          
           if (pageToLoad.organization_data) {
             const orgData = pageToLoad.organization_data;
             
             // Replace items with page-specific items from database
             orgData.items = pageItems;
+            
+            // Replace rings, activityGroups, labels with database versions (using UUIDs)
+            // Keep any client-ID entities from JSONB for backward compatibility
+            const jsonbRings = orgData.rings || [];
+            const jsonbGroups = orgData.activityGroups || orgData.activities || [];
+            const jsonbLabels = orgData.labels || [];
+            
+            // Merge: Use DB entities (UUID-based) + keep client-ID entities from JSONB
+            orgData.rings = [
+              ...(dbRings || []).map(r => ({
+                id: r.id,
+                name: r.name,
+                type: r.type,  // ✅ FIXED: Database column is 'type' not 'ring_type'
+                visible: r.visible,
+                orientation: r.orientation || 'vertical',
+                color: r.color || '#408cfb',  // Fallback to blue if null
+                data: r.data || [[""]]
+              })),
+              ...jsonbRings.filter(r => !r.id.match(/^[0-9a-f-]{36}$/i)) // Keep client IDs like "ring-123"
+            ];
+            
+            orgData.activityGroups = [
+              ...(dbActivityGroups || []).map(g => ({
+                id: g.id,
+                name: g.name,
+                color: g.color || '#8B5CF6',  // Fallback to purple if null
+                visible: g.visible
+              })),
+              ...jsonbGroups.filter(g => !g.id.match(/^[0-9a-f-]{36}$/i)) // Keep client IDs like "group-123"
+            ];
+            
+            orgData.labels = [
+              ...(dbLabels || []).map(l => ({
+                id: l.id,
+                name: l.name,
+                color: l.color,
+                visible: l.visible
+              })),
+              ...jsonbLabels.filter(l => !l.id.match(/^[0-9a-f-]{36}$/i)) // Keep client IDs like "label-123"
+            ];
+            
+            console.log('📊 [App] Final orgData.rings:', orgData.rings);
+            console.log('📊 [App] Final orgData.activityGroups:', orgData.activityGroups);
+            console.log('📊 [App] Final orgData.items:', orgData.items);
             
             // Backward compatibility: convert old 'activities' to 'activityGroups'
             if (orgData.activities && !orgData.activityGroups) {
@@ -474,15 +540,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         showRingNames: currentShowRingNames,
       });
       
-      // Save current page data if we have pages
+      // CRITICAL: Always call saveWheelData to sync to database tables
+      // This syncs rings, activity groups, labels, and items to their respective tables
+      await saveWheelData(wheelId, currentOrganizationData, currentCurrentPageId);
+      
+      // Also update the page's JSONB organization_data and year
       if (currentCurrentPageId) {
         await updatePage(currentCurrentPageId, {
           organization_data: currentOrganizationData,
           year: parseInt(currentYear)
         });
-      } else {
-        // Fallback: save organization data to wheel (legacy)
-        await saveWheelData(wheelId, currentOrganizationData);
       }
       
       // Mark the save timestamp to ignore our own broadcasts
@@ -644,15 +711,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           showRingNames,
         });
         
-        // Save current page data if we have pages
+        // CRITICAL: Always call saveWheelData to sync to database tables
+        // This syncs rings, activity groups, labels, and items to their respective tables
+        await saveWheelData(wheelId, organizationData, currentPageId);
+        
+        // Also update the page's JSONB organization_data and year
         if (currentPageId) {
           await updatePage(currentPageId, {
             organization_data: organizationData,
             year: parseInt(year)
           });
-        } else {
-          // Fallback: save organization data directly to wheel (legacy support)
-          await saveWheelData(wheelId, organizationData);
         }
         
         // Create version snapshot after successful save
@@ -1244,7 +1312,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               }
               
               // Save organization data using the PROCESSED data (for backward compatibility)
-              await saveWheelData(wheelId, processedOrgData);
+              await saveWheelData(wheelId, processedOrgData, currentPageId);
               
               // console.log('[FileImport] Successfully saved to database and current page');
               

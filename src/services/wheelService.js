@@ -173,6 +173,7 @@ export const fetchPageData = async (pageId) => {
     startDate: i.start_date,
     endDate: i.end_date,
     time: i.time,
+    pageId: i.page_id, // ⚠️ CRITICAL: Must preserve page_id for save cycle
   }));
 };
 
@@ -245,8 +246,12 @@ export const updateWheel = async (wheelId, updates) => {
 /**
  * Save complete wheel data (rings, activity groups, labels, items)
  * This is the main function for auto-save and manual save
+ * 
+ * CRITICAL: This function is now DEPRECATED for page-based wheels!
+ * Use savePageData() instead which properly handles page_id scoping.
+ * This is kept for backwards compatibility only.
  */
-export const saveWheelData = async (wheelId, organizationData) => {
+export const saveWheelData = async (wheelId, organizationData, pageId = null) => {
   // 1. Sync rings and get ID mappings (old ID -> new UUID)
   const ringIdMap = await syncRings(wheelId, organizationData.rings || []);
   
@@ -256,8 +261,8 @@ export const saveWheelData = async (wheelId, organizationData) => {
   // 3. Sync labels and get ID mappings
   const labelIdMap = await syncLabels(wheelId, organizationData.labels || []);
   
-  // 4. Sync items with ID mappings
-  await syncItems(wheelId, organizationData.items || [], ringIdMap, activityIdMap, labelIdMap);
+  // 4. Sync items with ID mappings (scoped to pageId if provided)
+  await syncItems(wheelId, organizationData.items || [], ringIdMap, activityIdMap, labelIdMap, pageId);
 };
 
 /**
@@ -498,19 +503,27 @@ const syncLabels = async (wheelId, labels) => {
  * Sync items
  * Uses ID mappings to convert temporary IDs to database UUIDs
  */
-const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap) => {
-  // Fetch existing
-  const { data: existing } = await supabase
+const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
+  // Fetch existing items - SCOPED TO PAGE if pageId provided
+  let query = supabase
     .from('items')
     .select('id')
     .eq('wheel_id', wheelId);
+  
+  // CRITICAL: If pageId is provided, only sync items for that page
+  if (pageId) {
+    query = query.eq('page_id', pageId);
+  }
+  
+  const { data: existing } = await query;
 
   const existingIds = new Set(existing?.map(i => i.id) || []);
   const currentIds = new Set(items.map(i => i.id).filter(id => id && !id.startsWith('item-')));
 
-  // Delete removed
+  // Delete removed items (only within the scoped page if pageId provided)
   const toDelete = [...existingIds].filter(id => !currentIds.has(id));
   if (toDelete.length > 0) {
+    console.log(`[syncItems] Deleting ${toDelete.length} items from ${pageId ? `page ${pageId}` : 'wheel'}`);
     await supabase.from('items').delete().in('id', toDelete);
   }
 
@@ -552,6 +565,7 @@ const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap) =
       start_date: item.startDate,
       end_date: item.endDate,
       time: item.time || null,
+      page_id: item.pageId || pageId || null, // ⚠️ Use item's pageId or fall back to function parameter
     };
 
     try {
