@@ -16,7 +16,7 @@ import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import PreviewWheelPage from "./components/PreviewWheelPage";
 import PricingPage from "./components/PricingPage";
-import { fetchWheel, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
+import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
@@ -119,6 +119,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showWeekRing, setShowWeekRing] = useState(true);
   const [showMonthRing, setShowMonthRing] = useState(true);
   const [showRingNames, setShowRingNames] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
   const [downloadFormat, setDownloadFormat] = useState("png");
   const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -156,7 +157,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     try {
       const wheelData = await fetchWheel(wheelId);
-      console.log('📊 [App] Fetched wheel data, items count:', wheelData?.organizationData?.items?.length || 0);
+      console.log('📊 [App] Fetched wheel data (wheel-level only, no items)');
       
       if (wheelData) {
         setIsPublic(wheelData.is_public || false);
@@ -177,8 +178,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           setCurrentPageId(pageToLoad.id);
           setYear(String(pageToLoad.year || new Date().getFullYear()));
           
+          // Fetch items for this specific page only
+          const pageItems = await fetchPageData(pageToLoad.id);
+          console.log('📊 [App] Fetched page items:', pageItems?.length || 0);
+          
           if (pageToLoad.organization_data) {
             const orgData = pageToLoad.organization_data;
+            
+            // Replace items with page-specific items from database
+            orgData.items = pageItems;
             
             // Backward compatibility: convert old 'activities' to 'activityGroups'
             if (orgData.activities && !orgData.activityGroups) {
@@ -1395,6 +1403,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onZoomToQuarter={setZoomedQuarter}
             showRingNames={showRingNames}
             onShowRingNamesChange={setShowRingNames}
+            showLabels={showLabels}
+            onShowLabelsChange={setShowLabels}
           />
         </div>
 
@@ -1413,6 +1423,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               showWeekRing={showWeekRing}
               showMonthRing={showMonthRing}
               showRingNames={showRingNames}
+              showLabels={showLabels}
               zoomedMonth={zoomedMonth}
               zoomedQuarter={zoomedQuarter}
               onSetZoomedMonth={setZoomedMonth}

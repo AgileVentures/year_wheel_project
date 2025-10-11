@@ -44,7 +44,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
 
   const loadWheelContext = async () => {
     try {
-      const context = await getWheelContext(wheelId);
+      const context = await getWheelContext(wheelId, currentPageId);
       setWheelContext(context);
     } catch (error) {
       console.error('[AIAssistant] Error loading wheel context:', error);
@@ -154,99 +154,27 @@ ${wheelContext.stats.rings === 0 || wheelContext.stats.activityGroups === 0 ? '\
 
     try {
       // Build system prompt with context
-      const systemPrompt = `Du är en AI-assistent för YearWheel, ett cirkulärt kalenderverktyg för årlig planering och visualisering.
+      const systemPrompt = `AI-assistent för YearWheel - cirkulär årsplanering.
 
-ABSOLUT REGEL - DU MÅSTE ALLTID SVARA MED TEXT:
-Efter varje verktygsanrop MÅSTE du skriva ett text-svar till användaren. Aldrig lämna tomt.
+**KONTEXT:**
+Hjul: ${wheelContext?.title || 'Okänt'} | År: ${wheelContext?.year || 'Okänt'} | Sidor: ${wheelContext?.pages?.length || 0}
+Ringar: ${wheelContext?.organizationData.rings?.map(r => `${r.name} (${r.id})`).join(', ') || 'inga'}
+Grupper: ${wheelContext?.organizationData.activityGroups?.map(ag => `${ag.name} (${ag.id})`).join(', ') || 'inga'}
 
-VIKTIGT - NYA HJUL OCH STRUKTUR:
-När användaren beskriver ett sammanhang/projekt (t.ex. "planera en SaaS-lansering", "organisera ett evenemang"):
-1. **Föreslå struktur FÖRST**: Förklara vilka ringar, aktivitetsgrupper och aktiviteter som passar
-2. **Fråga om godkännande**: "Vill du att jag skapar denna struktur?"
-3. **Skapa i rätt ordning**: Ringar → Aktivitetsgrupper → Aktiviteter
-4. **Använd aktivitetsgrupper**: ALLTID tilldela aktiviteter till en relevant aktivitetsgrupp
-5. **Standardgrupp finns**: Om ingen aktivitetsgrupp anges skapas automatiskt gruppen "Allmän"
+**EXEMPEL - Aktivitet över årsskifte:**
+User: "skapa julkampanj 2025-12-15 till 2026-01-30"
+Du MÅSTE:
+1. getAvailablePages() → svar: [{id:"page-2025", year:2025}, {id:"page-2026", year:2026}]
+2. createItem(pageId:"page-2025", name:"julkampanj (del 1)", startDate:"2025-12-15", endDate:"2025-12-31", ringId:"ring-1", activityGroupId:"group-1")
+3. createItem(pageId:"page-2026", name:"julkampanj (del 2)", startDate:"2026-01-01", endDate:"2026-01-30", ringId:"ring-1", activityGroupId:"group-1")
+4. Text: "Klart! julkampanj skapad över årsskifte"
 
-VIKTIGT - Verktygsval:
-- "vilken dag är det" / "dagens datum" → Använd getCurrentDate
-- "vilka år finns" / "visa alla sidor" → Använd getAvailablePages
-- "byt till 2026" / "visa 2025" / "gå till nästa år" → Använd navigateToPage med year eller pageId
-- "skapa sida för 2026" → Använd createPage med year=2026, copyStructure=true för att kopiera struktur
-- "vilka aktiviteter på ring X" → Använd getItemsByRing med ringName
-- "ta bort alla aktiviteter på/från ring X" → Använd deleteItemsByRing med ringName (bekräfta FÖRST)
-- "sök efter aktivitet X" → Använd searchWheel med type="items"
-- "finns det en ring X" → Använd searchWheel med type="rings"
-- "hitta grupp X" → Använd searchWheel med type="activityGroups"
-- "ta bort alla" (efter att ha listat aktiviteter) → Använd deleteItemsByRing om det gäller en ring
+ABSOLUT REGEL: När getAvailablePages() körs, kör DIREKT createItem() - INGET annat!
 
-VECKONUMMER:
-- Användare använder ofta veckonummer (t.ex. "v45", "vecka 12", "v23-25") för att referera till datum
-- Du ska förstå och konvertera veckonummer till korrekta datum enligt ISO 8601-standarden
-- När användaren säger "skapa aktivitet v45" eller "semester vecka 23", tolka detta som veckonummer
-- Exempel: "v45" i 2025 = vecka 45, "v23-25" = från vecka 23 till vecka 25
+**VERKTYG:**
+getAvailablePages, createItem(pageId, name, dates, ringId), createPage, updateItem, deleteItems
 
-DATUM OCH TIDSPLANERING:
-- **Standard: Antag framtida datum** - Om användaren inte anger år, antag att aktiviteten är för framtiden
-- **Historiska datum: Bekräfta först** - Om en aktivitet ligger i det förflutna (före dagens datum), fråga användaren INNAN du skapar: "Vill du verkligen skapa en aktivitet som ligger i det förflutna? (från STARTDATUM till SLUTDATUM)"
-- Vänta på användarens bekräftelse ("ja", "ok", "bekräfta") innan du fortsätter med skapandet
-- Om användaren säger "nej" eller liknande, avbryt skapandet
-
-FRAMTIDA ÅR OCH SIDOR:
-- **Om aktivitet skapas för ett år som inte finns**: Skapa FÖRST en ny sida för det året med createPage (year=XXXX, copyStructure=true), SEDAN navigera till den med navigateToPage (year=XXXX), SEDAN skapa aktiviteten
-- **Om aktivitet skapas för ett år som redan finns**: Navigera FÖRST till det året med navigateToPage (year=XXXX), SEDAN skapa aktiviteten
-- **Kontrollera alltid tillgängliga år**: Använd getAvailablePages för att se vilka år som redan finns
-- **Exempel**: Användare vill skapa aktivitet i 2027, men endast 2025 och 2026 finns → Skapa 2027 → Navigera till 2027 → Skapa aktivitet
-
-FORMATERING:
-- Använd ALDRIG emojis i dina svar (inga checkmarks, varningar, raketer, etc.)
-- Använd istället tydlig text: "Klart", "Varning", "Fel", etc.
-- Använd markdown för formatering: **fetstil**, *kursiv*, listor, rubriker
-- Var koncis och professionell i dina svar
-
-DIN ROLL OCH BEGRÄNSNINGAR:
-- Du hjälper ENDAST med YearWheel-relaterade uppgifter: skapa/redigera/söka/radera ringar, aktivitetsgrupper och aktiviteter
-- Du svarar INTE på allmänna frågor, kodningsfrågor, eller frågor utanför YearWheel-planering
-- Om användaren frågar något utanför din roll, svara: "Jag är specialiserad på att hjälpa dig med ditt YearWheel. Jag kan hjälpa dig att skapa ringar, aktivitetsgrupper, aktiviteter, eller söka och organisera ditt hjul. Hur kan jag hjälpa dig med din årsplanering?"
-
-Aktuellt hjul:
-- Titel: ${wheelContext?.title || 'Okänt'}
-- År: ${wheelContext?.year || 'Okänt'}
-- Sidor: ${wheelContext?.pages?.length || 0}
-- Dagens datum: ${new Date().toLocaleDateString('sv-SE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-- Ringar: ${wheelContext?.stats.rings || 0}
-- Aktivitetsgrupper: ${wheelContext?.stats.activityGroups || 0}
-- Aktiviteter: ${wheelContext?.stats.items || 0}
-
-Tillgängliga ringar:
-${wheelContext?.organizationData.rings?.map(r => `- ${r.name} (${r.type}, ID: ${r.id})`).join('\n') || 'Inga ringar'}
-
-Tillgängliga aktivitetsgrupper:
-${wheelContext?.organizationData.activityGroups?.map(ag => `- ${ag.name} (ID: ${ag.id})`).join('\n') || 'Inga grupper'}
-
-Tillgängliga aktiviteter:
-${wheelContext?.organizationData.items?.slice(0, 10).map(i => `- ${i.name} (${i.startDate} till ${i.endDate})`).join('\n') || 'Inga aktiviteter'}
-${wheelContext?.organizationData.items?.length > 10 ? `... och ${wheelContext.organizationData.items.length - 10} fler` : ''}
-
-VIKTIGT - Raderingsregler:
-- Innan du raderar NÅGONTING, fråga ALLTID användaren om bekräftelse
-- Förklara vad som kommer att raderas (antal aktiviteter, vilka objekt, etc.)
-- Vänta på explicit bekräftelse ("ja", "ok", "gör det", etc.) innan du kallar delete-verktyg
-- Om användaren säger "nej" eller är osäker, avbryt raderingen
-
-ABSOLUT KRITISKT - Verktyg och Svar:
-- Du MÅSTE ALLTID skriva en text-respons efter att ha använt ett verktyg
-- searchWheel returnerar formaterad text i 'message' - KOPIERA denna text ordagrant i ditt svar
-- createItem/createRing/createActivityGroup - säg "Klart! [Namn] har skapats"
-- deleteItems/deleteRing/deleteActivityGroup - säg "Klart! [Namn] har tagits bort"
-- Om du inte skriver en respons kommer användaren INTE se något resultat
-- EXEMPEL: Om searchWheel returnerar message: "Sökresultat för X...", skriv EXAKT den texten
-
-VIKTIGT - Sökresultat:
-- searchWheel returnerar färdigformaterad text i 'message'-fältet
-- Kopiera och visa 'message' exakt som det är - lägg inte till egen text
-- Om inga resultat hittas, föreslå alternativa sökord
-
-Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -, etc.) för tydligare svar.`;
+Svara på svenska, kort och tydligt.`;
 
       // Prepare messages for OpenAI
       const chatMessages = [
@@ -268,7 +196,7 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
 
       // Stream response with tools
       const result = await streamText({
-        model: openaiInstance.chat('gpt-4o'),
+        model: openaiInstance.chat('gpt-4o'), // Using gpt-4o for better multi-step execution
         messages: chatMessages,
         tools: {
           createRing: tool({
@@ -306,19 +234,20 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
           }),
 
           createItem: tool({
-            description: 'Skapa en ny aktivitet/händelse. Om ingen aktivitetsgrupp anges skapas automatiskt en standardgrupp.',
+            description: 'Skapa aktivitet på specifik sida. Kräver pageId från getAvailablePages().',
             inputSchema: z.object({
+              pageId: z.string().describe('Page ID från getAvailablePages() - bestämmer vilket år aktiviteten skapas på'),
               name: z.string().describe('Namnet på aktiviteten'),
-              startDate: z.string().describe('Startdatum (YYYY-MM-DD)'),
-              endDate: z.string().describe('Slutdatum (YYYY-MM-DD)'),
+              startDate: z.string().describe('Startdatum (YYYY-MM-DD) - måste matcha sidans år'),
+              endDate: z.string().describe('Slutdatum (YYYY-MM-DD) - måste matcha sidans år'),
               ringId: z.string().describe('Ring ID från kontext'),
               activityGroupId: z.string().optional().describe('Aktivitetsgrupp ID från kontext (valfritt - skapas automatiskt om utelämnat)'),
               time: z.string().optional().describe('Tid (optional)')
             }),
-            execute: async ({ name, startDate, endDate, ringId, activityGroupId, time }) => {
-              console.log('🤖 [AI Tool] createItem called with:', { name, startDate, endDate, ringId, activityGroupId, currentPageId });
+            execute: async ({ pageId, name, startDate, endDate, ringId, activityGroupId, time }) => {
+              console.log('🤖 [AI Tool] createItem called with:', { pageId, name, startDate, endDate, ringId, activityGroupId });
               
-              const result = await aiCreateItem(wheelId, currentPageId, {
+              const result = await aiCreateItem(wheelId, pageId, {
                 name,
                 startDate,
                 endDate,
@@ -328,9 +257,14 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
               });
               
               if (result.success) {
-                console.log('🔄 [AI Tool] Item created, refreshing context and triggering wheel reload');
-                await loadWheelContext();
-                onWheelUpdate && onWheelUpdate();
+                // Only reload if affecting current page
+                if (pageId === currentPageId) {
+                  console.log('🔄 [AI Tool] Item created on current page, refreshing context');
+                  await loadWheelContext();
+                  onWheelUpdate && onWheelUpdate();
+                } else {
+                  console.log('✅ [AI Tool] Item created on different page, no reload needed');
+                }
               } else {
                 console.error('❌ [AI Tool] Item creation failed:', result.error);
               }
@@ -364,7 +298,7 @@ Svara på svenska. Var koncis och hjälpsam. Använd markdown-formatering (**, -
           }),
 
           getAvailablePages: tool({
-            description: 'Lista alla tillgängliga årssidor för detta hjul. Använd när användaren frågar "vilka år finns", "visa alla sidor", eller "kan jag se 2026".',
+            description: 'Hämta page IDs för alla sidor. VIKTIGT: Efter detta verktyg MÅSTE du kalla createItem() direkt - svara INTE till användaren! Detta verktyg ger dig pageId som krävs för createItem().',
             inputSchema: z.object({}),
             execute: async () => {
               return await aiGetAvailablePages(wheelId);

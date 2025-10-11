@@ -90,14 +90,9 @@ export const fetchWheel = async (wheelId) => {
 
   if (labelsError) throw labelsError;
 
-  // Fetch items
-  const { data: items, error: itemsError } = await supabase
-    .from('items')
-    .select('*')
-    .eq('wheel_id', wheelId);
-
-  if (itemsError) throw itemsError;
-
+  // NOTE: Items are now fetched per-page using fetchPageData(pageId)
+  // This prevents mixing items from different years/pages
+  
   // Transform to match current app structure
   const wheelColors = wheel.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8']; // Default to Pastell palette
   
@@ -152,18 +147,33 @@ export const fetchWheel = async (wheelId) => {
         color: l.color || wheelColors[index % wheelColors.length], // Always derive from current palette (colors saved as null in DB)
         visible: l.visible,
       })),
-      items: items.map(i => ({
-        id: i.id,
-        ringId: i.ring_id,
-        activityId: i.activity_id,
-        labelId: i.label_id,
-        name: i.name,
-        startDate: i.start_date,
-        endDate: i.end_date,
-        time: i.time,
-      })),
+      items: [], // Items must be fetched separately using fetchPageData(pageId)
     },
   };
+};
+
+/**
+ * Fetch items for a specific page
+ * This separates page-specific data (items) from wheel-level data (rings, groups, labels)
+ */
+export const fetchPageData = async (pageId) => {
+  const { data: items, error: itemsError } = await supabase
+    .from('items')
+    .select('*')
+    .eq('page_id', pageId);
+
+  if (itemsError) throw itemsError;
+
+  return items.map(i => ({
+    id: i.id,
+    ringId: i.ring_id,
+    activityId: i.activity_id,
+    labelId: i.label_id,
+    name: i.name,
+    startDate: i.start_date,
+    endDate: i.end_date,
+    time: i.time,
+  }));
 };
 
 /**

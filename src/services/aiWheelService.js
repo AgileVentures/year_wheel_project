@@ -6,12 +6,13 @@
  */
 
 import { supabase } from '../lib/supabase';
-import { fetchWheel, saveWheelData, updateWheel, createPage as createPageService } from './wheelService';
+import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createPage as createPageService } from './wheelService';
 
 /**
  * Get current wheel context for AI
+ * Now fetches items separately per page to avoid mixing years
  */
-export const getWheelContext = async (wheelId) => {
+export const getWheelContext = async (wheelId, currentPageId) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const { data: pages } = await supabase
@@ -20,11 +21,17 @@ export const getWheelContext = async (wheelId) => {
       .eq('wheel_id', wheelId)
       .order('year');
     
+    // Fetch items only for the current page
+    const pageItems = currentPageId ? await fetchPageData(currentPageId) : [];
+    
     return {
       title: wheelData.title,
       year: wheelData.year,
       colors: wheelData.colors,
-      organizationData: wheelData.organizationData,
+      organizationData: {
+        ...wheelData.organizationData,
+        items: pageItems // Only current page's items
+      },
       pages: pages || [],
       stats: {
         rings: wheelData.organizationData.rings?.length || 0,
@@ -32,7 +39,7 @@ export const getWheelContext = async (wheelId) => {
         outerRings: wheelData.organizationData.rings?.filter(r => r.type === 'outer')?.length || 0,
         activityGroups: wheelData.organizationData.activityGroups?.length || 0,
         labels: wheelData.organizationData.labels?.length || 0,
-        items: wheelData.organizationData.items?.length || 0,
+        items: pageItems?.length || 0,
       }
     };
   } catch (error) {
@@ -184,47 +191,99 @@ export const aiCreateLabel = async (wheelId, { name, color, visible = true }) =>
  */
 export const aiCreateItem = async (wheelId, pageId, { name, startDate, endDate, ringId, activityGroupId, labelId, time }) => {
   try {
-    const wheelData = await fetchWheel(wheelId);
-    let orgData = wheelData.organizationData;
+    // Validate page year matches dates
+    const { data: pageData, error: pageYearError } = await supabase
+      .from('wheel_pages')
+      .select('year')
+      .eq('id', pageId)
+      .single();
     
-    // Validate ring exists
-    const ring = orgData.rings.find(r => r.id === ringId);
-    if (!ring) {
+    if (pageYearError || !pageData) {
+      return {
+        success: false,
+        error: 'Kunde inte hämta sidans år'
+      };
+    }
+    
+    const pageYear = pageData.year;
+    const startYear = parseInt(startDate.split('-')[0]);
+    const endYear = parseInt(endDate.split('-')[0]);
+    
+    // Validate dates match page year
+    if (startYear !== pageYear || endYear !== pageYear) {
+      return {
+        success: false,
+        error: `Datumen måste vara inom år ${pageYear}. Start: ${startYear}, Slut: ${endYear}. Använd rätt pageId från getAvailablePages().`,
+        pageYear: pageYear,
+        startYear: startYear,
+        endYear: endYear
+      };
+    }
+    
+    // Validate ring exists (wheel-level check)
+    const { data: ring, error: ringError } = await supabase
+      .from('wheel_rings')
+      .select('id')
+      .eq('id', ringId)
+      .eq('wheel_id', wheelId)
+      .single();
+    
+    if (ringError || !ring) {
       return {
         success: false,
         error: `Ring med ID ${ringId} hittades inte`
       };
     }
     
-    // Auto-create default activity group if none provided or doesn't exist
+    // Auto-create or validate activity group
     let finalActivityGroupId = activityGroupId;
+    
     if (!activityGroupId || activityGroupId.trim() === '') {
-      // Check if a default "Allmän" group exists
-      let defaultGroup = orgData.activityGroups.find(ag => ag.name === 'Allmän' || ag.name === 'General');
+      // Check if default group exists
+      const { data: defaultGroup } = await supabase
+        .from('activity_groups')
+        .select('id')
+        .eq('wheel_id', wheelId)
+        .or('name.eq.Allmän,name.eq.General')
+        .limit(1)
+        .single();
       
-      if (!defaultGroup) {
+      if (defaultGroup) {
+        finalActivityGroupId = defaultGroup.id;
+      } else {
         // Create default activity group
-        const defaultGroupId = `ag-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        defaultGroup = {
-          id: defaultGroupId,
-          name: 'Allmän',
-          color: '#94A3B8', // Neutral gray color
-          visible: true
-        };
+        const { data: newGroup, error: groupError } = await supabase
+          .from('activity_groups')
+          .insert({
+            wheel_id: wheelId,
+            name: 'Allmän',
+            color: null, // Will derive from wheel palette
+            visible: true
+          })
+          .select()
+          .single();
         
-        orgData = {
-          ...orgData,
-          activityGroups: [...orgData.activityGroups, defaultGroup]
-        };
+        if (groupError) {
+          console.error('[aiWheelService] Error creating default activity group:', groupError);
+          return {
+            success: false,
+            error: 'Kunde inte skapa standardgrupp'
+          };
+        }
         
-        console.log('🔧 [AI] Auto-created default activity group "Allmän":', defaultGroupId);
+        finalActivityGroupId = newGroup.id;
+        console.log('🔧 [AI] Auto-created default activity group "Allmän":', finalActivityGroupId);
       }
-      
-      finalActivityGroupId = defaultGroup.id;
     } else {
       // Validate provided activity group exists
-      const activityGroup = orgData.activityGroups.find(ag => ag.id === finalActivityGroupId);
-      if (!activityGroup) {
+      const { data: activityGroup, error: agError } = await supabase
+        .from('activity_groups')
+        .select('id')
+        .eq('id', finalActivityGroupId)
+        .eq('wheel_id', wheelId)
+        .single();
+      
+      if (agError || !activityGroup) {
         return {
           success: false,
           error: `Aktivitetsgrupp med ID ${finalActivityGroupId} hittades inte`
@@ -232,46 +291,36 @@ export const aiCreateItem = async (wheelId, pageId, { name, startDate, endDate, 
       }
     }
     
-    const itemId = `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Insert item directly with page_id
+    const { data: newItem, error: insertError } = await supabase
+      .from('items')
+      .insert({
+        wheel_id: wheelId,
+        page_id: pageId, // ← CRITICAL: Links to specific page
+        ring_id: ringId,
+        activity_id: finalActivityGroupId,
+        label_id: labelId || null,
+        name: name || 'Ny aktivitet',
+        start_date: startDate,
+        end_date: endDate,
+        time: time || null
+      })
+      .select()
+      .single();
     
-    const newItem = {
-      id: itemId,
-      name: name || 'Ny aktivitet',
-      startDate,
-      endDate,
-      ringId,
-      activityId: finalActivityGroupId,
-      labelId: labelId || null,
-      time: time || null
-    };
-    
-    const updatedOrgData = {
-      ...orgData,
-      items: [...orgData.items, newItem]
-    };
-    
-    // Save to individual tables (items, rings, etc.)
-    await saveWheelData(wheelId, updatedOrgData);
-    
-    // Also update the wheel_pages.organization_data JSON column for THIS specific page
-    // This ensures the UI loads the latest data
-    const { error: pageError } = await supabase
-      .from('wheel_pages')
-      .update({ organization_data: updatedOrgData })
-      .eq('id', pageId);  // Use pageId instead of wheelId
-    
-    if (pageError) {
-      console.error('[aiWheelService] Error updating page organization_data:', pageError);
-      throw pageError;
+    if (insertError) {
+      console.error('[aiWheelService] Error inserting item:', insertError);
+      throw insertError;
     }
     
-    console.log('✅ [AI] Item created and saved to DB:', {
+    console.log('✅ [AI] Item created in database:', {
+      id: newItem.id,
       name,
+      pageId,
       startDate,
       endDate,
       ringId,
-      activityGroupId: finalActivityGroupId,
-      itemId: newItem.id
+      activityGroupId: finalActivityGroupId
     });
     
     return {

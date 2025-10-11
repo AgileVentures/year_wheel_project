@@ -1,6 +1,14 @@
 
 # Year Wheel POC
 
+Your Next Steps
+Read START_HERE.md (10 minutes)
+Run database migration (5 minutes) - ADD_PAGE_ID_TO_ITEMS.sql
+Open FLOWS_AI_COMPREHENSIVE_TODO.md (working checklist)
+Start Task 1.1 - Create aiAgents.js
+Follow the checklist - Check off items as you go
+
+
 ## Brand Colors
 
 YearWheel uses a carefully crafted color palette that evokes trust, clarity, and the natural flow of time through the year.

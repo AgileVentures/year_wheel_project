@@ -36,6 +36,7 @@ class YearWheel {
     this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showRingNames = options.showRingNames !== undefined ? options.showRingNames : true;
+    this.showLabels = options.showLabels !== undefined ? options.showLabels : true;
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.zoomedQuarter = options.zoomedQuarter !== undefined && options.zoomedQuarter !== null ? options.zoomedQuarter : null;
     this.textColor = "#374151"; // Darker gray for better readability
@@ -1994,6 +1995,7 @@ class YearWheel {
 
   // Draw a label badge with text on an activity item
   drawLabelIndicator(item, startRadius, width, startAngle, endAngle) {
+    if (!this.showLabels) return; // Labels hidden via toggle
     if (!item.labelId) return; // No label, skip
     
     const label = this.organizationData.labels.find(l => l.id === item.labelId);
@@ -2065,8 +2067,9 @@ class YearWheel {
 
   // Function to draw rotating elements
   drawRotatingElements() {
-    // Clear clickable items before redrawing
+    // Clear clickable items and labels to draw before redrawing
     this.clickableItems = [];
+    this.labelsToDraw = [];
     
     this.context.save();
     this.context.translate(this.center.x, this.center.y);
@@ -2233,8 +2236,16 @@ class YearWheel {
               highlight: isHovered,
             });
             
-            // Draw label indicator if item has a label
-            this.drawLabelIndicator(item, itemStartRadius, itemWidth, adjustedStartAngle, adjustedEndAngle);
+            // Collect label indicator to draw last (on top)
+            if (item.labelId) {
+              this.labelsToDraw.push({
+                item,
+                startRadius: itemStartRadius,
+                width: itemWidth,
+                startAngle: adjustedStartAngle,
+                endAngle: adjustedEndAngle
+              });
+            }
             
             // Store clickable region for this item
             this.clickableItems.push({
@@ -2410,8 +2421,16 @@ class YearWheel {
             highlight: isHovered,
           });
           
-          // Draw label indicator if item has a label
-          this.drawLabelIndicator(item, itemStartRadius, itemWidth, adjustedStartAngle, adjustedEndAngle);
+          // Collect label indicator to draw last (on top)
+          if (item.labelId) {
+            this.labelsToDraw.push({
+              item,
+              startRadius: itemStartRadius,
+              width: itemWidth,
+              startAngle: adjustedStartAngle,
+              endAngle: adjustedEndAngle
+            });
+          }
           
           // Store clickable region for this item
           this.clickableItems.push({
@@ -2507,6 +2526,19 @@ class YearWheel {
       }
       // Clear the array for next render
       this.innerRingNamesToDraw = [];
+    }
+
+    // FINALLY draw all label indicators (on top of everything else)
+    if (this.labelsToDraw && this.labelsToDraw.length > 0) {
+      for (const labelData of this.labelsToDraw) {
+        this.drawLabelIndicator(
+          labelData.item,
+          labelData.startRadius,
+          labelData.width,
+          labelData.startAngle,
+          labelData.endAngle
+        );
+      }
     }
 
     this.context.restore();

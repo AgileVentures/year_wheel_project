@@ -15,7 +15,9 @@ function OrganizationPanel({
   onZoomToMonth,
   onZoomToQuarter,
   showRingNames,
-  onShowRingNamesChange
+  onShowRingNamesChange,
+  showLabels,
+  onShowLabelsChange
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
@@ -1372,6 +1374,15 @@ function OrganizationPanel({
                       type="checkbox"
                       checked={showRingNames}
                       onChange={(e) => onShowRingNamesChange && onShowRingNamesChange(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors">
+                    <span className="text-sm text-gray-600">Visa etiketter</span>
+                    <input
+                      type="checkbox"
+                      checked={showLabels}
+                      onChange={(e) => onShowLabelsChange && onShowLabelsChange(e.target.checked)}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     />
                   </label>
