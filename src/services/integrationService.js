@@ -88,9 +88,12 @@ export async function initiateGoogleOAuth(provider = 'google', scopes = []) {
       throw new Error('Du måste vara inloggad för att ansluta Google-konto');
     }
 
-    // Call Edge Function to get OAuth URL
+    // Call Edge Function to get OAuth URL with explicit auth header
     const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-init', {
-      body: { provider, scopes }
+      body: { provider, scopes },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      }
     });
 
     if (urlError) {
@@ -227,8 +230,10 @@ export async function deleteRingIntegration(integrationId) {
  * @returns {Promise<Object>} Sync result
  */
 export async function syncRingData(ringIntegrationId) {
+  const { data: { session } } = await supabase.auth.getSession();
   const { data, error } = await supabase.functions.invoke('sync-ring-data', {
-    body: { ringIntegrationId }
+    body: { ringIntegrationId },
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {}
   });
 
   if (error) throw error;
@@ -240,7 +245,10 @@ export async function syncRingData(ringIntegrationId) {
  * @returns {Promise<Array>} List of calendars
  */
 export async function listGoogleCalendars() {
-  const { data, error } = await supabase.functions.invoke('google-calendar-list');
+  const { data: { session } } = await supabase.auth.getSession();
+  const { data, error } = await supabase.functions.invoke('google-calendar-list', {
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {}
+  });
 
   if (error) throw error;
   return data.calendars || [];
@@ -252,8 +260,10 @@ export async function listGoogleCalendars() {
  * @returns {Promise<Object>} Sheet metadata and validation result
  */
 export async function validateGoogleSheet(spreadsheetId) {
+  const { data: { session } } = await supabase.auth.getSession();
   const { data, error } = await supabase.functions.invoke('google-sheets-validate', {
-    body: { spreadsheetId }
+    body: { spreadsheetId },
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {}
   });
 
   if (error) throw error;
@@ -266,8 +276,10 @@ export async function validateGoogleSheet(spreadsheetId) {
  * @returns {Promise<Array>} List of sheet names
  */
 export async function listGoogleSheets(spreadsheetId) {
+  const { data: { session } } = await supabase.auth.getSession();
   const { data, error } = await supabase.functions.invoke('google-sheets-list', {
-    body: { spreadsheetId }
+    body: { spreadsheetId },
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {}
   });
 
   if (error) throw error;
