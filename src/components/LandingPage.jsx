@@ -114,6 +114,16 @@ function LandingPage() {
     demoRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById('features-section');
+    featuresSection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToPricing = () => {
+    const pricingSection = document.getElementById('pricing-section');
+    pricingSection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -124,13 +134,16 @@ function LandingPage() {
               <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-8 w-auto" />
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <button onClick={scrollToDemo} className="text-gray-600 hover:text-gray-900 font-medium">
+              <button onClick={scrollToDemo} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 Demo
               </button>
-              <a href="/pricing" className="text-gray-600 hover:text-gray-900 font-medium">
+              <button onClick={scrollToFeatures} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                Funktioner
+              </button>
+              <button onClick={scrollToPricing} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 Priser
-              </a>
-              <button onClick={scrollToAuth} className="text-gray-600 hover:text-gray-900 font-medium">
+              </button>
+              <button onClick={scrollToAuth} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 Logga in
               </button>
               <button
@@ -531,7 +544,8 @@ function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* Features Section */}
+      <section id="features-section" className="py-20 px-4 sm:px-6 lg:px-8 scroll-mt-16">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -631,7 +645,8 @@ function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      {/* Pricing Section */}
+      <section id="pricing-section" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 scroll-mt-16">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -781,7 +796,8 @@ function LandingPage() {
       </section>
 
       {/* Auth Section */}
-      <section id="auth-section" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 via-white to-cyan-50">
+      {/* Auth Section */}
+      <section id="auth-section" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 scroll-mt-16">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
