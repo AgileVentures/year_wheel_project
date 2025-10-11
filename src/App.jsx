@@ -183,21 +183,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           console.log('📊 [App] Fetched page items:', pageItems?.length || 0);
           
           // Fetch rings, activity groups, and labels from database tables
+          // CRITICAL: Use page_id to get only THIS page's rings/groups/labels
           const { data: dbRings } = await supabase
             .from('wheel_rings')
             .select('*')
-            .eq('wheel_id', wheelId)
+            .eq('page_id', pageToLoad.id)
             .order('ring_order');
           
           const { data: dbActivityGroups } = await supabase
             .from('activity_groups')
             .select('*')
-            .eq('wheel_id', wheelId);
+            .eq('page_id', pageToLoad.id);
           
           const { data: dbLabels } = await supabase
             .from('labels')
             .select('*')
-            .eq('wheel_id', wheelId);
+            .eq('page_id', pageToLoad.id);
           
           console.log('📊 [App] Fetched from DB - Rings:', dbRings?.length, 'Groups:', dbActivityGroups?.length, 'Labels:', dbLabels?.length);
           console.log('📊 [App] DB Rings:', dbRings);

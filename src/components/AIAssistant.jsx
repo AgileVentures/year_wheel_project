@@ -47,17 +47,17 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         return;
       }
       
-      // Fetch rings count
+      // Fetch rings count (for THIS PAGE)
       const { count: ringsCount } = await supabase
-        .from('rings')
+        .from('wheel_rings')
         .select('*', { count: 'exact', head: true })
-        .eq('wheel_id', wheelId);
+        .eq('page_id', currentPageId);
       
-      // Fetch activity groups count
+      // Fetch activity groups count (for THIS PAGE)
       const { count: groupsCount } = await supabase
         .from('activity_groups')
         .select('*', { count: 'exact', head: true })
-        .eq('wheel_id', wheelId);
+        .eq('page_id', currentPageId);
       
       // Fetch items count for current page
       const { count: itemsCount } = await supabase

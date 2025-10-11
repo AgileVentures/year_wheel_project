@@ -59,6 +59,43 @@ const tools = [
   {
     type: 'function',
     function: {
+      name: 'update_activity',
+      description: 'Update an existing activity. Can change dates, name, ring, or activity group. Find the activity by name first.',
+      parameters: {
+        type: 'object',
+        properties: {
+          activityName: {
+            type: 'string',
+            description: 'Current name of the activity to update',
+          },
+          newName: {
+            type: 'string',
+            description: 'Optional: New name for the activity',
+          },
+          newStartDate: {
+            type: 'string',
+            description: 'Optional: New start date in ISO format (YYYY-MM-DD)',
+          },
+          newEndDate: {
+            type: 'string',
+            description: 'Optional: New end date in ISO format (YYYY-MM-DD)',
+          },
+          newRingId: {
+            type: 'string',
+            description: 'Optional: New ring UUID',
+          },
+          newActivityGroupId: {
+            type: 'string',
+            description: 'Optional: New activity group UUID',
+          },
+        },
+        required: ['activityName'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'delete_activity',
       description: 'Delete an activity by name. Searches for activities matching the name.',
       parameters: {
@@ -78,6 +115,81 @@ const tools = [
     function: {
       name: 'list_activities',
       description: 'List all activities for the current wheel and page',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_ring',
+      description: 'Create a new ring on the wheel. Ring order is automatically calculated (newest ring becomes outermost). Use "outer" type for activity rings, "inner" for text-based rings.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Name of the ring (e.g., "Kampanjer", "Produkter", "Event")',
+          },
+          type: {
+            type: 'string',
+            enum: ['inner', 'outer'],
+            description: 'Ring type - "outer" for activity rings (most common), "inner" for text-based rings',
+          },
+          color: {
+            type: 'string',
+            description: 'Optional: Hex color code (e.g., "#408cfb" for blue, "#10b981" for green, "#f59e0b" for orange). Defaults to blue if not specified.',
+          },
+        },
+        required: ['name', 'type'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_activity_group',
+      description: 'Create a new activity group/category for organizing activities',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Name of the group (e.g., "Kampanj", "Event", "REA")',
+          },
+          color: {
+            type: 'string',
+            description: 'Hex color code for the group (e.g., "#8B5CF6")',
+          },
+        },
+        required: ['name', 'color'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'suggest_wheel_structure',
+      description: 'ONLY use when user asks for IDEAS/SUGGESTIONS. DO NOT call this after user confirms with "ja"/"alla" - use create_ring/create_activity_group instead. Returns recommendations for rings, groups, and typical activities based on use case.',
+      parameters: {
+        type: 'object',
+        properties: {
+          useCase: {
+            type: 'string',
+            description: 'What the user wants to plan (e.g., "marknadsföring", "projektstyrning", "butikskampanjer"). Only use this tool for initial suggestions, not after confirmation.',
+          },
+        },
+        required: ['useCase'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'analyze_wheel',
+      description: 'Analyze the current wheel and provide insights (activity density, gaps, recommendations)',
       parameters: {
         type: 'object',
         properties: {},
@@ -268,11 +380,60 @@ async function createActivity(
   }
 }
 
+async function updateActivity(
+  supabase: any,
+  wheelId: string,
+  currentPageId: string,
+  args: { activityName: string; newName?: string; newStartDate?: string; newEndDate?: string; newRingId?: string; newActivityGroupId?: string }
+) {
+  console.log('[updateActivity] Searching for:', args.activityName)
+
+  // Find items matching the name on current page
+  const { data: items, error: findError } = await supabase
+    .from('items')
+    .select('*')
+    .eq('wheel_id', wheelId)
+    .eq('page_id', currentPageId)
+    .ilike('name', `%${args.activityName}%`)
+
+  if (findError) throw findError
+
+  if (!items || items.length === 0) {
+    return {
+      success: false,
+      message: `Hittade ingen aktivitet med namnet "${args.activityName}"`
+    }
+  }
+
+  // Update all matching items
+  const updates: any = {}
+  if (args.newName) updates.name = args.newName
+  if (args.newStartDate) updates.start_date = args.newStartDate
+  if (args.newEndDate) updates.end_date = args.newEndDate
+  if (args.newRingId) updates.ring_id = args.newRingId
+  if (args.newActivityGroupId) updates.activity_id = args.newActivityGroupId
+
+  const itemIds = items.map((i: any) => i.id)
+  
+  const { error: updateError } = await supabase
+    .from('items')
+    .update(updates)
+    .in('id', itemIds)
+
+  if (updateError) throw updateError
+
+  return {
+    success: true,
+    itemsUpdated: items.length,
+    message: `Uppdaterade ${items.length} aktivitet(er) "${args.activityName}"`
+  }
+}
+
 async function deleteActivity(supabase: any, wheelId: string, currentPageId: string, args: { name: string }) {
   console.log('[deleteActivity] Searching for:', args.name)
 
   // Find items matching the name
-  const { data: items, error: findError } = await supabase
+  const { data: items, error: findError} = await supabase
     .from('items')
     .select('*')
     .eq('wheel_id', wheelId)
@@ -330,6 +491,286 @@ async function listActivities(supabase: any, wheelId: string, currentPageId: str
   }
 }
 
+// --- Create Ring ---
+async function createRing(supabase: any, wheelId: string, pageId: string, name: string, type: 'inner' | 'outer', color?: string) {
+  const defaultColor = '#408cfb'
+  const finalColor = color || defaultColor
+
+  // Check if ring with this name already exists on this page
+  const { data: existingByName, error: checkError } = await supabase
+    .from('wheel_rings')
+    .select('id, name, ring_order')
+    .eq('page_id', pageId)
+    .ilike('name', name)
+    .maybeSingle()
+
+  if (checkError) {
+    console.error('[createRing] Error checking existing ring:', checkError)
+  }
+
+  if (existingByName) {
+    console.log('[createRing] Ring already exists:', existingByName)
+    return {
+      success: true,
+      message: `Ring "${name}" finns redan`,
+      alreadyExists: true,
+    }
+  }
+
+  // Auto-calculate ring_order: get max ring_order for this page and add 1
+  const { data: existingRings, error: fetchError } = await supabase
+    .from('wheel_rings')
+    .select('ring_order')
+    .eq('page_id', pageId)
+    .order('ring_order', { ascending: false })
+    .limit(1)
+
+  if (fetchError) {
+    console.error('[createRing] Error fetching existing rings:', fetchError)
+    throw new Error(`Kunde inte hämta befintliga ringar: ${fetchError.message}`)
+  }
+
+  const ringOrder = existingRings && existingRings.length > 0 
+    ? existingRings[0].ring_order + 1 
+    : 0
+
+  const { data: ring, error } = await supabase
+    .from('wheel_rings')
+    .insert({
+      wheel_id: wheelId,  // Keep for convenience queries
+      page_id: pageId,    // Primary FK
+      name,
+      type,
+      color: finalColor,
+      visible: true,
+      orientation: 0,
+      ring_order: ringOrder,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[createRing] Error creating ring:', error)
+    throw new Error(`Kunde inte skapa ring: ${error.message}`)
+  }
+
+  console.log('[createRing] Created ring:', ring)
+  return {
+    success: true,
+    message: `Ring "${name}" skapad (typ: ${type}, färg: ${finalColor})`,
+  }
+}
+
+// --- Create Activity Group ---
+async function createActivityGroup(supabase: any, wheelId: string, pageId: string, name: string, color: string) {
+  // Check if group with this name already exists on this page
+  const { data: existing, error: checkError } = await supabase
+    .from('activity_groups')
+    .select('id, name')
+    .eq('page_id', pageId)
+    .ilike('name', name)
+    .maybeSingle()
+
+  if (checkError) {
+    console.error('[createActivityGroup] Error checking existing group:', checkError)
+  }
+
+  if (existing) {
+    console.log('[createActivityGroup] Group already exists:', existing)
+    return {
+      success: true,
+      message: `Aktivitetsgrupp "${name}" finns redan`,
+      alreadyExists: true,
+    }
+  }
+
+  const { data: group, error } = await supabase
+    .from('activity_groups')
+    .insert({
+      wheel_id: wheelId,  // Keep for convenience queries
+      page_id: pageId,    // Primary FK
+      name,
+      color,
+      visible: true,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[createActivityGroup] Error creating group:', error)
+    throw new Error(`Kunde inte skapa aktivitetsgrupp: ${error.message}`)
+  }
+
+  console.log('[createActivityGroup] Created group:', group)
+  return {
+    success: true,
+    message: `Aktivitetsgrupp "${name}" skapad med färg ${color}`,
+  }
+}
+
+// --- Suggest Wheel Structure ---
+async function suggestWheelStructure(useCase: string) {
+  const suggestions = {
+    marknadsföring: {
+      rings: [
+        { name: 'Kampanjer', type: 'outer', color: '#408cfb' },
+        { name: 'Innehåll', type: 'outer', color: '#10b981' },
+        { name: 'Event', type: 'outer', color: '#f59e0b' },
+      ],
+      groups: [
+        { name: 'REA', color: '#ef4444' },
+        { name: 'Produktlansering', color: '#8b5cf6' },
+        { name: 'Social Media', color: '#06b6d4' },
+        { name: 'Email', color: '#f97316' },
+      ],
+      tips: 'För marknadsföring rekommenderar jag att lägga till aktiviteter för säsongskampanjer (jul, sommar, black friday), produktlanseringar och återkommande innehåll som nyhetsbrev.',
+    },
+    projektstyrning: {
+      rings: [
+        { name: 'Projekt', type: 'outer', color: '#8b5cf6' },
+        { name: 'Milstolpar', type: 'outer', color: '#10b981' },
+        { name: 'Resurser', type: 'inner', color: '#64748b' },
+      ],
+      groups: [
+        { name: 'Planering', color: '#06b6d4' },
+        { name: 'Utveckling', color: '#8b5cf6' },
+        { name: 'Test', color: '#f59e0b' },
+        { name: 'Lansering', color: '#10b981' },
+      ],
+      tips: 'För projektstyrning, lägg till viktiga deadlines som milstolpar och dela upp större projekt i faser. Använd färger för att skilja på olika projekttyper.',
+    },
+    butikskampanjer: {
+      rings: [
+        { name: 'Kampanjer', type: 'outer', color: '#ef4444' },
+        { name: 'Säsong', type: 'outer', color: '#f59e0b' },
+        { name: 'Event', type: 'outer', color: '#8b5cf6' },
+      ],
+      groups: [
+        { name: 'REA', color: '#ef4444' },
+        { name: 'Helgdagar', color: '#10b981' },
+        { name: 'Tema', color: '#8b5cf6' },
+        { name: 'Ordinarie', color: '#64748b' },
+      ],
+      tips: 'För butikskampanjer, planera kring högtider (jul, påsk, midsommar), skol-lov och säsongsskiften. Lägg till Black Friday, Cyber Monday och andra stora shoppingdagar.',
+    },
+  }
+
+  // Find best match
+  const lowerCase = useCase.toLowerCase()
+  let suggestion = null
+
+  if (lowerCase.includes('marknadsför') || lowerCase.includes('kampanj') || lowerCase.includes('marketing')) {
+    suggestion = suggestions.marknadsföring
+  } else if (lowerCase.includes('projekt') || lowerCase.includes('project')) {
+    suggestion = suggestions.projektstyrning
+  } else if (lowerCase.includes('butik') || lowerCase.includes('shop') || lowerCase.includes('retail')) {
+    suggestion = suggestions.butikskampanjer
+  } else {
+    return {
+      success: true,
+      message: `Jag kan ge förslag för:\n- Marknadsföring\n- Projektstyrning\n- Butikskampanjer\n\nVad passar bäst för ditt syfte?`,
+    }
+  }
+
+  let response = `**Förslag för ${useCase}:**\n\n`
+  response += `**Ringar att skapa:**\n`
+  suggestion.rings.forEach((r: any) => {
+    response += `- ${r.name} (${r.type === 'outer' ? 'yttre' : 'inre'}, färg: ${r.color})\n`
+  })
+  response += `\n**Aktivitetsgrupper att skapa:**\n`
+  suggestion.groups.forEach((g: any) => {
+    response += `- ${g.name} (färg: ${g.color})\n`
+  })
+  response += `\n**Tips:** ${suggestion.tips}`
+
+  return {
+    success: true,
+    message: response,
+    // Include structured data so AI can remember and execute later
+    suggestedRings: suggestion.rings,
+    suggestedGroups: suggestion.groups,
+  }
+}
+
+// --- Analyze Wheel ---
+async function analyzeWheel(supabase: any, pageId: string) {
+  // Fetch all data
+  const [ringsRes, groupsRes, itemsRes] = await Promise.all([
+    supabase.from('wheel_rings').select('*').eq('page_id', pageId),
+    supabase.from('activity_groups').select('*').eq('page_id', pageId),
+    supabase.from('items').select('*').eq('page_id', pageId),
+  ])
+
+  if (ringsRes.error || groupsRes.error || itemsRes.error) {
+    throw new Error('Kunde inte analysera hjulet')
+  }
+
+  const rings = ringsRes.data || []
+  const groups = groupsRes.data || []
+  const items = itemsRes.data || []
+
+  // Analyze
+  let analysis = `**Analys av ditt årshjul:**\n\n`
+  analysis += `📊 **Översikt:**\n`
+  analysis += `- Ringar: ${rings.length}\n`
+  analysis += `- Aktivitetsgrupper: ${groups.length}\n`
+  analysis += `- Aktiviteter: ${items.length}\n\n`
+
+  // Check for common issues
+  const warnings = []
+  const tips = []
+
+  if (rings.length === 0) {
+    warnings.push('⚠️ Inga ringar skapade ännu. Skapa minst en ring för att lägga till aktiviteter.')
+  }
+
+  if (groups.length === 0) {
+    warnings.push('⚠️ Inga aktivitetsgrupper skapade. Grupper hjälper dig organisera aktiviteter.')
+  }
+
+  if (items.length === 0) {
+    tips.push('💡 Börja med att lägga till några aktiviteter för att fylla hjulet.')
+  }
+
+  // Activity density by quarter
+  if (items.length > 0) {
+    const quarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 }
+    items.forEach((item: any) => {
+      const month = new Date(item.start_date).getMonth()
+      if (month < 3) quarters.Q1++
+      else if (month < 6) quarters.Q2++
+      else if (month < 9) quarters.Q3++
+      else quarters.Q4++
+    })
+
+    analysis += `📅 **Aktiviteter per kvartal:**\n`
+    analysis += `- Q1 (jan-mar): ${quarters.Q1}\n`
+    analysis += `- Q2 (apr-jun): ${quarters.Q2}\n`
+    analysis += `- Q3 (jul-sep): ${quarters.Q3}\n`
+    analysis += `- Q4 (okt-dec): ${quarters.Q4}\n\n`
+
+    // Check for imbalance
+    const max = Math.max(...Object.values(quarters))
+    const min = Math.min(...Object.values(quarters))
+    if (max > min * 3) {
+      tips.push('💡 Det verkar vara ojämn fördelning av aktiviteter över året. Överväg att sprida ut dem mer.')
+    }
+  }
+
+  if (warnings.length > 0) {
+    analysis += `\n⚠️ **Varningar:**\n${warnings.join('\n')}\n`
+  }
+
+  if (tips.length > 0) {
+    analysis += `\n💡 **Tips:**\n${tips.join('\n')}\n`
+  }
+
+  return {
+    success: true,
+    message: analysis,
+  }
+}
+
 // Main handler
 serve(async (req) => {
   try {
@@ -371,16 +812,17 @@ serve(async (req) => {
     console.log('[AI Chat] Processing:', { userMessage, wheelId, currentPageId })
 
     // Fetch existing rings and activity groups to give AI context
+    // CRITICAL: Use page_id to get only THIS page's rings/groups
     const { data: existingRings } = await supabase
       .from('wheel_rings')
       .select('id, name, type')
-      .eq('wheel_id', wheelId)
+      .eq('page_id', currentPageId)
       .order('ring_order')
     
     const { data: existingGroups } = await supabase
       .from('activity_groups')
       .select('id, name, color')
-      .eq('wheel_id', wheelId)
+      .eq('page_id', currentPageId)
     
     const ringsContext = existingRings && existingRings.length > 0
       ? `\n\nTillgängliga ringar:\n${existingRings.map(r => `- ${r.name} (${r.type}, ID: ${r.id})`).join('\n')}`
@@ -394,20 +836,72 @@ serve(async (req) => {
     const messages: any[] = [
       {
         role: 'system',
-        content: `Du är en assistent för en svensk kalenderapplikation (Year Wheel). 
-Du hjälper användare att skapa, radera och lista aktiviteter.
+        content: `You are a professional assistant for a calendar planning application called Year Wheel.
 
-Viktigt:
-- Alla datum ska vara i formatet YYYY-MM-DD
-- Aktiviteter kan sträcka sig över flera år (t.ex. 2025-12-15 till 2026-01-30)
-- När användaren nämner en ring eller grupp NAMN, hitta motsvarande ID från listan ovan
-- Om användaren säger "Kammpanjer", använd ID:t för ringen "Kammpanjer" från listan ovan
-- Om användaren säger "Allmän", använd ID:t för gruppen "Allmän" från listan ovan
-- Du MÅSTE använda de exakta UUID:na från listorna ovan, inte namnen
-- Svara alltid på svenska
-- Var kortfattad men informativ${ringsContext}${groupsContext}
+YOUR CAPABILITIES:
+- Create, update, and delete activities with specific dates
+- Create rings (inner/outer) and activity groups with custom colors
+- Suggest wheel structures based on use cases (marketing, project management, retail)
+- Analyze wheel distribution and provide insights
+- List all activities
 
-EXEMPEL: Om användaren säger "lägg på Ring 1 i Allmän", kolla listorna ovan och använd UUID:na för "Ring 1" och "Allmän".`,
+CRITICAL BEHAVIOR RULES:
+1. **EXECUTION-FIRST MINDSET**: 
+   - When user says "ja", "ja tack", "gör det", "skapa", "alla" → IMMEDIATELY call tools, DON'T ask again
+   - When user requests suggestions → give suggestions AND THEN ASK if they want you to create them
+   - When user confirms ("ja", "yes", "alla", "gör det") → EXECUTE immediately without repeating suggestions
+   
+2. **BATCH OPERATIONS**:
+   - "alla" or "allt" = execute ALL previously mentioned items in ONE response
+   - Call multiple tools simultaneously (e.g., 3 rings + 4 groups = 7 tool calls)
+   - After execution, summarize WHAT was created (not what COULD be created)
+
+3. **CONVERSATION MEMORY**:
+   - Remember what you suggested in previous messages
+   - When user says "ja" or "alla", refer back to YOUR OWN previous suggestions
+   - Don't give NEW suggestions after user confirmed - execute the OLD ones!
+
+4. **LANGUAGE & TONE**:
+   - Always respond in the SAME LANGUAGE as the user (Swedish, English, etc.)
+   - Be direct and action-oriented, not hesitant
+   - After creating items: "Jag har skapat..." (not "Vill du att jag...")
+
+5. **TECHNICAL RULES**:
+   - All dates must be in YYYY-MM-DD format
+   - Activities can span multiple years (e.g., 2025-12-15 to 2026-01-30)
+   - When users mention ring/group NAMES, find the corresponding ID from the lists below
+   - You MUST use exact UUIDs from the lists, not the names
+   - Ring order is automatically calculated - newest rings become outermost
+
+6. **ERROR HANDLING**:
+   - When tool execution fails: translate errors into user-friendly language
+   - Example: "Ring med ID X hittades inte" → "Jag kunde inte hitta den ringen. Här är tillgängliga ringar: [list]"
+   - When feature unavailable: suggest alternatives using available tools${ringsContext}${groupsContext}
+
+EXAMPLE CONVERSATION FLOWS:
+
+**Suggestion Flow (user asks for ideas):**
+User: "föreslå ringar för SaaS lansering"
+You: "För SaaS-lansering föreslår jag: Kampanjer (yttre, #408cfb), Innehåll (yttre, #10b981), Event (yttre, #f59e0b). Vill du att jag skapar dessa?"
+
+**Execution Flow (user confirms):**
+User: "ja tack" or "alla" or "gör det"
+You: [Call create_ring 3 times immediately]
+You: "Jag har skapat 3 ringar: Kampanjer, Innehåll och Event. Vill du att jag också skapar aktivitetsgrupper?"
+
+**Bad Pattern (DON'T DO THIS):**
+User: "ja tack"
+You: "För SaaS-lansering kan vi rekommendera... Vill du att jag skapar någon av dessa?" ❌ WRONG - Don't repeat suggestions after confirmation!
+
+**Error Handling:**
+- Swedish: "Jag kunde inte hitta den ringen. Här är tillgängliga ringar: [list]. Vilken vill du använda?"
+- Swedish: "Det blev ett problem: [friendly explanation]. Kan du dubbelkolla att [requirement]?"
+
+LANGUAGE ADAPTATION:
+- If user writes in Swedish → respond in Swedish
+- If user writes in English → respond in English
+- Match the user's formality level (casual/professional)
+- Adapt tone: friendly for casual users, formal for professional contexts`,
       }
     ]
     
@@ -438,42 +932,65 @@ EXEMPEL: Om användaren säger "lägg på Ring 1 i Allmän", kolla listorna ovan
 
     // Handle tool calls
     if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-      const toolCall = responseMessage.tool_calls[0]
-      const functionName = toolCall.function.name
-      const functionArgs = JSON.parse(toolCall.function.arguments)
+      console.log(`[AI Chat] Processing ${responseMessage.tool_calls.length} tool calls`)
+      
+      // Execute ALL tool calls
+      const toolResults = []
+      for (const toolCall of responseMessage.tool_calls) {
+        const functionName = toolCall.function.name
+        const functionArgs = JSON.parse(toolCall.function.arguments)
 
-      console.log('[AI Chat] Tool call:', { functionName, functionArgs })
+        console.log('[AI Chat] Tool call:', { functionName, functionArgs })
 
-      let result
-      if (functionName === 'create_activity') {
-        result = await createActivity(supabase, wheelId, functionArgs)
-      } else if (functionName === 'delete_activity') {
-        result = await deleteActivity(supabase, wheelId, currentPageId, functionArgs)
-      } else if (functionName === 'list_activities') {
-        result = await listActivities(supabase, wheelId, currentPageId)
-      } else {
-        throw new Error(`Unknown tool: ${functionName}`)
+        let result
+        try {
+          if (functionName === 'create_activity') {
+            result = await createActivity(supabase, wheelId, functionArgs)
+          } else if (functionName === 'update_activity') {
+            result = await updateActivity(supabase, wheelId, currentPageId, functionArgs)
+          } else if (functionName === 'delete_activity') {
+            result = await deleteActivity(supabase, wheelId, currentPageId, functionArgs)
+          } else if (functionName === 'list_activities') {
+            result = await listActivities(supabase, wheelId, currentPageId)
+        } else if (functionName === 'create_ring') {
+          result = await createRing(supabase, wheelId, currentPageId, functionArgs.name, functionArgs.type, functionArgs.color)
+        } else if (functionName === 'create_activity_group') {
+          result = await createActivityGroup(supabase, wheelId, currentPageId, functionArgs.name, functionArgs.color)
+          } else if (functionName === 'suggest_wheel_structure') {
+            result = await suggestWheelStructure(functionArgs.useCase)
+          } else if (functionName === 'analyze_wheel') {
+            result = await analyzeWheel(supabase, currentPageId)
+          } else {
+            // Unknown tool - let AI handle gracefully
+            result = {
+              success: false,
+              message: `Tool "${functionName}" is not yet implemented. Please let the user know this feature is not available yet and suggest alternatives.`,
+            }
+          }
+        } catch (toolError) {
+          // Tool execution failed - return error to AI for graceful handling
+          console.error(`[AI Chat] Tool ${functionName} failed:`, toolError)
+          result = {
+            success: false,
+            message: (toolError as Error).message,
+          }
+        }
+        
+        // Add tool result
+        toolResults.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(result),
+        })
       }
 
-      // Get final response from model with tool result
+      // Get final response from model with ALL tool results
+      // CRITICAL: Include full conversation history + assistant's tool calls + ALL tool responses
+      const finalMessages = [...messages, responseMessage, ...toolResults]
+      
       const finalCompletion = await openai.chat.completions.create({
         model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `Du är en assistent för en svensk kalenderapplikation. Svara kortfattat och informativt på svenska.`,
-          },
-          {
-            role: 'user',
-            content: userMessage,
-          },
-          responseMessage,
-          {
-            role: 'tool',
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(result),
-          },
-        ],
+        messages: finalMessages,
       })
 
       const finalMessage = finalCompletion.choices[0].message.content
@@ -482,8 +999,8 @@ EXEMPEL: Om användaren säger "lägg på Ring 1 i Allmän", kolla listorna ovan
         JSON.stringify({
           success: true,
           message: finalMessage,
-          toolUsed: functionName,
-          toolResult: result,
+          toolsUsed: responseMessage.tool_calls.map((tc: any) => tc.function.name),
+          toolResults: toolResults,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
