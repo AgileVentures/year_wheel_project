@@ -270,7 +270,7 @@ function YearWheel({
       
       {/* Navigation arrows - only show when zoomed in beyond fit */}
       {zoomLevel > 100 && (
-        <div className="absolute top-4 right-4 flex flex-col gap-1 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-1 border border-gray-200">
+        <div className="absolute top-4 right-4 flex flex-col gap-1 bg-white/90 backdrop-blur-sm rounded-sm shadow-lg p-1 border border-gray-200">
           <button
             onClick={panUp}
             className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"

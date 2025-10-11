@@ -264,7 +264,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
               {/* Subscription Button */}
               {!subscriptionLoading && !isAdminUser && (
                 <button
-                  onClick={() => isPremium ? setShowSubscriptionSettings(true) : setShowSubscriptionModal(true)}
+                  onClick={() => isPremium ? setShowSubscriptionSettings(true) : window.location.href = '/pricing'}
                   className={`
                     flex items-center gap-2 px-4 py-2.5 rounded-sm font-semibold transition-all
                     ${isPremium 
@@ -272,7 +272,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                       : 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-md hover:shadow-lg'
                     }
                   `}
-                  title={isPremium ? 'Hantera prenumeration' : 'Uppgradera till Premium'}
+                  title={isPremium ? 'Hantera prenumeration' : 'Se priser och uppgradera'}
                 >
                   <Crown size={18} className={isPremium ? 'animate-pulse' : ''} />
                   <span className="text-sm hidden sm:inline">

@@ -10,10 +10,12 @@ import AddPageModal from "./components/AddPageModal";
 import AIAssistant from "./components/AIAssistant";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
+import LandingPage from "./components/LandingPage";
 import AuthPage from "./components/auth/AuthPage";
 import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import PreviewWheelPage from "./components/PreviewWheelPage";
+import PricingPage from "./components/PricingPage";
 import { fetchWheel, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
@@ -1561,7 +1563,9 @@ function AppContent() {
   return (
     <Routes>
       {/* Public routes */}
+      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
       <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
       <Route path="/invite/:token" element={<InviteAcceptPage />} />
       <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
 
@@ -1576,9 +1580,6 @@ function AppContent() {
           <WheelEditorRoute />
         </ProtectedRoute>
       } />
-
-      {/* Redirect root to dashboard or auth */}
-      <Route path="/" element={<Navigate to={user ? "/dashboard" : "/auth"} replace />} />
       
       {/* 404 redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />

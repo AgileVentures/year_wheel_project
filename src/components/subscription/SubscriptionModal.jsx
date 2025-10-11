@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Check, Crown, Zap } from 'lucide-react';
+import { X, Check, Crown, Zap, Sparkles } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { createCheckoutSession } from '../../services/subscriptionService';
 
@@ -46,10 +46,10 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
       name: 'Gratis',
       price: '0',
       period: '',
-      description: 'Perfekt för att testa',
+      description: 'Perfekt för att komma igång',
       features: [
-        'Upp till 2 årshjul',
-        '1 team med upp till 3 medlemmar',
+        '3 årshjul',
+        '1 team med 3 medlemmar',
         'Export som PNG och SVG',
         'Grundläggande funktioner'
       ],
@@ -64,6 +64,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
       period: '/månad',
       description: 'För flexibilitet',
       features: [
+        'AI-assisterad design och planering',
         'Obegränsade årshjul',
         'Obegränsade team och medlemmar',
         'Alla exportformat (PNG, SVG, PDF, JPG)',
@@ -84,6 +85,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
       savings: 'Spara 19%!',
       description: 'Bästa värdet',
       features: [
+        'AI-assisterad design och planering',
         'Obegränsade årshjul',
         'Obegränsade team och medlemmar',
         'Alla exportformat (PNG, SVG, PDF, JPG)',

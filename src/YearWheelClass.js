@@ -1992,6 +1992,77 @@ class YearWheel {
     this.context.restore();
   }
 
+  // Draw a label badge with text on an activity item
+  drawLabelIndicator(item, startRadius, width, startAngle, endAngle) {
+    if (!item.labelId) return; // No label, skip
+    
+    const label = this.organizationData.labels.find(l => l.id === item.labelId);
+    if (!label || !label.visible) return; // Label not found or not visible
+    
+    this.context.save();
+    
+    // Calculate badge dimensions
+    const fontSize = Math.max(this.size / 120, 8); // Minimum readable size
+    const padding = fontSize * 0.4;
+    const badgeHeight = fontSize + padding * 2;
+    
+    // Measure text width
+    this.context.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+    const textWidth = this.context.measureText(label.name).width;
+    const badgeWidth = textWidth + padding * 2;
+    
+    // Position badge at the END of activity (right edge)
+    const badgeAngle = endAngle - (badgeWidth / (startRadius + width)) * (180 / Math.PI) * 0.5;
+    const badgeRadius = startRadius + width * 0.5; // Middle of ring
+    
+    // Draw rounded rectangle badge
+    const centerCoord = this.moveToAngle(badgeRadius, badgeAngle);
+    
+    // Badge background with border
+    this.context.translate(centerCoord.x, centerCoord.y);
+    this.context.rotate(badgeAngle * (Math.PI / 180) + Math.PI / 2);
+    
+    // White border for contrast
+    this.context.fillStyle = '#FFFFFF';
+    this.context.strokeStyle = '#FFFFFF';
+    this.context.lineWidth = 2;
+    this.roundRect(-badgeWidth / 2 - 1, -badgeHeight / 2 - 1, badgeWidth + 2, badgeHeight + 2, fontSize * 0.3);
+    this.context.fill();
+    
+    // Colored background
+    this.context.fillStyle = label.color || '#94A3B8';
+    this.roundRect(-badgeWidth / 2, -badgeHeight / 2, badgeWidth, badgeHeight, fontSize * 0.3);
+    this.context.fill();
+    
+    // Label text
+    this.context.fillStyle = this.getContrastColor(label.color || '#94A3B8');
+    this.context.textAlign = 'center';
+    this.context.textBaseline = 'middle';
+    this.context.fillText(label.name, 0, 0);
+    
+    this.context.restore();
+  }
+  
+  // Helper to draw rounded rectangle (if not available)
+  roundRect(x, y, width, height, radius) {
+    if (typeof this.context.roundRect === 'function') {
+      this.context.roundRect(x, y, width, height, radius);
+    } else {
+      // Fallback for older browsers
+      this.context.beginPath();
+      this.context.moveTo(x + radius, y);
+      this.context.lineTo(x + width - radius, y);
+      this.context.quadraticCurveTo(x + width, y, x + width, y + radius);
+      this.context.lineTo(x + width, y + height - radius);
+      this.context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      this.context.lineTo(x + radius, y + height);
+      this.context.quadraticCurveTo(x, y + height, x, y + height - radius);
+      this.context.lineTo(x, y + radius);
+      this.context.quadraticCurveTo(x, y, x + radius, y);
+      this.context.closePath();
+    }
+  }
+
   // Function to draw rotating elements
   drawRotatingElements() {
     // Clear clickable items before redrawing
@@ -2161,6 +2232,9 @@ class YearWheel {
               isVertical: textOrientation === 'vertical',
               highlight: isHovered,
             });
+            
+            // Draw label indicator if item has a label
+            this.drawLabelIndicator(item, itemStartRadius, itemWidth, adjustedStartAngle, adjustedEndAngle);
             
             // Store clickable region for this item
             this.clickableItems.push({
@@ -2335,6 +2409,9 @@ class YearWheel {
             isVertical: textOrientation === 'vertical',
             highlight: isHovered,
           });
+          
+          // Draw label indicator if item has a label
+          this.drawLabelIndicator(item, itemStartRadius, itemWidth, adjustedStartAngle, adjustedEndAngle);
           
           // Store clickable region for this item
           this.clickableItems.push({

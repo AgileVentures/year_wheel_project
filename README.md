@@ -1,7 +1,50 @@
 
 # Year Wheel POC
 
-> 
+## Brand Colors
+
+YearWheel uses a carefully crafted color palette that evokes trust, clarity, and the natural flow of time through the year.
+
+### Text Colors
+
+| Element | Color Name | HEX | RGB | Usage |
+|---------|-----------|-----|-----|-------|
+| "YEAR" | Teal/Cyan | `#00A4A6` | (0, 164, 166) | Primary brand color, CTAs, accents |
+| "WHEEL" | Deep Blue/Indigo | `#1E1EBE` | (30, 30, 190) | Secondary text, headers |
+
+### Wheel Icon Colors
+
+The circular "wheel" symbol uses a gradient palette representing balance, clarity, and seasonal flow:
+
+| Segment | Color Description | HEX | RGB | Usage |
+|---------|------------------|-----|-----|-------|
+| A | Deep navy blue | `#1B2A63` | (27, 42, 99) | Backgrounds, dark overlays |
+| B | Royal blue | `#2D4EC8` | (45, 78, 200) | Active elements, interactive states |
+| C | Teal green | `#2E9E97` | (46, 158, 151) | Hover states, secondary CTAs |
+| D | Turquoise | `#36C2C6` | (54, 194, 198) | Accent highlights, badges |
+| E | Light aqua | `#A4E6E0` | (164, 230, 224) | Subtle text, borders, backgrounds |
+| F | Lime green | `#9FCB3E` | (159, 203, 62) | Success states, growth indicators |
+| G | Deep forest green | `#336B3E` | (51, 107, 62) | Alternative dark accent |
+| H | White/neutral | `#FFFFFF` | (255, 255, 255) | Text on dark, card backgrounds |
+
+### Color Philosophy
+
+- **Blue-green tones** (trust, calm, clarity) form the foundation
+- **Green-lime accents** (growth, renewal, vitality) add energy
+- **Gradient transitions** from teal to deep blue reinforce the "wheel motion" concept
+- **Natural + digital hues** balance structure with creativity, perfect for planning tools
+
+### Implementation
+
+Use these colors consistently across:
+- Hero sections (navy + teal gradients)
+- CTAs (teal primary, white secondary)
+- Badges (turquoise with light aqua text)
+- Interactive elements (royal blue for hover, teal for active)
+- Text hierarchy (white on dark, light aqua for secondary text)
+    
+    
+
 ## Getting Started
 
 ### Prerequisites
