@@ -18,10 +18,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔄 Callback received:', req.url)
+    
     const url = new URL(req.url)
     const code = url.searchParams.get('code')
     const state = url.searchParams.get('state')
     const error = url.searchParams.get('error')
+
+    console.log('📋 Parameters:', { hasCode: !!code, hasState: !!state, error })
 
     // Check for OAuth errors
     if (error) {
@@ -77,6 +81,8 @@ serve(async (req) => {
       throw new Error('Google OAuth not configured')
     }
 
+    console.log('🔑 Exchanging code for tokens...')
+    
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
@@ -93,11 +99,12 @@ serve(async (req) => {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text()
-      console.error('Token exchange failed:', errorData)
+      console.error('❌ Token exchange failed:', tokenResponse.status, errorData)
       throw new Error('Failed to exchange authorization code')
     }
 
     const tokens = await tokenResponse.json()
+    console.log('✅ Tokens received')
 
     // Get user info from Google
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -115,6 +122,8 @@ serve(async (req) => {
     // Calculate token expiry
     const expiresAt = new Date(Date.now() + (tokens.expires_in * 1000))
 
+    console.log('💾 Storing integration in database...')
+    
     // Store tokens in database
     const { data: integration, error: dbError } = await supabaseAdmin
       .from('user_integrations')
@@ -135,9 +144,11 @@ serve(async (req) => {
       .single()
 
     if (dbError) {
-      console.error('Database error:', dbError)
-      throw new Error('Failed to store integration')
+      console.error('❌ Database error:', dbError)
+      throw new Error(`Failed to store integration: ${dbError.message}`)
     }
+    
+    console.log('✅ Integration stored successfully')
 
     // Return HTML that closes popup and notifies parent
     const htmlSuccess = `

@@ -29,7 +29,7 @@ serve(async (req) => {
       )
     }
 
-    // Get Supabase client
+    // Get Supabase client with auth context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -40,11 +40,12 @@ serve(async (req) => {
       }
     )
 
-    // Check authentication
+    // Verify JWT token
+    const jwt = authHeader.replace('Bearer ', '')
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser()
+    } = await supabaseClient.auth.getUser(jwt)
 
     if (authError || !user) {
       return new Response(

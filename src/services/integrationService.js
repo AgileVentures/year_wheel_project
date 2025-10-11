@@ -83,18 +83,33 @@ export async function disconnectProvider(provider) {
 export async function initiateGoogleOAuth(provider = 'google', scopes = []) {
   try {
     // Check if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log('🔑 Session check:', {
+      hasSession: !!session,
+      hasAccessToken: !!session?.access_token,
+      sessionError,
+      tokenPreview: session?.access_token?.substring(0, 20) + '...'
+    });
+    
     if (!session) {
       throw new Error('Du måste vara inloggad för att ansluta Google-konto');
     }
 
+    if (!session.access_token) {
+      throw new Error('Ingen access token i session - försök logga in igen');
+    }
+
     // Call Edge Function to get OAuth URL with explicit auth header
+    console.log('📞 Calling google-oauth-init with auth header...');
     const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-init', {
       body: { provider, scopes },
       headers: {
         Authorization: `Bearer ${session.access_token}`
       }
     });
+
+    console.log('📥 Response:', { data: urlData, error: urlError });
 
     if (urlError) {
       console.error('OAuth init error:', urlError);
