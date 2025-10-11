@@ -863,7 +863,6 @@ function LandingPage() {
             <p>
               YearWheel Planner är en SaaS-tjänst skapad och driven av <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors">CommunitasLabs Inc</a>
             </p>
-            <p className="mt-2">© 2025 YearWheel. Alla rättigheter reserverade.</p>
           </div>
         </div>
       </footer>
