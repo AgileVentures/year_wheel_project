@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { User, Mail, Key, ArrowLeft } from 'lucide-react';
+import { User, Mail, Key, ArrowLeft, Link as LinkIcon, Calendar, Sheet, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { 
+  getUserIntegrations, 
+  isProviderConnected, 
+  initiateGoogleOAuth, 
+  disconnectProvider 
+} from '../services/integrationService';
 
 function ProfilePage({ onBack }) {
   const { user, signOut } = useAuth();
@@ -11,6 +17,28 @@ function ProfilePage({ onBack }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Integration states
+  const [integrations, setIntegrations] = useState([]);
+  const [integrationsLoading, setIntegrationsLoading] = useState(true);
+  const [connectingProvider, setConnectingProvider] = useState(null);
+
+  // Load integrations on mount
+  useEffect(() => {
+    loadIntegrations();
+  }, []);
+
+  const loadIntegrations = async () => {
+    try {
+      setIntegrationsLoading(true);
+      const data = await getUserIntegrations();
+      setIntegrations(data);
+    } catch (err) {
+      console.error('Error loading integrations:', err);
+    } finally {
+      setIntegrationsLoading(false);
+    }
+  };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -46,12 +74,49 @@ function ProfilePage({ onBack }) {
     }
   };
 
+  const handleConnectGoogle = async (provider, scopes) => {
+    setError('');
+    setConnectingProvider(provider);
+    
+    try {
+      await initiateGoogleOAuth(provider, scopes);
+      setSuccess(`${provider === 'google_calendar' ? 'Google Calendar' : 'Google Sheets'} ansluten!`);
+      await loadIntegrations(); // Reload integrations
+    } catch (err) {
+      setError(err.message || 'Kunde inte ansluta till Google');
+      console.error('Error connecting Google:', err);
+    } finally {
+      setConnectingProvider(null);
+    }
+  };
+
+  const handleDisconnectGoogle = async (provider) => {
+    if (!confirm('Är du säker på att du vill koppla från denna integration? Alla ring-kopplingar kommer att tas bort.')) {
+      return;
+    }
+
+    setError('');
+    
+    try {
+      await disconnectProvider(provider);
+      setSuccess('Integration borttagen');
+      await loadIntegrations(); // Reload integrations
+    } catch (err) {
+      setError(err.message || 'Kunde inte koppla från integration');
+      console.error('Error disconnecting:', err);
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
     } catch (err) {
       console.error('Error signing out:', err);
     }
+  };
+
+  const getIntegrationByProvider = (provider) => {
+    return integrations.find(i => i.provider === provider);
   };
 
   return (
@@ -141,6 +206,116 @@ function ProfilePage({ onBack }) {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Google Integrations */}
+        <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <LinkIcon size={20} />
+            Google Integrationer
+          </h2>
+          <p className="text-sm text-gray-600 mb-6">
+            Anslut ditt Google-konto för att synkronisera data från Calendar och Sheets till dina hjul.
+          </p>
+
+          {integrationsLoading ? (
+            <div className="flex items-center gap-2 text-gray-600">
+              <Loader2 size={20} className="animate-spin" />
+              <span>Laddar integrationer...</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Google Calendar Integration */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-sm bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <Calendar size={24} className="text-blue-600" />
+                  <div>
+                    <h3 className="font-medium text-gray-900">Google Calendar</h3>
+                    <p className="text-sm text-gray-600">
+                      Synkronisera händelser från dina kalendrar
+                    </p>
+                  </div>
+                </div>
+                
+                {getIntegrationByProvider('google_calendar') ? (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <CheckCircle size={20} />
+                      <span className="text-sm font-medium">Ansluten</span>
+                    </div>
+                    <button
+                      onClick={() => handleDisconnectGoogle('google_calendar')}
+                      className="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-sm transition-colors"
+                    >
+                      Koppla från
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleConnectGoogle('google_calendar', [
+                      'https://www.googleapis.com/auth/calendar.readonly'
+                    ])}
+                    disabled={connectingProvider === 'google_calendar'}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {connectingProvider === 'google_calendar' ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Ansluter...
+                      </>
+                    ) : (
+                      'Anslut Calendar'
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Google Sheets Integration */}
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-sm bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <Sheet size={24} className="text-green-600" />
+                  <div>
+                    <h3 className="font-medium text-gray-900">Google Sheets</h3>
+                    <p className="text-sm text-gray-600">
+                      Importera data från kalkylblad
+                    </p>
+                  </div>
+                </div>
+                
+                {getIntegrationByProvider('google_sheets') ? (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-green-600">
+                      <CheckCircle size={20} />
+                      <span className="text-sm font-medium">Ansluten</span>
+                    </div>
+                    <button
+                      onClick={() => handleDisconnectGoogle('google_sheets')}
+                      className="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-sm transition-colors"
+                    >
+                      Koppla från
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleConnectGoogle('google_sheets', [
+                      'https://www.googleapis.com/auth/spreadsheets.readonly'
+                    ])}
+                    disabled={connectingProvider === 'google_sheets'}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {connectingProvider === 'google_sheets' ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Ansluter...
+                      </>
+                    ) : (
+                      'Anslut Sheets'
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Security Settings */}

@@ -1,8 +1,9 @@
-import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X } from 'lucide-react';
+import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import AddAktivitetModal from './AddAktivitetModal';
 import EditAktivitetModal from './EditAktivitetModal';
+import RingIntegrationModal from './RingIntegrationModal';
 
 function OrganizationPanel({ 
   organizationData,
@@ -23,6 +24,7 @@ function OrganizationPanel({
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAktivitet, setEditingAktivitet] = useState(null);
+  const [integrationRing, setIntegrationRing] = useState(null); // Ring being configured for integration
   const [sortBy, setSortBy] = useState('startDate'); // startDate, name, ring
   const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
   const [selectedMonth, setSelectedMonth] = useState(9); // October (0-indexed)
@@ -794,6 +796,13 @@ function OrganizationPanel({
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                       {countRingItems(ring.id)}
                     </span>
+                    <button
+                      onClick={() => setIntegrationRing(ring)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 text-blue-600 hover:bg-blue-50 rounded transition-opacity"
+                      title="Koppla datakälla"
+                    >
+                      <LinkIcon size={12} />
+                    </button>
                     {innerRings.length > 1 && (
                       <button
                         onClick={() => handleRemoveRing(ring.id)}
@@ -892,6 +901,13 @@ function OrganizationPanel({
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                       {countRingItems(ring.id)}
                     </span>
+                    <button
+                      onClick={() => setIntegrationRing(ring)}
+                      className="opacity-0 group-hover:opacity-100 p-0.5 text-blue-600 hover:bg-blue-50 rounded transition-opacity"
+                      title="Koppla datakälla"
+                    >
+                      <LinkIcon size={12} />
+                    </button>
                     {outerRings.length > 0 && (
                       <button
                         onClick={() => handleRemoveRing(ring.id)}
@@ -1391,6 +1407,19 @@ function OrganizationPanel({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Ring Integration Modal */}
+      {integrationRing && (
+        <RingIntegrationModal
+          ring={integrationRing}
+          onClose={() => setIntegrationRing(null)}
+          onSyncComplete={() => {
+            // Trigger refresh of wheel data
+            // The parent component should handle reloading the wheel
+            setIntegrationRing(null);
+          }}
+        />
       )}
     </div>
   );
