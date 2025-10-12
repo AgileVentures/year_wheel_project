@@ -245,9 +245,9 @@ export function useUndoRedo(initialState, options = {}) {
   const hasUnsavedChanges = currentIndex !== lastSaveIndex.current;
   const unsavedChangesCount = Math.abs(currentIndex - lastSaveIndex.current);
   
-  // Get descriptive labels for UI
-  const undoLabel = canUndo ? history[currentIndex - 1].label : '';
-  const redoLabel = canRedo ? history[currentIndex + 1].label : '';
+  // Get descriptive labels for UI with safety checks
+  const undoLabel = canUndo && history[currentIndex - 1] ? (history[currentIndex - 1].label || '') : '';
+  const redoLabel = canRedo && history[currentIndex + 1] ? (history[currentIndex + 1].label || '') : '';
 
   /**
    * Keyboard shortcuts
