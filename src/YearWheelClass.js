@@ -626,7 +626,7 @@ class YearWheel {
   ) {
     const coord = this.moveToAngle(radius, angle);
     this.context.save();
-    this.context.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`; // Modern system font
+    this.context.font = `600 ${fontSize}px Arial, sans-serif`;
     this.context.fillStyle = color;
     this.context.textAlign = textAlign;
     this.context.textBaseline = "middle";
@@ -809,7 +809,7 @@ class YearWheel {
     const color = "#ffffff";
     
     this.context.save();
-    this.context.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+    this.context.font = `600 ${fontSize}px Arial, sans-serif`;
     this.context.fillStyle = color;
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
@@ -910,7 +910,7 @@ class YearWheel {
     activityFontSize = Math.max(activityFontSize, minFontSize);
     
     this.context.save();
-    this.context.font = `500 ${activityFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif`;
+    this.context.font = `500 ${activityFontSize}px Arial, sans-serif`;
     this.context.fillStyle = textColor;
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
@@ -1124,7 +1124,7 @@ class YearWheel {
     
     // Measure text and truncate if needed to fit available arc length
     this.context.save();
-    this.context.font = `500 ${adjustedFontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+    this.context.font = `500 ${adjustedFontSize}px Arial, sans-serif`;
     
     // Calculate available arc length (use 88% for comfortable spacing)
     const availableArcLength = middleRadius * angleLength * 0.88;
@@ -1171,7 +1171,7 @@ class YearWheel {
   // Draw text following the arc character by character with natural spacing
   drawTextAlongArc(text, radius, startAngle, endAngle, fontSize, color) {
     this.context.save();
-    this.context.font = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`; // Medium weight, modern font
+    this.context.font = `500 ${fontSize}px Arial, sans-serif`; // Medium weight, modern font
     this.context.fillStyle = color;
     this.context.textAlign = "center";
     this.context.textBaseline = "middle";
@@ -1243,7 +1243,7 @@ class YearWheel {
     const textRadius = startRadius + bandWidth / 2;
     
     this.context.save();
-    this.context.font = `400 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`; // Normal weight (not bold)
+    this.context.font = `400 ${fontSize}px Arial, sans-serif`; // Normal weight (not bold)
     this.context.fillStyle = '#0F172A'; // Very dark for maximum contrast
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
@@ -1966,7 +1966,7 @@ class YearWheel {
       // Activity name (bold) - smaller font
       this.context.fillStyle = '#1E293B';
       this.context.textAlign = "center";
-      this.context.font = `700 ${this.size / 65}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+      this.context.font = `700 ${this.size / 65}px Arial, sans-serif`;
       this.context.textBaseline = "middle";
       
       // Text wrapping for activity name - split on spaces and hyphens
@@ -2008,7 +2008,7 @@ class YearWheel {
       
       // Date range (smaller, less prominent)
       this.context.fillStyle = '#F4A896';
-      this.context.font = `500 ${this.size / 85}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+      this.context.font = `500 ${this.size / 85}px Arial, sans-serif`;
       const startDate = new Date(this.hoveredItem.startDate).toLocaleDateString('sv-SE');
       const endDate = new Date(this.hoveredItem.endDate).toLocaleDateString('sv-SE');
       this.context.fillText(
@@ -2028,7 +2028,7 @@ class YearWheel {
     } else {
       // Draw year text in center (bold, large)
       this.context.fillStyle = '#1E293B';
-      this.context.font = `700 ${this.size / 30}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+      this.context.font = `700 ${this.size / 30}px Arial, sans-serif`;
       this.context.textAlign = "center";
       this.context.textBaseline = "middle";
       this.context.fillText(
@@ -2058,7 +2058,7 @@ class YearWheel {
     const badgeHeight = fontSize + padding * 2;
     
     // Measure text width
-    this.context.font = `600 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif`;
+    this.context.font = `600 ${fontSize}px Arial, sans-serif`;
     const textWidth = this.context.measureText(label.name).width;
     const badgeWidth = textWidth + padding * 2;
     

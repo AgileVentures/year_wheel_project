@@ -43,7 +43,7 @@ function AuthPage() {
           </h1>
           <p className="text-gray-600">
             {mode === 'signup' 
-              ? 'Kom igång på 30 sekunder – ingen kreditkort behövs' 
+              ? 'Kom igång direkt – ingen kreditkort behövs' 
               : 'Välkommen tillbaka!'}
           </p>
         </div>

@@ -845,7 +845,7 @@ function LandingPage() {
             </h2>
             <p className="text-gray-600">
               {authMode === 'signup' 
-                ? 'Kom igång på 30 sekunder – ingen kreditkort behövs' 
+                ? 'Kom igång direkt – ingen kreditkort behövs' 
                 : 'Välkommen tillbaka!'}
             </p>
           </div>
