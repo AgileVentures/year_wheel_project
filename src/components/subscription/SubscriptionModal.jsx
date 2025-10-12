@@ -19,18 +19,18 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
         : import.meta.env.VITE_STRIPE_YEARLY_PRICE_ID;
 
       // Create checkout session
-      const { sessionId } = await createCheckoutSession(
+      const { sessionId, url } = await createCheckoutSession(
         priceId,
         `${window.location.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
         `${window.location.origin}/dashboard`
       );
 
-      // Redirect to Stripe Checkout
-      const stripe = await stripePromise;
-      const { error } = await stripe.redirectToCheckout({ sessionId });
-
-      if (error) {
-        throw error;
+      // Redirect to Stripe Checkout using the URL
+      // Modern Stripe.js no longer uses redirectToCheckout
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
       console.error('Error starting checkout:', error);

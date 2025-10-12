@@ -72,7 +72,10 @@ serve(async (req) => {
     })
 
     return new Response(
-      JSON.stringify({ sessionId: session.id }),
+      JSON.stringify({ 
+        sessionId: session.id,
+        url: session.url // Return the Checkout URL for modern Stripe.js
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
