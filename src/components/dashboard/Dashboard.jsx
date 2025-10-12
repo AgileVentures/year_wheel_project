@@ -75,6 +75,58 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
 
+  // Check for successful Stripe checkout on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    
+    if (sessionId) {
+      // User returned from successful checkout
+      console.log('[Dashboard] Stripe checkout successful, refreshing subscription...');
+      
+      // Show success message
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Prenumeration aktiverad! Vänligen vänta...', type: 'success' } 
+      });
+      window.dispatchEvent(event);
+      
+      // Poll subscription status (webhook might take a few seconds)
+      let attempts = 0;
+      const maxAttempts = 10;
+      const pollInterval = 2000; // 2 seconds
+      
+      const pollSubscription = setInterval(async () => {
+        attempts++;
+        console.log(`[Dashboard] Polling subscription status (attempt ${attempts}/${maxAttempts})...`);
+        
+        await refreshSubscription();
+        
+        // Stop polling after max attempts
+        if (attempts >= maxAttempts) {
+          clearInterval(pollSubscription);
+          console.log('[Dashboard] Stopped polling subscription status');
+          
+          // Show final message
+          const finalEvent = new CustomEvent('showToast', { 
+            detail: { 
+              message: 'Prenumeration aktiverad! Om du inte ser ändringarna, försök ladda om sidan.', 
+              type: 'success' 
+            } 
+          });
+          window.dispatchEvent(finalEvent);
+        }
+      }, pollInterval);
+      
+      // Clean URL by removing session_id param
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('session_id');
+      window.history.replaceState({}, '', newUrl);
+      
+      // Cleanup interval on unmount
+      return () => clearInterval(pollSubscription);
+    }
+  }, []); // Run only once on mount
+
   useEffect(() => {
     if (currentView === 'wheels') {
       loadWheels();
