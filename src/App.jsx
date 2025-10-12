@@ -105,32 +105,35 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   }, [setUndoableStates]);
   
   const setOrganizationData = useCallback((value, label) => {
-    setUndoableStates(prevStates => {
-      const newOrgData = typeof value === 'function' ? value(prevStates.organizationData) : value;
-      
-      // Auto-generate label if not provided
-      let finalLabel = label;
-      if (!finalLabel && prevStates.organizationData) {
-        const oldData = prevStates.organizationData;
-        // Detect what changed
-        if (newOrgData.rings?.length !== oldData.rings?.length) {
-          finalLabel = newOrgData.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
-        } else if (newOrgData.activityGroups?.length !== oldData.activityGroups?.length) {
-          finalLabel = newOrgData.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
-        } else if (newOrgData.labels?.length !== oldData.labels?.length) {
-          finalLabel = newOrgData.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
-        } else if (newOrgData.items?.length !== oldData.items?.length) {
-          finalLabel = newOrgData.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
-        } else {
-          // Check for visibility changes
-          const ringVisChanged = newOrgData.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
-          const agVisChanged = newOrgData.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
-          if (ringVisChanged) finalLabel = 'Växla ringsynlighet';
-          else if (agVisChanged) finalLabel = 'Växla aktivitetssynlighet';
-          else finalLabel = 'Ändra organisationsdata';
-        }
+    // Calculate new data first to determine label
+    const currentOrgData = organizationData;
+    const newOrgData = typeof value === 'function' ? value(currentOrgData) : value;
+    
+    // Auto-generate label if not provided
+    let finalLabel = label;
+    if (!finalLabel && currentOrgData) {
+      const oldData = currentOrgData;
+      // Detect what changed
+      if (newOrgData.rings?.length !== oldData.rings?.length) {
+        finalLabel = newOrgData.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
+      } else if (newOrgData.activityGroups?.length !== oldData.activityGroups?.length) {
+        finalLabel = newOrgData.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
+      } else if (newOrgData.labels?.length !== oldData.labels?.length) {
+        finalLabel = newOrgData.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
+      } else if (newOrgData.items?.length !== oldData.items?.length) {
+        finalLabel = newOrgData.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
+      } else {
+        // Check for visibility changes
+        const ringVisChanged = newOrgData.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
+        const agVisChanged = newOrgData.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
+        if (ringVisChanged) finalLabel = 'Växla ringsynlighet';
+        else if (agVisChanged) finalLabel = 'Växla aktivitetssynlighet';
+        else finalLabel = 'Ändra organisationsdata';
       }
-      
+    }
+    
+    // Update state with calculated data and label
+    setUndoableStates(prevStates => {
       // CRITICAL: Update ref immediately so auto-save gets the latest data
       latestValuesRef.current = {
         ...latestValuesRef.current,
@@ -139,7 +142,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       return { organizationData: newOrgData };
     }, finalLabel || 'Ändra');
-  }, [setUndoableStates]);
+  }, [setUndoableStates, organizationData]);
   
   // Other non-undoable states
   const [zoomedMonth, setZoomedMonth] = useState(null);
