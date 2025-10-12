@@ -47,19 +47,19 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         return;
       }
       
-      // Fetch rings count (for THIS PAGE)
+      // Fetch rings count (SHARED across all pages in wheel)
       const { count: ringsCount } = await supabase
         .from('wheel_rings')
         .select('*', { count: 'exact', head: true })
-        .eq('page_id', currentPageId);
+        .eq('wheel_id', wheelId);
       
-      // Fetch activity groups count (for THIS PAGE)
+      // Fetch activity groups count (SHARED across all pages in wheel)
       const { count: groupsCount } = await supabase
         .from('activity_groups')
         .select('*', { count: 'exact', head: true })
-        .eq('page_id', currentPageId);
+        .eq('wheel_id', wheelId);
       
-      // Fetch items count for current page
+      // Fetch items count for current page (page-specific)
       const { count: itemsCount } = await supabase
         .from('items')
         .select('*', { count: 'exact', head: true })
@@ -133,15 +133,14 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       const greeting = {
         id: Date.now(),
         role: 'assistant',
-        content: `Hej! ✨ **Flows AI är aktiverat!**
+        content: `Hej! ✨
 
 Jag kan hjälpa dig med ditt årshjul **"${wheelContext.title}"** (${wheelContext.year}).
 
 🎯 **Jag kan:**
-- Skapa aktiviteter (även över årsskiften!)
-- Uppdatera och ta bort aktiviteter
-- Visa och söka aktiviteter
-- Hantera ringar och grupper
+- Skapa, uudatera och ta bort aktiviteter
+- Visa och söka efter aktiviteter på årshjulet
+- Hantera ringar, aktivitetsgrupper och etiketter
 
 **Struktur:**
 - 🔵 Ringar: ${wheelContext.stats.rings}
@@ -169,8 +168,8 @@ Vad vill du göra?`
     setIsLoading(true);
 
     try {
-      console.log('\n🚀 [Flows AI] Calling edge function...');
-      console.log('📝 [Flows AI] User:', userMessage.content);
+      console.log('[AI] Calling edge function...');
+      console.log('[AI] User:', userMessage.content);
       
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -224,15 +223,15 @@ Vad vill du göra?`
         id: Date.now()
       }]);
 
-      console.log('🔄 [Flows AI] Reloading...');
+      console.log('[AI] Reloading...');
       if (onWheelUpdate) await onWheelUpdate();
       await loadWheelContext();
 
     } catch (error) {
-      console.error('❌ [Flows AI] Error:', error);
+      console.error('[AI] Error:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `❌ **Fel:** ${error.message}\n\nFörsök igen.`,
+        content: `**Fel:** ${error.message}\n\nFörsök igen.`,
         isError: true,
         id: Date.now()
       }]);
@@ -254,7 +253,6 @@ Vad vill du göra?`
         <div className="flex items-center gap-2 pointer-events-none">
           <Sparkles size={16} className="text-amber-500" />
           <h3 className="text-base font-semibold text-gray-900">AI Assistent</h3>
-          <span className="text-xs text-purple-600 font-semibold">Flows AI</span>
         </div>
         <button onClick={onToggle} className="hover:bg-gray-100 rounded-sm p-1.5 transition-colors pointer-events-auto text-gray-600">
           <X size={16} />
@@ -285,7 +283,7 @@ Vad vill du göra?`
             <div className="bg-white rounded-sm p-3 border border-gray-200">
               <div className="flex gap-2 items-center">
                 <Loader2 size={16} className="animate-spin text-purple-500" />
-                <span className="text-sm text-gray-600">Kör Flows AI...</span>
+                <span className="text-sm text-gray-600">Jag jobbar på...</span>
               </div>
             </div>
           </div>

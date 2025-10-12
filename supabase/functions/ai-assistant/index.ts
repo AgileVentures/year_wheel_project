@@ -692,10 +692,21 @@ async function suggestWheelStructure(useCase: string) {
 
 // --- Analyze Wheel ---
 async function analyzeWheel(supabase: any, pageId: string) {
-  // Fetch all data
+  // First get wheelId from page
+  const { data: page, error: pageError } = await supabase
+    .from('wheel_pages')
+    .select('wheel_id')
+    .eq('id', pageId)
+    .single();
+  
+  if (pageError || !page) {
+    throw new Error('Kunde inte hitta sida');
+  }
+  
+  // Fetch all data (rings/groups are wheel-scoped, items are page-scoped)
   const [ringsRes, groupsRes, itemsRes] = await Promise.all([
-    supabase.from('wheel_rings').select('*').eq('page_id', pageId),
-    supabase.from('activity_groups').select('*').eq('page_id', pageId),
+    supabase.from('wheel_rings').select('*').eq('wheel_id', page.wheel_id),
+    supabase.from('activity_groups').select('*').eq('wheel_id', page.wheel_id),
     supabase.from('items').select('*').eq('page_id', pageId),
   ])
 
@@ -810,17 +821,17 @@ serve(async (req) => {
     console.log('[AI Chat] Processing:', { userMessage, wheelId, currentPageId })
 
     // Fetch existing rings and activity groups to give AI context
-    // CRITICAL: Use page_id to get only THIS page's rings/groups
+    // CRITICAL: Rings and groups are WHEEL-SCOPED (shared across pages)
     const { data: existingRings } = await supabase
       .from('wheel_rings')
       .select('id, name, type')
-      .eq('page_id', currentPageId)
+      .eq('wheel_id', wheelId)
       .order('ring_order')
     
     const { data: existingGroups } = await supabase
       .from('activity_groups')
       .select('id, name, color')
-      .eq('page_id', currentPageId)
+      .eq('wheel_id', wheelId)
     
     const ringsContext = existingRings && existingRings.length > 0
       ? `\n\nTillgängliga ringar:\n${existingRings.map(r => `- ${r.name} (${r.type}, ID: ${r.id})`).join('\n')}`
