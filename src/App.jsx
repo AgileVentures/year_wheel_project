@@ -105,35 +105,36 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   }, [setUndoableStates]);
   
   const setOrganizationData = useCallback((value, label) => {
-    // Calculate new data first to determine label
-    const currentOrgData = organizationData;
-    const newOrgData = typeof value === 'function' ? value(currentOrgData) : value;
+    // We need to calculate label inside the functional update
+    // but pass it as the second parameter to setUndoableStates
+    let calculatedLabel = label;
     
-    // Auto-generate label if not provided
-    let finalLabel = label;
-    if (!finalLabel && currentOrgData) {
-      const oldData = currentOrgData;
-      // Detect what changed
-      if (newOrgData.rings?.length !== oldData.rings?.length) {
-        finalLabel = newOrgData.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
-      } else if (newOrgData.activityGroups?.length !== oldData.activityGroups?.length) {
-        finalLabel = newOrgData.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
-      } else if (newOrgData.labels?.length !== oldData.labels?.length) {
-        finalLabel = newOrgData.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
-      } else if (newOrgData.items?.length !== oldData.items?.length) {
-        finalLabel = newOrgData.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
-      } else {
-        // Check for visibility changes
-        const ringVisChanged = newOrgData.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
-        const agVisChanged = newOrgData.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
-        if (ringVisChanged) finalLabel = 'Växla ringsynlighet';
-        else if (agVisChanged) finalLabel = 'Växla aktivitetssynlighet';
-        else finalLabel = 'Ändra organisationsdata';
-      }
-    }
-    
-    // Update state with calculated data and label
     setUndoableStates(prevStates => {
+      const currentOrgData = prevStates.organizationData;
+      const newOrgData = typeof value === 'function' ? value(currentOrgData) : value;
+      
+      // Auto-generate label if not provided (only if we need to)
+      if (!calculatedLabel && currentOrgData) {
+        const oldData = currentOrgData;
+        // Detect what changed
+        if (newOrgData.rings?.length !== oldData.rings?.length) {
+          calculatedLabel = newOrgData.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
+        } else if (newOrgData.activityGroups?.length !== oldData.activityGroups?.length) {
+          calculatedLabel = newOrgData.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
+        } else if (newOrgData.labels?.length !== oldData.labels?.length) {
+          calculatedLabel = newOrgData.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
+        } else if (newOrgData.items?.length !== oldData.items?.length) {
+          calculatedLabel = newOrgData.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
+        } else {
+          // Check for visibility changes
+          const ringVisChanged = newOrgData.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
+          const agVisChanged = newOrgData.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
+          if (ringVisChanged) calculatedLabel = 'Växla ringsynlighet';
+          else if (agVisChanged) calculatedLabel = 'Växla aktivitetssynlighet';
+          else calculatedLabel = 'Ändra organisationsdata';
+        }
+      }
+      
       // CRITICAL: Update ref immediately so auto-save gets the latest data
       latestValuesRef.current = {
         ...latestValuesRef.current,
@@ -141,8 +142,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       };
       
       return { organizationData: newOrgData };
-    }, finalLabel || 'Ändra');
-  }, [setUndoableStates, organizationData]);
+    }, calculatedLabel || 'Ändra');
+  }, [setUndoableStates]);
   
   // Other non-undoable states
   const [zoomedMonth, setZoomedMonth] = useState(null);
@@ -1267,57 +1268,62 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    // Calculate label before setState call
-    const currentData = organizationData;
-    const oldItem = currentData.items.find(item => item.id === updatedItem.id);
+    // Calculate label inside functional update to avoid stale closure
+    let calculatedLabel = 'Ändra aktivitet';
     
-    let label = 'Ändra aktivitet';
-    
-    if (oldItem) {
-      // Determine what type of change occurred
-      const ringChanged = oldItem.ringId !== updatedItem.ringId;
-      const datesChanged = oldItem.startDate !== updatedItem.startDate || 
-                          oldItem.endDate !== updatedItem.endDate;
+    setOrganizationData(prevData => {
+      const oldItem = prevData.items.find(item => item.id === updatedItem.id);
       
-      // Create descriptive label based on what changed
-      if (ringChanged && datesChanged) {
-        label = `Flytta och ändra ${updatedItem.name}`;
-      } else if (ringChanged) {
-        // Find ring names for more context
-        const newRing = currentData.rings.find(r => r.id === updatedItem.ringId);
-        if (newRing) {
-          label = `Flytta ${updatedItem.name} till ${newRing.name}`;
+      if (oldItem) {
+        // Determine what type of change occurred
+        const ringChanged = oldItem.ringId !== updatedItem.ringId;
+        const datesChanged = oldItem.startDate !== updatedItem.startDate || 
+                            oldItem.endDate !== updatedItem.endDate;
+        
+        // Create descriptive label based on what changed
+        if (ringChanged && datesChanged) {
+          calculatedLabel = `Flytta och ändra ${updatedItem.name}`;
+        } else if (ringChanged) {
+          // Find ring names for more context
+          const newRing = prevData.rings.find(r => r.id === updatedItem.ringId);
+          if (newRing) {
+            calculatedLabel = `Flytta ${updatedItem.name} till ${newRing.name}`;
+          } else {
+            calculatedLabel = `Flytta ${updatedItem.name}`;
+          }
+        } else if (datesChanged) {
+          calculatedLabel = `Ändra datum för ${updatedItem.name}`;
         } else {
-          label = `Flytta ${updatedItem.name}`;
+          // Fallback for other changes (name, color, etc.)
+          calculatedLabel = `Redigera ${updatedItem.name}`;
         }
-      } else if (datesChanged) {
-        label = `Ändra datum för ${updatedItem.name}`;
-      } else {
-        // Fallback for other changes (name, color, etc.)
-        label = `Redigera ${updatedItem.name}`;
       }
-    }
-    
-    // Update state with calculated label
-    setOrganizationData(prevData => ({
-      ...prevData,
-      items: prevData.items.map(item => 
-        item.id === updatedItem.id ? updatedItem : item
-      )
-    }), label);
-  }, [setOrganizationData, organizationData]);
+      
+      return {
+        ...prevData,
+        items: prevData.items.map(item => 
+          item.id === updatedItem.id ? updatedItem : item
+        )
+      };
+    }, calculatedLabel);
+  }, [setOrganizationData]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
-    // Calculate label before setState call
-    const itemToDelete = organizationData.items.find(item => item.id === itemId);
-    const label = itemToDelete ? `Ta bort ${itemToDelete.name}` : 'Ta bort aktivitet';
+    // Calculate label inside functional update to avoid stale closure
+    let calculatedLabel = 'Ta bort aktivitet';
     
-    // Update state with calculated label
-    setOrganizationData(prevData => ({
-      ...prevData,
-      items: prevData.items.filter(item => item.id !== itemId)
-    }), label);
-  }, [setOrganizationData, organizationData]);
+    setOrganizationData(prevData => {
+      const itemToDelete = prevData.items.find(item => item.id === itemId);
+      if (itemToDelete) {
+        calculatedLabel = `Ta bort ${itemToDelete.name}`;
+      }
+      
+      return {
+        ...prevData,
+        items: prevData.items.filter(item => item.id !== itemId)
+      };
+    }, calculatedLabel);
+  }, [setOrganizationData]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
