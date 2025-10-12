@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { fetchUserWheels, createWheel, deleteWheel, duplicateWheel } from '../../services/wheelService';
 import { getMyInvitations } from '../../services/teamService';
 import WheelCard from './WheelCard';
+import CreateWheelCard from './CreateWheelCard';
 import CreateWheelModal from './CreateWheelModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
@@ -377,54 +378,32 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
         {/* Wheels View */}
         {currentView === 'wheels' && (
           <>
-            <div className="mb-6 flex items-center justify-between">
-              <button
-                onClick={handleCreateWheelClick}
-                className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Skapa nytt hjul
-              </button>
-              
-              {/* Usage indicator for free users */}
-              {!isPremium && !subscriptionLoading && (
-                <div className="text-sm text-gray-600">
-                  <span className={wheelCount >= maxWheels ? 'text-orange-600 font-semibold' : ''}>
-                    {wheelCount} / {maxWheels} hjul
-                  </span>
-                  {wheelCount >= maxWheels && (
-                    <span className="ml-2 text-orange-600">
-                      (uppgradera för fler)
+            {/* Header with title and usage indicator */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">Dina årshjul</h2>
+              <div className="flex items-center justify-between">
+                <p className="text-gray-600">Skapa och hantera dina årsplaneringar</p>
+                
+                {/* Usage indicator for free users */}
+                {!isPremium && !subscriptionLoading && (
+                  <div className="text-sm text-gray-600">
+                    <span className={wheelCount >= maxWheels ? 'text-orange-600 font-semibold' : ''}>
+                      {wheelCount} / {maxWheels} hjul
                     </span>
-                  )}
-                </div>
-              )}
+                    {wheelCount >= maxWheels && (
+                      <span className="ml-2 text-orange-600">
+                        (uppgradera för fler)
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <p className="mt-2 text-gray-600">Laddar hjul...</p>
-              </div>
-            ) : wheels.length === 0 ? (
-              <div className="text-center py-12">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="text-gray-600 mb-4 mt-4">Du har inga hjul ännu</p>
-                <button
-                  onClick={handleCreateWheelClick}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 inline-flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Skapa ditt första hjul
-                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -437,6 +416,12 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                     onUpdate={loadWheels}
                   />
                 ))}
+                
+                {/* Create New Wheel Card - Always show in grid */}
+                <CreateWheelCard 
+                  onClick={handleCreateWheelClick}
+                  hasReachedLimit={hasReachedWheelLimit}
+                />
               </div>
             )}
           </>

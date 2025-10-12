@@ -134,9 +134,6 @@ function LandingPage() {
               <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-8 w-auto" />
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <button onClick={scrollToDemo} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                Demo
-              </button>
               <button onClick={scrollToFeatures} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 Funktioner
               </button>
@@ -222,8 +219,8 @@ function LandingPage() {
                     
                     {/* Clean Wheel with Perfect Cake Slices */}
                     <div className="flex-1 flex items-center justify-center p-8">
-                      <div className="relative">
-                        <svg width="432" height="432" viewBox="0 0 360 360" className="transform -rotate-90 drop-shadow-xl">
+                      <div className="relative w-full max-w-md">
+                        <svg viewBox="0 0 360 360" className="transform -rotate-90 drop-shadow-xl w-full h-auto">
                           {/* Background */}
                           <circle cx="180" cy="180" r="175" fill="#fafafa" />
                           
@@ -850,7 +847,6 @@ function LandingPage() {
             <div>
               <h4 className="text-gray-900 font-semibold mb-4">Produkt</h4>
               <ul className="space-y-2 text-sm">
-                <li><button onClick={scrollToDemo} className="text-gray-600 hover:text-[#00A4A6] transition-colors">Demo</button></li>
                 <li><a href="/pricing" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Priser</a></li>
                 <li><a href="/auth" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Kom igång</a></li>
               </ul>
@@ -867,8 +863,8 @@ function LandingPage() {
             <div>
               <h4 className="text-gray-900 font-semibold mb-4">Juridiskt</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="/privacy" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Integritet</a></li>
-                <li><a href="/terms" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Villkor</a></li>
+                <li><a href="https://communitaslabs.io/privacy" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Integritet</a></li>
+                <li><a href="https://communitaslabs.io/terms" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Villkor</a></li>
               </ul>
             </div>
           </div>

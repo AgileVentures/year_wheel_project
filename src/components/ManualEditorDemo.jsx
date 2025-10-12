@@ -251,7 +251,7 @@ export default function ManualEditorDemo() {
                     <span className="text-3xl text-blue-600">+</span>
                   </div>
                   <h3 className="font-semibold text-blue-900 mb-1">Skapa nytt årshjul</h3>
-                  <p className="text-sm text-blue-700 text-center">Börja planera ditt nästa projekt</p>
+                  <p className="text-sm text-blue-700 text-center">Börja planera ditt år</p>
                 </div>
               </div>
             </div>
@@ -422,8 +422,8 @@ export default function ManualEditorDemo() {
 
           {/* Wheel Display */}
           <div className="flex-1 flex items-center justify-center py-12 px-8">
-            <div className="relative">
-              <svg width="640" height="640" viewBox="0 0 360 360" className="transform -rotate-90 drop-shadow-2xl">
+            <div className="relative w-full max-w-lg">
+              <svg viewBox="0 0 360 360" className="transform -rotate-90 drop-shadow-2xl w-full h-auto">
                 {/* Background */}
                 <circle cx="180" cy="180" r="175" fill="#fafafa" />
 

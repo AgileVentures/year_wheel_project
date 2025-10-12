@@ -83,8 +83,8 @@ export default function AIAssistantDemo() {
 
           {/* Clean Wheel with Perfect Cake Slices */}
           <div className="flex-1 flex items-center justify-center py-12 px-8">
-            <div className="relative">
-              <svg width="640" height="640" viewBox="0 0 360 360" className="transform -rotate-90 drop-shadow-2xl">
+            <div className="relative w-full max-w-lg">
+              <svg viewBox="0 0 360 360" className="transform -rotate-90 drop-shadow-2xl w-full h-auto">
                 {/* Background */}
                 <circle cx="180" cy="180" r="175" fill="#fafafa" />
 
