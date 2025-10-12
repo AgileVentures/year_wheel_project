@@ -881,14 +881,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         });
       }
       
-      // Load new page data and apply template colors
+      // Load new page data
       const newPage = pages.find(p => p.id === pageId);
       if (newPage) {
         setCurrentPageId(pageId);
-        if (newPage.organization_data) {
-          // console.log('[PageChange] Loading page data');
-          setOrganizationData(newPage.organization_data);
-        }
+        
+        // Fetch page-specific items from database
+        const pageItems = await fetchPageData(pageId);
+        console.log(`📊 [PageChange] Loaded ${pageItems?.length || 0} items for page ${newPage.year}`);
+        
+        // CRITICAL: Keep wheel-level data (rings, groups, labels) unchanged
+        // Only update page-specific data (items, year)
+        setOrganizationData(prevData => ({
+          ...prevData,
+          items: pageItems  // Update only items - rings/groups/labels are shared!
+        }));
+        
         if (newPage.year) {
           setYear(String(newPage.year));
         }

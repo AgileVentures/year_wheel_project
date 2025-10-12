@@ -51,11 +51,12 @@ export function useSubscription() {
     loadSubscription();
   }, [loadSubscription]);
 
-  // Subscribe to subscription changes
+  // Subscribe to subscription changes AND wheel changes
   useEffect(() => {
-    let channel;
+    let subscriptionChannel;
+    let wheelsChannel;
     
-    const setupRealtimeSubscription = async () => {
+    const setupRealtimeSubscriptions = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -64,7 +65,8 @@ export function useSubscription() {
           return;
         }
         
-        channel = supabase
+        // Listen to subscription changes
+        subscriptionChannel = supabase
           .channel('subscription-changes')
           .on(
             'postgres_changes',
@@ -80,16 +82,37 @@ export function useSubscription() {
             }
           )
           .subscribe();
+        
+        // Listen to wheel changes (create/delete) to update count
+        wheelsChannel = supabase
+          .channel('wheel-count-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'year_wheels',
+              filter: `user_id=eq.${user.id}`
+            },
+            () => {
+              // Reload subscription to update wheel count
+              loadSubscription();
+            }
+          )
+          .subscribe();
       } catch (error) {
         console.error('Error setting up subscription realtime:', error);
       }
     };
 
-    setupRealtimeSubscription();
+    setupRealtimeSubscriptions();
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (subscriptionChannel) {
+        supabase.removeChannel(subscriptionChannel);
+      }
+      if (wheelsChannel) {
+        supabase.removeChannel(wheelsChannel);
       }
     };
   }, [loadSubscription]);
