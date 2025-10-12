@@ -281,17 +281,17 @@ export const saveWheelData = async (wheelId, organizationData, pageId = null) =>
 /**
  * Sync rings (handles creates, updates, deletes)
  * Returns a map of old IDs to new database UUIDs
- * @param {string} wheelId - The wheel ID (for convenience queries)
- * @param {string} pageId - The page ID (CRITICAL: rings are per-page, not per-wheel)
+ * @param {string} wheelId - The wheel ID (rings are shared across all pages)
+ * @param {string} pageId - Not used for rings (kept for API compatibility)
  */
 const syncRings = async (wheelId, pageId, rings) => {
   const idMap = new Map(); // oldId -> newId
   
-  // Fetch existing rings for THIS PAGE
+  // Fetch existing rings for THIS WHEEL (rings are shared, not per-page!)
   const { data: existingRings } = await supabase
     .from('wheel_rings')
     .select('id')
-    .eq('page_id', pageId);
+    .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existingRings?.map(r => r.id) || []);
   // Only include IDs that are actual database UUIDs (not temporary client IDs)
@@ -324,8 +324,7 @@ const syncRings = async (wheelId, pageId, rings) => {
                   !existingIds.has(ring.id); // Not in database
     
     const ringData = {
-      wheel_id: wheelId,  // Keep for convenience queries
-      page_id: pageId,    // Primary FK - isolates rings per page
+      wheel_id: wheelId,  // Primary FK - rings are shared across all pages
       name: ring.name,
       type: ring.type,
       color: null, // Don't save color - let it derive from palette based on ring_order
@@ -396,17 +395,17 @@ const saveRingData = async (ringId, monthData) => {
 /**
  * Sync activity groups
  * Returns a map of old IDs to new database UUIDs
- * @param {string} wheelId - The wheel ID (for convenience queries)
- * @param {string} pageId - The page ID (CRITICAL: groups are per-page, not per-wheel)
+ * @param {string} wheelId - The wheel ID (groups are shared across all pages)
+ * @param {string} pageId - Not used for groups (kept for API compatibility)
  */
 const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
   const idMap = new Map(); // oldId -> newId
   
-  // Fetch existing for THIS PAGE
+  // Fetch existing for THIS WHEEL (groups are shared, not per-page!)
   const { data: existing} = await supabase
     .from('activity_groups')
     .select('id')
-    .eq('page_id', pageId);
+    .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existing?.map(a => a.id) || []);
   // Only include IDs that are actual database UUIDs
@@ -432,8 +431,7 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
     
     const isNew = !group.id || group.id.startsWith('group-') || !existingIds.has(group.id);
     const groupData = {
-      wheel_id: wheelId,  // Keep for convenience queries
-      page_id: pageId,    // Primary FK - isolates groups per page
+      wheel_id: wheelId,  // Primary FK - groups are shared across all pages
       name: group.name.trim(),
       color: null, // Don't save color - let it derive from palette based on index
       visible: group.visible !== undefined ? group.visible : true,
@@ -460,17 +458,17 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
 /**
  * Sync labels
  * Returns a map of old IDs to new database UUIDs
- * @param {string} wheelId - The wheel ID (for convenience queries)
- * @param {string} pageId - The page ID (CRITICAL: labels are per-page, not per-wheel)
+ * @param {string} wheelId - The wheel ID (labels are shared across all pages)
+ * @param {string} pageId - Not used for labels (kept for API compatibility)
  */
 const syncLabels = async (wheelId, pageId, labels) => {
   const idMap = new Map(); // oldId -> newId
   
-  // Fetch existing for THIS PAGE
+  // Fetch existing for THIS WHEEL (labels are shared, not per-page!)
   const { data: existing } = await supabase
     .from('labels')
     .select('id')
-    .eq('page_id', pageId);
+    .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existing?.map(l => l.id) || []);
   // Only include IDs that are actual database UUIDs
@@ -496,8 +494,7 @@ const syncLabels = async (wheelId, pageId, labels) => {
     
     const isNew = !label.id || label.id.startsWith('label-') || !existingIds.has(label.id);
     const labelData = {
-      wheel_id: wheelId,  // Keep for convenience queries
-      page_id: pageId,    // Primary FK - isolates labels per page
+      wheel_id: wheelId,  // Primary FK - labels are shared across all pages
       name: label.name.trim(),
       color: null, // Don't save color - let it derive from palette based on index
       visible: label.visible !== undefined ? label.visible : true,

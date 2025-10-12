@@ -77,14 +77,35 @@ serve(async (req) => {
     if (integrationError) throw integrationError
     if (!ringIntegration) throw new Error('Integration not found')
 
-    // Verify access token is valid (not expired)
+    // Check if access token is expired and refresh if needed
     const tokenExpiresAt = new Date(ringIntegration.user_integration.token_expires_at)
+    let accessToken = ringIntegration.user_integration.access_token
+    
     if (tokenExpiresAt < new Date()) {
-      // TODO: Implement token refresh
-      throw new Error('Access token expired - please reconnect')
+      console.log('🔄 Access token expired, refreshing...')
+      
+      const refreshToken = ringIntegration.user_integration.refresh_token
+      if (!refreshToken) {
+        throw new Error('No refresh token available - please reconnect your Google account')
+      }
+      
+      // Refresh the access token
+      const newTokens = await refreshGoogleToken(refreshToken)
+      
+      // Update the database with new tokens
+      const newExpiresAt = new Date(Date.now() + (newTokens.expires_in * 1000))
+      await supabaseClient
+        .from('user_integrations')
+        .update({
+          access_token: newTokens.access_token,
+          token_expires_at: newExpiresAt.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', ringIntegration.user_integration.id)
+      
+      accessToken = newTokens.access_token
+      console.log('✅ Token refreshed successfully')
     }
-
-    const accessToken = ringIntegration.user_integration.access_token
 
     let syncedItems = []
     let syncError = null
@@ -168,16 +189,25 @@ serve(async (req) => {
 async function syncCalendarData(accessToken, ringIntegration, supabaseClient, userId) {
   const calendarId = ringIntegration.config.calendar_id || 'primary'
   
-  // Get wheel year for date range
-  const { data: wheel } = await supabaseClient
-    .from('year_wheels')
-    .select('year')
-    .eq('id', ringIntegration.ring.wheel_id)
-    .single()
+  // Fetch ALL pages for this wheel to create items on correct pages by year
+  const { data: pages, error: pagesError } = await supabaseClient
+    .from('wheel_pages')
+    .select('*')
+    .eq('wheel_id', ringIntegration.ring.wheel_id)
+    .order('year')
 
-  const year = wheel?.year || new Date().getFullYear()
-  const timeMin = new Date(`${year}-01-01T00:00:00Z`).toISOString()
-  const timeMax = new Date(`${year}-12-31T23:59:59Z`).toISOString()
+  if (pagesError) throw pagesError
+  if (!pages || pages.length === 0) {
+    throw new Error('No pages found for this wheel')
+  }
+
+  console.log('[syncCalendarData] Found pages:', pages.map(p => ({ id: p.id, year: p.year })))
+
+  // Get min/max years from pages to fetch wide date range
+  const minYear = pages[0].year
+  const maxYear = pages[pages.length - 1].year
+  const timeMin = new Date(`${minYear}-01-01T00:00:00Z`).toISOString()
+  const timeMax = new Date(`${maxYear}-12-31T23:59:59Z`).toISOString()
 
   // Fetch events from Google Calendar
   const calendarUrl = new URL('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calendarId) + '/events')
@@ -221,31 +251,80 @@ async function syncCalendarData(accessToken, ringIntegration, supabaseClient, us
     .eq('ring_id', ringIntegration.ring_id)
     .eq('source', 'google_calendar')
 
-  // Create items from events
+  // Create items from events, mapping to correct page based on year
   const itemsToCreate = events
     .filter(event => {
       // Filter out events without dates
       return event.start && (event.start.date || event.start.dateTime)
     })
-    .map(event => {
+    .flatMap(event => {
       const startDate = event.start.date || event.start.dateTime.split('T')[0]
       const endDate = event.end ? (event.end.date || event.end.dateTime.split('T')[0]) : startDate
-
-      return {
-        wheel_id: ringIntegration.ring.wheel_id,
-        page_id: ringIntegration.ring.page_id, // CRITICAL: Add page_id from ring
-        ring_id: ringIntegration.ring_id,
-        activity_id: activityGroup.id,
-        name: event.summary || 'Unnamed Event',
-        start_date: startDate,
-        end_date: endDate,
-        source: 'google_calendar',
-        external_id: event.id,
-        sync_metadata: {
-          calendar_id: calendarId,
-          event_link: event.htmlLink,
-          color_id: event.colorId,
-        },
+      
+      const startYear = new Date(startDate).getFullYear()
+      const endYear = new Date(endDate).getFullYear()
+      
+      // Handle cross-year events by splitting them
+      if (startYear !== endYear) {
+        console.log(`[syncCalendarData] Cross-year event: ${event.summary} (${startDate} to ${endDate})`)
+        
+        const segments = []
+        for (let year = startYear; year <= endYear; year++) {
+          const page = pages.find(p => p.year === year)
+          if (!page) {
+            console.warn(`[syncCalendarData] No page found for year ${year}, skipping segment`)
+            continue
+          }
+          
+          const segmentStart = year === startYear ? startDate : `${year}-01-01`
+          const segmentEnd = year === endYear ? endDate : `${year}-12-31`
+          
+          segments.push({
+            wheel_id: ringIntegration.ring.wheel_id,
+            page_id: page.id, // CRITICAL: Use page_id matching the year
+            ring_id: ringIntegration.ring_id,
+            activity_id: activityGroup.id,
+            name: event.summary || 'Unnamed Event',
+            start_date: segmentStart,
+            end_date: segmentEnd,
+            source: 'google_calendar',
+            external_id: event.id,
+            sync_metadata: {
+              calendar_id: calendarId,
+              event_link: event.htmlLink,
+              color_id: event.colorId,
+              is_segment: true,
+              original_start: startDate,
+              original_end: endDate,
+            },
+          })
+        }
+        
+        return segments
+      } else {
+        // Single-year event
+        const page = pages.find(p => p.year === startYear)
+        if (!page) {
+          console.warn(`[syncCalendarData] No page found for year ${startYear}, skipping event ${event.summary}`)
+          return []
+        }
+        
+        return [{
+          wheel_id: ringIntegration.ring.wheel_id,
+          page_id: page.id, // CRITICAL: Use page_id matching the year
+          ring_id: ringIntegration.ring_id,
+          activity_id: activityGroup.id,
+          name: event.summary || 'Unnamed Event',
+          start_date: startDate,
+          end_date: endDate,
+          source: 'google_calendar',
+          external_id: event.id,
+          sync_metadata: {
+            calendar_id: calendarId,
+            event_link: event.htmlLink,
+            color_id: event.colorId,
+          },
+        }]
       }
     })
 
@@ -282,6 +361,20 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
   if (!spreadsheetId) {
     throw new Error('Missing spreadsheet_id in configuration')
   }
+
+  // Fetch ALL pages for this wheel to create items on correct pages by year
+  const { data: pages, error: pagesError } = await supabaseClient
+    .from('wheel_pages')
+    .select('*')
+    .eq('wheel_id', ringIntegration.ring.wheel_id)
+    .order('year')
+
+  if (pagesError) throw pagesError
+  if (!pages || pages.length === 0) {
+    throw new Error('No pages found for this wheel')
+  }
+
+  console.log('[syncSheetData] Found pages:', pages.map(p => ({ id: p.id, year: p.year })))
 
   // Fetch sheet data
   const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${range}`
@@ -338,29 +431,86 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
   // Expected format: [Name, Start Date, End Date, Color/Notes]
   const itemsToCreate = dataRows
     .filter(row => row.length >= 3 && row[0] && row[1] && row[2]) // Must have name and dates
-    .map((row, index) => {
-      return {
-        wheel_id: ringIntegration.ring.wheel_id,
-        page_id: ringIntegration.ring.page_id, // CRITICAL: Add page_id from ring
-        ring_id: ringIntegration.ring_id,
-        activity_id: activityGroup.id,
-        name: row[0],
-        start_date: parseDate(row[1]),
-        end_date: parseDate(row[2]),
-        source: 'google_sheets',
-        external_id: `${spreadsheetId}_${sheetName}_${index + 2}`, // +2 for header + 0-index
-        sync_metadata: {
-          spreadsheet_id: spreadsheetId,
-          sheet_name: sheetName,
-          row_index: index + 2,
-          raw_data: row,
-        },
+    .flatMap((row, index) => {
+      const startDate = parseDate(row[1])
+      const endDate = parseDate(row[2])
+      
+      const startYear = new Date(startDate).getFullYear()
+      const endYear = new Date(endDate).getFullYear()
+      
+      // Handle cross-year items by splitting them
+      if (startYear !== endYear) {
+        console.log(`[syncSheetData] Cross-year item: ${row[0]} (${startDate} to ${endDate})`)
+        
+        const segments = []
+        for (let year = startYear; year <= endYear; year++) {
+          const page = pages.find(p => p.year === year)
+          if (!page) {
+            console.warn(`[syncSheetData] No page found for year ${year}, skipping segment`)
+            continue
+          }
+          
+          const segmentStart = year === startYear ? startDate : `${year}-01-01`
+          const segmentEnd = year === endYear ? endDate : `${year}-12-31`
+          
+          segments.push({
+            wheel_id: ringIntegration.ring.wheel_id,
+            page_id: page.id, // CRITICAL: Use page_id matching the year
+            ring_id: ringIntegration.ring_id,
+            activity_id: activityGroup.id,
+            name: row[0],
+            start_date: segmentStart,
+            end_date: segmentEnd,
+            source: 'google_sheets',
+            external_id: `${spreadsheetId}_${sheetName}_${index + 2}`, // +2 for header + 0-index
+            sync_metadata: {
+              spreadsheet_id: spreadsheetId,
+              sheet_name: sheetName,
+              row_index: index + 2,
+              raw_data: row,
+              is_segment: true,
+              original_start: startDate,
+              original_end: endDate,
+            },
+          })
+        }
+        
+        return segments
+      } else {
+        // Single-year item
+        const page = pages.find(p => p.year === startYear)
+        if (!page) {
+          console.warn(`[syncSheetData] No page found for year ${startYear}, skipping item ${row[0]}`)
+          return []
+        }
+        
+        return [{
+          wheel_id: ringIntegration.ring.wheel_id,
+          page_id: page.id, // CRITICAL: Use page_id matching the year
+          ring_id: ringIntegration.ring_id,
+          activity_id: activityGroup.id,
+          name: row[0],
+          start_date: startDate,
+          end_date: endDate,
+          source: 'google_sheets',
+          external_id: `${spreadsheetId}_${sheetName}_${index + 2}`, // +2 for header + 0-index
+          sync_metadata: {
+            spreadsheet_id: spreadsheetId,
+            sheet_name: sheetName,
+            row_index: index + 2,
+            raw_data: row,
+          },
+        }]
       }
     })
 
   if (itemsToCreate.length === 0) {
+    console.warn('[syncSheetData] No items to create - all items skipped or filtered out')
     return []
   }
+
+  console.log(`[syncSheetData] Creating ${itemsToCreate.length} items:`, 
+    itemsToCreate.map(i => `${i.name} (${i.start_date} to ${i.end_date}) on page ${i.page_id}`))
 
   // Insert items
   const { data: createdItems, error: insertError } = await supabaseClient
@@ -369,10 +519,11 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
     .select()
 
   if (insertError) {
-    console.error('Error inserting items:', insertError)
+    console.error('[syncSheetData] Error inserting items:', insertError)
     throw insertError
   }
 
+  console.log(`[syncSheetData] ✅ Successfully created ${createdItems?.length || 0} items`)
   return createdItems || []
 }
 
@@ -411,3 +562,37 @@ function parseDate(dateStr) {
   console.warn(`Could not parse date: ${dateStr}, using today`)
   return new Date().toISOString().split('T')[0]
 }
+
+/**
+ * Refresh Google OAuth access token using refresh token
+ */
+async function refreshGoogleToken(refreshToken: string) {
+  const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
+  const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Google OAuth credentials not configured')
+  }
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    console.error('Token refresh failed:', error)
+    throw new Error('Failed to refresh access token - please reconnect your Google account')
+  }
+
+  return await response.json()
+}
+

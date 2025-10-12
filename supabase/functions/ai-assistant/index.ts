@@ -227,24 +227,22 @@ async function createActivity(
     throw new Error('Aktivitetsgrupp ID måste anges. Fråga användaren vilken grupp som ska användas.')
   }
   
-  // Verify ring exists
+  // Verify ring exists (just by ID - it might be on any page)
   const { data: ring, error: ringError } = await supabase
     .from('wheel_rings')
-    .select('id, name')
+    .select('id, name, page_id')
     .eq('id', args.ringId)
-    .eq('wheel_id', wheelId)
     .single()
   
   if (ringError || !ring) {
     throw new Error(`Ring med ID ${args.ringId} hittades inte`)
   }
   
-  // Verify activity group exists
+  // Verify activity group exists (just by ID - it might be on any page)
   const { data: group, error: groupError } = await supabase
     .from('activity_groups')
-    .select('id, name')
+    .select('id, name, page_id')
     .eq('id', args.activityGroupId)
-    .eq('wheel_id', wheelId)
     .single()
   
   if (groupError || !group) {

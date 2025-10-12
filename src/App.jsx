@@ -188,22 +188,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           console.log('📊 [App] Fetched page items:', pageItems?.length || 0);
           
           // Fetch rings, activity groups, and labels from database tables
-          // CRITICAL: Use page_id to get only THIS page's rings/groups/labels
+          // CRITICAL: Use wheel_id - rings are SHARED across all pages!
           const { data: dbRings } = await supabase
             .from('wheel_rings')
             .select('*')
-            .eq('page_id', pageToLoad.id)
+            .eq('wheel_id', wheelId)
             .order('ring_order');
           
           const { data: dbActivityGroups } = await supabase
             .from('activity_groups')
             .select('*')
-            .eq('page_id', pageToLoad.id);
+            .eq('wheel_id', wheelId);
           
           const { data: dbLabels } = await supabase
             .from('labels')
             .select('*')
-            .eq('page_id', pageToLoad.id);
+            .eq('wheel_id', wheelId);
           
           console.log('📊 [App] Fetched from DB - Rings:', dbRings?.length, 'Groups:', dbActivityGroups?.length, 'Labels:', dbLabels?.length);
           console.log('📊 [App] DB Rings:', dbRings);
@@ -409,8 +409,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     throttledReload();
   }, [throttledReload]);
 
-  // Enable realtime sync for this wheel
-  useRealtimeWheel(wheelId, handleRealtimeChange);
+  // Enable realtime sync for this page (not wheel!)
+  // CRITICAL: Pass currentPageId to filter by page, not wheel
+  useRealtimeWheel(wheelId, currentPageId, handleRealtimeChange);
 
   // Handle realtime page changes
   const handlePageRealtimeChange = useCallback((eventType, payload) => {
@@ -507,8 +508,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
 
 
-  // Auto-save function (debounced to prevent excessive saves)
-  // Uses refs to always read the latest state values
+  // Lightweight auto-save ONLY for wheel metadata (title, colors, settings)
+  // organizationData changes are handled by realtime, so we don't auto-save those
   const autoSave = useDebouncedCallback(async () => {
     // Don't auto-save if:
     // 1. No wheelId (localStorage mode)
@@ -527,18 +528,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       showWeekRing: currentShowWeekRing,
       showMonthRing: currentShowMonthRing,
       showRingNames: currentShowRingNames,
-      organizationData: currentOrganizationData,
-      year: currentYear,
-      currentPageId: currentCurrentPageId
     } = latestValuesRef.current;
 
     try {
       // Mark as saving to prevent realtime interference
-      // NOTE: Don't update isSaving state - auto-save should be invisible
       isSavingRef.current = true;
-      isLoadingData.current = true; // Prevent recursive auto-save
       
-      // Update wheel metadata (NOT including year - it's per-page now)
+      // LIGHTWEIGHT: Only update wheel metadata (no heavy database table syncing)
       await updateWheel(wheelId, {
         title: currentTitle,
         colors: currentColors,
@@ -547,80 +543,34 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         showRingNames: currentShowRingNames,
       });
       
-      // CRITICAL: Always call saveWheelData to sync to database tables AND get ID maps
-      // This syncs rings, activity groups, labels, and items to their respective tables
-      const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrganizationData, currentCurrentPageId);
-      
-      // Update local state with new database UUIDs (replace temporary IDs)
-      const updatedOrgData = {
-        ...currentOrganizationData,
-        rings: currentOrganizationData.rings.map(ring => ({
-          ...ring,
-          id: ringIdMap.get(ring.id) || ring.id
-        })),
-        activityGroups: currentOrganizationData.activityGroups.map(group => ({
-          ...group,
-          id: activityIdMap.get(group.id) || group.id
-        })),
-        labels: currentOrganizationData.labels.map(label => ({
-          ...label,
-          id: labelIdMap.get(label.id) || label.id
-        })),
-        items: currentOrganizationData.items.map(item => ({
-          ...item,
-          ringId: ringIdMap.get(item.ringId) || item.ringId,
-          activityId: activityIdMap.get(item.activityId) || item.activityId,
-          labelId: labelIdMap.get(item.labelId) || item.labelId
-        }))
-      };
-      
-      // Update React state with UUIDs (silently, without triggering undo)
-      setOrganizationData(updatedOrgData);
-      
-      // Also update the page's JSONB organization_data and year
-      if (currentCurrentPageId) {
-        await updatePage(currentCurrentPageId, {
-          organization_data: updatedOrgData,
-          year: parseInt(currentYear)
-        });
-      }
-      
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
       
-      // NO TOAST - auto-save should be completely invisible to user
+      console.log('[AutoSave] Metadata saved (lightweight)');
     } catch (error) {
       console.error('[AutoSave] Error:', error);
-      // Show error toast only on failure (user needs to know about problems)
+      // Show error toast only on failure
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Auto-sparning misslyckades', type: 'error' } 
       });
       window.dispatchEvent(event);
     } finally {
-      // Re-enable realtime after save completes
       isSavingRef.current = false;
-      isLoadingData.current = false;
-      // Don't update isSaving state - keep UI unchanged
     }
-  }, 2000); // Wait 2 seconds after last change before saving
+  }, 10000); // Wait 10 seconds after last metadata change (much less aggressive)
 
-  // Auto-save on organizationData changes (with safeguards to prevent loops)
+  // REMOVED: Auto-save on organizationData changes
+  // Realtime handles syncing organization data across users
+  // Manual save button does the full sync when needed
+
+  // Auto-save ONLY on metadata changes (title, colors, settings)
   useEffect(() => {
     // Skip if initial load, loading data, or data came from realtime
     if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
       return;
     }
     autoSave();
-  }, [organizationData, autoSave]);
-
-  // Auto-save on settings changes (with safeguards to prevent loops)
-  useEffect(() => {
-    // Skip if initial load, loading data, or data came from realtime
-    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
-      return;
-    }
-    autoSave();
-  }, [title, year, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
+  }, [title, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
 
   // Initial load on mount AND reload when reloadTrigger changes
   useEffect(() => {
@@ -1021,16 +971,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         : parseInt(year);
       const nextYear = maxYear + 1;
       
-      // Use current organizationData state (just saved above)
-      // Copy ONLY rings and activityGroups (structure), NOT items (activities)
+      // Create blank page for next year
+      // NOTE: Rings/groups are shared across wheel, so they'll automatically appear!
       const newPage = await createPage(wheelId, {
         year: nextYear,
         title: `${nextYear}`,
         organizationData: {  // NOTE: camelCase for service function!
-          rings: organizationData.rings || [], // Copy rings structure
-          activityGroups: organizationData.activityGroups || [], // Copy activity groups
-          labels: organizationData.labels || [], // Copy labels
-          items: [] // Empty items - no activities copied
+          rings: [], // Don't copy - rings are shared at wheel level
+          activityGroups: [], // Don't copy - groups are shared at wheel level
+          labels: [], // Don't copy - labels are shared at wheel level
+          items: [] // Empty items - start fresh
         }
       });
       

@@ -70,7 +70,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   
   // Subscription state
   const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading } = useUsageLimits();
-  const { isAdmin: isAdminUser } = useSubscription();
+  const { isAdmin: isAdminUser, refresh: refreshSubscription } = useSubscription();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
@@ -110,6 +110,8 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     try {
       const newWheelId = await createWheel(wheelData);
       await loadWheels();
+      // Refresh subscription to update wheel count
+      await refreshSubscription();
       setShowCreateModal(false);
       // Show success feedback
       const event = new CustomEvent('showToast', { 
@@ -132,6 +134,8 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     try {
       await deleteWheel(wheelId);
       await loadWheels();
+      // CRITICAL: Refresh subscription to update wheel count
+      await refreshSubscription();
       // Show success feedback
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Hjul raderat!', type: 'success' } 
@@ -150,6 +154,8 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     try {
       await duplicateWheel(wheelId);
       await loadWheels();
+      // Refresh subscription to update wheel count
+      await refreshSubscription();
       // Show success feedback
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Hjul duplicerat!', type: 'success' } 

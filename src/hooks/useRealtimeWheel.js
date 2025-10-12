@@ -5,9 +5,12 @@ import { supabase } from '../lib/supabase';
  * Real-time synchronization hook for Year Wheel data
  * 
  * Listens to changes in wheel_rings, activity_groups, labels, and items tables
- * and triggers a callback when any changes occur for the specified wheel.
+ * and triggers a callback when any changes occur for the specified page.
  * 
- * @param {string} wheelId - The ID of the wheel to monitor
+ * CRITICAL: Filters by page_id to avoid cross-page contamination!
+ * 
+ * @param {string} wheelId - The ID of the wheel to monitor (for items only)
+ * @param {string} pageId - The ID of the page to monitor (PRIMARY filter)
  * @param {function} onDataChange - Callback function called when data changes
  *   Receives: (eventType, tableName, payload) => void
  *   - eventType: 'INSERT', 'UPDATE', or 'DELETE'
@@ -15,21 +18,28 @@ import { supabase } from '../lib/supabase';
  *   - payload: { old: {...}, new: {...}, eventType, ... }
  * 
  * @example
- * useRealtimeWheel(currentWheel?.id, (eventType, tableName, payload) => {
+ * useRealtimeWheel(wheelId, pageId, (eventType, tableName, payload) => {
  *   console.log(`${tableName} ${eventType}:`, payload);
- *   refetchWheelData(); // Re-fetch the entire wheel
+ *   refetchPageData(); // Re-fetch the current page
  * });
  */
-export function useRealtimeWheel(wheelId, onDataChange) {
+export function useRealtimeWheel(wheelId, pageId, onDataChange) {
   const channelRef = useRef(null);
   const wheelIdRef = useRef(wheelId);
+  const pageIdRef = useRef(pageId);
 
-  // Keep wheelId in ref to avoid recreating subscriptions
+  // Keep IDs in refs to avoid recreating subscriptions
   useEffect(() => {
     wheelIdRef.current = wheelId;
-  }, [wheelId]);
+    pageIdRef.current = pageId;
+  }, [wheelId, pageId]);
 
-  // Wrap callback in useCallback to ensure stable reference
+  // Wrap callback - use ref for onDataChange to avoid recreating subscriptions
+  const onDataChangeRef = useRef(onDataChange);
+  useEffect(() => {
+    onDataChangeRef.current = onDataChange;
+  }, [onDataChange]);
+
   const handleChange = useCallback((tableName) => {
     return (payload) => {
       const eventType = payload.eventType; // 'INSERT', 'UPDATE', 'DELETE'
@@ -40,69 +50,72 @@ export function useRealtimeWheel(wheelId, onDataChange) {
       //   wheelId: wheelIdRef.current
       // });
 
-      // Call the user's callback
-      if (onDataChange) {
-        onDataChange(eventType, tableName, payload);
+      // Call the user's callback (from ref to get latest)
+      if (onDataChangeRef.current) {
+        onDataChangeRef.current(eventType, tableName, payload);
       }
     };
-  }, [onDataChange]);
+  }, []); // No dependencies - callback is stable
 
   useEffect(() => {
-    // Don't subscribe if no wheelId
-    if (!wheelId) {
-      // console.log('[Realtime] No wheelId, skipping subscription');
+    // Don't subscribe if no wheelId or pageId
+    if (!wheelId || !pageId) {
+      // console.log('[Realtime] Missing wheelId or pageId, skipping subscription');
       return;
     }
 
-    // console.log(`[Realtime] Setting up subscriptions for wheel: ${wheelId}`);
+    console.log(`[Realtime] Setting up subscriptions - Wheel: ${wheelId}, Page: ${pageId}`);
 
-    // Create a unique channel for this wheel
-    const channel = supabase.channel(`wheel:${wheelId}`);
+    // Create a unique channel for this wheel+page combination
+    const channel = supabase.channel(`wheel:${wheelId}:page:${pageId}`);
 
-    // Subscribe to wheel_rings changes
+    // ARCHITECTURE: Rings/Groups/Labels are SHARED (filter by wheel_id)
+    //               Items are DISTRIBUTED (filter by page_id)
+
+    // Subscribe to wheel_rings changes (wheel-scoped - shared across pages)
     channel.on(
       'postgres_changes',
       {
         event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
         schema: 'public',
         table: 'wheel_rings',
-        filter: `wheel_id=eq.${wheelId}`,
+        filter: `wheel_id=eq.${wheelId}`, // ✅ Shared - use wheel_id
       },
       handleChange('wheel_rings')
     );
 
-    // Subscribe to activity_groups changes
+    // Subscribe to activity_groups changes (wheel-scoped - shared across pages)
     channel.on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'activity_groups',
-        filter: `wheel_id=eq.${wheelId}`,
+        filter: `wheel_id=eq.${wheelId}`, // ✅ Shared - use wheel_id
       },
       handleChange('activity_groups')
     );
 
-    // Subscribe to labels changes
+    // Subscribe to labels changes (wheel-scoped - shared across pages)
     channel.on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'labels',
-        filter: `wheel_id=eq.${wheelId}`,
+        filter: `wheel_id=eq.${wheelId}`, // ✅ Shared - use wheel_id
       },
       handleChange('labels')
     );
 
-    // Subscribe to items changes
+    // Subscribe to items changes (page-scoped - distributed by year)
     channel.on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'items',
-        filter: `wheel_id=eq.${wheelId}`,
+        filter: `page_id=eq.${pageId}`, // ✅ Distributed - use page_id
       },
       handleChange('items')
     );
@@ -111,7 +124,7 @@ export function useRealtimeWheel(wheelId, onDataChange) {
     channel
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          // console.log(`[Realtime] Successfully subscribed to wheel: ${wheelId}`);
+          console.log(`[Realtime] ✅ Subscribed to page: ${pageId}`);
         } else if (status === 'CHANNEL_ERROR') {
           console.error('[Realtime] Subscription error:', status);
         } else if (status === 'TIMED_OUT') {
@@ -126,13 +139,13 @@ export function useRealtimeWheel(wheelId, onDataChange) {
 
     // Cleanup function
     return () => {
-      // console.log(`[Realtime] Cleaning up subscriptions for wheel: ${wheelId}`);
+      console.log(`[Realtime] 🧹 Cleaning up subscriptions for page: ${pageId}`);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [wheelId, handleChange]);
+  }, [wheelId, pageId, handleChange]); // Only re-subscribe when wheelId or pageId changes
 
   // Return channel status for debugging
   return {

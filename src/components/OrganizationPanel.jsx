@@ -354,8 +354,20 @@ function OrganizationPanel({
 
   const handleRemoveRing = (ringId) => {
     if (organizationData.rings.length <= 1) return;
+    
+    // Remove the ring
     const updatedRings = organizationData.rings.filter(r => r.id !== ringId);
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    
+    // CRITICAL: Also remove all items on this ring to prevent orphaned items
+    const updatedItems = organizationData.items.filter(item => item.ringId !== ringId);
+    
+    console.log(`[handleRemoveRing] Removing ring ${ringId} and ${organizationData.items.length - updatedItems.length} items`);
+    
+    onOrganizationChange({ 
+      ...organizationData, 
+      rings: updatedRings,
+      items: updatedItems
+    });
   };
 
   const handleRingNameChange = (ringId, newName) => {

@@ -67,16 +67,40 @@ serve(async (req) => {
       throw new Error('Google Calendar not connected')
     }
 
-    // Check token expiry
+    // Check token expiry and refresh if needed
     const tokenExpiresAt = new Date(integration.token_expires_at)
+    let accessToken = integration.access_token
+    
     if (tokenExpiresAt < new Date()) {
-      throw new Error('Access token expired - please reconnect')
+      console.log('🔄 Access token expired, refreshing...')
+      
+      const refreshToken = integration.refresh_token
+      if (!refreshToken) {
+        throw new Error('No refresh token available - please reconnect your Google account')
+      }
+      
+      // Refresh the access token
+      const newTokens = await refreshGoogleToken(refreshToken)
+      
+      // Update the database with new tokens
+      const newExpiresAt = new Date(Date.now() + (newTokens.expires_in * 1000))
+      await supabaseClient
+        .from('user_integrations')
+        .update({
+          access_token: newTokens.access_token,
+          token_expires_at: newExpiresAt.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', integration.id)
+      
+      accessToken = newTokens.access_token
+      console.log('✅ Token refreshed successfully')
     }
 
     // Fetch calendar list from Google
     const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
       headers: {
-        'Authorization': `Bearer ${integration.access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
     })
 
@@ -116,3 +140,36 @@ serve(async (req) => {
     )
   }
 })
+
+/**
+ * Refresh Google OAuth access token using refresh token
+ */
+async function refreshGoogleToken(refreshToken: string) {
+  const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
+  const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Google OAuth credentials not configured')
+  }
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    console.error('Token refresh failed:', error)
+    throw new Error('Failed to refresh access token - please reconnect your Google account')
+  }
+
+  return await response.json()
+}

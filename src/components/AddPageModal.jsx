@@ -17,26 +17,10 @@ export default function AddPageModal({
 
   const options = [
     {
-      id: 'blank',
-      icon: FileText,
-      title: 'Tom sida',
-      description: 'Skapa en tom sida att börja från scratch',
-      color: 'blue',
-      action: onCreateBlank
-    },
-    {
-      id: 'duplicate',
-      icon: Copy,
-      title: 'Duplicera nuvarande',
-      description: 'Kopiera alla aktiviteter och inställningar',
-      color: 'purple',
-      action: onDuplicate
-    },
-    {
       id: 'next-year',
       icon: Calendar,
       title: `Nästa år (${nextYear})`,
-      description: `Skapa ${nextYear} med samma struktur`,
+      description: `Skapa en tom sida för ${nextYear} med samma struktur (ringar delas automatiskt)`,
       color: 'green',
       action: onCreateNextYear
     }
