@@ -30,7 +30,7 @@ export function useUndoRedo(initialState, options = {}) {
   const [state, setStateInternal] = useState(initialState);
   
   // History stacks with metadata (using Immer freeze for immutability)
-  const [history, setHistory] = useState([{ state: freeze(initialState, true), label: 'Initial' }]);
+  const [history, setHistory] = useState([{ state: freeze(initialState, true), label: 'Start' }]);
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // Flag to prevent adding to history during undo/redo
@@ -48,7 +48,7 @@ export function useUndoRedo(initialState, options = {}) {
    * Add state to history with optional label
    * Uses Immer to create immutable snapshots efficiently
    */
-  const addToHistory = useCallback((newState, label = 'Change') => {
+  const addToHistory = useCallback((newState, label = 'Ändring') => {
     if (isUndoRedoAction.current) {
       return; // Don't add to history during undo/redo
     }
@@ -141,7 +141,7 @@ export function useUndoRedo(initialState, options = {}) {
         isUndoRedoAction.current = false;
       }, 0);
       
-      return history[newIndex].label || 'Change';
+      return history[newIndex].label || 'Ändring';
     }
     return false;
   }, [currentIndex, history]);
@@ -161,7 +161,7 @@ export function useUndoRedo(initialState, options = {}) {
         isUndoRedoAction.current = false;
       }, 0);
       
-      return history[newIndex].label || 'Change';
+      return history[newIndex].label || 'Ändring';
     }
     return false;
   }, [currentIndex, history]);
@@ -197,7 +197,7 @@ export function useUndoRedo(initialState, options = {}) {
    * Used for drag operations to prevent history spam
    * Uses Immer freeze to preserve initial state
    */
-  const startBatch = useCallback((label = 'Batch operation') => {
+  const startBatch = useCallback((label = 'Gruppoperation') => {
     isBatchMode.current = true;
     batchModeLabel.current = label;
     // Freeze initial state to prevent mutations
@@ -232,7 +232,7 @@ export function useUndoRedo(initialState, options = {}) {
    * Uses Immer freeze to ensure immutability
    */
   const clear = useCallback(() => {
-    setHistory([{ state: freeze(state, true), label: 'Initial' }]);
+    setHistory([{ state: freeze(state, true), label: 'Start' }]);
     setCurrentIndex(0);
     lastSaveIndex.current = 0;
   }, [state]);

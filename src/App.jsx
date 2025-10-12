@@ -1264,59 +1264,57 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    setOrganizationData(prevData => {
-      // Find the old item to detect what changed
-      const oldItem = prevData.items.find(item => item.id === updatedItem.id);
+    // Calculate label before setState call
+    const currentData = organizationData;
+    const oldItem = currentData.items.find(item => item.id === updatedItem.id);
+    
+    let label = 'Ändra aktivitet';
+    
+    if (oldItem) {
+      // Determine what type of change occurred
+      const ringChanged = oldItem.ringId !== updatedItem.ringId;
+      const datesChanged = oldItem.startDate !== updatedItem.startDate || 
+                          oldItem.endDate !== updatedItem.endDate;
       
-      let label = 'Ändra aktivitet';
-      
-      if (oldItem) {
-        // Determine what type of change occurred
-        const ringChanged = oldItem.ringId !== updatedItem.ringId;
-        const datesChanged = oldItem.startDate !== updatedItem.startDate || 
-                            oldItem.endDate !== updatedItem.endDate;
-        
-        // Create descriptive label based on what changed
-        if (ringChanged && datesChanged) {
-          label = `Flytta och ändra ${updatedItem.name}`;
-        } else if (ringChanged) {
-          // Find ring names for more context
-          const oldRing = prevData.rings.find(r => r.id === oldItem.ringId);
-          const newRing = prevData.rings.find(r => r.id === updatedItem.ringId);
-          if (oldRing && newRing) {
-            label = `Flytta ${updatedItem.name} till ${newRing.name}`;
-          } else {
-            label = `Flytta ${updatedItem.name}`;
-          }
-        } else if (datesChanged) {
-          label = `Ändra datum för ${updatedItem.name}`;
+      // Create descriptive label based on what changed
+      if (ringChanged && datesChanged) {
+        label = `Flytta och ändra ${updatedItem.name}`;
+      } else if (ringChanged) {
+        // Find ring names for more context
+        const newRing = currentData.rings.find(r => r.id === updatedItem.ringId);
+        if (newRing) {
+          label = `Flytta ${updatedItem.name} till ${newRing.name}`;
         } else {
-          // Fallback for other changes (name, color, etc.)
-          label = `Redigera ${updatedItem.name}`;
+          label = `Flytta ${updatedItem.name}`;
         }
+      } else if (datesChanged) {
+        label = `Ändra datum för ${updatedItem.name}`;
+      } else {
+        // Fallback for other changes (name, color, etc.)
+        label = `Redigera ${updatedItem.name}`;
       }
-      
-      return {
-        ...prevData,
-        items: prevData.items.map(item => 
-          item.id === updatedItem.id ? updatedItem : item
-        )
-      };
-    }, label);
-  }, [setOrganizationData]);
+    }
+    
+    // Update state with calculated label
+    setOrganizationData(prevData => ({
+      ...prevData,
+      items: prevData.items.map(item => 
+        item.id === updatedItem.id ? updatedItem : item
+      )
+    }), label);
+  }, [setOrganizationData, organizationData]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
-    setOrganizationData(prevData => {
-      // Find item name before deleting for descriptive label
-      const itemToDelete = prevData.items.find(item => item.id === itemId);
-      const label = itemToDelete ? `Ta bort ${itemToDelete.name}` : 'Ta bort aktivitet';
-      
-      return {
-        ...prevData,
-        items: prevData.items.filter(item => item.id !== itemId)
-      };
-    }, label);
-  }, [setOrganizationData]);
+    // Calculate label before setState call
+    const itemToDelete = organizationData.items.find(item => item.id === itemId);
+    const label = itemToDelete ? `Ta bort ${itemToDelete.name}` : 'Ta bort aktivitet';
+    
+    // Update state with calculated label
+    setOrganizationData(prevData => ({
+      ...prevData,
+      items: prevData.items.filter(item => item.id !== itemId)
+    }), label);
+  }, [setOrganizationData, organizationData]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
