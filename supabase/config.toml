@@ -4,3 +4,7 @@
 # Google OAuth callback - must be publicly accessible (Google redirects without JWT)
 [functions.google-oauth-callback]
 verify_jwt = false
+
+# Stripe webhook - must be publicly accessible (Stripe sends webhooks without JWT)
+[functions.stripe-webhook]
+verify_jwt = false
