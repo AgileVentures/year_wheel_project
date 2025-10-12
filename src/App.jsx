@@ -16,6 +16,7 @@ import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import PreviewWheelPage from "./components/PreviewWheelPage";
 import PricingPage from "./components/PricingPage";
+import CookieConsent from "./components/CookieConsent";
 import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
@@ -1672,6 +1673,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppContent />
+        <CookieConsent />
       </AuthProvider>
     </BrowserRouter>
   );
