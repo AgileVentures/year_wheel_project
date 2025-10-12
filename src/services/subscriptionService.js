@@ -276,6 +276,8 @@ export function getUsageLimits(isPremium, isAdminUser = false) {
       canShareWheels: true,
       isAdmin: isAdminUser,  // Flag to show admin badge
       features: [
+        'AI-assistent för planering',
+        'Google Integration (Calendar & Sheets)',
         'Obegränsade årshjul',
         'Obegränsade team och medlemmar',
         'Alla exportformat (PNG, SVG, PDF, JPG)',
