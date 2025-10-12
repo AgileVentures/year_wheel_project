@@ -309,7 +309,7 @@ Vad vill du göra?`
             {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-2">💡 Tips: "skapa julkampanj 2025-12-15 till 2026-01-30"</p>
+        {/* <p className="text-xs text-gray-500 mt-2">💡 Tips: "skapa julkampanj 2025-12-15 till 2026-01-30"</p> */}
       </form>
     </div>
   );

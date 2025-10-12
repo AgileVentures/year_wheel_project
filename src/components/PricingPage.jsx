@@ -178,7 +178,13 @@ function PricingPage() {
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Sparkles className="w-3 h-3 text-[#00A4A6]" />
                 </div>
-                <span className="text-white font-semibold">AI-assisterad design och planering</span>
+                <span className="text-white font-semibold">AI-assistent för planering</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Sparkles className="w-3 h-3 text-[#00A4A6]" />
+                </div>
+                <span className="text-white font-semibold">Google Integration (Calendar & Sheets)</span>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -255,10 +261,36 @@ function PricingPage() {
 
             <div className="border-b border-gray-200 pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Hur fungerar AI-assistenten?
+                Hur fungerar AI-assistenten? <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
               </h3>
-              <p className="text-gray-600">
-                AI-assistenten hjälper dig att snabbt skapa strukturer, aktiviteter och planering baserat på dina behov. Beskriv bara vad du vill åstadkomma!
+              <p className="text-gray-600 mb-2">
+                AI-assistenten använder avancerad språkförståelse för att hjälpa dig planera snabbare. 
+                Beskriv bara vad du vill åstadkomma i naturligt språk, t.ex:
+              </p>
+              <ul className="text-gray-600 list-disc list-inside ml-4 space-y-1">
+                <li>"Skapa en kampanj i mars och kopiera den till september"</li>
+                <li>"Förläng produktlansering till halva april"</li>
+                <li>"Lägg till 10 möten jämnt fördelade över första kvartalet"</li>
+              </ul>
+              <p className="text-gray-600 mt-2">
+                AI:n skapar automatiskt aktiviteter, upptäcker konflikter och föreslår förbättringar.
+              </p>
+            </div>
+
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Vad är Google Integration? <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
+              </h3>
+              <p className="text-gray-600 mb-2">
+                Med Premium får du tillgång till automatisk synkronisering från:
+              </p>
+              <ul className="text-gray-600 list-disc list-inside ml-4 space-y-1">
+                <li><strong>Google Calendar:</strong> Importera händelser direkt till ditt årshjul</li>
+                <li><strong>Google Sheets:</strong> Synka aktiviteter från dina kalkylark</li>
+              </ul>
+              <p className="text-gray-600 mt-2">
+                Systemet distribuerar automatiskt aktiviteter över flera år baserat på datum, 
+                och uppdaterar i realtid när du ändrar i Google.
               </p>
             </div>
 

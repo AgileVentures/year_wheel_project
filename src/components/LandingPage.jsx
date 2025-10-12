@@ -557,24 +557,46 @@ function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#36C2C6]/30 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
+            {/* Feature 1 - AI Assistant (PREMIUM) */}
+            <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#36C2C6] hover:shadow-xl transition-all relative overflow-hidden">
+              <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#336B3E] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
+                <Crown size={12} />
+                PREMIUM
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00A4A6] to-[#2D4EC8] rounded-sm flex items-center justify-center mb-6">
                 <Sparkles className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                AI-assisterad planering
+                AI-assistent för planering
               </h3>
               <p className="text-gray-600">
-                Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter 
-                och upptäcker konflikter automatiskt.
+                Beskriv vad du vill åstadkomma i naturligt språk – AI:n skapar strukturen, 
+                lägger till aktiviteter, upptäcker konflikter och föreslår förbättringar automatiskt.
               </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#2D4EC8]/30 hover:shadow-lg transition-shadow">
+            {/* Feature 2 - Google Integration (PREMIUM) */}
+            <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#2D4EC8] hover:shadow-xl transition-all relative overflow-hidden">
+              <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#336B3E] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
+                <Crown size={12} />
+                PREMIUM
+              </div>
               <div className="w-12 h-12 bg-[#2D4EC8] rounded-sm flex items-center justify-center mb-6">
                 <Calendar className="text-white" size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                Google Integration
+              </h3>
+              <p className="text-gray-600">
+                Synka aktiviteter direkt från Google Calendar och Google Sheets. 
+                Importera automatiskt och distribuera över flera år – allt uppdateras i realtid.
+              </p>
+            </div>
+
+            {/* Feature 3 - Circular Overview */}
+            <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#36C2C6]/30 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
+                <TrendingUp className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Cirkulär överblick
@@ -585,7 +607,7 @@ function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 3 */}
+            {/* Feature 4 - Real-time Collaboration */}
             <div className="bg-gradient-to-br from-[#9FCB3E]/20 to-white p-8 rounded-sm border border-[#9FCB3E]/30 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-[#336B3E] rounded-sm flex items-center justify-center mb-6">
                 <Users className="text-white" size={24} />
@@ -599,10 +621,10 @@ function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 4 */}
+            {/* Feature 5 - Smart Rings */}
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#2E9E97]/30 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-[#2E9E97] rounded-sm flex items-center justify-center mb-6">
-                <TrendingUp className="text-white" size={24} />
+                <Zap className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
                 Smarta ringar
@@ -613,7 +635,7 @@ function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 5 */}
+            {/* Feature 6 - High Quality Export */}
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#36C2C6]/30 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-[#36C2C6] rounded-sm flex items-center justify-center mb-6">
                 <Download className="text-white" size={24} />
@@ -624,20 +646,6 @@ function LandingPage() {
               <p className="text-gray-600">
                 Exportera som PNG, SVG, PDF eller JPG. Använd direkt i presentationer, 
                 styrgrupper eller skriv ut och sätt på väggen.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#00A4A6]/30 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
-                <Zap className="text-white" size={24} />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Versionshistorik
-              </h3>
-              <p className="text-gray-600">
-                Se alla ändringar och återställ till tidigare versioner när som helst. 
-                Perfekt för att experimentera tryggt.
               </p>
             </div>
           </div>
@@ -754,7 +762,13 @@ function LandingPage() {
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Sparkles className="text-[#00A4A6]" size={12} />
                   </div>
-                  <span className="text-white font-semibold">AI-assisterad design och planering</span>
+                  <span className="text-white font-semibold">AI-assistent för planering</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Calendar className="text-[#00A4A6]" size={12} />
+                  </div>
+                  <span className="text-white font-semibold">Google Integration (Calendar & Sheets)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-white flex-shrink-0 mt-1" size={20} />
