@@ -36,7 +36,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     canRedo,
     clear: clearHistory
   } = useMultiStateUndoRedo({
-    title: "New wheel",
+    title: "Nytt hjul",
     year: "2025",
     colors: ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"], // Pastell palette
     organizationData: {
@@ -65,7 +65,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   });
 
   // Extract states from undo-managed object
-  const title = undoableStates?.title || "New wheel";
+  const title = undoableStates?.title || "Nytt hjul";
   const year = undoableStates?.year || "2025";
   const colors = undoableStates?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
   const organizationData = undoableStates?.organizationData || {
@@ -339,7 +339,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // CRITICAL: Update title, colors AND organizationData together in ONE call to prevent race condition
         const updates = {};
         if (wheelData.title !== undefined) {
-          updates.title = wheelData.title || 'New wheel';
+          updates.title = wheelData.title || 'Nytt hjul';
         }
         if (wheelData.colors) {
           updates.colors = wheelData.colors;
@@ -1128,7 +1128,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!confirm('Är du säker på att du vill återställa allt? All data kommer att raderas.')) return;
     
     // Reset to clean state with one initial inner ring
-    setTitle("New wheel");
+    setTitle("Nytt hjul");
     setYear("2025");
     const defaultColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     setColors(defaultColors);

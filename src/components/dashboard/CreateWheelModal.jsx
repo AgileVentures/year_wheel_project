@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import { getUserTeams } from '../../services/teamService';
 
 export default function CreateWheelModal({ onClose, onCreate }) {
-  const [title, setTitle] = useState('New wheel');
+  const [title, setTitle] = useState('Nytt hjul');
   const [year, setYear] = useState(new Date().getFullYear());
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
@@ -32,7 +32,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
     
     try {
       await onCreate({
-        title: title.trim() || 'New wheel',
+        title: title.trim() || 'Nytt hjul',
         year,
         team_id: selectedTeam || null,
       });
@@ -49,7 +49,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-sm shadow-xl max-w-md w-full my-8">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Skapa New wheel</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Skapa nytt hjul</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
