@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { produce, current, freeze } from 'immer';
 
 /**
  * useUndoRedo Hook
@@ -11,6 +12,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
  * - Configurable history limit
  * - Immediate history tracking (no debouncing)
  * - Clear history on major operations
+ * - Immer for optimized deep cloning and immutability
  * 
  * @param {*} initialState - Initial state value
  * @param {Object} options - Configuration options
@@ -27,8 +29,8 @@ export function useUndoRedo(initialState, options = {}) {
   // Current state
   const [state, setStateInternal] = useState(initialState);
   
-  // History stacks with metadata
-  const [history, setHistory] = useState([{ state: initialState, label: 'Initial' }]);
+  // History stacks with metadata (using Immer freeze for immutability)
+  const [history, setHistory] = useState([{ state: freeze(initialState, true), label: 'Initial' }]);
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // Flag to prevent adding to history during undo/redo
@@ -44,6 +46,7 @@ export function useUndoRedo(initialState, options = {}) {
 
   /**
    * Add state to history with optional label
+   * Uses Immer to create immutable snapshots efficiently
    */
   const addToHistory = useCallback((newState, label = 'Change') => {
     if (isUndoRedoAction.current) {
@@ -52,23 +55,27 @@ export function useUndoRedo(initialState, options = {}) {
 
     // In batch mode, just store the latest state without adding to history yet
     if (isBatchMode.current) {
-      batchModeState.current = newState;
+      // Use Immer freeze to ensure immutability in batch mode
+      batchModeState.current = freeze(newState, true);
       return;
     }
 
     setHistory(prev => {
-      // Remove any future history (we're creating a new timeline)
-      const newHistory = prev.slice(0, currentIndex + 1);
-      
-      // Add new state with label
-      newHistory.push({ state: newState, label });
-      
-      // Limit history size
-      if (newHistory.length > limit) {
-        return newHistory.slice(-limit);
-      }
-      
-      return newHistory;
+      // Use Immer produce to create new history array immutably
+      return produce(prev, draft => {
+        // Remove any future history (we're creating a new timeline)
+        draft.splice(currentIndex + 1);
+        
+        // Add new state with label (Immer freeze ensures deep immutability)
+        // freeze() creates a deeply frozen copy, preventing accidental mutations
+        draft.push({ state: freeze(newState, true), label });
+        
+        // Limit history size
+        if (draft.length > limit) {
+          // Keep only the last 'limit' entries
+          draft.splice(0, draft.length - limit);
+        }
+      });
     });
     
     setCurrentIndex(prev => {
@@ -80,18 +87,36 @@ export function useUndoRedo(initialState, options = {}) {
   /**
    * Set state WITHOUT debouncing for immediate undo history
    * This ensures undo/redo always has the correct state
+   * Uses Immer for functional updates when possible
    * 
-   * @param {*} newState - New state value or function
+   * @param {*} newState - New state value, function, or Immer recipe
    * @param {string} label - Optional descriptive label for undo button
    */
   const setState = useCallback((newState, label) => {
     // CRITICAL: Use setStateInternal's callback to get LATEST state
     // This prevents stale closure issues when multiple state updates happen
     setStateInternal(prevState => {
-      // Support functional updates with LATEST prevState
-      const resolvedState = typeof newState === 'function' 
-        ? newState(prevState) 
-        : newState;
+      let resolvedState;
+      
+      if (typeof newState === 'function') {
+        // For functional updates, use Immer produce if state is an object
+        // This enables draft mutations while maintaining immutability
+        if (prevState && typeof prevState === 'object' && !Array.isArray(prevState)) {
+          resolvedState = produce(prevState, draft => {
+            // Call the function with current() to get plain values
+            const update = newState(current(draft));
+            // If function returns a value, use it; otherwise mutations were made
+            if (update !== undefined) {
+              return update;
+            }
+          });
+        } else {
+          // For primitives or arrays, use normal functional update
+          resolvedState = newState(prevState);
+        }
+      } else {
+        resolvedState = newState;
+      }
       
       // Add to history IMMEDIATELY (no debouncing for undo history)
       // This ensures every state change can be undone
@@ -170,11 +195,13 @@ export function useUndoRedo(initialState, options = {}) {
   /**
    * Start batch mode - accumulate changes without creating history entries
    * Used for drag operations to prevent history spam
+   * Uses Immer freeze to preserve initial state
    */
   const startBatch = useCallback((label = 'Batch operation') => {
     isBatchMode.current = true;
     batchModeLabel.current = label;
-    batchModeState.current = state;
+    // Freeze initial state to prevent mutations
+    batchModeState.current = freeze(state, true);
   }, [state]);
 
   /**
@@ -202,9 +229,10 @@ export function useUndoRedo(initialState, options = {}) {
 
   /**
    * Clear history
+   * Uses Immer freeze to ensure immutability
    */
   const clear = useCallback(() => {
-    setHistory([{ state, label: 'Initial' }]);
+    setHistory([{ state: freeze(state, true), label: 'Initial' }]);
     setCurrentIndex(0);
     lastSaveIndex.current = 0;
   }, [state]);
