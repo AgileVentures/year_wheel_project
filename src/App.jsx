@@ -705,7 +705,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     setYearEventsCollection(yearEvents);
   }, [year]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     // If we have a wheelId, save to database
     if (wheelId) {
       // Temporarily disable auto-save during manual save
@@ -824,7 +824,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     }
-  };
+  }, [wheelId, autoSaveEnabled, setOrganizationData, markSaved, title, year, colors, ringsData, organizationData, showWeekRing, showMonthRing, showRingNames]);
 
   const handleTogglePublic = async () => {
     if (!wheelId) return;
