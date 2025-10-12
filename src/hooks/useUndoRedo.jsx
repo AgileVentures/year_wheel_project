@@ -182,6 +182,13 @@ export function useUndoRedo(initialState, options = {}) {
     return false;
   }, [currentIndex, history]);
   /**
+   * Mark current position as a save point
+   */
+  const markSaved = useCallback(() => {
+    lastSaveIndex.current = currentIndex;
+  }, [currentIndex]);
+  
+  /**
    * Undo to last save point
    */
   const undoToSave = useCallback(() => {
