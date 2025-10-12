@@ -64,7 +64,7 @@ function CookieConsent() {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-sm shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-start justify-between">
@@ -100,7 +100,7 @@ function CookieConsent() {
           {showDetails && (
             <div className="space-y-4 mb-6">
               {/* Necessary Cookies */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900">Nödvändiga cookies</h3>
                   <div className="relative inline-block w-11 h-6">
@@ -121,7 +121,7 @@ function CookieConsent() {
               </div>
 
               {/* Preferences Cookies */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900">Preferens-cookies</h3>
                   <button
@@ -150,7 +150,7 @@ function CookieConsent() {
               </div>
 
               {/* Statistics Cookies */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900">Statistik-cookies</h3>
                   <button
@@ -179,7 +179,7 @@ function CookieConsent() {
               </div>
 
               {/* Marketing Cookies */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900">Marknadsförings-cookies</h3>
                   <button
@@ -225,14 +225,14 @@ function CookieConsent() {
             <div className="flex gap-3 flex-wrap">
               <button
                 onClick={handleAcceptNecessary}
-                className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-lg font-semibold 
+                className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-sm font-semibold 
                          border border-gray-300 transition-colors"
               >
                 Acceptera nödvändiga
               </button>
               <button
                 onClick={handleSavePreferences}
-                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold 
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-sm font-semibold 
                          transition-colors shadow-lg"
               >
                 Spara preferenser
@@ -242,14 +242,14 @@ function CookieConsent() {
             <div className="flex gap-3 flex-wrap">
               <button
                 onClick={handleAcceptNecessary}
-                className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-lg font-semibold 
+                className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-sm font-semibold 
                          border border-gray-300 transition-colors"
               >
                 Acceptera nödvändiga
               </button>
               <button
                 onClick={handleAcceptAll}
-                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold 
+                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-sm font-semibold 
                          transition-colors shadow-lg"
               >
                 Acceptera alla
