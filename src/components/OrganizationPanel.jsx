@@ -20,7 +20,8 @@ function OrganizationPanel({
   onShowRingNamesChange,
   showLabels,
   onShowLabelsChange,
-  onSaveToDatabase // New prop to trigger immediate save
+  onSaveToDatabase, // Trigger immediate save
+  onReloadData // Reload wheel data from database
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
@@ -1477,9 +1478,11 @@ function OrganizationPanel({
         <RingIntegrationModal
           ring={integrationRing}
           onClose={() => setIntegrationRing(null)}
-          onSyncComplete={() => {
-            // Trigger refresh of wheel data
-            // The parent component should handle reloading the wheel
+          onSyncComplete={async () => {
+            // Reload wheel data to get synced items
+            if (onReloadData) {
+              await onReloadData();
+            }
             setIntegrationRing(null);
           }}
         />

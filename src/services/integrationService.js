@@ -29,9 +29,9 @@ export async function getUserIntegrationByProvider(provider) {
     .from('user_integrations')
     .select('*')
     .eq('provider', provider)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+  if (error) throw error;
   return data || null;
 }
 
@@ -162,6 +162,8 @@ export async function getRingIntegrationByType(ringId, integrationType) {
  * @returns {Promise<Object>} Created/updated integration
  */
 export async function upsertRingIntegration(integration) {
+  console.log('[integrationService] Upserting ring integration:', integration);
+  
   const { data, error } = await supabase
     .from('ring_integrations')
     .upsert(integration, {
@@ -170,7 +172,12 @@ export async function upsertRingIntegration(integration) {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('[integrationService] Upsert error:', error);
+    throw error;
+  }
+  
+  console.log('[integrationService] Upsert successful:', data);
   return data;
 }
 

@@ -107,6 +107,14 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       setError('');
       const result = await validateGoogleSheet(spreadsheetId);
       setValidatedSheet(result.spreadsheet);
+      
+      // Automatically select the first sheet if available
+      if (result.spreadsheet.sheets && result.spreadsheet.sheets.length > 0) {
+        const firstSheetName = result.spreadsheet.sheets[0].title;
+        console.log('[RingIntegration] Auto-selecting first sheet:', firstSheetName);
+        setSheetName(firstSheetName);
+      }
+      
       setSuccess('Spreadsheet validerad!');
     } catch (err) {
       setError('Kunde inte validera sheet: ' + err.message);
@@ -185,7 +193,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
         });
 
         // Create or update sheet integration
-        const integration = await upsertRingIntegration({
+        const integrationData = {
           ring_id: ring.id,
           user_integration_id: sheetsAuth.id,
           integration_type: 'sheet',
@@ -195,13 +203,22 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
             range: 'A:D' // Default range
           },
           sync_enabled: true
-        });
+        };
 
-        console.log('[RingIntegration] Sheet integration saved:', integration);
+        console.log('[RingIntegration] Saving sheet integration with data:', integrationData);
+        
+        const integration = await upsertRingIntegration(integrationData);
+
+        if (!integration) {
+          throw new Error('Upsert returned null - integration not saved');
+        }
+
+        console.log('[RingIntegration] Sheet integration saved successfully:', integration);
         setSheetIntegration(integration);
         setSuccess('Sheet-integration sparad!');
 
         // Auto-sync after save
+        console.log('[RingIntegration] Starting auto-sync for integration:', integration.id);
         await handleSync(integration.id);
       }
 
@@ -224,7 +241,9 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       setSyncing(true);
       setError('');
       
+      console.log('[RingIntegration] Starting sync for integration:', integrationId);
       const result = await syncRingData(integrationId);
+      console.log('[RingIntegration] Sync result:', result);
       
       setSuccess(`Synkronisering klar! ${result.itemCount} aktiviteter importerade.`);
       
@@ -232,6 +251,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
         onSyncComplete();
       }
     } catch (err) {
+      console.error('[RingIntegration] Sync error:', err);
       setError('Synkronisering misslyckades: ' + err.message);
     } finally {
       setSyncing(false);

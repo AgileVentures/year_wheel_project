@@ -1515,6 +1515,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             showLabels={showLabels}
             onShowLabelsChange={setShowLabels}
             onSaveToDatabase={handleSave}
+            onReloadData={loadWheelData}
           />
         </div>
 

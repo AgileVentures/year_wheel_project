@@ -271,9 +271,13 @@ async function syncCalendarData(accessToken, ringIntegration, supabaseClient, us
  * Sync data from Google Sheets
  */
 async function syncSheetData(accessToken, ringIntegration, supabaseClient, userId) {
+  console.log('[syncSheetData] Ring integration config:', JSON.stringify(ringIntegration.config, null, 2))
+  
   const spreadsheetId = ringIntegration.config.spreadsheet_id
   const sheetName = ringIntegration.config.sheet_name || 'Sheet1'
   const range = ringIntegration.config.range || 'A:D' // Default: columns A-D
+
+  console.log('[syncSheetData] Using:', { spreadsheetId, sheetName, range })
 
   if (!spreadsheetId) {
     throw new Error('Missing spreadsheet_id in configuration')
@@ -290,8 +294,16 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
 
   if (!response.ok) {
     const error = await response.text()
-    console.error('Sheets API error:', error)
-    throw new Error('Failed to fetch sheet data')
+    console.error('Sheets API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: error,
+      url: sheetsUrl,
+      spreadsheetId,
+      sheetName,
+      range
+    })
+    throw new Error(`Failed to fetch sheet data: ${response.status} ${response.statusText} - ${error}`)
   }
 
   const data = await response.json()
