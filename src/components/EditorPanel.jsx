@@ -254,7 +254,7 @@ function EditorPanel({
               <div key={index} className="flex items-center gap-2">
                 <input
                   type="color"
-                  value={color}
+                  value={color || '#CCCCCC'}
                   onChange={(e) => handleColorChange(index, e.target.value)}
                   className="w-12 h-12 rounded-sm cursor-pointer border-2 border-gray-200"
                 />

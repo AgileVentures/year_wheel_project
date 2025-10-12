@@ -70,10 +70,19 @@ export function useUndoRedo(initialState, options = {}) {
         // freeze() creates a deeply frozen copy, preventing accidental mutations
         draft.push({ state: freeze(newState, true), label });
         
-        // Limit history size
+        // Limit history size and adjust save index if needed
         if (draft.length > limit) {
+          const trimCount = draft.length - limit;
           // Keep only the last 'limit' entries
-          draft.splice(0, draft.length - limit);
+          draft.splice(0, trimCount);
+          
+          // Adjust save index if it was trimmed
+          if (lastSaveIndex.current >= trimCount) {
+            lastSaveIndex.current -= trimCount;
+          } else {
+            // Save point was trimmed, reset to oldest entry
+            lastSaveIndex.current = 0;
+          }
         }
       });
     });
@@ -193,7 +202,15 @@ export function useUndoRedo(initialState, options = {}) {
    */
   const undoToSave = useCallback(() => {
     if (currentIndex > lastSaveIndex.current && history.length > 0) {
-      const saveIndex = lastSaveIndex.current;
+      let saveIndex = lastSaveIndex.current;
+      
+      // If save index is out of bounds (history was trimmed), use first entry
+      if (saveIndex >= history.length) {
+        console.warn(`Save point ${saveIndex} is out of bounds (history length: ${history.length}). Using oldest entry.`);
+        saveIndex = 0;
+        lastSaveIndex.current = 0; // Update to valid index
+      }
+      
       const historyEntry = history[saveIndex];
       
       // Safety check: ensure history entry exists

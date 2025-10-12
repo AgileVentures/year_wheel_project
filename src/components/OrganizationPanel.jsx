@@ -1070,7 +1070,7 @@ function OrganizationPanel({
                     />
                     <input
                       type="color"
-                      value={group.color}
+                      value={group.color || '#3B82F6'}
                       onChange={(e) => handleActivityGroupColorChange(group.id, e.target.value)}
                       className="w-4 h-4 rounded cursor-pointer"
                     />
@@ -1155,7 +1155,7 @@ function OrganizationPanel({
                     />
                     <input
                       type="color"
-                      value={label.color}
+                      value={label.color || '#10B981'}
                       onChange={(e) => handleLabelColorChange(label.id, e.target.value)}
                       className="w-4 h-4 rounded-full cursor-pointer"
                     />
