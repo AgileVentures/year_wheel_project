@@ -137,15 +137,15 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
 
 Jag kan hjälpa dig med ditt årshjul **"${wheelContext.title}"** (${wheelContext.year}).
 
-🎯 **Jag kan:**
-- Skapa, uudatera och ta bort aktiviteter
+**Jag kan:**
+- Skapa, uppdatera och ta bort aktiviteter
 - Visa och söka efter aktiviteter på årshjulet
 - Hantera ringar, aktivitetsgrupper och etiketter
 
 **Struktur:**
-- 🔵 Ringar: ${wheelContext.stats.rings}
-- 🟢 Grupper: ${wheelContext.stats.activityGroups}
-- 📅 Aktiviteter: ${wheelContext.stats.items}
+- Ringar: ${wheelContext.stats.rings}
+- Grupper: ${wheelContext.stats.activityGroups}
+- Aktiviteter: ${wheelContext.stats.items}
 
 Vad vill du göra?`
       };
