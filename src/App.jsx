@@ -61,8 +61,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       items: []
     }
   }, {
-    limit: 100, // Keep 100 undo steps
-    debounceMs: 500 // Group rapid changes
+    limit: 50, // Keep 50 undo steps (reduced for memory efficiency)
+    enableKeyboard: true
   });
 
   // Extract states from undo-managed object
@@ -405,10 +405,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // This flag will be reset in loadWheelData's finally block
     isRealtimeUpdate.current = true;
     
+    // Clear undo history since remote changes invalidate local history
+    clearHistory();
+    
     // Reload the wheel data when any change occurs
     // Throttled to prevent too many reloads
     throttledReload();
-  }, [throttledReload]);
+  }, [throttledReload, clearHistory]);
 
   // Enable realtime sync for this page (not wheel!)
   // CRITICAL: Pass currentPageId to filter by page, not wheel
@@ -901,6 +904,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (newPage.year) {
           setYear(String(newPage.year));
         }
+        
+        // Clear undo history when switching pages
+        clearHistory();
       }
     } catch (error) {
       console.error('Error changing page:', error);
@@ -1061,6 +1067,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (newCurrentPage.year) {
           setYear(String(newCurrentPage.year));
         }
+        
+        // Clear undo history when switching pages
+        clearHistory();
       }
       
       const event = new CustomEvent('showToast', {
@@ -1105,6 +1114,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if (versionData.colors) versionUpdates.colors = versionData.colors;
       if (versionData.organizationData) versionUpdates.organizationData = versionData.organizationData;
       setUndoableStates(versionUpdates);
+      
+      // Clear undo history after version restore (new data context)
+      clearHistory();
       
       // Set non-undoable states separately
       if (versionData.year) setYear(versionData.year.toString());
@@ -1339,6 +1351,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           if (data.colors) fileUpdates.colors = data.colors;
           fileUpdates.organizationData = processedOrgData;
           setUndoableStates(fileUpdates);
+          
+          // Clear undo history after file import (new data context)
+          clearHistory();
           
           // Set non-undoable states separately
           setYear(data.year);

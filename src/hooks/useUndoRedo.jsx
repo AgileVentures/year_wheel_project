@@ -9,20 +9,18 @@ import { useState, useCallback, useRef, useEffect } from 'react';
  * - Ctrl+Z / Cmd+Z for undo
  * - Ctrl+Shift+Z / Cmd+Shift+Z for redo
  * - Configurable history limit
- * - Batching support for multiple changes
- * - Debouncing to avoid too many history entries
+ * - Immediate history tracking (no debouncing)
+ * - Clear history on major operations
  * 
  * @param {*} initialState - Initial state value
  * @param {Object} options - Configuration options
  * @param {number} options.limit - Max history entries (default: 50)
- * @param {number} options.debounceMs - Debounce time for state changes (default: 300)
  * @param {boolean} options.enableKeyboard - Enable keyboard shortcuts (default: true)
- * @returns {Object} { state, setState, undo, redo, canUndo, canRedo, clear }
+ * @returns {Object} { state, setState, undo, redo, canUndo, canRedo, clear, historyLength, currentIndex }
  */
 export function useUndoRedo(initialState, options = {}) {
   const {
     limit = 50,
-    debounceMs = 300,
     enableKeyboard = true
   } = options;
 
@@ -32,10 +30,6 @@ export function useUndoRedo(initialState, options = {}) {
   // History stacks
   const [history, setHistory] = useState([initialState]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  
-  // Debounce timer
-  const debounceTimer = useRef(null);
-  const pendingState = useRef(null);
   
   // Flag to prevent adding to history during undo/redo
   const isUndoRedoAction = useRef(false);
@@ -70,7 +64,8 @@ export function useUndoRedo(initialState, options = {}) {
   }, [currentIndex, limit]);
 
   /**
-   * Set state with debouncing
+   * Set state WITHOUT debouncing for immediate undo history
+   * This ensures undo/redo always has the correct state
    */
   const setState = useCallback((newState) => {
     // CRITICAL: Use setStateInternal's callback to get LATEST state
@@ -81,40 +76,18 @@ export function useUndoRedo(initialState, options = {}) {
         ? newState(prevState) 
         : newState;
       
-      // Store pending state for debounced history addition
-      pendingState.current = resolvedState;
-      
-      // Clear existing timer
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-      
-      // Set new timer
-      debounceTimer.current = setTimeout(() => {
-        if (pendingState.current !== null) {
-          addToHistory(pendingState.current);
-          pendingState.current = null;
-        }
-      }, debounceMs);
+      // Add to history IMMEDIATELY (no debouncing for undo history)
+      // This ensures every state change can be undone
+      addToHistory(resolvedState);
       
       return resolvedState;
     });
-  }, [addToHistory, debounceMs]);
+  }, [addToHistory]);
 
   /**
    * Undo to previous state
    */
   const undo = useCallback(() => {
-    // CRITICAL: Flush any pending state to history before undoing
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-      debounceTimer.current = null;
-    }
-    if (pendingState.current !== null) {
-      addToHistory(pendingState.current);
-      pendingState.current = null;
-    }
-    
     if (currentIndex > 0) {
       isUndoRedoAction.current = true;
       const newIndex = currentIndex - 1;
@@ -129,22 +102,12 @@ export function useUndoRedo(initialState, options = {}) {
       return true;
     }
     return false;
-  }, [currentIndex, history, addToHistory]);
+  }, [currentIndex, history]);
 
   /**
    * Redo to next state
    */
   const redo = useCallback(() => {
-    // CRITICAL: Flush any pending state to history before redoing
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-      debounceTimer.current = null;
-    }
-    if (pendingState.current !== null) {
-      addToHistory(pendingState.current);
-      pendingState.current = null;
-    }
-    
     if (currentIndex < history.length - 1) {
       isUndoRedoAction.current = true;
       const newIndex = currentIndex + 1;
@@ -159,7 +122,7 @@ export function useUndoRedo(initialState, options = {}) {
       return true;
     }
     return false;
-  }, [currentIndex, history, addToHistory]);
+  }, [currentIndex, history]);
 
   /**
    * Clear history
@@ -224,17 +187,6 @@ export function useUndoRedo(initialState, options = {}) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo, enableKeyboard]);
-
-  /**
-   * Cleanup debounce timer on unmount
-   */
-  useEffect(() => {
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
-  }, []);
 
   return {
     state,
