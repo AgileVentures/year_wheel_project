@@ -180,7 +180,7 @@ function LandingPage() {
       </section>
 
       {/* Interactive Demo Section (Inspired by lexlegal.ai) */}
-      <section ref={demoRef} className="hidden md:block py-20 px-4 sm:px-6 lg:px-8 bg-gray-900 text-white">
+      <section id="demo-section" ref={demoRef} className="hidden md:block py-20 px-4 sm:px-6 lg:px-8 bg-gray-900 text-white scroll-mt-16">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
@@ -803,10 +803,39 @@ function LandingPage() {
               Se alla detaljer och FAQ →
             </a>
           </div>
+
+          {/* NGO/Non-profit Discount Banner */}
+          <div className="mt-12 max-w-3xl mx-auto">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-6 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Ideell organisation eller NGO?
+                  </h3>
+                  <p className="text-gray-700 mb-3">
+                    Vi stödjer ideella organisationer och NGO:er i deras viktiga arbete. Kontakta oss för en <strong>50% rabattkupong</strong> på Premium-planen.
+                  </p>
+                  <a 
+                    href="mailto:hey@communitaslabs.io?subject=NGO%20Rabatt%20-%20YearWheel&body=Hej!%0A%0AVi%20är%20en%20ideell%20organisation%2FNGO%20och%20skulle%20vilja%20veta%20mer%20om%20er%2050%25%20rabatt%20på%20Premium-planen.%0A%0AOrganisation%3A%20%0AWebbplats%3A%20%0A%0ATack!"
+                    className="inline-flex items-center gap-2 text-green-700 hover:text-green-800 font-medium transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    hey@communitaslabs.io
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Auth Section */}
       {/* Auth Section */}
       <section id="auth-section" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 scroll-mt-16">
         <div className="max-w-md mx-auto">
