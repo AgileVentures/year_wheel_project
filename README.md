@@ -1,12 +1,18 @@
 
-# Year Wheel POC
+# YearWheel Planner
 
-Your Next Steps
-Read START_HERE.md (10 minutes)
-Run database migration (5 minutes) - ADD_PAGE_ID_TO_ITEMS.sql
-Open FLOWS_AI_COMPREHENSIVE_TODO.md (working checklist)
-Start Task 1.1 - Create aiAgents.js
-Follow the checklist - Check off items as you go
+A modern, AI-powered annual planning tool that helps you visualize your entire year at a glance. Built with React, Supabase, and OpenAI.
+
+## ✨ Features
+
+- 🎨 **Visual Year Planning**: Circular calendar view showing your entire year in one interactive wheel
+- 🤖 **AI Assistant**: Natural language planning powered by OpenAI - just describe what you want
+- 📊 **Google Integration**: Sync with Google Calendar and Google Sheets (Premium)
+- 👥 **Team Collaboration**: Share wheels with unlimited team members (Premium)
+- 📤 **Multiple Export Formats**: PNG, SVG, PDF, JPG with high-resolution support
+- 🔄 **Version Control**: Track changes and restore previous versions (Premium)
+- 📱 **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- 🎯 **Multi-Year Support**: Plan across multiple years in a single project
 
 
 ## Brand Colors
@@ -53,59 +59,161 @@ Use these colors consistently across:
     
     
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js installed on your machine
+- Node.js 18+ installed on your machine
 - Yarn package manager
+- Supabase account (for backend services)
+- OpenAI API key (for AI assistant - optional)
+- Google Cloud project with Calendar & Sheets API enabled (for integrations - optional)
 
 ### Installation
-1. Clone (or fork and clone) this repository.
-2. Open your terminal and navigate to the project directory.
-3. Install dependencies by running:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/tochman/year_wheel_poc.git
+   cd year_wheel_poc
    ```
-   yarn
+
+2. **Install dependencies**
+   ```bash
+   yarn install
    ```
-4. Start the development server with:
+
+3. **Set up environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
+
+4. **Run database migrations**
+   
+   Apply the migrations in the `supabase/migrations` folder to your Supabase project.
+
+5. **Start the development server**
+   ```bash
    yarn dev
    ```
 
-## Contributing
-Contributions are warmly welcomed. If you have an idea for improving Year Wheel POC, feel free to fork the repository and submit a pull request.
+6. **Open your browser**
+   
+   Navigate to `http://localhost:5173`
 
-## Todo & Fatures
-### Current To-Do List
-1. Implement Chakra UI as the CSS framework.
-2. ~~Clean up and modularize the code in `year-wheel.js`.~~
-3. ~~Divide each month section into weeks.~~
-4. Make yearly events editable. (removed for now)
-5. Fix placement of the text on rings/inner sections
-6. Upgrade the color picker to use complete color palettes that harmonize well.
-7. Redefine/refactor the entire class - see `YearWheelRedefined.js` (it's a mess atm)
-8. Use GH Project as a feature tracker if needed
+### Project Structure
 
-### Multiple Rings with Different Categories
-* Feature: Allow users to create multiple rings, each representing a different category or theme (e.g., events, operations, award shows).
-* Customization: Users can assign different colors to each ring, as well as control the spacing and size of each ring.
-* User story: _As a user, in order to visually organize different themes, I would like to create multiple rings, each representing a unique category with customizable colors, spacing, and sizes._
-  
-### Basic and Advanced Year Wheel Options
-* **Feature**: Allow users to choose between using a basic, predefined year wheel or opting for more advanced settings to personalize the wheel according to their specific needs.
-* **Customization**: Users can start with a simple, ready-made wheel or delve into detailed customization options, adjusting various aspects such as colors, event sections, and more.
-* **User Story**: _As a user, in order to quickly set up or deeply personalize my year wheel, I would like the option to choose between a basic template and advanced customization settings._
+```
+year_wheel_poc/
+├── src/
+│   ├── components/      # React components
+│   │   ├── dashboard/   # Dashboard and wheel cards
+│   │   ├── teams/       # Team collaboration
+│   │   ├── auth/        # Authentication
+│   │   └── subscription/# Premium features
+│   ├── hooks/           # Custom React hooks
+│   ├── services/        # API services (Supabase, AI, etc.)
+│   ├── lib/            # Utilities and configurations
+│   └── YearWheelClass.js # Core canvas rendering engine
+├── supabase/
+│   ├── functions/       # Edge Functions (AI, integrations)
+│   └── migrations/      # Database schema migrations
+└── public/             # Static assets
+```
 
-### Internationalization (i18n) Support
-* **Feature**: Add internationalization support using i18next to enable the application to be easily translated into multiple languages.
-* **Customization**: Users can choose their preferred language, with translations available for various parts of the interface.
-* **User Story**: _As a user, in order to use the application in my native language, I would like the option to select from multiple languages supported through internationalization._
+## 🛠️ Tech Stack
 
-### Right-to-Left (RTL) Language Support
-* **Feature**: Add support for right-to-left (RTL) languages such as Farsi and Arabic.
-* **Customization**: The application layout will automatically adjust to accommodate RTL languages, ensuring proper text alignment and direction.
-* **User Story**: _As a user who reads in an RTL language, in order to have a comfortable experience, I would like the application to fully support right-to-left text alignment and layout._
+- **Frontend**: React 18, Vite, TailwindCSS
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **AI**: OpenAI GPT-4 for natural language planning
+- **Integrations**: Google Calendar API, Google Sheets API
+- **Payments**: Stripe for subscription management
+- **Canvas Rendering**: Custom HTML5 Canvas with SVG export via canvas2svg
 
-### Customizable Event Sections
+## 💡 Key Features Explained
+
+### Multi-Ring Organization
+Create inner and outer rings to organize different categories (campaigns, projects, holidays). Each ring can have its own color scheme and visibility settings.
+
+### AI-Powered Planning
+The AI assistant understands natural language commands like:
+- "Create a campaign in March and copy it to September"
+- "Add 10 meetings evenly distributed across Q1"
+- "Extend the product launch to mid-April"
+
+### Cross-Year Planning
+Projects can span multiple years. The system automatically distributes activities across different year pages based on their dates.
+
+### Real-Time Collaboration
+Multiple team members can work on the same wheel simultaneously with presence indicators and live updates.
+
+### Google Integration (Premium)
+- **Calendar Sync**: Import Google Calendar events directly into your wheel
+- **Sheets Sync**: Connect spreadsheets to automatically create and update activities
+- **Auto-Distribution**: Activities are intelligently placed across years based on dates
+
+## 🎯 Roadmap
+
+### Completed ✅
+- ✅ Multi-year support with automatic cross-year distribution
+- ✅ AI Assistant with natural language processing
+- ✅ Google Calendar & Sheets integration
+- ✅ Team collaboration with real-time presence
+- ✅ Version control and history
+- ✅ Public wheel sharing
+- ✅ Stripe subscription management
+- ✅ Responsive dashboard with modern card design
+- ✅ High-resolution export (PNG, SVG, PDF, JPG)
+
+### Planned 🚧
+- 🔄 Internationalization (i18n) support
+- 🔄 RTL language support (Arabic, Farsi)
+- 🔄 Mobile app (React Native)
+- 🔄 Drag-and-drop ring reorganization
+- 🔄 Custom wheel templates
+- 🔄 Advanced color themes and palettes
+- 🔄 Activity dependencies and milestones
+- 🔄 Notification system for deadlines
+
+## 🤝 Contributing
+
+Contributions are warmly welcomed! Here's how you can help:
+
+### Ways to Contribute
+- **💻 Code**: Fix bugs, add features, or improve performance
+- **📚 Documentation**: Improve guides, add tutorials, or fix typos
+- **🐛 Testing**: Report bugs, test features, or write test cases
+- **💡 Ideas**: Suggest features or improvements via GitHub Issues
+- **🌍 Translations**: Help translate the app (coming soon)
+
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Commit with clear messages (`git commit -m 'Add amazing feature'`)
+5. Push to your fork (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+### Code Style
+- Use ESLint and Prettier configurations
+- Write clear, descriptive commit messages
+- Add comments for complex logic
+- Follow React best practices and hooks patterns
+
+## 📄 License
+
+This project is licensed [under the MIT License](LICENSE.md).
+
+## 💪 Why Open Source?
+
+Open Source Software (OSS) is more than just free code—it's about fostering a culture of collaboration, innovation, and shared learning. By contributing to YearWheel, you become part of a global community that believes in building software that's accessible, reliable, and capable of driving real-world change.
+
+OSS empowers developers to stand on the shoulders of giants, enabling us to create complex and reliable systems faster than ever before. Together, we can harness the collective power of open source to make planning and visualizing yearly activities more intuitive and effective.
+
+**Let's create something truly awesome together! 🚀**
+
+````
 * Feature: Enable users to add events to different sections within each ring.
 * Customization: Users can adjust the number of sections per ring, the text orientation, and the font size for event descriptions.
 * User story: _As a user, in order to personalize how events are displayed, I would like to add events to different sections within each ring, with control over the number of sections, text orientation, and font size._
