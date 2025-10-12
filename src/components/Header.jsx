@@ -28,6 +28,10 @@ function Header({
   onRedo,
   canUndo = false,
   canRedo = false,
+  undoLabel = '',
+  redoLabel = '',
+  undoToSave,
+  unsavedChangesCount = 0,
   // Page navigation props
   pages = [],
   currentPageId,
@@ -102,27 +106,60 @@ function Header({
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Undo/Redo Buttons */}
+        {/* Undo/Redo Buttons with Keyboard Hints */}
         {onUndo && onRedo && (
           <>
-            <button
-              onClick={onUndo}
-              disabled={!canUndo}
-              className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Ångra (Ctrl+Z)"
-              aria-label="Ångra"
-            >
-              <Undo size={14} />
-            </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Gör om (Ctrl+Shift+Z)"
-              aria-label="Gör om"
-            >
-              <Redo size={14} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onUndo}
+                disabled={!canUndo}
+                className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed group relative"
+                title={`Ångra${undoLabel ? ': ' + undoLabel : ''} (Ctrl+Z)`}
+                aria-label="Ångra"
+              >
+                <Undo size={14} />
+                {/* Show descriptive label if available */}
+                {undoLabel && canUndo && (
+                  <span className="text-xs max-w-[120px] truncate">
+                    {undoLabel}
+                  </span>
+                )}
+                {/* Keyboard hint tooltip */}
+                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  Ctrl+Z{undoLabel && ` • ${undoLabel}`}
+                </span>
+              </button>
+              <button
+                onClick={onRedo}
+                disabled={!canRedo}
+                className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed group relative"
+                title={`Gör om${redoLabel ? ': ' + redoLabel : ''} (Ctrl+Shift+Z)`}
+                aria-label="Gör om"
+              >
+                <Redo size={14} />
+                {/* Show descriptive label if available */}
+                {redoLabel && canRedo && (
+                  <span className="text-xs max-w-[120px] truncate">
+                    {redoLabel}
+                  </span>
+                )}
+                {/* Keyboard hint tooltip */}
+                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                  Ctrl+Shift+Z{redoLabel && ` • ${redoLabel}`}
+                </span>
+              </button>
+              {/* Undo to Save Point button - only show if there are unsaved changes */}
+              {undoToSave && unsavedChangesCount > 0 && (
+                <button
+                  onClick={undoToSave}
+                  className="px-2.5 py-2 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-sm transition-colors border border-amber-200"
+                  title={`Ångra till senaste sparning (${unsavedChangesCount} ändringar)`}
+                  aria-label="Ångra till sparning"
+                >
+                  Till sparning
+                </button>
+              )}
+            </div>
             <div className="w-px h-8 bg-gray-300"></div>
           </>
         )}
@@ -303,7 +340,12 @@ function Header({
           title={onBackToDashboard ? "Spara till databas" : "Spara till webbläsarlagring"}
         >
           <Save size={14} />
-          <span>{isSaving ? 'Sparar...' : 'Spara'}</span>
+          <span>
+            {isSaving ? 'Sparar...' : 'Spara'}
+            {!isSaving && unsavedChangesCount > 0 && (
+              <span className="ml-1 text-xs opacity-90">({unsavedChangesCount})</span>
+            )}
+          </span>
         </button>
       </div>
     </header>

@@ -35,7 +35,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     redo,
     canUndo,
     canRedo,
-    clear: clearHistory
+    undoLabel,
+    redoLabel,
+    clear: clearHistory,
+    markSaved,
+    undoToSave,
+    hasUnsavedChanges,
+    unsavedChangesCount,
+    startBatch,
+    endBatch,
+    cancelBatch
   } = useMultiStateUndoRedo({
     title: "Nytt hjul",
     year: "2025",
@@ -95,9 +104,32 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }));
   }, [setUndoableStates]);
   
-  const setOrganizationData = useCallback((value) => {
+  const setOrganizationData = useCallback((value, label) => {
     setUndoableStates(prevStates => {
       const newOrgData = typeof value === 'function' ? value(prevStates.organizationData) : value;
+      
+      // Auto-generate label if not provided
+      let finalLabel = label;
+      if (!finalLabel && prevStates.organizationData) {
+        const oldData = prevStates.organizationData;
+        // Detect what changed
+        if (newOrgData.rings?.length !== oldData.rings?.length) {
+          finalLabel = newOrgData.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
+        } else if (newOrgData.activityGroups?.length !== oldData.activityGroups?.length) {
+          finalLabel = newOrgData.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
+        } else if (newOrgData.labels?.length !== oldData.labels?.length) {
+          finalLabel = newOrgData.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
+        } else if (newOrgData.items?.length !== oldData.items?.length) {
+          finalLabel = newOrgData.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
+        } else {
+          // Check for visibility changes
+          const ringVisChanged = newOrgData.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
+          const agVisChanged = newOrgData.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
+          if (ringVisChanged) finalLabel = 'Växla ringsynlighet';
+          else if (agVisChanged) finalLabel = 'Växla aktivitetssynlighet';
+          else finalLabel = 'Ändra organisationsdata';
+        }
+      }
       
       // CRITICAL: Update ref immediately so auto-save gets the latest data
       latestValuesRef.current = {
@@ -106,7 +138,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       };
       
       return { organizationData: newOrgData };
-    });
+    }, finalLabel || 'Ändra');
   }, [setUndoableStates]);
   
   // Other non-undoable states
@@ -742,6 +774,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Mark the save timestamp to ignore our own broadcasts
         lastSaveTimestamp.current = Date.now();
         
+        // Mark current undo position as a save point
+        markSaved();
+        
         // console.log('[ManualSave] Wheel data saved successfully');
         
         // Show success feedback
@@ -775,6 +810,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         showRingNames,
       };
       localStorage.setItem("yearWheelData", JSON.stringify(dataToSave));
+      
+      // Mark current undo position as a save point
+      markSaved();
       
       // Show success feedback
       const event = new CustomEvent('showToast', { 
@@ -1457,6 +1495,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onRedo={redo}
         canUndo={canUndo}
         canRedo={canRedo}
+        undoLabel={undoLabel}
+        redoLabel={redoLabel}
+        undoToSave={undoToSave}
+        unsavedChangesCount={unsavedChangesCount}
         // Page navigation props
         pages={pages}
         currentPageId={currentPageId}
