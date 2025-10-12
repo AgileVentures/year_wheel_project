@@ -130,18 +130,26 @@ export function useUndoRedo(initialState, options = {}) {
    * Undo to previous state
    */
   const undo = useCallback(() => {
-    if (currentIndex > 0) {
+    if (currentIndex > 0 && history.length > 0) {
       isUndoRedoAction.current = true;
       const newIndex = currentIndex - 1;
+      const historyEntry = history[newIndex];
+      
+      // Safety check: ensure history entry exists
+      if (!historyEntry) {
+        console.error('Undo failed: history entry not found at index', newIndex);
+        return false;
+      }
+      
       setCurrentIndex(newIndex);
-      setStateInternal(history[newIndex].state);
+      setStateInternal(historyEntry.state);
       
       // Reset flag after state update
       setTimeout(() => {
         isUndoRedoAction.current = false;
       }, 0);
       
-      return history[newIndex].label || 'Ändring';
+      return historyEntry.label || 'Ändring';
     }
     return false;
   }, [currentIndex, history]);
@@ -150,37 +158,46 @@ export function useUndoRedo(initialState, options = {}) {
    * Redo to next state
    */
   const redo = useCallback(() => {
-    if (currentIndex < history.length - 1) {
+    if (currentIndex < history.length - 1 && history.length > 0) {
       isUndoRedoAction.current = true;
       const newIndex = currentIndex + 1;
+      const historyEntry = history[newIndex];
+      
+      // Safety check: ensure history entry exists
+      if (!historyEntry) {
+        console.error('Redo failed: history entry not found at index', newIndex);
+        return false;
+      }
+      
       setCurrentIndex(newIndex);
-      setStateInternal(history[newIndex].state);
+      setStateInternal(historyEntry.state);
       
       // Reset flag after state update
       setTimeout(() => {
         isUndoRedoAction.current = false;
       }, 0);
       
-      return history[newIndex].label || 'Ändring';
+      return historyEntry.label || 'Ändring';
     }
     return false;
   }, [currentIndex, history]);
-
-  /**
-   * Mark current position as a save point
-   */
-  const markSaved = useCallback(() => {
-    lastSaveIndex.current = currentIndex;
-  }, [currentIndex]);
-  
   /**
    * Undo to last save point
    */
   const undoToSave = useCallback(() => {
-    if (currentIndex > lastSaveIndex.current) {
+    if (currentIndex > lastSaveIndex.current && history.length > 0) {
+      const saveIndex = lastSaveIndex.current;
+      const historyEntry = history[saveIndex];
+      
+      // Safety check: ensure history entry exists
+      if (!historyEntry) {
+        console.error('Undo to save failed: history entry not found at index', saveIndex);
+        return false;
+      }
+      
       isUndoRedoAction.current = true;
-      setCurrentIndex(lastSaveIndex.current);
-      setStateInternal(history[lastSaveIndex.current].state);
+      setCurrentIndex(saveIndex);
+      setStateInternal(historyEntry.state);
       
       // Reset flag after state update
       setTimeout(() => {
