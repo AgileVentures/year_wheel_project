@@ -16,6 +16,11 @@ import {
 } from '../services/integrationService';
 
 function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
+  // Validate that ring has a proper UUID before allowing integration
+  const isValidUUID = (id) => {
+    return id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -38,6 +43,11 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
+    if (!isValidUUID(ring.id)) {
+      setError('Denna ring måste sparas innan du kan ansluta datakällor. Spara hjulet först.');
+      setLoading(false);
+      return;
+    }
     loadIntegrations();
   }, [ring.id]);
 
@@ -113,15 +123,29 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       const calendarAuth = await getUserIntegrationByProvider('google_calendar');
       const sheetsAuth = await getUserIntegrationByProvider('google_sheets');
 
+      console.log('[RingIntegration] Auth status:', { 
+        calendarAuth: !!calendarAuth, 
+        sheetsAuth: !!sheetsAuth,
+        integrationType 
+      });
+
       if (integrationType === 'calendar') {
         if (!selectedCalendarId) {
           setError('Välj en kalender');
+          setSyncing(false);
           return;
         }
         if (!calendarAuth) {
           setError('Google Calendar inte anslutet');
+          setSyncing(false);
           return;
         }
+
+        console.log('[RingIntegration] Saving calendar integration:', {
+          ring_id: ring.id,
+          user_integration_id: calendarAuth.id,
+          calendar_id: selectedCalendarId
+        });
 
         // Create or update calendar integration
         const integration = await upsertRingIntegration({
@@ -134,6 +158,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           sync_enabled: true
         });
 
+        console.log('[RingIntegration] Calendar integration saved:', integration);
         setCalendarIntegration(integration);
         setSuccess('Kalenderintegration sparad!');
 
@@ -143,12 +168,21 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       } else if (integrationType === 'sheet') {
         if (!spreadsheetId || !sheetName) {
           setError('Ange Spreadsheet ID och Sheet-namn');
+          setSyncing(false);
           return;
         }
         if (!sheetsAuth) {
           setError('Google Sheets inte anslutet');
+          setSyncing(false);
           return;
         }
+
+        console.log('[RingIntegration] Saving sheet integration:', {
+          ring_id: ring.id,
+          user_integration_id: sheetsAuth.id,
+          spreadsheet_id: spreadsheetId,
+          sheet_name: sheetName
+        });
 
         // Create or update sheet integration
         const integration = await upsertRingIntegration({
@@ -163,6 +197,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           sync_enabled: true
         });
 
+        console.log('[RingIntegration] Sheet integration saved:', integration);
         setSheetIntegration(integration);
         setSuccess('Sheet-integration sparad!');
 
@@ -172,7 +207,13 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
     } catch (err) {
       setError('Kunde inte spara integration: ' + err.message);
-      console.error('Save error:', err);
+      console.error('[RingIntegration] Save error:', err);
+      console.error('[RingIntegration] Error details:', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint
+      });
     } finally {
       setSyncing(false);
     }
@@ -289,8 +330,10 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           {!hasGoogleCalendar && !hasGoogleSheets && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
               <p className="text-sm text-blue-800">
-                Anslut först ditt Google-konto i{' '}
-                <a href="#" className="underline font-medium">Profil → Integrationer</a>
+                Du måste först ansluta ditt Google-konto i{' '}
+                <a href="/profile" className="underline font-medium hover:text-blue-900" onClick={onClose}>
+                  Profil → Integrationer
+                </a>
               </p>
             </div>
           )}
@@ -338,9 +381,27 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           {/* Calendar Configuration */}
           {integrationType === 'calendar' && hasGoogleCalendar && (
             <div className="space-y-4">
+              {/* Show current integration info */}
+              {calendarIntegration && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar size={18} className="text-blue-600" />
+                    <span className="font-medium text-blue-900">Befintlig integration</span>
+                  </div>
+                  <div className="text-sm text-blue-800">
+                    <div>Kalender-ID: <code className="bg-blue-100 px-1 rounded">{calendarIntegration.config.calendar_id}</code></div>
+                    {calendarIntegration.last_synced_at && (
+                      <div className="mt-1 text-xs text-blue-700">
+                        Senast synkad: {new Date(calendarIntegration.last_synced_at).toLocaleString('sv-SE')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Välj kalender
+                  {calendarIntegration ? 'Ändra kalender' : 'Välj kalender'}
                 </label>
                 <select
                   value={selectedCalendarId}
@@ -386,9 +447,28 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           {/* Sheets Configuration */}
           {integrationType === 'sheet' && hasGoogleSheets && (
             <div className="space-y-4">
+              {/* Show current integration info */}
+              {sheetIntegration && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sheet size={18} className="text-green-600" />
+                    <span className="font-medium text-green-900">Befintlig integration</span>
+                  </div>
+                  <div className="text-sm text-green-800">
+                    <div>Spreadsheet-ID: <code className="bg-green-100 px-1 rounded">{sheetIntegration.config.spreadsheet_id}</code></div>
+                    <div>Ark: <strong>{sheetIntegration.config.sheet_name}</strong></div>
+                    {sheetIntegration.last_synced_at && (
+                      <div className="mt-1 text-xs text-green-700">
+                        Senast synkad: {new Date(sheetIntegration.last_synced_at).toLocaleString('sv-SE')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Spreadsheet ID
+                  {sheetIntegration ? 'Ändra Spreadsheet ID' : 'Spreadsheet ID'}
                 </label>
                 <input
                   type="text"

@@ -1,9 +1,10 @@
 import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Fuse from 'fuse.js';
 import AddAktivitetModal from './AddAktivitetModal';
 import EditAktivitetModal from './EditAktivitetModal';
 import RingIntegrationModal from './RingIntegrationModal';
+import { getRingIntegrations } from '../services/integrationService';
 
 function OrganizationPanel({ 
   organizationData,
@@ -18,13 +19,57 @@ function OrganizationPanel({
   showRingNames,
   onShowRingNamesChange,
   showLabels,
-  onShowLabelsChange
+  onShowLabelsChange,
+  onSaveToDatabase // New prop to trigger immediate save
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAktivitet, setEditingAktivitet] = useState(null);
   const [integrationRing, setIntegrationRing] = useState(null); // Ring being configured for integration
+  const [ringIntegrations, setRingIntegrations] = useState({}); // Track which rings have integrations: {ringId: true/false}
+  const loadingIntegrationsRef = useRef(false);
+  
+  // Load integration status for all rings
+  useEffect(() => {
+    const loadIntegrationStatus = async () => {
+      // Prevent multiple simultaneous loads
+      if (loadingIntegrationsRef.current) {
+        return;
+      }
+      
+      loadingIntegrationsRef.current = true;
+      const statusMap = {};
+      
+      // Use Promise.all for parallel requests instead of sequential loop
+      const integrationPromises = organizationData.rings.map(async (ring) => {
+        // Skip temporary IDs
+        if (!ring.id || ring.id.startsWith('ring-') || ring.id.startsWith('inner-ring-') || ring.id.startsWith('outer-ring-')) {
+          return { ringId: ring.id, hasIntegration: false };
+        }
+        try {
+          const integrations = await getRingIntegrations(ring.id);
+          return { ringId: ring.id, hasIntegration: integrations && integrations.length > 0 };
+        } catch (err) {
+          console.error(`Error loading integrations for ring ${ring.id}:`, err);
+          return { ringId: ring.id, hasIntegration: false };
+        }
+      });
+      
+      const results = await Promise.all(integrationPromises);
+      results.forEach(({ ringId, hasIntegration }) => {
+        statusMap[ringId] = hasIntegration;
+      });
+      
+      setRingIntegrations(statusMap);
+      loadingIntegrationsRef.current = false;
+    };
+    
+    if (organizationData.rings.length > 0) {
+      loadIntegrationStatus();
+    }
+  }, [organizationData.rings.length]); // Only re-check when NUMBER of rings changes
+  
   const [sortBy, setSortBy] = useState('startDate'); // startDate, name, ring
   const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
   const [selectedMonth, setSelectedMonth] = useState(9); // October (0-indexed)
@@ -277,29 +322,33 @@ function OrganizationPanel({
   };
 
   // Ring management
-  const handleAddInnerRing = () => {
+  const handleAddInnerRing = async () => {
     const newRing = {
-      id: `ring-${Date.now()}`,
+      id: `ring-${Date.now()}`, // Temporary ID - will be replaced with UUID after save
       name: `Innerring ${innerRings.length + 1}`,
       type: 'inner',
       visible: true,
       data: Array.from({ length: 12 }, () => [""]),
       orientation: 'vertical'
     };
-    const updatedRings = [...organizationData.rings, newRing];
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    const updatedOrgData = { ...organizationData, rings: [...organizationData.rings, newRing] };
+    
+    // Update state - this will trigger auto-save after 2 seconds
+    onOrganizationChange(updatedOrgData);
   };
 
-  const handleAddOuterRing = () => {
+  const handleAddOuterRing = async () => {
     const newRing = {
-      id: `ring-${Date.now()}`,
+      id: `ring-${Date.now()}`, // Temporary ID - will be replaced with UUID after save
       name: `Ytterring ${outerRings.length + 1}`,
       type: 'outer',
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       visible: true
     };
-    const updatedRings = [...organizationData.rings, newRing];
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    const updatedOrgData = { ...organizationData, rings: [...organizationData.rings, newRing] };
+    
+    // Update state - this will trigger auto-save after 2 seconds
+    onOrganizationChange(updatedOrgData);
   };
 
   const handleRemoveRing = (ringId) => {
@@ -798,10 +847,17 @@ function OrganizationPanel({
                     </span>
                     <button
                       onClick={() => setIntegrationRing(ring)}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 text-blue-600 hover:bg-blue-50 rounded transition-opacity"
-                      title="Koppla datakälla"
+                      className={`opacity-0 group-hover:opacity-100 p-0.5 rounded transition-opacity relative ${
+                        ringIntegrations[ring.id] 
+                          ? 'text-green-600 hover:bg-green-50' 
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      title={ringIntegrations[ring.id] ? 'Datakälla ansluten - klicka för att hantera' : 'Koppla datakälla'}
                     >
                       <LinkIcon size={12} />
+                      {ringIntegrations[ring.id] && (
+                        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      )}
                     </button>
                     {innerRings.length > 1 && (
                       <button
@@ -903,10 +959,17 @@ function OrganizationPanel({
                     </span>
                     <button
                       onClick={() => setIntegrationRing(ring)}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 text-blue-600 hover:bg-blue-50 rounded transition-opacity"
-                      title="Koppla datakälla"
+                      className={`opacity-0 group-hover:opacity-100 p-0.5 rounded transition-opacity relative ${
+                        ringIntegrations[ring.id] 
+                          ? 'text-green-600 hover:bg-green-50' 
+                          : 'text-blue-600 hover:bg-blue-50'
+                      }`}
+                      title={ringIntegrations[ring.id] ? 'Datakälla ansluten - klicka för att hantera' : 'Koppla datakälla'}
                     >
                       <LinkIcon size={12} />
+                      {ringIntegrations[ring.id] && (
+                        <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                      )}
                     </button>
                     {outerRings.length > 0 && (
                       <button

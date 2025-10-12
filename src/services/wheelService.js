@@ -9,8 +9,12 @@ import { supabase } from '../lib/supabase';
 
 /**
  * Fetch all wheels for the current user
+ * ONLY returns wheels that the user owns (not public wheels from others)
  */
 export const fetchUserWheels = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
   const { data, error } = await supabase
     .from('year_wheels')
     .select(`
@@ -20,6 +24,7 @@ export const fetchUserWheels = async () => {
         name
       )
     `)
+    .eq('user_id', user.id) // CRITICAL: Only fetch wheels owned by this user
     .order('created_at', { ascending: false }); // Sort by creation date (newest first)
 
   if (error) throw error;
@@ -268,6 +273,9 @@ export const saveWheelData = async (wheelId, organizationData, pageId = null) =>
   
   // 4. Sync items with ID mappings (scoped to pageId)
   await syncItems(wheelId, organizationData.items || [], ringIdMap, activityIdMap, labelIdMap, pageId);
+  
+  // Return ID maps so caller can update local state with new UUIDs
+  return { ringIdMap, activityIdMap, labelIdMap };
 };
 
 /**

@@ -23,9 +23,27 @@ function ProfilePage({ onBack }) {
   const [integrationsLoading, setIntegrationsLoading] = useState(true);
   const [connectingProvider, setConnectingProvider] = useState(null);
 
-  // Load integrations on mount
+  // Load integrations on mount and check for OAuth callback
   useEffect(() => {
     loadIntegrations();
+    
+    // Check for OAuth callback in URL
+    const params = new URLSearchParams(window.location.search);
+    const oauthSuccess = params.get('oauth_success');
+    const oauthError = params.get('oauth_error');
+    const oauthProvider = params.get('provider');
+    
+    if (oauthSuccess === 'true') {
+      const providerName = oauthProvider === 'google_calendar' ? 'Google Calendar' : 
+                          oauthProvider === 'google_sheets' ? 'Google Sheets' : 'Google';
+      setSuccess(`${providerName} ansluten!`);
+      // Clean URL
+      window.history.replaceState({}, '', '/profile');
+    } else if (oauthError) {
+      setError(decodeURIComponent(oauthError));
+      // Clean URL
+      window.history.replaceState({}, '', '/profile');
+    }
   }, []);
 
   const loadIntegrations = async () => {

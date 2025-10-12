@@ -97,6 +97,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const setOrganizationData = useCallback((value) => {
     setUndoableStates(prevStates => {
       const newOrgData = typeof value === 'function' ? value(prevStates.organizationData) : value;
+      
+      // CRITICAL: Update ref immediately so auto-save gets the latest data
+      latestValuesRef.current = {
+        ...latestValuesRef.current,
+        organizationData: newOrgData
+      };
+      
       return { organizationData: newOrgData };
     });
   }, [setUndoableStates]);
@@ -150,8 +157,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Load wheel data function (memoized to avoid recreating)
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
-    
-    console.log('🔄 [App] loadWheelData called, wheelId:', wheelId);
     
     isLoadingData.current = true; // Prevent auto-save during load
     
@@ -531,6 +536,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark as saving to prevent realtime interference
       // NOTE: Don't update isSaving state - auto-save should be invisible
       isSavingRef.current = true;
+      isLoadingData.current = true; // Prevent recursive auto-save
       
       // Update wheel metadata (NOT including year - it's per-page now)
       await updateWheel(wheelId, {
@@ -541,14 +547,40 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         showRingNames: currentShowRingNames,
       });
       
-      // CRITICAL: Always call saveWheelData to sync to database tables
+      // CRITICAL: Always call saveWheelData to sync to database tables AND get ID maps
       // This syncs rings, activity groups, labels, and items to their respective tables
-      await saveWheelData(wheelId, currentOrganizationData, currentCurrentPageId);
+      const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrganizationData, currentCurrentPageId);
+      
+      // Update local state with new database UUIDs (replace temporary IDs)
+      const updatedOrgData = {
+        ...currentOrganizationData,
+        rings: currentOrganizationData.rings.map(ring => ({
+          ...ring,
+          id: ringIdMap.get(ring.id) || ring.id
+        })),
+        activityGroups: currentOrganizationData.activityGroups.map(group => ({
+          ...group,
+          id: activityIdMap.get(group.id) || group.id
+        })),
+        labels: currentOrganizationData.labels.map(label => ({
+          ...label,
+          id: labelIdMap.get(label.id) || label.id
+        })),
+        items: currentOrganizationData.items.map(item => ({
+          ...item,
+          ringId: ringIdMap.get(item.ringId) || item.ringId,
+          activityId: activityIdMap.get(item.activityId) || item.activityId,
+          labelId: labelIdMap.get(item.labelId) || item.labelId
+        }))
+      };
+      
+      // Update React state with UUIDs (silently, without triggering undo)
+      setOrganizationData(updatedOrgData);
       
       // Also update the page's JSONB organization_data and year
       if (currentCurrentPageId) {
         await updatePage(currentCurrentPageId, {
-          organization_data: currentOrganizationData,
+          organization_data: updatedOrgData,
           year: parseInt(currentYear)
         });
       }
@@ -567,6 +599,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     } finally {
       // Re-enable realtime after save completes
       isSavingRef.current = false;
+      isLoadingData.current = false;
       // Don't update isSaving state - keep UI unchanged
     }
   }, 2000); // Wait 2 seconds after last change before saving
@@ -689,61 +722,67 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       const wasAutoSaveEnabled = autoSaveEnabled;
       setAutoSaveEnabled(false);
       isSavingRef.current = true;
+      isLoadingData.current = true; // Prevent auto-save during reload
       setIsSaving(true); // Update UI
       
       try {
-        // console.log('[ManualSave] Saving wheel data...', {
-        //   wheelId,
-        //   title,
-        //   year,
-        //   organizationData: {
-        //     rings: organizationData.rings?.length || 0,
-        //     activityGroups: organizationData.activityGroups?.length || 0,
-        //     labels: organizationData.labels?.length || 0,
-        //     items: organizationData.items?.length || 0,
-        //   }
-        // });
+        // Get latest values from ref (not from closure) - CRITICAL for immediate saves after state changes
+        const {
+          title: currentTitle,
+          colors: currentColors,
+          showWeekRing: currentShowWeekRing,
+          showMonthRing: currentShowMonthRing,
+          showRingNames: currentShowRingNames,
+          organizationData: currentOrganizationData,
+          year: currentYear,
+          currentPageId: currentCurrentPageId
+        } = latestValuesRef.current;
+        
         // First, update wheel metadata (title, colors, settings)
         await updateWheel(wheelId, {
-          title,
-          colors,
-          showWeekRing,
-          showMonthRing,
-          showRingNames,
+          title: currentTitle,
+          colors: currentColors,
+          showWeekRing: currentShowWeekRing,
+          showMonthRing: currentShowMonthRing,
+          showRingNames: currentShowRingNames,
         });
         
         // CRITICAL: Always call saveWheelData to sync to database tables
         // This syncs rings, activity groups, labels, and items to their respective tables
-        await saveWheelData(wheelId, organizationData, currentPageId);
+        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrganizationData, currentCurrentPageId);
+        
+        // Update local state with new database UUIDs (replace temporary IDs)
+        const updatedOrgData = {
+          ...currentOrganizationData,
+          rings: currentOrganizationData.rings.map(ring => ({
+            ...ring,
+            id: ringIdMap.get(ring.id) || ring.id
+          })),
+          activityGroups: currentOrganizationData.activityGroups.map(group => ({
+            ...group,
+            id: activityIdMap.get(group.id) || group.id
+          })),
+          labels: currentOrganizationData.labels.map(label => ({
+            ...label,
+            id: labelIdMap.get(label.id) || label.id
+          })),
+          items: currentOrganizationData.items.map(item => ({
+            ...item,
+            ringId: ringIdMap.get(item.ringId) || item.ringId,
+            activityId: activityIdMap.get(item.activityId) || item.activityId,
+            labelId: labelIdMap.get(item.labelId) || item.labelId
+          }))
+        };
+        
+        // Update React state with UUIDs
+        setOrganizationData(updatedOrgData);
         
         // Also update the page's JSONB organization_data and year
-        if (currentPageId) {
-          await updatePage(currentPageId, {
-            organization_data: organizationData,
-            year: parseInt(year)
+        if (currentCurrentPageId) {
+          await updatePage(currentCurrentPageId, {
+            organization_data: updatedOrgData,
+            year: parseInt(currentYear)
           });
-        }
-        
-        // Create version snapshot after successful save
-        try {
-          await createVersion(
-            wheelId,
-            {
-              title,
-              year,
-              colors,
-              showWeekRing,
-              showMonthRing,
-              showRingNames,
-              organizationData
-            },
-            null, // No manual description
-            false // Not an auto-save
-          );
-          // console.log('[ManualSave] Version snapshot created');
-        } catch (versionError) {
-          console.error('[ManualSave] Error creating version:', versionError);
-          // Don't fail the save if version creation fails
         }
         
         // Mark the save timestamp to ignore our own broadcasts
@@ -764,6 +803,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         window.dispatchEvent(event);
       } finally {
         isSavingRef.current = false;
+        isLoadingData.current = false; // Re-enable auto-save
         setIsSaving(false); // Update UI
         // Re-enable auto-save
         setAutoSaveEnabled(wasAutoSaveEnabled);
@@ -1474,6 +1514,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onShowRingNamesChange={setShowRingNames}
             showLabels={showLabels}
             onShowLabelsChange={setShowLabels}
+            onSaveToDatabase={handleSave}
           />
         </div>
 

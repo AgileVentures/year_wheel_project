@@ -3,22 +3,33 @@
  * Generates OAuth URL for user to authenticate with Google
  */
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Get authorization header
+    // Get Supabase client with auth context of the user that called the function
+    // This way your row-level-security (RLS) policies are applied
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    )
+
+    // Get the token from the Authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -30,20 +41,10 @@ serve(async (req) => {
       )
     }
 
-    // Get Supabase client with auth context
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    )
-
-    // Verify JWT token
-    const jwt = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt)
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Get the user from the token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
 
     if (authError || !user) {
       return new Response(
@@ -54,6 +55,8 @@ serve(async (req) => {
         }
       )
     }
+
+    console.log('✅ User authenticated:', user.id)
 
     // Get request body
     const { provider = 'google', scopes = [] } = await req.json()
@@ -67,20 +70,19 @@ serve(async (req) => {
     }
 
     // Default scopes based on provider
-    let defaultScopes = []
+    // Always include userinfo scopes so we can identify the user
+    let defaultScopes = [
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/userinfo.profile'
+    ]
+    
     if (provider === 'google_calendar') {
-      defaultScopes = ['https://www.googleapis.com/auth/calendar.readonly']
+      defaultScopes.push('https://www.googleapis.com/auth/calendar.readonly')
     } else if (provider === 'google_sheets') {
-      defaultScopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    } else {
-      // Generic Google - get profile + email
-      defaultScopes = [
-        'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/userinfo.profile'
-      ]
+      defaultScopes.push('https://www.googleapis.com/auth/spreadsheets.readonly')
     }
 
-    // Merge with requested scopes
+    // Merge with requested scopes (remove duplicates)
     const allScopes = [...new Set([...defaultScopes, ...scopes])]
 
     // Generate state parameter (includes user_id and provider for callback)
@@ -119,7 +121,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in google-oauth-init:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,

@@ -75,22 +75,15 @@ export async function disconnectProvider(provider) {
 
 /**
  * Initiate Google OAuth flow
- * Opens popup window for Google authentication
+ * Redirects to Google authentication in the same window
  * @param {string} provider - 'google', 'google_calendar', or 'google_sheets'
  * @param {Array<string>} scopes - OAuth scopes to request
- * @returns {Promise<Object>} Integration data after successful auth
+ * @returns {Promise<void>} Redirects to Google OAuth
  */
 export async function initiateGoogleOAuth(provider = 'google', scopes = []) {
   try {
     // Check if user is authenticated
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    console.log('🔑 Session check:', {
-      hasSession: !!session,
-      hasAccessToken: !!session?.access_token,
-      sessionError,
-      tokenPreview: session?.access_token?.substring(0, 20) + '...'
-    });
     
     if (!session) {
       throw new Error('Du måste vara inloggad för att ansluta Google-konto');
@@ -100,8 +93,11 @@ export async function initiateGoogleOAuth(provider = 'google', scopes = []) {
       throw new Error('Ingen access token i session - försök logga in igen');
     }
 
-    // Call Edge Function to get OAuth URL with explicit auth header
-    console.log('📞 Calling google-oauth-init with auth header...');
+    // Store current location to return to after OAuth
+    sessionStorage.setItem('oauth_return_url', window.location.pathname);
+    sessionStorage.setItem('oauth_provider', provider);
+
+    // Call Edge Function to get OAuth URL
     const { data: urlData, error: urlError } = await supabase.functions.invoke('google-oauth-init', {
       body: { provider, scopes },
       headers: {
@@ -109,59 +105,15 @@ export async function initiateGoogleOAuth(provider = 'google', scopes = []) {
       }
     });
 
-    console.log('📥 Response:', { data: urlData, error: urlError });
-
     if (urlError) {
       console.error('OAuth init error:', urlError);
       throw urlError;
     }
 
-    const { authUrl, state } = urlData;
+    const { authUrl } = urlData;
 
-    // Open OAuth popup
-    const popup = window.open(
-      authUrl,
-      'Google OAuth',
-      'width=600,height=700,left=100,top=100'
-    );
-
-    // Wait for OAuth callback via message
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        popup?.close();
-        reject(new Error('OAuth timeout - ingen respons från Google'));
-      }, 5 * 60 * 1000); // 5 minutes timeout
-
-      // Listen for message from OAuth callback
-      const messageHandler = async (event) => {
-        // Verify origin for security
-        if (event.origin !== window.location.origin) return;
-
-        if (event.data.type === 'google-oauth-success' && event.data.state === state) {
-          clearTimeout(timeout);
-          window.removeEventListener('message', messageHandler);
-          popup?.close();
-          
-          // Fetch the newly created integration
-          const integration = await getUserIntegrationByProvider(provider);
-          resolve(integration);
-        } else if (event.data.type === 'google-oauth-error') {
-          clearTimeout(timeout);
-          window.removeEventListener('message', messageHandler);
-          popup?.close();
-          reject(new Error(event.data.error || 'OAuth-auktorisering misslyckades'));
-        }
-      };
-
-      window.addEventListener('message', messageHandler);
-
-      // Check if popup was blocked
-      if (!popup || popup.closed) {
-        clearTimeout(timeout);
-        window.removeEventListener('message', messageHandler);
-        reject(new Error('Popup blockerades - tillåt popups för denna sida'));
-      }
-    });
+    // Redirect to Google OAuth in same window
+    window.location.href = authUrl;
   } catch (error) {
     console.error('Error initiating Google OAuth:', error);
     throw error;
@@ -176,10 +128,7 @@ export async function initiateGoogleOAuth(provider = 'google', scopes = []) {
 export async function getRingIntegrations(ringId) {
   const { data, error } = await supabase
     .from('ring_integrations')
-    .select(`
-      *,
-      user_integration:user_integrations(*)
-    `)
+    .select('*')
     .eq('ring_id', ringId);
 
   if (error) throw error;
@@ -195,15 +144,15 @@ export async function getRingIntegrations(ringId) {
 export async function getRingIntegrationByType(ringId, integrationType) {
   const { data, error } = await supabase
     .from('ring_integrations')
-    .select(`
-      *,
-      user_integration:user_integrations(*)
-    `)
+    .select('*')
     .eq('ring_id', ringId)
     .eq('integration_type', integrationType)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) {
+    console.error('Error fetching ring integration:', error);
+    throw error;
+  }
   return data || null;
 }
 

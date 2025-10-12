@@ -233,6 +233,7 @@ async function syncCalendarData(accessToken, ringIntegration, supabaseClient, us
 
       return {
         wheel_id: ringIntegration.ring.wheel_id,
+        page_id: ringIntegration.ring.page_id, // CRITICAL: Add page_id from ring
         ring_id: ringIntegration.ring_id,
         activity_id: activityGroup.id,
         name: event.summary || 'Unnamed Event',
@@ -328,6 +329,7 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
     .map((row, index) => {
       return {
         wheel_id: ringIntegration.ring.wheel_id,
+        page_id: ringIntegration.ring.page_id, // CRITICAL: Add page_id from ring
         ring_id: ringIntegration.ring_id,
         activity_id: activityGroup.id,
         name: row[0],

@@ -84,6 +84,19 @@ class YearWheel {
     this.dragStartAngle = 0;
     this.clickableItems = []; // Store clickable item regions
 
+    // Performance optimization: Offscreen canvas for caching static elements
+    this.backgroundCache = document.createElement('canvas');
+    this.backgroundCacheContext = this.backgroundCache.getContext('2d');
+    this.cacheValid = false; // Track if cache needs regeneration
+    this.lastCacheKey = ''; // Track what's cached to detect changes
+    
+    // Performance optimization: Text measurement cache
+    this.textMeasurementCache = new Map();
+    
+    // Performance optimization: Throttle hover detection
+    this.lastHoverCheck = 0;
+    this.hoverThrottleMs = 16; // ~60fps max for hover checks
+
     // Store bound event handlers for cleanup
     this.boundHandlers = {
       startDrag: this.startDrag.bind(this),
@@ -101,9 +114,25 @@ class YearWheel {
     this.canvas.addEventListener("click", this.boundHandlers.handleClick);
   }
 
+  // Generate cache key to detect when background needs redrawing
+  getCacheKey() {
+    const ringCount = this.organizationData.rings.filter(r => r.visible).length;
+    const visibilityState = `m${this.showMonthRing}w${this.showWeekRing}r${this.showRingNames}`;
+    const zoomState = `z${this.zoomedMonth}-${this.zoomedQuarter}`;
+    return `${this.year}-${ringCount}-${visibilityState}-${zoomState}-${this.size}`;
+  }
+
+  // Invalidate cache when structure changes
+  invalidateCache() {
+    this.cacheValid = false;
+    this.textMeasurementCache.clear();
+  }
+
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
     this.organizationData = newOrganizationData;
+    // Invalidate cache if ring structure changed
+    this.invalidateCache();
     // DON'T redraw during drag - it will cause wheel to go blank
     // The drag handler (dragActivity) already calls create() to show preview
     if (!this.dragState || !this.dragState.isDragging) {
@@ -722,6 +751,17 @@ class YearWheel {
     }
   }
 
+  // Cached text measurement to avoid repeated measureText calls
+  cachedMeasureText(text, font) {
+    const cacheKey = `${font}:${text}`;
+    if (this.textMeasurementCache.has(cacheKey)) {
+      return this.textMeasurementCache.get(cacheKey);
+    }
+    const width = this.context.measureText(text).width;
+    this.textMeasurementCache.set(cacheKey, width);
+    return width;
+  }
+
   setCircleSectionSmallTitle(
     text,
     startRadius,
@@ -736,7 +776,7 @@ class YearWheel {
     const middleRadius = startRadius + width / 2.2;
     const circleSectionLength =
       startRadius * 2 * Math.PI * (angleLength / (Math.PI * 2));
-    const textWidth = this.context.measureText(text).width;
+    const textWidth = this.cachedMeasureText(text, this.context.font);
 
     const radius =
       textWidth < circleSectionLength ? middleRadius : middleRadius + width;
@@ -1658,7 +1698,16 @@ class YearWheel {
       return;
     }
 
-    // Handle hover detection for activities (throttled to prevent flicker)
+    // Handle hover detection for activities (throttled to prevent excessive redraws)
+    const now = Date.now();
+    const timeSinceLastCheck = now - this.lastHoverCheck;
+    
+    // Throttle hover checks to ~60fps max
+    if (timeSinceLastCheck < this.hoverThrottleMs) {
+      return; // Skip this hover check
+    }
+    this.lastHoverCheck = now;
+    
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
     const scaleY = this.canvas.height / rect.height;
@@ -2127,6 +2176,10 @@ class YearWheel {
     const visibleActivityGroups = this.organizationData.activityGroups.filter(a => a.visible);
     const visibleLabels = this.organizationData.labels.filter(l => l.visible);
     
+    // PERFORMANCE: Create lookup maps to avoid repeated array.find() calls
+    const activityGroupMap = new Map(visibleActivityGroups.map(a => [a.id, a]));
+    const labelMap = new Map(visibleLabels.map(l => [l.id, l]));
+    
     // Draw organization data items (from sidebar) if available
     if (this.organizationData && this.organizationData.items && this.organizationData.items.length > 0) {
       
@@ -2175,16 +2228,22 @@ class YearWheel {
             let itemStartDate = new Date(item.startDate);
             let itemEndDate = new Date(item.endDate);
             
-            // Skip items outside the current year
+            // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
             if (itemEndDate < minDate || itemStartDate > maxDate) return;
             
-            // Clip item dates to year boundaries
+            // Clip item dates to visible boundaries
             if (itemStartDate < minDate) itemStartDate = minDate;
             if (itemEndDate > maxDate) itemEndDate = maxDate;
             
             // Calculate angles
             let startAngle = dateToAngle(itemStartDate);
             let endAngle = dateToAngle(itemEndDate);
+            
+            // VIEWPORT CULLING: Skip items outside visible angle range (performance optimization)
+            // When zoomed, only draw items within the 0-360 degree visible range
+            const visibleRangeStart = 0;
+            const visibleRangeEnd = 360;
+            if (endAngle < visibleRangeStart || startAngle > visibleRangeEnd) return;
             
             // Enforce MINIMUM 1-WEEK WIDTH (7 days = ~5.75 degrees)
             const minWeekAngle = (7 / 365) * 360; // 1 week in degrees
@@ -2198,8 +2257,8 @@ class YearWheel {
             const adjustedStartAngle = this.initAngle + startAngle;
             const adjustedEndAngle = this.initAngle + endAngle;
             
-            // Get color from activity group
-            const activityGroup = this.organizationData.activityGroups.find(a => a.id === item.activityId);
+            // Get color from activity group (use Map lookup for O(1) instead of array.find O(n))
+            const activityGroup = activityGroupMap.get(item.activityId);
             let itemColor = activityGroup ? activityGroup.color : ring.color;
             
             // Check if this item is hovered
@@ -2360,16 +2419,21 @@ class YearWheel {
           let itemStartDate = new Date(item.startDate);
           let itemEndDate = new Date(item.endDate);
           
-          // Skip items outside the current year
+          // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
           if (itemEndDate < minDate || itemStartDate > maxDate) return;
           
-          // Clip item dates to year boundaries
+          // Clip item dates to visible boundaries
           if (itemStartDate < minDate) itemStartDate = minDate;
           if (itemEndDate > maxDate) itemEndDate = maxDate;
           
           // Calculate angles
           let startAngle = dateToAngle(itemStartDate);
           let endAngle = dateToAngle(itemEndDate);
+          
+          // VIEWPORT CULLING: Skip items outside visible angle range (performance optimization)
+          const visibleRangeStart = 0;
+          const visibleRangeEnd = 360;
+          if (endAngle < visibleRangeStart || startAngle > visibleRangeEnd) return;
           
           // Enforce MINIMUM 1-WEEK WIDTH (7 days = ~5.75 degrees)
           const minWeekAngle = (7 / 365) * 360; // 1 week in degrees
@@ -2383,8 +2447,8 @@ class YearWheel {
           const adjustedStartAngle = this.initAngle + startAngle;
           const adjustedEndAngle = this.initAngle + endAngle;
           
-          // Get color from activity group
-          const activityGroup = this.organizationData.activityGroups.find(a => a.id === item.activityId);
+          // Get color from activity group (use Map lookup for O(1) instead of array.find O(n))
+          const activityGroup = activityGroupMap.get(item.activityId);
           let itemColor = activityGroup ? activityGroup.color : this.sectionColors[0];
           
           // Check if this item is hovered

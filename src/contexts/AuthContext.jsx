@@ -23,8 +23,19 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sign up with email and password
-  const signUp = async (email, password) => {
+  // Sign up with email and password OR OAuth provider
+  const signUp = async (email, password, provider = null) => {
+    if (provider === 'google') {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+      return data;
+    }
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -33,8 +44,19 @@ export function AuthProvider({ children }) {
     return data;
   };
 
-  // Sign in with email and password
-  const signIn = async (email, password) => {
+  // Sign in with email and password OR OAuth provider
+  const signIn = async (email, password, provider = null) => {
+    if (provider === 'google') {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+      return data;
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,

@@ -9,6 +9,45 @@ import { supabase } from '../lib/supabase';
 import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createPage as createPageService } from './wheelService';
 
 /**
+ * Helper function to save wheel data and update local IDs with database UUIDs
+ */
+const saveAndUpdateIds = async (wheelId, pageId, orgData) => {
+  // Save to database and get ID mappings
+  const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, orgData, pageId);
+  
+  // Update IDs in case any were temporary
+  const updatedOrgData = {
+    ...orgData,
+    rings: orgData.rings.map(ring => ({
+      ...ring,
+      id: ringIdMap.get(ring.id) || ring.id
+    })),
+    activityGroups: orgData.activityGroups.map(group => ({
+      ...group,
+      id: activityIdMap.get(group.id) || group.id
+    })),
+    labels: orgData.labels.map(label => ({
+      ...label,
+      id: labelIdMap.get(label.id) || label.id
+    })),
+    items: orgData.items.map(item => ({
+      ...item,
+      ringId: ringIdMap.get(item.ringId) || item.ringId,
+      activityId: activityIdMap.get(item.activityId) || item.activityId,
+      labelId: labelIdMap.get(item.labelId) || item.labelId
+    }))
+  };
+  
+  // Also update wheel_pages.organization_data
+  await supabase
+    .from('wheel_pages')
+    .update({ organization_data: updatedOrgData })
+    .eq('id', pageId);
+    
+  return updatedOrgData;
+};
+
+/**
  * Get current wheel context for AI
  * Now fetches items separately per page to avoid mixing years
  */
@@ -81,14 +120,8 @@ export const aiCreateRing = async (wheelId, pageId, { name, type, color, orienta
       rings: [...orgData.rings, newRing]
     };
     
-    // Save to database
-    await saveWheelData(wheelId, updatedOrgData);
-    
-    // Also update wheel_pages.organization_data for THIS specific page
-    await supabase
-      .from('wheel_pages')
-      .update({ organization_data: updatedOrgData })
-      .eq('id', pageId);  // Use pageId instead of wheelId
+    // Save to database and update IDs
+    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
     return {
       success: true,
@@ -126,13 +159,7 @@ export const aiCreateActivityGroup = async (wheelId, pageId, { name, color, visi
       activityGroups: [...orgData.activityGroups, newGroup]
     };
     
-    await saveWheelData(wheelId, updatedOrgData);
-    
-    // Also update wheel_pages.organization_data for THIS specific page
-    await supabase
-      .from('wheel_pages')
-      .update({ organization_data: updatedOrgData })
-      .eq('id', pageId);  // Use pageId instead of wheelId
+    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
     return {
       success: true,
@@ -151,7 +178,7 @@ export const aiCreateActivityGroup = async (wheelId, pageId, { name, color, visi
 /**
  * Create a new label
  */
-export const aiCreateLabel = async (wheelId, { name, color, visible = true }) => {
+export const aiCreateLabel = async (wheelId, pageId, { name, color, visible = true }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
     const orgData = wheelData.organizationData;
@@ -170,7 +197,7 @@ export const aiCreateLabel = async (wheelId, { name, color, visible = true }) =>
       labels: [...orgData.labels, newLabel]
     };
     
-    await saveWheelData(wheelId, updatedOrgData);
+    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
     return {
       success: true,
@@ -521,13 +548,7 @@ export const aiDeleteRing = async (wheelId, pageId, { ringId }) => {
       items: orgData.items.filter(i => i.ringId !== ringId)
     };
     
-    await saveWheelData(wheelId, updatedOrgData);
-    
-    // Also update wheel_pages.organization_data for THIS specific page
-    await supabase
-      .from('wheel_pages')
-      .update({ organization_data: updatedOrgData })
-      .eq('id', pageId);  // Use pageId instead of wheelId
+    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
     return {
       success: true,
@@ -584,13 +605,7 @@ export const aiDeleteItems = async (wheelId, pageId, { itemName, itemIds }) => {
       )
     };
     
-    await saveWheelData(wheelId, updatedOrgData);
-    
-    // Also update wheel_pages.organization_data for THIS specific page
-    await supabase
-      .from('wheel_pages')
-      .update({ organization_data: updatedOrgData })
-      .eq('id', pageId);  // Use pageId instead of wheelId
+    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
     console.log('🗑️ [AI] Items deleted:', itemsToDelete.map(i => i.name));
     
@@ -655,13 +670,7 @@ export const aiDeleteItemsByRing = async (wheelId, pageId, { ringName, ringId })
       items: orgData.items.filter(item => item.ringId !== ring.id)
     };
     
-    await saveWheelData(wheelId, updatedOrgData);
-    
-    // Also update wheel_pages.organization_data for THIS specific page
-    await supabase
-      .from('wheel_pages')
-      .update({ organization_data: updatedOrgData })
-      .eq('id', pageId);  // Use pageId instead of wheelId
+    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
     console.log('🗑️ [AI] Deleted all items from ring:', ring.name, 'Count:', itemsToDelete.length);
     
@@ -707,13 +716,7 @@ export const aiDeleteActivityGroup = async (wheelId, pageId, { activityGroupId }
       items: orgData.items.filter(i => i.activityId !== activityGroupId)
     };
     
-    await saveWheelData(wheelId, updatedOrgData);
-    
-    // Also update wheel_pages.organization_data for THIS specific page
-    await supabase
-      .from('wheel_pages')
-      .update({ organization_data: updatedOrgData })
-      .eq('id', pageId);  // Use pageId instead of wheelId
+    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
     return {
       success: true,

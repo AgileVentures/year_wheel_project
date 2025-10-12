@@ -1,0 +1,6 @@
+# Supabase Edge Functions Configuration
+# https://supabase.com/docs/guides/functions/function-configuration
+
+# Google OAuth callback - must be publicly accessible (Google redirects without JWT)
+[functions.google-oauth-callback]
+verify_jwt = false
