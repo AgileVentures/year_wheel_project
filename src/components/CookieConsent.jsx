@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Cookie, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function CookieConsent() {
+  const { t } = useTranslation(['common']);
   const [showBanner, setShowBanner] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -72,7 +74,7 @@ function CookieConsent() {
               <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                 <Cookie className="text-orange-600" size={20} />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Cookie-inställningar</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('common:cookieConsent.title')}</h2>
             </div>
           </div>
         </div>
@@ -80,9 +82,7 @@ function CookieConsent() {
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-700 mb-6 leading-relaxed">
-            Vi använder cookies för att förbättra din upplevelse på vår webbplats, personalisera innehåll och annonser, 
-            tillhandahålla funktioner för sociala medier och analysera vår trafik. Vi delar också information om din 
-            användning av vår webbplats med våra partners för sociala medier, annonsering och analys.
+            {t('common:cookieConsent.description')}
           </p>
 
           {/* Toggle Details */}
@@ -90,7 +90,7 @@ function CookieConsent() {
             onClick={() => setShowDetails(!showDetails)}
             className="text-orange-600 hover:text-orange-700 font-medium mb-4 flex items-center gap-2"
           >
-            {showDetails ? 'Dölj detaljer' : 'Visa detaljer'}
+            {showDetails ? t('common:cookieConsent.hideDetails') : t('common:cookieConsent.showDetails')}
             <span className={`transform transition-transform ${showDetails ? 'rotate-180' : ''}`}>
               ▼
             </span>
@@ -102,7 +102,7 @@ function CookieConsent() {
               {/* Necessary Cookies */}
               <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">Nödvändiga cookies</h3>
+                  <h3 className="font-semibold text-gray-900">{t('common:cookieConsent.necessaryCookies')}</h3>
                   <div className="relative inline-block w-11 h-6">
                     <input
                       type="checkbox"
@@ -116,14 +116,14 @@ function CookieConsent() {
                   </div>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Dessa cookies är nödvändiga för att webbplatsen ska fungera och kan inte stängas av.
+                  {t('common:cookieConsent.necessaryDescription')}
                 </p>
               </div>
 
               {/* Preferences Cookies */}
               <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">Preferens-cookies</h3>
+                  <h3 className="font-semibold text-gray-900">{t('common:cookieConsent.preferencesCookies')}</h3>
                   <button
                     onClick={() => togglePreference('preferences')}
                     className="relative inline-block w-11 h-6"
@@ -144,15 +144,14 @@ function CookieConsent() {
                   </button>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Dessa cookies gör det möjligt för webbplatsen att komma ihåg val du gjort och tillhandahålla 
-                  förbättrade, mer personliga funktioner.
+                  {t('common:cookieConsent.preferencesDescription')}
                 </p>
               </div>
 
               {/* Statistics Cookies */}
               <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">Statistik-cookies</h3>
+                  <h3 className="font-semibold text-gray-900">{t('common:cookieConsent.statisticsCookies')}</h3>
                   <button
                     onClick={() => togglePreference('statistics')}
                     className="relative inline-block w-11 h-6"
@@ -173,15 +172,14 @@ function CookieConsent() {
                   </button>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Dessa cookies hjälper oss att förstå hur besökare interagerar med webbplatsen genom att samla in 
-                  och rapportera information anonymt.
+                  {t('common:cookieConsent.statisticsDescription')}
                 </p>
               </div>
 
               {/* Marketing Cookies */}
               <div className="border border-gray-200 rounded-sm p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">Marknadsförings-cookies</h3>
+                  <h3 className="font-semibold text-gray-900">{t('common:cookieConsent.marketingCookies')}</h3>
                   <button
                     onClick={() => togglePreference('marketing')}
                     className="relative inline-block w-11 h-6"
@@ -202,7 +200,7 @@ function CookieConsent() {
                   </button>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Dessa cookies används för att spåra besökare på olika webbplatser med syfte att visa relevanta annonser.
+                  {t('common:cookieConsent.marketingDescription')}
                 </p>
               </div>
             </div>
@@ -211,10 +209,10 @@ function CookieConsent() {
           {/* Links */}
           <div className="flex gap-4 text-sm mb-6">
             <a href="/privacy" className="text-gray-600 hover:text-gray-900 underline">
-              Integritetspolicy
+              {t('common:cookieConsent.privacyPolicy')}
             </a>
             <a href="/cookies" className="text-gray-600 hover:text-gray-900 underline">
-              Cookie Policy
+              {t('common:cookieConsent.cookiePolicy')}
             </a>
           </div>
         </div>
@@ -228,14 +226,14 @@ function CookieConsent() {
                 className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-sm font-semibold 
                          border border-gray-300 transition-colors"
               >
-                Acceptera nödvändiga
+                {t('common:cookieConsent.acceptNecessary')}
               </button>
               <button
                 onClick={handleSavePreferences}
                 className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-sm font-semibold 
                          transition-colors shadow-lg"
               >
-                Spara preferenser
+                {t('common:cookieConsent.savePreferences')}
               </button>
             </div>
           ) : (
@@ -245,14 +243,14 @@ function CookieConsent() {
                 className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-sm font-semibold 
                          border border-gray-300 transition-colors"
               >
-                Acceptera nödvändiga
+                {t('common:cookieConsent.acceptNecessary')}
               </button>
               <button
                 onClick={handleAcceptAll}
                 className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-sm font-semibold 
                          transition-colors shadow-lg"
               >
-                Acceptera alla
+                {t('common:cookieConsent.acceptAll')}
               </button>
             </div>
           )}

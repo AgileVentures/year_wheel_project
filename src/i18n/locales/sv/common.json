@@ -111,5 +111,24 @@
     "saving": "Sparar...",
     "saveToDatabase": "Spara till databas",
     "saveToBrowser": "Spara till webbläsarlagring"
+  },
+  "cookieConsent": {
+    "title": "Cookie-inställningar",
+    "description": "Vi använder cookies för att förbättra din upplevelse på vår webbplats, personalisera innehåll och annonser, tillhandahålla funktioner för sociala medier och analysera vår trafik. Vi delar också information om din användning av vår webbplats med våra partners för sociala medier, annonsering och analys.",
+    "showDetails": "Visa detaljer",
+    "hideDetails": "Dölj detaljer",
+    "necessaryCookies": "Nödvändiga cookies",
+    "necessaryDescription": "Dessa cookies är nödvändiga för att webbplatsen ska fungera och kan inte stängas av.",
+    "preferencesCookies": "Preferens-cookies",
+    "preferencesDescription": "Dessa cookies gör det möjligt för webbplatsen att komma ihåg val du gjort och tillhandahålla förbättrade, mer personliga funktioner.",
+    "statisticsCookies": "Statistik-cookies",
+    "statisticsDescription": "Dessa cookies hjälper oss att förstå hur besökare interagerar med webbplatsen genom att samla in och rapportera information anonymt.",
+    "marketingCookies": "Marknadsförings-cookies",
+    "marketingDescription": "Dessa cookies används för att spåra besökare på olika webbplatser med syfte att visa relevanta annonser.",
+    "privacyPolicy": "Integritetspolicy",
+    "cookiePolicy": "Cookie Policy",
+    "acceptNecessary": "Acceptera nödvändiga",
+    "acceptAll": "Acceptera alla",
+    "savePreferences": "Spara preferenser"
   }
 }
