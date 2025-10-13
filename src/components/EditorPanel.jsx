@@ -1,5 +1,6 @@
 import { Calendar, Palette, Layers, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function EditorPanel({ 
   title, 
@@ -19,6 +20,7 @@ function EditorPanel({
   onShowWeekRingChange,
   onShowMonthRingChange
 }) {
+  const { t } = useTranslation(['editor']);
   const [expandedSections, setExpandedSections] = useState({
     general: true,
     colors: true,
@@ -94,7 +96,7 @@ function EditorPanel({
         >
           <div className="flex items-center gap-2">
             <Calendar className="text-primary-600" size={20} />
-            <h2 className="text-lg font-semibold text-gray-900">Allmänt</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('editor:editorPanel.general')}</h2>
           </div>
           {expandedSections.general ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </button>
@@ -103,7 +105,7 @@ function EditorPanel({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Titel
+                {t('editor:editorPanel.title')}
               </label>
               <input
                 type="text"
@@ -116,7 +118,7 @@ function EditorPanel({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                År
+                {t('editor:editorPanel.year')}
               </label>
               <select
                 value={year}
@@ -145,7 +147,7 @@ function EditorPanel({
               <circle cx="12" cy="12" r="3"/>
               <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m0-6l4.2-4.2"/>
             </svg>
-            <h2 className="text-lg font-semibold text-gray-900">Visningsinställningar</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('editor:editorPanel.displaySettings')}</h2>
           </div>
           {expandedSections.display ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </button>
@@ -155,10 +157,10 @@ function EditorPanel({
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-sm">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Månadsring
+                  {t('editor:editorPanel.monthRing')}
                 </label>
                 <p className="text-xs text-gray-600">
-                  Visa yttre ringen med månadsnamn
+                  {t('editor:editorPanel.monthRingDescription')}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -175,10 +177,10 @@ function EditorPanel({
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-sm">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Veckoring
+                  {t('editor:editorPanel.weekRing')}
                 </label>
                 <p className="text-xs text-gray-600">
-                  Visa ringen med veckonummer
+                  {t('editor:editorPanel.weekRingDescription')}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -195,10 +197,10 @@ function EditorPanel({
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-sm">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Kalenderhändelser
+                  {t('editor:editorPanel.calendarEvents')}
                 </label>
                 <p className="text-xs text-gray-600">
-                  Visa helgdagar från kalendern
+                  {t('editor:editorPanel.calendarEventsDescription')}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">

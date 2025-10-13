@@ -215,6 +215,18 @@
     "edit": "Redigera",
     "noActivitiesThisMonth": "Inga aktiviteter denna månad"
   },
+  "editorPanel": {
+    "general": "Allmänt",
+    "title": "Titel",
+    "year": "År",
+    "displaySettings": "Visningsinställningar",
+    "monthRing": "Månadsring",
+    "monthRingDescription": "Visa yttre ringen med månadsnamn",
+    "weekRing": "Veckoring",
+    "weekRingDescription": "Visa ringen med veckonummer",
+    "calendarEvents": "Kalenderhändelser",
+    "calendarEventsDescription": "Visa helgdagar från kalendern"
+  },
   "modal": {
     "addActivity": "Lägg till aktivitet",
     "editActivity": "Redigera aktivitet",

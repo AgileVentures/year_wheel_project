@@ -75,5 +75,31 @@
     "activated": "Subscription activated! Please wait...",
     "activatedFinal": "Subscription activated! If you don't see the changes, try reloading the page.",
     "error": "Something went wrong. Please try again later."
+  },
+  "upgradePrompt": {
+    "defaultTitle": "Upgrade to Premium",
+    "currentUsage": "Current usage",
+    "benefitsTitle": "With Premium you get:",
+    "benefit1": "AI-assisted design and planning",
+    "benefit2": "Unlimited year wheels",
+    "benefit3": "Unlimited teams and members",
+    "benefit4": "All export formats (PNG, SVG, PDF, JPG)",
+    "benefit5": "Version history - view and restore changes",
+    "benefit6": "Share wheels and collaborate in real-time",
+    "benefit7": "Priority support",
+    "pricingFrom": "From only",
+    "perMonth": "/month",
+    "or": "or",
+    "discountNote": "(Annual payment gives 19% discount)",
+    "notNow": "Not now",
+    "seePlans": "See plans"
+  },
+  "publicShare": {
+    "public": "Public",
+    "private": "Private",
+    "isPublic": "The wheel is public",
+    "makePublic": "Make wheel public",
+    "copyLink": "Copy share link",
+    "copied": "Copied!"
   }
 }

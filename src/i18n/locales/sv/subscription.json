@@ -75,5 +75,31 @@
     "activated": "Prenumeration aktiverad! Vänligen vänta...",
     "activatedFinal": "Prenumeration aktiverad! Om du inte ser ändringarna, försök ladda om sidan.",
     "error": "Något gick fel. Försök igen senare."
+  },
+  "upgradePrompt": {
+    "defaultTitle": "Uppgradera till Premium",
+    "currentUsage": "Nuvarande användning",
+    "benefitsTitle": "Med Premium får du:",
+    "benefit1": "AI-assisterad design och planering",
+    "benefit2": "Obegränsade årshjul",
+    "benefit3": "Obegränsade team och medlemmar",
+    "benefit4": "Alla exportformat (PNG, SVG, PDF, JPG)",
+    "benefit5": "Versionshistorik - se och återställ ändringar",
+    "benefit6": "Dela hjul och samarbeta i realtid",
+    "benefit7": "Prioriterad support",
+    "pricingFrom": "Från bara",
+    "perMonth": "/månad",
+    "or": "eller",
+    "discountNote": "(Årlig betalning ger 19% rabatt)",
+    "notNow": "Inte nu",
+    "seePlans": "Se planer"
+  },
+  "publicShare": {
+    "public": "Publikt",
+    "private": "Privat",
+    "isPublic": "Hjulet är publikt",
+    "makePublic": "Gör hjulet publikt",
+    "copyLink": "Kopiera delningslänk",
+    "copied": "Kopierad!"
   }
 }

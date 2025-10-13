@@ -215,6 +215,18 @@
     "edit": "Edit",
     "noActivitiesThisMonth": "No activities this month"
   },
+  "editorPanel": {
+    "general": "General",
+    "title": "Title",
+    "year": "Year",
+    "displaySettings": "Display Settings",
+    "monthRing": "Month Ring",
+    "monthRingDescription": "Show outer ring with month names",
+    "weekRing": "Week Ring",
+    "weekRingDescription": "Show ring with week numbers",
+    "calendarEvents": "Calendar Events",
+    "calendarEventsDescription": "Show holidays from calendar"
+  },
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",
