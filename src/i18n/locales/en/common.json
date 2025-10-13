@@ -171,8 +171,8 @@
   },
   "previewWheelPage": {
     "loading": "Loading wheel...",
-    "accessDenied": "Access Denied",
-    "wheelNotFound": "The wheel was not found or is not publicly shared.",
+    "accessDenied": "Access denied",
+    "wheelNotFound": "Wheel not found or not publicly shared.",
     "goToHome": "Go to homepage",
     "publicShared": "Publicly shared year wheel - Read-only mode",
     "previousYear": "Previous year",
@@ -180,5 +180,8 @@
     "readOnlyInfo": "This is a read-only preview.",
     "createYourOwn": "Create your own year wheel",
     "errorLoading": "An error occurred while loading the wheel."
+  },
+  "footer": {
+    "tagline": "Make yearly planning simple, clear, and effective for the whole team"
   }
 }

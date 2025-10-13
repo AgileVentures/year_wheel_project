@@ -33,6 +33,7 @@
     "demoNote": "Interaktiva demos visas på skärmar från 768px och uppåt"
   },
   "demo": {
+    "wheelTitle": "Marknadsplan 2026",
     "manualTitle": "Skapa ditt årshjul manuellt",
     "manualDescription": "Klicka, dra och organisera dina aktiviteter precis som du vill ha dem.",
     "aiTitle": "Eller låt AI:n göra jobbet",
@@ -81,13 +82,22 @@
       "cta": "Kom igång gratis"
     },
     "premium": {
-      "name": "Premium",
-      "priceMonthly": "99 kr",
-      "priceYearly": "990 kr",
+      "title": "Premium",
+      "description": "För team och organisationer som behöver avancerad planering",
+      "priceMonthly": "79 kr",
+      "priceYearly": "64 kr",
       "period": "/månad",
-      "periodYearly": "/år",
-      "popular": "POPULÄR",
-      "cta": "Börja prenumerera"
+      "saveText": "Spara 20% med årlig betalning",
+      "cta": "Kom igång",
+      "features": [
+        "AI-assistent för planering",
+        "Google Integration (Calendar & Sheets)",
+        "Obegränsade årshjul",
+        "Obegränsade team och medlemmar",
+        "Alla exportformat (PNG, SVG, PDF, JPG)",
+        "Versionshistorik",
+        "Prioriterad support"
+      ]
     },
     "ngoDiscount": {
       "title": "Rabatt för ideella organisationer",

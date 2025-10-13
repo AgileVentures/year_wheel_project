@@ -76,7 +76,7 @@ export default function AIAssistantDemo() {
           <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-6 w-auto" />
-              <span className="text-sm font-medium text-gray-700">Marknadsplan 2026</span>
+              <span className="text-sm font-medium text-gray-700">{t('landing:demo.wheelTitle')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>

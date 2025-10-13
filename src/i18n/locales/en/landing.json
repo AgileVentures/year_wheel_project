@@ -33,10 +33,11 @@
     "demoNote": "Interactive demos are shown on screens from 768px and up"
   },
   "demo": {
+    "wheelTitle": "Marketing Plan 2026",
     "manualTitle": "Create your year wheel manually",
-    "manualDescription": "Click, drag, and organize your activities exactly how you want them.",
-    "aiTitle": "Or let AI do the work",
-    "aiDescription": "Describe what you want to accomplish – AI creates the structure, adds activities, and suggests improvements."
+    "manualDescription": "Click, drag, and organize your activities exactly as you want them.",
+    "aiTitle": "Or let the AI do the work",
+    "aiDescription": "Describe what you want to achieve – the AI creates the structure, adds activities, and suggests improvements."
   },
   "features": {
     "title": "Powerful features",
@@ -81,13 +82,22 @@
       "cta": "Get started free"
     },
     "premium": {
-      "name": "Premium",
-      "priceMonthly": "99 kr",
-      "priceYearly": "990 kr",
+      "title": "Premium",
+      "description": "For teams and organizations that need advanced planning",
+      "priceMonthly": "79 kr",
+      "priceYearly": "64 kr",
       "period": "/month",
-      "periodYearly": "/year",
-      "popular": "POPULAR",
-      "cta": "Start subscription"
+      "saveText": "Save 20% with annual payment",
+      "cta": "Get started",
+      "features": [
+        "AI assistant for planning",
+        "Google Integration (Calendar & Sheets)",
+        "Unlimited year wheels",
+        "Unlimited teams and members",
+        "All export formats (PNG, SVG, PDF, JPG)",
+        "Version history",
+        "Priority support"
+      ]
     },
     "ngoDiscount": {
       "title": "Discount for nonprofits",
@@ -195,7 +205,7 @@
     "allRightsReserved": "All rights reserved"
   },
   "cta": {
-    "title": "Ready to get started?",
+    "title": "Ready to start?",
     "subtitle": "Create your first year wheel today",
     "button": "Get started for free"
   }

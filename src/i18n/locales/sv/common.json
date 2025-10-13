@@ -180,5 +180,8 @@
     "readOnlyInfo": "Detta är en skrivskyddad förhandsgranskning.",
     "createYourOwn": "Skapa ditt eget årshjul",
     "errorLoading": "Ett fel uppstod vid laddning av hjulet."
+  },
+  "footer": {
+    "tagline": "Gör årsplanering enkel, tydlig och effektiv för hela teamet"
   }
 }

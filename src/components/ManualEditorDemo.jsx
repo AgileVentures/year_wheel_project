@@ -36,7 +36,7 @@ export default function ManualEditorDemo() {
     // Start typing title at 1500ms
     timers.push(setTimeout(() => {
       setIsTypingTitle(true);
-      const targetText = 'Marknadsplan 2026'; // Keep this hardcoded as it's a specific demo example
+      const targetText = t('landing:demo.wheelTitle');
       let currentIndex = 0;
       
       const typingInterval = setInterval(() => {
@@ -46,7 +46,7 @@ export default function ManualEditorDemo() {
         } else {
           clearInterval(typingInterval);
           setIsTypingTitle(false);
-          setWheelTitle('Marknadsplan 2026');
+          setWheelTitle(t('landing:demo.wheelTitle'));
         }
       }, 90);
       
@@ -57,7 +57,7 @@ export default function ManualEditorDemo() {
     timers.push(setTimeout(() => {
       setShowCreateModal(false);
       setDemoStep(1);
-      setWheelTitle('Marknadsplan 2026');
+      setWheelTitle(t('landing:demo.wheelTitle'));
       setTitleTypingText('');
     }, 4200));
     
