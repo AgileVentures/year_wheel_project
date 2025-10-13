@@ -1,4 +1,8 @@
+import { useTranslation } from 'react-i18next';
+
 function CreateWheelCard({ onClick, hasReachedLimit }) {
+  const { t } = useTranslation(['dashboard', 'subscription']);
+  
   return (
     <div 
       onClick={onClick}
@@ -24,12 +28,12 @@ function CreateWheelCard({ onClick, hasReachedLimit }) {
         <span className="text-3xl text-blue-600">+</span>
       </div>
       <h3 className="font-semibold text-blue-900 mb-1">
-        {hasReachedLimit ? 'Gräns nådd' : 'Skapa nytt årshjul'}
+        {hasReachedLimit ? t('subscription:limitReached.title') : t('dashboard:createWheel')}
       </h3>
       <p className="text-sm text-blue-700 text-center px-4">
         {hasReachedLimit 
-          ? 'Uppgradera till Premium för fler hjul'
-          : 'Börja planera ditt år'
+          ? t('subscription:limitReached.upgradePrompt')
+          : t('dashboard:createWheelSubtitle')
         }
       </p>
     </div>

@@ -46,7 +46,8 @@
     "title": "Wheel limit reached",
     "message": "You have {{current}} of {{max}} allowed wheels on the free plan. Upgrade to Premium for unlimited wheels!",
     "action": "See plans",
-    "cancel": "Not now"
+    "cancel": "Not now",
+    "upgradePrompt": "Upgrade to Premium for more wheels"
   },
   "modal": {
     "title": "Choose your plan",

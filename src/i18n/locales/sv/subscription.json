@@ -46,7 +46,8 @@
     "title": "Nått gränsen för hjul",
     "message": "Du har {{current}} av {{max}} tillåtna hjul på gratisplanen. Uppgradera till Premium för obegränsade hjul!",
     "action": "Se planer",
-    "cancel": "Inte nu"
+    "cancel": "Inte nu",
+    "upgradePrompt": "Uppgradera till Premium för fler hjul"
   },
   "modal": {
     "title": "Välj din plan",
