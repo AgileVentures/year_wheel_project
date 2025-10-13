@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function ManualEditorDemo() {
+  const { t } = useTranslation(['landing']);
   const [demoStep, setDemoStep] = useState(0);
   const [restartKey, setRestartKey] = useState(0); // Key to trigger restart
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showRenameInput, setShowRenameInput] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [ringName, setRingName] = useState('Ring 1');
+  const [ringName, setRingName] = useState(t('landing:manualDemo.activities.ring1'));
   const [wheelTitle, setWheelTitle] = useState('New wheel');
   const [activityAdded, setActivityAdded] = useState(false);
   const [titleTypingText, setTitleTypingText] = useState('');
@@ -34,7 +36,7 @@ export default function ManualEditorDemo() {
     // Start typing title at 1500ms
     timers.push(setTimeout(() => {
       setIsTypingTitle(true);
-      const targetText = 'Marknadsplan 2026';
+      const targetText = 'Marknadsplan 2026'; // Keep this hardcoded as it's a specific demo example
       let currentIndex = 0;
       
       const typingInterval = setInterval(() => {
@@ -69,7 +71,7 @@ export default function ManualEditorDemo() {
     // Start typing ring name at 6500ms
     timers.push(setTimeout(() => {
       setIsTypingRing(true);
-      const targetText = 'Kampanjer';
+      const targetText = t('landing:manualDemo.activities.kampanjer');
       let currentIndex = 0;
       
       const typingInterval = setInterval(() => {
@@ -87,7 +89,7 @@ export default function ManualEditorDemo() {
     
     // Step 3: Save renamed ring after 8200ms
     timers.push(setTimeout(() => {
-      setRingName('Kampanjer');
+      setRingName(t('landing:manualDemo.activities.kampanjer'));
       setShowRenameInput(false);
       setDemoStep(3);
       setRingTypingText('');
@@ -102,7 +104,7 @@ export default function ManualEditorDemo() {
     // Start typing activity name at 10500ms
     timers.push(setTimeout(() => {
       setIsTypingActivity(true);
-      const targetText = 'Min första aktivitet';
+      const targetText = t('landing:manualDemo.activities.firstActivity');
       let currentIndex = 0;
       
       const typingInterval = setInterval(() => {
@@ -167,7 +169,7 @@ export default function ManualEditorDemo() {
       setShowRenameInput(false);
       setShowAddModal(false);
       setShowEditModal(false);
-      setRingName('Ring 1');
+      setRingName(t('landing:manualDemo.activities.ring1'));
       setWheelTitle('New wheel');
       setActivityAdded(false);
       setActivityExtended(false);
@@ -198,10 +200,10 @@ export default function ManualEditorDemo() {
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-8 w-auto" />
-              <span className="text-lg font-semibold text-gray-900">Mina Årshjul</span>
+              <span className="text-lg font-semibold text-gray-900">{t('landing:manualDemo.dashboardTitle')}</span>
             </div>
             <button className="bg-blue-600 text-white rounded-sm px-5 py-2.5 text-sm font-medium shadow-sm hover:bg-blue-700 transition-colors">
-              + Skapa årshjul
+              + {t('landing:manualDemo.createWheelButton')}
             </button>
           </div>
 
@@ -210,8 +212,8 @@ export default function ManualEditorDemo() {
             <div className="max-w-5xl mx-auto">
               {/* Page Title */}
               <div className="mb-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Dina årshjul</h2>
-                <p className="text-gray-600">Skapa och hantera dina årsplaneringar</p>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">{t('landing:manualDemo.dashboardHeading')}</h2>
+                <p className="text-gray-600">{t('landing:manualDemo.dashboardSubheading')}</p>
               </div>
 
               {/* Wheels Grid */}
@@ -227,8 +229,8 @@ export default function ManualEditorDemo() {
                       <circle cx="180" cy="180" r="68" fill="white" />
                     </svg>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Försäljningsplan 2025</h3>
-                  <p className="text-sm text-gray-500">Senast ändrad: 8 okt 2025</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">{t('landing:manualDemo.sampleWheel1')}</h3>
+                  <p className="text-sm text-gray-500">{t('landing:manualDemo.lastEdited')}: 8 okt 2025</p>
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-sm p-5 hover:shadow-md transition-shadow cursor-pointer">
@@ -241,8 +243,8 @@ export default function ManualEditorDemo() {
                       <circle cx="180" cy="180" r="68" fill="white" />
                     </svg>
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Produktutveckling</h3>
-                  <p className="text-sm text-gray-500">Senast ändrad: 5 okt 2025</p>
+                  <h3 className="font-semibold text-gray-900 mb-1">{t('landing:manualDemo.sampleWheel2')}</h3>
+                  <p className="text-sm text-gray-500">{t('landing:manualDemo.lastEdited')}: 5 okt 2025</p>
                 </div>
 
                 {/* Empty Card - Call to Action */}
@@ -250,8 +252,8 @@ export default function ManualEditorDemo() {
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
                     <span className="text-3xl text-blue-600">+</span>
                   </div>
-                  <h3 className="font-semibold text-blue-900 mb-1">Skapa nytt årshjul</h3>
-                  <p className="text-sm text-blue-700 text-center">Börja planera ditt år</p>
+                  <h3 className="font-semibold text-blue-900 mb-1">{t('landing:manualDemo.createNew')}</h3>
+                  <p className="text-sm text-blue-700 text-center">{t('landing:manualDemo.createNewSubtext')}</p>
                 </div>
               </div>
             </div>
@@ -263,11 +265,11 @@ export default function ManualEditorDemo() {
       {showCreateModal && (
         <div className="h-full bg-gray-900 bg-opacity-50 flex items-center justify-center">
           <div className="bg-white rounded-sm shadow-2xl w-full max-w-lg p-6 animate-fadeIn">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Skapa nytt årshjul</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">{t('landing:manualDemo.modal.createTitle')}</h3>
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Titel <span className="text-red-500">*</span>
+                  {t('landing:manualDemo.modal.titleLabel')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                 </label>
                 <input
                   type="text"
@@ -286,7 +288,7 @@ export default function ManualEditorDemo() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  År <span className="text-red-500">*</span>
+                  {t('landing:manualDemo.modal.yearLabel')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                 </label>
                 <input
                   type="text"
@@ -297,10 +299,10 @@ export default function ManualEditorDemo() {
               </div>
               <div className="flex justify-end gap-3 pt-6">
                 <button className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors">
-                  Avbryt
+                  {t('landing:manualDemo.modal.cancel')}
                 </button>
                 <button className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm shadow-sm transition-colors">
-                  Skapa årshjul
+                  {t('landing:manualDemo.modal.create')}
                 </button>
               </div>
             </div>
@@ -315,11 +317,11 @@ export default function ManualEditorDemo() {
         <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
           {/* Sidebar Header */}
           <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-1">Hantera</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('landing:manualDemo.sidebar.manage')}</h3>
             <div className="flex gap-2 text-xs text-gray-600">
-              <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-sm font-medium">Disc</button>
-              <button className="px-3 py-1 hover:bg-gray-100 rounded-sm">Lista</button>
-              <button className="px-3 py-1 hover:bg-gray-100 rounded-sm">Kalender</button>
+              <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded-sm font-medium">{t('landing:manualDemo.sidebar.disc')}</button>
+              <button className="px-3 py-1 hover:bg-gray-100 rounded-sm">{t('landing:manualDemo.sidebar.list')}</button>
+              <button className="px-3 py-1 hover:bg-gray-100 rounded-sm">{t('landing:manualDemo.sidebar.calendar')}</button>
             </div>
           </div>
 
@@ -328,20 +330,20 @@ export default function ManualEditorDemo() {
             {/* Innerringar */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-gray-700 uppercase">Innerringar</h4>
-                <button className="text-xs text-blue-600 hover:text-blue-700">+ Lägg till</button>
+                <h4 className="text-xs font-semibold text-gray-700 uppercase">{t('landing:manualDemo.sidebar.innerRings')}</h4>
+                <button className="text-xs text-blue-600 hover:text-blue-700">{t('landing:manualDemo.sidebar.addButton')}</button>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 py-1">
                   <input type="checkbox" checked readOnly className="w-4 h-4" />
-                  <div className={`w-3 h-3 rounded-sm ${ringName === 'Kampanjer' ? 'bg-orange-300' : 'bg-gray-300'}`}></div>
+                  <div className={`w-3 h-3 rounded-sm ${ringName === t('landing:manualDemo.activities.kampanjer') ? 'bg-orange-300' : 'bg-gray-300'}`}></div>
                   {showRenameInput ? (
                     <div className="relative flex-1">
                       <input
                         type="text"
                         value={ringTypingText}
                         readOnly
-                        placeholder="Skriv namn..."
+                        placeholder={t('landing:manualDemo.modal.placeholder')}
                         className="text-xs text-gray-900 border border-blue-500 rounded px-1 py-0.5 w-full bg-white"
                       />
                       {isTypingRing && (
@@ -361,23 +363,23 @@ export default function ManualEditorDemo() {
             {/* Ytterringar */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-gray-700 uppercase">Ytterringar</h4>
-                <button className="text-xs text-blue-600 hover:text-blue-700">+ Lägg till</button>
+                <h4 className="text-xs font-semibold text-gray-700 uppercase">{t('landing:manualDemo.sidebar.outerRings')}</h4>
+                <button className="text-xs text-blue-600 hover:text-blue-700">{t('landing:manualDemo.sidebar.addButton')}</button>
               </div>
-              <div className="text-xs text-gray-500 italic">Inga ytterringar</div>
+              <div className="text-xs text-gray-500 italic">{t('landing:manualDemo.sidebar.noOuterRings')}</div>
             </div>
 
             {/* Aktivitetsgrupper */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-gray-700 uppercase">Aktivitetsgrupper</h4>
-                <button className="text-xs text-blue-600 hover:text-blue-700">+ Lägg till</button>
+                <h4 className="text-xs font-semibold text-gray-700 uppercase">{t('landing:manualDemo.sidebar.activityGroups')}</h4>
+                <button className="text-xs text-blue-600 hover:text-blue-700">{t('landing:manualDemo.sidebar.addButton')}</button>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 py-1">
                   <input type="checkbox" checked readOnly className="w-4 h-4" />
                   <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                  <span className="text-xs text-gray-700">Planering</span>
+                  <span className="text-xs text-gray-700">{t('landing:manualDemo.activities.planering')}</span>
                   <span className="text-xs text-gray-500 ml-auto">{activityAdded ? '1' : '0'}</span>
                 </div>
               </div>
@@ -386,10 +388,10 @@ export default function ManualEditorDemo() {
             {/* Labels */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-gray-700 uppercase">Labels</h4>
-                <button className="text-xs text-blue-600 hover:text-blue-700">+ Lägg till</button>
+                <h4 className="text-xs font-semibold text-gray-700 uppercase">{t('landing:manualDemo.sidebar.labels')}</h4>
+                <button className="text-xs text-blue-600 hover:text-blue-700">{t('landing:manualDemo.sidebar.addButton')}</button>
               </div>
-              <div className="text-xs text-gray-500 italic">Inga labels</div>
+              <div className="text-xs text-gray-500 italic">{t('landing:manualDemo.sidebar.noLabels')}</div>
             </div>
           </div>
 
@@ -399,7 +401,7 @@ export default function ManualEditorDemo() {
               onClick={() => setShowAddModal(true)}
               className="w-full bg-blue-600 text-white rounded-sm px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
             >
-              + Lägg till aktivitet
+              + {t('landing:manualDemo.modal.addActivity')}
             </button>
           </div>
         </div>
@@ -415,7 +417,7 @@ export default function ManualEditorDemo() {
             <div className="flex items-center gap-3">
               <span className="text-xs text-green-600 font-medium flex items-center gap-1">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Sparad
+                {t('landing:manualDemo.modal.saved')}
               </span>
             </div>
           </div>
@@ -513,7 +515,7 @@ export default function ManualEditorDemo() {
               <div className="bg-white rounded-sm shadow-xl w-full max-w-md animate-fadeIn">
                 {/* Modal Header */}
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Lägg till aktivitet</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('landing:manualDemo.modal.addActivityTitle')}</h3>
                   <button
                     onClick={() => setShowAddModal(false)}
                     className="text-gray-400 hover:text-gray-600"
@@ -527,12 +529,12 @@ export default function ManualEditorDemo() {
                   {/* Item Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aktivitetens namn <span className="text-red-500">*</span>
+                      {t('landing:manualDemo.modal.activityName')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <div className="relative">
                       <input
                         type="text"
-                        value={isTypingActivity ? activityTypingText : 'Min första aktivitet'}
+                        value={isTypingActivity ? activityTypingText : t('landing:manualDemo.activities.firstActivity')}
                         readOnly
                         className="w-full px-4 py-2.5 border border-blue-500 rounded-sm bg-white text-base font-medium text-gray-900"
                       />
@@ -547,7 +549,7 @@ export default function ManualEditorDemo() {
                   {/* Ring */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ring <span className="text-red-500">*</span>
+                      {t('landing:manualDemo.modal.ring')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <select value={ringName} readOnly className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-white">
                       <option>{ringName}</option>
@@ -557,18 +559,18 @@ export default function ManualEditorDemo() {
                   {/* Activity Group */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aktivitetsgrupp <span className="text-red-500">*</span>
+                      {t('landing:manualDemo.modal.activityGroup')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <select className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-white">
-                      <option>Planering</option>
+                      <option>{t('landing:manualDemo.activities.planering')}</option>
                     </select>
                   </div>
 
                   {/* Label */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Label (valfritt)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('landing:manualDemo.modal.label')}</label>
                     <select className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-white">
-                      <option value="">Ingen label</option>
+                      <option value="">{t('landing:manualDemo.modal.noLabel')}</option>
                     </select>
                   </div>
 
@@ -576,7 +578,7 @@ export default function ManualEditorDemo() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Startdatum <span className="text-red-500">*</span>
+                        {t('landing:manualDemo.modal.startDate')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                       </label>
                       <input
                         type="date"
@@ -586,7 +588,7 @@ export default function ManualEditorDemo() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Slutdatum <span className="text-red-500">*</span>
+                        {t('landing:manualDemo.modal.endDate')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                       </label>
                       <input
                         type="date"
@@ -603,13 +605,13 @@ export default function ManualEditorDemo() {
                     onClick={() => setShowAddModal(false)}
                     className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
                   >
-                    Avbryt
+                    {t('landing:manualDemo.modal.cancel')}
                   </button>
                   <button
                     onClick={() => setShowAddModal(false)}
                     className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm shadow-sm transition-colors"
                   >
-                    Lägg till aktivitet
+                    {t('landing:manualDemo.modal.addActivity')}
                   </button>
                 </div>
               </div>
@@ -622,7 +624,7 @@ export default function ManualEditorDemo() {
               <div className="bg-white rounded-sm shadow-xl w-full max-w-md animate-fadeIn">
                 {/* Modal Header */}
                 <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Redigera aktivitet</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('landing:manualDemo.modal.editActivity')}</h3>
                   <button
                     onClick={() => setShowEditModal(false)}
                     className="text-gray-400 hover:text-gray-600"
@@ -636,11 +638,11 @@ export default function ManualEditorDemo() {
                   {/* Item Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aktivitetens namn <span className="text-red-500">*</span>
+                      {t('landing:manualDemo.modal.activityName')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <input
                       type="text"
-                      value="Min första aktivitet"
+                      value={t('landing:manualDemo.activities.firstActivity')}
                       readOnly
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-sm bg-gray-50 text-base font-medium text-gray-900"
                     />
@@ -649,7 +651,7 @@ export default function ManualEditorDemo() {
                   {/* Ring */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ring <span className="text-red-500">*</span>
+                      {t('landing:manualDemo.modal.ring')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <select value={ringName} readOnly className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-gray-50 text-gray-900">
                       <option>{ringName}</option>
@@ -659,10 +661,10 @@ export default function ManualEditorDemo() {
                   {/* Activity Group */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Aktivitetsgrupp <span className="text-red-500">*</span>
+                      {t('landing:manualDemo.modal.activityGroup')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <select className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-gray-50 text-gray-900">
-                      <option>Planering</option>
+                      <option>{t('landing:manualDemo.activities.planering')}</option>
                     </select>
                   </div>
 
@@ -670,7 +672,7 @@ export default function ManualEditorDemo() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Startdatum <span className="text-red-500">*</span>
+                        {t('landing:manualDemo.modal.startDate')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                       </label>
                       <input
                         type="date"
@@ -680,7 +682,7 @@ export default function ManualEditorDemo() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Slutdatum <span className="text-red-500">*</span>
+                        {t('landing:manualDemo.modal.endDate')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                       </label>
                       <div className="relative">
                         <input
@@ -703,13 +705,13 @@ export default function ManualEditorDemo() {
                     onClick={() => setShowEditModal(false)}
                     className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
                   >
-                    Avbryt
+                    {t('landing:manualDemo.modal.cancel')}
                   </button>
                   <button
                     onClick={() => setShowEditModal(false)}
                     className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm shadow-sm transition-colors"
                   >
-                    Spara ändringar
+                    {t('landing:manualDemo.modal.save')}
                   </button>
                 </div>
               </div>
