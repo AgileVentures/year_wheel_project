@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Users, Plus, Crown, Shield, User } from 'lucide-react';
 import { getUserTeams } from '../../services/teamService';
 import CreateTeamModal from './CreateTeamModal';
 import TeamDetails from './TeamDetails';
 
 const TeamList = ({ onSelectWheel }) => {
+  const { t, i18n } = useTranslation(['teams', 'common']);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,11 +64,11 @@ const TeamList = ({ onSelectWheel }) => {
   const getRoleLabel = (role) => {
     switch (role) {
       case 'owner':
-        return 'Ägare';
+        return t('teams:roles.owner');
       case 'admin':
-        return 'Admin';
+        return t('teams:roles.admin');
       default:
-        return 'Medlem';
+        return t('teams:roles.member');
     }
   };
 
@@ -86,9 +88,9 @@ const TeamList = ({ onSelectWheel }) => {
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Mina team</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('teams:title')}</h2>
           <p className="text-gray-600 mt-1">
-            Hantera dina team och samarbeta med andra användare
+            {t('teams:subtitle')}
           </p>
         </div>
         <button
@@ -96,7 +98,7 @@ const TeamList = ({ onSelectWheel }) => {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-5 h-5" />
-          Skapa team
+          {t('teams:create')}
         </button>
       </div>
 
@@ -109,23 +111,23 @@ const TeamList = ({ onSelectWheel }) => {
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Laddar team...</p>
+          <p className="mt-2 text-gray-600">{t('common:messages.loading')}</p>
         </div>
       ) : teams.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">
           <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Inga team än
+            {t('teams:noTeams')}
           </h3>
           <p className="text-gray-600 mb-4">
-            Skapa ett team för att börja samarbeta med andra användare
+            {t('teams:noTeamsDescription')}
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Skapa ditt första team
+            {t('teams:createFirst')}
           </button>
         </div>
       ) : (
@@ -154,10 +156,10 @@ const TeamList = ({ onSelectWheel }) => {
               
               <div className="flex items-center justify-between text-sm text-gray-500">
                 <span>
-                  {team.team_members?.length || 0} medlem{team.team_members?.length !== 1 ? 'mar' : ''}
+                  {t('teams:member', { count: team.team_members?.length || 0 })}
                 </span>
                 <span>
-                  {new Date(team.created_at).toLocaleDateString('sv-SE')}
+                  {new Date(team.created_at).toLocaleDateString(i18n.language === 'sv' ? 'sv-SE' : 'en-US')}
                 </span>
               </div>
             </div>
