@@ -76,7 +76,7 @@
     "yearlyDiscount": "Save 19%",
     "free": {
       "name": "Free",
-      "price": "0 kr",
+      "price": "0 SEK",
       "period": "forever",
       "features": "Basic features",
       "cta": "Get started free"
@@ -188,8 +188,8 @@
     },
     "activities": {
       "ring1": "Ring 1",
-      "kampanjer": "Campaigns",
-      "planering": "Planning",
+      "campaigns": "Campaigns",
+      "planning": "Planning",
       "firstActivity": "My first activity"
     }
   },

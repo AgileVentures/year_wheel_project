@@ -188,8 +188,8 @@
     },
     "activities": {
       "ring1": "Ring 1",
-      "kampanjer": "Kampanjer",
-      "planering": "Planering",
+      "campaigns": "Kampanjer",
+      "planning": "Planering",
       "firstActivity": "Min första aktivitet"
     }
   },

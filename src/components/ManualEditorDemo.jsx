@@ -71,7 +71,7 @@ export default function ManualEditorDemo() {
     // Start typing ring name at 6500ms
     timers.push(setTimeout(() => {
       setIsTypingRing(true);
-      const targetText = t('landing:manualDemo.activities.kampanjer');
+      const targetText = t('landing:manualDemo.activities.campaigns');
       let currentIndex = 0;
       
       const typingInterval = setInterval(() => {
@@ -89,7 +89,7 @@ export default function ManualEditorDemo() {
     
     // Step 3: Save renamed ring after 8200ms
     timers.push(setTimeout(() => {
-      setRingName(t('landing:manualDemo.activities.kampanjer'));
+      setRingName(t('landing:manualDemo.activities.campaigns'));
       setShowRenameInput(false);
       setDemoStep(3);
       setRingTypingText('');
@@ -336,7 +336,7 @@ export default function ManualEditorDemo() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 py-1">
                   <input type="checkbox" checked readOnly className="w-4 h-4" />
-                  <div className={`w-3 h-3 rounded-sm ${ringName === t('landing:manualDemo.activities.kampanjer') ? 'bg-orange-300' : 'bg-gray-300'}`}></div>
+                  <div className={`w-3 h-3 rounded-sm ${ringName === t('landing:manualDemo.activities.campaigns') ? 'bg-orange-300' : 'bg-gray-300'}`}></div>
                   {showRenameInput ? (
                     <div className="relative flex-1">
                       <input
@@ -379,7 +379,7 @@ export default function ManualEditorDemo() {
                 <div className="flex items-center gap-2 py-1">
                   <input type="checkbox" checked readOnly className="w-4 h-4" />
                   <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
-                  <span className="text-xs text-gray-700">{t('landing:manualDemo.activities.planering')}</span>
+                  <span className="text-xs text-gray-700">{t('landing:manualDemo.activities.planning')}</span>
                   <span className="text-xs text-gray-500 ml-auto">{activityAdded ? '1' : '0'}</span>
                 </div>
               </div>
@@ -562,7 +562,7 @@ export default function ManualEditorDemo() {
                       {t('landing:manualDemo.modal.activityGroup')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <select className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-white">
-                      <option>{t('landing:manualDemo.activities.planering')}</option>
+                      <option>{t('landing:manualDemo.activities.planning')}</option>
                     </select>
                   </div>
 
@@ -664,7 +664,7 @@ export default function ManualEditorDemo() {
                       {t('landing:manualDemo.modal.activityGroup')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                     </label>
                     <select className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-gray-50 text-gray-900">
-                      <option>{t('landing:manualDemo.activities.planering')}</option>
+                      <option>{t('landing:manualDemo.activities.planning')}</option>
                     </select>
                   </div>
 
