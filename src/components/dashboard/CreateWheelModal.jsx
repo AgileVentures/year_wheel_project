@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { getUserTeams } from '../../services/teamService';
 
 export default function CreateWheelModal({ onClose, onCreate }) {
-  const [title, setTitle] = useState('Nytt hjul');
+  const { t } = useTranslation(['dashboard', 'common']);
+  const [title, setTitle] = useState(t('dashboard:createWheel'));
   const [year, setYear] = useState(new Date().getFullYear());
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
@@ -32,14 +34,14 @@ export default function CreateWheelModal({ onClose, onCreate }) {
     
     try {
       await onCreate({
-        title: title.trim() || 'Nytt hjul',
+        title: title.trim() || t('dashboard:createWheel'),
         year,
         team_id: selectedTeam || null,
       });
       onClose();
     } catch (err) {
       console.error('Error creating wheel:', err);
-      alert('Kunde inte skapa hjul: ' + err.message);
+      alert(t('dashboard:messages.createError') + ': ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-sm shadow-xl max-w-md w-full my-8">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Skapa nytt hjul</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('dashboard:createWheel')}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -61,21 +63,21 @@ export default function CreateWheelModal({ onClose, onCreate }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Titel
+              {t('common:labels.title')}
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="T.ex. Årsplanering 2025"
+              placeholder={t('common:labels.title')}
               autoFocus
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              År
+              {t('common:labels.year')}
             </label>
             <input
               type="number"
@@ -89,17 +91,17 @@ export default function CreateWheelModal({ onClose, onCreate }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Team (valfritt)
+              {t('common:navigation.teams')} ({t('common:labels.optional')})
             </label>
             {loadingTeams ? (
-              <div className="text-sm text-gray-500">Laddar team...</div>
+              <div className="text-sm text-gray-500">{t('common:messages.loading')}</div>
             ) : (
               <select
                 value={selectedTeam}
                 onChange={(e) => setSelectedTeam(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Personligt hjul</option>
+                <option value="">{t('common:labels.personal', { defaultValue: 'Personal wheel' })}</option>
                 {teams.map((team) => (
                   <option key={team.id} value={team.id}>
                     {team.name}
@@ -108,7 +110,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
               </select>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Team-hjul kan ses av alla teammedlemmar
+              {t('common:labels.teamWheelInfo', { defaultValue: 'Team wheels can be seen by all team members' })}
             </p>
           </div>
 
@@ -119,14 +121,14 @@ export default function CreateWheelModal({ onClose, onCreate }) {
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors"
               disabled={loading}
             >
-              Avbryt
+              {t('common:actions.cancel')}
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:bg-blue-400"
               disabled={loading}
             >
-              {loading ? 'Skapar...' : 'Skapa hjul'}
+              {loading ? t('common:messages.processing') : t('dashboard:createWheel')}
             </button>
           </div>
         </form>

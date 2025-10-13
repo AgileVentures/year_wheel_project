@@ -37,7 +37,9 @@
     "year": "Year",
     "date": "Date",
     "time": "Time",
-    "selectTeam": "Select team"
+    "selectTeam": "Select team",
+    "personal": "Personal wheel",
+    "teamWheelInfo": "Team wheels can be seen by all team members"
   },
   "messages": {
     "saved": "Saved!",

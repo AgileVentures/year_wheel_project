@@ -37,7 +37,9 @@
     "year": "År",
     "date": "Datum",
     "time": "Tid",
-    "selectTeam": "Välj team"
+    "selectTeam": "Välj team",
+    "personal": "Personligt hjul",
+    "teamWheelInfo": "Team-hjul kan ses av alla teammedlemmar"
   },
   "messages": {
     "saved": "Sparad!",
