@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Cookie, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -208,12 +209,12 @@ function CookieConsent() {
 
           {/* Links */}
           <div className="flex gap-4 text-sm mb-6">
-            <a href="/privacy" className="text-gray-600 hover:text-gray-900 underline">
+            <Link to="/privacy" className="text-gray-600 hover:text-gray-900 underline">
               {t('common:cookieConsent.privacyPolicy')}
-            </a>
-            <a href="/cookies" className="text-gray-600 hover:text-gray-900 underline">
+            </Link>
+            <Link to="/cookies" className="text-gray-600 hover:text-gray-900 underline">
               {t('common:cookieConsent.cookiePolicy')}
-            </a>
+            </Link>
           </div>
         </div>
 

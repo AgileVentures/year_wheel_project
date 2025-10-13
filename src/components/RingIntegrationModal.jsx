@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { X, Calendar, Sheet, Loader2, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -354,9 +355,9 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
               <p className="text-sm text-blue-800">
                 {t('integration:ringIntegrationModal.connectAccountPrompt')}{' '}
-                <a href="/profile" className="underline font-medium hover:text-blue-900" onClick={onClose}>
+                <Link to="/profile" className="underline font-medium hover:text-blue-900" onClick={onClose}>
                   {t('integration:ringIntegrationModal.profileIntegrations')}
-                </a>
+                </Link>
               </p>
             </div>
           )}

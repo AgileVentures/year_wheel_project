@@ -40,8 +40,8 @@
     "aiDescription": "Describe what you want to achieve – the AI creates the structure, adds activities, and suggests improvements."
   },
   "features": {
-    "title": "Powerful features",
-    "subtitle": "Everything you need to plan and visualize your year",
+    "title": "Everything you need for professional planning",
+    "subtitle": "From strategy to execution – YearWheel gives you the tools to keep your team in sync",
     "premium": "PREMIUM",
     "aiAssistant": {
       "title": "AI Planning Assistant",
@@ -69,7 +69,7 @@
     }
   },
   "pricing": {
-    "title": "Choose your plan",
+    "title": "Simple pricing",
     "subtitle": "Start free and upgrade when you need more",
     "monthly": "Monthly",
     "yearly": "Yearly",
@@ -82,6 +82,8 @@
       "cta": "Get started free"
     },
     "premium": {
+      "name": "Premium",
+      "popular": "Most Popular",
       "title": "Premium",
       "description": "For teams and organizations that need advanced planning",
       "priceMonthly": "79 SEK",
@@ -105,7 +107,8 @@
       "title": "Discount for nonprofits",
       "description": "We support nonprofit organizations and NGOs in their important work. Contact us for a <strong>50% discount coupon</strong> on the Premium plan.",
       "cta": "Contact us"
-    }
+    },
+    "viewAllDetails": "View all details and FAQ →"
   },
   "auth": {
     "title": "Create your account",
@@ -194,7 +197,8 @@
     }
   },
   "footer": {
-    "tagline": "Visualize your year",
+    "tagline": "Make annual planning simple, clear and effective for the whole team.",
+    "createdBy": "YearWheel Planner is a SaaS service created and operated by",
     "product": "Product",
     "features": "Features",
     "pricing": "Pricing",

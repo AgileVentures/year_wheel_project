@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap, Calendar } from 'lucide-react';
 import SubscriptionModal from './subscription/SubscriptionModal';
+import LanguageSwitcher from './LanguageSwitcher';
 
 function PricingPage() {
   const { t } = useTranslation(['landing', 'common']);
@@ -36,19 +37,22 @@ function PricingPage() {
       <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <img 
                 src="/year_wheel_logo.svg" 
                 alt="YearWheel" 
                 className="h-8 w-auto"
               />
-            </a>
-            <button
-              onClick={handleBackToDashboard}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-              {user ? t('common:navigation.dashboard') : t('common:navigation.login')}
-            </button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <button
+                onClick={handleBackToDashboard}
+                className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              >
+                {user ? t('common:navigation.dashboard') : t('common:navigation.login')}
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -212,7 +216,7 @@ function PricingPage() {
 
         {/* NGO/Non-profit Discount Banner */}
         <div className="mt-12 max-w-3xl mx-auto">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-6 shadow-sm">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-sm p-6 shadow-sm">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
                 <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

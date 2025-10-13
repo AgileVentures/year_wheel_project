@@ -40,8 +40,8 @@
     "aiDescription": "Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter och föreslår förbättringar."
   },
   "features": {
-    "title": "Kraftfulla funktioner",
-    "subtitle": "Allt du behöver för att planera och visualisera ditt år",
+    "title": "Allt du behöver för professionell planering",
+    "subtitle": "Från strategi till genomförande – YearWheel ger dig verktygen för att hålla teamet synkat",
     "premium": "PREMIUM",
     "aiAssistant": {
       "title": "AI-assistent för planering",
@@ -69,7 +69,7 @@
     }
   },
   "pricing": {
-    "title": "Välj din plan",
+    "title": "Enkel prissättning",
     "subtitle": "Börja gratis, uppgradera när du behöver mer",
     "monthly": "Månadsvis",
     "yearly": "Årsvis",
@@ -82,6 +82,8 @@
       "cta": "Kom igång gratis"
     },
     "premium": {
+      "name": "Premium",
+      "popular": "Populärast",
       "title": "Premium",
       "description": "För team och organisationer som behöver avancerad planering",
       "priceMonthly": "79 kr",
@@ -105,7 +107,8 @@
       "title": "Rabatt för ideella organisationer",
       "description": "Vi stödjer ideella organisationer och NGO:er i deras viktiga arbete. Kontakta oss för en <strong>50% rabattkupong</strong> på Premium-planen.",
       "cta": "Kontakta oss"
-    }
+    },
+    "viewAllDetails": "Se alla detaljer och FAQ →"
   },
   "auth": {
     "title": "Skapa ditt konto",
@@ -194,7 +197,8 @@
     }
   },
   "footer": {
-    "tagline": "Visualisera ditt år",
+    "tagline": "Gör årsplanering enkel, tydlig och effektiv för hela teamet.",
+    "createdBy": "YearWheel Planner är en SaaS-tjänst skapad och driven av",
     "product": "Produkt",
     "features": "Funktioner",
     "pricing": "Priser",

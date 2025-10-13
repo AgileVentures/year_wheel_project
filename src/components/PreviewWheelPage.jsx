@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchWheel, fetchPages } from '../services/wheelService';
 import YearWheel from '../YearWheel';
 import { Eye, Lock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
@@ -194,9 +194,9 @@ function PreviewWheelPage() {
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>
             {t('common:previewWheelPage.readOnlyInfo')}
-            <a href="/" className="text-blue-600 hover:text-blue-700 ml-1">
+            <Link to="/" className="text-blue-600 hover:text-blue-700 ml-1">
               {t('common:previewWheelPage.createYourOwn')}
-            </a>
+            </Link>
           </p>
         </div>
       </div>

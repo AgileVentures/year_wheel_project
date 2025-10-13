@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play, Share2 } from 'lucide-react';
@@ -42,15 +42,15 @@ function LandingPage() {
   const [isTypingInInput, setIsTypingInInput] = useState(false);
   const chatContainerRef = useRef(null);
 
-  // Conversation sequence
+  // Conversation sequence - using translations
   const conversationSequence = [
-    { type: 'input-typing', text: "Skapa Kampanj i andra veckan i mars", delay: 500 },
+    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message1'), delay: 500 },
     { type: 'user-send', delay: 100 },
     { type: 'ai-response', delay: 800 },
-    { type: 'input-typing', text: "Förläng den till halva april", delay: 1500 },
+    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message2'), delay: 1500 },
     { type: 'user-send', delay: 100 },
     { type: 'ai-response', delay: 800 },
-    { type: 'input-typing', text: "Kopiera kampanjen och lägg den i september", delay: 1500 },
+    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message3'), delay: 1500 },
     { type: 'user-send', delay: 100 },
     { type: 'ai-response', delay: 800 },
     { type: 'reset', delay: 3500 }
@@ -217,7 +217,7 @@ function LandingPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-xs text-gray-500">Auto-sparad</span>
+                        <span className="text-xs text-gray-500">{t('landing:aiDemo.autoSaved')}</span>
                       </div>
                     </div>
                     
@@ -432,7 +432,7 @@ function LandingPage() {
                       {conversationStep >= 1 && (
                         <div className="flex justify-end animate-fadeIn">
                           <div className="bg-blue-600 text-white rounded-sm px-3 py-2 max-w-[85%] text-xs">
-                            Skapa Kampanj i andra veckan i mars
+                            {t('landing:aiDemo.userMessages.message1')}
                           </div>
                         </div>
                       )}
@@ -446,10 +446,10 @@ function LandingPage() {
                                 AI
                               </div>
                               <div className="flex-1 space-y-1">
-                                <p>✓ Skapade aktivitet "Kampanj"</p>
-                                <p>✓ Placerade i mars, vecka 2 (8-14 mars)</p>
-                                <p>✓ Använde blå färg från Marknadsföring</p>
-                                <p className="text-blue-600 font-medium mt-1">Vill du lägga till mer information?</p>
+                                <p>{t('landing:aiDemo.aiResponses.response1.line1')}</p>
+                                <p>{t('landing:aiDemo.aiResponses.response1.line2')}</p>
+                                <p>{t('landing:aiDemo.aiResponses.response1.line3')}</p>
+                                <p className="text-blue-600 font-medium mt-1">{t('landing:aiDemo.aiResponses.response1.question')}</p>
                               </div>
                             </div>
                           </div>
@@ -460,7 +460,7 @@ function LandingPage() {
                       {conversationStep >= 4 && (
                         <div className="flex justify-end animate-fadeIn">
                           <div className="bg-blue-600 text-white rounded-sm px-3 py-2 max-w-[80%] text-xs">
-                            Förläng den till halva april
+                            {t('landing:aiDemo.userMessages.message2')}
                           </div>
                         </div>
                       )}
@@ -474,9 +474,9 @@ function LandingPage() {
                                 AI
                               </div>
                               <div className="flex-1 space-y-1">
-                                <p>✓ Förlängde "Kampanj" till 15 april</p>
-                                <p>✓ Kampanjen varar nu i 6 veckor</p>
-                                <p>✓ Visuellt uppdaterad på hjulet</p>
+                                <p>{t('landing:aiDemo.aiResponses.response2.line1')}</p>
+                                <p>{t('landing:aiDemo.aiResponses.response2.line2')}</p>
+                                <p>{t('landing:aiDemo.aiResponses.response2.line3')}</p>
                               </div>
                             </div>
                           </div>
@@ -487,7 +487,7 @@ function LandingPage() {
                       {conversationStep >= 7 && (
                         <div className="flex justify-end animate-fadeIn">
                           <div className="bg-blue-600 text-white rounded-sm px-3 py-2 max-w-[80%] text-xs">
-                            Kopiera kampanjen och lägg den i september
+                            {t('landing:aiDemo.userMessages.message3')}
                           </div>
                         </div>
                       )}
@@ -501,9 +501,9 @@ function LandingPage() {
                                 AI
                               </div>
                               <div className="flex-1 space-y-1">
-                                <p>✓ Kopierade "Kampanj" till september</p>
-                                <p>✓ Samma varaktighet (6 veckor)</p>
-                                <p>✓ Båda kampanjerna är nu synliga</p>
+                                <p>{t('landing:aiDemo.aiResponses.response3.line1')}</p>
+                                <p>{t('landing:aiDemo.aiResponses.response3.line2')}</p>
+                                <p>{t('landing:aiDemo.aiResponses.response3.line3')}</p>
                               </div>
                             </div>
                           </div>
@@ -524,16 +524,16 @@ function LandingPage() {
                             </div>
                           ) : (
                             <div className="text-sm text-gray-400">
-                              Skriv vad du vill planera...
+                              {t('landing:aiDemo.placeholder')}
                             </div>
                           )}
                         </div>
                         <button className="bg-blue-600 text-white rounded-sm px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors">
-                          Skicka
+                          {t('landing:aiDemo.sendButton')}
                         </button>
                       </div>
                       <div className="mt-2 text-xs text-gray-400">
-                        + Naturligt språk • AI förstår kontext • Automatisk planering
+                        {t('landing:aiDemo.hint')}
                       </div>
                     </div>
                   </div>
@@ -550,10 +550,10 @@ function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Allt du behöver för professionell planering
+              {t('landing:features.title')}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Från strategi till genomförande – YearWheel ger dig verktygen för att hålla teamet synkat
+              {t('landing:features.subtitle')}
             </p>
           </div>
 
@@ -792,14 +792,14 @@ function LandingPage() {
           </div>
 
           <div className="text-center mt-8">
-            <a href="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-semibold">
-              Se alla detaljer och FAQ →
-            </a>
+            <Link to="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-semibold">
+              {t('landing:pricing.viewAllDetails')}
+            </Link>
           </div>
 
           {/* NGO/Non-profit Discount Banner */}
           <div className="mt-12 max-w-3xl mx-auto">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-6 shadow-sm">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-sm p-6 shadow-sm">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0">
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -856,19 +856,19 @@ function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-3 mb-4">
                 <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-6 w-auto" />
               </div>
               <p className="text-sm text-gray-600">
-                Gör årsplanering enkel, tydlig och effektiv för hela teamet.
+                {t('landing:footer.tagline')}
               </p>
             </div>
 
             <div>
               <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.product')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="/pricing" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.pricing')}</a></li>
-                <li><a href="/auth" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:nav.getStarted')}</a></li>
+                <li><Link to="/pricing" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.pricing')}</Link></li>
+                <li><Link to="/auth" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:nav.getStarted')}</Link></li>
               </ul>
             </div>
 
@@ -891,7 +891,7 @@ function LandingPage() {
 
           <div className="border-t border-gray-200 pt-8 text-center text-sm text-gray-600">
             <p>
-              YearWheel Planner är en SaaS-tjänst skapad och driven av <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors">CommunitasLabs Inc</a>
+              {t('landing:footer.createdBy')} <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors">CommunitasLabs Inc</a>
             </p>
           </div>
         </div>

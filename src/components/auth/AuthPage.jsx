@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 
@@ -25,13 +26,13 @@ function AuthPage() {
       {/* Header with Logo */}
       <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity w-fit">
+          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity w-fit">
             <img 
               src="/year_wheel_logo.svg" 
               alt="YearWheel" 
               className="h-8 w-auto"
             />
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -90,7 +91,7 @@ function AuthPage() {
         {mode === 'login' && (
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
-              Inget konto ännu? <a href="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium">Se våra planer</a>
+              Inget konto ännu? <Link to="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium">Se våra planer</Link>
             </p>
           </div>
         )}
