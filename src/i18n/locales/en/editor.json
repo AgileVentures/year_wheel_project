@@ -101,8 +101,19 @@
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",
+    "itemName": "Item Name",
+    "itemNamePlaceholder": "e.g., Christmas campaign",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "time": "Time (optional)",
     "cancel": "Cancel",
     "save": "Save",
-    "addButton": "Add activity"
+    "addButton": "Add activity",
+    "validation": {
+      "nameRequired": "Name is required",
+      "startDateRequired": "Start date is required",
+      "endDateRequired": "End date is required",
+      "endDateAfterStart": "End date must be after start date"
+    }
   }
 }

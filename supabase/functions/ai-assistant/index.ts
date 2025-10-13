@@ -3,6 +3,9 @@
 // Handles Swedish language naturally, supports cross-year activities
 // @ts-ignore
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+
+// Declare Deno global for TypeScript
+declare const Deno: any;
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // @ts-ignore
@@ -17,7 +20,7 @@ const corsHeaders = {
 // Initialize OpenAI with reasoning model
 // @ts-ignore: Deno global is available in Supabase Edge Functions
 const openai = new OpenAI({
-  apiKey: Deno.env.get('OPENAI_API_KEY'),
+  apiKey: typeof Deno !== 'undefined' && Deno.env ? Deno.env.get('OPENAI_API_KEY') : '',
 })
 
 // Tool definitions for OpenAI function calling
@@ -297,7 +300,7 @@ async function createActivity(
 
   if (startYear === endYear) {
     // Single year activity
-    const page = pages.find((p) => p.year === startYear)
+    const page = pages.find((p: { year: number }) => p.year === startYear)
     if (!page) {
       throw new Error(`Ingen sida hittades för år ${startYear}`)
     }

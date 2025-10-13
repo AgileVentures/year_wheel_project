@@ -101,8 +101,19 @@
   "modal": {
     "addActivity": "Lägg till aktivitet",
     "editActivity": "Redigera aktivitet",
+    "itemName": "Aktivitetens namn",
+    "itemNamePlaceholder": "t.ex. Julkampanj",
+    "startDate": "Startdatum",
+    "endDate": "Slutdatum",
+    "time": "Tid (frivilligt)",
     "cancel": "Avbryt",
     "save": "Spara",
-    "addButton": "Lägg till aktivitet"
+    "addButton": "Lägg till aktivitet",
+    "validation": {
+      "nameRequired": "Namn krävs",
+      "startDateRequired": "Startdatum krävs",
+      "endDateRequired": "Slutdatum krävs",
+      "endDateAfterStart": "Slutdatum måste vara efter startdatum"
+    }
   }
 }
