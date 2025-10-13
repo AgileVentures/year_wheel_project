@@ -58,6 +58,11 @@
   "dangerZoneDescription": "Permanently delete this team. This action cannot be undone.",
   "messages": {
     "removeMemberConfirm": "Are you sure you want to remove this member?",
-    "cancelInviteConfirm": "Are you sure you want to cancel this invitation?"
+    "cancelInviteConfirm": "Are you sure you want to cancel this invitation?",
+    "errorRemoveMember": "Could not remove member",
+    "errorChangeRole": "Could not change role",
+    "errorCancelInvitation": "Could not cancel invitation",
+    "errorDeleteTeam": "Could not delete team",
+    "loading": "Loading team..."
   }
 }

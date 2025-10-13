@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Settings, UserPlus, Trash2, Crown, Shield, User, X, MoreVertical, ExternalLink, Mail, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { 
   getTeam, 
   updateTeam, 
@@ -16,6 +17,7 @@ import InviteMemberModal from './InviteMemberModal';
 import WheelCard from '../dashboard/WheelCard';
 
 const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWheel }) => {
+  const { t, i18n } = useTranslation(['teams']);
   const { user } = useAuth();
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
@@ -77,12 +79,12 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       onTeamDeleted(teamId);
     } catch (err) {
       console.error('Error deleting team:', err);
-      alert('Kunde inte ta bort team: ' + err.message);
+      alert(t('teams:messages.errorDeleteTeam') + ': ' + err.message);
     }
   };
 
   const handleRemoveMember = async (memberId, userId) => {
-    if (!confirm('Är du säker på att du vill ta bort denna medlem?')) return;
+    if (!confirm(t('teams:messages.removeMemberConfirm'))) return;
     
     try {
       await removeTeamMember(teamId, userId);
@@ -90,7 +92,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       setMemberMenuOpen(null);
     } catch (err) {
       console.error('Error removing member:', err);
-      alert('Kunde inte ta bort medlem: ' + err.message);
+      alert(t('teams:messages.errorRemoveMember') + ': ' + err.message);
     }
   };
 
@@ -103,12 +105,12 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       setMemberMenuOpen(null);
     } catch (err) {
       console.error('Error changing role:', err);
-      alert('Kunde inte ändra roll: ' + err.message);
+      alert(t('teams:messages.errorChangeRole') + ': ' + err.message);
     }
   };
 
   const handleCancelInvitation = async (inviteId) => {
-    if (!confirm('Är du säker på att du vill avbryta denna inbjudan?')) return;
+    if (!confirm(t('teams:messages.cancelInviteConfirm'))) return;
     
     try {
       await cancelInvitation(inviteId);
@@ -116,7 +118,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       setInviteMenuOpen(null);
     } catch (err) {
       console.error('Error canceling invitation:', err);
-      alert('Kunde inte avbryta inbjudan: ' + err.message);
+      alert(t('teams:messages.errorCancelInvitation') + ': ' + err.message);
     }
   };
 
@@ -134,11 +136,11 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
   const getRoleLabel = (role) => {
     switch (role) {
       case 'owner':
-        return 'Ägare';
+        return t('teams:roles.owner');
       case 'admin':
-        return 'Admin';
+        return t('teams:roles.admin');
       default:
-        return 'Medlem';
+        return t('teams:roles.member');
     }
   };
 
@@ -146,7 +148,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
     return (
       <div className="text-center py-12">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-2 text-gray-600">Laddar team...</p>
+        <p className="mt-2 text-gray-600">{t('teams:messages.loading')}</p>
       </div>
     );
   }
@@ -159,7 +161,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeft className="w-5 h-5" />
-          Tillbaka
+          {t('teams:back')}
         </button>
         <div className="p-4 bg-red-50 border border-red-200 rounded-sm text-red-700">
           {error}
@@ -178,7 +180,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
-            Tillbaka till team
+            {t('teams:back')}
           </button>
           <h2 className="text-2xl font-bold text-gray-900">{team?.name}</h2>
           {team?.description && (
@@ -191,7 +193,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
             className="flex items-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors"
           >
             <Settings className="w-4 h-4" />
-            Inställningar
+            {t('teams:settings')}
           </button>
         )}
       </div>
@@ -200,7 +202,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       <div className="bg-white border border-gray-200 rounded-sm p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Medlemmar ({members.length})
+            {t('teams:members', { count: members.length })}
           </h3>
           {canManageTeam && (
             <button
@@ -208,7 +210,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
               className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm"
             >
               <UserPlus className="w-4 h-4" />
-              Bjud in
+              {t('teams:invite')}
             </button>
           )}
         </div>
@@ -229,7 +231,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                       {member.email}
                     </span>
                     {member.user_id === user?.id && (
-                      <span className="text-xs text-gray-500">(Du)</span>
+                      <span className="text-xs text-gray-500">{t('teams:you')}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-sm text-gray-600">
@@ -261,7 +263,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                             className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
                           >
                             <Shield className="w-4 h-4 text-blue-500" />
-                            Gör till admin
+                            {t('teams:changeRole.makeAdmin')}
                           </button>
                         )}
                         {isOwner && member.role === 'admin' && (
@@ -270,7 +272,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                             className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
                           >
                             <User className="w-4 h-4 text-gray-500" />
-                            Gör till medlem
+                            {t('teams:changeRole.makeMember')}
                           </button>
                         )}
                         <button
@@ -278,7 +280,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                           className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Ta bort
+                          {t('teams:removeMember')}
                         </button>
                       </div>
                     </>
@@ -294,7 +296,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
           <div className="mt-6 pt-6 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              Väntande inbjudningar ({pendingInvites.length})
+              {t('teams:pendingInvites', { count: pendingInvites.length })}
             </h4>
             <div className="space-y-2">
               {pendingInvites.map((invite) => (
@@ -311,7 +313,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                         {invite.email}
                       </div>
                       <div className="text-xs text-gray-600">
-                        Inbjuden {new Date(invite.created_at).toLocaleDateString('sv-SE')}
+                        {t('teams:invited', { date: new Date(invite.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'sv-SE') })}
                       </div>
                     </div>
                   </div>
@@ -336,7 +338,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                             className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-red-600"
                           >
                             <X className="w-4 h-4" />
-                            Avbryt inbjudan
+                            {t('teams:cancelInvite')}
                           </button>
                         </div>
                       </>
@@ -353,19 +355,19 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       <div className="mt-6 bg-white border border-gray-200 rounded-sm p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Team-hjul ({wheels.length})
+            {t('teams:teamWheels', { count: wheels.length })}
           </h3>
         </div>
 
         {loadingWheels ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-sm text-gray-600">Laddar hjul...</p>
+            <p className="mt-2 text-sm text-gray-600">{t('teams:loadingWheels')}</p>
           </div>
         ) : wheels.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p>Inga hjul har tilldelats detta team än</p>
-            <p className="text-sm mt-1">Skapa ett New wheel och välj detta team för att börja</p>
+            <p>{t('teams:noWheels')}</p>
+            <p className="text-sm mt-1">{t('teams:noWheelsDescription')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -385,16 +387,16 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       {/* Danger Zone */}
       {isOwner && (
         <div className="mt-6 bg-red-50 border border-red-200 rounded-sm p-6">
-          <h3 className="text-lg font-semibold text-red-900 mb-2">Farlig zon</h3>
+          <h3 className="text-lg font-semibold text-red-900 mb-2">{t('teams:dangerZone')}</h3>
           <p className="text-sm text-red-700 mb-4">
-            Ta bort detta team permanent. Denna åtgärd kan inte ångras.
+            {t('teams:dangerZoneDescription')}
           </p>
           <button
             onClick={() => setShowDeleteConfirm(true)}
             className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
-            Ta bort team
+            {t('teams:deleteTeam.button')}
           </button>
         </div>
       )}
@@ -426,23 +428,20 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-sm max-w-md w-full p-6 my-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Ta bort team?</h3>
-            <p className="text-gray-700 mb-6">
-              Är du säker på att du vill ta bort <strong>{team?.name}</strong>? 
-              Alla medlemmar kommer att förlora åtkomst och denna åtgärd kan inte ångras.
-            </p>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">{t('teams:deleteTeam.confirm')}</h3>
+            <p className="text-gray-700 mb-6" dangerouslySetInnerHTML={{ __html: t('teams:deleteTeam.confirmMessage', { name: team?.name }) + ' ' + t('teams:deleteTeam.warning') }} />
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors"
               >
-                Avbryt
+                {t('teams:editTeam.cancel')}
               </button>
               <button
                 onClick={handleDeleteTeam}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition-colors"
               >
-                Ta bort
+                {t('teams:deleteTeam.button')}
               </button>
             </div>
           </div>
@@ -454,6 +453,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
 
 // Edit Team Modal Component
 const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
+  const { t } = useTranslation(['teams']);
   const [name, setName] = useState(team?.name || '');
   const [description, setDescription] = useState(team?.description || '');
   const [loading, setLoading] = useState(false);
@@ -463,7 +463,7 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
     e.preventDefault();
     
     if (!name.trim()) {
-      setError('Namn är obligatoriskt');
+      setError(t('teams:editTeam.nameRequired'));
       return;
     }
 
@@ -487,7 +487,7 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-sm max-w-md w-full my-8">
         <div className="flex justify-between items-center p-6 pb-4 sticky top-0 bg-white rounded-t-sm z-10">
-          <h3 className="text-xl font-bold text-gray-900">Redigera team</h3>
+          <h3 className="text-xl font-bold text-gray-900">{t('teams:editTeam.title')}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -506,7 +506,7 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Namn <span className="text-red-500">*</span>
+              {t('teams:editTeam.nameLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -520,7 +520,7 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Beskrivning
+              {t('teams:editTeam.descriptionLabel')}
             </label>
             <textarea
               value={description}
@@ -539,14 +539,14 @@ const EditTeamModal = ({ team, onClose, onTeamUpdated }) => {
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors"
               disabled={loading}
             >
-              Avbryt
+              {t('teams:editTeam.cancel')}
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:bg-blue-400"
               disabled={loading || !name.trim()}
             >
-              {loading ? 'Sparar...' : 'Spara'}
+              {loading ? t('teams:editTeam.saving') : t('teams:editTeam.save')}
             </button>
           </div>
         </form>

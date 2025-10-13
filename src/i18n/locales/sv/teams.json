@@ -58,6 +58,11 @@
   "dangerZoneDescription": "Ta bort detta team permanent. Denna åtgärd kan inte ångras.",
   "messages": {
     "removeMemberConfirm": "Är du säker på att du vill ta bort denna medlem?",
-    "cancelInviteConfirm": "Är du säker på att du vill avbryta denna inbjudan?"
+    "cancelInviteConfirm": "Är du säker på att du vill avbryta denna inbjudan?",
+    "errorRemoveMember": "Kunde inte ta bort medlem",
+    "errorChangeRole": "Kunde inte ändra roll",
+    "errorCancelInvitation": "Kunde inte avbryta inbjudan",
+    "errorDeleteTeam": "Kunde inte ta bort team",
+    "loading": "Laddar team..."
   }
 }
