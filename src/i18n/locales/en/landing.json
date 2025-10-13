@@ -86,8 +86,9 @@
       "description": "For teams and organizations that need advanced planning",
       "priceMonthly": "79 kr",
       "priceYearly": "64 kr",
+      "yearlyTotal": "768 kr/year",
       "period": "/month",
-      "saveText": "Save 20% with annual payment",
+      "saveText": "Save 17%",
       "cta": "Get started",
       "features": [
         "AI assistant for planning",

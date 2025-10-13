@@ -86,8 +86,9 @@
       "description": "För team och organisationer som behöver avancerad planering",
       "priceMonthly": "79 kr",
       "priceYearly": "64 kr",
+      "yearlyTotal": "768 kr/år",
       "period": "/månad",
-      "saveText": "Spara 20% med årlig betalning",
+      "saveText": "Spara 17%",
       "cta": "Kom igång",
       "features": [
         "AI-assistent för planering",

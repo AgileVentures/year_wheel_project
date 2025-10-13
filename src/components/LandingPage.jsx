@@ -744,10 +744,10 @@ function LandingPage() {
                 ) : (
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold text-white">{t('landing:pricing.premium.priceMonthly')}</span>
+                      <span className="text-5xl font-bold text-white">{t('landing:pricing.premium.priceYearly')}</span>
                       <span className="text-[#A4E6E0]">{t('landing:pricing.premium.period')}</span>
                     </div>
-                    <p className="text-sm text-[#A4E6E0] mt-1">({t('landing:pricing.premium.priceYearly')} - {t('landing:pricing.yearlyDiscount')})</p>
+                    <p className="text-sm text-[#A4E6E0] mt-1">({t('landing:pricing.premium.yearlyTotal')} - {t('landing:pricing.premium.saveText')})</p>
                   </div>
                 )}
               </div>
