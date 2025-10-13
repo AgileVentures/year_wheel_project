@@ -4,6 +4,7 @@ import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
 import PageNavigator from './PageNavigator';
+import LanguageSwitcher from './LanguageSwitcher';
 import { useState } from 'react';
 
 function Header({ 
@@ -322,6 +323,11 @@ function Header({
             <Sparkles size={14} className="text-amber-500" />
           </button>
         )}
+        
+        <div className="w-px h-8 bg-gray-300"></div>
+        
+        {/* Language Switcher */}
+        <LanguageSwitcher />
         
         <div className="w-px h-8 bg-gray-300"></div>
         

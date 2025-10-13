@@ -490,7 +490,7 @@ function OrganizationPanel({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-semibold text-gray-900">Hantera</h1>
+            <h1 className="text-base font-semibold text-gray-900">{t('editor:title')}</h1>
           </div>
           <div className="flex items-center gap-1">
             <button 
@@ -595,7 +595,7 @@ function OrganizationPanel({
 
         {/* Filter Visning & Add Button */}
         <div className="flex items-center justify-between mb-2">
-          <div className="text-xs font-medium text-gray-700">Filtrera Visning</div>
+          <div className="text-xs font-medium text-gray-700">{t('editor:filter.title')}</div>
           <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
@@ -875,7 +875,7 @@ function OrganizationPanel({
                           ? 'text-green-600 hover:bg-green-50' 
                           : 'text-blue-600 hover:bg-blue-50'
                       }`}
-                      title={ringIntegrations[ring.id] ? 'Datakälla ansluten - klicka för att hantera' : 'Koppla datakälla'}
+                      title={ringIntegrations[ring.id] ? t('editor:rings.integrationConnected') : t('editor:rings.integrationConnect')}
                     >
                       <LinkIcon size={12} />
                       {ringIntegrations[ring.id] && (
@@ -987,7 +987,7 @@ function OrganizationPanel({
                           ? 'text-green-600 hover:bg-green-50' 
                           : 'text-blue-600 hover:bg-blue-50'
                       }`}
-                      title={ringIntegrations[ring.id] ? 'Datakälla ansluten - klicka för att hantera' : 'Koppla datakälla'}
+                      title={ringIntegrations[ring.id] ? t('editor:rings.integrationConnected') : t('editor:rings.integrationConnect')}
                     >
                       <LinkIcon size={12} />
                       {ringIntegrations[ring.id] && (
