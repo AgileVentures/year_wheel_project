@@ -20,6 +20,8 @@ function OrganizationPanel({
   onShowRingNamesChange,
   showLabels,
   onShowLabelsChange,
+  weekRingDisplayMode,
+  onWeekRingDisplayModeChange,
   onSaveToDatabase, // Trigger immediate save
   onReloadData // Reload wheel data from database
 }) {
@@ -1480,6 +1482,20 @@ function OrganizationPanel({
                       onChange={(e) => onShowLabelsChange && onShowLabelsChange(e.target.checked)}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     />
+                  </label>
+                  <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-600">Veckoringvisning</span>
+                      <span className="text-xs text-gray-400">Veckonummer eller datumintervall</span>
+                    </div>
+                    <select
+                      value={weekRingDisplayMode}
+                      onChange={(e) => onWeekRingDisplayModeChange && onWeekRingDisplayModeChange(e.target.value)}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="week-numbers">Veckonummer</option>
+                      <option value="dates">Datum</option>
+                    </select>
                   </label>
                 </div>
               </div>

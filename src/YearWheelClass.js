@@ -37,6 +37,7 @@ class YearWheel {
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showRingNames = options.showRingNames !== undefined ? options.showRingNames : true;
     this.showLabels = options.showLabels !== undefined ? options.showLabels : true;
+    this.weekRingDisplayMode = options.weekRingDisplayMode || 'week-numbers'; // 'week-numbers' or 'dates'
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.zoomedQuarter = options.zoomedQuarter !== undefined && options.zoomedQuarter !== null ? options.zoomedQuarter : null;
     this.textColor = "#374151"; // Darker gray for better readability
@@ -156,6 +157,52 @@ class YearWheel {
     if (this.dragState) {
       this.dragState.isDragging = false;
     }
+  }
+
+  // Generate date ranges for each week (DD-DD format)
+  generateWeekDateRanges() {
+    const dateRanges = [];
+    const year = parseInt(this.year);
+    
+    // Start from January 1st
+    let currentDate = new Date(year, 0, 1);
+    
+    // Find the first Monday of the calendar
+    while (currentDate.getDay() !== 1) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+    
+    // Iterate through all weeks
+    while (currentDate.getFullYear() <= year && dateRanges.length < 53) {
+      const weekStart = new Date(currentDate);
+      const weekEnd = new Date(currentDate);
+      weekEnd.setDate(weekEnd.getDate() + 6); // Sunday
+      
+      // Only include weeks that overlap with the current year
+      if (weekStart.getFullYear() === year || weekEnd.getFullYear() === year) {
+        const startDay = weekStart.getDate();
+        const endDay = weekEnd.getDate();
+        
+        // Format: "DD-DD" - handle month boundaries gracefully
+        if (weekStart.getMonth() === weekEnd.getMonth()) {
+          // Same month: simple format
+          dateRanges.push(`${startDay}-${endDay}`);
+        } else {
+          // Different months: show both dates
+          dateRanges.push(`${startDay}-${endDay}`);
+        }
+      }
+      
+      // Move to next Monday
+      currentDate.setDate(currentDate.getDate() + 7);
+      
+      // Stop if we've moved too far into the next year
+      if (currentDate.getFullYear() > year && currentDate.getMonth() > 0) {
+        break;
+      }
+    }
+    
+    return dateRanges;
   }
 
   generateWeeks() {
@@ -2570,8 +2617,44 @@ class YearWheel {
 
     // NOW draw week ring AFTER inner rings (so it's on top)
     if (this.showWeekRing) {
-      // Get weeks for current zoom level
-      const weekData = this.getWeeksForZoom();
+      // Get data based on display mode: week numbers or date ranges
+      let weekData;
+      if (this.weekRingDisplayMode === 'dates') {
+        // Generate date ranges (DD-DD format)
+        const allDateRanges = this.generateWeekDateRanges();
+        // Filter for current zoom level (similar to getWeeksForZoom logic)
+        const { startDate, endDate } = this.getDateRangeForZoom();
+        const year = parseInt(this.year);
+        
+        // If zoomed, filter date ranges to match the zoom period
+        if (this.zoomedMonth !== null || this.zoomedQuarter !== null) {
+          weekData = [];
+          let currentDate = new Date(year, 0, 1);
+          while (currentDate.getDay() !== 1) currentDate.setDate(currentDate.getDate() - 1);
+          
+          let rangeIndex = 0;
+          while (currentDate.getFullYear() <= year && rangeIndex < allDateRanges.length) {
+            const weekStart = new Date(currentDate);
+            const weekEnd = new Date(currentDate);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            
+            // Check if this week overlaps with the zoomed period
+            if (weekEnd >= startDate && weekStart <= endDate) {
+              weekData.push(allDateRanges[rangeIndex]);
+            }
+            
+            rangeIndex++;
+            currentDate.setDate(currentDate.getDate() + 7);
+            if (currentDate.getFullYear() > year && currentDate.getMonth() > 0) break;
+          }
+        } else {
+          weekData = allDateRanges;
+        }
+      } else {
+        // Default: week numbers
+        weekData = this.getWeeksForZoom();
+      }
+      
       const numberOfWeeks = weekData.length;
       
       // Use lighter version of third template color (or second if only 2 colors)

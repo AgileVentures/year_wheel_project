@@ -164,6 +164,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showMonthRing, setShowMonthRing] = useState(true);
   const [showRingNames, setShowRingNames] = useState(true);
   const [showLabels, setShowLabels] = useState(false); // Default to false - labels shown on hover
+  const [weekRingDisplayMode, setWeekRingDisplayMode] = useState('week-numbers'); // 'week-numbers' or 'dates'
   const [downloadFormat, setDownloadFormat] = useState("png");
   const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -397,8 +398,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           if (wheelData.settings.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
           if (wheelData.settings.showRingNames !== undefined) setShowRingNames(wheelData.settings.showRingNames);
         }
-        // TODO: Load showLabels from wheel data after adding show_labels column to database
-        // if (wheelData.showLabels !== undefined) setShowLabels(wheelData.showLabels);
+        // Load showLabels and weekRingDisplayMode from wheel data (stored at wheel level, not in settings)
+        if (wheelData.showLabels !== undefined) setShowLabels(wheelData.showLabels);
+        if (wheelData.weekRingDisplayMode !== undefined) setWeekRingDisplayMode(wheelData.weekRingDisplayMode);
       }
     } catch (error) {
       console.error('Error loading wheel:', error);
@@ -544,6 +546,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     showMonthRing,
     showRingNames,
     showLabels,
+    weekRingDisplayMode,
     organizationData,
     year,
     currentPageId
@@ -572,6 +575,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       showMonthRing: currentShowMonthRing,
       showRingNames: currentShowRingNames,
       showLabels: currentShowLabels,
+      weekRingDisplayMode: currentWeekRingDisplayMode,
     } = latestValuesRef.current;
 
     try {
@@ -586,6 +590,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         showMonthRing: currentShowMonthRing,
         showRingNames: currentShowRingNames,
         showLabels: currentShowLabels,
+        weekRingDisplayMode: currentWeekRingDisplayMode,
       });
       
       // Mark the save timestamp to ignore our own broadcasts
@@ -615,7 +620,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     autoSave();
-  }, [title, colors, showWeekRing, showMonthRing, showRingNames, showLabels, autoSave]);
+  }, [title, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, autoSave]);
 
   // Initial load on mount AND reload when reloadTrigger changes
   useEffect(() => {
@@ -729,6 +734,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           showMonthRing: currentShowMonthRing,
           showRingNames: currentShowRingNames,
           showLabels: currentShowLabels,
+          weekRingDisplayMode: currentWeekRingDisplayMode,
           organizationData: currentOrganizationData,
           year: currentYear,
           currentPageId: currentCurrentPageId
@@ -742,6 +748,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           showMonthRing: currentShowMonthRing,
           showRingNames: currentShowRingNames,
           showLabels: currentShowLabels,
+          weekRingDisplayMode: currentWeekRingDisplayMode,
         });
         
         // CRITICAL: Always call saveWheelData to sync to database tables
@@ -1595,6 +1602,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onShowRingNamesChange={setShowRingNames}
             showLabels={showLabels}
             onShowLabelsChange={setShowLabels}
+            weekRingDisplayMode={weekRingDisplayMode}
+            onWeekRingDisplayModeChange={setWeekRingDisplayMode}
             onSaveToDatabase={handleSave}
             onReloadData={loadWheelData}
           />
@@ -1616,6 +1625,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               showMonthRing={showMonthRing}
               showRingNames={showRingNames}
               showLabels={showLabels}
+              weekRingDisplayMode={weekRingDisplayMode}
               zoomedMonth={zoomedMonth}
               zoomedQuarter={zoomedQuarter}
               onSetZoomedMonth={setZoomedMonth}
