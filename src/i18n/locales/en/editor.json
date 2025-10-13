@@ -131,6 +131,24 @@
     "deleteConfirmTitle": "Delete activity?",
     "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
   },
+  "addItemModal": {
+    "title": "Add new item",
+    "itemNameLabel": "Item name",
+    "itemNamePlaceholder": "e.g., Christmas campaign",
+    "itemNameRequired": "Name is required",
+    "ringLabel": "Ring",
+    "activityLabel": "Activity",
+    "labelLabel": "Label",
+    "startDateLabel": "Start date",
+    "startDateRequired": "Start date is required",
+    "endDateLabel": "End date",
+    "endDateRequired": "End date is required",
+    "endDateInvalid": "End date must be after start date",
+    "timeLabel": "Time (optional)",
+    "timePlaceholder": "e.g., 09:00 - 17:00",
+    "cancel": "Cancel",
+    "addItem": "Add item"
+  },
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",
