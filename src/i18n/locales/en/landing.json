@@ -104,11 +104,52 @@
       ]
     },
     "ngoDiscount": {
-      "title": "Discount for nonprofits",
+      "title": "Nonprofit or NGO?",
       "description": "We support nonprofit organizations and NGOs in their important work. Contact us for a <strong>50% discount coupon</strong> on the Premium plan.",
-      "cta": "Contact us"
+      "cta": "hey@communitaslabs.io"
     },
-    "viewAllDetails": "View all details and FAQ →"
+    "viewAllDetails": "View all details and FAQ →",
+    "trustSignals": "Secure payments via Stripe",
+    "flexibility": "No commitment • Cancel anytime • 30-day money-back guarantee",
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "tryPremium": {
+        "question": "Can I try Premium for free?",
+        "answer": "Yes! Create a free account and start using the basic version. You can upgrade to Premium whenever you want."
+      },
+      "dataAfterCancel": {
+        "question": "What happens to my data if I cancel Premium?",
+        "answer": "Your wheels and data remain intact. You can continue using the free version with limited features."
+      },
+      "aiAssistant": {
+        "question": "How does the AI assistant work?",
+        "answer1": "The AI assistant uses advanced language understanding to help you plan faster. Simply describe what you want to accomplish in natural language, e.g:",
+        "example1": "Create a campaign in March and copy it to September",
+        "example2": "Extend product launch to mid-April",
+        "example3": "Add 10 meetings evenly distributed over the first quarter",
+        "answer2": "The AI automatically creates activities, detects conflicts, and suggests improvements."
+      },
+      "googleIntegration": {
+        "question": "What is Google Integration?",
+        "answer1": "With Premium, you get access to automatic synchronization from:",
+        "calendar": "Google Calendar: Import events directly to your year wheel",
+        "sheets": "Google Sheets: Sync activities from your spreadsheets",
+        "answer2": "The system automatically distributes activities across multiple years based on dates, and updates in real-time when you make changes in Google."
+      },
+      "changePlan": {
+        "question": "Can I switch between monthly and annual billing?",
+        "answer": "Yes, you can switch between monthly and annual billing at any time in your subscription settings."
+      },
+      "securePayments": {
+        "question": "Are my payments secure?",
+        "answer": "Absolutely! We use Stripe for all payments - one of the world's most trusted payment platforms. We never store your card details."
+      }
+    },
+    "cta": {
+      "title": "Ready to start planning?",
+      "subtitle": "Create your free account today and discover how easy planning can be",
+      "button": "Get started free"
+    }
   },
   "auth": {
     "title": "Create your account",

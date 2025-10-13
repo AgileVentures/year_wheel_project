@@ -210,8 +210,8 @@ function PricingPage() {
 
         {/* Trust Signals */}
         <div className="mt-16 text-center">
-          <p className="text-gray-600 mb-4">Säkra betalningar via Stripe</p>
-          <p className="text-sm text-gray-500">Ingen bindningstid • Avsluta när du vill • 30 dagars pengarna-tillbaka-garanti</p>
+          <p className="text-gray-600 mb-4">{t('landing:pricing.trustSignals')}</p>
+          <p className="text-sm text-gray-500">{t('landing:pricing.flexibility')}</p>
         </div>
 
         {/* NGO/Non-profit Discount Banner */}
@@ -225,19 +225,17 @@ function PricingPage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Ideell organisation eller NGO?
+                  {t('landing:pricing.ngoDiscount.title')}
                 </h3>
-                <p className="text-gray-700 mb-3">
-                  Vi stödjer ideella organisationer och NGO:er i deras viktiga arbete. Kontakta oss för en <strong>50% rabattkupong</strong> på Premium-planen.
-                </p>
+                <p className="text-gray-700 mb-3" dangerouslySetInnerHTML={{ __html: t('landing:pricing.ngoDiscount.description') }} />
                 <a 
-                  href="mailto:hey@communitaslabs.io?subject=NGO%20Rabatt%20-%20YearWheel&body=Hej!%0A%0AVi%20är%20en%20ideell%20organisation%2FNGO%20och%20skulle%20vilja%20veta%20mer%20om%20er%2050%25%20rabatt%20på%20Premium-planen.%0A%0AOrganisation%3A%20%0AWebbplats%3A%20%0A%0ATack!"
+                  href={`mailto:${t('landing:pricing.ngoDiscount.cta')}?subject=NGO%20Discount%20-%20YearWheel`}
                   className="inline-flex items-center gap-2 text-green-700 hover:text-green-800 font-medium transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  hey@communitaslabs.io
+                  {t('landing:pricing.ngoDiscount.cta')}
                 </a>
               </div>
             </div>
@@ -249,78 +247,69 @@ function PricingPage() {
       <section className="bg-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-            Vanliga frågor
+            {t('landing:pricing.faq.title')}
           </h2>
           
           <div className="space-y-6">
             <div className="border-b border-gray-200 pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Kan jag prova Premium utan kostnad?
+                {t('landing:pricing.faq.tryPremium.question')}
               </h3>
               <p className="text-gray-600">
-                Ja! Skapa ett gratis konto och börja använda basversionen. Du kan uppgradera till Premium när du vill.
+                {t('landing:pricing.faq.tryPremium.answer')}
               </p>
             </div>
 
             <div className="border-b border-gray-200 pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Vad händer med mina data om jag avslutar Premium?
+                {t('landing:pricing.faq.dataAfterCancel.question')}
               </h3>
               <p className="text-gray-600">
-                Dina hjul och data förblir intakta. Du kan fortsätta använda gratisversionen med begränsade funktioner.
+                {t('landing:pricing.faq.dataAfterCancel.answer')}
               </p>
             </div>
 
             <div className="border-b border-gray-200 pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Hur fungerar AI-assistenten? <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
+                {t('landing:pricing.faq.aiAssistant.question')} <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
               </h3>
               <p className="text-gray-600 mb-2">
-                AI-assistenten använder avancerad språkförståelse för att hjälpa dig planera snabbare. 
-                Beskriv bara vad du vill åstadkomma i naturligt språk, t.ex:
+                {t('landing:pricing.faq.aiAssistant.answer1')}
               </p>
               <ul className="text-gray-600 list-disc list-inside ml-4 space-y-1">
-                <li>"Skapa en kampanj i mars och kopiera den till september"</li>
-                <li>"Förläng produktlansering till halva april"</li>
-                <li>"Lägg till 10 möten jämnt fördelade över första kvartalet"</li>
+                <li>"{t('landing:pricing.faq.aiAssistant.example1')}"</li>
+                <li>"{t('landing:pricing.faq.aiAssistant.example2')}"</li>
+                <li>"{t('landing:pricing.faq.aiAssistant.example3')}"</li>
               </ul>
               <p className="text-gray-600 mt-2">
-                AI:n skapar automatiskt aktiviteter, upptäcker konflikter och föreslår förbättringar.
+                {t('landing:pricing.faq.aiAssistant.answer2')}
               </p>
             </div>
 
             <div className="border-b border-gray-200 pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Vad är Google Integration? <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
-              </h3>
-              <p className="text-gray-600 mb-2">
-                Med Premium får du tillgång till automatisk synkronisering från:
-              </p>
-              <ul className="text-gray-600 list-disc list-inside ml-4 space-y-1">
-                <li><strong>Google Calendar:</strong> Importera händelser direkt till ditt årshjul</li>
-                <li><strong>Google Sheets:</strong> Synka aktiviteter från dina kalkylark</li>
-              </ul>
-              <p className="text-gray-600 mt-2">
-                Systemet distribuerar automatiskt aktiviteter över flera år baserat på datum, 
-                och uppdaterar i realtid när du ändrar i Google.
-              </p>
-            </div>
-
-            <div className="border-b border-gray-200 pb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Kan jag byta mellan månads- och årsbetalning?
+                {t('landing:pricing.faq.googleIntegration.question')} <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
               </h3>
               <p className="text-gray-600">
-                Ja, du kan när som helst byta mellan månads- och årsbetalning i dina prenumerationsinställningar.
+                {t('landing:pricing.faq.googleIntegration.answer')}
+              </p>
+            </div>
+
+            <div className="border-b border-gray-200 pb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {t('landing:pricing.faq.changePlan.question')}
+              </h3>
+              <p className="text-gray-600">
+                {t('landing:pricing.faq.changePlan.answer')}
               </p>
             </div>
 
             <div className="pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Är mina betalningar säkra?
+                {t('landing:pricing.faq.securePayments.question')}
               </h3>
               <p className="text-gray-600">
-                Absolut! Vi använder Stripe för alla betalningar - en av världens mest betrodda betalningsplattformar. Vi lagrar aldrig dina kortuppgifter.
+                {t('landing:pricing.faq.securePayments.answer')}
               </p>
             </div>
           </div>
@@ -331,16 +320,16 @@ function PricingPage() {
       <section className="bg-gradient-to-r from-[#1B2A63] via-[#2D4EC8] to-[#2E9E97] py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Redo att börja planera?
+            {t('landing:pricing.cta.title')}
           </h2>
           <p className="text-xl text-[#A4E6E0] mb-8">
-            Skapa ditt gratis konto idag och upptäck hur enkelt planering kan vara
+            {t('landing:pricing.cta.subtitle')}
           </p>
           <button
             onClick={() => navigate('/auth')}
             className="px-8 py-4 bg-white hover:bg-[#A4E6E0] text-[#1B2A63] rounded-sm font-bold text-lg transition-colors shadow-xl inline-flex items-center gap-2"
           >
-            Kom igång gratis
+            {t('landing:pricing.cta.button')}
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -350,15 +339,9 @@ function PricingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-center gap-2">
-            <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-6 w-auto mb-2" />
-            <p className="text-sm text-gray-600 text-center">
-              YearWheel Planner är en SaaS-tjänst skapad och driven av <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors">CommunitasLabs Inc</a>
-            </p>
-            {/* <p className="text-sm text-gray-500">© 2025 YearWheel. Alla rättigheter reserverade.</p> */}
-          </div>
+      <footer className="bg-gray-50 py-8 border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
+          <p dangerouslySetInnerHTML={{ __html: t('landing:footer.createdBy') }} />
         </div>
       </footer>
 

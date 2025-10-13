@@ -104,11 +104,52 @@
       ]
     },
     "ngoDiscount": {
-      "title": "Rabatt för ideella organisationer",
+      "title": "Ideell organisation eller NGO?",
       "description": "Vi stödjer ideella organisationer och NGO:er i deras viktiga arbete. Kontakta oss för en <strong>50% rabattkupong</strong> på Premium-planen.",
-      "cta": "Kontakta oss"
+      "cta": "hey@communitaslabs.io"
     },
-    "viewAllDetails": "Se alla detaljer och FAQ →"
+    "viewAllDetails": "Se alla detaljer och FAQ →",
+    "trustSignals": "Säkra betalningar via Stripe",
+    "flexibility": "Ingen bindningstid • Avsluta när du vill • 30 dagars pengarna-tillbaka-garanti",
+    "faq": {
+      "title": "Vanliga frågor",
+      "tryPremium": {
+        "question": "Kan jag prova Premium utan kostnad?",
+        "answer": "Ja! Skapa ett gratis konto och börja använda basversionen. Du kan uppgradera till Premium när du vill."
+      },
+      "dataAfterCancel": {
+        "question": "Vad händer med mina data om jag avslutar Premium?",
+        "answer": "Dina hjul och data förblir intakta. Du kan fortsätta använda gratisversionen med begränsade funktioner."
+      },
+      "aiAssistant": {
+        "question": "Hur fungerar AI-assistenten?",
+        "answer1": "AI-assistenten använder avancerad språkförståelse för att hjälpa dig planera snabbare. Beskriv bara vad du vill åstadkomma i naturligt språk, t.ex:",
+        "example1": "Skapa en kampanj i mars och kopiera den till september",
+        "example2": "Förläng produktlansering till halva april",
+        "example3": "Lägg till 10 möten jämnt fördelade över första kvartalet",
+        "answer2": "AI:n skapar automatiskt aktiviteter, upptäcker konflikter och föreslår förbättringar."
+      },
+      "googleIntegration": {
+        "question": "Vad är Google Integration?",
+        "answer1": "Med Premium får du tillgång till automatisk synkronisering från:",
+        "calendar": "Google Calendar: Importera händelser direkt till ditt årshjul",
+        "sheets": "Google Sheets: Synka aktiviteter från dina kalkylark",
+        "answer2": "Systemet distribuerar automatiskt aktiviteter över flera år baserat på datum, och uppdaterar i realtid när du ändrar i Google."
+      },
+      "changePlan": {
+        "question": "Kan jag byta mellan månads- och årsbetalning?",
+        "answer": "Ja, du kan när som helst byta mellan månads- och årsbetalning i dina prenumerationsinställningar."
+      },
+      "securePayments": {
+        "question": "Är mina betalningar säkra?",
+        "answer": "Absolut! Vi använder Stripe för alla betalningar - en av världens mest betrodda betalningsplattformar. Vi lagrar aldrig dina kortuppgifter."
+      }
+    },
+    "cta": {
+      "title": "Redo att börja planera?",
+      "subtitle": "Skapa ditt gratis konto idag och upptäck hur enkelt planering kan vara",
+      "button": "Kom igång gratis"
+    }
   },
   "auth": {
     "title": "Skapa ditt konto",
