@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
@@ -27,6 +28,7 @@ import calendarEvents from "./calendarEvents.json";
 import sampleOrgData from "./sampleOrganizationData.json";
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
+  const { t } = useTranslation(['common']);
   // Undo/Redo for main editable states
   const {
     states: undoableStates,
