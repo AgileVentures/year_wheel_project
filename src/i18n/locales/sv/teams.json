@@ -76,5 +76,26 @@
     "cancel": "Avbryt",
     "create": "Skapa team",
     "creating": "Skapar..."
+  },
+  "inviteMemberModal": {
+    "title": "Bjud in medlem",
+    "description": "Bjud in en användare till <strong>{{teamName}}</strong> genom att ange deras e-postadress.",
+    "emailLabel": "E-postadress",
+    "emailPlaceholder": "anvandare@example.com",
+    "emailRequired": "E-post är obligatoriskt",
+    "emailInvalid": "Ogiltig e-postadress",
+    "emailHint": "Personen kommer att få en inbjudan och kan acceptera den från sitt konto.",
+    "errorDuplicate": "En inbjudan har redan skickats till denna e-postadress",
+    "cancel": "Avbryt",
+    "send": "Skicka inbjudan",
+    "sending": "Skickar...",
+    "successTitle": "Inbjudan skapad!",
+    "successDescription": "Dela länken nedan med {{email}}",
+    "inviteLinkLabel": "Inbjudningslänk:",
+    "copyLink": "Kopiera",
+    "linkCopied": "Kopierad!",
+    "tipTitle": "💡 Tips:",
+    "tipDescription": "Skicka länken via e-post, Slack, eller WhatsApp. När mottagaren klickar på länken kommer de automatiskt att läggas till i teamet när de loggar in eller skapar ett konto.",
+    "close": "Stäng"
   }
 }

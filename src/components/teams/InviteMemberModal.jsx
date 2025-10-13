@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { X, Mail, Copy, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { sendTeamInvitation } from '../../services/teamService';
 
 const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
+  const { t } = useTranslation(['teams']);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,12 +20,12 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
     e.preventDefault();
     
     if (!email.trim()) {
-      setError('E-post är obligatoriskt');
+      setError(t('teams:inviteMemberModal.emailRequired'));
       return;
     }
 
     if (!validateEmail(email)) {
-      setError('Ogiltig e-postadress');
+      setError(t('teams:inviteMemberModal.emailInvalid'));
       return;
     }
 
@@ -42,7 +44,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
     } catch (err) {
       console.error('Error sending invitation:', err);
       if (err.message.includes('duplicate')) {
-        setError('En inbjudan har redan skickats till denna e-postadress');
+        setError(t('teams:inviteMemberModal.errorDuplicate'));
       } else {
         setError(err.message);
       }
@@ -55,7 +57,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-sm max-w-md w-full my-8">
         <div className="flex justify-between items-center p-6 pb-4 sticky top-0 bg-white rounded-t-sm z-10">
-          <h3 className="text-xl font-bold text-gray-900">Bjud in medlem</h3>
+          <h3 className="text-xl font-bold text-gray-900">{t('teams:inviteMemberModal.title')}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -72,14 +74,14 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
               <Mail className="w-8 h-8 text-green-600" />
             </div>
             <h4 className="text-lg font-semibold text-gray-900 mb-2 text-center">
-              Inbjudan skapad!
+              {t('teams:inviteMemberModal.successTitle')}
             </h4>
             <p className="text-gray-600 text-center mb-6">
-              Dela länken nedan med {email}
+              {t('teams:inviteMemberModal.successDescription', { email })}
             </p>
             
             <div className="bg-gray-50 border border-gray-200 rounded-sm p-3 mb-4">
-              <p className="text-xs text-gray-600 mb-2">Inbjudningslänk:</p>
+              <p className="text-xs text-gray-600 mb-2">{t('teams:inviteMemberModal.inviteLinkLabel')}</p>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -94,17 +96,17 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
                     setTimeout(() => setCopied(false), 2000);
                   }}
                   className="px-3 py-1 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
-                  title="Kopiera länk"
+                  title={t('teams:inviteMemberModal.copyLink')}
                 >
                   {copied ? (
                     <>
                       <Check className="w-4 h-4" />
-                      Kopierad!
+                      {t('teams:inviteMemberModal.linkCopied')}
                     </>
                   ) : (
                     <>
                       <Copy className="w-4 h-4" />
-                      Kopiera
+                      {t('teams:inviteMemberModal.copyLink')}
                     </>
                   )}
                 </button>
@@ -113,9 +115,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
 
             <div className="bg-blue-50 border border-blue-200 rounded-sm p-3 mb-4">
               <p className="text-sm text-blue-800">
-                <strong>💡 Tips:</strong> Skicka länken via e-post, Slack, eller WhatsApp. 
-                När mottagaren klickar på länken kommer de automatiskt att läggas till i teamet 
-                när de loggar in eller skapar ett konto.
+                <strong>{t('teams:inviteMemberModal.tipTitle')}</strong> {t('teams:inviteMemberModal.tipDescription')}
               </p>
             </div>
 
@@ -123,14 +123,12 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
               onClick={onClose}
               className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 transition-colors"
             >
-              Stäng
+              {t('teams:inviteMemberModal.close')}
             </button>
           </div>
         ) : (
           <>
-            <p className="text-gray-600 mb-4">
-              Bjud in en användare till <strong>{teamName}</strong> genom att ange deras e-postadress.
-            </p>
+            <p className="text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: t('teams:inviteMemberModal.description', { teamName }) }} />
 
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
@@ -141,19 +139,19 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  E-postadress <span className="text-red-500">*</span>
+                  {t('teams:inviteMemberModal.emailLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="anvandare@example.com"
+                  placeholder={t('teams:inviteMemberModal.emailPlaceholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={loading}
                   autoFocus
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Personen kommer att få en inbjudan och kan acceptera den från sitt konto.
+                  {t('teams:inviteMemberModal.emailHint')}
                 </p>
               </div>
 
@@ -164,7 +162,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors"
                   disabled={loading}
                 >
-                  Avbryt
+                  {t('teams:inviteMemberModal.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -174,12 +172,12 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Skickar...
+                      {t('teams:inviteMemberModal.sending')}
                     </>
                   ) : (
                     <>
                       <Mail className="w-4 h-4" />
-                      Skicka inbjudan
+                      {t('teams:inviteMemberModal.send')}
                     </>
                   )}
                 </button>
