@@ -1470,7 +1470,10 @@ function OrganizationPanel({
                     />
                   </label>
                   <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors">
-                    <span className="text-sm text-gray-600">Visa etiketter</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-600">Visa etiketter alltid</span>
+                      <span className="text-xs text-gray-400">Om av: visa endast vid hovring</span>
+                    </div>
                     <input
                       type="checkbox"
                       checked={showLabels}

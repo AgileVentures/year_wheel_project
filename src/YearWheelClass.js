@@ -2044,11 +2044,16 @@ class YearWheel {
 
   // Draw a label badge with text on an activity item
   drawLabelIndicator(item, startRadius, width, startAngle, endAngle) {
-    if (!this.showLabels) return; // Labels hidden via toggle
     if (!item.labelId) return; // No label, skip
     
     const label = this.organizationData.labels.find(l => l.id === item.labelId);
     if (!label || !label.visible) return; // Label not found or not visible
+    
+    // Only show label if:
+    // 1. showLabels is true (user wants all labels visible), OR
+    // 2. This item is currently being hovered
+    const isHovered = this.hoveredItem && this.hoveredItem.id === item.id;
+    if (!this.showLabels && !isHovered) return; // Labels hidden and not hovering
     
     this.context.save();
     
@@ -2063,15 +2068,20 @@ class YearWheel {
     const badgeWidth = textWidth + padding * 2;
     
     // Position badge at the END of activity (right edge)
-    const badgeAngle = endAngle - (badgeWidth / (startRadius + width)) * (180 / Math.PI) * 0.5;
-    const badgeRadius = startRadius + width * 0.5; // Middle of ring
+    // Place badge AWAY from ring name band (which is at outer edge)
+    // Position at 30% from inner edge to avoid ring name band at outer edge
+    const badgeRadius = startRadius + width * 0.3; // Closer to inner edge, away from name band
+    const arcLength = badgeWidth;
+    const angleOffset = arcLength / badgeRadius; // Arc length to radians
+    const badgeAngleRadians = this.toRadians(endAngle) - angleOffset * 0.5; // Center badge at end (in radians)
+    const badgeAngleDegrees = endAngle - (angleOffset * 0.5 * 180 / Math.PI); // For rotation (in degrees)
     
     // Draw rounded rectangle badge
-    const centerCoord = this.moveToAngle(badgeRadius, badgeAngle);
+    const centerCoord = this.moveToAngle(badgeRadius, badgeAngleRadians);
     
     // Badge background with border
     this.context.translate(centerCoord.x, centerCoord.y);
-    this.context.rotate(badgeAngle * (Math.PI / 180) + Math.PI / 2);
+    this.context.rotate(badgeAngleRadians + Math.PI / 2);
     
     // White border for contrast
     this.context.fillStyle = '#FFFFFF';
@@ -2583,16 +2593,7 @@ class YearWheel {
       });
     }
 
-    // NOW draw inner ring names that were collected earlier
-    if (this.showRingNames && this.innerRingNamesToDraw && this.innerRingNamesToDraw.length > 0) {
-      for (const ringName of this.innerRingNamesToDraw) {
-        this.drawRingNameBand(ringName.name, ringName.radius, ringName.width);
-      }
-      // Clear the array for next render
-      this.innerRingNamesToDraw = [];
-    }
-
-    // FINALLY draw all label indicators (on top of everything else)
+    // FIRST draw all label indicators (below ring names)
     if (this.labelsToDraw && this.labelsToDraw.length > 0) {
       for (const labelData of this.labelsToDraw) {
         this.drawLabelIndicator(
@@ -2603,6 +2604,16 @@ class YearWheel {
           labelData.endAngle
         );
       }
+    }
+
+    // FINALLY draw inner ring names on top (collected earlier)
+    // Ring names should always be visible, even over labels
+    if (this.showRingNames && this.innerRingNamesToDraw && this.innerRingNamesToDraw.length > 0) {
+      for (const ringName of this.innerRingNamesToDraw) {
+        this.drawRingNameBand(ringName.name, ringName.radius, ringName.width);
+      }
+      // Clear the array for next render
+      this.innerRingNamesToDraw = [];
     }
 
     this.context.restore();

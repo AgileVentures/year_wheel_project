@@ -163,7 +163,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showWeekRing, setShowWeekRing] = useState(true);
   const [showMonthRing, setShowMonthRing] = useState(true);
   const [showRingNames, setShowRingNames] = useState(true);
-  const [showLabels, setShowLabels] = useState(true);
+  const [showLabels, setShowLabels] = useState(false); // Default to false - labels shown on hover
   const [downloadFormat, setDownloadFormat] = useState("png");
   const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -397,6 +397,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           if (wheelData.settings.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
           if (wheelData.settings.showRingNames !== undefined) setShowRingNames(wheelData.settings.showRingNames);
         }
+        // Load showLabels from wheel data (stored at wheel level, not in settings)
+        if (wheelData.showLabels !== undefined) setShowLabels(wheelData.showLabels);
       }
     } catch (error) {
       console.error('Error loading wheel:', error);
@@ -541,6 +543,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     showWeekRing,
     showMonthRing,
     showRingNames,
+    showLabels,
     organizationData,
     year,
     currentPageId
@@ -568,6 +571,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       showWeekRing: currentShowWeekRing,
       showMonthRing: currentShowMonthRing,
       showRingNames: currentShowRingNames,
+      showLabels: currentShowLabels,
     } = latestValuesRef.current;
 
     try {
@@ -581,6 +585,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         showWeekRing: currentShowWeekRing,
         showMonthRing: currentShowMonthRing,
         showRingNames: currentShowRingNames,
+        showLabels: currentShowLabels,
       });
       
       // Mark the save timestamp to ignore our own broadcasts
@@ -610,7 +615,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     autoSave();
-  }, [title, colors, showWeekRing, showMonthRing, showRingNames, autoSave]);
+  }, [title, colors, showWeekRing, showMonthRing, showRingNames, showLabels, autoSave]);
 
   // Initial load on mount AND reload when reloadTrigger changes
   useEffect(() => {
@@ -723,6 +728,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           showWeekRing: currentShowWeekRing,
           showMonthRing: currentShowMonthRing,
           showRingNames: currentShowRingNames,
+          showLabels: currentShowLabels,
           organizationData: currentOrganizationData,
           year: currentYear,
           currentPageId: currentCurrentPageId
@@ -735,6 +741,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           showWeekRing: currentShowWeekRing,
           showMonthRing: currentShowMonthRing,
           showRingNames: currentShowRingNames,
+          showLabels: currentShowLabels,
         });
         
         // CRITICAL: Always call saveWheelData to sync to database tables
@@ -1485,16 +1492,28 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   };
 
   // Combined handler for palette changes - updates BOTH colors AND organizationData in ONE state update
-  const handlePaletteChange = useCallback((newColors, newOrganizationData) => {
+  const handlePaletteChange = useCallback(async (newColors, newOrganizationData) => {
     // Update BOTH colors and organizationData in a SINGLE setUndoableStates call
     setUndoableStates({ 
       colors: newColors,
       organizationData: newOrganizationData
     });
+    
+    // CRITICAL: Update refs IMMEDIATELY before save so handleSave reads the new data
+    // Normally refs update on next render, but we need them NOW for immediate save
+    latestValuesRef.current = {
+      ...latestValuesRef.current,
+      colors: newColors,
+      organizationData: newOrganizationData
+    };
+    
     // Update timestamp to ignore realtime events
     lastSaveTimestamp.current = Date.now();
-    // Note: latestValuesRef is automatically updated on next render (see lines 427-436)
-  }, [setUndoableStates]);
+    
+    // CRITICAL: Palette changes update activity group colors, which need to be saved to database
+    // Auto-save only handles wheel metadata, so we need to explicitly call handleSave here
+    await handleSave();
+  }, [setUndoableStates, handleSave]);
 
   // Wrapped color change handler that updates timestamp to prevent realtime overwrites
   const handleColorsChange = useCallback((newColors) => {
