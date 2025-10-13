@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MoreVertical, Users, Calendar } from 'lucide-react';
 import { getUserTeams, assignWheelToTeam, removeWheelFromTeam } from '../../services/teamService';
 import { fetchPages } from '../../services/wheelService';
 import { supabase } from '../../lib/supabase';
 
 function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false }) {
+  const { t, i18n } = useTranslation(['dashboard', 'common']);
   const [showMenu, setShowMenu] = useState(false);
   const [showTeamSelector, setShowTeamSelector] = useState(false);
   const [teams, setTeams] = useState([]);
@@ -13,7 +15,8 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
   const [ringColors, setRingColors] = useState([]);
   const menuRef = useRef(null);
 
-  const formattedDate = new Date(wheel.updated_at).toLocaleDateString('sv-SE', {
+  const locale = i18n.language === 'sv' ? 'sv-SE' : 'en-US';
+  const formattedDate = new Date(wheel.updated_at).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -94,13 +97,13 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
       if (onUpdate) onUpdate();
       
       const event = new CustomEvent('showToast', { 
-        detail: { message: 'Hjul flyttat till team!', type: 'success' } 
+        detail: { message: t('dashboard:messages.movedToTeam'), type: 'success' } 
       });
       window.dispatchEvent(event);
     } catch (err) {
       console.error('Error moving wheel to team:', err);
       const event = new CustomEvent('showToast', { 
-        detail: { message: 'Kunde inte flytta hjul', type: 'error' } 
+        detail: { message: t('dashboard:messages.moveError'), type: 'error' } 
       });
       window.dispatchEvent(event);
     } finally {
@@ -116,13 +119,13 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
       if (onUpdate) onUpdate();
       
       const event = new CustomEvent('showToast', { 
-        detail: { message: 'Hjul gjort personligt!', type: 'success' } 
+        detail: { message: t('dashboard:messages.madePersonal'), type: 'success' } 
       });
       window.dispatchEvent(event);
     } catch (err) {
       console.error('Error removing wheel from team:', err);
       const event = new CustomEvent('showToast', { 
-        detail: { message: 'Kunde inte ta bort från team', type: 'error' } 
+        detail: { message: t('dashboard:messages.moveError'), type: 'error' } 
       });
       window.dispatchEvent(event);
     } finally {
@@ -189,7 +192,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
               setShowMenu(!showMenu);
             }}
             className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 bg-white/80 backdrop-blur-sm rounded-sm opacity-0 group-hover:opacity-100"
-            title="Mer alternativ"
+            title={t('common:actions.more', { defaultValue: 'More options' })}
           >
             <MoreVertical className="w-4 h-4" />
           </button>
@@ -199,7 +202,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
               {!isTeamContext && isTeamWheel && (
                 <>
                   <div className="px-4 py-2 border-b border-gray-200 text-xs text-gray-500 font-medium">
-                    Delat med: {wheel.teams.name}
+                    {t('dashboard:wheel.sharedWith', { team: wheel.teams.name })}
                   </div>
                   <button
                     onClick={(e) => {
@@ -211,7 +214,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
                     disabled={loading}
                   >
                     <Users className="w-4 h-4" />
-                    Flytta till annat team
+                    {t('dashboard:wheel.moveToTeam')}
                   </button>
                   <button
                     onClick={(e) => {
@@ -221,7 +224,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-200"
                     disabled={loading}
                   >
-                    Gör personligt
+                    {t('dashboard:wheel.makePersonal')}
                   </button>
                 </>
               )}
@@ -236,7 +239,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
                   disabled={loading}
                 >
                   <Users className="w-4 h-4" />
-                  Dela med team
+                  {t('dashboard:wheel.shareWithTeam')}
                 </button>
               )}
               {onDelete && (
@@ -249,7 +252,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
                   className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
                   disabled={loading}
                 >
-                  Radera hjul
+                  {t('dashboard:wheel.delete')}
                 </button>
               )}
             </div>
@@ -258,11 +261,11 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
           {showTeamSelector && (
             <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-sm shadow-lg z-20 max-h-64 overflow-y-auto">
               <div className="px-4 py-2 border-b border-gray-200 font-medium text-sm text-gray-700">
-                Välj team
+                {t('common:labels.selectTeam', { defaultValue: 'Select team' })}
               </div>
               {teams.filter(team => team.id !== wheel.team_id).length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500">
-                  {teams.length === 0 ? 'Du har inga team än' : 'Inga andra team tillgängliga'}
+                  {teams.length === 0 ? t('common:messages.noTeams', { defaultValue: 'You have no teams yet' }) : t('common:messages.noOtherTeams', { defaultValue: 'No other teams available' })}
                 </div>
               ) : (
                 teams
@@ -293,30 +296,30 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
         {/* Metadata Row */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm text-gray-600">
-            År: {wheel.year}
+            {t('dashboard:wheel.year', { year: wheel.year })}
           </span>
           {pageCount > 1 && (
             <>
               <span className="text-gray-300">•</span>
-              <span className="inline-flex items-center gap-1 text-xs text-gray-600" title={`${pageCount} år i detta projekt`}>
+              <span className="inline-flex items-center gap-1 text-xs text-gray-600" title={t('dashboard:wheel.years', { count: pageCount })}>
                 <Calendar className="w-3 h-3" />
-                {pageCount} år
+                {t('dashboard:wheel.years', { count: pageCount })}
               </span>
             </>
           )}
           {isTeamWheel && (
             <>
               <span className="text-gray-300">•</span>
-              <span className="inline-flex items-center gap-1 text-xs text-blue-700" title={`Delat med ${wheel.teams.name}`}>
+              <span className="inline-flex items-center gap-1 text-xs text-blue-700" title={t('dashboard:wheel.sharedWith', { team: wheel.teams.name })}>
                 <Users className="w-3 h-3" />
-                Team
+                {t('common:navigation.teams')}
               </span>
             </>
           )}
         </div>
         
         <p className="text-sm text-gray-500">
-          Senast ändrad: {formattedDate}
+          {t('dashboard:wheel.lastUpdated', { date: formattedDate })}
         </p>
       </div>
     </div>

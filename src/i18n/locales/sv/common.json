@@ -21,7 +21,8 @@
     "undo": "Ångra",
     "redo": "Gör om",
     "loading": "Laddar...",
-    "confirm": "Bekräfta"
+    "confirm": "Bekräfta",
+    "more": "Mer alternativ"
   },
   "labels": {
     "name": "Namn",
@@ -35,7 +36,8 @@
     "required": "obligatoriskt",
     "year": "År",
     "date": "Datum",
-    "time": "Tid"
+    "time": "Tid",
+    "selectTeam": "Välj team"
   },
   "messages": {
     "saved": "Sparad!",
@@ -46,7 +48,9 @@
     "confirm": "Är du säker?",
     "success": "Lyckades!",
     "autoSave": "Sparas automatiskt",
-    "processing": "Behandlar..."
+    "processing": "Behandlar...",
+    "noTeams": "Du har inga team än",
+    "noOtherTeams": "Inga andra team tillgängliga"
   },
   "navigation": {
     "dashboard": "Översikt",

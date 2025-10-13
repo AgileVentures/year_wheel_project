@@ -86,14 +86,38 @@ src/
 
 ---
 
-## Next Phase: Phase 3 - More Components
+## Phase 3: WheelCard Component Migration ✅ COMPLETE
 
-Continue migrating other components:
-1. WheelCard component
-2. CreateWheelModal
+### What we did:
+1. ✅ Migrated WheelCard component to use i18n
+2. ✅ Added dynamic locale-based date formatting (sv-SE / en-US)
+3. ✅ Translated all UI strings:
+   - Menu options (Share with team, Move to team, Make personal, Delete)
+   - Team selector
+   - Metadata display (Year, years count, Team badge)
+   - Toast messages (success/error)
+   - Tooltips
+4. ✅ Added missing translation keys to common.json (both languages)
+
+### Translation Keys Added to common.json:
+- `actions.more` - "Mer alternativ" / "More options"
+- `labels.selectTeam` - "Välj team" / "Select team"
+- `messages.noTeams` - "Du har inga team än" / "You have no teams yet"
+- `messages.noOtherTeams` - "Inga andra team tillgängliga" / "No other teams available"
+
+### Components Updated:
+- `src/components/dashboard/WheelCard.jsx` - MIGRATED ✅
+
+---
+
+## Next Phase: Phase 4 - More Components
+
+Continue migrating:
+1. CreateWheelModal
+2. CreateWheelCard
 3. TeamList and TeamDetails
 4. Editor Panel (OrganizationPanel)
-5. And more...
+5. Modals (Add/Edit activities)
 
 ---
 

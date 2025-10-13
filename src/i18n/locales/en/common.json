@@ -21,7 +21,8 @@
     "undo": "Undo",
     "redo": "Redo",
     "loading": "Loading...",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "more": "More options"
   },
   "labels": {
     "name": "Name",
@@ -35,7 +36,8 @@
     "required": "required",
     "year": "Year",
     "date": "Date",
-    "time": "Time"
+    "time": "Time",
+    "selectTeam": "Select team"
   },
   "messages": {
     "saved": "Saved!",
@@ -46,7 +48,9 @@
     "confirm": "Are you sure?",
     "success": "Success!",
     "autoSave": "Auto-saved",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "noTeams": "You have no teams yet",
+    "noOtherTeams": "No other teams available"
   },
   "navigation": {
     "dashboard": "Dashboard",
