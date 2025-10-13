@@ -687,29 +687,29 @@ function LandingPage() {
             {/* Free Plan */}
             <div className="bg-white rounded-sm p-8 border-2 border-gray-200 hover:border-gray-300 transition-colors">
               <div className="mb-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Gratis</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('landing:pricing.free.name')}</h3>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-bold text-gray-900">0 kr</span>
-                  <span className="text-gray-600">/månad</span>
+                  <span className="text-5xl font-bold text-gray-900">{t('landing:pricing.free.price')}</span>
+                  <span className="text-gray-600">{t('landing:pricing.premium.period')}</span>
                 </div>
               </div>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Check className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <span className="text-gray-700">3 årshjul</span>
+                  <span className="text-gray-700">{t('subscription:plans.free.features.wheels')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <span className="text-gray-700">1 team med 3 medlemmar</span>
+                  <span className="text-gray-700">{t('subscription:plans.free.features.team')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <span className="text-gray-700">Export som PNG och SVG</span>
+                  <span className="text-gray-700">{t('subscription:plans.free.features.export')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <span className="text-gray-700">Grundläggande funktioner</span>
+                  <span className="text-gray-700">{t('landing:pricing.free.features')}</span>
                 </li>
               </ul>
 
@@ -717,35 +717,35 @@ function LandingPage() {
                 onClick={scrollToAuth}
                 className="w-full py-3 px-6 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm font-semibold transition-colors"
               >
-                Kom igång gratis
+                {t('landing:pricing.free.cta')}
               </button>
             </div>
 
             {/* Premium Plan */}
             <div className="bg-gradient-to-br from-[#1B2A63] via-[#2D4EC8] to-[#2E9E97] rounded-sm p-8 border-2 border-[#36C2C6]/50 relative overflow-hidden shadow-2xl">
               <div className="absolute top-0 right-0 bg-[#9FCB3E] text-[#336B3E] px-4 py-1 text-xs font-bold rounded-bl-lg">
-                POPULÄRAST
+                {t('landing:pricing.premium.popular')}
               </div>
 
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <Crown className="text-[#9FCB3E]" size={24} />
-                  <h3 className="text-2xl font-bold text-white">Premium</h3>
+                  <h3 className="text-2xl font-bold text-white">{t('landing:pricing.premium.name')}</h3>
                 </div>
                 {billingCycle === 'monthly' ? (
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold text-white">79 kr</span>
-                      <span className="text-[#A4E6E0]">/månad</span>
+                      <span className="text-5xl font-bold text-white">{t('landing:pricing.premium.priceMonthly')}</span>
+                      <span className="text-[#A4E6E0]">{t('landing:pricing.premium.period')}</span>
                     </div>
                   </div>
                 ) : (
                   <div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold text-white">64 kr</span>
-                      <span className="text-[#A4E6E0]">/månad</span>
+                      <span className="text-5xl font-bold text-white">{t('landing:pricing.premium.priceMonthly')}</span>
+                      <span className="text-[#A4E6E0]">{t('landing:pricing.premium.period')}</span>
                     </div>
-                    <p className="text-sm text-[#A4E6E0] mt-1">(768 kr/år - spara 180 kr)</p>
+                    <p className="text-sm text-[#A4E6E0] mt-1">({t('landing:pricing.premium.priceYearly')} - {t('landing:pricing.yearlyDiscount')})</p>
                   </div>
                 )}
               </div>
@@ -755,33 +755,33 @@ function LandingPage() {
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Sparkles className="text-[#00A4A6]" size={12} />
                   </div>
-                  <span className="text-white font-semibold">AI-assistent för planering</span>
+                  <span className="text-white font-semibold">{t('subscription:plans.premium.features.aiAssistant')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Calendar className="text-[#00A4A6]" size={12} />
                   </div>
-                  <span className="text-white font-semibold">Google Integration (Calendar & Sheets)</span>
+                  <span className="text-white font-semibold">{t('subscription:plans.premium.features.googleIntegration')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">Obegränsade årshjul</span>
+                  <span className="text-white">{t('subscription:plans.premium.features.unlimitedWheels')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">Obegränsade team och medlemmar</span>
+                  <span className="text-white">{t('subscription:plans.premium.features.unlimitedTeams')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">Alla exportformat (PNG, SVG, PDF, JPG)</span>
+                  <span className="text-white">{t('subscription:plans.premium.features.allExports')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">Versionshistorik</span>
+                  <span className="text-white">{t('subscription:plans.premium.features.versionHistory')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">Prioriterad support</span>
+                  <span className="text-white">{t('subscription:plans.premium.features.prioritySupport')}</span>
                 </li>
               </ul>
 
@@ -789,7 +789,7 @@ function LandingPage() {
                 onClick={scrollToAuth}
                 className="w-full py-3 px-6 bg-white hover:bg-[#A4E6E0] text-[#1B2A63] rounded-sm font-semibold transition-colors shadow-lg"
               >
-                Kom igång nu
+                {t('landing:pricing.premium.cta')}
               </button>
             </div>
           </div>
@@ -811,11 +811,9 @@ function LandingPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Ideell organisation eller NGO?
+                    {t('landing:pricing.ngoDiscount.title')}
                   </h3>
-                  <p className="text-gray-700 mb-3">
-                    Vi stödjer ideella organisationer och NGO:er i deras viktiga arbete. Kontakta oss för en <strong>50% rabattkupong</strong> på Premium-planen.
-                  </p>
+                  <p className="text-gray-700 mb-3" dangerouslySetInnerHTML={{ __html: t('landing:pricing.ngoDiscount.description') }} />
                   <a 
                     href="mailto:hey@communitaslabs.io?subject=NGO%20Rabatt%20-%20YearWheel&body=Hej!%0A%0AVi%20är%20en%20ideell%20organisation%2FNGO%20och%20skulle%20vilja%20veta%20mer%20om%20er%2050%25%20rabatt%20på%20Premium-planen.%0A%0AOrganisation%3A%20%0AWebbplats%3A%20%0A%0ATack!"
                     className="inline-flex items-center gap-2 text-green-700 hover:text-green-800 font-medium transition-colors"
@@ -837,12 +835,12 @@ function LandingPage() {
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              {authMode === 'signup' ? 'Skapa ditt konto' : 'Logga in'}
+              {authMode === 'signup' ? t('landing:auth.title') : t('landing:auth.titleLogin')}
             </h2>
             <p className="text-gray-600">
               {authMode === 'signup' 
-                ? 'Kom igång direkt – ingen kreditkort behövs' 
-                : 'Välkommen tillbaka!'}
+                ? t('auth:signup.noCreditCard')
+                : t('auth:login.welcomeBack')}
             </p>
           </div>
 
@@ -870,26 +868,26 @@ function LandingPage() {
             </div>
 
             <div>
-              <h4 className="text-gray-900 font-semibold mb-4">Produkt</h4>
+              <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.product')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="/pricing" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Priser</a></li>
-                <li><a href="/auth" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Kom igång</a></li>
+                <li><a href="/pricing" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.pricing')}</a></li>
+                <li><a href="/auth" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:nav.getStarted')}</a></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-gray-900 font-semibold mb-4">Företag</h4>
+              <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.company')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Om oss</a></li>
-                <li><a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Kontakt</a></li>
+                <li><a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.about')}</a></li>
+                <li><a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.contact')}</a></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-gray-900 font-semibold mb-4">Juridiskt</h4>
+              <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.legal')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="https://communitaslabs.io/privacy" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Integritet</a></li>
-                <li><a href="https://communitaslabs.io/terms" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">Villkor</a></li>
+                <li><a href="https://communitaslabs.io/privacy" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.privacy')}</a></li>
+                <li><a href="https://communitaslabs.io/terms" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.terms')}</a></li>
               </ul>
             </div>
           </div>
