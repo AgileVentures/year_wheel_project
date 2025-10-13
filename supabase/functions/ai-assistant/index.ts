@@ -1,9 +1,11 @@
 // Modern AI Chat Edge Function
 // Uses OpenAI's reasoning models with native tool calling
 // Handles Swedish language naturally, supports cross-year activities
-
+// @ts-ignore
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// @ts-ignore
 import OpenAI from 'https://esm.sh/openai@4.73.1'
 
 const corsHeaders = {
@@ -13,6 +15,7 @@ const corsHeaders = {
 }
 
 // Initialize OpenAI with reasoning model
+// @ts-ignore: Deno global is available in Supabase Edge Functions
 const openai = new OpenAI({
   apiKey: Deno.env.get('OPENAI_API_KEY'),
 })
@@ -262,7 +265,7 @@ async function createActivity(
 
   // Check if all required pages exist
   for (let year = startYear; year <= endYear; year++) {
-    const pageExists = pages.find((p) => p.year === year)
+    const pageExists = pages.find((p: { year: number }) => p.year === year)
     if (!pageExists) {
       console.log('[createActivity] Creating missing page for year:', year)
       const { data: newPage, error: pageError } = await supabase
@@ -332,10 +335,10 @@ async function createActivity(
     
     for (let year = startYear; year <= endYear; year++) {
       console.log('[createActivity] Processing year:', year)
-      const page = pages.find((p) => p.year === year)
+      const page = pages.find((p: { year: number }) => p.year === year)
       
       if (!page) {
-        console.error('[createActivity] No page found for year:', year, 'Available pages:', pages.map(p => p.year))
+        console.error('[createActivity] No page found for year:', year, 'Available pages:', pages.map((p: any) => p.year))
         throw new Error(`Ingen sida hittades för år ${year}. Skapa en sida för ${year} först!`)
       }
 
@@ -449,7 +452,7 @@ async function deleteActivity(supabase: any, wheelId: string, currentPageId: str
   // Delete all matching items
   const { error: deleteError } = await supabase.from('items').delete().in(
     'id',
-    items.map((i) => i.id)
+    items.map((i: any) => i.id)
   )
 
   if (deleteError) throw deleteError
@@ -481,7 +484,7 @@ async function listActivities(supabase: any, wheelId: string, currentPageId: str
     }
   }
 
-  const list = items.map((item) => `- ${item.name} (${item.start_date} till ${item.end_date})`).join('\n')
+  const list = items.map((item: { name: string; start_date: string; end_date: string }) => `- ${item.name} (${item.start_date} till ${item.end_date})`).join('\n')
 
   return {
     success: true,
@@ -781,7 +784,7 @@ async function analyzeWheel(supabase: any, pageId: string) {
 }
 
 // Main handler
-serve(async (req) => {
+serve(async (req: Request) => {
   try {
     console.log('[AI Chat] Request method:', req.method)
 
@@ -798,7 +801,9 @@ serve(async (req) => {
       throw new Error('Missing authorization header')
     }
 
+    // @ts-ignore: Deno global is available in Supabase Edge Functions
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    // @ts-ignore: Deno global is available in Supabase Edge Functions
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -834,11 +839,11 @@ serve(async (req) => {
       .eq('wheel_id', wheelId)
     
     const ringsContext = existingRings && existingRings.length > 0
-      ? `\nRings (for tool calls - use ID, for user display - use name only):\n${existingRings.map(r => `"${r.name}": ${r.id} (${r.type})`).join('\n')}`
+      ? `\nRings (for tool calls - use ID, for user display - use name only):\n${existingRings.map((r: { name: string; id: string; type: string }) => `"${r.name}": ${r.id} (${r.type})`).join('\n')}`
       : '\nNo rings exist yet.'
     
     const groupsContext = existingGroups && existingGroups.length > 0
-      ? `\nActivity Groups (for tool calls - use ID, for user display - use name only):\n${existingGroups.map(g => `"${g.name}": ${g.id}`).join('\n')}`
+      ? `\nActivity Groups (for tool calls - use ID, for user display - use name only):\n${existingGroups.map((g: { name: string; id: string }) => `"${g.name}": ${g.id}`).join('\n')}`
       : '\nNo activity groups exist yet.'
     
     // Build messages array with conversation history

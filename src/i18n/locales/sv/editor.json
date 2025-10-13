@@ -21,14 +21,34 @@
   },
   "settings": {
     "title": "Färgpalett och visning",
-    "update": "Uppdatera"
+    "update": "Uppdatera",
+    "colorPalette": "Färgpalett",
+    "colorPaletteDescription": "Välj en färgpalett för aktiviteter och ringar",
+    "palettePastel": "Pastell (standard)",
+    "paletteVibrant": "Livlig",
+    "paletteModern": "Modern",
+    "paletteClassic": "Klassisk",
+    "displayOptions": "Visningsalternativ",
+    "showRingNames": "Visa ringnamn",
+    "showLabelsAlways": "Visa etiketter alltid",
+    "showLabelsHint": "Om av: visa endast vid hovring",
+    "weekRingDisplay": "Veckoringvisning",
+    "weekRingDisplayHint": "Veckonummer eller datumintervall",
+    "weekNumbers": "Veckonummer",
+    "dates": "Datum"
   },
   "activities": {
     "title": "Aktiviteter",
     "add": "Lägg till aktivitet",
+    "addActivity": "Lägg till aktivitet",
     "edit": "Redigera aktivitet",
     "delete": "Radera aktivitet",
+    "confirmDelete": "Radera \"{{name}}\"?",
     "none": "Inga aktiviteter ännu",
+    "empty": "Inga aktiviteter ännu",
+    "noSearchResults": "Inga aktiviteter matchar din sökning",
+    "count_one": "{{count}} aktivitet",
+    "count_other": "{{count}} aktiviteter",
     "name": "Aktivitetens namn",
     "ring": "Ring",
     "activityGroup": "Aktivitetsgrupp",
@@ -37,16 +57,26 @@
     "noLabel": "Ingen etikett",
     "activity": "Aktivitet"
   },
+  "calendar": {
+    "activitiesThisMonth": "Aktiviteter denna månad ({{count}})",
+    "noActivities": "Inga aktiviteter denna månad"
+  },
   "rings": {
     "title": "Ringar",
-    "add": "Lägg till ring"
+    "add": "Lägg till ring",
+    "innerRings": "INNERRINGAR",
+    "outerRings": "YTTERRINGAR",
+    "innerDescription": "Innerringar visas mellan centrum och månaderna. Lägg till aktiviteter för att visualisera händelser på dessa ringar.",
+    "outerDescription": "Ytterringar visas utanför månaderna. Använd dem för att kategorisera händelser i avdelningar, team eller målgrupper.",
+    "colorTooltip": "Färg: {{color}} (ändras via färgpalett i inställningar)"
   },
   "activityGroups": {
-    "title": "Aktivitetsgrupper",
-    "add": "Lägg till grupp"
+    "title": "AKTIVITETSGRUPPER",
+    "add": "Lägg till grupp",
+    "description": "Aktivitetsgrupper används för att färgkoda aktiviteter på hjulet. Varje aktivitet måste tillhöra en grupp."
   },
   "labels": {
-    "title": "Etiketter",
+    "title": "LABELS",
     "add": "Lägg till etikett",
     "none": "Inga etiketter"
   },

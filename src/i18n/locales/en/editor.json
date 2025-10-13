@@ -21,14 +21,34 @@
   },
   "settings": {
     "title": "Color palette and display",
-    "update": "Update"
+    "update": "Update",
+    "colorPalette": "Color Palette",
+    "colorPaletteDescription": "Choose a color palette for activities and rings",
+    "palettePastel": "Pastel (default)",
+    "paletteVibrant": "Vibrant",
+    "paletteModern": "Modern",
+    "paletteClassic": "Classic",
+    "displayOptions": "Display Options",
+    "showRingNames": "Show ring names",
+    "showLabelsAlways": "Always show labels",
+    "showLabelsHint": "If off: show only on hover",
+    "weekRingDisplay": "Week ring display",
+    "weekRingDisplayHint": "Week numbers or date ranges",
+    "weekNumbers": "Week numbers",
+    "dates": "Dates"
   },
   "activities": {
     "title": "Activities",
     "add": "Add activity",
+    "addActivity": "Add activity",
     "edit": "Edit activity",
     "delete": "Delete activity",
+    "confirmDelete": "Delete \"{{name}}\"?",
     "none": "No activities yet",
+    "empty": "No activities yet",
+    "noSearchResults": "No activities match your search",
+    "count_one": "{{count}} activity",
+    "count_other": "{{count}} activities",
     "name": "Activity name",
     "ring": "Ring",
     "activityGroup": "Activity group",
@@ -37,16 +57,26 @@
     "noLabel": "No label",
     "activity": "Activity"
   },
+  "calendar": {
+    "activitiesThisMonth": "Activities this month ({{count}})",
+    "noActivities": "No activities this month"
+  },
   "rings": {
     "title": "Rings",
-    "add": "Add ring"
+    "add": "Add ring",
+    "innerRings": "INNER RINGS",
+    "outerRings": "OUTER RINGS",
+    "innerDescription": "Inner rings appear between the center and months. Add activities to visualize events on these rings.",
+    "outerDescription": "Outer rings appear outside the months. Use them to categorize events by departments, teams, or audiences.",
+    "colorTooltip": "Color: {{color}} (changed via color palette in settings)"
   },
   "activityGroups": {
-    "title": "Activity Groups",
-    "add": "Add group"
+    "title": "ACTIVITY GROUPS",
+    "add": "Add group",
+    "description": "Activity groups are used to color-code activities on the wheel. Each activity must belong to a group."
   },
   "labels": {
-    "title": "Labels",
+    "title": "LABELS",
     "add": "Add label",
     "none": "No labels"
   },

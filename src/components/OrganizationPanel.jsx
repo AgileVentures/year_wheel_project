@@ -1,5 +1,6 @@
 import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
 import AddAktivitetModal from './AddAktivitetModal';
 import EditAktivitetModal from './EditAktivitetModal';
@@ -25,6 +26,7 @@ function OrganizationPanel({
   onSaveToDatabase, // Trigger immediate save
   onReloadData // Reload wheel data from database
 }) {
+  const { t } = useTranslation(['editor', 'common']);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -89,10 +91,16 @@ function OrganizationPanel({
 
   // Calendar helpers
   const monthNames = [
-    'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
-    'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
+    t('common:monthsFull.january'), t('common:monthsFull.february'), t('common:monthsFull.march'),
+    t('common:monthsFull.april'), t('common:monthsFull.may'), t('common:monthsFull.june'),
+    t('common:monthsFull.july'), t('common:monthsFull.august'), t('common:monthsFull.september'),
+    t('common:monthsFull.october'), t('common:monthsFull.november'), t('common:monthsFull.december')
   ];
-  const daysOfWeek = ['må', 'ti', 'on', 'to', 'fr', 'lö', 'sö'];
+  const daysOfWeek = [
+    t('common:daysShort.monday'), t('common:daysShort.tuesday'), t('common:daysShort.wednesday'),
+    t('common:daysShort.thursday'), t('common:daysShort.friday'), t('common:daysShort.saturday'),
+    t('common:daysShort.sunday')
+  ];
   
   // Calculate current quarter (0-3) from selected month
   const currentQuarter = Math.floor(selectedMonth / 3);
@@ -514,10 +522,10 @@ function OrganizationPanel({
             type="text"
             value={title || ''}
             onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
-            placeholder="Namnge ditt hjul..."
+            placeholder={t('editor:wheelTitle.placeholder')}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          <p className="text-xs text-gray-400 mt-1 italic">Sparas automatiskt</p>
+          <p className="text-xs text-gray-400 mt-1 italic">{t('editor:wheelTitle.autoSave')}</p>
         </div>
 
         {/* View Tabs */}
@@ -530,7 +538,7 @@ function OrganizationPanel({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Disc
+            {t('editor:tabs.disc')}
             {activeView === 'disc' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
             )}
@@ -543,7 +551,7 @@ function OrganizationPanel({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Lista
+            {t('editor:tabs.list')}
             {activeView === 'liste' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
             )}
@@ -556,7 +564,7 @@ function OrganizationPanel({
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Kalender
+            {t('editor:tabs.calendar')}
             {activeView === 'kalender' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
             )}
@@ -569,7 +577,7 @@ function OrganizationPanel({
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Sök aktiviteter..."
+              placeholder={t('editor:search.placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
@@ -593,7 +601,7 @@ function OrganizationPanel({
             className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
           >
             <Plus size={14} />
-            <span>Lägg till</span>
+            <span>{t('common:actions.add')}</span>
           </button>
         </div>
       </div>
@@ -605,7 +613,7 @@ function OrganizationPanel({
             {/* List Header */}
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-700">
-                {filteredAktiviteter.length} aktivitet{filteredAktiviteter.length !== 1 ? 'er' : ''}
+                {t('editor:activities.count', { count: filteredAktiviteter.length })}
               </h3>
             </div>
 
@@ -668,12 +676,12 @@ function OrganizationPanel({
                           </button>
                           <button
                             onClick={() => {
-                              if (confirm(`Radera "${item.name}"?`)) {
+                              if (confirm(t('editor:activities.confirmDelete', { name: item.name }))) {
                                 handleDeleteAktivitet(item.id);
                               }
                             }}
                             className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Radera"
+                            title={t('common:actions.delete')}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -686,7 +694,7 @@ function OrganizationPanel({
             ) : (
               <div className="text-center py-12">
                 <p className="text-sm text-gray-500 mb-4">
-                  {searchQuery ? 'Inga aktiviteter matchar din sökning' : 'Inga aktiviteter ännu'}
+                  {searchQuery ? t('editor:activities.noSearchResults') : t('editor:activities.empty')}
                 </p>
                 {!searchQuery && (
                   <button
@@ -694,7 +702,7 @@ function OrganizationPanel({
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
                   >
                     <Plus size={16} />
-                    <span>Lägg till aktivitet</span>
+                    <span>{t('editor:activities.addActivity')}</span>
                   </button>
                 )}
               </div>
@@ -771,7 +779,7 @@ function OrganizationPanel({
             {/* Events List for Selected Month */}
             <div className="pt-4">
               <h4 className="text-xs font-semibold text-gray-700 mb-3">
-                Aktiviteter denna månad ({aktiviteterForMonth.length})
+                {t('editor:calendar.activitiesThisMonth', { count: aktiviteterForMonth.length })}
               </h4>
               {aktiviteterForMonth.length > 0 ? (
                 <div className="space-y-2">
@@ -804,7 +812,7 @@ function OrganizationPanel({
                 </div>
               ) : (
                 <p className="text-xs text-gray-500 text-center py-4">
-                  Inga aktiviteter denna månad
+                  {t('editor:calendar.noActivities')}
                 </p>
               )}
             </div>
@@ -820,7 +828,7 @@ function OrganizationPanel({
             className="w-full flex items-center justify-between mb-2"
           >
             <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              INNERRINGAR
+              {t('editor:rings.innerRings')}
             </h2>
             <ChevronDown 
               size={14} 
@@ -831,7 +839,7 @@ function OrganizationPanel({
           {expandedSections.innerRings && (
             <>
               <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                Innerringar visas mellan centrum och månaderna. Lägg till aktiviteter för att visualisera händelser på dessa ringar.
+                {t('editor:rings.innerDescription')}
               </p>
 
               <div className="space-y-1 mb-2">
@@ -849,7 +857,7 @@ function OrganizationPanel({
                     <div
                       className="w-4 h-4 rounded border border-gray-300"
                       style={{ backgroundColor: ring.color || '#cccccc' }}
-                      title={`Färg: ${ring.color || '#cccccc'} (ändras via färgpalett i inställningar)`}
+                      title={t('editor:rings.colorTooltip', { color: ring.color || '#cccccc' })}
                     />
                     <input
                       type="text"
@@ -910,7 +918,7 @@ function OrganizationPanel({
                     }}
                     className="text-blue-600 hover:text-blue-700"
                   >
-                    Ingen
+                    {t('common:labels.none')}
                   </button>
                 </div>
                 <button
@@ -918,7 +926,7 @@ function OrganizationPanel({
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
-                  <span>Lägg till</span>
+                  <span>{t('common:actions.add')}</span>
                 </button>
               </div>
             </>
@@ -932,7 +940,7 @@ function OrganizationPanel({
             className="w-full flex items-center justify-between mb-2"
           >
             <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              YTTERRINGAR
+              {t('editor:rings.outerRings')}
             </h2>
             <ChevronDown 
               size={14} 
@@ -943,7 +951,7 @@ function OrganizationPanel({
           {expandedSections.outerRings && (
             <>
               <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                Ytterringar visas utanför månaderna. Använd dem för att kategorisera händelser i avdelningar, team eller målgrupper.
+                {t('editor:rings.outerDescription')}
               </p>
 
               <div className="space-y-1 mb-2">
@@ -961,7 +969,7 @@ function OrganizationPanel({
                     <div
                       className="w-4 h-4 rounded border border-gray-300"
                       style={{ backgroundColor: ring.color || '#cccccc' }}
-                      title={`Färg: ${ring.color || '#cccccc'} (ändras via färgpalett i inställningar)`}
+                      title={t('editor:rings.colorTooltip', { color: ring.color || '#cccccc' })}
                     />
                     <input
                       type="text"
@@ -1022,7 +1030,7 @@ function OrganizationPanel({
                     }}
                     className="text-blue-600 hover:text-blue-700"
                   >
-                    Ingen
+                    {t('common:labels.none')}
                   </button>
                 </div>
                 <button
@@ -1030,7 +1038,7 @@ function OrganizationPanel({
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
-                  <span>Lägg till</span>
+                  <span>{t('common:actions.add')}</span>
                 </button>
               </div>
             </>
@@ -1044,7 +1052,7 @@ function OrganizationPanel({
             className="w-full flex items-center justify-between mb-2"
           >
             <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              AKTIVITETSGRUPPER
+              {t('editor:activityGroups.title')}
             </h2>
             <ChevronDown 
               size={14} 
@@ -1055,7 +1063,7 @@ function OrganizationPanel({
           {expandedSections.activityGroups && (
             <>
               <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                Aktivitetsgrupper används för att färgkoda aktiviteter på hjulet. Varje aktivitet måste tillhöra en grupp.
+                {t('editor:activityGroups.description')}
               </p>
 
               <div className="space-y-1 mb-2">
@@ -1111,7 +1119,7 @@ function OrganizationPanel({
                     onClick={() => handleShowActivityGroups(false)}
                     className="text-blue-600 hover:text-blue-700"
                   >
-                    Ingen
+                    {t('common:labels.none')}
                   </button>
                 </div>
                 <button
@@ -1119,7 +1127,7 @@ function OrganizationPanel({
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
-                  <span>Lägg till</span>
+                  <span>{t('common:actions.add')}</span>
                 </button>
               </div>
             </>
@@ -1133,7 +1141,7 @@ function OrganizationPanel({
             className="w-full flex items-center justify-between mb-2"
           >
             <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              LABELS
+              {t('editor:labels.title')}
             </h2>
             <ChevronDown 
               size={14} 
@@ -1196,7 +1204,7 @@ function OrganizationPanel({
                     onClick={() => handleShowLabels(false)}
                     className="text-blue-600 hover:text-blue-700"
                   >
-                    Ingen
+                    {t('common:labels.none')}
                   </button>
                 </div>
                 <button
@@ -1204,7 +1212,7 @@ function OrganizationPanel({
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
-                  <span>Lägg till</span>
+                  <span>{t('common:actions.add')}</span>
                 </button>
               </div>
             </>
@@ -1248,7 +1256,7 @@ function OrganizationPanel({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-sm shadow-xl w-full max-w-md my-8">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
-              <h2 className="text-lg font-semibold text-gray-900">Färgpalett och visning</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('editor:settings.title')}</h2>
               <button
                 onClick={() => setIsSettingsOpen(false)}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -1258,8 +1266,8 @@ function OrganizationPanel({
             </div>
             <div className="p-4 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Färgpalett</h3>
-                <p className="text-xs text-gray-500 mb-3">Välj en färgpalett för aktiviteter och ringar</p>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">{t('editor:settings.colorPalette')}</h3>
+                <p className="text-xs text-gray-500 mb-3">{t('editor:settings.colorPaletteDescription')}</p>
                 <div className="space-y-2">
                   <div 
                     onClick={() => {
@@ -1297,7 +1305,7 @@ function OrganizationPanel({
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#F4A896' }}></div>
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#B8D4E8' }}></div>
                     </div>
-                    <p className="text-xs text-gray-700 font-medium">Pastell (standard)</p>
+                    <p className="text-xs text-gray-700 font-medium">{t('editor:settings.palettePastel')}</p>
                   </div>
 
                   <div 
@@ -1337,7 +1345,7 @@ function OrganizationPanel({
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#10B981' }}></div>
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#F59E0B' }}></div>
                     </div>
-                    <p className="text-xs text-gray-700 font-medium">Livlig</p>
+                    <p className="text-xs text-gray-700 font-medium">{t('editor:settings.paletteVibrant')}</p>
                   </div>
 
                   <div 
@@ -1376,7 +1384,7 @@ function OrganizationPanel({
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#06B6D4' }}></div>
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#84CC16' }}></div>
                     </div>
-                    <p className="text-xs text-gray-700 font-medium">Modern</p>
+                    <p className="text-xs text-gray-700 font-medium">{t('editor:settings.paletteModern')}</p>
                   </div>
 
                   <div 
@@ -1415,7 +1423,7 @@ function OrganizationPanel({
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#065F46' }}></div>
                       <div className="w-10 h-10 rounded" style={{ backgroundColor: '#78350F' }}></div>
                     </div>
-                    <p className="text-xs text-gray-700 font-medium">Klassisk</p>
+                    <p className="text-xs text-gray-700 font-medium">{t('editor:settings.paletteClassic')}</p>
                   </div>
 
                   <div 
@@ -1460,10 +1468,10 @@ function OrganizationPanel({
               </div>
 
               <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Visningsalternativ</h3>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">{t('editor:settings.displayOptions')}</h3>
                 <div className="space-y-2">
                   <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors">
-                    <span className="text-sm text-gray-600">Visa ringnamn</span>
+                    <span className="text-sm text-gray-600">{t('editor:settings.showRingNames')}</span>
                     <input
                       type="checkbox"
                       checked={showRingNames}
@@ -1473,8 +1481,8 @@ function OrganizationPanel({
                   </label>
                   <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-sm text-gray-600">Visa etiketter alltid</span>
-                      <span className="text-xs text-gray-400">Om av: visa endast vid hovring</span>
+                      <span className="text-sm text-gray-600">{t('editor:settings.showLabelsAlways')}</span>
+                      <span className="text-xs text-gray-400">{t('editor:settings.showLabelsHint')}</span>
                     </div>
                     <input
                       type="checkbox"
@@ -1485,16 +1493,16 @@ function OrganizationPanel({
                   </label>
                   <label className="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-sm text-gray-600">Veckoringvisning</span>
-                      <span className="text-xs text-gray-400">Veckonummer eller datumintervall</span>
+                      <span className="text-sm text-gray-600">{t('editor:settings.weekRingDisplay')}</span>
+                      <span className="text-xs text-gray-400">{t('editor:settings.weekRingDisplayHint')}</span>
                     </div>
                     <select
                       value={weekRingDisplayMode}
                       onChange={(e) => onWeekRingDisplayModeChange && onWeekRingDisplayModeChange(e.target.value)}
                       className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="week-numbers">Veckonummer</option>
-                      <option value="dates">Datum</option>
+                      <option value="week-numbers">{t('editor:settings.weekNumbers')}</option>
+                      <option value="dates">{t('editor:settings.dates')}</option>
                     </select>
                   </label>
                 </div>
