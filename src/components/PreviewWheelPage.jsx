@@ -4,6 +4,7 @@ import { fetchWheel, fetchPages } from '../services/wheelService';
 import YearWheel from '../YearWheel';
 import { Eye, Lock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -130,9 +131,12 @@ function PreviewWheelPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+            
             {/* Page Navigator (only show if multiple pages) */}
             {pages.length > 1 && (
-              <div className="flex items-center gap-2 border-r border-gray-200 pr-4">
+              <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
                 <button
                   onClick={() => setCurrentPageIndex(currentPageIndex - 1)}
                   disabled={!canGoPrev}

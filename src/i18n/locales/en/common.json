@@ -39,7 +39,8 @@
     "time": "Time",
     "selectTeam": "Select team",
     "personal": "Personal wheel",
-    "teamWheelInfo": "Team wheels can be seen by all team members"
+    "teamWheelInfo": "Team wheels can be seen by all team members",
+    "none": "None"
   },
   "messages": {
     "saved": "Saved!",
