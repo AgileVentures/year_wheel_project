@@ -1,0 +1,78 @@
+{
+  "title": "Hantera",
+  "wheelTitle": {
+    "label": "Titel",
+    "placeholder": "Namnge ditt hjul...",
+    "autoSave": "Sparas automatiskt"
+  },
+  "tabs": {
+    "disc": "Skiva",
+    "list": "Lista",
+    "calendar": "Kalender"
+  },
+  "search": {
+    "placeholder": "Sök aktiviteter...",
+    "noResults": "Inga aktiviteter matchar din sökning",
+    "clear": "Rensa"
+  },
+  "filter": {
+    "title": "Filtrera Visning",
+    "showAll": "Visa alla"
+  },
+  "settings": {
+    "title": "Färgpalett och visning",
+    "update": "Uppdatera"
+  },
+  "activities": {
+    "title": "Aktiviteter",
+    "add": "Lägg till aktivitet",
+    "edit": "Redigera aktivitet",
+    "delete": "Radera aktivitet",
+    "none": "Inga aktiviteter ännu",
+    "name": "Aktivitetens namn",
+    "ring": "Ring",
+    "activityGroup": "Aktivitetsgrupp",
+    "label": "Etikett",
+    "time": "Tid",
+    "noLabel": "Ingen etikett",
+    "activity": "Aktivitet"
+  },
+  "rings": {
+    "title": "Ringar",
+    "add": "Lägg till ring"
+  },
+  "activityGroups": {
+    "title": "Aktivitetsgrupper",
+    "add": "Lägg till grupp"
+  },
+  "labels": {
+    "title": "Etiketter",
+    "add": "Lägg till etikett",
+    "none": "Inga etiketter"
+  },
+  "undoLabels": {
+    "moveToRing": "Flytta {{name}} till {{ring}}",
+    "changeDates": "Ändra datum för {{name}}",
+    "moveAndChange": "Flytta och ändra {{name}}",
+    "edit": "Redigera {{name}}",
+    "delete": "Ta bort {{name}}",
+    "addRing": "Lägg till ring",
+    "deleteRing": "Ta bort ring",
+    "addActivity": "Lägg till aktivitet",
+    "deleteActivity": "Ta bort aktivitet",
+    "addActivityGroup": "Lägg till aktivitetsgrupp",
+    "deleteActivityGroup": "Ta bort aktivitetsgrupp",
+    "addLabel": "Lägg till etikett",
+    "deleteLabel": "Ta bort etikett",
+    "toggleRingVisibility": "Växla ringsynlighet",
+    "toggleActivityVisibility": "Växla aktivitetssynlighet",
+    "change": "Ändra organisationsdata"
+  },
+  "modal": {
+    "addActivity": "Lägg till aktivitet",
+    "editActivity": "Redigera aktivitet",
+    "cancel": "Avbryt",
+    "save": "Spara",
+    "addButton": "Lägg till aktivitet"
+  }
+}

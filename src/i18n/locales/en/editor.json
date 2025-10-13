@@ -1,0 +1,78 @@
+{
+  "title": "Manage",
+  "wheelTitle": {
+    "label": "Title",
+    "placeholder": "Name your wheel...",
+    "autoSave": "Auto-saved"
+  },
+  "tabs": {
+    "disc": "Disc",
+    "list": "List",
+    "calendar": "Calendar"
+  },
+  "search": {
+    "placeholder": "Search activities...",
+    "noResults": "No activities match your search",
+    "clear": "Clear"
+  },
+  "filter": {
+    "title": "Filter View",
+    "showAll": "Show all"
+  },
+  "settings": {
+    "title": "Color palette and display",
+    "update": "Update"
+  },
+  "activities": {
+    "title": "Activities",
+    "add": "Add activity",
+    "edit": "Edit activity",
+    "delete": "Delete activity",
+    "none": "No activities yet",
+    "name": "Activity name",
+    "ring": "Ring",
+    "activityGroup": "Activity group",
+    "label": "Label",
+    "time": "Time",
+    "noLabel": "No label",
+    "activity": "Activity"
+  },
+  "rings": {
+    "title": "Rings",
+    "add": "Add ring"
+  },
+  "activityGroups": {
+    "title": "Activity Groups",
+    "add": "Add group"
+  },
+  "labels": {
+    "title": "Labels",
+    "add": "Add label",
+    "none": "No labels"
+  },
+  "undoLabels": {
+    "moveToRing": "Move {{name}} to {{ring}}",
+    "changeDates": "Change dates for {{name}}",
+    "moveAndChange": "Move and change {{name}}",
+    "edit": "Edit {{name}}",
+    "delete": "Remove {{name}}",
+    "addRing": "Add ring",
+    "deleteRing": "Remove ring",
+    "addActivity": "Add activity",
+    "deleteActivity": "Remove activity",
+    "addActivityGroup": "Add activity group",
+    "deleteActivityGroup": "Remove activity group",
+    "addLabel": "Add label",
+    "deleteLabel": "Remove label",
+    "toggleRingVisibility": "Toggle ring visibility",
+    "toggleActivityVisibility": "Toggle activity visibility",
+    "change": "Change organization data"
+  },
+  "modal": {
+    "addActivity": "Add Activity",
+    "editActivity": "Edit Activity",
+    "cancel": "Cancel",
+    "save": "Save",
+    "addButton": "Add activity"
+  }
+}

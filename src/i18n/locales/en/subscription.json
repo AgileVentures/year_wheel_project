@@ -1,0 +1,78 @@
+{
+  "free": "Free",
+  "premium": "Premium",
+  "upgrade": "Upgrade",
+  "manage": "Manage subscription",
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "Perfect to get started",
+      "current": "Current plan",
+      "notAvailable": "Not available",
+      "features": {
+        "wheels": "3 year wheels",
+        "teams": "1 team with 3 members",
+        "export": "Export as PNG and SVG",
+        "basic": "Basic features"
+      }
+    },
+    "monthly": {
+      "name": "Premium Monthly",
+      "price": "79",
+      "currency": "SEK",
+      "period": "/month",
+      "description": "For flexibility"
+    },
+    "yearly": {
+      "name": "Premium Annual",
+      "price": "779",
+      "currency": "SEK",
+      "period": "/year",
+      "description": "Best value - Save 19%",
+      "savings": "Save {{amount}} SEK/year",
+      "discount": "(Annual payment gives 19% discount)"
+    }
+  },
+  "premiumFeatures": {
+    "unlimited": "Unlimited year wheels",
+    "teams": "Unlimited teams and members",
+    "export": "All export formats (PNG, SVG, PDF, JPG)",
+    "history": "Version history",
+    "support": "Priority support",
+    "ai": "AI assistant",
+    "integrations": "Integrations (Google Calendar, Sheets)"
+  },
+  "limitReached": {
+    "title": "Wheel limit reached",
+    "message": "You have {{current}} of {{max}} allowed wheels on the free plan. Upgrade to Premium for unlimited wheels!",
+    "action": "See plans",
+    "cancel": "Not now"
+  },
+  "modal": {
+    "title": "Choose your plan",
+    "close": "Close",
+    "processing": "Processing...",
+    "select": "Select plan",
+    "mostPopular": "Most popular"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "cancel": {
+      "question": "Can I cancel anytime?",
+      "answer": "Yes, you can cancel your subscription at any time. You'll retain access to Premium features until the end of your billing period."
+    },
+    "change": {
+      "question": "Can I change plans?",
+      "answer": "Yes, you can switch between monthly and annual payments at any time in your subscription settings."
+    },
+    "secure": {
+      "question": "Are my payments secure?",
+      "answer": "Absolutely! We use Stripe for all payments - one of the world's most trusted payment platforms. We never store your card details."
+    }
+  },
+  "messages": {
+    "activated": "Subscription activated! Please wait...",
+    "activatedFinal": "Subscription activated! If you don't see the changes, try reloading the page.",
+    "error": "Something went wrong. Please try again later."
+  }
+}

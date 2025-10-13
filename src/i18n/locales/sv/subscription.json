@@ -1,0 +1,78 @@
+{
+  "free": "Gratis",
+  "premium": "Premium",
+  "upgrade": "Uppgradera",
+  "manage": "Hantera prenumeration",
+  "plans": {
+    "free": {
+      "name": "Gratis",
+      "description": "Perfekt för att komma igång",
+      "current": "Nuvarande plan",
+      "notAvailable": "Inte tillgänglig",
+      "features": {
+        "wheels": "3 årshjul",
+        "teams": "1 team med 3 medlemmar",
+        "export": "Export som PNG och SVG",
+        "basic": "Grundläggande funktioner"
+      }
+    },
+    "monthly": {
+      "name": "Premium Månadsvis",
+      "price": "79",
+      "currency": "kr",
+      "period": "/månad",
+      "description": "För flexibilitet"
+    },
+    "yearly": {
+      "name": "Premium Årlig",
+      "price": "779",
+      "currency": "kr",
+      "period": "/år",
+      "description": "Bäst värde - Spara 19%",
+      "savings": "Spara {{amount}} kr/år",
+      "discount": "(Årlig betalning ger 19% rabatt)"
+    }
+  },
+  "premiumFeatures": {
+    "unlimited": "Obegränsade årshjul",
+    "teams": "Obegränsade team och medlemmar",
+    "export": "Alla exportformat (PNG, SVG, PDF, JPG)",
+    "history": "Versionshistorik",
+    "support": "Prioriterad support",
+    "ai": "AI-assistent",
+    "integrations": "Integrationer (Google Kalender, Sheets)"
+  },
+  "limitReached": {
+    "title": "Nått gränsen för hjul",
+    "message": "Du har {{current}} av {{max}} tillåtna hjul på gratisplanen. Uppgradera till Premium för obegränsade hjul!",
+    "action": "Se planer",
+    "cancel": "Inte nu"
+  },
+  "modal": {
+    "title": "Välj din plan",
+    "close": "Stäng",
+    "processing": "Behandlar...",
+    "select": "Välj plan",
+    "mostPopular": "Mest populär"
+  },
+  "faq": {
+    "title": "Vanliga frågor",
+    "cancel": {
+      "question": "Kan jag avsluta när som helst?",
+      "answer": "Ja, du kan avsluta din prenumeration när som helst. Du behåller åtkomst till Premium-funktioner till slutet av din betalperiod."
+    },
+    "change": {
+      "question": "Kan jag byta plan?",
+      "answer": "Ja, du kan när som helst byta mellan månads- och årsbetalning i dina prenumerationsinställningar."
+    },
+    "secure": {
+      "question": "Är mina betalningar säkra?",
+      "answer": "Absolut! Vi använder Stripe för alla betalningar - en av världens mest betrodda betalningsplattformar. Vi lagrar aldrig dina kortuppgifter."
+    }
+  },
+  "messages": {
+    "activated": "Prenumeration aktiverad! Vänligen vänta...",
+    "activatedFinal": "Prenumeration aktiverad! Om du inte ser ändringarna, försök ladda om sidan.",
+    "error": "Något gick fel. Försök igen senare."
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "title": "Mina team",
+  "subtitle": "Hantera dina team och samarbeta med andra användare",
+  "create": "Skapa team",
+  "noTeams": "Inga team än",
+  "noTeamsDescription": "Skapa ett team för att börja samarbeta med andra användare",
+  "createFirst": "Skapa ditt första team",
+  "members": "Medlemmar ({{count}})",
+  "member_one": "{{count}} medlem",
+  "member_other": "{{count}} medlemmar",
+  "invite": "Bjud in",
+  "back": "Tillbaka till team",
+  "settings": "Inställningar",
+  "roles": {
+    "owner": "Ägare",
+    "admin": "Admin",
+    "member": "Medlem"
+  },
+  "pendingInvites": "Väntande inbjudningar ({{count}})",
+  "invited": "Inbjuden {{date}}",
+  "cancelInvite": "Avbryt inbjudan",
+  "removeMember": "Ta bort medlem",
+  "you": "(Du)",
+  "changeRole": {
+    "makeAdmin": "Gör till admin",
+    "makeMember": "Gör till medlem"
+  },
+  "teamWheels": "Team-hjul ({{count}})",
+  "noWheels": "Inga hjul har tilldelats detta team än",
+  "noWheelsDescription": "Skapa ett New wheel och välj detta team för att börja",
+  "loadingWheels": "Laddar hjul...",
+  "deleteTeam": {
+    "title": "Ta bort team",
+    "button": "Ta bort team",
+    "confirm": "Ta bort team?",
+    "confirmMessage": "Är du säker på att du vill ta bort <strong>{{name}}</strong>?",
+    "warning": "Alla medlemmar kommer att förlora åtkomst och denna åtgärd kan inte ångras."
+  },
+  "editTeam": {
+    "title": "Redigera team",
+    "nameLabel": "Namn",
+    "nameRequired": "Namn är obligatoriskt",
+    "descriptionLabel": "Beskrivning",
+    "cancel": "Avbryt",
+    "save": "Spara",
+    "saving": "Sparar..."
+  },
+  "inviteModal": {
+    "title": "Bjud in medlem till {{team}}",
+    "emailLabel": "E-postadress",
+    "emailPlaceholder": "namn@example.com",
+    "roleLabel": "Roll",
+    "cancel": "Avbryt",
+    "send": "Skicka inbjudan",
+    "sending": "Skickar..."
+  },
+  "dangerZone": "Farlig zon",
+  "dangerZoneDescription": "Ta bort detta team permanent. Denna åtgärd kan inte ångras.",
+  "messages": {
+    "removeMemberConfirm": "Är du säker på att du vill ta bort denna medlem?",
+    "cancelInviteConfirm": "Är du säker på att du vill avbryta denna inbjudan?"
+  }
+}

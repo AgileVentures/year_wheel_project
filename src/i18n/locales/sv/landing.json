@@ -1,0 +1,32 @@
+{
+  "hero": {
+    "title": "Planera ditt år visuellt",
+    "subtitle": "Skapa interaktiva årshjul för att visualisera projekt, kampanjer och aktiviteter över hela året",
+    "cta": "Kom igång gratis",
+    "demo": "Se demo"
+  },
+  "features": {
+    "title": "Kraftfulla funktioner",
+    "visual": {
+      "title": "Visuell planering",
+      "description": "Se hela året på ett ställe med vår intuitiva cirkulära kalendervy"
+    },
+    "collaborate": {
+      "title": "Samarbeta",
+      "description": "Dela dina årshjul med team och samarbeta i realtid"
+    },
+    "export": {
+      "title": "Export i hög kvalitet",
+      "description": "Exportera som PNG, SVG, PDF eller JPG. Använd direkt i presentationer, styrgrupper eller skriv ut och sätt på väggen."
+    }
+  },
+  "pricing": {
+    "title": "Välj din plan",
+    "subtitle": "Börja gratis, uppgradera när du behöver"
+  },
+  "cta": {
+    "title": "Redo att börja?",
+    "subtitle": "Skapa ditt första årshjul idag",
+    "button": "Kom igång gratis"
+  }
+}

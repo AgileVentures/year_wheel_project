@@ -1,0 +1,52 @@
+{
+  "title": "Dina årshjul",
+  "subtitle": "Skapa och hantera dina årsplaneringar",
+  "myWheels": "Mina hjul",
+  "teamWheels": "Team hjul",
+  "createWheel": "Skapa nytt hjul",
+  "loading": "Laddar hjul...",
+  "error": "Kunde inte ladda hjul",
+  "wheelCount": "{{count}} / {{max}} hjul",
+  "limitReached": "(uppgradera för fler)",
+  "wheel": {
+    "year": "År: {{year}}",
+    "years_one": "{{count}} år",
+    "years_other": "{{count}} år",
+    "lastUpdated": "Senast ändrad: {{date}}",
+    "delete": "Radera hjul",
+    "duplicate": "Duplicera hjul",
+    "shareWithTeam": "Dela med team",
+    "moveToTeam": "Flytta till annat team",
+    "makePersonal": "Gör personligt",
+    "sharedWith": "Delat med: {{team}}"
+  },
+  "messages": {
+    "created": "Nytt hjul skapat!",
+    "deleted": "Hjul raderat!",
+    "duplicated": "Hjul duplicerat!",
+    "movedToTeam": "Hjul flyttat till team!",
+    "madePersonal": "Hjul gjort personligt!",
+    "createError": "Kunde inte skapa hjul",
+    "deleteError": "Kunde inte radera hjul",
+    "duplicateError": "Kunde inte duplicera hjul",
+    "moveError": "Kunde inte flytta hjul",
+    "confirmDelete": "Är du säker på att du vill radera \"{{title}}\"?"
+  },
+  "nav": {
+    "wheels": "Hjul",
+    "teams": "Team",
+    "invitations": "Inbjudningar",
+    "myWheelsTitle": "Mina hjul",
+    "myTeamsTitle": "Mina team"
+  },
+  "profile": {
+    "title": "Min profil"
+  },
+  "subscription": {
+    "admin": "Admin",
+    "premium": "Premium",
+    "upgrade": "Uppgradera",
+    "manage": "Hantera prenumeration",
+    "seePricing": "Se priser och uppgradera"
+  }
+}

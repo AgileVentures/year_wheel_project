@@ -1,0 +1,52 @@
+{
+  "title": "Your Year Wheels",
+  "subtitle": "Create and manage your annual planning",
+  "myWheels": "My Wheels",
+  "teamWheels": "Team Wheels",
+  "createWheel": "Create New Wheel",
+  "loading": "Loading wheels...",
+  "error": "Could not load wheels",
+  "wheelCount": "{{count}} / {{max}} wheels",
+  "limitReached": "(upgrade for more)",
+  "wheel": {
+    "year": "Year: {{year}}",
+    "years_one": "{{count}} year",
+    "years_other": "{{count}} years",
+    "lastUpdated": "Last updated: {{date}}",
+    "delete": "Delete wheel",
+    "duplicate": "Duplicate wheel",
+    "shareWithTeam": "Share with team",
+    "moveToTeam": "Move to another team",
+    "makePersonal": "Make personal",
+    "sharedWith": "Shared with: {{team}}"
+  },
+  "messages": {
+    "created": "New wheel created!",
+    "deleted": "Wheel deleted!",
+    "duplicated": "Wheel duplicated!",
+    "movedToTeam": "Wheel moved to team!",
+    "madePersonal": "Wheel made personal!",
+    "createError": "Could not create wheel",
+    "deleteError": "Could not delete wheel",
+    "duplicateError": "Could not duplicate wheel",
+    "moveError": "Could not move wheel",
+    "confirmDelete": "Are you sure you want to delete \"{{title}}\"?"
+  },
+  "nav": {
+    "wheels": "Wheels",
+    "teams": "Teams",
+    "invitations": "Invitations",
+    "myWheelsTitle": "My Wheels",
+    "myTeamsTitle": "My Teams"
+  },
+  "profile": {
+    "title": "My Profile"
+  },
+  "subscription": {
+    "admin": "Admin",
+    "premium": "Premium",
+    "upgrade": "Upgrade",
+    "manage": "Manage subscription",
+    "seePricing": "See pricing and upgrade"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "title": "My Teams",
+  "subtitle": "Manage your teams and collaborate with other users",
+  "create": "Create team",
+  "noTeams": "No teams yet",
+  "noTeamsDescription": "Create a team to start collaborating with other users",
+  "createFirst": "Create your first team",
+  "members": "Members ({{count}})",
+  "member_one": "{{count}} member",
+  "member_other": "{{count}} members",
+  "invite": "Invite",
+  "back": "Back to teams",
+  "settings": "Settings",
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "pendingInvites": "Pending invitations ({{count}})",
+  "invited": "Invited {{date}}",
+  "cancelInvite": "Cancel invitation",
+  "removeMember": "Remove member",
+  "you": "(You)",
+  "changeRole": {
+    "makeAdmin": "Make admin",
+    "makeMember": "Make member"
+  },
+  "teamWheels": "Team Wheels ({{count}})",
+  "noWheels": "No wheels have been assigned to this team yet",
+  "noWheelsDescription": "Create a new wheel and select this team to get started",
+  "loadingWheels": "Loading wheels...",
+  "deleteTeam": {
+    "title": "Delete team",
+    "button": "Delete team",
+    "confirm": "Delete team?",
+    "confirmMessage": "Are you sure you want to delete <strong>{{name}}</strong>?",
+    "warning": "All members will lose access and this action cannot be undone."
+  },
+  "editTeam": {
+    "title": "Edit team",
+    "nameLabel": "Name",
+    "nameRequired": "Name is required",
+    "descriptionLabel": "Description",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving..."
+  },
+  "inviteModal": {
+    "title": "Invite member to {{team}}",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "name@example.com",
+    "roleLabel": "Role",
+    "cancel": "Cancel",
+    "send": "Send invitation",
+    "sending": "Sending..."
+  },
+  "dangerZone": "Danger zone",
+  "dangerZoneDescription": "Permanently delete this team. This action cannot be undone.",
+  "messages": {
+    "removeMemberConfirm": "Are you sure you want to remove this member?",
+    "cancelInviteConfirm": "Are you sure you want to cancel this invitation?"
+  }
+}

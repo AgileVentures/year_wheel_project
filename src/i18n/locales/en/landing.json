@@ -1,0 +1,32 @@
+{
+  "hero": {
+    "title": "Plan Your Year Visually",
+    "subtitle": "Create interactive year wheels to visualize projects, campaigns, and activities throughout the year",
+    "cta": "Get started for free",
+    "demo": "See demo"
+  },
+  "features": {
+    "title": "Powerful features",
+    "visual": {
+      "title": "Visual planning",
+      "description": "See the entire year in one place with our intuitive circular calendar view"
+    },
+    "collaborate": {
+      "title": "Collaborate",
+      "description": "Share your year wheels with teams and collaborate in real-time"
+    },
+    "export": {
+      "title": "High-quality export",
+      "description": "Export as PNG, SVG, PDF or JPG. Use directly in presentations, board meetings, or print and hang on the wall."
+    }
+  },
+  "pricing": {
+    "title": "Choose your plan",
+    "subtitle": "Start for free, upgrade when you need"
+  },
+  "cta": {
+    "title": "Ready to get started?",
+    "subtitle": "Create your first year wheel today",
+    "button": "Get started for free"
+  }
+}
