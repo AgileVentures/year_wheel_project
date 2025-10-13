@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play } from 'lucide-react';
 import LoginForm from './auth/LoginForm';
@@ -9,6 +10,7 @@ import ManualEditorDemo from './ManualEditorDemo';
 import Hero from './Hero';
 
 function LandingPage() {
+  const { t } = useTranslation(['landing', 'common']);
   const navigate = useNavigate();
   const { user } = useAuth();
   const [authMode, setAuthMode] = useState('signup'); // 'login' or 'signup'
@@ -135,19 +137,19 @@ function LandingPage() {
             </div>
             <div className="hidden md:flex items-center gap-8">
               <button onClick={scrollToFeatures} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                Funktioner
+                {t('landing:nav.features')}
               </button>
               <button onClick={scrollToPricing} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                Priser
+                {t('landing:nav.pricing')}
               </button>
               <button onClick={scrollToAuth} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                Logga in
+                {t('landing:nav.login')}
               </button>
               <button
                 onClick={scrollToAuth}
                 className="px-5 py-2.5 bg-[#00A4A6] text-white rounded-sm hover:bg-[#2E9E97] font-semibold transition-colors"
               >
-                Kom igång gratis
+                {t('landing:nav.getStarted')}
               </button>
             </div>
           </div>
@@ -167,13 +169,13 @@ function LandingPage() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold mb-3">
-              Bäst på större skärmar
+              {t('landing:mobileMessage.title')}
             </h2>
             <p className="text-lg text-white/90 mb-6">
-              YearWheel är optimerad för surfplattor, laptops och desktop-datorer för den bästa upplevelsen.
+              {t('landing:mobileMessage.description')}
             </p>
             <p className="text-sm text-white/80">
-              Interaktiva demos visas på skärmar från 768px och uppåt
+              {t('landing:mobileMessage.demoNote')}
             </p>
           </div>
         </div>
@@ -185,13 +187,13 @@ function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               {activeDemo === 'wheel' 
-                ? 'Skapa ditt årshjul manuellt'
-                : 'Eller låt AI:n göra jobbet'}
+                ? t('landing:demo.manualTitle')
+                : t('landing:demo.aiTitle')}
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
               {activeDemo === 'wheel'
-                ? 'Klicka, dra och organisera dina aktiviteter precis som du vill ha dem.'
-                : 'Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter och föreslår förbättringar.'}
+                ? t('landing:demo.manualDescription')
+                : t('landing:demo.aiDescription')}
             </p>
           </div>
 
@@ -558,17 +560,16 @@ function LandingPage() {
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#36C2C6] hover:shadow-xl transition-all relative overflow-hidden">
               <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#336B3E] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
                 <Crown size={12} />
-                PREMIUM
+                {t('landing:features.premium')}
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-[#00A4A6] to-[#2D4EC8] rounded-sm flex items-center justify-center mb-6">
                 <Sparkles className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                AI-assistent för planering
+                {t('landing:features.aiAssistant.title')}
               </h3>
               <p className="text-gray-600">
-                Beskriv vad du vill åstadkomma i naturligt språk – AI:n skapar strukturen, 
-                lägger till aktiviteter, upptäcker konflikter och föreslår förbättringar automatiskt.
+                {t('landing:features.aiAssistant.description')}
               </p>
             </div>
 
@@ -576,17 +577,16 @@ function LandingPage() {
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#2D4EC8] hover:shadow-xl transition-all relative overflow-hidden">
               <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#336B3E] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
                 <Crown size={12} />
-                PREMIUM
+                {t('landing:features.premium')}
               </div>
               <div className="w-12 h-12 bg-[#2D4EC8] rounded-sm flex items-center justify-center mb-6">
                 <Calendar className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Google Integration
+                {t('landing:features.googleIntegration.title')}
               </h3>
               <p className="text-gray-600">
-                Synka aktiviteter direkt från Google Calendar och Google Sheets. 
-                Importera automatiskt och distribuera över flera år – allt uppdateras i realtid.
+                {t('landing:features.googleIntegration.description')}
               </p>
             </div>
 
@@ -596,11 +596,10 @@ function LandingPage() {
                 <TrendingUp className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Cirkulär överblick
+                {t('landing:features.circularOverview.title')}
               </h3>
               <p className="text-gray-600">
-                Se månader, veckor och dagar i ett intuitivt hjul. Upptäck säsongstoppar 
-                och resurstoppar som lätt försvinner i traditionella kalendrar.
+                {t('landing:features.circularOverview.description')}
               </p>
             </div>
 
@@ -610,11 +609,10 @@ function LandingPage() {
                 <Users className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Realtidssamarbete
+                {t('landing:features.realTimeCollaboration.title')}
               </h3>
               <p className="text-gray-600">
-                Skapa team, dela hjul och arbeta tillsammans. Se vem som är online och 
-                få uppdateringar i realtid när teamet gör ändringar.
+                {t('landing:features.realTimeCollaboration.description')}
               </p>
             </div>
 
@@ -624,11 +622,10 @@ function LandingPage() {
                 <Zap className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Smarta ringar
+                {t('landing:features.smartRings.title')}
               </h3>
               <p className="text-gray-600">
-                Ordna aktiviteter i ringar. Lägg mål i de inre ringarna och dagliga aktiviteter 
-                i de yttre. Färgkoda för tydlighet.
+                {t('landing:features.smartRings.description')}
               </p>
             </div>
 
@@ -638,11 +635,10 @@ function LandingPage() {
                 <Download className="text-white" size={24} />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Export i hög kvalitet
+                {t('landing:features.highQualityExport.title')}
               </h3>
               <p className="text-gray-600">
-                Exportera som PNG, SVG, PDF eller JPG. Använd direkt i presentationer, 
-                styrgrupper eller skriv ut och sätt på väggen.
+                {t('landing:features.highQualityExport.description')}
               </p>
             </div>
           </div>
@@ -664,7 +660,7 @@ function LandingPage() {
             {/* Billing Toggle */}
             <div className="flex items-center justify-center gap-4 mb-12">
               <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
-                Månadsvis
+                {t('landing:pricing.monthly')}
               </span>
               <button
                 onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
@@ -677,11 +673,11 @@ function LandingPage() {
                 />
               </button>
               <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>
-                Årsvis
+                {t('landing:pricing.yearly')}
               </span>
               {billingCycle === 'yearly' && (
                 <span className="inline-flex items-center px-2 py-1 bg-[#9FCB3E]/20 text-[#336B3E] text-xs font-bold rounded-full border border-[#9FCB3E]/30">
-                  Spara 19%
+                  {t('landing:pricing.yearlyDiscount')}
                 </span>
               )}
             </div>

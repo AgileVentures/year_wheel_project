@@ -1,28 +1,100 @@
 {
+  "nav": {
+    "features": "Funktioner",
+    "pricing": "Priser",
+    "login": "Logga in",
+    "getStarted": "Kom igång gratis"
+  },
   "hero": {
     "title": "Planera ditt år visuellt",
     "subtitle": "Skapa interaktiva årshjul för att visualisera projekt, kampanjer och aktiviteter över hela året",
     "cta": "Kom igång gratis",
     "demo": "Se demo"
   },
+  "mobileMessage": {
+    "title": "Bäst på större skärmar",
+    "description": "YearWheel är optimerad för surfplattor, laptops och desktop-datorer för den bästa upplevelsen.",
+    "demoNote": "Interaktiva demos visas på skärmar från 768px och uppåt"
+  },
+  "demo": {
+    "manualTitle": "Skapa ditt årshjul manuellt",
+    "manualDescription": "Klicka, dra och organisera dina aktiviteter precis som du vill ha dem.",
+    "aiTitle": "Eller låt AI:n göra jobbet",
+    "aiDescription": "Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter och föreslår förbättringar."
+  },
   "features": {
     "title": "Kraftfulla funktioner",
-    "visual": {
-      "title": "Visuell planering",
-      "description": "Se hela året på ett ställe med vår intuitiva cirkulära kalendervy"
+    "subtitle": "Allt du behöver för att planera och visualisera ditt år",
+    "premium": "PREMIUM",
+    "aiAssistant": {
+      "title": "AI-assistent för planering",
+      "description": "Beskriv vad du vill åstadkomma i naturligt språk – AI:n skapar strukturen, lägger till aktiviteter, upptäcker konflikter och föreslår förbättringar automatiskt."
     },
-    "collaborate": {
-      "title": "Samarbeta",
-      "description": "Dela dina årshjul med team och samarbeta i realtid"
+    "googleIntegration": {
+      "title": "Google Integration",
+      "description": "Synka aktiviteter direkt från Google Calendar och Google Sheets. Importera automatiskt och distribuera över flera år – allt uppdateras i realtid."
     },
-    "export": {
+    "circularOverview": {
+      "title": "Cirkulär överblick",
+      "description": "Se månader, veckor och dagar i ett intuitivt hjul. Upptäck säsongstoppar och resurstoppar som lätt försvinner i traditionella kalendrar."
+    },
+    "realTimeCollaboration": {
+      "title": "Realtidssamarbete",
+      "description": "Skapa team, dela hjul och arbeta tillsammans. Se vem som är online och få uppdateringar i realtid när teamet gör ändringar."
+    },
+    "smartRings": {
+      "title": "Smarta ringar",
+      "description": "Ordna aktiviteter i ringar. Lägg mål i de inre ringarna och dagliga aktiviteter i de yttre. Färgkoda för tydlighet."
+    },
+    "highQualityExport": {
       "title": "Export i hög kvalitet",
       "description": "Exportera som PNG, SVG, PDF eller JPG. Använd direkt i presentationer, styrgrupper eller skriv ut och sätt på väggen."
     }
   },
   "pricing": {
     "title": "Välj din plan",
-    "subtitle": "Börja gratis, uppgradera när du behöver"
+    "subtitle": "Börja gratis, uppgradera när du behöver mer",
+    "monthly": "Månadsvis",
+    "yearly": "Årsvis",
+    "yearlyDiscount": "Spara 17%",
+    "free": {
+      "name": "Gratis",
+      "price": "0 kr",
+      "period": "för alltid",
+      "features": "Grundläggande funktioner",
+      "cta": "Kom igång gratis"
+    },
+    "premium": {
+      "name": "Premium",
+      "priceMonthly": "99 kr",
+      "priceYearly": "990 kr",
+      "period": "/månad",
+      "periodYearly": "/år",
+      "popular": "POPULÄR",
+      "cta": "Börja prenumerera"
+    },
+    "ngoDiscount": {
+      "title": "Rabatt för ideella organisationer",
+      "description": "Vi stödjer ideella organisationer och NGO:er i deras viktiga arbete. Kontakta oss för en <strong>50% rabattkupong</strong> på Premium-planen.",
+      "cta": "Kontakta oss"
+    }
+  },
+  "auth": {
+    "title": "Skapa ditt konto",
+    "titleLogin": "Logga in"
+  },
+  "footer": {
+    "tagline": "Visualisera ditt år",
+    "product": "Produkt",
+    "features": "Funktioner",
+    "pricing": "Priser",
+    "company": "Företag",
+    "about": "Om oss",
+    "contact": "Kontakt",
+    "legal": "Juridiskt",
+    "privacy": "Integritetspolicy",
+    "terms": "Användarvillkor",
+    "allRightsReserved": "Alla rättigheter förbehållna"
   },
   "cta": {
     "title": "Redo att börja?",

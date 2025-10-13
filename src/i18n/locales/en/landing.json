@@ -1,28 +1,100 @@
 {
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "login": "Log in",
+    "getStarted": "Get started free"
+  },
   "hero": {
     "title": "Plan Your Year Visually",
     "subtitle": "Create interactive year wheels to visualize projects, campaigns, and activities throughout the year",
     "cta": "Get started for free",
     "demo": "See demo"
   },
+  "mobileMessage": {
+    "title": "Best on Larger Screens",
+    "description": "YearWheel is optimized for tablets, laptops, and desktop computers for the best experience.",
+    "demoNote": "Interactive demos are shown on screens from 768px and up"
+  },
+  "demo": {
+    "manualTitle": "Create your year wheel manually",
+    "manualDescription": "Click, drag, and organize your activities exactly how you want them.",
+    "aiTitle": "Or let AI do the work",
+    "aiDescription": "Describe what you want to accomplish – AI creates the structure, adds activities, and suggests improvements."
+  },
   "features": {
     "title": "Powerful features",
-    "visual": {
-      "title": "Visual planning",
-      "description": "See the entire year in one place with our intuitive circular calendar view"
+    "subtitle": "Everything you need to plan and visualize your year",
+    "premium": "PREMIUM",
+    "aiAssistant": {
+      "title": "AI Planning Assistant",
+      "description": "Describe what you want to accomplish in natural language – AI creates the structure, adds activities, detects conflicts, and suggests improvements automatically."
     },
-    "collaborate": {
-      "title": "Collaborate",
-      "description": "Share your year wheels with teams and collaborate in real-time"
+    "googleIntegration": {
+      "title": "Google Integration",
+      "description": "Sync activities directly from Google Calendar and Google Sheets. Import automatically and distribute across multiple years – everything updates in real-time."
     },
-    "export": {
-      "title": "High-quality export",
-      "description": "Export as PNG, SVG, PDF or JPG. Use directly in presentations, board meetings, or print and hang on the wall."
+    "circularOverview": {
+      "title": "Circular Overview",
+      "description": "See months, weeks, and days in an intuitive wheel. Discover seasonal peaks and resource spikes that easily disappear in traditional calendars."
+    },
+    "realTimeCollaboration": {
+      "title": "Real-time Collaboration",
+      "description": "Create teams, share wheels, and work together. See who's online and get real-time updates when the team makes changes."
+    },
+    "smartRings": {
+      "title": "Smart Rings",
+      "description": "Organize activities in rings. Put goals in inner rings and daily activities in outer ones. Color-code for clarity."
+    },
+    "highQualityExport": {
+      "title": "High-Quality Export",
+      "description": "Export as PNG, SVG, PDF, or JPG. Use directly in presentations, board meetings, or print and hang on the wall."
     }
   },
   "pricing": {
     "title": "Choose your plan",
-    "subtitle": "Start for free, upgrade when you need"
+    "subtitle": "Start free, upgrade when you need more",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "yearlyDiscount": "Save 17%",
+    "free": {
+      "name": "Free",
+      "price": "0 kr",
+      "period": "forever",
+      "features": "Basic features",
+      "cta": "Get started free"
+    },
+    "premium": {
+      "name": "Premium",
+      "priceMonthly": "99 kr",
+      "priceYearly": "990 kr",
+      "period": "/month",
+      "periodYearly": "/year",
+      "popular": "POPULAR",
+      "cta": "Start subscription"
+    },
+    "ngoDiscount": {
+      "title": "Discount for nonprofits",
+      "description": "We support nonprofit organizations and NGOs in their important work. Contact us for a <strong>50% discount coupon</strong> on the Premium plan.",
+      "cta": "Contact us"
+    }
+  },
+  "auth": {
+    "title": "Create your account",
+    "titleLogin": "Log in"
+  },
+  "footer": {
+    "tagline": "Visualize your year",
+    "product": "Product",
+    "features": "Features",
+    "pricing": "Pricing",
+    "company": "Company",
+    "about": "About",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "allRightsReserved": "All rights reserved"
   },
   "cta": {
     "title": "Ready to get started?",
