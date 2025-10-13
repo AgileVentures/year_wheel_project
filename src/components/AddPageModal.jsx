@@ -1,4 +1,5 @@
 import { X, FileText, Copy, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * AddPageModal Component
@@ -12,6 +13,7 @@ export default function AddPageModal({
   onDuplicate, 
   onCreateNextYear 
 }) {
+  const { t } = useTranslation(['editor']);
   const currentYear = currentPage?.year || new Date().getFullYear();
   const nextYear = currentYear + 1;
 
@@ -19,8 +21,8 @@ export default function AddPageModal({
     {
       id: 'next-year',
       icon: Calendar,
-      title: `Nästa år (${nextYear})`,
-      description: `Skapa en tom sida för ${nextYear} med samma struktur (ringar delas automatiskt)`,
+      title: t('editor:addPageModal.nextYearTitle', { year: nextYear }),
+      description: t('editor:addPageModal.nextYearDescription', { year: nextYear }),
       color: 'green',
       action: onCreateNextYear
     }
@@ -36,7 +38,7 @@ export default function AddPageModal({
       <div className="bg-white rounded-sm shadow-2xl w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Lägg till ny sida</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('editor:addPageModal.title')}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
@@ -98,7 +100,7 @@ export default function AddPageModal({
             onClick={onClose}
             className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-sm transition-colors font-medium"
           >
-            Avbryt
+            {t('editor:addPageModal.cancel')}
           </button>
         </div>
       </div>

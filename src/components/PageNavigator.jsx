@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * PageNavigator Component
@@ -15,6 +16,7 @@ export default function PageNavigator({
   onDeletePage,
   disabled = false
 }) {
+  const { t } = useTranslation(['editor']);
   const [showDropdown, setShowDropdown] = useState(false);
   
   const currentIndex = pages.findIndex(p => p.id === currentPageId);
@@ -41,10 +43,10 @@ export default function PageNavigator({
         onClick={onAddPage}
         disabled={disabled}
         className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 border border-green-300 rounded-sm hover:bg-green-100 hover:border-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Skapa första året"
+        title={t('editor:pageNavigator.createFirstYear')}
       >
         <Plus size={16} />
-        <span className="font-medium">Skapa år</span>
+        <span className="font-medium">{t('editor:pageNavigator.createYear')}</span>
       </button>
     );
   }
@@ -56,7 +58,7 @@ export default function PageNavigator({
         onClick={handlePrevPage}
         disabled={!canGoPrev || disabled}
         className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        title="Föregående år"
+        title={t('editor:pageNavigator.previousYear')}
       >
         <ChevronLeft size={18} className="text-gray-600" />
       </button>
@@ -67,7 +69,7 @@ export default function PageNavigator({
           onClick={() => setShowDropdown(!showDropdown)}
           disabled={disabled}
           className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-sm hover:border-blue-400 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
-          title="Välj år"
+          title={t('editor:pageNavigator.selectYear')}
         >
           <Calendar size={16} className="text-gray-500" />
           <span className="font-semibold text-gray-900">{currentPage?.year || '2025'}</span>
@@ -130,7 +132,7 @@ export default function PageNavigator({
                           setShowDropdown(false);
                         }}
                         className="p-2 mr-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Radera år"
+                        title={t('editor:pageNavigator.deleteYear')}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -148,7 +150,7 @@ export default function PageNavigator({
                 className="w-full px-4 py-2.5 text-left hover:bg-green-50 transition-colors flex items-center gap-2 text-green-700 font-medium border-t-2 border-gray-200"
               >
                 <Plus size={16} />
-                <span>Nytt år</span>
+                <span>{t('editor:pageNavigator.newYear')}</span>
               </button>
             </div>
           </>
@@ -160,7 +162,7 @@ export default function PageNavigator({
         onClick={handleNextPage}
         disabled={!canGoNext || disabled}
         className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        title="Nästa år"
+        title={t('editor:pageNavigator.nextYear')}
       >
         <ChevronRight size={18} className="text-gray-600" />
       </button>

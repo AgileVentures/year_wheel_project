@@ -172,6 +172,21 @@
     "deleteConfirmCancel": "Cancel",
     "deleteConfirmDelete": "Delete"
   },
+  "pageNavigator": {
+    "createFirstYear": "Create first year",
+    "createYear": "Create year",
+    "previousYear": "Previous year",
+    "selectYear": "Select year",
+    "nextYear": "Next year",
+    "deleteYear": "Delete year",
+    "newYear": "New year"
+  },
+  "addPageModal": {
+    "title": "Add New Page",
+    "nextYearTitle": "Next year ({{year}})",
+    "nextYearDescription": "Create an empty page for {{year}} with the same structure (rings are shared automatically)",
+    "cancel": "Cancel"
+  },
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",

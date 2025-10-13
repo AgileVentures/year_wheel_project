@@ -172,6 +172,21 @@
     "deleteConfirmCancel": "Avbryt",
     "deleteConfirmDelete": "Radera"
   },
+  "pageNavigator": {
+    "createFirstYear": "Skapa första året",
+    "createYear": "Skapa år",
+    "previousYear": "Föregående år",
+    "selectYear": "Välj år",
+    "nextYear": "Nästa år",
+    "deleteYear": "Radera år",
+    "newYear": "Nytt år"
+  },
+  "addPageModal": {
+    "title": "Lägg till ny sida",
+    "nextYearTitle": "Nästa år ({{year}})",
+    "nextYearDescription": "Skapa en tom sida för {{year}} med samma struktur (ringar delas automatiskt)",
+    "cancel": "Avbryt"
+  },
   "modal": {
     "addActivity": "Lägg till aktivitet",
     "editActivity": "Redigera aktivitet",
