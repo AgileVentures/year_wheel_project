@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, History, User, Clock, RotateCcw, Eye, Trash2, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { listVersions, restoreVersion, deleteVersion, getVersion } from '../services/wheelService';
 
 /**
@@ -13,6 +14,7 @@ import { listVersions, restoreVersion, deleteVersion, getVersion } from '../serv
  * - Delete old versions
  */
 export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
+  const { t, i18n } = useTranslation(['editor']);
   const [versions, setVersions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,18 +33,14 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       setVersions(data);
     } catch (err) {
       console.error('Error loading versions:', err);
-      setError('Kunde inte ladda versionshistorik');
+      setError(t('editor:versionHistory.error'));
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRestore = async (version) => {
-    if (!confirm(
-      `Återställ till version ${version.version_number}?\n\n` +
-      `Detta kommer att ersätta den nuvarande versionen med denna gamla version. ` +
-      `En ny version av det nuvarande tillståndet kommer att skapas först, så inget går förlorat.`
-    )) {
+    if (!confirm(t('editor:versionHistory.restoreConfirm', { number: version.version_number }))) {
       return;
     }
 
@@ -56,7 +54,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       // Show success message
       const event = new CustomEvent('showToast', {
         detail: { 
-          message: `Version ${version.version_number} återställd!`, 
+          message: t('editor:versionHistory.restored', { number: version.version_number }), 
           type: 'success' 
         }
       });
@@ -67,7 +65,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       console.error('Error restoring version:', err);
       const event = new CustomEvent('showToast', {
         detail: { 
-          message: 'Kunde inte återställa version', 
+          message: t('editor:versionHistory.restoreError'), 
           type: 'error' 
         }
       });
@@ -85,7 +83,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       console.error('Error loading version preview:', err);
       const event = new CustomEvent('showToast', {
         detail: { 
-          message: 'Kunde inte ladda förhandsvisning', 
+          message: t('editor:versionHistory.previewError'), 
           type: 'error' 
         }
       });
@@ -94,7 +92,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
   };
 
   const handleDelete = async (version) => {
-    if (!confirm(`Radera version ${version.version_number}? Detta går inte att ångra.`)) {
+    if (!confirm(t('editor:versionHistory.deleteConfirm', { number: version.version_number }))) {
       return;
     }
 
@@ -104,7 +102,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       
       const event = new CustomEvent('showToast', {
         detail: { 
-          message: 'Version raderad', 
+          message: t('editor:versionHistory.deleted'), 
           type: 'success' 
         }
       });
@@ -113,7 +111,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       console.error('Error deleting version:', err);
       const event = new CustomEvent('showToast', {
         detail: { 
-          message: 'Kunde inte radera version', 
+          message: t('editor:versionHistory.deleteError'), 
           type: 'error' 
         }
       });
@@ -129,12 +127,12 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just nu';
-    if (diffMins < 60) return `${diffMins} min sedan`;
-    if (diffHours < 24) return `${diffHours} tim sedan`;
-    if (diffDays < 7) return `${diffDays} dagar sedan`;
+    if (diffMins < 1) return t('editor:versionHistory.justNow');
+    if (diffMins < 60) return t('editor:versionHistory.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('editor:versionHistory.hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('editor:versionHistory.daysAgo', { count: diffDays });
     
-    return date.toLocaleDateString('sv-SE', {
+    return date.toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'sv-SE', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -160,9 +158,9 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
               <History className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Versionshistorik</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('editor:versionHistory.title')}</h2>
               <p className="text-sm text-gray-500">
-                {versions.length} {versions.length === 1 ? 'version' : 'versioner'} sparade
+                {t('editor:versionHistory.versionsSaved', { count: versions.length })}
               </p>
             </div>
           </div>
@@ -188,15 +186,15 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                 onClick={loadVersions}
                 className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
               >
-                Försök igen
+                {t('editor:versionHistory.retryButton')}
               </button>
             </div>
           ) : versions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <History className="w-12 h-12 text-gray-300 mb-3" />
-              <p className="text-gray-600">Inga versioner sparade än</p>
+              <p className="text-gray-600">{t('editor:versionHistory.noVersions')}</p>
               <p className="text-sm text-gray-500 mt-1">
-                Versioner skapas automatiskt när du sparar
+                {t('editor:versionHistory.noVersionsDescription')}
               </p>
             </div>
           ) : (
@@ -228,23 +226,23 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-gray-900">
-                              Version {version.version_number}
+                              {t('editor:versionHistory.version', { number: version.version_number })}
                             </span>
                             {index === 0 && (
                               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                                Senaste
+                                {t('editor:versionHistory.latest')}
                               </span>
                             )}
                             {version.is_auto_save && (
                               <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                                Auto-sparad
+                                {t('editor:versionHistory.autoSaved')}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                               <User className="w-3.5 h-3.5" />
-                              {version.user?.full_name || 'Okänd användare'}
+                              {version.user?.full_name || t('editor:versionHistory.unknownUser')}
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5" />
@@ -263,7 +261,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                           <button
                             onClick={() => handlePreview(version)}
                             className="p-2 hover:bg-blue-50 rounded-sm transition-colors"
-                            title="Förhandsgranska"
+                            title={t('editor:versionHistory.previewTooltip')}
                           >
                             <Eye className="w-4 h-4 text-blue-600" />
                           </button>
@@ -273,14 +271,14 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                                 onClick={() => handleRestore(version)}
                                 disabled={isRestoring}
                                 className="p-2 hover:bg-green-50 rounded-sm transition-colors disabled:opacity-50"
-                                title="Återställ denna version"
+                                title={t('editor:versionHistory.restoreTooltip')}
                               >
                                 <RotateCcw className="w-4 h-4 text-green-600" />
                               </button>
                               <button
                                 onClick={() => handleDelete(version)}
                                 className="p-2 hover:bg-red-50 rounded-sm transition-colors"
-                                title="Radera version"
+                                title={t('editor:versionHistory.deleteTooltip')}
                               >
                                 <Trash2 className="w-4 h-4 text-red-600" />
                               </button>
@@ -299,12 +297,12 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
           <div className="flex items-center justify-between text-sm text-gray-600">
-            <p>Versioner sparas automatiskt och behålls i 100 dagar</p>
+            <p>{t('editor:versionHistory.footerInfo')}</p>
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-sm transition-colors font-medium"
             >
-              Stäng
+              {t('editor:versionHistory.closeButton')}
             </button>
           </div>
         </div>
@@ -316,7 +314,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
           <div className="bg-white rounded-sm shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
-                Förhandsvisning: Version {previewVersion.version_number}
+                {t('editor:versionHistory.previewTitle', { number: previewVersion.version_number })}
               </h3>
               <button
                 onClick={() => setPreviewVersion(null)}
@@ -337,7 +335,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                 onClick={() => setPreviewVersion(null)}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               >
-                Stäng
+                {t('editor:versionHistory.closeButton')}
               </button>
               <button
                 onClick={() => {
@@ -347,7 +345,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                 className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
-                Återställ denna version
+                {t('editor:versionHistory.restoreButton')}
               </button>
             </div>
           </div>
