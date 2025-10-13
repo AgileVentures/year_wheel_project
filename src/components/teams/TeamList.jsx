@@ -77,6 +77,7 @@ const TeamList = ({ onSelectWheel }) => {
         onBack={() => setSelectedTeam(null)}
         onTeamUpdated={handleTeamUpdated}
         onTeamDeleted={handleTeamDeleted}
+        onSelectWheel={onSelectWheel}
       />
     );
   }

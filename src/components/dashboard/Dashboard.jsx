@@ -460,7 +460,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
 
         {/* Teams View */}
         {currentView === 'teams' && (
-          <TeamList />
+          <TeamList onSelectWheel={onSelectWheel} />
         )}
 
         {/* Invitations View */}

@@ -4,7 +4,7 @@ import { getUserTeams, assignWheelToTeam, removeWheelFromTeam } from '../../serv
 import { fetchPages } from '../../services/wheelService';
 import { supabase } from '../../lib/supabase';
 
-function WheelCard({ wheel, onSelect, onDelete, onUpdate }) {
+function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showTeamSelector, setShowTeamSelector] = useState(false);
   const [teams, setTeams] = useState([]);
@@ -196,7 +196,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate }) {
               
           {showMenu && (
             <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-sm shadow-lg z-20">
-              {isTeamWheel && (
+              {!isTeamContext && isTeamWheel && (
                 <>
                   <div className="px-4 py-2 border-b border-gray-200 text-xs text-gray-500 font-medium">
                     Delat med: {wheel.teams.name}
@@ -225,7 +225,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate }) {
                   </button>
                 </>
               )}
-              {!isTeamWheel && (
+              {!isTeamContext && !isTeamWheel && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -239,17 +239,19 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate }) {
                   Dela med team
                 </button>
               )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(false);
-                  onDelete();
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
-                disabled={loading}
-              >
-                Radera hjul
-              </button>
+              {onDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    onDelete();
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
+                  disabled={loading}
+                >
+                  Radera hjul
+                </button>
+              )}
             </div>
           )}
 

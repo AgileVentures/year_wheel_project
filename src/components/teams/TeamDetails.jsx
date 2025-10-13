@@ -375,6 +375,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                 wheel={wheel}
                 onSelect={() => onSelectWheel?.(wheel.id)}
                 onUpdate={loadTeamWheels}
+                isTeamContext={true}
               />
             ))}
           </div>
