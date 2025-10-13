@@ -97,5 +97,22 @@
     "tipTitle": "💡 Tips:",
     "tipDescription": "Skicka länken via e-post, Slack, eller WhatsApp. När mottagaren klickar på länken kommer de automatiskt att läggas till i teamet när de loggar in eller skapar ett konto.",
     "close": "Stäng"
+  },
+  "myInvitations": {
+    "loading": "Laddar inbjudningar...",
+    "title": "Väntande inbjudningar",
+    "noInvitationsTitle": "Inga väntande inbjudningar",
+    "noInvitationsDescription": "Du har inga teaminbjudningar just nu",
+    "sent": "Skickad {{date}}",
+    "today": "Idag",
+    "yesterday": "Igår",
+    "daysAgo": "{{count}} dagar sedan",
+    "accept": "Acceptera",
+    "decline": "Avvisa",
+    "acceptTooltip": "Acceptera inbjudan",
+    "declineTooltip": "Avvisa inbjudan",
+    "confirmDecline": "Är du säker på att du vill avvisa denna inbjudan?",
+    "errorAccept": "Kunde inte acceptera inbjudan",
+    "errorDecline": "Kunde inte avvisa inbjudan"
   }
 }

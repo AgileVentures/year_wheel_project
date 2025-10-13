@@ -97,5 +97,22 @@
     "tipTitle": "💡 Tip:",
     "tipDescription": "Send the link via email, Slack, or WhatsApp. When the recipient clicks the link, they will automatically be added to the team when they log in or create an account.",
     "close": "Close"
+  },
+  "myInvitations": {
+    "loading": "Loading invitations...",
+    "title": "Pending invitations",
+    "noInvitationsTitle": "No pending invitations",
+    "noInvitationsDescription": "You have no team invitations right now",
+    "sent": "Sent {{date}}",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{{count}} days ago",
+    "accept": "Accept",
+    "decline": "Decline",
+    "acceptTooltip": "Accept invitation",
+    "declineTooltip": "Decline invitation",
+    "confirmDecline": "Are you sure you want to decline this invitation?",
+    "errorAccept": "Could not accept invitation",
+    "errorDecline": "Could not decline invitation"
   }
 }
