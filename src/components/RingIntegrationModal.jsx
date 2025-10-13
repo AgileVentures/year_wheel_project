@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Calendar, Sheet, Loader2, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   getRingIntegrationByType,
   upsertRingIntegration,
@@ -16,6 +17,8 @@ import {
 } from '../services/integrationService';
 
 function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
+  const { t, i18n } = useTranslation(['integration']);
+  
   // Validate that ring has a proper UUID before allowing integration
   const isValidUUID = (id) => {
     return id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -44,12 +47,12 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
   useEffect(() => {
     if (!isValidUUID(ring.id)) {
-      setError('Denna ring måste sparas innan du kan ansluta datakällor. Spara hjulet först.');
+      setError(t('integration:ringIntegrationModal.invalidUUID'));
       setLoading(false);
       return;
     }
     loadIntegrations();
-  }, [ring.id]);
+  }, [ring.id, t]);
 
   const loadIntegrations = async () => {
     try {
@@ -82,7 +85,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
     } catch (err) {
       console.error('Error loading integrations:', err);
-      setError(err.message);
+      setError(t('integration:ringIntegrationModal.errors.loadFailed') + ': ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -93,13 +96,13 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       const cals = await listGoogleCalendars();
       setCalendars(cals);
     } catch (err) {
-      setError('Kunde inte ladda kalendrar: ' + err.message);
+      setError(t('integration:ringIntegrationModal.errors.loadCalendarsFailed') + ': ' + err.message);
     }
   };
 
   const handleValidateSheet = async () => {
     if (!spreadsheetId) {
-      setError('Ange Spreadsheet ID');
+      setError(t('integration:ringIntegrationModal.sheets.enterSpreadsheetIdError'));
       return;
     }
 
@@ -115,9 +118,9 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
         setSheetName(firstSheetName);
       }
       
-      setSuccess('Spreadsheet validerad!');
+      setSuccess(t('integration:ringIntegrationModal.success.validated'));
     } catch (err) {
-      setError('Kunde inte validera sheet: ' + err.message);
+      setError(t('integration:ringIntegrationModal.errors.validateSheetFailed') + ': ' + err.message);
       setValidatedSheet(null);
     }
   };
@@ -139,12 +142,12 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
       if (integrationType === 'calendar') {
         if (!selectedCalendarId) {
-          setError('Välj en kalender');
+          setError(t('integration:ringIntegrationModal.calendar.selectCalendarError'));
           setSyncing(false);
           return;
         }
         if (!calendarAuth) {
-          setError('Google Calendar inte anslutet');
+          setError(t('integration:ringIntegrationModal.calendar.notConnectedError'));
           setSyncing(false);
           return;
         }
@@ -168,19 +171,19 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
         console.log('[RingIntegration] Calendar integration saved:', integration);
         setCalendarIntegration(integration);
-        setSuccess('Kalenderintegration sparad!');
+        setSuccess(t('integration:ringIntegrationModal.success.calendarSaved'));
 
         // Auto-sync after save
         await handleSync(integration.id);
 
       } else if (integrationType === 'sheet') {
         if (!spreadsheetId || !sheetName) {
-          setError('Ange Spreadsheet ID och Sheet-namn');
+          setError(t('integration:ringIntegrationModal.sheets.enterDetailsError'));
           setSyncing(false);
           return;
         }
         if (!sheetsAuth) {
-          setError('Google Sheets inte anslutet');
+          setError(t('integration:ringIntegrationModal.sheets.notConnectedError'));
           setSyncing(false);
           return;
         }
@@ -210,12 +213,12 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
         const integration = await upsertRingIntegration(integrationData);
 
         if (!integration) {
-          throw new Error('Upsert returned null - integration not saved');
+          throw new Error(t('integration:ringIntegrationModal.errors.upsertNull'));
         }
 
         console.log('[RingIntegration] Sheet integration saved successfully:', integration);
         setSheetIntegration(integration);
-        setSuccess('Sheet-integration sparad!');
+        setSuccess(t('integration:ringIntegrationModal.success.sheetSaved'));
 
         // Auto-sync after save
         console.log('[RingIntegration] Starting auto-sync for integration:', integration.id);
@@ -223,7 +226,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       }
 
     } catch (err) {
-      setError('Kunde inte spara integration: ' + err.message);
+      setError(t('integration:ringIntegrationModal.errors.saveFailed') + ': ' + err.message);
       console.error('[RingIntegration] Save error:', err);
       console.error('[RingIntegration] Error details:', {
         message: err.message,
@@ -245,21 +248,21 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       const result = await syncRingData(integrationId);
       console.log('[RingIntegration] Sync result:', result);
       
-      setSuccess(`Synkronisering klar! ${result.itemCount} aktiviteter importerade.`);
+      setSuccess(t('integration:ringIntegrationModal.sync.syncComplete', { count: result.itemCount }));
       
       if (onSyncComplete) {
         onSyncComplete();
       }
     } catch (err) {
       console.error('[RingIntegration] Sync error:', err);
-      setError('Synkronisering misslyckades: ' + err.message);
+      setError(t('integration:ringIntegrationModal.errors.syncFailed') + ': ' + err.message);
     } finally {
       setSyncing(false);
     }
   };
 
   const handleRemoveIntegration = async (type) => {
-    if (!confirm('Är du säker på att du vill ta bort denna integration?')) {
+    if (!confirm(t('integration:ringIntegrationModal.actions.removeConfirm'))) {
       return;
     }
 
@@ -277,11 +280,11 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           setValidatedSheet(null);
         }
         
-        setSuccess('Integration borttagen');
+        setSuccess(t('integration:ringIntegrationModal.actions.removed'));
         setIntegrationType('');
       }
     } catch (err) {
-      setError('Kunde inte ta bort integration: ' + err.message);
+      setError(t('integration:ringIntegrationModal.errors.removeFailed') + ': ' + err.message);
     }
   };
 
@@ -301,7 +304,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
         <div className="bg-white rounded-sm shadow-xl p-6 max-w-md w-full mx-4">
           <div className="flex items-center gap-3 justify-center">
             <Loader2 size={20} className="animate-spin text-blue-600" />
-            <span className="text-gray-700">Laddar integrationer...</span>
+            <span className="text-gray-700">{t('integration:ringIntegrationModal.loading')}</span>
           </div>
         </div>
       </div>
@@ -315,10 +318,10 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
-              Datakälla för {ring.name}
+              {t('integration:ringIntegrationModal.title', { ringName: ring.name })}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              Synkronisera data från Google Calendar eller Sheets
+              {t('integration:ringIntegrationModal.description')}
             </p>
           </div>
           <button
@@ -350,9 +353,9 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           {!hasGoogleCalendar && !hasGoogleSheets && (
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
               <p className="text-sm text-blue-800">
-                Du måste först ansluta ditt Google-konto i{' '}
+                {t('integration:ringIntegrationModal.connectAccountPrompt')}{' '}
                 <a href="/profile" className="underline font-medium hover:text-blue-900" onClick={onClose}>
-                  Profil → Integrationer
+                  {t('integration:ringIntegrationModal.profileIntegrations')}
                 </a>
               </p>
             </div>
@@ -361,7 +364,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           {/* Integration Type Selector */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Välj datakälla
+              {t('integration:ringIntegrationModal.selectDataSource')}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -374,9 +377,9 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 } ${!hasGoogleCalendar ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Calendar size={24} className={integrationType === 'calendar' ? 'text-blue-600' : 'text-gray-400'} />
-                <div className="mt-2 text-sm font-medium text-gray-900">Google Calendar</div>
+                <div className="mt-2 text-sm font-medium text-gray-900">{t('integration:ringIntegrationModal.googleCalendar')}</div>
                 {!hasGoogleCalendar && (
-                  <div className="mt-1 text-xs text-red-600">Inte anslutet</div>
+                  <div className="mt-1 text-xs text-red-600">{t('integration:ringIntegrationModal.notConnected')}</div>
                 )}
               </button>
 
@@ -390,9 +393,9 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 } ${!hasGoogleSheets ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Sheet size={24} className={integrationType === 'sheet' ? 'text-green-600' : 'text-gray-400'} />
-                <div className="mt-2 text-sm font-medium text-gray-900">Google Sheets</div>
+                <div className="mt-2 text-sm font-medium text-gray-900">{t('integration:ringIntegrationModal.googleSheets')}</div>
                 {!hasGoogleSheets && (
-                  <div className="mt-1 text-xs text-red-600">Inte anslutet</div>
+                  <div className="mt-1 text-xs text-red-600">{t('integration:ringIntegrationModal.notConnected')}</div>
                 )}
               </button>
             </div>
@@ -406,13 +409,13 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <Calendar size={18} className="text-blue-600" />
-                    <span className="font-medium text-blue-900">Befintlig integration</span>
+                    <span className="font-medium text-blue-900">{t('integration:ringIntegrationModal.calendar.existingIntegration')}</span>
                   </div>
                   <div className="text-sm text-blue-800">
-                    <div>Kalender-ID: <code className="bg-blue-100 px-1 rounded">{calendarIntegration.config.calendar_id}</code></div>
+                    <div>{t('integration:ringIntegrationModal.calendar.calendarId')}: <code className="bg-blue-100 px-1 rounded">{calendarIntegration.config.calendar_id}</code></div>
                     {calendarIntegration.last_synced_at && (
                       <div className="mt-1 text-xs text-blue-700">
-                        Senast synkad: {new Date(calendarIntegration.last_synced_at).toLocaleString('sv-SE')}
+                        {t('integration:ringIntegrationModal.calendar.lastSynced')}: {new Date(calendarIntegration.last_synced_at).toLocaleString(i18n.language === 'en' ? 'en-GB' : 'sv-SE')}
                       </div>
                     )}
                   </div>
@@ -421,29 +424,29 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {calendarIntegration ? 'Ändra kalender' : 'Välj kalender'}
+                  {calendarIntegration ? t('integration:ringIntegrationModal.calendar.changeCalendar') : t('integration:ringIntegrationModal.calendar.selectCalendar')}
                 </label>
                 <select
                   value={selectedCalendarId}
                   onChange={(e) => setSelectedCalendarId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">-- Välj kalender --</option>
+                  <option value="">{t('integration:ringIntegrationModal.calendar.selectPlaceholder')}</option>
                   {calendars.map(cal => (
                     <option key={cal.id} value={cal.id}>
-                      {cal.summary} {cal.primary ? '(Primär)' : ''}
+                      {cal.summary} {cal.primary ? t('integration:ringIntegrationModal.calendar.primaryLabel') : ''}
                     </option>
                   ))}
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Händelser från valt år importeras som aktiviteter på denna ring.
+                  {t('integration:ringIntegrationModal.calendar.importDescription')}
                 </p>
               </div>
 
               {calendarIntegration && (
                 <div className="p-3 bg-gray-50 rounded-sm text-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-700">Status:</span>
+                    <span className="font-medium text-gray-700">{t('integration:ringIntegrationModal.calendar.status')}:</span>
                     <span className={`px-2 py-0.5 rounded text-xs ${
                       calendarIntegration.last_sync_status === 'success'
                         ? 'bg-green-100 text-green-700'
@@ -451,12 +454,12 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                         ? 'bg-red-100 text-red-700'
                         : 'bg-gray-200 text-gray-700'
                     }`}>
-                      {calendarIntegration.last_sync_status || 'Ej synkad'}
+                      {calendarIntegration.last_sync_status || t('integration:ringIntegrationModal.calendar.notSynced')}
                     </span>
                   </div>
                   {calendarIntegration.last_synced_at && (
                     <div className="text-xs text-gray-600">
-                      Senast synkad: {new Date(calendarIntegration.last_synced_at).toLocaleString('sv-SE')}
+                      {t('integration:ringIntegrationModal.calendar.lastSynced')}: {new Date(calendarIntegration.last_synced_at).toLocaleString(i18n.language === 'en' ? 'en-GB' : 'sv-SE')}
                     </div>
                   )}
                 </div>
@@ -472,14 +475,14 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 <div className="p-4 bg-green-50 border border-green-200 rounded-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <Sheet size={18} className="text-green-600" />
-                    <span className="font-medium text-green-900">Befintlig integration</span>
+                    <span className="font-medium text-green-900">{t('integration:ringIntegrationModal.sheets.existingIntegration')}</span>
                   </div>
                   <div className="text-sm text-green-800">
-                    <div>Spreadsheet-ID: <code className="bg-green-100 px-1 rounded">{sheetIntegration.config.spreadsheet_id}</code></div>
-                    <div>Ark: <strong>{sheetIntegration.config.sheet_name}</strong></div>
+                    <div>{t('integration:ringIntegrationModal.sheets.spreadsheetId')}: <code className="bg-green-100 px-1 rounded">{sheetIntegration.config.spreadsheet_id}</code></div>
+                    <div>{t('integration:ringIntegrationModal.sheets.sheetName')}: <strong>{sheetIntegration.config.sheet_name}</strong></div>
                     {sheetIntegration.last_synced_at && (
                       <div className="mt-1 text-xs text-green-700">
-                        Senast synkad: {new Date(sheetIntegration.last_synced_at).toLocaleString('sv-SE')}
+                        {t('integration:ringIntegrationModal.sheets.lastSynced')}: {new Date(sheetIntegration.last_synced_at).toLocaleString(i18n.language === 'en' ? 'en-GB' : 'sv-SE')}
                       </div>
                     )}
                   </div>
@@ -488,24 +491,24 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {sheetIntegration ? 'Ändra Spreadsheet ID' : 'Spreadsheet ID'}
+                  {sheetIntegration ? t('integration:ringIntegrationModal.sheets.changeSpreadsheetId') : t('integration:ringIntegrationModal.sheets.spreadsheetIdLabel')}
                 </label>
                 <input
                   type="text"
                   value={spreadsheetId}
                   onChange={(e) => setSpreadsheetId(e.target.value)}
-                  placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                  placeholder={t('integration:ringIntegrationModal.sheets.placeholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Hittas i URL:en: docs.google.com/spreadsheets/d/<strong>[ID]</strong>/edit
+                  {t('integration:ringIntegrationModal.sheets.urlHint')}<strong>{t('integration:ringIntegrationModal.sheets.urlHintBold')}</strong>{t('integration:ringIntegrationModal.sheets.urlHintEnd')}
                 </p>
                 <button
                   onClick={handleValidateSheet}
                   disabled={!spreadsheetId}
                   className="mt-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
                 >
-                  Validera Sheet
+                  {t('integration:ringIntegrationModal.sheets.validateButton')}
                 </button>
               </div>
 
@@ -513,14 +516,14 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 <div className="p-3 bg-green-50 border border-green-200 rounded-sm">
                   <div className="text-sm font-medium text-green-800">{validatedSheet.title}</div>
                   <div className="text-xs text-green-700 mt-1">
-                    Tillgängliga ark: {validatedSheet.sheets.map(s => s.title).join(', ')}
+                    {t('integration:ringIntegrationModal.sheets.validatedTitle')}: {validatedSheet.sheets.map(s => s.title).join(', ')}
                   </div>
                 </div>
               )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ark-namn
+                  {t('integration:ringIntegrationModal.sheets.sheetNameLabel')}
                 </label>
                 {validatedSheet ? (
                   <select
@@ -539,29 +542,29 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                     type="text"
                     value={sheetName}
                     onChange={(e) => setSheetName(e.target.value)}
-                    placeholder="Sheet1"
+                    placeholder={t('integration:ringIntegrationModal.sheets.sheetPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 )}
               </div>
 
               <div className="p-3 bg-blue-50 rounded-sm text-sm text-blue-800">
-                <div className="font-medium mb-1">Förväntat format:</div>
+                <div className="font-medium mb-1">{t('integration:ringIntegrationModal.sheets.expectedFormat')}</div>
                 <table className="w-full text-xs border border-blue-200 bg-white">
                   <thead>
                     <tr className="bg-blue-100">
-                      <th className="border border-blue-200 px-2 py-1">Namn</th>
-                      <th className="border border-blue-200 px-2 py-1">Startdatum</th>
-                      <th className="border border-blue-200 px-2 py-1">Slutdatum</th>
-                      <th className="border border-blue-200 px-2 py-1">Anteckningar</th>
+                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnName')}</th>
+                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnStartDate')}</th>
+                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnEndDate')}</th>
+                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnNotes')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td className="border border-blue-200 px-2 py-1">Sommarsemester</td>
-                      <td className="border border-blue-200 px-2 py-1">2025-06-15</td>
-                      <td className="border border-blue-200 px-2 py-1">2025-08-15</td>
-                      <td className="border border-blue-200 px-2 py-1">Familjeresa</td>
+                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleName')}</td>
+                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleStartDate')}</td>
+                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleEndDate')}</td>
+                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleNotes')}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -570,7 +573,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
               {sheetIntegration && (
                 <div className="p-3 bg-gray-50 rounded-sm text-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-700">Status:</span>
+                    <span className="font-medium text-gray-700">{t('integration:ringIntegrationModal.sheets.status')}:</span>
                     <span className={`px-2 py-0.5 rounded text-xs ${
                       sheetIntegration.last_sync_status === 'success'
                         ? 'bg-green-100 text-green-700'
@@ -578,12 +581,12 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                         ? 'bg-red-100 text-red-700'
                         : 'bg-gray-200 text-gray-700'
                     }`}>
-                      {sheetIntegration.last_sync_status || 'Ej synkad'}
+                      {sheetIntegration.last_sync_status || t('integration:ringIntegrationModal.sheets.notSynced')}
                     </span>
                   </div>
                   {sheetIntegration.last_synced_at && (
                     <div className="text-xs text-gray-600">
-                      Senast synkad: {new Date(sheetIntegration.last_synced_at).toLocaleString('sv-SE')}
+                      {t('integration:ringIntegrationModal.sheets.lastSynced')}: {new Date(sheetIntegration.last_synced_at).toLocaleString(i18n.language === 'en' ? 'en-GB' : 'sv-SE')}
                     </div>
                   )}
                 </div>
@@ -600,7 +603,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 onClick={() => handleRemoveIntegration(integrationType)}
                 className="text-sm text-red-600 hover:text-red-700"
               >
-                Ta bort integration
+                {t('integration:ringIntegrationModal.actions.removeIntegration')}
               </button>
             )}
           </div>
@@ -609,7 +612,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
               onClick={onClose}
               className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-sm transition-colors"
             >
-              Stäng
+              {t('integration:ringIntegrationModal.actions.close')}
             </button>
             {integrationType && (
               <>
@@ -622,12 +625,12 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                     {syncing ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Synkroniserar...
+                        {t('integration:ringIntegrationModal.sync.syncing')}
                       </>
                     ) : (
                       <>
                         <RefreshCw size={16} />
-                        Synkronisera nu
+                        {t('integration:ringIntegrationModal.sync.syncNow')}
                       </>
                     )}
                   </button>
@@ -637,7 +640,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                   disabled={syncing}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm transition-colors disabled:opacity-50"
                 >
-                  {syncing ? 'Sparar...' : 'Spara & Synkronisera'}
+                  {syncing ? t('integration:ringIntegrationModal.actions.saving') : t('integration:ringIntegrationModal.actions.save')}
                 </button>
               </>
             )}

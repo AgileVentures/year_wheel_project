@@ -1,0 +1,86 @@
+{
+  "ringIntegrationModal": {
+    "title": "Data Source for {{ringName}}",
+    "description": "Sync data from Google Calendar or Sheets",
+    "loading": "Loading integrations...",
+    "invalidUUID": "This ring must be saved before you can connect data sources. Save the wheel first.",
+    "connectAccountPrompt": "You must first connect your Google account in",
+    "profileIntegrations": "Profile → Integrations",
+    "selectDataSource": "Select data source",
+    "googleCalendar": "Google Calendar",
+    "googleSheets": "Google Sheets",
+    "notConnected": "Not connected",
+    "calendar": {
+      "existingIntegration": "Existing integration",
+      "calendarId": "Calendar ID",
+      "lastSynced": "Last synced",
+      "selectCalendar": "Select calendar",
+      "changeCalendar": "Change calendar",
+      "selectPlaceholder": "-- Select calendar --",
+      "primaryLabel": "(Primary)",
+      "importDescription": "Events from the selected year will be imported as activities on this ring.",
+      "status": "Status",
+      "notSynced": "Not synced",
+      "notConnectedError": "Google Calendar not connected",
+      "selectCalendarError": "Select a calendar"
+    },
+    "sheets": {
+      "existingIntegration": "Existing integration",
+      "spreadsheetId": "Spreadsheet ID",
+      "spreadsheetIdLabel": "Spreadsheet ID",
+      "changeSpreadsheetId": "Change Spreadsheet ID",
+      "sheetName": "Sheet",
+      "sheetNameLabel": "Sheet name",
+      "lastSynced": "Last synced",
+      "placeholder": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "urlHint": "Found in URL: docs.google.com/spreadsheets/d/",
+      "urlHintBold": "[ID]",
+      "urlHintEnd": "/edit",
+      "validateButton": "Validate Sheet",
+      "validatedTitle": "Available sheets",
+      "sheetPlaceholder": "Sheet1",
+      "expectedFormat": "Expected format:",
+      "columnName": "Name",
+      "columnStartDate": "Start Date",
+      "columnEndDate": "End Date",
+      "columnNotes": "Notes",
+      "exampleName": "Summer vacation",
+      "exampleStartDate": "2025-06-15",
+      "exampleEndDate": "2025-08-15",
+      "exampleNotes": "Family trip",
+      "status": "Status",
+      "notSynced": "Not synced",
+      "notConnectedError": "Google Sheets not connected",
+      "enterSpreadsheetIdError": "Enter Spreadsheet ID",
+      "enterDetailsError": "Enter Spreadsheet ID and sheet name"
+    },
+    "sync": {
+      "syncing": "Syncing...",
+      "syncNow": "Sync now",
+      "syncComplete": "Sync complete! {{count}} activities imported.",
+      "syncFailed": "Sync failed"
+    },
+    "actions": {
+      "removeIntegration": "Remove integration",
+      "removeConfirm": "Are you sure you want to remove this integration?",
+      "close": "Close",
+      "save": "Save & Sync",
+      "saving": "Saving...",
+      "removed": "Integration removed"
+    },
+    "errors": {
+      "loadFailed": "Could not load integrations",
+      "loadCalendarsFailed": "Could not load calendars",
+      "validateSheetFailed": "Could not validate sheet",
+      "saveFailed": "Could not save integration",
+      "syncFailed": "Could not sync",
+      "removeFailed": "Could not remove integration",
+      "upsertNull": "Upsert returned null - integration not saved"
+    },
+    "success": {
+      "calendarSaved": "Calendar integration saved!",
+      "sheetSaved": "Sheet integration saved!",
+      "validated": "Spreadsheet validated!"
+    }
+  }
+}

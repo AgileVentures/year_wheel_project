@@ -1,0 +1,86 @@
+{
+  "ringIntegrationModal": {
+    "title": "Datakälla för {{ringName}}",
+    "description": "Synkronisera data från Google Calendar eller Sheets",
+    "loading": "Laddar integrationer...",
+    "invalidUUID": "Denna ring måste sparas innan du kan ansluta datakällor. Spara hjulet först.",
+    "connectAccountPrompt": "Du måste först ansluta ditt Google-konto i",
+    "profileIntegrations": "Profil → Integrationer",
+    "selectDataSource": "Välj datakälla",
+    "googleCalendar": "Google Calendar",
+    "googleSheets": "Google Sheets",
+    "notConnected": "Inte anslutet",
+    "calendar": {
+      "existingIntegration": "Befintlig integration",
+      "calendarId": "Kalender-ID",
+      "lastSynced": "Senast synkad",
+      "selectCalendar": "Välj kalender",
+      "changeCalendar": "Ändra kalender",
+      "selectPlaceholder": "-- Välj kalender --",
+      "primaryLabel": "(Primär)",
+      "importDescription": "Händelser från valt år importeras som aktiviteter på denna ring.",
+      "status": "Status",
+      "notSynced": "Ej synkad",
+      "notConnectedError": "Google Calendar inte anslutet",
+      "selectCalendarError": "Välj en kalender"
+    },
+    "sheets": {
+      "existingIntegration": "Befintlig integration",
+      "spreadsheetId": "Spreadsheet-ID",
+      "spreadsheetIdLabel": "Spreadsheet ID",
+      "changeSpreadsheetId": "Ändra Spreadsheet ID",
+      "sheetName": "Ark",
+      "sheetNameLabel": "Ark-namn",
+      "lastSynced": "Senast synkad",
+      "placeholder": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "urlHint": "Hittas i URL:en: docs.google.com/spreadsheets/d/",
+      "urlHintBold": "[ID]",
+      "urlHintEnd": "/edit",
+      "validateButton": "Validera Sheet",
+      "validatedTitle": "Tillgängliga ark",
+      "sheetPlaceholder": "Sheet1",
+      "expectedFormat": "Förväntat format:",
+      "columnName": "Namn",
+      "columnStartDate": "Startdatum",
+      "columnEndDate": "Slutdatum",
+      "columnNotes": "Anteckningar",
+      "exampleName": "Sommarsemester",
+      "exampleStartDate": "2025-06-15",
+      "exampleEndDate": "2025-08-15",
+      "exampleNotes": "Familjeresa",
+      "status": "Status",
+      "notSynced": "Ej synkad",
+      "notConnectedError": "Google Sheets inte anslutet",
+      "enterSpreadsheetIdError": "Ange Spreadsheet ID",
+      "enterDetailsError": "Ange Spreadsheet ID och Sheet-namn"
+    },
+    "sync": {
+      "syncing": "Synkroniserar...",
+      "syncNow": "Synkronisera nu",
+      "syncComplete": "Synkronisering klar! {{count}} aktiviteter importerade.",
+      "syncFailed": "Synkronisering misslyckades"
+    },
+    "actions": {
+      "removeIntegration": "Ta bort integration",
+      "removeConfirm": "Är du säker på att du vill ta bort denna integration?",
+      "close": "Stäng",
+      "save": "Spara & Synkronisera",
+      "saving": "Sparar...",
+      "removed": "Integration borttagen"
+    },
+    "errors": {
+      "loadFailed": "Kunde inte ladda integrationer",
+      "loadCalendarsFailed": "Kunde inte ladda kalendrar",
+      "validateSheetFailed": "Kunde inte validera sheet",
+      "saveFailed": "Kunde inte spara integration",
+      "syncFailed": "Kunde inte synkronisera",
+      "removeFailed": "Kunde inte ta bort integration",
+      "upsertNull": "Upsert returned null - integration not saved"
+    },
+    "success": {
+      "calendarSaved": "Kalenderintegration sparad!",
+      "sheetSaved": "Sheet-integration sparad!",
+      "validated": "Spreadsheet validerad!"
+    }
+  }
+}
