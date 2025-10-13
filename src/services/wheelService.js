@@ -32,6 +32,43 @@ export const fetchUserWheels = async () => {
 };
 
 /**
+ * Fetch team wheels that the user has access to (but doesn't own)
+ * Returns wheels from teams where the user is a member
+ */
+export const fetchTeamWheels = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  // Get team IDs where user is a member
+  const { data: memberships, error: membershipsError } = await supabase
+    .from('team_members')
+    .select('team_id')
+    .eq('user_id', user.id);
+
+  if (membershipsError) throw membershipsError;
+  if (!memberships || memberships.length === 0) return [];
+
+  const teamIds = memberships.map(m => m.team_id);
+
+  // Fetch wheels that belong to these teams
+  const { data, error } = await supabase
+    .from('year_wheels')
+    .select(`
+      *,
+      teams (
+        id,
+        name
+      )
+    `)
+    .in('team_id', teamIds)
+    .not('user_id', 'eq', user.id) // Exclude wheels owned by the user (already in personal wheels)
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+};
+
+/**
  * Fetch a single wheel with all related data
  */
 export const fetchWheel = async (wheelId) => {

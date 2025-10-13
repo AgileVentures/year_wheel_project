@@ -4,7 +4,7 @@ import { getUserTeams } from '../../services/teamService';
 import CreateTeamModal from './CreateTeamModal';
 import TeamDetails from './TeamDetails';
 
-const TeamList = () => {
+const TeamList = ({ onSelectWheel }) => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

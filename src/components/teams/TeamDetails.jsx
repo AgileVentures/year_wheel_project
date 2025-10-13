@@ -13,8 +13,9 @@ import {
 } from '../../services/teamService';
 import { useAuth } from '../../hooks/useAuth';
 import InviteMemberModal from './InviteMemberModal';
+import WheelCard from '../dashboard/WheelCard';
 
-const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted }) => {
+const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWheel }) => {
   const { user } = useAuth();
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
@@ -367,29 +368,14 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted }) => {
             <p className="text-sm mt-1">Skapa ett New wheel och välj detta team för att börja</p>
           </div>
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {wheels.map((wheel) => (
-              <div
+              <WheelCard
                 key={wheel.id}
-                className="border border-gray-200 rounded-sm p-4 hover:border-blue-500 transition-colors"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-gray-900">{wheel.title}</h4>
-                  <a
-                    href={`/wheel/${wheel.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-700"
-                    title="Öppna hjul"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-                <p className="text-sm text-gray-600">År: {wheel.year}</p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Uppdaterad {new Date(wheel.updated_at).toLocaleDateString('sv-SE')}
-                </p>
-              </div>
+                wheel={wheel}
+                onSelect={() => onSelectWheel?.(wheel.id)}
+                onUpdate={loadTeamWheels}
+              />
             ))}
           </div>
         )}

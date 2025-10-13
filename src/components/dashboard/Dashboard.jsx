@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
-import { fetchUserWheels, createWheel, deleteWheel, duplicateWheel } from '../../services/wheelService';
+import { fetchUserWheels, fetchTeamWheels, createWheel, deleteWheel, duplicateWheel } from '../../services/wheelService';
 import { getMyInvitations } from '../../services/teamService';
 import WheelCard from './WheelCard';
 import CreateWheelCard from './CreateWheelCard';
@@ -65,6 +65,7 @@ function Dashboard({ onSelectWheel }) {
 function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurrentView, invitationCount, onInvitationAccepted, refreshInvitations }) {
   const { user, signOut } = useAuth();
   const [wheels, setWheels] = useState([]);
+  const [teamWheels, setTeamWheels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -138,8 +139,12 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     setLoading(true);
     setError('');
     try {
-      const data = await fetchUserWheels();
-      setWheels(data);
+      const [personalWheels, sharedWheels] = await Promise.all([
+        fetchUserWheels(),
+        fetchTeamWheels()
+      ]);
+      setWheels(personalWheels);
+      setTeamWheels(sharedWheels);
     } catch (err) {
       console.error('Error loading wheels:', err);
       setError('Kunde inte ladda hjul');
@@ -406,22 +411,48 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 <p className="mt-2 text-gray-600">Laddar hjul...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {wheels.map((wheel) => (
-                  <WheelCard
-                    key={wheel.id}
-                    wheel={wheel}
-                    onSelect={() => onSelectWheel(wheel.id)}
-                    onDelete={() => handleDeleteWheel(wheel.id, wheel.title)}
-                    onUpdate={loadWheels}
-                  />
-                ))}
-                
-                {/* Create New Wheel Card - Always show in grid */}
-                <CreateWheelCard 
-                  onClick={handleCreateWheelClick}
-                  hasReachedLimit={hasReachedWheelLimit}
-                />
+              <div className="space-y-8">
+                {/* Personal Wheels Section */}
+                <section>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Mina hjul</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {wheels.map((wheel) => (
+                      <WheelCard
+                        key={wheel.id}
+                        wheel={wheel}
+                        onSelect={() => onSelectWheel(wheel.id)}
+                        onDelete={() => handleDeleteWheel(wheel.id, wheel.title)}
+                        onUpdate={loadWheels}
+                      />
+                    ))}
+                    
+                    {/* Create New Wheel Card - Always show in grid */}
+                    <CreateWheelCard 
+                      onClick={handleCreateWheelClick}
+                      hasReachedLimit={hasReachedWheelLimit}
+                    />
+                  </div>
+                </section>
+
+                {/* Team Wheels Section */}
+                {teamWheels.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Users className="w-5 h-5 text-blue-600" />
+                      <h3 className="text-lg font-semibold text-gray-900">Team hjul</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {teamWheels.map((wheel) => (
+                        <WheelCard
+                          key={wheel.id}
+                          wheel={wheel}
+                          onSelect={() => onSelectWheel(wheel.id)}
+                          onUpdate={loadWheels}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             )}
           </>
