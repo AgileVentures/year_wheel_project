@@ -1,7 +1,9 @@
 import { X, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onClose }) {
+  const { t } = useTranslation(['editor']);
   const [formData, setFormData] = useState({
     name: item.name,
     ringId: item.ringId,
@@ -21,16 +23,16 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
     // Validation
     const newErrors = {};
     if (!formData.name.trim()) {
-      newErrors.name = 'Namn är obligatoriskt';
+      newErrors.name = t('editor:editItemModal.itemNameRequired');
     }
     if (!formData.startDate) {
-      newErrors.startDate = 'Startdatum är obligatoriskt';
+      newErrors.startDate = t('editor:editItemModal.startDateRequired');
     }
     if (!formData.endDate) {
-      newErrors.endDate = 'Slutdatum är obligatoriskt';
+      newErrors.endDate = t('editor:editItemModal.endDateRequired');
     }
     if (new Date(formData.endDate) < new Date(formData.startDate)) {
-      newErrors.endDate = 'Slutdatum måste vara efter startdatum';
+      newErrors.endDate = t('editor:editItemModal.endDateInvalid');
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -76,7 +78,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
       <div className="bg-white rounded-sm shadow-xl w-full max-w-md my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
-          <h2 className="text-lg font-semibold text-gray-900">Redigera händelse</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('editor:editItemModal.title')}</h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -90,7 +92,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Namn *
+              {t('editor:editItemModal.itemNameLabel')} *
             </label>
             <input
               type="text"
@@ -99,7 +101,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                 errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder="t.ex., Julkampanj"
+              placeholder={t('editor:editItemModal.itemNamePlaceholder')}
             />
             {errors.name && (
               <p className="mt-1 text-xs text-red-600">{errors.name}</p>
@@ -109,7 +111,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
           {/* Ring */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ring
+              {t('editor:editItemModal.ringLabel')}
             </label>
             <select
               value={formData.ringId}
@@ -127,7 +129,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
           {/* Activity */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Aktivitet
+              {t('editor:editItemModal.activityLabel')}
             </label>
             <select
               value={formData.activityId}
@@ -145,7 +147,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
           {/* Label */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Etikett
+              {t('editor:editItemModal.labelLabel')}
             </label>
             <select
               value={formData.labelId}
@@ -164,7 +166,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Startdatum *
+                {t('editor:editItemModal.startDateLabel')} *
               </label>
               <input
                 type="date"
@@ -180,7 +182,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Slutdatum *
+                {t('editor:editItemModal.endDateLabel')} *
               </label>
               <input
                 type="date"
@@ -199,14 +201,14 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
           {/* Time (optional) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tid (valfritt)
+              {t('editor:editItemModal.timeLabel')}
             </label>
             <input
               type="text"
               value={formData.time}
               onChange={(e) => handleChange('time', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder="t.ex., 09:00 - 17:00"
+              placeholder={t('editor:editItemModal.timePlaceholder')}
             />
           </div>
 
@@ -218,7 +220,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               className="px-4 py-2 border border-red-300 text-red-600 rounded-sm hover:bg-red-50 transition-colors text-sm font-medium flex items-center gap-1"
             >
               <Trash2 size={16} />
-              <span>Radera</span>
+              <span>{t('editor:editItemModal.deleteButton')}</span>
             </button>
             <div className="flex-1 flex gap-2">
               <button
@@ -226,13 +228,13 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                 onClick={onClose}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
               >
-                Avbryt
+                {t('editor:editItemModal.cancel')}
               </button>
               <button
                 type="submit"
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Spara
+                {t('editor:editItemModal.save')}
               </button>
             </div>
           </div>
@@ -244,23 +246,23 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white rounded-sm shadow-xl p-6 max-w-sm mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Radera händelse?
+              {t('editor:editItemModal.deleteConfirmTitle')}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Är du säker på att du vill radera "{item.name}"? Denna åtgärd kan inte ångras.
+              {t('editor:editItemModal.deleteConfirmMessage', { itemName: item.name })}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
               >
-                Avbryt
+                {t('editor:editItemModal.deleteConfirmCancel')}
               </button>
               <button
                 onClick={handleDelete}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700 transition-colors text-sm font-medium"
               >
-                Radera
+                {t('editor:editItemModal.deleteConfirmDelete')}
               </button>
             </div>
           </div>
