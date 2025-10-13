@@ -227,6 +227,15 @@
     "calendarEvents": "Kalenderhändelser",
     "calendarEventsDescription": "Visa helgdagar från kalendern"
   },
+  "aiAssistant": {
+    "title": "AI Assistent",
+    "greeting": "Hej! ✨\n\nJag kan hjälpa dig med ditt årshjul **\"{{title}}\"** ({{year}}).\n\n**Jag kan:**\n- Skapa, uppdatera och ta bort aktiviteter\n- Visa och söka efter aktiviteter på årshjulet\n- Hantera ringar, aktivitetsgrupper och etiketter\n\n**Struktur:**\n- Ringar: {{rings}}\n- Grupper: {{activityGroups}}\n- Aktiviteter: {{items}}\n\nVad vill du göra?",
+    "error": "**Fel:** {{message}}\n\nFörsök igen.",
+    "loading": "Jag jobbar på...",
+    "placeholder": "Vad vill du göra? (t.ex. skapa julkampanj...)",
+    "noSession": "Ingen aktiv session",
+    "edgeFunctionError": "Edge function call failed"
+  },
   "modal": {
     "addActivity": "Lägg till aktivitet",
     "editActivity": "Redigera aktivitet",

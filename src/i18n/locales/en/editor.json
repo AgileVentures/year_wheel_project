@@ -227,6 +227,15 @@
     "calendarEvents": "Calendar Events",
     "calendarEventsDescription": "Show holidays from calendar"
   },
+  "aiAssistant": {
+    "title": "AI Assistant",
+    "greeting": "Hello! ✨\n\nI can help you with your year wheel **\"{{title}}\"** ({{year}}).\n\n**I can:**\n- Create, update, and delete activities\n- Show and search for activities on the year wheel\n- Manage rings, activity groups, and labels\n\n**Structure:**\n- Rings: {{rings}}\n- Groups: {{activityGroups}}\n- Activities: {{items}}\n\nWhat would you like to do?",
+    "error": "**Error:** {{message}}\n\nPlease try again.",
+    "loading": "Working on it...",
+    "placeholder": "What would you like to do? (e.g., create Christmas campaign...)",
+    "noSession": "No active session",
+    "edgeFunctionError": "Edge function call failed"
+  },
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",

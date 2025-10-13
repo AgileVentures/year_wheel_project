@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Sparkles, X, Send, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 
 function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOpen, onToggle }) {
+  const { t } = useTranslation(['editor']);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -217,25 +219,17 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       const greeting = {
         id: Date.now(),
         role: 'assistant',
-        content: `Hej! ✨
-
-Jag kan hjälpa dig med ditt årshjul **"${wheelContext.title}"** (${wheelContext.year}).
-
-**Jag kan:**
-- Skapa, uppdatera och ta bort aktiviteter
-- Visa och söka efter aktiviteter på årshjulet
-- Hantera ringar, aktivitetsgrupper och etiketter
-
-**Struktur:**
-- Ringar: ${wheelContext.stats.rings}
-- Grupper: ${wheelContext.stats.activityGroups}
-- Aktiviteter: ${wheelContext.stats.items}
-
-Vad vill du göra?`
+        content: t('editor:aiAssistant.greeting', {
+          title: wheelContext.title,
+          year: wheelContext.year,
+          rings: wheelContext.stats.rings,
+          activityGroups: wheelContext.stats.activityGroups,
+          items: wheelContext.stats.items
+        })
       };
       setMessages([greeting]);
     }
-  }, [isOpen, wheelContext]);
+  }, [isOpen, wheelContext, t]);
 
   // Clean up AI responses - remove technical details that shouldn't be shown to users
   const cleanAIResponse = (text) => {
@@ -274,7 +268,7 @@ Vad vill du göra?`
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error('No active session');
+        throw new Error(t('editor:aiAssistant.noSession'));
       }
 
       // Call AI Assistant edge function
@@ -295,7 +289,7 @@ Vad vill du göra?`
       if (!response.ok) {
         const errorData = await response.json();
         console.error('🔴 [AI Assistant] Edge function error:', errorData);
-        throw new Error(errorData.error || 'Edge function call failed');
+        throw new Error(errorData.error || t('editor:aiAssistant.edgeFunctionError'));
       }
 
       const result = await response.json();
@@ -334,7 +328,7 @@ Vad vill du göra?`
       console.error('[AI] Error:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `**Fel:** ${error.message}\n\nFörsök igen.`,
+        content: t('editor:aiAssistant.error', { message: error.message }),
         isError: true,
         id: Date.now()
       }]);
@@ -399,7 +393,7 @@ Vad vill du göra?`
       <div className="drag-handle bg-white border-b border-gray-200 p-4 flex justify-between items-center cursor-grab active:cursor-grabbing">
         <div className="flex items-center gap-2 pointer-events-none">
           <Sparkles size={16} className="text-amber-500" />
-          <h3 className="text-base font-semibold text-gray-900">AI Assistent</h3>
+          <h3 className="text-base font-semibold text-gray-900">{t('editor:aiAssistant.title')}</h3>
         </div>
         <button onClick={onToggle} className="hover:bg-gray-100 rounded-sm p-1.5 transition-colors pointer-events-auto text-gray-600">
           <X size={16} />
@@ -430,7 +424,7 @@ Vad vill du göra?`
             <div className="bg-white rounded-sm p-3 border border-gray-200">
               <div className="flex gap-2 items-center">
                 <Loader2 size={16} className="animate-spin text-purple-500" />
-                <span className="text-sm text-gray-600">Jag jobbar på...</span>
+                <span className="text-sm text-gray-600">{t('editor:aiAssistant.loading')}</span>
               </div>
             </div>
           </div>
@@ -444,7 +438,7 @@ Vad vill du göra?`
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Vad vill du göra? (t.ex. skapa julkampanj...)"
+            placeholder={t('editor:aiAssistant.placeholder')}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white"
             disabled={isLoading}
           />
