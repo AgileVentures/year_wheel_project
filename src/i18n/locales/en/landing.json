@@ -6,10 +6,26 @@
     "getStarted": "Get started free"
   },
   "hero": {
-    "title": "Plan Your Year Visually",
-    "subtitle": "Create interactive year wheels to visualize projects, campaigns, and activities throughout the year",
-    "cta": "Get started for free",
-    "demo": "See demo"
+    "badge": "AI-powered annual planning",
+    "title1": "Your year at a glance –",
+    "title2": "make decisions faster",
+    "description": "YearWheel makes your annual planning clear, unified and easy to act on. See the whole year at once, spot gaps and conflicts instantly – all with AI assistance.",
+    "ctaPrimary": "Get started free",
+    "ctaSecondary": "See demo",
+    "stats": {
+      "free": {
+        "value": "Free",
+        "label": "to get started"
+      },
+      "wheels": {
+        "value": "3 wheels",
+        "label": "free forever"
+      },
+      "premium": {
+        "value": "∞",
+        "label": "with Premium"
+      }
+    }
   },
   "mobileMessage": {
     "title": "Best on Larger Screens",
@@ -83,13 +99,95 @@
     "title": "Create your account",
     "titleLogin": "Log in"
   },
+  "aiDemo": {
+    "title": "AI Assistant",
+    "status": "Online",
+    "autoSaved": "Auto-saved",
+    "placeholder": "Write what you want to plan...",
+    "sendButton": "Send",
+    "hint": "+ Natural language • AI understands context • Automatic planning",
+    "userMessages": {
+      "message1": "Create a campaign in the second week of March",
+      "message2": "Extend it to mid-April",
+      "message3": "Copy that campaign and place it in September"
+    },
+    "aiResponses": {
+      "response1": {
+        "line1": "✓ Created activity \"Campaign\"",
+        "line2": "✓ Placed in March, week 2 (March 8-14)",
+        "line3": "✓ Used blue color from Marketing",
+        "question": "Would you like to add more information?"
+      },
+      "response2": {
+        "line1": "✓ Extended \"Campaign\" to April 15",
+        "line2": "✓ Campaign now lasts 6 weeks",
+        "line3": "✓ Visually updated on the wheel"
+      },
+      "response3": {
+        "line1": "✓ Copied \"Campaign\" to September",
+        "line2": "✓ Same duration (6 weeks)",
+        "line3": "✓ Both campaigns are now visible"
+      }
+    }
+  },
+  "manualDemo": {
+    "dashboardTitle": "My Year Wheels",
+    "createWheelButton": "Create year wheel",
+    "dashboardHeading": "Your year wheels",
+    "dashboardSubheading": "Create and manage your annual plans",
+    "sampleWheel1": "Sales Plan 2025",
+    "sampleWheel2": "Product Development",
+    "lastEdited": "Last edited",
+    "createNew": "Create new year wheel",
+    "createNewSubtext": "Start planning your year",
+    "modal": {
+      "createTitle": "Create new year wheel",
+      "titleLabel": "Title",
+      "yearLabel": "Year",
+      "required": "*",
+      "cancel": "Cancel",
+      "create": "Create year wheel",
+      "saved": "Saved",
+      "addActivity": "Add activity",
+      "addActivityTitle": "Add activity",
+      "editActivity": "Edit activity",
+      "activityName": "Activity name",
+      "ring": "Ring",
+      "activityGroup": "Activity group",
+      "label": "Label (optional)",
+      "noLabel": "No label",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "save": "Save changes",
+      "placeholder": "Enter name..."
+    },
+    "sidebar": {
+      "manage": "Manage",
+      "disc": "Disc",
+      "list": "List",
+      "calendar": "Calendar",
+      "innerRings": "Inner rings",
+      "outerRings": "Outer rings",
+      "activityGroups": "Activity groups",
+      "labels": "Labels",
+      "addButton": "+ Add",
+      "noOuterRings": "No outer rings",
+      "noLabels": "No labels"
+    },
+    "activities": {
+      "ring1": "Ring 1",
+      "kampanjer": "Campaigns",
+      "planering": "Planning",
+      "firstActivity": "My first activity"
+    }
+  },
   "footer": {
     "tagline": "Visualize your year",
     "product": "Product",
     "features": "Features",
     "pricing": "Pricing",
     "company": "Company",
-    "about": "About",
+    "about": "About us",
     "contact": "Contact",
     "legal": "Legal",
     "privacy": "Privacy Policy",

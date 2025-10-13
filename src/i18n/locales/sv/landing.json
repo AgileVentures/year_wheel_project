@@ -6,10 +6,26 @@
     "getStarted": "Kom igång gratis"
   },
   "hero": {
-    "title": "Planera ditt år visuellt",
-    "subtitle": "Skapa interaktiva årshjul för att visualisera projekt, kampanjer och aktiviteter över hela året",
-    "cta": "Kom igång gratis",
-    "demo": "Se demo"
+    "badge": "AI-assisterad årsplanering",
+    "title1": "Året i en bild –",
+    "title2": "fatta beslut snabbare",
+    "description": "YearWheel gör din årsplanering tydlig, samlad och lätt att agera på. Se hela året på en gång, hitta luckor och krockar direkt – allt med AI-assistans.",
+    "ctaPrimary": "Kom igång gratis",
+    "ctaSecondary": "Se demo",
+    "stats": {
+      "free": {
+        "value": "0 kr",
+        "label": "att komma igång"
+      },
+      "wheels": {
+        "value": "3 hjul",
+        "label": "gratis för alltid"
+      },
+      "premium": {
+        "value": "∞",
+        "label": "med Premium"
+      }
+    }
   },
   "mobileMessage": {
     "title": "Bäst på större skärmar",
@@ -82,6 +98,88 @@
   "auth": {
     "title": "Skapa ditt konto",
     "titleLogin": "Logga in"
+  },
+  "aiDemo": {
+    "title": "AI-assistant",
+    "status": "Online",
+    "autoSaved": "Auto-sparad",
+    "placeholder": "Skriv vad du vill planera...",
+    "sendButton": "Skicka",
+    "hint": "+ Naturligt språk • AI förstår kontext • Automatisk planering",
+    "userMessages": {
+      "message1": "Skapa en kampanj i andra veckan i mars",
+      "message2": "Förläng den till halva april",
+      "message3": "Kopiera den kampanjen och lägg den i september"
+    },
+    "aiResponses": {
+      "response1": {
+        "line1": "✓ Skapade aktivitet \"Kampanj\"",
+        "line2": "✓ Placerade i mars, vecka 2 (8-14 mars)",
+        "line3": "✓ Använde blå färg från Marknadsföring",
+        "question": "Vill du lägga till mer information?"
+      },
+      "response2": {
+        "line1": "✓ Förlängde \"Kampanj\" till 15 april",
+        "line2": "✓ Kampanjen varar nu i 6 veckor",
+        "line3": "✓ Visuellt uppdaterad på hjulet"
+      },
+      "response3": {
+        "line1": "✓ Kopierade \"Kampanj\" till september",
+        "line2": "✓ Samma varaktighet (6 veckor)",
+        "line3": "✓ Båda kampanjerna är nu synliga"
+      }
+    }
+  },
+  "manualDemo": {
+    "dashboardTitle": "Mina Årshjul",
+    "createWheelButton": "Skapa årshjul",
+    "dashboardHeading": "Dina årshjul",
+    "dashboardSubheading": "Skapa och hantera dina årsplaneringar",
+    "sampleWheel1": "Försäljningsplan 2025",
+    "sampleWheel2": "Produktutveckling",
+    "lastEdited": "Senast ändrad",
+    "createNew": "Skapa nytt årshjul",
+    "createNewSubtext": "Börja planera ditt år",
+    "modal": {
+      "createTitle": "Skapa nytt årshjul",
+      "titleLabel": "Titel",
+      "yearLabel": "År",
+      "required": "*",
+      "cancel": "Avbryt",
+      "create": "Skapa årshjul",
+      "saved": "Sparad",
+      "addActivity": "Lägg till aktivitet",
+      "addActivityTitle": "Lägg till aktivitet",
+      "editActivity": "Redigera aktivitet",
+      "activityName": "Aktivitetens namn",
+      "ring": "Ring",
+      "activityGroup": "Aktivitetsgrupp",
+      "label": "Label (valfritt)",
+      "noLabel": "Ingen label",
+      "startDate": "Startdatum",
+      "endDate": "Slutdatum",
+      "save": "Spara ändringar",
+      "placeholder": "Skriv namn..."
+    },
+    "sidebar": {
+      "manage": "Hantera",
+      "disc": "Disc",
+      "list": "Lista",
+      "calendar": "Kalender",
+      "innerRings": "Innerringar",
+      "outerRings": "Ytterringar",
+      "activityGroups": "Aktivitetsgrupper",
+      "labels": "Labels",
+      "addButton": "+ Lägg till",
+      "noOuterRings": "Inga ytterringar",
+      "noLabels": "Inga labels"
+    },
+    "activities": {
+      "ring1": "Ring 1",
+      "kampanjer": "Kampanjer",
+      "planering": "Planering",
+      "firstActivity": "Min första aktivitet"
+    }
   },
   "footer": {
     "tagline": "Visualisera ditt år",

@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function AIAssistantDemo() {
+  const { t } = useTranslation(['landing']);
+  
   // Conversation animation state
   const [conversationStep, setConversationStep] = useState(0);
   const [inputText, setInputText] = useState('');
@@ -10,13 +13,13 @@ export default function AIAssistantDemo() {
 
   // Conversation sequence
   const conversationSequence = [
-    { type: 'input-typing', text: "Skapa en kampanj i andra veckan i mars", delay: 500 },
+    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message1'), delay: 500 },
     { type: 'user-send', delay: 100 },
     { type: 'ai-response', delay: 800 },
-    { type: 'input-typing', text: "Förläng den till halva april", delay: 1500 },
+    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message2'), delay: 1500 },
     { type: 'user-send', delay: 100 },
     { type: 'ai-response', delay: 800 },
-    { type: 'input-typing', text: "Kopiera den kampanjen och lägg den i september", delay: 1500 },
+    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message3'), delay: 1500 },
     { type: 'user-send', delay: 100 },
     { type: 'ai-response', delay: 800 },
     { type: 'reset', delay: 4000 }
@@ -77,7 +80,7 @@ export default function AIAssistantDemo() {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-gray-500">Auto-sparad</span>
+              <span className="text-xs text-gray-500">{t('landing:aiDemo.autoSaved')}</span>
             </div>
           </div>
 
@@ -277,11 +280,11 @@ export default function AIAssistantDemo() {
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                   <Sparkles size={16} className="text-white" />
                 </div>
-                <span className="text-sm font-medium text-gray-900">AI-assistant</span>
+                <span className="text-sm font-medium text-gray-900">{t('landing:aiDemo.title')}</span>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs text-gray-500">Online</span>
+                <span className="text-xs text-gray-500">{t('landing:aiDemo.status')}</span>
               </div>
             </div>
           </div>
@@ -292,7 +295,7 @@ export default function AIAssistantDemo() {
             {conversationStep >= 1 && (
               <div className="flex justify-end animate-fadeIn">
                 <div className="bg-blue-600 text-white rounded-sm px-3 py-2 max-w-[85%] text-xs">
-                  Skapa en kampanj i andra veckan i mars
+                  {t('landing:aiDemo.userMessages.message1')}
                 </div>
               </div>
             )}
@@ -306,10 +309,10 @@ export default function AIAssistantDemo() {
                       AI
                     </div>
                     <div className="flex-1 space-y-1">
-                      <p>✓ Skapade aktivitet "Kampanj"</p>
-                      <p>✓ Placerade i mars, vecka 2 (8-14 mars)</p>
-                      <p>✓ Använde blå färg från Marknadsföring</p>
-                      <p className="text-blue-600 font-medium mt-1">Vill du lägga till mer information?</p>
+                      <p>{t('landing:aiDemo.aiResponses.response1.line1')}</p>
+                      <p>{t('landing:aiDemo.aiResponses.response1.line2')}</p>
+                      <p>{t('landing:aiDemo.aiResponses.response1.line3')}</p>
+                      <p className="text-blue-600 font-medium mt-1">{t('landing:aiDemo.aiResponses.response1.question')}</p>
                     </div>
                   </div>
                 </div>
@@ -320,7 +323,7 @@ export default function AIAssistantDemo() {
             {conversationStep >= 4 && (
               <div className="flex justify-end animate-fadeIn">
                 <div className="bg-blue-600 text-white rounded-sm px-3 py-2 max-w-[80%] text-xs">
-                  Förläng den till halva april
+                  {t('landing:aiDemo.userMessages.message2')}
                 </div>
               </div>
             )}
@@ -334,9 +337,9 @@ export default function AIAssistantDemo() {
                       AI
                     </div>
                     <div className="flex-1 space-y-1">
-                      <p>✓ Förlängde "Kampanj" till 15 april</p>
-                      <p>✓ Kampanjen varar nu i 6 veckor</p>
-                      <p>✓ Visuellt uppdaterad på hjulet</p>
+                      <p>{t('landing:aiDemo.aiResponses.response2.line1')}</p>
+                      <p>{t('landing:aiDemo.aiResponses.response2.line2')}</p>
+                      <p>{t('landing:aiDemo.aiResponses.response2.line3')}</p>
                     </div>
                   </div>
                 </div>
@@ -347,7 +350,7 @@ export default function AIAssistantDemo() {
             {conversationStep >= 7 && (
               <div className="flex justify-end animate-fadeIn">
                 <div className="bg-blue-600 text-white rounded-sm px-3 py-2 max-w-[80%] text-xs">
-                  Kopiera den kampanjen och lägg den i september
+                  {t('landing:aiDemo.userMessages.message3')}
                 </div>
               </div>
             )}
@@ -361,9 +364,9 @@ export default function AIAssistantDemo() {
                       AI
                     </div>
                     <div className="flex-1 space-y-1">
-                      <p>✓ Kopierade "Kampanj" till september</p>
-                      <p>✓ Samma varaktighet (6 veckor)</p>
-                      <p>✓ Båda kampanjerna är nu synliga</p>
+                      <p>{t('landing:aiDemo.aiResponses.response3.line1')}</p>
+                      <p>{t('landing:aiDemo.aiResponses.response3.line2')}</p>
+                      <p>{t('landing:aiDemo.aiResponses.response3.line3')}</p>
                     </div>
                   </div>
                 </div>
@@ -384,16 +387,16 @@ export default function AIAssistantDemo() {
                   </div>
                 ) : (
                   <div className="text-sm text-gray-400">
-                    Skriv vad du vill planera...
+                    {t('landing:aiDemo.placeholder')}
                   </div>
                 )}
               </div>
               <button className="bg-blue-600 text-white rounded-sm px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors">
-                Skicka
+                {t('landing:aiDemo.sendButton')}
               </button>
             </div>
             <div className="mt-2 text-xs text-gray-400">
-              + Naturligt språk • AI förstår kontext • Automatisk planering
+              {t('landing:aiDemo.hint')}
             </div>
           </div>
         </div>
