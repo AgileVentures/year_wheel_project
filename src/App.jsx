@@ -17,6 +17,7 @@ import Dashboard from "./components/dashboard/Dashboard";
 import InviteAcceptPage from "./components/InviteAcceptPage";
 import PreviewWheelPage from "./components/PreviewWheelPage";
 import PricingPage from "./components/PricingPage";
+import LegalPage from "./components/LegalPage";
 import CookieConsent from "./components/CookieConsent";
 import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
@@ -1783,6 +1784,7 @@ function AppContent() {
       <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
       <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/legal/:document" element={<LegalPage />} />
       <Route path="/invite/:token" element={<InviteAcceptPage />} />
       <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
 

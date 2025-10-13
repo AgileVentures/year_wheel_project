@@ -1,0 +1,176 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { ArrowLeft } from 'lucide-react';
+import LanguageSwitcher from './LanguageSwitcher';
+
+function LegalPage() {
+  const { i18n } = useTranslation();
+  const { document } = useParams(); // 'privacy' or 'terms'
+  const navigate = useNavigate();
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadDocument = async () => {
+      setLoading(true);
+      setError(null);
+      
+      const lang = i18n.language === 'en' ? 'en' : 'sv';
+      const fileName = document === 'privacy' 
+        ? `privacy-policy-${lang}.md`
+        : `terms-of-service-${lang}.md`;
+      
+      try {
+        const response = await fetch(`/legal/${fileName}`);
+        if (!response.ok) {
+          throw new Error('Document not found');
+        }
+        const text = await response.text();
+        setContent(text);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDocument();
+  }, [document, i18n.language]);
+
+  const title = document === 'privacy' 
+    ? (i18n.language === 'en' ? 'Privacy Policy' : 'Integritetspolicy')
+    : (i18n.language === 'en' ? 'Terms of Service' : 'Användarvillkor');
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <img 
+                  src="/year_wheel_logo.svg" 
+                  alt="YearWheel" 
+                  className="h-8 w-auto"
+                />
+              </Link>
+              <span className="text-gray-400">|</span>
+              <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              >
+                <ArrowLeft size={18} />
+                <span className="hidden sm:inline">
+                  {i18n.language === 'en' ? 'Back' : 'Tillbaka'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00A4A6]"></div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-800 font-medium mb-2">
+              {i18n.language === 'en' ? 'Error loading document' : 'Fel vid laddning av dokument'}
+            </p>
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <article className="bg-white rounded-lg shadow-lg p-8 md:p-12">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              className="prose prose-slate max-w-none
+                prose-headings:font-bold prose-headings:text-gray-900
+                prose-h1:text-3xl prose-h1:mb-6 prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-4
+                prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4
+                prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3
+                prose-p:text-gray-700 prose-p:leading-relaxed prose-p:mb-4
+                prose-a:text-[#00A4A6] prose-a:no-underline hover:prose-a:underline
+                prose-strong:text-gray-900 prose-strong:font-semibold
+                prose-ul:my-4 prose-ul:list-disc prose-ul:pl-6
+                prose-ol:my-4 prose-ol:list-decimal prose-ol:pl-6
+                prose-li:text-gray-700 prose-li:mb-2
+                prose-hr:my-8 prose-hr:border-gray-300
+                prose-blockquote:border-l-4 prose-blockquote:border-[#00A4A6] prose-blockquote:pl-4 prose-blockquote:italic"
+            >
+              {content}
+            </ReactMarkdown>
+          </article>
+        )}
+
+        {/* Quick Links */}
+        {!loading && !error && (
+          <div className="mt-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {i18n.language === 'en' ? 'Legal Documents' : 'Juridiska dokument'}
+            </h3>
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/legal/privacy"
+                className={`px-4 py-2 rounded-sm font-medium transition-colors ${
+                  document === 'privacy'
+                    ? 'bg-[#00A4A6] text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                {i18n.language === 'en' ? 'Privacy Policy' : 'Integritetspolicy'}
+              </Link>
+              <Link
+                to="/legal/terms"
+                className={`px-4 py-2 rounded-sm font-medium transition-colors ${
+                  document === 'terms'
+                    ? 'bg-[#00A4A6] text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                {i18n.language === 'en' ? 'Terms of Service' : 'Användarvillkor'}
+              </Link>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 py-8 px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="max-w-4xl mx-auto text-center text-sm text-gray-600">
+          <p>
+            {i18n.language === 'en' 
+              ? 'YearWheel Planner is a SaaS service created and operated by'
+              : 'YearWheel Planner är en SaaS-tjänst skapad och driven av'
+            }{' '}
+            <a 
+              href="https://communitaslabs.io" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors"
+            >
+              CommunitasLabs Inc
+            </a>
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default LegalPage;
