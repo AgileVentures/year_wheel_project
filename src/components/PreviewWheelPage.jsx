@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchWheel, fetchPages } from '../services/wheelService';
 import YearWheel from '../YearWheel';
 import { Eye, Lock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -12,6 +13,7 @@ import { Eye, Lock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 function PreviewWheelPage() {
   const { wheelId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation(['common']);
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +31,7 @@ function PreviewWheelPage() {
         const data = await fetchWheel(wheelId);
         
         if (!data) {
-          setError('Hjulet hittades inte eller är inte publikt delat.');
+          setError(t('common:previewWheelPage.wheelNotFound'));
           return;
         }
 
@@ -55,9 +57,9 @@ function PreviewWheelPage() {
         
         if (err.code === 'PGRST116') {
           // No rows returned - wheel doesn't exist or isn't public
-          setError('Hjulet hittades inte eller är inte publikt delat.');
+          setError(t('common:previewWheelPage.wheelNotFound'));
         } else {
-          setError('Ett fel uppstod vid laddning av hjulet.');
+          setError(t('common:previewWheelPage.errorLoading'));
         }
       } finally {
         setIsLoading(false);
@@ -74,7 +76,7 @@ function PreviewWheelPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Laddar hjul...</p>
+          <p className="text-gray-600">{t('common:previewWheelPage.loading')}</p>
         </div>
       </div>
     );
@@ -85,13 +87,13 @@ function PreviewWheelPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
           <Lock size={48} className="text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Åtkomst nekad</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('common:previewWheelPage.accessDenied')}</h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => navigate('/')}
             className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
           >
-            Gå till startsidan
+            {t('common:previewWheelPage.goToHome')}
           </button>
         </div>
       </div>
@@ -122,7 +124,7 @@ function PreviewWheelPage() {
                 {wheelData.title}
               </h1>
               <p className="text-sm text-gray-500">
-                Publikt delat årshjul - Skrivskyddat läge
+                {t('common:previewWheelPage.publicShared')}
               </p>
             </div>
           </div>
@@ -135,7 +137,7 @@ function PreviewWheelPage() {
                   onClick={() => setCurrentPageIndex(currentPageIndex - 1)}
                   disabled={!canGoPrev}
                   className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Föregående år"
+                  title={t('common:previewWheelPage.previousYear')}
                 >
                   <ChevronLeft size={18} className="text-gray-600" />
                 </button>
@@ -152,7 +154,7 @@ function PreviewWheelPage() {
                   onClick={() => setCurrentPageIndex(currentPageIndex + 1)}
                   disabled={!canGoNext}
                   className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Nästa år"
+                  title={t('common:previewWheelPage.nextYear')}
                 >
                   <ChevronRight size={18} className="text-gray-600" />
                 </button>
@@ -163,7 +165,7 @@ function PreviewWheelPage() {
               onClick={() => navigate('/')}
               className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
             >
-              Gå till startsidan
+              {t('common:previewWheelPage.goToHome')}
             </button>
           </div>
         </div>
@@ -187,9 +189,9 @@ function PreviewWheelPage() {
         {/* Info Footer */}
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>
-            Detta är en skrivskyddad förhandsgranskning. 
+            {t('common:previewWheelPage.readOnlyInfo')}
             <a href="/" className="text-blue-600 hover:text-blue-700 ml-1">
-              Skapa ditt eget årshjul
+              {t('common:previewWheelPage.createYourOwn')}
             </a>
           </p>
         </div>

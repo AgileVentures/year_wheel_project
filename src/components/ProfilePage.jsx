@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { User, Mail, Key, ArrowLeft, Link as LinkIcon, Calendar, Sheet, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 import { 
   getUserIntegrations, 
   isProviderConnected, 
@@ -11,6 +12,7 @@ import {
 
 function ProfilePage({ onBack }) {
   const { user, signOut } = useAuth();
+  const { t, i18n } = useTranslation(['common']);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -36,7 +38,7 @@ function ProfilePage({ onBack }) {
     if (oauthSuccess === 'true') {
       const providerName = oauthProvider === 'google_calendar' ? 'Google Calendar' : 
                           oauthProvider === 'google_sheets' ? 'Google Sheets' : 'Google';
-      setSuccess(`${providerName} ansluten!`);
+      setSuccess(t('common:profilePage.integrationConnected', { provider: providerName }));
       // Clean URL
       window.history.replaceState({}, '', '/profile');
     } else if (oauthError) {
@@ -64,12 +66,12 @@ function ProfilePage({ onBack }) {
     setSuccess('');
     
     if (newPassword.length < 6) {
-      setError('Lösenordet måste vara minst 6 tecken');
+      setError(t('common:profilePage.passwordMinLength'));
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      setError('Lösenorden matchar inte');
+      setError(t('common:profilePage.passwordsNoMatch'));
       return;
     }
     
@@ -81,7 +83,7 @@ function ProfilePage({ onBack }) {
       
       if (error) throw error;
       
-      setSuccess('Lösenord uppdaterat!');
+      setSuccess(t('common:profilePage.passwordUpdated'));
       setNewPassword('');
       setConfirmPassword('');
       setIsChangingPassword(false);
@@ -98,7 +100,8 @@ function ProfilePage({ onBack }) {
     
     try {
       await initiateGoogleOAuth(provider, scopes);
-      setSuccess(`${provider === 'google_calendar' ? 'Google Calendar' : 'Google Sheets'} ansluten!`);
+      const providerName = provider === 'google_calendar' ? 'Google Calendar' : 'Google Sheets';
+      setSuccess(t('common:profilePage.integrationConnected', { provider: providerName }));
       await loadIntegrations(); // Reload integrations
     } catch (err) {
       setError(err.message || 'Kunde inte ansluta till Google');
@@ -109,7 +112,7 @@ function ProfilePage({ onBack }) {
   };
 
   const handleDisconnectGoogle = async (provider) => {
-    if (!confirm('Är du säker på att du vill koppla från denna integration? Alla ring-kopplingar kommer att tas bort.')) {
+    if (!confirm(t('common:profilePage.disconnectConfirm'))) {
       return;
     }
 
@@ -117,7 +120,7 @@ function ProfilePage({ onBack }) {
     
     try {
       await disconnectProvider(provider);
-      setSuccess('Integration borttagen');
+      setSuccess(t('common:profilePage.integrationDisconnected'));
       await loadIntegrations(); // Reload integrations
     } catch (err) {
       setError(err.message || 'Kunde inte koppla från integration');
@@ -146,7 +149,7 @@ function ProfilePage({ onBack }) {
             <button
               onClick={onBack}
               className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-              title="Tillbaka"
+              title={t('common:profilePage.back')}
             >
               <ArrowLeft size={22} />
             </button>
@@ -156,8 +159,8 @@ function ProfilePage({ onBack }) {
               className="w-10 h-10"
             />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Min profil</h1>
-              <p className="text-xs text-gray-600">Kontoinställningar</p>
+              <h1 className="text-xl font-bold text-gray-900">{t('common:profilePage.title')}</h1>
+              <p className="text-xs text-gray-600">{t('common:profilePage.accountSettings')}</p>
             </div>
           </div>
         </div>
@@ -166,8 +169,8 @@ function ProfilePage({ onBack }) {
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Min profil</h1>
-          <p className="text-gray-600">Hantera dina kontoinställningar</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('common:profilePage.title')}</h1>
+          <p className="text-gray-600">{t('common:profilePage.subtitle')}</p>
         </div>
 
         {error && (
@@ -186,13 +189,13 @@ function ProfilePage({ onBack }) {
         <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <User size={20} />
-            Kontoinformation
+            {t('common:profilePage.accountInfo')}
           </h2>
           
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                E-post
+                {t('common:profilePage.email')}
               </label>
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
                 <Mail size={16} className="text-gray-400" />
@@ -202,7 +205,7 @@ function ProfilePage({ onBack }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Användar-ID
+                {t('common:profilePage.userId')}
               </label>
               <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
                 <span className="text-sm text-gray-600 font-mono">{user?.id}</span>
@@ -211,11 +214,11 @@ function ProfilePage({ onBack }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Medlem sedan
+                {t('common:profilePage.memberSince')}
               </label>
               <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
                 <span className="text-gray-900">
-                  {new Date(user?.created_at).toLocaleDateString('sv-SE', {
+                  {new Date(user?.created_at).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'sv-SE', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
@@ -230,16 +233,16 @@ function ProfilePage({ onBack }) {
         <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <LinkIcon size={20} />
-            Google Integrationer
+            {t('common:profilePage.googleIntegrations')}
           </h2>
           <p className="text-sm text-gray-600 mb-6">
-            Anslut ditt Google-konto för att synkronisera data från Calendar och Sheets till dina hjul.
+            {t('common:profilePage.googleIntegrationsDescription')}
           </p>
 
           {integrationsLoading ? (
             <div className="flex items-center gap-2 text-gray-600">
               <Loader2 size={20} className="animate-spin" />
-              <span>Laddar integrationer...</span>
+              <span>{t('common:profilePage.loadingIntegrations')}</span>
             </div>
           ) : (
             <div className="space-y-4">
@@ -248,9 +251,9 @@ function ProfilePage({ onBack }) {
                 <div className="flex items-center gap-3">
                   <Calendar size={24} className="text-blue-600" />
                   <div>
-                    <h3 className="font-medium text-gray-900">Google Calendar</h3>
+                    <h3 className="font-medium text-gray-900">{t('common:profilePage.googleCalendar')}</h3>
                     <p className="text-sm text-gray-600">
-                      Synkronisera händelser från dina kalendrar
+                      {t('common:profilePage.googleCalendarDescription')}
                     </p>
                   </div>
                 </div>
@@ -259,13 +262,13 @@ function ProfilePage({ onBack }) {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircle size={20} />
-                      <span className="text-sm font-medium">Ansluten</span>
+                      <span className="text-sm font-medium">{t('common:profilePage.connected')}</span>
                     </div>
                     <button
                       onClick={() => handleDisconnectGoogle('google_calendar')}
                       className="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-sm transition-colors"
                     >
-                      Koppla från
+                      {t('common:profilePage.disconnect')}
                     </button>
                   </div>
                 ) : (
@@ -279,10 +282,10 @@ function ProfilePage({ onBack }) {
                     {connectingProvider === 'google_calendar' ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Ansluter...
+                        {t('common:profilePage.connecting')}
                       </>
                     ) : (
-                      'Anslut Calendar'
+                      t('common:profilePage.connectCalendar')
                     )}
                   </button>
                 )}
@@ -293,9 +296,9 @@ function ProfilePage({ onBack }) {
                 <div className="flex items-center gap-3">
                   <Sheet size={24} className="text-green-600" />
                   <div>
-                    <h3 className="font-medium text-gray-900">Google Sheets</h3>
+                    <h3 className="font-medium text-gray-900">{t('common:profilePage.googleSheets')}</h3>
                     <p className="text-sm text-gray-600">
-                      Importera data från kalkylblad
+                      {t('common:profilePage.googleSheetsDescription')}
                     </p>
                   </div>
                 </div>
@@ -304,13 +307,13 @@ function ProfilePage({ onBack }) {
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 text-green-600">
                       <CheckCircle size={20} />
-                      <span className="text-sm font-medium">Ansluten</span>
+                      <span className="text-sm font-medium">{t('common:profilePage.connected')}</span>
                     </div>
                     <button
                       onClick={() => handleDisconnectGoogle('google_sheets')}
                       className="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-sm transition-colors"
                     >
-                      Koppla från
+                      {t('common:profilePage.disconnect')}
                     </button>
                   </div>
                 ) : (
@@ -324,10 +327,10 @@ function ProfilePage({ onBack }) {
                     {connectingProvider === 'google_sheets' ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Ansluter...
+                        {t('common:profilePage.connecting')}
                       </>
                     ) : (
-                      'Anslut Sheets'
+                      t('common:profilePage.connectSheets')
                     )}
                   </button>
                 )}
@@ -340,7 +343,7 @@ function ProfilePage({ onBack }) {
         <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Key size={20} />
-            Säkerhet
+            {t('common:profilePage.security')}
           </h2>
 
           {!isChangingPassword ? (
@@ -348,13 +351,13 @@ function ProfilePage({ onBack }) {
               onClick={() => setIsChangingPassword(true)}
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm transition-colors"
             >
-              Ändra lösenord
+              {t('common:profilePage.changePassword')}
             </button>
           ) : (
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nytt lösenord
+                  {t('common:profilePage.newPassword')}
                 </label>
                 <input
                   type="password"
@@ -368,7 +371,7 @@ function ProfilePage({ onBack }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bekräfta nytt lösenord
+                  {t('common:profilePage.confirmPassword')}
                 </label>
                 <input
                   type="password"
@@ -385,7 +388,7 @@ function ProfilePage({ onBack }) {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Uppdaterar...' : 'Uppdatera lösenord'}
+                  {loading ? t('common:profilePage.updating') : t('common:profilePage.updatePassword')}
                 </button>
                 <button
                   type="button"
@@ -397,7 +400,7 @@ function ProfilePage({ onBack }) {
                   }}
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm transition-colors"
                 >
-                  Avbryt
+                  {t('common:profilePage.cancel')}
                 </button>
               </div>
             </form>
@@ -407,16 +410,16 @@ function ProfilePage({ onBack }) {
         {/* Danger Zone */}
         <div className="bg-white rounded-sm shadow-sm border border-red-200 p-6">
           <h2 className="text-xl font-semibold text-red-600 mb-4">
-            Farlig zon
+            {t('common:profilePage.dangerZone')}
           </h2>
           <p className="text-gray-600 mb-4">
-            När du loggar ut kommer du att återvända till inloggningssidan.
+            {t('common:profilePage.signOutDescription')}
           </p>
           <button
             onClick={handleSignOut}
             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors"
           >
-            Logga ut
+            {t('common:profilePage.signOut')}
           </button>
         </div>
       </main>
