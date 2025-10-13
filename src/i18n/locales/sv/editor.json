@@ -109,6 +109,28 @@
     "delete": "Radera",
     "deleteConfirm": "Radera \"{name}\"?"
   },
+  "editActivityModal": {
+    "title": "Redigera aktivitet",
+    "nameLabel": "Namn",
+    "namePlaceholder": "t.ex., Julkampanj",
+    "nameRequired": "Namn är obligatoriskt",
+    "ringLabel": "Ring",
+    "activityGroupLabel": "Aktivitetsgrupp",
+    "labelLabel": "Etikett (valfritt)",
+    "labelNone": "Ingen",
+    "startDateLabel": "Startdatum",
+    "startDateRequired": "Startdatum är obligatoriskt",
+    "endDateLabel": "Slutdatum",
+    "endDateRequired": "Slutdatum är obligatoriskt",
+    "endDateInvalid": "Slutdatum måste vara efter startdatum",
+    "timeLabel": "Tid (valfritt)",
+    "timePlaceholder": "t.ex., 09:00 - 17:00",
+    "deleteButton": "Radera",
+    "cancelButton": "Avbryt",
+    "saveButton": "Spara",
+    "deleteConfirmTitle": "Radera aktivitet?",
+    "deleteConfirmMessage": "Är du säker på att du vill radera \"{name}\"? Denna åtgärd kan inte ångras."
+  },
   "modal": {
     "addActivity": "Lägg till aktivitet",
     "editActivity": "Redigera aktivitet",

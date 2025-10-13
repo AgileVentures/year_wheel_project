@@ -109,6 +109,28 @@
     "delete": "Delete",
     "deleteConfirm": "Delete \"{name}\"?"
   },
+  "editActivityModal": {
+    "title": "Edit activity",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g., Christmas campaign",
+    "nameRequired": "Name is required",
+    "ringLabel": "Ring",
+    "activityGroupLabel": "Activity group",
+    "labelLabel": "Label (optional)",
+    "labelNone": "None",
+    "startDateLabel": "Start date",
+    "startDateRequired": "Start date is required",
+    "endDateLabel": "End date",
+    "endDateRequired": "End date is required",
+    "endDateInvalid": "End date must be after start date",
+    "timeLabel": "Time (optional)",
+    "timePlaceholder": "e.g., 09:00 - 17:00",
+    "deleteButton": "Delete",
+    "cancelButton": "Cancel",
+    "saveButton": "Save",
+    "deleteConfirmTitle": "Delete activity?",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
+  },
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",
