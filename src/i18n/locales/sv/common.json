@@ -90,5 +90,26 @@
     "october": "Oktober",
     "november": "November",
     "december": "December"
+  },
+  "header": {
+    "closePanel": "Stäng panel",
+    "openPanel": "Öppna panel",
+    "backToDashboard": "Tillbaka till mina hjul",
+    "yearPlaceholder": "År",
+    "fileOperations": "Filoperationer",
+    "importFile": "Importera (.yrw)",
+    "exportFile": "Exportera (.yrw)",
+    "resetAll": "Återställ allt",
+    "selectImageFormat": "Välj bildformat",
+    "pngTransparent": "PNG (Transparent)",
+    "pngWhite": "PNG (Vit bakgrund)",
+    "copyToClipboard": "Kopiera till urklipp",
+    "downloadImage": "Ladda ner bild",
+    "versionHistory": "Visa versionshistorik",
+    "history": "Historik",
+    "aiAssistant": "AI Assistent",
+    "saving": "Sparar...",
+    "saveToDatabase": "Spara till databas",
+    "saveToBrowser": "Spara till webbläsarlagring"
   }
 }

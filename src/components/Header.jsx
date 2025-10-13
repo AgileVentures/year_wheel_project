@@ -1,4 +1,5 @@
 import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
@@ -41,6 +42,7 @@ function Header({
   // AI Assistant props
   onToggleAI
 }) {
+  const { t } = useTranslation(['common']);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   
@@ -63,8 +65,8 @@ function Header({
           <button
             onClick={onToggleSidebar}
             className="p-2.5 hover:bg-gray-100 rounded-sm transition-colors text-gray-700"
-            aria-label={isSidebarOpen ? "Close panel" : "Open panel"}
-            title={isSidebarOpen ? "Stäng panel" : "Öppna panel"}
+            aria-label={isSidebarOpen ? t('common:header.closePanel') : t('common:header.openPanel')}
+            title={isSidebarOpen ? t('common:header.closePanel') : t('common:header.openPanel')}
           >
             {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
           </button>
@@ -75,7 +77,7 @@ function Header({
             alt="YearWheel" 
             className={`w-12 h-12 transition-transform ${onBackToDashboard ? 'hover:scale-110 cursor-pointer' : ''}`}
             onClick={onBackToDashboard}
-            title={onBackToDashboard ? "Tillbaka till mina hjul" : "YearWheel"}
+            title={onBackToDashboard ? t('common:header.backToDashboard') : "YearWheel"}
           />
         </div>
         
@@ -99,7 +101,7 @@ function Header({
               min="1900"
               max="2100"
               className="w-20 px-2 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="År"
+              placeholder={t('common:header.yearPlaceholder')}
             />
           </div>
         )}
@@ -114,8 +116,8 @@ function Header({
                 onClick={onUndo}
                 disabled={!canUndo}
                 className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed group relative"
-                title={`Ångra${undoLabel ? ': ' + undoLabel : ''} (Ctrl+Z)`}
-                aria-label="Ångra"
+                title={`${t('common:actions.undo')}${undoLabel ? ': ' + undoLabel : ''} (Ctrl+Z)`}
+                aria-label={t('common:actions.undo')}
               >
                 <Undo size={14} />
                 {/* Show descriptive label if available */}
@@ -133,8 +135,8 @@ function Header({
                 onClick={onRedo}
                 disabled={!canRedo}
                 className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed group relative"
-                title={`Gör om${redoLabel ? ': ' + redoLabel : ''} (Ctrl+Shift+Z)`}
-                aria-label="Gör om"
+                title={`${t('common:actions.redo')}${redoLabel ? ': ' + redoLabel : ''} (Ctrl+Shift+Z)`}
+                aria-label={t('common:actions.redo')}
               >
                 <Redo size={14} />
                 {/* Show descriptive label if available */}
@@ -159,7 +161,7 @@ function Header({
           trigger={
             <button 
               className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-              title="Filoperationer"
+              title={t('common:header.fileOperations')}
             >
               <FolderOpen size={14} />
             </button>
@@ -167,18 +169,18 @@ function Header({
         >
           <DropdownItem
             icon={Upload}
-            label="Importera (.yrw)"
+            label={t('common:header.importFile')}
             onClick={onLoadFromFile}
           />
           <DropdownItem
             icon={Download}
-            label="Exportera (.yrw)"
+            label={t('common:header.exportFile')}
             onClick={onSaveToFile}
           />
           <DropdownDivider />
           <DropdownItem
             icon={RotateCcw}
-            label="Återställ allt"
+            label={t('common:header.resetAll')}
             onClick={onReset}
             variant="danger"
           />
@@ -191,7 +193,7 @@ function Header({
             <button
               onClick={() => setShowFormatDropdown(!showFormatDropdown)}
               className="px-2.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors border border-gray-300 flex items-center gap-1.5"
-              title="Välj bildformat"
+              title={t('common:header.selectImageFormat')}
             >
               <Image size={14} />
               <span className="uppercase">{downloadFormat || 'PNG'}</span>
@@ -213,7 +215,7 @@ function Header({
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    PNG (Transparent)
+                    {t('common:header.pngTransparent')}
                   </button>
                   <button
                     onClick={() => {
@@ -223,7 +225,7 @@ function Header({
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    PNG (Vit bakgrund)
+                    {t('common:header.pngWhite')}
                   </button>
                   <button
                     onClick={() => {
@@ -233,7 +235,7 @@ function Header({
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    JPEG
+                    {t('common:actions.export')} JPEG
                   </button>
                   <button
                     onClick={() => {
@@ -243,7 +245,7 @@ function Header({
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    SVG
+                    {t('common:actions.export')} SVG
                   </button>
                 </div>
               </>
@@ -254,7 +256,7 @@ function Header({
           <button
             onClick={() => handleCopyToClipboard(downloadFormat)}
             className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors relative"
-            title="Kopiera till urklipp"
+            title={t('common:header.copyToClipboard')}
           >
             {copiedFormat ? (
               <Check size={14} className="text-green-600" />
@@ -269,7 +271,7 @@ function Header({
               onDownloadImage && onDownloadImage(false);
             }}
             className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-            title="Ladda ner bild"
+            title={t('common:header.downloadImage')}
           >
             <Download size={14} />
           </button>
@@ -302,10 +304,10 @@ function Header({
             <button
               onClick={onVersionHistory}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-              title="Visa versionshistorik"
+              title={t('common:header.versionHistory')}
             >
               <History size={14} />
-              <span>Historik</span>
+              <span>{t('common:header.history')}</span>
             </button>
           </>
         )}
@@ -315,7 +317,7 @@ function Header({
           <button
             onClick={onToggleAI}
             className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-            title="AI Assistent"
+            title={t('common:header.aiAssistant')}
           >
             <Sparkles size={14} className="text-amber-500" />
           </button>
@@ -327,11 +329,11 @@ function Header({
           onClick={onSave}
           disabled={isSaving}
           className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
-          title={onBackToDashboard ? "Spara till databas" : "Spara till webbläsarlagring"}
+          title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
         >
           <Save size={14} />
           <span>
-            {isSaving ? 'Sparar...' : 'Spara'}
+            {isSaving ? t('common:header.saving') : t('common:actions.save')}
             {!isSaving && unsavedChangesCount > 0 && (
               <span className="ml-1 text-xs opacity-90">({unsavedChangesCount})</span>
             )}

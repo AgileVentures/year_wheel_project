@@ -90,5 +90,26 @@
     "october": "October",
     "november": "November",
     "december": "December"
+  },
+  "header": {
+    "closePanel": "Close panel",
+    "openPanel": "Open panel",
+    "backToDashboard": "Back to my wheels",
+    "yearPlaceholder": "Year",
+    "fileOperations": "File operations",
+    "importFile": "Import (.yrw)",
+    "exportFile": "Export (.yrw)",
+    "resetAll": "Reset all",
+    "selectImageFormat": "Select image format",
+    "pngTransparent": "PNG (Transparent)",
+    "pngWhite": "PNG (White background)",
+    "copyToClipboard": "Copy to clipboard",
+    "downloadImage": "Download image",
+    "versionHistory": "Show version history",
+    "history": "History",
+    "aiAssistant": "AI Assistant",
+    "saving": "Saving...",
+    "saveToDatabase": "Save to database",
+    "saveToBrowser": "Save to browser storage"
   }
 }
