@@ -397,8 +397,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           if (wheelData.settings.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
           if (wheelData.settings.showRingNames !== undefined) setShowRingNames(wheelData.settings.showRingNames);
         }
-        // Load showLabels from wheel data (stored at wheel level, not in settings)
-        if (wheelData.showLabels !== undefined) setShowLabels(wheelData.showLabels);
+        // TODO: Load showLabels from wheel data after adding show_labels column to database
+        // if (wheelData.showLabels !== undefined) setShowLabels(wheelData.showLabels);
       }
     } catch (error) {
       console.error('Error loading wheel:', error);

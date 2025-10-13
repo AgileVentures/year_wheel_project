@@ -110,7 +110,8 @@ export const fetchWheel = async (wheelId) => {
     showWeekRing: wheel.show_week_ring,
     showMonthRing: wheel.show_month_ring,
     showRingNames: wheel.show_ring_names,
-    showLabels: wheel.show_labels !== undefined ? wheel.show_labels : false,
+    // TODO: Add show_labels column to database before enabling this
+    // showLabels: wheel.show_labels !== undefined ? wheel.show_labels : false,
     organizationData: {
       rings: rings.map((ring, index) => {
         // For inner rings, attach the month data
@@ -201,7 +202,8 @@ export const createWheel = async (wheelData) => {
       show_week_ring: wheelData.showWeekRing !== undefined ? wheelData.showWeekRing : true,
       show_month_ring: wheelData.showMonthRing !== undefined ? wheelData.showMonthRing : true,
       show_ring_names: wheelData.showRingNames !== undefined ? wheelData.showRingNames : true,
-      show_labels: wheelData.showLabels !== undefined ? wheelData.showLabels : false,
+      // TODO: Add show_labels column to database before enabling this
+      // show_labels: wheelData.showLabels !== undefined ? wheelData.showLabels : false,
       team_id: wheelData.team_id || null,
     })
     .select()
@@ -233,7 +235,8 @@ export const updateWheel = async (wheelId, updates) => {
   if (updates.showWeekRing !== undefined) updateData.show_week_ring = updates.showWeekRing;
   if (updates.showMonthRing !== undefined) updateData.show_month_ring = updates.showMonthRing;
   if (updates.showRingNames !== undefined) updateData.show_ring_names = updates.showRingNames;
-  if (updates.showLabels !== undefined) updateData.show_labels = updates.showLabels;
+  // TODO: Add show_labels column to database before enabling this
+  // if (updates.showLabels !== undefined) updateData.show_labels = updates.showLabels;
   if (updates.is_public !== undefined) updateData.is_public = updates.is_public;
 
   // console.log('[wheelService] Final updateData being sent to DB:', updateData);

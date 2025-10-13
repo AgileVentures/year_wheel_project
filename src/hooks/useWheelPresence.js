@@ -47,12 +47,17 @@ export function useWheelPresence(wheelId) {
         
         // Flatten the state object into an array of users
         // Each key in state contains an array (for handling multiple connections per user)
-        const users = Object.values(state)
+        const allUsers = Object.values(state)
           .flat()
           .filter((u) => u.user_id !== user.id); // Exclude current user
 
-        // console.log(`[Presence] ${users.length} other users online:`, users);
-        setActiveUsers(users);
+        // Deduplicate by user_id (in case of multiple tabs/connections)
+        const uniqueUsers = Array.from(
+          new Map(allUsers.map(u => [u.user_id, u])).values()
+        );
+
+        // console.log(`[Presence] ${uniqueUsers.length} other users online:`, uniqueUsers);
+        setActiveUsers(uniqueUsers);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
         // console.log(`[Presence] User joined:`, newPresences);
