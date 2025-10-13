@@ -51,24 +51,29 @@
   },
   "modal": {
     "title": "Välj din plan",
+    "subtitle": "Uppgradera för obegränsade möjligheter",
     "close": "Stäng",
     "processing": "Behandlar...",
+    "upgradeNow": "Uppgradera nu",
     "select": "Välj plan",
-    "mostPopular": "Mest populär"
+    "mostPopular": "Mest populär",
+    "savings": "Spara 19%!",
+    "perMonth": "/månad",
+    "priceBreakdown": "{{price}} kr/månad"
   },
   "faq": {
     "title": "Vanliga frågor",
     "cancel": {
-      "question": "Kan jag avsluta när som helst?",
-      "answer": "Ja, du kan avsluta din prenumeration när som helst. Du behåller åtkomst till Premium-funktioner till slutet av din betalperiod."
+      "question": "Kan jag avbryta när som helst?",
+      "answer": "Ja, du kan avbryta din prenumeration när som helst. Både månadsprenumerationen och årsprenumerationen löper till periodens slut. Du behåller full åtkomst till premium-funktioner fram till slutdatumet."
     },
-    "change": {
-      "question": "Kan jag byta plan?",
-      "answer": "Ja, du kan när som helst byta mellan månads- och årsbetalning i dina prenumerationsinställningar."
+    "periodEnd": {
+      "question": "Vad händer när prenumerationen tar slut?",
+      "answer": "Du återgår automatiskt till gratisplanen. Dina hjul sparas, men du kan bara ha 2 aktiva hjul och 3 teammedlemmar. Ingen återbetalning sker för resterande tid."
     },
     "secure": {
-      "question": "Är mina betalningar säkra?",
-      "answer": "Absolut! Vi använder Stripe för alla betalningar - en av världens mest betrodda betalningsplattformar. Vi lagrar aldrig dina kortuppgifter."
+      "question": "Är betalningen säker?",
+      "answer": "Ja, vi använder Stripe för säkra betalningar. Din kortinformation lagras aldrig på våra servrar."
     }
   },
   "messages": {
@@ -101,5 +106,35 @@
     "makePublic": "Gör hjulet publikt",
     "copyLink": "Kopiera delningslänk",
     "copied": "Kopierad!"
+  },
+  "settings": {
+    "title": "Prenumeration",
+    "loading": "Laddar prenumeration...",
+    "currentPlan": "Nuvarande plan",
+    "status": {
+      "active": "Aktiv",
+      "canceled": "Avslutad"
+    },
+    "renews": "Förnyas",
+    "endsOn": "Avslutas",
+    "manageBilling": "Hantera betalning",
+    "cancel": "Avbryt",
+    "usage": {
+      "title": "Din användning",
+      "wheels": "Årshjul",
+      "features": "Tillgängliga funktioner:"
+    },
+    "cancelConfirm": {
+      "title": "Avbryt prenumeration?",
+      "message": "Du kommer att behålla åtkomst till premium-funktioner till {{date}}. Efter det återgår du till gratisplanen.",
+      "keep": "Behåll prenumeration",
+      "confirm": "Ja, avbryt",
+      "processing": "Avbryter..."
+    },
+    "alerts": {
+      "canceled": "Din prenumeration kommer att avslutas vid periodens slut.",
+      "billingError": "Kunde inte öppna faktureringspanelen. Försök igen senare.",
+      "cancelError": "Kunde inte avbryta prenumeration. Försök igen senare."
+    }
   }
 }

@@ -51,24 +51,29 @@
   },
   "modal": {
     "title": "Choose your plan",
+    "subtitle": "Upgrade for unlimited possibilities",
     "close": "Close",
     "processing": "Processing...",
+    "upgradeNow": "Upgrade now",
     "select": "Select plan",
-    "mostPopular": "Most popular"
+    "mostPopular": "Most popular",
+    "savings": "Save 19%!",
+    "perMonth": "/month",
+    "priceBreakdown": "{{price}} SEK/month"
   },
   "faq": {
     "title": "Frequently Asked Questions",
     "cancel": {
       "question": "Can I cancel anytime?",
-      "answer": "Yes, you can cancel your subscription at any time. You'll retain access to Premium features until the end of your billing period."
+      "answer": "Yes, you can cancel your subscription at any time. Both monthly and annual subscriptions run until the end of the period. You retain full access to premium features until the end date."
     },
-    "change": {
-      "question": "Can I change plans?",
-      "answer": "Yes, you can switch between monthly and annual payments at any time in your subscription settings."
+    "periodEnd": {
+      "question": "What happens when the subscription ends?",
+      "answer": "You automatically return to the free plan. Your wheels are saved, but you can only have 2 active wheels and 3 team members. No refund is given for remaining time."
     },
     "secure": {
-      "question": "Are my payments secure?",
-      "answer": "Absolutely! We use Stripe for all payments - one of the world's most trusted payment platforms. We never store your card details."
+      "question": "Is payment secure?",
+      "answer": "Yes, we use Stripe for secure payments. Your card information is never stored on our servers."
     }
   },
   "messages": {
@@ -101,5 +106,35 @@
     "makePublic": "Make wheel public",
     "copyLink": "Copy share link",
     "copied": "Copied!"
+  },
+  "settings": {
+    "title": "Subscription",
+    "loading": "Loading subscription...",
+    "currentPlan": "Current plan",
+    "status": {
+      "active": "Active",
+      "canceled": "Canceled"
+    },
+    "renews": "Renews",
+    "endsOn": "Ends on",
+    "manageBilling": "Manage billing",
+    "cancel": "Cancel",
+    "usage": {
+      "title": "Your usage",
+      "wheels": "Year wheels",
+      "features": "Available features:"
+    },
+    "cancelConfirm": {
+      "title": "Cancel subscription?",
+      "message": "You will retain access to premium features until {{date}}. After that you will return to the free plan.",
+      "keep": "Keep subscription",
+      "confirm": "Yes, cancel",
+      "processing": "Canceling..."
+    },
+    "alerts": {
+      "canceled": "Your subscription will end at the end of the period.",
+      "billingError": "Could not open billing portal. Please try again later.",
+      "cancelError": "Could not cancel subscription. Please try again later."
+    }
   }
 }

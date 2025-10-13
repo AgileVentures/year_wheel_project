@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { X, Check, Crown, Zap, Sparkles } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
+import { useTranslation } from 'react-i18next';
 import { createCheckoutSession } from '../../services/subscriptionService';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
+  const { t } = useTranslation(['subscription']);
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('yearly');
 
@@ -34,7 +36,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
       }
     } catch (error) {
       console.error('Error starting checkout:', error);
-      alert('Något gick fel. Försök igen senare.');
+      alert(t('subscription:messages.error'));
     } finally {
       setLoading(false);
     }
@@ -43,58 +45,58 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
   const plans = [
     {
       id: 'free',
-      name: 'Gratis',
+      name: t('subscription:plans.free.name'),
       price: '0',
       period: '',
-      description: 'Perfekt för att komma igång',
+      description: t('subscription:plans.free.description'),
       features: [
-        '3 årshjul',
-        '1 team med 3 medlemmar',
-        'Export som PNG och SVG',
-        'Grundläggande funktioner'
+        t('subscription:plans.free.features.wheels'),
+        t('subscription:plans.free.features.teams'),
+        t('subscription:plans.free.features.export'),
+        t('subscription:plans.free.features.basic')
       ],
       disabled: currentPlan !== 'free',
-      buttonText: currentPlan === 'free' ? 'Nuvarande plan' : 'Inte tillgänglig',
+      buttonText: currentPlan === 'free' ? t('subscription:plans.free.current') : t('subscription:plans.free.notAvailable'),
       icon: null
     },
     {
       id: 'monthly',
-      name: 'Premium Månadsvis',
-      price: '79',
-      period: '/månad',
-      description: 'För flexibilitet',
+      name: t('subscription:plans.monthly.name'),
+      price: t('subscription:plans.monthly.price'),
+      period: t('subscription:plans.monthly.period'),
+      description: t('subscription:plans.monthly.description'),
       features: [
-        'AI-assisterad design och planering',
-        'Obegränsade årshjul',
-        'Obegränsade team och medlemmar',
-        'Alla exportformat (PNG, SVG, PDF, JPG)',
-        'Versionshistorik - se och återställ ändringar',
-        'Dela hjul och samarbeta i realtid',
-        'Prioriterad support'
+        t('subscription:upgradePrompt.benefit1'),
+        t('subscription:upgradePrompt.benefit2'),
+        t('subscription:upgradePrompt.benefit3'),
+        t('subscription:upgradePrompt.benefit4'),
+        t('subscription:upgradePrompt.benefit5'),
+        t('subscription:upgradePrompt.benefit6'),
+        t('subscription:upgradePrompt.benefit7')
       ],
       highlighted: false,
-      buttonText: 'Uppgradera nu',
+      buttonText: t('subscription:modal.upgradeNow'),
       icon: Zap
     },
     {
       id: 'yearly',
-      name: 'Premium Årlig',
+      name: t('subscription:plans.yearly.name'),
       price: '768',
-      period: '/år',
-      pricePerMonth: '64 kr/månad',
-      savings: 'Spara 19%!',
-      description: 'Bästa värdet',
+      period: t('subscription:plans.yearly.period'),
+      pricePerMonth: t('subscription:modal.priceBreakdown', { price: '64' }),
+      savings: t('subscription:modal.savings'),
+      description: t('subscription:plans.yearly.description'),
       features: [
-        'AI-assisterad design och planering',
-        'Obegränsade årshjul',
-        'Obegränsade team och medlemmar',
-        'Alla exportformat (PNG, SVG, PDF, JPG)',
-        'Versionshistorik - se och återställ ändringar',
-        'Dela hjul och samarbeta i realtid',
-        'Prioriterad support'
+        t('subscription:upgradePrompt.benefit1'),
+        t('subscription:upgradePrompt.benefit2'),
+        t('subscription:upgradePrompt.benefit3'),
+        t('subscription:upgradePrompt.benefit4'),
+        t('subscription:upgradePrompt.benefit5'),
+        t('subscription:upgradePrompt.benefit6'),
+        t('subscription:upgradePrompt.benefit7')
       ],
       highlighted: true,
-      buttonText: 'Uppgradera nu',
+      buttonText: t('subscription:modal.upgradeNow'),
       icon: Crown
     }
   ];
@@ -105,9 +107,9 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Välj din plan</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t('subscription:modal.title')}</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Uppgradera för obegränsade möjligheter
+              {t('subscription:modal.subtitle')}
             </p>
           </div>
           <button
@@ -207,7 +209,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
                       ${loading ? 'opacity-50 cursor-wait' : ''}
                     `}
                   >
-                    {loading && !plan.disabled ? 'Behandlar...' : plan.buttonText}
+                    {loading && !plan.disabled ? t('subscription:modal.processing') : plan.buttonText}
                   </button>
                 </div>
               );
@@ -217,35 +219,31 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
           {/* FAQ/Info Section */}
           <div className="mt-12 bg-gray-50 rounded-sm p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">
-              Vanliga frågor
+              {t('subscription:faq.title')}
             </h3>
             <div className="space-y-4">
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  Kan jag avbryta när som helst?
+                  {t('subscription:faq.cancel.question')}
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Ja, du kan avbryta din prenumeration när som helst. 
-                  Både månadsprenumerationen och årsprenumerationen löper till periodens slut. 
-                  Du behåller full åtkomst till premium-funktioner fram till slutdatumet.
+                  {t('subscription:faq.cancel.answer')}
                 </p>
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  Vad händer när prenumerationen tar slut?
+                  {t('subscription:faq.periodEnd.question')}
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Du återgår automatiskt till gratisplanen. Dina hjul sparas, men du kan 
-                  bara ha 2 aktiva hjul och 3 teammedlemmar. Ingen återbetalning sker för resterande tid.
+                  {t('subscription:faq.periodEnd.answer')}
                 </p>
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  Är betalningen säker?
+                  {t('subscription:faq.secure.question')}
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Ja, vi använder Stripe för säkra betalningar. 
-                  Din kortinformation lagras aldrig på våra servrar.
+                  {t('subscription:faq.secure.answer')}
                 </p>
               </div>
             </div>
