@@ -1,6 +1,6 @@
 import { X, Edit2, Trash2 } from 'lucide-react';
 
-function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClose }) {
+function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClose, readonly = false }) {
   if (!item) return null;
 
   const ring = organizationData.rings.find(r => r.id === item.ringId);
@@ -81,30 +81,32 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 p-3 border-t border-gray-200">
-        <button
-          onClick={() => {
-            onEdit(item);
-            onClose();
-          }}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
-        >
-          <Edit2 size={12} />
-          <span>Redigera</span>
-        </button>
-        <button
-          onClick={() => {
-            if (confirm(`Radera "${item.name}"?`)) {
-              onDelete(item.id);
+      {/* Actions - only show in edit mode */}
+      {!readonly && (
+        <div className="flex gap-2 p-3 border-t border-gray-200">
+          <button
+            onClick={() => {
+              onEdit(item);
               onClose();
-            }
-          }}
-          className="px-3 py-1.5 border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
+          >
+            <Edit2 size={12} />
+            <span>Redigera</span>
+          </button>
+          <button
+            onClick={() => {
+              if (confirm(`Radera "${item.name}"?`)) {
+                onDelete(item.id);
+                onClose();
+              }
+            }}
+            className="px-3 py-1.5 border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

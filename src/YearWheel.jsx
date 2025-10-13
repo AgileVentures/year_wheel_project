@@ -25,6 +25,7 @@ function YearWheel({
   onWheelReady,
   onUpdateAktivitet,
   onDeleteAktivitet,
+  readonly = false,
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -448,11 +449,12 @@ function YearWheel({
             setSelectedItem(null);
             setTooltipPosition(null);
           }}
+          readonly={readonly}
         />
       )}
 
-      {/* Edit Aktivitet Modal */}
-      {editingItem && (
+      {/* Edit Aktivitet Modal - only in edit mode */}
+      {editingItem && !readonly && (
         <EditAktivitetModal
           aktivitet={editingItem}
           organizationData={organizationData}

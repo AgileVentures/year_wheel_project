@@ -11,8 +11,12 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   const messagesEndRef = useRef(null);
   const [wheelContext, setWheelContext] = useState(null);
   const [position, setPosition] = useState({ x: window.innerWidth - 440, y: 20 });
+  const [size, setSize] = useState({ width: 420, height: 650 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeDirection, setResizeDirection] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const chatWindowRef = useRef(null);
 
   useEffect(() => {
@@ -92,21 +96,83 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Constrain position to viewport boundaries
+  const constrainToViewport = (pos, currentSize) => {
+    const margin = 10; // Minimum margin from edges
+    return {
+      x: Math.max(margin, Math.min(pos.x, window.innerWidth - currentSize.width - margin)),
+      y: Math.max(margin, Math.min(pos.y, window.innerHeight - currentSize.height - margin))
+    };
+  };
+
+  // Handle viewport resize - keep window visible
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition(prev => constrainToViewport(prev, size));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [size]);
+
+  // Dragging and resizing handlers
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDragging) {
-        setPosition({
+        const newPos = {
           x: e.clientX - dragOffset.x,
           y: e.clientY - dragOffset.y
-        });
+        };
+        setPosition(constrainToViewport(newPos, size));
+      } else if (isResizing && resizeDirection) {
+        const deltaX = e.clientX - resizeStart.x;
+        const deltaY = e.clientY - resizeStart.y;
+        
+        let newWidth = resizeStart.width;
+        let newHeight = resizeStart.height;
+        let newX = position.x;
+        let newY = position.y;
+
+        // Apply constraints
+        const minWidth = 320;
+        const minHeight = 400;
+        const maxWidth = window.innerWidth - 40;
+        const maxHeight = window.innerHeight - 40;
+
+        // Handle different resize directions
+        if (resizeDirection.includes('e')) {
+          newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStart.width + deltaX));
+        }
+        if (resizeDirection.includes('w')) {
+          const potentialWidth = resizeStart.width - deltaX;
+          if (potentialWidth >= minWidth && potentialWidth <= maxWidth) {
+            newWidth = potentialWidth;
+            newX = resizeStart.x + deltaX;
+          }
+        }
+        if (resizeDirection.includes('s')) {
+          newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStart.height + deltaY));
+        }
+        if (resizeDirection.includes('n')) {
+          const potentialHeight = resizeStart.height - deltaY;
+          if (potentialHeight >= minHeight && potentialHeight <= maxHeight) {
+            newHeight = potentialHeight;
+            newY = resizeStart.y + deltaY;
+          }
+        }
+
+        setSize({ width: newWidth, height: newHeight });
+        setPosition(constrainToViewport({ x: newX, y: newY }, { width: newWidth, height: newHeight }));
       }
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setIsResizing(false);
+      setResizeDirection(null);
     };
 
-    if (isDragging) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
@@ -115,7 +181,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragOffset]);
+  }, [isDragging, isResizing, dragOffset, resizeDirection, resizeStart, position, size]);
 
   const handleMouseDown = (e) => {
     if (chatWindowRef.current && e.target.closest('.drag-handle')) {
@@ -126,6 +192,24 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       });
       setIsDragging(true);
     }
+  };
+
+  const handleResizeStart = (e, direction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizeDirection(direction);
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      width: size.width,
+      height: size.height
+    });
+    setResizeStart(prev => ({
+      ...prev,
+      x: e.clientX,
+      y: e.clientY
+    }));
+    setIsResizing(true);
   };
 
   useEffect(() => {
@@ -152,6 +236,22 @@ Vad vill du göra?`
       setMessages([greeting]);
     }
   }, [isOpen, wheelContext]);
+
+  // Clean up AI responses - remove technical details that shouldn't be shown to users
+  const cleanAIResponse = (text) => {
+    if (!text) return text;
+    
+    // Remove UUID patterns (e.g., "ID: 7a7fe4e2-0fb0-4b7b-9242-1fd544b28f8d")
+    text = text.replace(/\(?\s*ID:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\s*\)?/gi, '');
+    
+    // Remove standalone UUIDs that might leak through
+    text = text.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '[removed]');
+    
+    // Clean up double spaces and trailing commas that might result
+    text = text.replace(/\s+/g, ' ').replace(/,\s*\)/g, ')').replace(/\(\s*\)/g, '');
+    
+    return text.trim();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -217,6 +317,9 @@ Vad vill du göra?`
         assistantMessage = 'Klart!';
       }
 
+      // Clean up the response before displaying
+      assistantMessage = cleanAIResponse(assistantMessage);
+
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: assistantMessage,
@@ -245,10 +348,54 @@ Vad vill du göra?`
   return (
     <div 
       ref={chatWindowRef}
-      style={{ left: `${position.x}px`, top: `${position.y}px`, cursor: isDragging ? 'grabbing' : 'default' }}
-      className="fixed w-[420px] h-[650px] bg-white rounded-sm shadow-xl flex flex-col z-50 border border-gray-200"
+      style={{ 
+        left: `${position.x}px`, 
+        top: `${position.y}px`,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        cursor: isDragging ? 'grabbing' : 'default' 
+      }}
+      className="fixed bg-white rounded-sm shadow-xl flex flex-col z-50 border border-gray-200"
       onMouseDown={handleMouseDown}
     >
+      {/* Resize handles */}
+      {/* Top edge */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-1 cursor-n-resize hover:bg-purple-200 transition-colors"
+        onMouseDown={(e) => handleResizeStart(e, 'n')}
+      />
+      {/* Bottom edge */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-1 cursor-s-resize hover:bg-purple-200 transition-colors"
+        onMouseDown={(e) => handleResizeStart(e, 's')}
+      />
+      {/* Left edge */}
+      <div 
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-w-resize hover:bg-purple-200 transition-colors"
+        onMouseDown={(e) => handleResizeStart(e, 'w')}
+      />
+      {/* Right edge */}
+      <div 
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-e-resize hover:bg-purple-200 transition-colors"
+        onMouseDown={(e) => handleResizeStart(e, 'e')}
+      />
+      {/* Corners */}
+      <div 
+        className="absolute top-0 left-0 w-3 h-3 cursor-nw-resize hover:bg-purple-300 transition-colors rounded-tl-sm"
+        onMouseDown={(e) => handleResizeStart(e, 'nw')}
+      />
+      <div 
+        className="absolute top-0 right-0 w-3 h-3 cursor-ne-resize hover:bg-purple-300 transition-colors rounded-tr-sm"
+        onMouseDown={(e) => handleResizeStart(e, 'ne')}
+      />
+      <div 
+        className="absolute bottom-0 left-0 w-3 h-3 cursor-sw-resize hover:bg-purple-300 transition-colors rounded-bl-sm"
+        onMouseDown={(e) => handleResizeStart(e, 'sw')}
+      />
+      <div 
+        className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize hover:bg-purple-300 transition-colors rounded-br-sm"
+        onMouseDown={(e) => handleResizeStart(e, 'se')}
+      />
       <div className="drag-handle bg-white border-b border-gray-200 p-4 flex justify-between items-center cursor-grab active:cursor-grabbing">
         <div className="flex items-center gap-2 pointer-events-none">
           <Sparkles size={16} className="text-amber-500" />

@@ -214,8 +214,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         // If we have pages, load data from first page (or current page if set)
         if (pagesData.length > 0) {
-          const pageToLoad = currentPageId 
-            ? pagesData.find(p => p.id === currentPageId) || pagesData[0]
+          // Use ref to get the CURRENT pageId, not stale closure value
+          const activePageId = latestValuesRef.current?.currentPageId;
+          const pageToLoad = activePageId 
+            ? pagesData.find(p => p.id === activePageId) || pagesData[0]
             : pagesData[0];
           
           setCurrentPageId(pageToLoad.id);
