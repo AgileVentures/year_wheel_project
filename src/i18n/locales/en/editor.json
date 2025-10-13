@@ -98,6 +98,17 @@
     "toggleActivityVisibility": "Toggle activity visibility",
     "change": "Change organization data"
   },
+  "itemTooltip": {
+    "ring": "Ring",
+    "activity": "Activity",
+    "label": "Label",
+    "start": "Start",
+    "end": "End",
+    "time": "Time",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete \"{name}\"?"
+  },
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",

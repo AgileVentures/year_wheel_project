@@ -1,6 +1,8 @@
 import { X, Edit2, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClose, readonly = false }) {
+  const { t, i18n } = useTranslation(['editor']);
   if (!item) return null;
 
   const ring = organizationData.rings.find(r => r.id === item.ringId);
@@ -42,16 +44,16 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
       {/* Content */}
       <div className="p-3 space-y-2 text-xs">
         <div className="flex items-center justify-between">
-          <span className="text-gray-500">Ring:</span>
+          <span className="text-gray-500">{t('editor:itemTooltip.ring')}:</span>
           <span className="text-gray-900 font-medium">{ring?.name || 'N/A'}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-gray-500">Aktivitet:</span>
+          <span className="text-gray-500">{t('editor:itemTooltip.activity')}:</span>
           <span className="text-gray-900 font-medium">{activity?.name || 'N/A'}</span>
         </div>
         {label && label.id !== 'no-label' && (
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">Etikett:</span>
+            <span className="text-gray-500">{t('editor:itemTooltip.label')}:</span>
             <div className="flex items-center gap-1">
               <div
                 className="w-2 h-2 rounded-full"
@@ -62,20 +64,20 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
           </div>
         )}
         <div className="flex items-center justify-between">
-          <span className="text-gray-500">Start:</span>
+          <span className="text-gray-500">{t('editor:itemTooltip.start')}:</span>
           <span className="text-gray-900 font-medium">
-            {startDate.toLocaleDateString('sv-SE')}
+            {startDate.toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'sv-SE')}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-gray-500">Slut:</span>
+          <span className="text-gray-500">{t('editor:itemTooltip.end')}:</span>
           <span className="text-gray-900 font-medium">
-            {endDate.toLocaleDateString('sv-SE')}
+            {endDate.toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'sv-SE')}
           </span>
         </div>
         {item.time && (
           <div className="flex items-center justify-between">
-            <span className="text-gray-500">Tid:</span>
+            <span className="text-gray-500">{t('editor:itemTooltip.time')}:</span>
             <span className="text-gray-900 font-medium">{item.time}</span>
           </div>
         )}
@@ -92,11 +94,11 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
           >
             <Edit2 size={12} />
-            <span>Redigera</span>
+            <span>{t('editor:itemTooltip.edit')}</span>
           </button>
           <button
             onClick={() => {
-              if (confirm(`Radera "${item.name}"?`)) {
+              if (confirm(t('editor:itemTooltip.deleteConfirm', { name: item.name }))) {
                 onDelete(item.id);
                 onClose();
               }

@@ -98,6 +98,17 @@
     "toggleActivityVisibility": "Växla aktivitetssynlighet",
     "change": "Ändra organisationsdata"
   },
+  "itemTooltip": {
+    "ring": "Ring",
+    "activity": "Aktivitet",
+    "label": "Etikett",
+    "start": "Start",
+    "end": "Slut",
+    "time": "Tid",
+    "edit": "Redigera",
+    "delete": "Radera",
+    "deleteConfirm": "Radera \"{name}\"?"
+  },
   "modal": {
     "addActivity": "Lägg till aktivitet",
     "editActivity": "Redigera aktivitet",
