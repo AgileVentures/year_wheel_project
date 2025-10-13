@@ -61,7 +61,8 @@
     "profile": "Profil",
     "settings": "Inställningar",
     "logout": "Logga ut",
-    "invitations": "Inbjudningar"
+    "invitations": "Inbjudningar",
+    "login": "Logga in"
   },
   "months": {
     "jan": "JAN",

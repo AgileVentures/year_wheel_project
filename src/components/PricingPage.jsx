@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap } from 'lucide-react';
+import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap, Calendar } from 'lucide-react';
 import SubscriptionModal from './subscription/SubscriptionModal';
 
 function PricingPage() {
+  const { t } = useTranslation(['landing', 'common']);
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
@@ -45,7 +47,7 @@ function PricingPage() {
               onClick={handleBackToDashboard}
               className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
             >
-              {user ? 'Till Dashboard' : 'Logga in'}
+              {user ? t('common:navigation.dashboard') : t('common:navigation.login')}
             </button>
           </div>
         </div>
@@ -55,21 +57,20 @@ function PricingPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00A4A6]/10 backdrop-blur-sm border border-[#36C2C6]/30 rounded-full text-sm font-semibold mb-6">
           <Sparkles size={16} className="text-[#36C2C6]" />
-          <span className="text-[#2E9E97]">AI-assisterad planering</span>
+          <span className="text-[#2E9E97]">{t('landing:pricing.premium.features.0')}</span>
         </div>
         
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-          Enkel prissättning för alla
+          {t('landing:pricing.title')}
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-          Börja gratis och uppgradera när du behöver fler funktioner. 
-          Ingen bindningstid, avsluta när du vill.
+          {t('landing:pricing.subtitle')}
         </p>
 
         {/* Billing Toggle */}
         <div className="flex items-center justify-center gap-4 mb-12">
           <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
-            Månadsvis
+            {t('landing:pricing.monthly')}
           </span>
           <button
             onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
@@ -82,11 +83,11 @@ function PricingPage() {
             />
           </button>
           <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-gray-900' : 'text-gray-500'}`}>
-            Årsvis
+            {t('landing:pricing.yearly')}
           </span>
           {billingCycle === 'yearly' && (
             <span className="inline-flex items-center px-2 py-1 bg-[#9FCB3E]/20 text-[#336B3E] text-xs font-bold rounded-full border border-[#9FCB3E]/30">
-              Spara 19%
+              {t('landing:pricing.yearlyDiscount')}
             </span>
           )}
         </div>
@@ -98,38 +99,38 @@ function PricingPage() {
           {/* Free Plan */}
           <div className="bg-white rounded-sm shadow-lg border-2 border-gray-200 p-8 flex flex-col">
             <div className="mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Gratis</h3>
-              <p className="text-gray-600">Perfekt för att komma igång</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('landing:pricing.free.name')}</h3>
+              <p className="text-gray-600">{t('subscription:plans.free.description')}</p>
             </div>
 
             <div className="mb-6">
-              <span className="text-5xl font-bold text-gray-900">0 kr</span>
-              <span className="text-gray-600 ml-2">/månad</span>
+              <span className="text-5xl font-bold text-gray-900">{t('landing:pricing.free.price')}</span>
+              <span className="text-gray-600 ml-2">{t('subscription:plans.monthly.period')}</span>
             </div>
 
             <button
               onClick={() => navigate('/auth')}
               className="w-full py-3 px-6 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-sm font-semibold transition-colors mb-8"
             >
-              Kom igång gratis
+              {t('landing:pricing.free.cta')}
             </button>
 
             <div className="space-y-4 flex-grow">
               <div className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">3 årshjul</span>
+                <span className="text-gray-700">{t('subscription:plans.free.features.wheels')}</span>
               </div>
               <div className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">1 team med 3 medlemmar</span>
+                <span className="text-gray-700">{t('subscription:plans.free.features.teams')}</span>
               </div>
               <div className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">Export som PNG och SVG</span>
+                <span className="text-gray-700">{t('subscription:plans.free.features.export')}</span>
               </div>
               <div className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">Grundläggande funktioner</span>
+                <span className="text-gray-700">{t('subscription:plans.free.features.basic')}</span>
               </div>
             </div>
           </div>
@@ -138,29 +139,29 @@ function PricingPage() {
           <div className="bg-gradient-to-br from-[#1B2A63] via-[#2D4EC8] to-[#2E9E97] rounded-sm shadow-2xl border-2 border-[#36C2C6]/50 p-8 flex flex-col relative overflow-hidden">
             {/* Popular Badge */}
             <div className="absolute top-0 right-0 bg-[#9FCB3E] text-[#336B3E] px-4 py-1 text-xs font-bold rounded-bl-lg">
-              POPULÄRAST
+              {t('subscription:modal.mostPopular').toUpperCase()}
             </div>
 
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="w-6 h-6 text-[#9FCB3E]" />
-                <h3 className="text-2xl font-bold text-white">Premium</h3>
+                <h3 className="text-2xl font-bold text-white">{t('landing:pricing.premium.title')}</h3>
               </div>
-              <p className="text-[#A4E6E0]">Allt du behöver för professionell planering</p>
+              <p className="text-[#A4E6E0]">{t('landing:pricing.premium.description')}</p>
             </div>
 
             <div className="mb-6">
               {billingCycle === 'monthly' ? (
                 <div>
-                  <span className="text-5xl font-bold text-white">79 kr</span>
-                  <span className="text-[#A4E6E0] ml-2">/månad</span>
+                  <span className="text-5xl font-bold text-white">{t('landing:pricing.premium.priceMonthly')}</span>
+                  <span className="text-[#A4E6E0] ml-2">{t('landing:pricing.premium.period')}</span>
                 </div>
               ) : (
                 <div>
-                  <span className="text-5xl font-bold text-white">64 kr</span>
-                  <span className="text-[#A4E6E0] ml-2">/månad</span>
+                  <span className="text-5xl font-bold text-white">{t('landing:pricing.premium.priceYearly')}</span>
+                  <span className="text-[#A4E6E0] ml-2">{t('landing:pricing.premium.period')}</span>
                   <div className="text-sm text-[#A4E6E0] mt-1">
-                    (768 kr/år - spara 180 kr)
+                    ({t('landing:pricing.premium.yearlyTotal')} - {t('landing:pricing.premium.saveText').toLowerCase()})
                   </div>
                 </div>
               )}
@@ -170,58 +171,35 @@ function PricingPage() {
               onClick={handleGetStarted}
               className="w-full py-3 px-6 bg-white hover:bg-[#A4E6E0] text-[#1B2A63] rounded-sm font-semibold transition-colors mb-8 shadow-lg"
             >
-              Kom igång nu
+              {t('landing:pricing.premium.cta')}
             </button>
 
             <div className="space-y-4 flex-grow">
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Sparkles className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white font-semibold">AI-assistent för planering</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Sparkles className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white font-semibold">Google Integration (Calendar & Sheets)</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Zap className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white">Obegränsade årshjul</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Users className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white">Obegränsade team och medlemmar</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <FileImage className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white">Alla exportformat (PNG, SVG, PDF, JPG)</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <History className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white">Versionshistorik</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Share2 className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white">Dela hjul och samarbeta i realtid</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="w-3 h-3 text-[#00A4A6]" />
-                </div>
-                <span className="text-white">Prioriterad support</span>
-              </div>
+              {t('landing:pricing.premium.features', { returnObjects: true }).map((feature, index) => {
+                // Icon mapping for each feature
+                const getIcon = () => {
+                  const iconMap = [
+                    <Sparkles className="w-3 h-3 text-[#00A4A6]" />,  // AI assistant
+                    <Calendar className="w-3 h-3 text-[#00A4A6]" />,  // Google Integration
+                    <Zap className="w-3 h-3 text-[#00A4A6]" />,       // Unlimited wheels
+                    <Users className="w-3 h-3 text-[#00A4A6]" />,     // Unlimited teams
+                    <FileImage className="w-3 h-3 text-[#00A4A6]" />, // All export formats
+                    <History className="w-3 h-3 text-[#00A4A6]" />,   // Version history
+                    <Share2 className="w-3 h-3 text-[#00A4A6]" />,    // Share & collaborate
+                    <Check className="w-3 h-3 text-[#00A4A6]" />      // Priority support
+                  ];
+                  return iconMap[index] || <Check className="w-3 h-3 text-[#00A4A6]" />;
+                };
+
+                return (
+                  <div key={index} className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {getIcon()}
+                    </div>
+                    <span className={`text-white ${index < 2 ? 'font-semibold' : ''}`}>{feature}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

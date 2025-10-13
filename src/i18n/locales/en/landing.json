@@ -70,10 +70,10 @@
   },
   "pricing": {
     "title": "Choose your plan",
-    "subtitle": "Start free, upgrade when you need more",
+    "subtitle": "Start free and upgrade when you need more",
     "monthly": "Monthly",
     "yearly": "Yearly",
-    "yearlyDiscount": "Save 17%",
+    "yearlyDiscount": "Save 19%",
     "free": {
       "name": "Free",
       "price": "0 kr",
@@ -84,11 +84,11 @@
     "premium": {
       "title": "Premium",
       "description": "For teams and organizations that need advanced planning",
-      "priceMonthly": "79 kr",
-      "priceYearly": "64 kr",
-      "yearlyTotal": "768 kr/year",
+      "priceMonthly": "79 SEK",
+      "priceYearly": "64 SEK",
+      "yearlyTotal": "768 SEK/year",
       "period": "/month",
-      "saveText": "Save 17%",
+      "saveText": "Save 19%",
       "cta": "Get started",
       "features": [
         "AI assistant for planning",
@@ -97,6 +97,7 @@
         "Unlimited teams and members",
         "All export formats (PNG, SVG, PDF, JPG)",
         "Version history",
+        "Share wheels and collaborate in real-time",
         "Priority support"
       ]
     },

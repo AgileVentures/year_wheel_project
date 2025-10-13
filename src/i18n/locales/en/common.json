@@ -60,8 +60,9 @@
     "teams": "Teams",
     "profile": "Profile",
     "settings": "Settings",
-    "logout": "Log out",
-    "invitations": "Invitations"
+    "logout": "Logout",
+    "invitations": "Invitations",
+    "login": "Log in"
   },
   "months": {
     "jan": "JAN",

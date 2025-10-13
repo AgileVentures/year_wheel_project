@@ -73,7 +73,7 @@
     "subtitle": "Börja gratis, uppgradera när du behöver mer",
     "monthly": "Månadsvis",
     "yearly": "Årsvis",
-    "yearlyDiscount": "Spara 17%",
+    "yearlyDiscount": "Spara 19%",
     "free": {
       "name": "Gratis",
       "price": "0 kr",
@@ -88,7 +88,7 @@
       "priceYearly": "64 kr",
       "yearlyTotal": "768 kr/år",
       "period": "/månad",
-      "saveText": "Spara 17%",
+      "saveText": "Spara 19%",
       "cta": "Kom igång",
       "features": [
         "AI-assistent för planering",
@@ -97,6 +97,7 @@
         "Obegränsade team och medlemmar",
         "Alla exportformat (PNG, SVG, PDF, JPG)",
         "Versionshistorik",
+        "Dela hjul och samarbeta i realtid",
         "Prioriterad support"
       ]
     },

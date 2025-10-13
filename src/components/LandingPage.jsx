@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play } from 'lucide-react';
+import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play, Share2 } from 'lucide-react';
 import LoginForm from './auth/LoginForm';
 import SignupForm from './auth/SignupForm';
 import AIAssistantDemo from './AIAssistantDemo';
@@ -753,38 +753,33 @@ function LandingPage() {
               </div>
 
               <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Sparkles className="text-[#00A4A6]" size={12} />
-                  </div>
-                  <span className="text-white font-semibold">{t('subscription:plans.premium.features.aiAssistant')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Calendar className="text-[#00A4A6]" size={12} />
-                  </div>
-                  <span className="text-white font-semibold">{t('subscription:plans.premium.features.googleIntegration')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">{t('subscription:plans.premium.features.unlimitedWheels')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">{t('subscription:plans.premium.features.unlimitedTeams')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">{t('subscription:plans.premium.features.allExports')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">{t('subscription:plans.premium.features.versionHistory')}</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="text-white flex-shrink-0 mt-1" size={20} />
-                  <span className="text-white">{t('subscription:plans.premium.features.prioritySupport')}</span>
-                </li>
+                {t('landing:pricing.premium.features', { returnObjects: true }).map((feature, index) => {
+                  // Special icons for first two features (AI and Google Integration)
+                  const getIcon = () => {
+                    if (index === 0) {
+                      return (
+                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Sparkles className="text-[#00A4A6]" size={12} />
+                        </div>
+                      );
+                    }
+                    if (index === 1) {
+                      return (
+                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Calendar className="text-[#00A4A6]" size={12} />
+                        </div>
+                      );
+                    }
+                    return <Check className="text-white flex-shrink-0 mt-1" size={20} />;
+                  };
+
+                  return (
+                    <li key={index} className="flex items-start gap-3">
+                      {getIcon()}
+                      <span className={`text-white ${index < 2 ? 'font-semibold' : ''}`}>{feature}</span>
+                    </li>
+                  );
+                })}
               </ul>
 
               <button
