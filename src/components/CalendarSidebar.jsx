@@ -1,19 +1,39 @@
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import EditAktivitetModal from './EditAktivitetModal';
 
 function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose, onZoomToMonth }) {
+  const { t } = useTranslation(['editor']);
   const [currentMonth, setCurrentMonth] = useState(9); // October (0-indexed)
   const [selectedYear, setSelectedYear] = useState(parseInt(year));
   const [editingAktivitet, setEditingAktivitet] = useState(null);
   const [isZoomedToMonth, setIsZoomedToMonth] = useState(false);
 
   const months = [
-    'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
-    'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
+    t('editor:calendarSidebar.months.january'),
+    t('editor:calendarSidebar.months.february'),
+    t('editor:calendarSidebar.months.march'),
+    t('editor:calendarSidebar.months.april'),
+    t('editor:calendarSidebar.months.may'),
+    t('editor:calendarSidebar.months.june'),
+    t('editor:calendarSidebar.months.july'),
+    t('editor:calendarSidebar.months.august'),
+    t('editor:calendarSidebar.months.september'),
+    t('editor:calendarSidebar.months.october'),
+    t('editor:calendarSidebar.months.november'),
+    t('editor:calendarSidebar.months.december')
   ];
 
-  const daysOfWeek = ['mån', 'tis', 'ons', 'tor', 'fre', 'lör', 'sön'];
+  const daysOfWeek = [
+    t('editor:calendarSidebar.daysOfWeek.mon'),
+    t('editor:calendarSidebar.daysOfWeek.tue'),
+    t('editor:calendarSidebar.daysOfWeek.wed'),
+    t('editor:calendarSidebar.daysOfWeek.thu'),
+    t('editor:calendarSidebar.daysOfWeek.fri'),
+    t('editor:calendarSidebar.daysOfWeek.sat'),
+    t('editor:calendarSidebar.daysOfWeek.sun')
+  ];
 
   const getDaysInMonth = (year, month) => {
     return new Date(year, month + 1, 0).getDate();
@@ -130,7 +150,7 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
               className="w-4 h-4 rounded border-gray-300"
             />
             <label htmlFor="zoom-toggle" className="text-xs text-gray-600 cursor-pointer">
-              Zooma in månad
+              {t('editor:calendarSidebar.zoomInMonth')}
             </label>
           </div>
           <button
@@ -207,7 +227,7 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
                       <button 
                         onClick={() => setEditingAktivitet(event)}
                         className="p-1 hover:bg-gray-100 rounded"
-                        title="Redigera"
+                        title={t('editor:calendarSidebar.edit')}
                       >
                         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-gray-400">
                           <path d="M11.333 2A1.886 1.886 0 0 1 14 4.667l-9 9-3.667 1 1-3.667 9-9Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -221,7 +241,7 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
           </div>
         ) : (
           <div className="text-center text-sm text-gray-400 py-8">
-            Inga aktiviteter denna månad
+            {t('editor:calendarSidebar.noActivitiesThisMonth')}
           </div>
         )}
       </div>

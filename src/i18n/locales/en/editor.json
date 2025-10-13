@@ -187,6 +187,34 @@
     "nextYearDescription": "Create an empty page for {{year}} with the same structure (rings are shared automatically)",
     "cancel": "Cancel"
   },
+  "calendarSidebar": {
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "daysOfWeek": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "zoomInMonth": "Zoom in month",
+    "edit": "Edit",
+    "noActivitiesThisMonth": "No activities this month"
+  },
   "modal": {
     "addActivity": "Add Activity",
     "editActivity": "Edit Activity",
