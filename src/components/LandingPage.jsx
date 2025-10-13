@@ -8,6 +8,7 @@ import SignupForm from './auth/SignupForm';
 import AIAssistantDemo from './AIAssistantDemo';
 import ManualEditorDemo from './ManualEditorDemo';
 import Hero from './Hero';
+import LanguageSwitcher from './LanguageSwitcher';
 
 function LandingPage() {
   const { t } = useTranslation(['landing', 'common']);
@@ -145,6 +146,7 @@ function LandingPage() {
               <button onClick={scrollToAuth} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 {t('landing:nav.login')}
               </button>
+              <LanguageSwitcher />
               <button
                 onClick={scrollToAuth}
                 className="px-5 py-2.5 bg-[#00A4A6] text-white rounded-sm hover:bg-[#2E9E97] font-semibold transition-colors"
