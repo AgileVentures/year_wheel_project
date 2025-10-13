@@ -64,5 +64,17 @@
     "errorCancelInvitation": "Could not cancel invitation",
     "errorDeleteTeam": "Could not delete team",
     "loading": "Loading team..."
+  },
+  "createTeamModal": {
+    "title": "Create new team",
+    "nameLabel": "Name",
+    "nameRequired": "Name is required",
+    "namePlaceholder": "e.g., My team",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Short description of the team (optional)",
+    "characterCount": "{{count}}/500 characters",
+    "cancel": "Cancel",
+    "create": "Create team",
+    "creating": "Creating..."
   }
 }

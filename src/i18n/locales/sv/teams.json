@@ -64,5 +64,17 @@
     "errorCancelInvitation": "Kunde inte avbryta inbjudan",
     "errorDeleteTeam": "Kunde inte ta bort team",
     "loading": "Laddar team..."
+  },
+  "createTeamModal": {
+    "title": "Skapa nytt team",
+    "nameLabel": "Namn",
+    "nameRequired": "Namn är obligatoriskt",
+    "namePlaceholder": "T.ex. Mitt team",
+    "descriptionLabel": "Beskrivning",
+    "descriptionPlaceholder": "Kort beskrivning av teamet (valfritt)",
+    "characterCount": "{{count}}/500 tecken",
+    "cancel": "Avbryt",
+    "create": "Skapa team",
+    "creating": "Skapar..."
   }
 }
