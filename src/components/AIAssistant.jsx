@@ -271,8 +271,8 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         throw new Error(t('editor:aiAssistant.noSession'));
       }
 
-      // Call AI Assistant edge function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`, {
+      // Call AI Assistant V2 edge function (using OpenAI Agents SDK)
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant-v2`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -280,7 +280,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         },
         body: JSON.stringify({
           userMessage: userMessage.content,
-          conversationHistory: messages.slice(0, -1), // Send all previous messages
+          conversationHistory: messages, // Send all messages including current one
           wheelId,
           currentPageId
         })

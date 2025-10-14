@@ -126,7 +126,7 @@ year_wheel_poc/
 
 - **Frontend**: React 18, Vite, TailwindCSS
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Edge Functions)
-- **AI**: OpenAI GPT-4 for natural language planning
+- **AI**: OpenAI GPT-4.1 for natural language planning
 - **Integrations**: Google Calendar API, Google Sheets API
 - **Payments**: Stripe for subscription management
 - **Canvas Rendering**: Custom HTML5 Canvas with SVG export via canvas2svg
