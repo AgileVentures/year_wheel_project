@@ -598,6 +598,7 @@ function OrganizationPanel({
           <div className="text-xs font-medium text-gray-700">{t('editor:filter.title')}</div>
           <button
             onClick={() => setIsAddModalOpen(true)}
+            data-onboarding="add-activity"
             className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
           >
             <Plus size={14} />
@@ -923,6 +924,7 @@ function OrganizationPanel({
                 </div>
                 <button
                   onClick={handleAddInnerRing}
+                  data-onboarding="add-inner-ring"
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
@@ -1035,6 +1037,7 @@ function OrganizationPanel({
                 </div>
                 <button
                   onClick={handleAddOuterRing}
+                  data-onboarding="add-outer-ring"
                   className="flex items-center gap-1 px-2 py-0.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 >
                   <Plus size={12} />
@@ -1046,7 +1049,7 @@ function OrganizationPanel({
         </div>
 
         {/* AKTIVITETSGRUPPER Section */}
-        <div className="px-4 py-3 border-b border-gray-200">
+        <div className="px-4 py-3 border-b border-gray-200" data-onboarding="activity-groups">
           <button
             onClick={() => toggleSection('activityGroups')}
             className="w-full flex items-center justify-between mb-2"

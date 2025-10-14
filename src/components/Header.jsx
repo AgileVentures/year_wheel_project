@@ -5,6 +5,7 @@ import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
 import PageNavigator from './PageNavigator';
 import LanguageSwitcher from './LanguageSwitcher';
+import OnboardingMenu from './OnboardingMenu';
 import { useState } from 'react';
 
 function Header({ 
@@ -41,7 +42,10 @@ function Header({
   onAddPage,
   onDeletePage,
   // AI Assistant props
-  onToggleAI
+  onToggleAI,
+  // Onboarding props
+  onStartOnboarding,
+  onStartAIOnboarding
 }) {
   const { t } = useTranslation(['common']);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
@@ -188,7 +192,7 @@ function Header({
         </Dropdown>
         
         {/* Image Export with Format Selector */}
-        <div className="relative flex items-center gap-1">
+        <div className="relative flex items-center gap-1" data-onboarding="export-share">
           {/* Format Selector Dropdown */}
           <div className="relative">
             <button
@@ -322,6 +326,18 @@ function Header({
           >
             <Sparkles size={14} className="text-amber-500" />
           </button>
+        )}
+
+        {/* Onboarding Help Menu */}
+        {onStartOnboarding && (
+          <>
+            <div className="w-px h-8 bg-gray-300"></div>
+            <OnboardingMenu
+              onStartEditorGuide={onStartOnboarding}
+              onStartAIGuide={onStartAIOnboarding}
+              showAIOption={!!wheelId && !!onToggleAI}
+            />
+          </>
         )}
         
         <div className="w-px h-8 bg-gray-300"></div>

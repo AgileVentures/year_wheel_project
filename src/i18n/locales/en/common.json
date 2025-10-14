@@ -22,7 +22,10 @@
     "redo": "Redo",
     "loading": "Loading...",
     "confirm": "Confirm",
-    "more": "More options"
+    "more": "More options",
+    "next": "Next",
+    "previous": "Previous",
+    "done": "Done"
   },
   "labels": {
     "name": "Name",
@@ -112,7 +115,8 @@
     "aiAssistant": "AI Assistant",
     "saving": "Saving...",
     "saveToDatabase": "Save to database",
-    "saveToBrowser": "Save to browser storage"
+    "saveToBrowser": "Save to browser storage",
+    "showGuide": "Show quick guide"
   },
   "cookieConsent": {
     "title": "Cookie Settings",

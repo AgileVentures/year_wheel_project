@@ -342,6 +342,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   return (
     <div 
       ref={chatWindowRef}
+      data-onboarding="ai-assistant-window"
       style={{ 
         left: `${position.x}px`, 
         top: `${position.y}px`,
@@ -361,6 +362,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       {/* Bottom edge */}
       <div 
         className="absolute bottom-0 left-0 right-0 h-1 cursor-s-resize hover:bg-purple-200 transition-colors"
+        data-onboarding="ai-resize-handle"
         onMouseDown={(e) => handleResizeStart(e, 's')}
       />
       {/* Left edge */}
@@ -390,7 +392,10 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize hover:bg-purple-300 transition-colors rounded-br-sm"
         onMouseDown={(e) => handleResizeStart(e, 'se')}
       />
-      <div className="drag-handle bg-white border-b border-gray-200 p-4 flex justify-between items-center cursor-grab active:cursor-grabbing">
+      <div 
+        className="drag-handle bg-white border-b border-gray-200 p-4 flex justify-between items-center cursor-grab active:cursor-grabbing"
+        data-onboarding="ai-drag-handle"
+      >
         <div className="flex items-center gap-2 pointer-events-none">
           <Sparkles size={16} className="text-amber-500" />
           <h3 className="text-base font-semibold text-gray-900">{t('editor:aiAssistant.title')}</h3>

@@ -287,5 +287,77 @@
       "endDateRequired": "End date is required",
       "endDateAfterStart": "End date must be after start date"
     }
+  },
+  "guides": {
+    "editorGuide": {
+      "title": "Editor Guide",
+      "description": "Learn the basics of YearWheel"
+    },
+    "aiGuide": {
+      "title": "AI Assistant Guide",
+      "description": "Discover AI features"
+    }
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome to YearWheel! 🎉",
+      "description": "Here you can plan your entire year in one place. Let us show you how it works in a quick tour."
+    },
+    "innerRing": {
+      "title": "Add Inner Ring",
+      "description": "Inner rings represent areas like Goals or Campaigns. They appear inside the month ring and can contain text for each month."
+    },
+    "outerRing": {
+      "title": "Add Outer Ring",
+      "description": "Outer rings appear outside the month ring. Perfect for longer activities like projects or campaigns with start and end dates."
+    },
+    "activityGroups": {
+      "title": "Activity Groups",
+      "description": "Color-code activities by creating groups. Click the color circle to change the color. Use this to organize different types of activities."
+    },
+    "addActivity": {
+      "title": "Add Activity",
+      "description": "Create an activity by selecting a ring, dates, and activity group. The activity will appear immediately in the wheel. You can edit it later by clicking on it."
+    },
+    "exportShare": {
+      "title": "Export & Share",
+      "description": "Export your wheel as PNG, JPEG, or SVG. You can also share it with others via a public link or copy it to the clipboard."
+    },
+    "complete": {
+      "title": "All done! You're ready! ✨",
+      "description": "You can always return to this guide by clicking the help icon. Good luck with your year planning!"
+    },
+    "buttons": {
+      "startTour": "Show me how it works",
+      "skip": "Skip",
+      "startCreating": "Start creating your year wheel"
+    }
+  },
+  "aiOnboarding": {
+    "welcome": {
+      "title": "Welcome to the AI Assistant! 🤖✨",
+      "description": "The AI assistant helps you plan faster using natural language. The window can be moved and resized to fit your workflow."
+    },
+    "window": {
+      "title": "AI Assistant Window",
+      "description": "This is your AI assistant window. It floats above your editor and can be customized to your needs."
+    },
+    "drag": {
+      "title": "Drag to Move 🎯",
+      "description": "Click and hold the title bar to drag the window to a different location. Position it wherever works best for you!"
+    },
+    "resize": {
+      "title": "Resize 📏",
+      "description": "Hover over the edges or corners to reveal resize handles. Drag to make the window larger or smaller."
+    },
+    "complete": {
+      "title": "All Done! 🎉",
+      "description": "You're now ready to use the AI assistant! Describe what you want to do in natural language and the AI will help you."
+    },
+    "buttons": {
+      "startTour": "Show features",
+      "skip": "Skip",
+      "startUsing": "Start using AI"
+    }
   }
 }

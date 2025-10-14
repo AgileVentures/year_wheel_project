@@ -287,5 +287,77 @@
       "endDateRequired": "Slutdatum krävs",
       "endDateAfterStart": "Slutdatum måste vara efter startdatum"
     }
+  },
+  "guides": {
+    "editorGuide": {
+      "title": "Editor Guide",
+      "description": "Lär dig grunderna i YearWheel"
+    },
+    "aiGuide": {
+      "title": "AI-assistent Guide",
+      "description": "Upptäck AI-funktionerna"
+    }
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Välkommen till YearWheel! 🎉",
+      "description": "Här kan du planera hela året på ett ställe. Låt oss visa dig hur det funkar i en snabb genomgång."
+    },
+    "innerRing": {
+      "title": "Lägg till Innerring",
+      "description": "Innerringar representerar områden som Mål eller Kampanjer. De visas innanför månadsringen och kan innehålla text för varje månad."
+    },
+    "outerRing": {
+      "title": "Lägg till Ytterring",
+      "description": "Ytterringar visas utanför månadsringen. Perfekt för längre aktiviteter som projekt eller kampanjer med start- och slutdatum."
+    },
+    "activityGroups": {
+      "title": "Aktivitetsgrupper",
+      "description": "Färgkoda aktiviteter genom att skapa grupper. Klicka på färgcirkeln för att ändra färg. Använd för att organisera olika typer av aktiviteter."
+    },
+    "addActivity": {
+      "title": "Lägg till Aktivitet",
+      "description": "Skapa en aktivitet genom att välja ring, datum och aktivitetsgrupp. Aktiviteten syns direkt i hjulet. Du kan redigera den senare genom att klicka på den."
+    },
+    "exportShare": {
+      "title": "Exportera & Dela",
+      "description": "Exportera ditt hjul som PNG, JPEG eller SVG. Du kan också dela det med andra via en publik länk eller kopiera till urklipp."
+    },
+    "complete": {
+      "title": "Klart! Nu är du redo! ✨",
+      "description": "Du kan alltid komma tillbaka till denna guide genom att klicka på hjälpikonen. Lycka till med din årsplanering!"
+    },
+    "buttons": {
+      "startTour": "Visa hur det funkar",
+      "skip": "Hoppa över",
+      "startCreating": "Börja skapa ditt årshjul"
+    }
+  },
+  "aiOnboarding": {
+    "welcome": {
+      "title": "Välkommen till AI-assistenten! 🤖✨",
+      "description": "AI-assistenten hjälper dig att planera snabbare med naturligt språk. Fönstret kan flyttas och storleksändras för att passa ditt arbetsflöde."
+    },
+    "window": {
+      "title": "AI-assistentfönster",
+      "description": "Detta är ditt AI-assistentfönster. Det flyter ovanför din editor och kan anpassas efter dina behov."
+    },
+    "drag": {
+      "title": "Dra för att flytta 🎯",
+      "description": "Klicka och håll i titelraden för att dra fönstret till en annan plats. Placera det där det passar bäst för dig!"
+    },
+    "resize": {
+      "title": "Ändra storlek 📏",
+      "description": "Hovra över kanterna eller hörnen för att visa storleksändringshandtag. Dra för att göra fönstret större eller mindre."
+    },
+    "complete": {
+      "title": "Klart! 🎉",
+      "description": "Nu är du redo att använda AI-assistenten! Beskriv vad du vill göra i naturligt språk så hjälper AI:n dig."
+    },
+    "buttons": {
+      "startTour": "Visa funktionerna",
+      "skip": "Hoppa över",
+      "startUsing": "Börja använda AI"
+    }
   }
 }

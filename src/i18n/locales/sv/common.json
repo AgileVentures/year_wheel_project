@@ -22,7 +22,10 @@
     "redo": "Gör om",
     "loading": "Laddar...",
     "confirm": "Bekräfta",
-    "more": "Mer alternativ"
+    "more": "Mer alternativ",
+    "next": "Nästa",
+    "previous": "Föregående",
+    "done": "Klart"
   },
   "labels": {
     "name": "Namn",
@@ -112,7 +115,8 @@
     "aiAssistant": "AI Assistent",
     "saving": "Sparar...",
     "saveToDatabase": "Spara till databas",
-    "saveToBrowser": "Spara till webbläsarlagring"
+    "saveToBrowser": "Spara till webbläsarlagring",
+    "showGuide": "Visa snabbguide"
   },
   "cookieConsent": {
     "title": "Cookie-inställningar",

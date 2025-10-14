@@ -9,6 +9,8 @@ import VersionHistoryModal from "./components/VersionHistoryModal";
 import PageNavigator from "./components/PageNavigator";
 import AddPageModal from "./components/AddPageModal";
 import AIAssistant from "./components/AIAssistant";
+import EditorOnboarding from "./components/EditorOnboarding";
+import AIAssistantOnboarding from "./components/AIAssistantOnboarding";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import LandingPage from "./components/LandingPage";
@@ -183,6 +185,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
   // AI Assistant state
   const [isAIOpen, setIsAIOpen] = useState(false);
+  
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAIOnboarding, setShowAIOnboarding] = useState(false);
   
   // Track if we're currently loading data to prevent auto-save during load
   const isLoadingData = useRef(false);
@@ -699,6 +705,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
     
     setIsLoading(false);
+    
+    // Check if this is a first-time user (no onboarding completed flag)
+    const hasCompletedOnboarding = localStorage.getItem('yearwheel_onboarding_completed');
+    if (!hasCompletedOnboarding && !wheelId) {
+      // Only show onboarding for local/new users, not for existing database wheels
+      setTimeout(() => setShowOnboarding(true), 1000); // Delay to let UI render
+    }
   }, [wheelId]);
 
   // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
@@ -1583,7 +1596,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onAddPage={handleAddPage}
         onDeletePage={handleDeletePage}
         // AI Assistant
-        onToggleAI={() => setIsAIOpen(!isAIOpen)}
+        onToggleAI={wheelId ? () => setIsAIOpen(!isAIOpen) : null}
+        // Onboarding
+        onStartOnboarding={() => setShowOnboarding(true)}
+        onStartAIOnboarding={() => {
+          // Ensure AI window is open before starting guide
+          if (!isAIOpen) setIsAIOpen(true);
+          // Small delay to let AI window render
+          setTimeout(() => setShowAIOnboarding(true), 300);
+        }}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -1703,6 +1724,34 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }}
           isOpen={isAIOpen}
           onToggle={() => setIsAIOpen(!isAIOpen)}
+        />
+      )}
+
+      {/* Editor Onboarding Tour */}
+      <EditorOnboarding
+        shouldStart={showOnboarding}
+        onComplete={() => {
+          setShowOnboarding(false);
+          localStorage.setItem('yearwheel_onboarding_completed', 'true');
+        }}
+        onSkip={() => {
+          setShowOnboarding(false);
+          localStorage.setItem('yearwheel_onboarding_completed', 'true');
+        }}
+      />
+
+      {/* AI Assistant Onboarding Tour - Only for database wheels */}
+      {wheelId && (
+        <AIAssistantOnboarding
+          shouldStart={showAIOnboarding && isAIOpen}
+          onComplete={() => {
+            setShowAIOnboarding(false);
+            localStorage.setItem('yearwheel_ai_onboarding_completed', 'true');
+          }}
+          onSkip={() => {
+            setShowAIOnboarding(false);
+            localStorage.setItem('yearwheel_ai_onboarding_completed', 'true');
+          }}
         />
       )}
     </div>
