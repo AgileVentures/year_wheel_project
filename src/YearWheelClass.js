@@ -2782,8 +2782,11 @@ class YearWheel {
     const originalContext = this.context;
     this.context = svgContext;
     this.create();
-    this.context = originalContext;
     const svgData = svgContext.getSerializedSvg();
+    
+    // Restore original context and re-render to canvas
+    this.context = originalContext;
+    this.create();
     
     // Copy as text
     await navigator.clipboard.writeText(svgData);
@@ -2832,8 +2835,12 @@ class YearWheel {
     const originalContext = this.context;
     this.context = svgContext;
     this.create();
-    this.context = originalContext;
     const svgData = svgContext.getSerializedSvg();
+    
+    // Restore original context and re-render to canvas
+    this.context = originalContext;
+    this.create();
+    
     const fileName = this.generateFileName("svg");
     this.downloadFile(svgData, fileName, "image/svg+xml");
   }
