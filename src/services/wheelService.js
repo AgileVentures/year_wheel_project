@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 /**
  * Fetch all wheels for the current user
  * ONLY returns wheels that the user owns (not public wheels from others)
+ * Excludes template wheels (they appear separately in admin view)
  */
 export const fetchUserWheels = async () => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -25,6 +26,7 @@ export const fetchUserWheels = async () => {
       )
     `)
     .eq('user_id', user.id) // CRITICAL: Only fetch wheels owned by this user
+    .eq('is_template', false) // CRITICAL: Exclude templates from personal wheels
     .order('created_at', { ascending: false }); // Sort by creation date (newest first)
 
   if (error) throw error;
@@ -332,13 +334,21 @@ export const saveWheelData = async (wheelId, organizationData, pageId = null) =>
 const syncRings = async (wheelId, pageId, rings) => {
   const idMap = new Map(); // oldId -> newId
   
-  // Fetch existing rings for THIS WHEEL (rings are shared, not per-page!)
+  // Fetch existing rings for THIS WHEEL with full data for name matching
   const { data: existingRings } = await supabase
     .from('wheel_rings')
-    .select('id')
+    .select('id, name, type')
     .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existingRings?.map(r => r.id) || []);
+  
+  // Create a map of existing rings by name+type for duplicate detection
+  const existingByNameType = new Map();
+  existingRings?.forEach(r => {
+    const key = `${r.name.toLowerCase().trim()}|${r.type}`;
+    existingByNameType.set(key, r);
+  });
+  
   // Only include IDs that are actual database UUIDs (not temporary client IDs)
   const currentIds = new Set(
     rings
@@ -361,12 +371,10 @@ const syncRings = async (wheelId, pageId, rings) => {
   // Upsert rings
   for (let i = 0; i < rings.length; i++) {
     const ring = rings[i];
-    // Check if this is a new ring (no ID, or has a temporary/non-UUID ID)
-    const isNew = !ring.id || 
-                  ring.id.startsWith('ring-') || 
-                  ring.id.startsWith('inner-ring-') || 
-                  ring.id.startsWith('outer-ring-') ||
-                  !existingIds.has(ring.id); // Not in database
+    
+    // First check if a ring with same name+type already exists (duplicate detection)
+    const key = `${ring.name.toLowerCase().trim()}|${ring.type}`;
+    const existingMatch = existingByNameType.get(key);
     
     const ringData = {
       wheel_id: wheelId,  // Primary FK - rings are shared across all pages
@@ -378,36 +386,60 @@ const syncRings = async (wheelId, pageId, rings) => {
       orientation: ring.orientation || null,
     };
 
-    if (isNew) {
-      // Insert new ring
-      const { data: newRing, error } = await supabase
-        .from('wheel_rings')
-        .insert(ringData)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // Map old ID to new UUID
-      idMap.set(ring.id, newRing.id);
-      
-      // Save month data for inner rings
-      if (ring.type === 'inner' && ring.data) {
-        await saveRingData(newRing.id, ring.data);
-      }
-    } else {
-      // Update existing ring
+    if (existingMatch) {
+      // Ring with same name+type already exists -> UPDATE and reuse UUID
       await supabase
         .from('wheel_rings')
         .update(ringData)
-        .eq('id', ring.id);
+        .eq('id', existingMatch.id);
       
-      // Existing rings keep their ID
-      idMap.set(ring.id, ring.id);
+      // Map to existing UUID
+      idMap.set(ring.id, existingMatch.id);
+      currentIds.add(existingMatch.id);
       
       // Update month data for inner rings
       if (ring.type === 'inner' && ring.data) {
-        await saveRingData(ring.id, ring.data);
+        await saveRingData(existingMatch.id, ring.data);
+      }
+    } else {
+      // Check if this is a new ring (no ID, or has a temporary/non-UUID ID)
+      const isNew = !ring.id || 
+                    ring.id.startsWith('ring-') || 
+                    ring.id.startsWith('inner-ring-') || 
+                    ring.id.startsWith('outer-ring-') ||
+                    !existingIds.has(ring.id); // Not in database
+      
+      if (isNew) {
+        // Insert new ring
+        const { data: newRing, error } = await supabase
+          .from('wheel_rings')
+          .insert(ringData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        // Map old ID to new UUID
+        idMap.set(ring.id, newRing.id);
+        
+        // Save month data for inner rings
+        if (ring.type === 'inner' && ring.data) {
+          await saveRingData(newRing.id, ring.data);
+        }
+      } else {
+        // Update existing ring
+        await supabase
+          .from('wheel_rings')
+          .update(ringData)
+          .eq('id', ring.id);
+        
+        // Existing rings keep their ID
+        idMap.set(ring.id, ring.id);
+        
+        // Update month data for inner rings
+        if (ring.type === 'inner' && ring.data) {
+          await saveRingData(ring.id, ring.data);
+        }
       }
     }
   }
@@ -446,13 +478,21 @@ const saveRingData = async (ringId, monthData) => {
 const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
   const idMap = new Map(); // oldId -> newId
   
-  // Fetch existing for THIS WHEEL (groups are shared, not per-page!)
+  // Fetch existing for THIS WHEEL with full data for name matching
   const { data: existing} = await supabase
     .from('activity_groups')
-    .select('id')
+    .select('id, name')
     .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existing?.map(a => a.id) || []);
+  
+  // Create a map of existing groups by name for duplicate detection
+  const existingByName = new Map();
+  existing?.forEach(g => {
+    const key = g.name.toLowerCase().trim();
+    existingByName.set(key, g);
+  });
+  
   // Only include IDs that are actual database UUIDs
   const currentIds = new Set(
     activityGroups
@@ -474,7 +514,10 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
       continue;
     }
     
-    const isNew = !group.id || group.id.startsWith('group-') || !existingIds.has(group.id);
+    // First check if a group with same name already exists (duplicate detection)
+    const key = group.name.toLowerCase().trim();
+    const existingMatch = existingByName.get(key);
+    
     const groupData = {
       wheel_id: wheelId,  // Primary FK - groups are shared across all pages
       name: group.name.trim(),
@@ -482,18 +525,27 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
       visible: group.visible !== undefined ? group.visible : true,
     };
 
-    if (isNew) {
-      const { data: newGroup, error } = await supabase
-        .from('activity_groups')
-        .insert(groupData)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      idMap.set(group.id, newGroup.id);
+    if (existingMatch) {
+      // Group with same name already exists -> UPDATE and reuse UUID
+      await supabase.from('activity_groups').update(groupData).eq('id', existingMatch.id);
+      idMap.set(group.id, existingMatch.id);
+      currentIds.add(existingMatch.id);
     } else {
-      await supabase.from('activity_groups').update(groupData).eq('id', group.id);
-      idMap.set(group.id, group.id);
+      const isNew = !group.id || group.id.startsWith('group-') || !existingIds.has(group.id);
+      
+      if (isNew) {
+        const { data: newGroup, error } = await supabase
+          .from('activity_groups')
+          .insert(groupData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        idMap.set(group.id, newGroup.id);
+      } else {
+        await supabase.from('activity_groups').update(groupData).eq('id', group.id);
+        idMap.set(group.id, group.id);
+      }
     }
   }
   
@@ -509,13 +561,21 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
 const syncLabels = async (wheelId, pageId, labels) => {
   const idMap = new Map(); // oldId -> newId
   
-  // Fetch existing for THIS WHEEL (labels are shared, not per-page!)
+  // Fetch existing for THIS WHEEL with full data for name matching
   const { data: existing } = await supabase
     .from('labels')
-    .select('id')
+    .select('id, name')
     .eq('wheel_id', wheelId);
 
   const existingIds = new Set(existing?.map(l => l.id) || []);
+  
+  // Create a map of existing labels by name for duplicate detection
+  const existingByName = new Map();
+  existing?.forEach(l => {
+    const key = l.name.toLowerCase().trim();
+    existingByName.set(key, l);
+  });
+  
   // Only include IDs that are actual database UUIDs
   const currentIds = new Set(
     labels
@@ -537,7 +597,10 @@ const syncLabels = async (wheelId, pageId, labels) => {
       continue;
     }
     
-    const isNew = !label.id || label.id.startsWith('label-') || !existingIds.has(label.id);
+    // First check if a label with same name already exists (duplicate detection)
+    const key = label.name.toLowerCase().trim();
+    const existingMatch = existingByName.get(key);
+    
     const labelData = {
       wheel_id: wheelId,  // Primary FK - labels are shared across all pages
       name: label.name.trim(),
@@ -545,18 +608,27 @@ const syncLabels = async (wheelId, pageId, labels) => {
       visible: label.visible !== undefined ? label.visible : true,
     };
 
-    if (isNew) {
-      const { data: newLabel, error } = await supabase
-        .from('labels')
-        .insert(labelData)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      idMap.set(label.id, newLabel.id);
+    if (existingMatch) {
+      // Label with same name already exists -> UPDATE and reuse UUID
+      await supabase.from('labels').update(labelData).eq('id', existingMatch.id);
+      idMap.set(label.id, existingMatch.id);
+      currentIds.add(existingMatch.id);
     } else {
-      await supabase.from('labels').update(labelData).eq('id', label.id);
-      idMap.set(label.id, label.id);
+      const isNew = !label.id || label.id.startsWith('label-') || !existingIds.has(label.id);
+      
+      if (isNew) {
+        const { data: newLabel, error } = await supabase
+          .from('labels')
+          .insert(labelData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        idMap.set(label.id, newLabel.id);
+      } else {
+        await supabase.from('labels').update(labelData).eq('id', label.id);
+        idMap.set(label.id, label.id);
+      }
     }
   }
   
@@ -568,6 +640,11 @@ const syncLabels = async (wheelId, pageId, labels) => {
  * Uses ID mappings to convert temporary IDs to database UUIDs
  */
 const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
+  console.log(`[syncItems] Starting sync for ${items.length} items on page ${pageId}`);
+  console.log('[syncItems] Ring ID map:', Array.from(ringIdMap.entries()));
+  console.log('[syncItems] Activity ID map:', Array.from(activityIdMap.entries()));
+  console.log('[syncItems] Label ID map:', Array.from(labelIdMap.entries()));
+  
   // Fetch existing items - SCOPED TO PAGE if pageId provided
   let query = supabase
     .from('items')
@@ -593,7 +670,14 @@ const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, p
 
   // Upsert items
   for (const item of items) {
-    const isNew = !item.id || item.id.startsWith('item-');
+    console.log(`[syncItems] Processing item "${item.name}":`, {
+      id: item.id,
+      ringId: item.ringId,
+      activityId: item.activityId,
+      labelId: item.labelId
+    });
+    // Check if item exists in database (not just if it has an ID)
+    const isNew = !item.id || item.id.startsWith('item-') || !existingIds.has(item.id);
     
     // Map old IDs to new database UUIDs
     let ringId = ringIdMap.get(item.ringId) || item.ringId;
@@ -632,25 +716,39 @@ const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, p
       page_id: item.pageId || pageId || null, // ⚠️ Use item's pageId or fall back to function parameter
     };
 
+    console.log(`[syncItems] Mapped IDs for "${item.name}":`, {
+      ringId: `${item.ringId} -> ${ringId}`,
+      activityId: `${item.activityId} -> ${activityId}`,
+      labelId: item.labelId ? `${item.labelId} -> ${labelId}` : 'null'
+    });
+    
+    console.log(`[syncItems] Item data to save:`, itemData);
+    
     try {
       if (isNew) {
+        console.log(`[syncItems] Inserting new item "${item.name}"`);
         const { error } = await supabase.from('items').insert(itemData);
         if (error) {
           console.error(`Error inserting item "${item.name}":`, error);
           throw error;
         }
+        console.log(`[syncItems] ✓ Successfully inserted item "${item.name}"`);
       } else {
+        console.log(`[syncItems] Updating existing item "${item.name}"`);
         const { error } = await supabase.from('items').update(itemData).eq('id', item.id);
         if (error) {
           console.error(`Error updating item "${item.name}":`, error);
           throw error;
         }
+        console.log(`[syncItems] ✓ Successfully updated item "${item.name}"`);
       }
     } catch (err) {
       console.error('Failed to save item:', item, err);
       // Continue with next item instead of failing completely
     }
   }
+  
+  console.log(`[syncItems] Finished syncing ${items.length} items`);
 };
 
 /**
@@ -1122,7 +1220,10 @@ export const toggleTemplateStatus = async (wheelId, isTemplate) => {
 
   const { data, error } = await supabase
     .from('year_wheels')
-    .update({ is_template: isTemplate })
+    .update({ 
+      is_template: isTemplate,
+      is_public: isTemplate // Templates must be public to be viewable
+    })
     .eq('id', wheelId)
     .select()
     .single();

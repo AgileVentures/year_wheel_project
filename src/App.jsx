@@ -1404,7 +1404,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           const data = JSON.parse(readerEvent.target.result);
           
           // Validate the data structure (allow empty title)
-          if (data.title === undefined || !data.year || !data.ringsData) {
+          // Support both old format (ringsData) and new format (organizationData)
+          if (data.title === undefined || !data.year || (!data.ringsData && !data.organizationData)) {
             throw new Error('Invalid file format');
           }
 
@@ -1516,9 +1517,43 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               }
               
               // Save organization data using the PROCESSED data (for backward compatibility)
-              await saveWheelData(wheelId, processedOrgData, currentPageId);
+              // CRITICAL: Get ID mappings to update items with database UUIDs
+              console.log('[FileImport] Before saveWheelData - items:', processedOrgData.items.length);
+              console.log('[FileImport] Sample item before save:', processedOrgData.items[0]);
               
-              // console.log('[FileImport] Successfully saved to database and current page');
+              const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, processedOrgData, currentPageId);
+              
+              console.log('[FileImport] ID Mappings received:');
+              console.log('  - Rings:', Array.from(ringIdMap.entries()));
+              console.log('  - Activity Groups:', Array.from(activityIdMap.entries()));
+              console.log('  - Labels:', Array.from(labelIdMap.entries()));
+              
+              // Update items with the database UUIDs from sync functions
+              processedOrgData.rings = processedOrgData.rings.map(ring => ({
+                ...ring,
+                id: ringIdMap.get(ring.id) || ring.id
+              }));
+              
+              processedOrgData.activityGroups = processedOrgData.activityGroups.map(group => ({
+                ...group,
+                id: activityIdMap.get(group.id) || group.id
+              }));
+              
+              processedOrgData.labels = processedOrgData.labels.map(label => ({
+                ...label,
+                id: labelIdMap.get(label.id) || label.id
+              }));
+              
+              processedOrgData.items = processedOrgData.items.map(item => ({
+                ...item,
+                ringId: ringIdMap.get(item.ringId) || item.ringId,
+                activityId: activityIdMap.get(item.activityId) || item.activityId,
+                labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
+              }));
+              
+              console.log('[FileImport] After ID remapping - items:', processedOrgData.items.length);
+              console.log('[FileImport] Sample item after remapping:', processedOrgData.items[0]);
+              console.log('[FileImport] Successfully saved to database and updated IDs');
               
               // Show success feedback
               const toastEvent = new CustomEvent('showToast', { 

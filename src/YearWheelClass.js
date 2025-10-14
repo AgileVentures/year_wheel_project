@@ -2267,8 +2267,34 @@ class YearWheel {
           
           // Assign items to tracks to handle overlaps
           const { maxTracks, itemToTrack } = this.assignActivitiesToTracks(ringItems);
-          const trackHeight = maxTracks > 0 ? outerRingContentHeight / maxTracks : outerRingContentHeight;
           const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
+          
+          // Calculate which items actually have overlaps (are in tracks > 0)
+          const itemsWithOverlaps = new Set();
+          itemToTrack.forEach((track, itemId) => {
+            if (track > 0) {
+              // This item is in a higher track, so it overlaps with something
+              itemsWithOverlaps.add(itemId);
+              // Also mark items in track 0 that this overlaps with
+              const overlappingItem = ringItems.find(i => i.id === itemId);
+              if (overlappingItem) {
+                ringItems.forEach(otherItem => {
+                  if (otherItem.id !== itemId && itemToTrack.get(otherItem.id) === 0) {
+                    const overlap = this.dateRangesOverlap(
+                      new Date(overlappingItem.startDate),
+                      new Date(overlappingItem.endDate),
+                      new Date(otherItem.startDate),
+                      new Date(otherItem.endDate)
+                    );
+                    if (overlap) itemsWithOverlaps.add(otherItem.id);
+                  }
+                });
+              }
+            }
+          });
+          
+          // Default track height for overlapping items
+          const overlapTrackHeight = maxTracks > 0 ? outerRingContentHeight / maxTracks : outerRingContentHeight;
           
           // Always draw background for ALL outer rings using palette colors
           this.context.beginPath();
@@ -2327,8 +2353,14 @@ class YearWheel {
             
             // Get track assignment for this item
             const trackIndex = itemToTrack.get(item.id) || 0;
-            const itemStartRadius = ringStartRadius + (trackIndex * trackHeight);
-            const itemWidth = trackHeight - trackGap; // Subtract tiny gap between tracks
+            
+            // Determine height: full height if no overlaps, partial height if overlaps
+            const hasOverlap = itemsWithOverlaps.has(item.id);
+            const itemHeight = hasOverlap ? overlapTrackHeight : outerRingContentHeight;
+            const itemStartRadius = hasOverlap 
+              ? ringStartRadius + (trackIndex * overlapTrackHeight)
+              : ringStartRadius;
+            const itemWidth = itemHeight - trackGap; // Subtract tiny gap between tracks
             
             // Decide text orientation based on activity dimensions
             const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));
@@ -2470,8 +2502,34 @@ class YearWheel {
         
         // Assign items to tracks to handle overlaps
         const { maxTracks, itemToTrack } = this.assignActivitiesToTracks(ringItems);
-        const trackHeight = maxTracks > 0 ? ringContentHeight / maxTracks : ringContentHeight;
         const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
+        
+        // Calculate which items actually have overlaps (are in tracks > 0)
+        const itemsWithOverlaps = new Set();
+        itemToTrack.forEach((track, itemId) => {
+          if (track > 0) {
+            // This item is in a higher track, so it overlaps with something
+            itemsWithOverlaps.add(itemId);
+            // Also mark items in track 0 that this overlaps with
+            const overlappingItem = ringItems.find(i => i.id === itemId);
+            if (overlappingItem) {
+              ringItems.forEach(otherItem => {
+                if (otherItem.id !== itemId && itemToTrack.get(otherItem.id) === 0) {
+                  const overlap = this.dateRangesOverlap(
+                    new Date(overlappingItem.startDate),
+                    new Date(overlappingItem.endDate),
+                    new Date(otherItem.startDate),
+                    new Date(otherItem.endDate)
+                  );
+                  if (overlap) itemsWithOverlaps.add(otherItem.id);
+                }
+              });
+            }
+          }
+        });
+        
+        // Default track height for overlapping items
+        const overlapTrackHeight = maxTracks > 0 ? ringContentHeight / maxTracks : ringContentHeight;
         
         ringItems.forEach((item) => {
           let itemStartDate = new Date(item.startDate);
@@ -2517,8 +2575,14 @@ class YearWheel {
           
           // Get track assignment for this item
           const trackIndex = itemToTrack.get(item.id) || 0;
-          const itemStartRadius = eventRadius + (trackIndex * trackHeight);
-          const itemWidth = trackHeight - trackGap; // Subtract tiny gap between tracks
+          
+          // Determine height: full height if no overlaps, partial height if overlaps
+          const hasOverlap = itemsWithOverlaps.has(item.id);
+          const itemHeight = hasOverlap ? overlapTrackHeight : ringContentHeight;
+          const itemStartRadius = hasOverlap 
+            ? eventRadius + (trackIndex * overlapTrackHeight)
+            : eventRadius;
+          const itemWidth = itemHeight - trackGap; // Subtract tiny gap between tracks
           
           // Decide text orientation based on activity dimensions
           const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));

@@ -38,7 +38,8 @@
         "name": "Höstterminen",
         "startDate": "2026-08-17",
         "endDate": "2026-12-18",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-002",
@@ -48,7 +49,8 @@
         "name": "Vårterminen",
         "startDate": "2026-01-11",
         "endDate": "2026-06-05",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-003",
@@ -58,7 +60,8 @@
         "name": "Sommarlov",
         "startDate": "2026-06-06",
         "endDate": "2026-08-16",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-004",
@@ -68,7 +71,8 @@
         "name": "Jullov",
         "startDate": "2026-12-19",
         "endDate": "2027-01-10",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-005",
@@ -78,7 +82,8 @@
         "name": "Svenska 1",
         "startDate": "2026-08-17",
         "endDate": "2026-10-30",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-006",
@@ -88,7 +93,8 @@
         "name": "Matematik 1",
         "startDate": "2026-09-01",
         "endDate": "2026-11-27",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-007",
@@ -98,7 +104,8 @@
         "name": "Engelska 1",
         "startDate": "2026-11-02",
         "endDate": "2026-12-18",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-008",
@@ -108,7 +115,8 @@
         "name": "Historia",
         "startDate": "2026-01-11",
         "endDate": "2026-03-12",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-009",
@@ -118,7 +126,8 @@
         "name": "Samhällskunskap",
         "startDate": "2026-03-15",
         "endDate": "2026-05-14",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-010",
@@ -128,7 +137,8 @@
         "name": "Projektarbete",
         "startDate": "2026-09-14",
         "endDate": "2026-10-16",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-011",
@@ -138,7 +148,8 @@
         "name": "Nationella prov",
         "startDate": "2026-03-08",
         "endDate": "2026-03-26",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-012",
@@ -148,7 +159,8 @@
         "name": "Examensarbete",
         "startDate": "2026-04-12",
         "endDate": "2026-06-05",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-013",
@@ -158,7 +170,8 @@
         "name": "Höstlov",
         "startDate": "2026-10-26",
         "endDate": "2026-10-30",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-014",
@@ -168,7 +181,8 @@
         "name": "Sportlov",
         "startDate": "2026-02-23",
         "endDate": "2026-02-27",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-015",
@@ -178,7 +192,8 @@
         "name": "Påsklov",
         "startDate": "2026-04-02",
         "endDate": "2026-04-06",
-        "time": null
+        "time": null,
+        "pageId": null
       },
       {
         "id": "item-016",
@@ -188,7 +203,8 @@
         "name": "Studiebesök",
         "startDate": "2026-05-11",
         "endDate": "2026-05-15",
-        "time": null
+        "time": null,
+        "pageId": null
       }
     ],
     "rings": [
