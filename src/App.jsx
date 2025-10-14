@@ -1408,6 +1408,50 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             processedOrgData.labels = processedOrgData.labels || [];
             processedOrgData.items = processedOrgData.items || [];
             
+            // CRITICAL FIX: Generate new UUIDs to prevent cross-wheel conflicts
+            // When importing, we must NOT reuse IDs from the source wheel
+            const idMapping = {
+              rings: {},
+              activityGroups: {},
+              labels: {}
+            };
+            
+            // Regenerate ring IDs
+            processedOrgData.rings = processedOrgData.rings.map(ring => {
+              const oldId = ring.id;
+              const newId = crypto.randomUUID();
+              idMapping.rings[oldId] = newId;
+              return { ...ring, id: newId };
+            });
+            
+            // Regenerate activity group IDs
+            processedOrgData.activityGroups = processedOrgData.activityGroups.map(group => {
+              const oldId = group.id;
+              const newId = crypto.randomUUID();
+              idMapping.activityGroups[oldId] = newId;
+              return { ...group, id: newId };
+            });
+            
+            // Regenerate label IDs
+            processedOrgData.labels = processedOrgData.labels.map(label => {
+              const oldId = label.id;
+              const newId = crypto.randomUUID();
+              idMapping.labels[oldId] = newId;
+              return { ...label, id: newId };
+            });
+            
+            // Regenerate item IDs and update foreign key references
+            processedOrgData.items = processedOrgData.items.map(item => {
+              return {
+                ...item,
+                id: crypto.randomUUID(),
+                ringId: idMapping.rings[item.ringId] || item.ringId,
+                activityId: idMapping.activityGroups[item.activityId] || item.activityId,
+                labelId: item.labelId ? (idMapping.labels[item.labelId] || item.labelId) : null
+              };
+            });
+            
+            console.log('[FileImport] Regenerated all UUIDs to prevent cross-wheel conflicts');
             // console.log('[FileImport] Processed organization data from file:', {
             //   rings: processedOrgData.rings.length,
             //   activityGroups: processedOrgData.activityGroups.length,
