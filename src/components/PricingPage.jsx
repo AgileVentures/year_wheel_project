@@ -96,7 +96,7 @@ function PricingPage() {
             {t('landing:pricing.yearly')}
           </span>
           {billingCycle === 'yearly' && (
-            <span className="inline-flex items-center px-2 py-1 bg-[#9FCB3E]/20 text-[#336B3E] text-xs font-bold rounded-full border border-[#9FCB3E]/30">
+            <span className="inline-flex items-center px-2 py-1 bg-[#9FCB3E]/20 text-[#1a3d1f] text-xs font-bold rounded-full border border-[#9FCB3E]/30">
               {t('landing:pricing.yearlyDiscount')}
             </span>
           )}
@@ -148,7 +148,7 @@ function PricingPage() {
           {/* Premium Plan */}
           <div className="bg-gradient-to-br from-[#1B2A63] via-[#2D4EC8] to-[#2E9E97] rounded-sm shadow-2xl border-2 border-[#36C2C6]/50 p-8 flex flex-col relative overflow-hidden">
             {/* Popular Badge */}
-            <div className="absolute top-0 right-0 bg-[#9FCB3E] text-[#336B3E] px-4 py-1 text-xs font-bold rounded-bl-lg">
+            <div className="absolute top-0 right-0 bg-[#9FCB3E] text-[#1a3d1f] px-4 py-1 text-xs font-bold rounded-bl-lg">
               {t('subscription:modal.mostPopular').toUpperCase()}
             </div>
 
@@ -280,7 +280,7 @@ function PricingPage() {
 
             <div className="border-b border-gray-200 pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {t('landing:pricing.faq.aiAssistant.question')} <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
+                {t('landing:pricing.faq.aiAssistant.question')} <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#1a3d1f] rounded-full font-bold ml-2">PREMIUM</span>
               </h3>
               <p className="text-gray-600 mb-2">
                 {t('landing:pricing.faq.aiAssistant.answer1')}
@@ -297,7 +297,7 @@ function PricingPage() {
 
             <div className="border-b border-gray-200 pb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {t('landing:pricing.faq.googleIntegration.question')} <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#336B3E] rounded-full font-bold ml-2">PREMIUM</span>
+                {t('landing:pricing.faq.googleIntegration.question')} <span className="text-xs px-2 py-0.5 bg-[#9FCB3E]/20 text-[#1a3d1f] rounded-full font-bold ml-2">PREMIUM</span>
               </h3>
               <p className="text-gray-600">
                 {t('landing:pricing.faq.googleIntegration.answer')}

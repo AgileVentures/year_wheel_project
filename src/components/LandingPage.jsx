@@ -652,7 +652,7 @@ function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 - AI Assistant (PREMIUM) */}
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#36C2C6] hover:shadow-xl transition-all relative overflow-hidden">
-              <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#336B3E] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
+              <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#1a3d1f] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
                 <Crown size={12} />
                 {t('landing:features.premium')}
               </div>
@@ -669,7 +669,7 @@ function LandingPage() {
 
             {/* Feature 2 - Google Integration (PREMIUM) */}
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#2D4EC8] hover:shadow-xl transition-all relative overflow-hidden">
-              <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#336B3E] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
+              <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#1a3d1f] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
                 <Crown size={12} />
                 {t('landing:features.premium')}
               </div>
@@ -774,7 +774,7 @@ function LandingPage() {
                 {t('landing:pricing.yearly')}
               </span>
               {billingCycle === 'yearly' && (
-                <span className="inline-flex items-center px-2 py-1 bg-[#9FCB3E]/20 text-[#336B3E] text-xs font-bold rounded-full border border-[#9FCB3E]/30">
+                <span className="inline-flex items-center px-2 py-1 bg-[#9FCB3E]/20 text-[#1a3d1f] text-xs font-bold rounded-full border border-[#9FCB3E]/30">
                   {t('landing:pricing.yearlyDiscount')}
                 </span>
               )}
@@ -821,7 +821,7 @@ function LandingPage() {
 
             {/* Premium Plan */}
             <div className="bg-gradient-to-br from-[#1B2A63] via-[#2D4EC8] to-[#2E9E97] rounded-sm p-8 border-2 border-[#36C2C6]/50 relative overflow-hidden shadow-2xl">
-              <div className="absolute top-0 right-0 bg-[#9FCB3E] text-[#336B3E] px-4 py-1 text-xs font-bold rounded-bl-lg">
+              <div className="absolute top-0 right-0 bg-[#9FCB3E] text-[#1a3d1f] px-4 py-1 text-xs font-bold rounded-bl-lg">
                 {t('landing:pricing.premium.popular')}
               </div>
 
