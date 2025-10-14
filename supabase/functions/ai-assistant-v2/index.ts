@@ -56,6 +56,41 @@ const DeleteActivityInput = z.object({
   name: z.string().describe('Name or partial name of the activity to delete'),
 })
 
+const UpdateRingInput = z.object({
+  ringName: z.string().describe('Current name of the ring to update'),
+  newName: z.string().nullable().describe('Optional: New name for the ring'),
+  newColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().describe('Optional: New hex color code'),
+})
+
+const DeleteRingInput = z.object({
+  name: z.string().describe('Name or partial name of the ring to delete'),
+})
+
+const UpdateGroupInput = z.object({
+  groupName: z.string().describe('Current name of the activity group to update'),
+  newName: z.string().nullable().describe('Optional: New name for the group'),
+  newColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().describe('Optional: New hex color code'),
+})
+
+const DeleteGroupInput = z.object({
+  name: z.string().describe('Name or partial name of the activity group to delete'),
+})
+
+const CreateLabelInput = z.object({
+  name: z.string().describe('Label name'),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).describe('Hex color code'),
+})
+
+const UpdateLabelInput = z.object({
+  labelName: z.string().describe('Current name of the label to update'),
+  newName: z.string().nullable().describe('Optional: New name for the label'),
+  newColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().describe('Optional: New hex color code'),
+})
+
+const DeleteLabelInput = z.object({
+  name: z.string().describe('Name or partial name of the label to delete'),
+})
+
 const DateRangeInput = z.object({
   month: z.number().min(1).max(12).nullable(),
   year: z.number().nullable(),
@@ -298,6 +333,278 @@ async function createGroup(
   }
 }
 
+async function updateRing(
+  supabase: any,
+  wheelId: string,
+  ringName: string,
+  updates: { newName?: string; newColor?: string }
+) {
+  const { data: ring, error: findError } = await supabase
+    .from('wheel_rings')
+    .select('id, name')
+    .eq('wheel_id', wheelId)
+    .ilike('name', `%${ringName}%`)
+    .maybeSingle()
+
+  if (findError) throw findError
+  if (!ring) {
+    return {
+      success: false,
+      message: `Hittade ingen ring med namnet "${ringName}"`
+    }
+  }
+
+  const updateData: any = {}
+  if (updates.newName) updateData.name = updates.newName
+  if (updates.newColor) updateData.color = updates.newColor
+
+  const { error: updateError } = await supabase
+    .from('wheel_rings')
+    .update(updateData)
+    .eq('id', ring.id)
+
+  if (updateError) throw updateError
+
+  return {
+    success: true,
+    message: `Ring "${ringName}" uppdaterad`
+  }
+}
+
+async function deleteRing(supabase: any, wheelId: string, ringName: string) {
+  const { data: ring, error: findError } = await supabase
+    .from('wheel_rings')
+    .select('id, name')
+    .eq('wheel_id', wheelId)
+    .ilike('name', `%${ringName}%`)
+    .maybeSingle()
+
+  if (findError) throw findError
+  if (!ring) {
+    return {
+      success: false,
+      message: `Ingen ring hittades med namnet "${ringName}"`
+    }
+  }
+
+  // Check if ring has activities
+  const { count: itemsCount } = await supabase
+    .from('items')
+    .select('*', { count: 'exact', head: true })
+    .eq('ring_id', ring.id)
+
+  if (itemsCount && itemsCount > 0) {
+    return {
+      success: false,
+      message: `Ring "${ringName}" har ${itemsCount} aktivitet(er) och kan inte tas bort. Ta bort aktiviteterna först.`
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('wheel_rings')
+    .delete()
+    .eq('id', ring.id)
+
+  if (deleteError) throw deleteError
+
+  return {
+    success: true,
+    message: `Ring "${ringName}" har tagits bort`
+  }
+}
+
+async function updateGroup(
+  supabase: any,
+  wheelId: string,
+  groupName: string,
+  updates: { newName?: string; newColor?: string }
+) {
+  const { data: group, error: findError } = await supabase
+    .from('activity_groups')
+    .select('id, name')
+    .eq('wheel_id', wheelId)
+    .ilike('name', `%${groupName}%`)
+    .maybeSingle()
+
+  if (findError) throw findError
+  if (!group) {
+    return {
+      success: false,
+      message: `Hittade ingen aktivitetsgrupp med namnet "${groupName}"`
+    }
+  }
+
+  const updateData: any = {}
+  if (updates.newName) updateData.name = updates.newName
+  if (updates.newColor) updateData.color = updates.newColor
+
+  const { error: updateError } = await supabase
+    .from('activity_groups')
+    .update(updateData)
+    .eq('id', group.id)
+
+  if (updateError) throw updateError
+
+  return {
+    success: true,
+    message: `Aktivitetsgrupp "${groupName}" uppdaterad`
+  }
+}
+
+async function deleteGroup(supabase: any, wheelId: string, groupName: string) {
+  const { data: group, error: findError } = await supabase
+    .from('activity_groups')
+    .select('id, name')
+    .eq('wheel_id', wheelId)
+    .ilike('name', `%${groupName}%`)
+    .maybeSingle()
+
+  if (findError) throw findError
+  if (!group) {
+    return {
+      success: false,
+      message: `Ingen aktivitetsgrupp hittades med namnet "${groupName}"`
+    }
+  }
+
+  // Check if group has activities
+  const { count: itemsCount } = await supabase
+    .from('items')
+    .select('*', { count: 'exact', head: true })
+    .eq('activity_id', group.id)
+
+  if (itemsCount && itemsCount > 0) {
+    return {
+      success: false,
+      message: `Aktivitetsgrupp "${groupName}" har ${itemsCount} aktivitet(er) och kan inte tas bort. Ta bort aktiviteterna först.`
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('activity_groups')
+    .delete()
+    .eq('id', group.id)
+
+  if (deleteError) throw deleteError
+
+  return {
+    success: true,
+    message: `Aktivitetsgrupp "${groupName}" har tagits bort`
+  }
+}
+
+async function createLabel(
+  supabase: any,
+  wheelId: string,
+  args: z.infer<typeof CreateLabelInput>
+) {
+  // Check if label exists
+  const { data: existing } = await supabase
+    .from('labels')
+    .select('id, name')
+    .eq('wheel_id', wheelId)
+    .ilike('name', args.name)
+    .maybeSingle()
+
+  if (existing) {
+    return {
+      success: true,
+      message: `Label "${args.name}" finns redan`,
+      labelId: existing.id,
+      labelName: existing.name,
+      alreadyExists: true,
+    }
+  }
+
+  const { data: label, error } = await supabase
+    .from('labels')
+    .insert({
+      wheel_id: wheelId,
+      name: args.name,
+      color: args.color,
+      visible: true,
+    })
+    .select()
+    .single()
+
+  if (error) throw new Error(`Kunde inte skapa label: ${error.message}`)
+
+  return {
+    success: true,
+    message: `Label "${args.name}" skapad med färg ${args.color}`,
+    labelId: label.id,
+    labelName: label.name,
+  }
+}
+
+async function updateLabel(
+  supabase: any,
+  wheelId: string,
+  labelName: string,
+  updates: { newName?: string; newColor?: string }
+) {
+  const { data: label, error: findError } = await supabase
+    .from('labels')
+    .select('id, name')
+    .eq('wheel_id', wheelId)
+    .ilike('name', `%${labelName}%`)
+    .maybeSingle()
+
+  if (findError) throw findError
+  if (!label) {
+    return {
+      success: false,
+      message: `Hittade ingen label med namnet "${labelName}"`
+    }
+  }
+
+  const updateData: any = {}
+  if (updates.newName) updateData.name = updates.newName
+  if (updates.newColor) updateData.color = updates.newColor
+
+  const { error: updateError } = await supabase
+    .from('labels')
+    .update(updateData)
+    .eq('id', label.id)
+
+  if (updateError) throw updateError
+
+  return {
+    success: true,
+    message: `Label "${labelName}" uppdaterad`
+  }
+}
+
+async function deleteLabel(supabase: any, wheelId: string, labelName: string) {
+  const { data: label, error: findError } = await supabase
+    .from('labels')
+    .select('id, name')
+    .eq('wheel_id', wheelId)
+    .ilike('name', `%${labelName}%`)
+    .maybeSingle()
+
+  if (findError) throw findError
+  if (!label) {
+    return {
+      success: false,
+      message: `Ingen label hittades med namnet "${labelName}"`
+    }
+  }
+
+  // Labels can be deleted even if in use (they're optional)
+  const { error: deleteError } = await supabase
+    .from('labels')
+    .delete()
+    .eq('id', label.id)
+
+  if (deleteError) throw deleteError
+
+  return {
+    success: true,
+    message: `Label "${labelName}" har tagits bort`
+  }
+}
+
 async function updateActivity(
   supabase: any,
   wheelId: string,
@@ -503,14 +810,96 @@ function createAgentSystem(supabase: any, wheelId: string, currentPageId: string
     }
   })
 
+  // Add update/delete ring tools
+  const updateRingTool = tool({
+    name: 'update_ring',
+    description: 'Update an existing ring name or color',
+    parameters: UpdateRingInput,
+    async execute(input: z.infer<typeof UpdateRingInput>) {
+      const result = await updateRing(supabase, wheelId, input.ringName, {
+        newName: input.newName || undefined,
+        newColor: input.newColor || undefined,
+      })
+      return JSON.stringify(result)
+    }
+  })
+
+  const deleteRingTool = tool({
+    name: 'delete_ring',
+    description: 'Delete a ring by name. Will fail if ring has activities.',
+    parameters: DeleteRingInput,
+    async execute(input: z.infer<typeof DeleteRingInput>) {
+      const result = await deleteRing(supabase, wheelId, input.name)
+      return JSON.stringify(result)
+    }
+  })
+
+  const updateGroupTool = tool({
+    name: 'update_activity_group',
+    description: 'Update an existing activity group name or color',
+    parameters: UpdateGroupInput,
+    async execute(input: z.infer<typeof UpdateGroupInput>) {
+      const result = await updateGroup(supabase, wheelId, input.groupName, {
+        newName: input.newName || undefined,
+        newColor: input.newColor || undefined,
+      })
+      return JSON.stringify(result)
+    }
+  })
+
+  const deleteGroupTool = tool({
+    name: 'delete_activity_group',
+    description: 'Delete an activity group by name. Will fail if group has activities.',
+    parameters: DeleteGroupInput,
+    async execute(input: z.infer<typeof DeleteGroupInput>) {
+      const result = await deleteGroup(supabase, wheelId, input.name)
+      return JSON.stringify(result)
+    }
+  })
+
+  const createLabelTool = tool({
+    name: 'create_label',
+    description: 'Create a new label for categorizing activities',
+    parameters: CreateLabelInput,
+    async execute(input: z.infer<typeof CreateLabelInput>) {
+      const result = await createLabel(supabase, wheelId, input)
+      return JSON.stringify(result)
+    }
+  })
+
+  const updateLabelTool = tool({
+    name: 'update_label',
+    description: 'Update an existing label name or color',
+    parameters: UpdateLabelInput,
+    async execute(input: z.infer<typeof UpdateLabelInput>) {
+      const result = await updateLabel(supabase, wheelId, input.labelName, {
+        newName: input.newName || undefined,
+        newColor: input.newColor || undefined,
+      })
+      return JSON.stringify(result)
+    }
+  })
+
+  const deleteLabelTool = tool({
+    name: 'delete_label',
+    description: 'Delete a label by name. Can be deleted even if in use.',
+    parameters: DeleteLabelInput,
+    async execute(input: z.infer<typeof DeleteLabelInput>) {
+      const result = await deleteLabel(supabase, wheelId, input.name)
+      return JSON.stringify(result)
+    }
+  })
+
   const structureAgent = new Agent({
     name: 'Structure Agent',
-    model: 'gpt-4.1',
-    instructions: `You are the Structure Agent. Your job is to create rings and activity groups for the Year Wheel.
+    model: 'gpt-4o',
+    handoffDescription: 'Expert at creating, updating, and deleting rings, activity groups, and labels for organizing the Year Wheel structure',
+    instructions: `You are the Structure Agent. Your job is to manage the structure of the Year Wheel (rings, activity groups, and labels).
 
 RESPONSIBILITIES:
-- Create rings (outer type for activities, inner for text/labels)
-- Create activity groups (categories for organizing activities)
+- Create, update, and delete rings (outer type for activities, inner for text/labels)
+- Create, update, and delete activity groups (categories for organizing activities)
+- Create, update, and delete labels (optional tags for activities)
 - Suggest wheel structures based on use cases
 
 RING COLORS (defaults):
@@ -521,14 +910,33 @@ RING COLORS (defaults):
 - Purple (#8b5cf6) - Premium/creative
 
 WORKFLOW:
-1. When user requests structure, create rings and groups immediately
-2. Return the IDs and names of created items
+1. When user requests structure operations, execute them immediately
+2. Return the IDs and names of created/updated items
 3. Speak Swedish to the user naturally
+
+CRUD OPERATIONS:
+- "Skapa ring X" → create_ring
+- "Ändra ring X till Y" → update_ring
+- "Ta bort ring X" → delete_ring (will fail if has activities)
+- Same pattern for groups and labels
 
 EXAMPLES:
 - "Skapa ring Kampanjer" → Create outer ring "Kampanjer" with blue
-- "Föreslå struktur för marknadsföring" → Create: Kampanjer, Innehåll, Event rings + REA, Produktlansering groups`,
-    tools: [getContextTool, createRingTool, createGroupTool],
+- "Föreslå struktur för marknadsföring" → Create: Kampanjer, Innehåll, Event rings + REA, Produktlansering groups
+- "Byt namn på ringen Kampanjer till Marketing" → update_ring
+- "Ta bort gruppen REA" → delete_activity_group`,
+    tools: [
+      getContextTool, 
+      createRingTool, 
+      updateRingTool, 
+      deleteRingTool,
+      createGroupTool,
+      updateGroupTool,
+      deleteGroupTool,
+      createLabelTool,
+      updateLabelTool,
+      deleteLabelTool
+    ],
   })
 
   // ──────────────────────────────────────────────────────────────────
@@ -594,6 +1002,7 @@ EXAMPLES:
   const activityAgent = new Agent({
     name: 'Activity Agent',
     model: 'gpt-4o',
+    handoffDescription: 'Expert at creating, updating, deleting, and managing activities/events on the Year Wheel with smart date handling',
     instructions: `You are the Activity Agent. Your ONLY job is to CREATE activities immediately when asked.
 
 ⚠️ CRITICAL: DO NOT JUST SAY YOU DID IT - ACTUALLY CALL THE TOOLS!
@@ -705,7 +1114,8 @@ Speak Swedish naturally. Be concise.`,
 
   const analysisAgent = new Agent({
     name: 'Analysis Agent',
-    model: 'gpt-4.1',
+    model: 'gpt-4o',
+    handoffDescription: 'Expert at analyzing the Year Wheel and providing insights about activity distribution, gaps, and recommendations',
     instructions: `You are the Analysis Agent. You provide insights about the Year Wheel.
 
 RESPONSIBILITIES:
@@ -738,7 +1148,7 @@ Be conversational and helpful.`,
 
   const orchestratorAgent = Agent.create({
     name: 'Year Wheel Assistant',
-    model: 'gpt-4.1',
+    model: 'gpt-4o',
     instructions: `Du är Year Wheel Assistant - en AI-assistent för årsplanering.
 
 DIN ROLL:
@@ -775,17 +1185,7 @@ User: "Hur är aktiviteterna fördelade?"
 You: [Handoff to Analysis Agent immediately]
 
 Prata svenska naturligt.`,
-    handoffs: [
-      handoff(structureAgent, {
-        toolDescriptionOverride: 'Delegate to Structure Agent for creating rings and groups',
-      }),
-      handoff(activityAgent, {
-        toolDescriptionOverride: 'Delegate to Activity Agent for creating and managing activities',
-      }),
-      handoff(analysisAgent, {
-        toolDescriptionOverride: 'Delegate to Analysis Agent for wheel analysis and insights',
-      }),
-    ],
+    handoffs: [structureAgent, activityAgent, analysisAgent],
   })
 
   return orchestratorAgent
