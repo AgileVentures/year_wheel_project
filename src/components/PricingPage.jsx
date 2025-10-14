@@ -80,8 +80,12 @@ function PricingPage() {
           </span>
           <button
             onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-            className="relative inline-flex h-6 w-11 items-center rounded-full bg-[#00A4A6] transition-colors"
+            className="relative inline-flex h-6 w-11 items-center rounded-full bg-[#00A4A6] transition-colors focus:outline-none focus:ring-2 focus:ring-[#00A4A6] focus:ring-offset-2"
+            aria-label={`Switch to ${billingCycle === 'monthly' ? 'yearly' : 'monthly'} billing`}
+            role="switch"
+            aria-checked={billingCycle === 'yearly'}
           >
+            <span className="sr-only">Toggle billing cycle</span>
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                 billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-1'
