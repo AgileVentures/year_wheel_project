@@ -1,0 +1,107 @@
+{
+  "badge": "Comparison",
+  "title": "YearWheel vs traditional tools",
+  "subtitle": "See why YearWheel is the best choice for visual annual planning",
+  "columnHeaders": {
+    "feature": "Feature / Property",
+    "yearwheelTagline": "Visual planning with AI",
+    "competitor": "Traditional tools",
+    "competitorTagline": "Enterprise-focused planning"
+  },
+  "features": {
+    "aiAssistant": {
+      "name": "AI-assisted planning",
+      "description": "Automatic generation and optimization",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Generate wheels, fill activities, and discover conflicts automatically"
+      },
+      "competitor": {
+        "status": "no",
+        "text": "No built-in AI functionality"
+      }
+    },
+    "realtime": {
+      "name": "Real-time collaboration",
+      "description": "Multiple users editing simultaneously",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Multiple users edit simultaneously and see changes instantly"
+      },
+      "competitor": {
+        "status": "partial",
+        "text": "Updates when changes are saved"
+      }
+    },
+    "shareLinks": {
+      "name": "Shareable links (read-only)",
+      "description": "Share wheels publicly or privately",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Share wheels publicly or privately in read-only mode"
+      },
+      "competitor": {
+        "status": "partial",
+        "text": "Sharing primarily within organization"
+      }
+    },
+    "dynamicRings": {
+      "name": "Dynamic rings and activities",
+      "description": "Flexible structure",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Add, remove, and reorganize rings completely freely"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "Ring structure with customizable templates"
+      }
+    },
+    "versionHistory": {
+      "name": "Version history",
+      "description": "Track and restore changes",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Full history — restore previous versions with one click"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "Tracking via dashboards with restore capabilities"
+      }
+    },
+    "exportFormats": {
+      "name": "Export formats",
+      "description": "Various file formats for export",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Export as PNG, SVG, PDF, and JPG"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "PowerPoint and Excel export for reports"
+      }
+    },
+    "pricing": {
+      "name": "Pricing and availability",
+      "description": "Cost and business model",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Freemium: Free (3 wheels) / $7/month Premium. NGO discounts available"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "Enterprise licenses tailored for larger organizations"
+      }
+    }
+  },
+  "footer": {
+    "note": "Note:",
+    "disclaimer": "This comparison is based on publicly available information. Different tools suit different needs and organizations."
+  },
+  "cta": {
+    "title": "Ready to experience the difference?",
+    "subtitle": "Start free today and see how YearWheel makes your annual planning easier and more visual.",
+    "primary": "Get started free",
+    "secondary": "View pricing"
+  }
+}

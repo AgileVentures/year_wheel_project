@@ -11,6 +11,7 @@ import svAuth from './locales/sv/auth.json';
 import svSubscription from './locales/sv/subscription.json';
 import svLanding from './locales/sv/landing.json';
 import svIntegration from './locales/sv/integration.json';
+import svComparison from './locales/sv/comparison.json';
 
 // Import English translations
 import enCommon from './locales/en/common.json';
@@ -21,6 +22,7 @@ import enAuth from './locales/en/auth.json';
 import enSubscription from './locales/en/subscription.json';
 import enLanding from './locales/en/landing.json';
 import enIntegration from './locales/en/integration.json';
+import enComparison from './locales/en/comparison.json';
 
 i18n
   .use(LanguageDetector)
@@ -36,6 +38,7 @@ i18n
         subscription: svSubscription,
         landing: svLanding,
         integration: svIntegration,
+        comparison: svComparison,
       },
       en: {
         common: enCommon,
@@ -46,6 +49,7 @@ i18n
         subscription: enSubscription,
         landing: enLanding,
         integration: enIntegration,
+        comparison: enComparison,
       },
     },
     lng: 'sv', // Default language

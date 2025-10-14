@@ -1,0 +1,107 @@
+{
+  "badge": "Jämförelse",
+  "title": "YearWheel vs traditionella verktyg",
+  "subtitle": "Se varför YearWheel är det bästa valet för visuell årsplanering",
+  "columnHeaders": {
+    "feature": "Funktion / Egenskap",
+    "yearwheelTagline": "Visuell årsplanering med AI",
+    "competitor": "Traditionella verktyg",
+    "competitorTagline": "Enterprise-fokuserad planering"
+  },
+  "features": {
+    "aiAssistant": {
+      "name": "AI-assisterad planering",
+      "description": "Automatisk generering och optimering",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Generera hjul, fyll aktiviteter och upptäck konflikter automatiskt"
+      },
+      "competitor": {
+        "status": "no",
+        "text": "Ingen inbyggd AI-funktion"
+      }
+    },
+    "realtime": {
+      "name": "Realtidssamarbete",
+      "description": "Flera användare redigerar samtidigt",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Flera användare redigerar samtidigt och ser ändringar direkt"
+      },
+      "competitor": {
+        "status": "partial",
+        "text": "Uppdateras när ändringar sparas"
+      }
+    },
+    "shareLinks": {
+      "name": "Delbara länkar (läs-läge)",
+      "description": "Dela hjul publikt eller privat",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Dela hjul publikt eller privat i read-only läge"
+      },
+      "competitor": {
+        "status": "partial",
+        "text": "Delning främst inom organisationen"
+      }
+    },
+    "dynamicRings": {
+      "name": "Dynamiska ringar och aktiviteter",
+      "description": "Flexibel struktur",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Lägg till, ta bort och omorganisera ringar helt fritt"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "Ringstruktur med anpassningsbara mallar"
+      }
+    },
+    "versionHistory": {
+      "name": "Versionshistorik",
+      "description": "Spåra och återställ ändringar",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Full historik — återställ tidigare versioner med ett klick"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "Spårning via dashboards och möjlighet att återställa"
+      }
+    },
+    "exportFormats": {
+      "name": "Exportformat",
+      "description": "Olika filformat för export",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Exportera som PNG, SVG, PDF och JPG"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "PowerPoint och Excel export för rapporter"
+      }
+    },
+    "pricing": {
+      "name": "Pris och tillgänglighet",
+      "description": "Kostnad och affärsmodell",
+      "yearwheel": {
+        "status": "yes",
+        "text": "Freemium: 0 kr (3 hjul) / 64 kr/mån Premium. Rabatter för NGO"
+      },
+      "competitor": {
+        "status": "yes",
+        "text": "Enterprise-licenser anpassade för större organisationer"
+      }
+    }
+  },
+  "footer": {
+    "note": "Obs:",
+    "disclaimer": "Denna jämförelse är baserad på offentligt tillgänglig information. Olika verktyg passar olika behov och organisationer."
+  },
+  "cta": {
+    "title": "Redo att testa skillnaden?",
+    "subtitle": "Börja gratis idag och upplev hur YearWheel gör din årsplanering enklare och mer visuell.",
+    "primary": "Kom igång gratis",
+    "secondary": "Se priser"
+  }
+}

@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap, Calendar } from 'lucide-react';
 import SubscriptionModal from './subscription/SubscriptionModal';
 import LanguageSwitcher from './LanguageSwitcher';
+import ComparisonTable from './ComparisonTable';
 
 function PricingPage() {
   const { t } = useTranslation(['landing', 'common']);
@@ -242,6 +243,9 @@ function PricingPage() {
           </div>
         </div>
       </section>
+
+      {/* Comparison Table */}
+      <ComparisonTable />
 
       {/* FAQ Section */}
       <section className="bg-white py-16">

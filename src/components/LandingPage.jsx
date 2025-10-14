@@ -10,6 +10,7 @@ import ManualEditorDemo from './ManualEditorDemo';
 import Hero from './Hero';
 import LanguageSwitcher from './LanguageSwitcher';
 import TemplateShowcase from './TemplateShowcase';
+import ComparisonTable from './ComparisonTable';
 
 function LandingPage() {
   const { t } = useTranslation(['landing', 'common']);
@@ -126,6 +127,11 @@ function LandingPage() {
   const scrollToPricing = () => {
     const pricingSection = document.getElementById('pricing-section');
     pricingSection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToComparison = () => {
+    const comparisonSection = document.getElementById('comparison-section');
+    comparisonSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -851,6 +857,9 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Comparison Table */}
+      <ComparisonTable />
 
       {/* Template Showcase */}
       <TemplateShowcase />

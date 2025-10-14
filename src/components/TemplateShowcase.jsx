@@ -83,7 +83,7 @@ function TemplateShowcase() {
                 <div
                   key={template.id}
                   onClick={() => handleTemplateClick(template.id)}
-                  className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden"
+                  className="bg-white rounded-sm shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden"
                 >
                   {/* Wheel Preview */}
                   <div className="aspect-square bg-gray-50 flex items-center justify-center p-8 group-hover:bg-gray-100 transition-colors">
