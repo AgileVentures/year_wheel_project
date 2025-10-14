@@ -29,13 +29,13 @@ const CreateActivityInput = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('End date (YYYY-MM-DD)'),
   ringId: z.string().uuid().describe('Ring UUID'),
   activityGroupId: z.string().uuid().describe('Activity group UUID'),
-  labelId: z.string().uuid().optional().describe('Optional label UUID'),
+  labelId: z.string().uuid().nullable().describe('Optional label UUID'),
 })
 
 const CreateRingInput = z.object({
   name: z.string().describe('Ring name'),
   type: z.enum(['inner', 'outer']).describe('Ring type - outer for activities, inner for text'),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().describe('Hex color code (defaults to #408cfb)'),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().describe('Hex color code (defaults to #408cfb)'),
 })
 
 const CreateGroupInput = z.object({
@@ -44,8 +44,8 @@ const CreateGroupInput = z.object({
 })
 
 const DateRangeInput = z.object({
-  month: z.number().min(1).max(12).optional(),
-  year: z.number().optional(),
+  month: z.number().min(1).max(12).nullable(),
+  year: z.number().nullable(),
 })
 
 // ═══════════════════════════════════════════════════════════════════
