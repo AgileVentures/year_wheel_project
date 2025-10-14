@@ -300,7 +300,7 @@
   },
   "onboarding": {
     "welcome": {
-      "title": "Välkommen till YearWheel! ",
+      "title": "Välkommen till YearWheel!",
       "description": "Här kan du planera hela året på ett ställe. Låt oss visa dig hur det funkar i en snabb genomgång."
     },
     "innerRing": {
@@ -324,7 +324,7 @@
       "description": "Exportera ditt hjul som PNG, JPEG eller SVG. Du kan också dela det med andra via en publik länk eller kopiera till urklipp."
     },
     "complete": {
-      "title": "Klart! Nu är du redo! ✨",
+      "title": "Klart! Nu är du redo!",
       "description": "Du kan alltid komma tillbaka till denna guide genom att klicka på hjälpikonen. Lycka till med din årsplanering!"
     },
     "buttons": {
@@ -343,27 +343,27 @@
       "description": "Detta är ditt AI-assistentfönster. Det flyter ovanför din editor och kan anpassas efter dina behov."
     },
     "drag": {
-      "title": "Dra för att flytta 🎯",
+      "title": "Dra för att flytta",
       "description": "Klicka och håll i titelraden för att dra fönstret till en annan plats. Placera det där det passar bäst för dig!"
     },
     "resize": {
-      "title": "Ändra storlek 📏",
+      "title": "Ändra storlek",
       "description": "Hovra över kanterna eller hörnen för att visa storleksändringshandtag. Dra för att göra fönstret större eller mindre."
     },
     "typeCommands": {
-      "title": "Skriv kommandon ✍️",
+      "title": "Skriv kommandon",
       "description": "Använd naturligt språk för att berätta vad du vill göra. Exempel: 'Skapa en sommarkampanj från 1 juni till 31 augusti', 'Lägg till en innerring för mål', eller 'Ta bort aktiviteten julrea'."
     },
     "chatMessages": {
-      "title": "Konversation & Svar 💬",
+      "title": "Konversation & Svar",
       "description": "AI:n svarar här och bekräftar åtgärder. Du kan se hela historiken av dina kommandon och AI:ns svar. Scrolla för att se tidigare meddelanden."
     },
     "aiActions": {
-      "title": "AI skapar, ändrar & tar bort ⚡",
+      "title": "AI skapar, ändrar & tar bort",
       "description": "AI-assistenten kan:\n• Skapa aktiviteter, ringar och aktivitetsgrupper\n• Redigera befintliga element (ändra datum, namn, färg)\n• Ta bort element\n• Föreslå strukturer och förbättringar\n\nÄndringarna syns direkt på ditt hjul!"
     },
     "complete": {
-      "title": "Klart! 🎉",
+      "title": "Klart!",
       "description": "Nu är du redo att använda AI-assistenten! Beskriv vad du vill göra i naturligt språk så hjälper AI:n dig."
     },
     "buttons": {

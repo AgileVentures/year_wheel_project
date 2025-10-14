@@ -324,7 +324,7 @@
       "description": "Export your wheel as PNG, JPEG, or SVG. You can also share it with others via a public link or copy it to the clipboard."
     },
     "complete": {
-      "title": "All done! You're ready! ✨",
+      "title": "All done! You're ready!",
       "description": "You can always return to this guide by clicking the help icon. Good luck with your year planning!"
     },
     "buttons": {
@@ -343,27 +343,27 @@
       "description": "This is your AI assistant window. It floats above your editor and can be customized to your needs."
     },
     "drag": {
-      "title": "Drag to Move 🎯",
+      "title": "Drag to Move",
       "description": "Click and hold the title bar to drag the window to a different location. Position it wherever works best for you!"
     },
     "resize": {
-      "title": "Resize 📏",
+      "title": "Resize",
       "description": "Hover over the edges or corners to reveal resize handles. Drag to make the window larger or smaller."
     },
     "typeCommands": {
-      "title": "Type Commands ✍️",
+      "title": "Type Commands",
       "description": "Use natural language to tell the AI what you want to do. Examples: 'Create a summer campaign from June 1 to August 31', 'Add an inner ring for goals', or 'Delete the Christmas sale activity'."
     },
     "chatMessages": {
-      "title": "Conversation & Responses 💬",
+      "title": "Conversation & Responses",
       "description": "The AI responds here and confirms actions. You can see the full history of your commands and the AI's responses. Scroll to view previous messages."
     },
     "aiActions": {
-      "title": "AI Creates, Modifies & Deletes ⚡",
+      "title": "AI Creates, Modifies & Deletes",
       "description": "The AI assistant can:\n• Create activities, rings, and activity groups\n• Edit existing elements (change dates, names, colors)\n• Delete elements\n• Suggest structures and improvements\n\nChanges appear instantly on your wheel!"
     },
     "complete": {
-      "title": "All Done! 🎉",
+      "title": "All Done!",
       "description": "You're now ready to use the AI assistant! Describe what you want to do in natural language and the AI will help you."
     },
     "buttons": {
