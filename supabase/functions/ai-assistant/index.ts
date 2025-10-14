@@ -202,6 +202,17 @@ const tools = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'get_current_rings_and_groups',
+      description: 'CRITICAL: Call this tool when you need fresh ring/group IDs. Use this: 1) Before creating activities if unsure which ring/group to use, 2) After creating new rings/groups in previous messages, 3) When user mentions a ring/group name but you need the ID. Returns current rings and activity groups with their IDs.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+    },
+  },
 ]
 
 // Tool implementations
@@ -561,6 +572,8 @@ async function createRing(supabase: any, wheelId: string, name: string, type: 'i
   return {
     success: true,
     message: `Ring "${name}" skapad (typ: ${type}, färg: ${finalColor})`,
+    ringId: ring.id,
+    ringName: ring.name,
   }
 }
 
@@ -607,6 +620,8 @@ async function createActivityGroup(supabase: any, wheelId: string, name: string,
   return {
     success: true,
     message: `Aktivitetsgrupp "${name}" skapad med färg ${color}`,
+    groupId: group.id,
+    groupName: group.name,
   }
 }
 
@@ -784,6 +799,37 @@ async function analyzeWheel(supabase: any, pageId: string) {
   }
 }
 
+// --- Get Current Rings and Groups ---
+async function getCurrentRingsAndGroups(supabase: any, wheelId: string) {
+  console.log('[getCurrentRingsAndGroups] Fetching for wheel:', wheelId)
+  
+  // Fetch current rings and groups
+  const [ringsRes, groupsRes] = await Promise.all([
+    supabase.from('wheel_rings').select('id, name, type, color').eq('wheel_id', wheelId).order('ring_order'),
+    supabase.from('activity_groups').select('id, name, color').eq('wheel_id', wheelId),
+  ])
+
+  if (ringsRes.error) {
+    throw new Error(`Kunde inte hämta ringar: ${ringsRes.error.message}`)
+  }
+  
+  if (groupsRes.error) {
+    throw new Error(`Kunde inte hämta aktivitetsgrupper: ${groupsRes.error.message}`)
+  }
+
+  const rings = ringsRes.data || []
+  const groups = groupsRes.data || []
+
+  console.log('[getCurrentRingsAndGroups] Found:', { rings: rings.length, groups: groups.length })
+
+  return {
+    success: true,
+    rings: rings.map((r: any) => ({ id: r.id, name: r.name, type: r.type, color: r.color })),
+    groups: groups.map((g: any) => ({ id: g.id, name: g.name, color: g.color })),
+    message: `Hittade ${rings.length} ringar och ${groups.length} aktivitetsgrupper`,
+  }
+}
+
 // Main handler
 serve(async (req: Request) => {
   try {
@@ -913,15 +959,37 @@ CRITICAL BEHAVIOR RULES:
    - If user explicitly specifies ring/group, use that instead
    - Only ask if NO reasonable inference possible (rare)
    
-   **CRITICAL ID MAPPING:**
-   - When you've identified the ring/group NAME (e.g., "Kampanjer"), look it up in context
-   - Find the line with that exact name and extract the UUID (the part after the colon)
-   - Example: Context shows '"Kampanjer": abc-123-456 (outer)' → Extract 'abc-123-456' as ringId
-   - NEVER pass the name as the ID - always use the UUID from the context
-   - Be case-insensitive and flexible when matching:
-     * "Kampanjer" = "kampanjer" = "Kampanjer (inner)" = matches '"Kampanjer"' in context
-     * "Händelser" = "händelser" = "Händelser ring" = matches '"Händelser"' in context
-   - If truly ambiguous after inference, ask user to clarify (but this should be rare)
+   **CRITICAL ID MAPPING (MOST IMPORTANT RULE):**
+   - **ALWAYS USE get_current_rings_and_groups TOOL WHEN UNSURE**
+   - Initial context at top of conversation may be stale after creating rings/groups
+   - When creating activities and you need ring/group IDs:
+     * Option 1: If you JUST created the ring/group, use ringId/groupId from that tool's response
+     * Option 2: If ring/group was created in previous message or exists already, call get_current_rings_and_groups first
+     * Option 3: Only use initial context if you're certain it's accurate (at start of conversation)
+   
+   **When to call get_current_rings_and_groups:**
+   - Before creating activities if rings were mentioned in previous messages
+   - After the user says "try again" or "försök igen" (context may have changed)
+   - When you see an error like "Ring med ID X hittades inte"
+   - When user mentions a ring/group name but you're not 100% certain of the ID
+   - After creating multiple rings/groups, before creating activities
+   
+   **ID Mapping Process:**
+   1. If you JUST created a ring → use ringId from create_ring response
+   2. If ring exists but you're unsure → call get_current_rings_and_groups first
+   3. Extract UUID from the tool response: rings array contains {id, name, type, color}
+   4. NEVER pass the name as the ID - always use the UUID
+   
+   **Example Flow:**
+   User: "skapa ring Kampanjer"
+   You: [Call create_ring] → returns {ringId: "abc-123"}
+   User: "lägg till julkampanj"
+   You: Use ringId "abc-123" directly (from previous tool result)
+   
+   **Example Flow 2:**
+   User: "lägg till aktivitet i kampanjer-ringen"
+   You: [Call get_current_rings_and_groups first] → returns rings: [{id: "abc-123", name: "Kampanjer"}]
+   You: Extract id "abc-123" → [Call create_activity with ringId: "abc-123"]
 
 6. **ERROR HANDLING**:
    - When tool execution fails: translate errors into user-friendly language
@@ -997,6 +1065,37 @@ User: "lägg till julkampanj i kampanjer-ringen"
 You call tool: create_activity with ringId: "Kampanjer" ❌ WRONG - Must use UUID!
 Result: Error - can't find ring with that ID
 
+**Creating Ring + Activities in Same Request (CRITICAL - Do this!):**
+User: "skapa ringen Kampanjer och lägg till julkampanj i december"
+You: [Call create_ring with name: "Kampanjer", type: "outer"]
+Tool returns: { success: true, ringId: "new-uuid-123", ringName: "Kampanjer" }
+You internally: Store ringId "new-uuid-123" for next tool call
+You: [Call create_activity with ringId: "new-uuid-123" (from previous tool result, NOT from context)]
+You respond: "Klart! Jag har skapat ringen Kampanjer och lagt till julkampanj i december ✅"
+
+**User Says "Try Again" (REFRESH CONTEXT):**
+User: "prova på nytt"
+You internally: Previous attempt may have created ring, need fresh IDs
+You: [Call get_current_rings_and_groups first]
+Tool returns: { rings: [{id: "xyz-789", name: "Kampanjer", type: "outer"}], groups: [...] }
+You internally: Now I have fresh ID "xyz-789" for "Kampanjer"
+You: [Call create_activity with ringId: "xyz-789"]
+You respond: "Nu fungerade det! Aktiviteten är tillagd i ringen Kampanjer ✅"
+
+**Activity in Different Message from Ring Creation (REFRESH):**
+Message 1 -
+User: "skapa ring Kampanjer"
+You: [Call create_ring] → ringId: "abc-123"
+You respond: "Ring skapad!"
+
+Message 2 -
+User: "lägg till julkampanj"
+You internally: Ring was created in previous message, context might be stale
+You: [Call get_current_rings_and_groups first to get fresh IDs]
+Tool returns: { rings: [{id: "abc-123", name: "Kampanjer"}] }
+You: [Call create_activity with ringId: "abc-123"]
+You respond: "Julkampanj tillagd! ✅"
+
 **Bad Pattern (DON'T DO THIS):**
 User: "ja tack"
 You: "För SaaS-lansering kan vi rekommendera... Vill du att jag skapar någon av dessa?" ❌ WRONG - Don't repeat suggestions after confirmation!
@@ -1068,6 +1167,8 @@ LANGUAGE ADAPTATION:
             result = await suggestWheelStructure(functionArgs.useCase)
           } else if (functionName === 'analyze_wheel') {
             result = await analyzeWheel(supabase, currentPageId)
+          } else if (functionName === 'get_current_rings_and_groups') {
+            result = await getCurrentRingsAndGroups(supabase, wheelId)
           } else {
             // Unknown tool - let AI handle gracefully
             result = {
