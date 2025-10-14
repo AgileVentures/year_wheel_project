@@ -87,7 +87,7 @@ function LegalPage() {
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-sm p-6 text-center">
             <p className="text-red-800 font-medium mb-2">
               {i18n.language === 'en' ? 'Error loading document' : 'Fel vid laddning av dokument'}
             </p>
@@ -96,7 +96,7 @@ function LegalPage() {
         )}
 
         {!loading && !error && (
-          <article className="bg-white rounded-lg shadow-lg p-8 md:p-12">
+          <article className="bg-white rounded-sm shadow-lg p-8 md:p-12">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               className="prose prose-slate max-w-none
@@ -120,7 +120,7 @@ function LegalPage() {
 
         {/* Quick Links */}
         {!loading && !error && (
-          <div className="mt-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
+          <div className="mt-8 bg-gray-50 rounded-sm p-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {i18n.language === 'en' ? 'Legal Documents' : 'Juridiska dokument'}
             </h3>
