@@ -271,7 +271,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         throw new Error(t('editor:aiAssistant.noSession'));
       }
 
-      // Call AI Assistant V2 edge function with streaming (using OpenAI Agents SDK)
+      // Call AI Assistant V2 edge function (using OpenAI Agents SDK)
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant-v2`, {
         method: 'POST',
         headers: {
@@ -287,43 +287,38 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🔴 [AI Assistant] Edge function error:', errorText);
-        throw new Error(errorText || t('editor:aiAssistant.edgeFunctionError'));
+        const errorData = await response.json();
+        console.error('🔴 [AI Assistant] Edge function error:', errorData);
+        throw new Error(errorData.error || t('editor:aiAssistant.edgeFunctionError'));
       }
 
-      // Handle streaming response
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantMessage = '';
-      const assistantMessageId = Date.now();
+      const result = await response.json();
+      console.log('✨ [AI Assistant] Complete!', result);
 
-      // Add empty assistant message that we'll update
+      let assistantMessage = '';
+      if (result.message) {
+        assistantMessage = result.message;
+      } else if (typeof result.result === 'string') {
+        try {
+          const parsed = JSON.parse(result.result);
+          assistantMessage = parsed.message || parsed.content || result.result;
+        } catch {
+          assistantMessage = result.result;
+        }
+      } else if (result.result && typeof result.result === 'object') {
+        assistantMessage = result.result.message || result.result.content || JSON.stringify(result.result, null, 2);
+      } else {
+        assistantMessage = 'Klart!';
+      }
+
+      // Clean up the response before displaying
+      assistantMessage = cleanAIResponse(assistantMessage);
+
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '',
-        id: assistantMessageId
+        content: assistantMessage,
+        id: Date.now()
       }]);
-
-      console.log('📡 [AI Assistant] Streaming response...');
-
-      // Read stream
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        assistantMessage += chunk;
-
-        // Update UI in real-time
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? { ...msg, content: cleanAIResponse(assistantMessage) }
-            : msg
-        ));
-      }
-
-      console.log('✨ [AI Assistant] Streaming complete!', { length: assistantMessage.length });
 
       console.log('[AI] Reloading...');
       if (onWheelUpdate) await onWheelUpdate();

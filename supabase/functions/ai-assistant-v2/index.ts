@@ -1284,25 +1284,22 @@ serve(async (req: Request) => {
       content: msg.content,
     }))
 
-    // Run agent with streaming enabled
-    const stream = await run(orchestrator, userMessage, {
-      stream: true,
+    // Run agent with RunContext
+    const result = await run(orchestrator, userMessage, {
       context: wheelContext,
       maxTurns: 20,
     })
 
-    console.log('[AI Assistant V2] Streaming response started')
+    console.log('[AI Assistant V2] Result:', { finalOutput: result.finalOutput })
 
-    // Return streaming response as Server-Sent Events
     return new Response(
-      stream.toTextStream({ compatibleWithNodeStreams: true }),
+      JSON.stringify({
+        success: true,
+        message: result.finalOutput,
+        agentUsed: result.agent?.name || 'Year Wheel Assistant',
+      }),
       {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     )
