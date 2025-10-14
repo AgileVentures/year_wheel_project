@@ -1,7 +1,9 @@
 {
   "nav": {
     "features": "Features",
+    "templates": "Templates",
     "pricing": "Pricing",
+    "comparison": "Comparison",
     "login": "Log in",
     "getStarted": "Get started free"
   },
@@ -76,7 +78,7 @@
     "yearlyDiscount": "Save 19%",
     "free": {
       "name": "Free",
-      "price": "0 SEK",
+      "price": "€0",
       "period": "forever",
       "features": "Basic features",
       "cta": "Get started free"
@@ -86,9 +88,9 @@
       "popular": "Most Popular",
       "title": "Premium",
       "description": "For teams and organizations that need advanced planning",
-      "priceMonthly": "79 SEK",
-      "priceYearly": "64 SEK",
-      "yearlyTotal": "768 SEK/year",
+      "priceMonthly": "€7",
+      "priceYearly": "€6",
+      "yearlyTotal": "€70/year",
       "period": "/month",
       "saveText": "Save 19%",
       "cta": "Get started",
@@ -111,6 +113,7 @@
     "viewAllDetails": "View all details and FAQ →",
     "trustSignals": "Secure payments via Stripe",
     "flexibility": "No commitment • Cancel anytime • 30-day money-back guarantee",
+    "billingNote": "* Prices shown in EUR for reference. Actual billing is in SEK (10.9 SEK = €1).",
     "faq": {
       "title": "Frequently Asked Questions",
       "tryPremium": {

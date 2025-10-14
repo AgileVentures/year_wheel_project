@@ -1,7 +1,9 @@
 {
   "nav": {
     "features": "Funktioner",
+    "templates": "Mallar",
     "pricing": "Priser",
+    "comparison": "Jämförelse",
     "login": "Logga in",
     "getStarted": "Kom igång gratis"
   },

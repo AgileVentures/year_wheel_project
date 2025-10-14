@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play, Share2 } from 'lucide-react';
+import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play, Share2, Menu, X } from 'lucide-react';
 import LoginForm from './auth/LoginForm';
 import SignupForm from './auth/SignupForm';
 import AIAssistantDemo from './AIAssistantDemo';
@@ -14,12 +14,13 @@ import ComparisonTable from './ComparisonTable';
 import Footer from './Footer';
 
 function LandingPage() {
-  const { t } = useTranslation(['landing', 'common']);
+  const { t, i18n } = useTranslation(['landing', 'common']);
   const navigate = useNavigate();
   const { user } = useAuth();
   const [authMode, setAuthMode] = useState('signup'); // 'login' or 'signup'
   const [activeDemo, setActiveDemo] = useState('wheel'); // 'wheel' or 'ai'
   const [billingCycle, setBillingCycle] = useState('yearly'); // 'monthly' or 'yearly'
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const demoRef = useRef(null);
 
   // Redirect if already logged in
@@ -135,6 +136,11 @@ function LandingPage() {
     comparisonSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToTemplates = () => {
+    const templatesSection = document.getElementById('templates-section');
+    templatesSection?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -144,15 +150,20 @@ function LandingPage() {
             <div className="flex items-center gap-3">
               <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-8 w-auto" />
             </div>
-            <div className="hidden md:flex items-center gap-8">
+            
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center gap-6">
               <button onClick={scrollToFeatures} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 {t('landing:nav.features')}
+              </button>
+              <button onClick={scrollToTemplates} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                {t('landing:nav.templates')}
               </button>
               <button onClick={scrollToPricing} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 {t('landing:nav.pricing')}
               </button>
-              <button onClick={scrollToAuth} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                {t('landing:nav.login')}
+              <button onClick={scrollToComparison} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
+                {t('landing:nav.comparison')}
               </button>
               <LanguageSwitcher />
               <button
@@ -162,9 +173,82 @@ function LandingPage() {
                 {t('landing:nav.getStarted')}
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="flex lg:hidden items-center gap-3">
+              <LanguageSwitcher />
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
+
+      {/* Mobile Menu Overlay - Outside nav */}
+      {mobileMenuOpen && (
+        <>
+          <div 
+            className="fixed top-16 left-0 right-0 bottom-0 bg-black/50 z-[45] lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="fixed top-16 right-0 bottom-0 w-64 bg-white shadow-2xl z-[60] lg:hidden overflow-y-auto border-l border-gray-200">
+            <div className="p-4 space-y-2">
+              <button
+                onClick={() => {
+                  scrollToFeatures();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-sm font-medium transition-colors"
+              >
+                {t('landing:nav.features')}
+              </button>
+              <button
+                onClick={() => {
+                  scrollToTemplates();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-sm font-medium transition-colors"
+              >
+                {t('landing:nav.templates')}
+              </button>
+              <button
+                onClick={() => {
+                  scrollToPricing();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-sm font-medium transition-colors"
+              >
+                {t('landing:nav.pricing')}
+              </button>
+              <button
+                onClick={() => {
+                  scrollToComparison();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-sm font-medium transition-colors"
+              >
+                {t('landing:nav.comparison')}
+              </button>
+              <div className="pt-4 border-t border-gray-200 mt-4">
+                <button
+                  onClick={() => {
+                    scrollToAuth();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 bg-[#00A4A6] text-white rounded-sm hover:bg-[#2E9E97] font-semibold transition-colors"
+                >
+                  {t('landing:nav.getStarted')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Hero Section */}
       <Hero />
@@ -803,6 +887,12 @@ function LandingPage() {
             <Link to="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-semibold">
               {t('landing:pricing.viewAllDetails')}
             </Link>
+            {/* Billing note for English language */}
+            {i18n.language === 'en' && (
+              <p className="text-sm text-gray-500 mt-4">
+                {t('landing:pricing.billingNote')}
+              </p>
+            )}
           </div>
 
           {/* NGO/Non-profit Discount Banner */}
@@ -860,10 +950,14 @@ function LandingPage() {
       </section>
 
       {/* Comparison Table */}
-      <ComparisonTable />
+      <div id="comparison-section" className="scroll-mt-16">
+        <ComparisonTable />
+      </div>
 
       {/* Template Showcase */}
-      <TemplateShowcase />
+      <div id="templates-section" className="scroll-mt-16">
+        <TemplateShowcase />
+      </div>
 
       <Footer />
 

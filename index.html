@@ -5,6 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/year_wheel_symbol.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
+    <!-- DNS Prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://js.stripe.com" />
+    <link rel="dns-prefetch" href="https://m.stripe.network" />
+    
     <!-- Primary Meta Tags -->
     <title>YearWheel - Visualisera och planera ditt år med AI</title>
     <meta name="title" content="YearWheel - Visualisera och planera ditt år med AI" />
@@ -34,10 +38,11 @@
     <meta name="language" content="Swedish" />
     <meta name="revisit-after" content="7 days" />
     
-    <!-- Google Fonts - Poppins -->
+    <!-- Google Fonts - Poppins (optimized for performance) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
   </head>
   <body>
     <div id="root"></div>

@@ -12,6 +12,10 @@ export default function Hero() {
           src="/banner.jpg"
           alt="YearWheel Planning"
           className="w-full h-full object-cover"
+          loading="eager"
+          fetchpriority="high"
+          width="2030"
+          height="4284"
         />
         {/* Deep navy blue to teal gradient overlay - using logo colors */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#1B2A63]/95 via-[#1B2A63]/85 to-[#2E9E97]/70"></div>

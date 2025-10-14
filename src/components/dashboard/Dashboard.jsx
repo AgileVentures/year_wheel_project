@@ -17,6 +17,7 @@ import UpgradePrompt from '../subscription/UpgradePrompt';
 import SubscriptionSettings from '../subscription/SubscriptionSettings';
 import LanguageSwitcher from '../LanguageSwitcher';
 import Footer from '../Footer';
+import MobileNav from './MobileNav';
 
 // User Menu Dropdown Component
 function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManageSubscription }) {
@@ -375,8 +376,19 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 className="h-6 sm:h-8 w-auto flex-shrink-0"
               />
               
-              {/* Icon-based Navigation */}
-              <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+              {/* Mobile Navigation */}
+              <MobileNav 
+                currentView={currentView}
+                onViewChange={setCurrentView}
+                wheelCount={wheels.length}
+                invitationCount={invitationCount}
+                isPremium={isPremium}
+                isAdmin={isAdminUser}
+                isLoading={subscriptionLoading}
+              />
+              
+              {/* Desktop Navigation */}
+              <nav className="hidden lg:flex items-center gap-1 sm:gap-2 overflow-x-auto">
                 <button
                   onClick={() => setCurrentView('wheels')}
                   className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-medium transition-all whitespace-nowrap ${

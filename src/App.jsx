@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import YearWheel from "./YearWheel";
@@ -13,14 +13,16 @@ import EditorOnboarding from "./components/EditorOnboarding";
 import AIAssistantOnboarding from "./components/AIAssistantOnboarding";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
-import LandingPage from "./components/LandingPage";
-import AuthPage from "./components/auth/AuthPage";
-import Dashboard from "./components/dashboard/Dashboard";
-import InviteAcceptPage from "./components/InviteAcceptPage";
-import PreviewWheelPage from "./components/PreviewWheelPage";
-import PricingPage from "./components/PricingPage";
-import LegalPage from "./components/LegalPage";
 import CookieConsent from "./components/CookieConsent";
+
+// Lazy load route components for better code splitting
+const LandingPage = lazy(() => import("./components/LandingPage"));
+const AuthPage = lazy(() => import("./components/auth/AuthPage"));
+const Dashboard = lazy(() => import("./components/dashboard/Dashboard"));
+const InviteAcceptPage = lazy(() => import("./components/InviteAcceptPage"));
+const PreviewWheelPage = lazy(() => import("./components/PreviewWheelPage"));
+const PricingPage = lazy(() => import("./components/PricingPage"));
+const LegalPage = lazy(() => import("./components/LegalPage"));
 import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
@@ -1942,30 +1944,39 @@ function AppContent() {
   };
 
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
-      <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/legal/:document" element={<LegalPage />} />
-      <Route path="/invite/:token" element={<InviteAcceptPage />} />
-      <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+        <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/legal/:document" element={<LegalPage />} />
+        <Route path="/invite/:token" element={<InviteAcceptPage />} />
+        <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
 
-      {/* Protected routes */}
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <DashboardRoute />
-        </ProtectedRoute>
-      } />
-      <Route path="/wheel/:wheelId" element={
-        <ProtectedRoute>
-          <WheelEditorRoute />
-        </ProtectedRoute>
-      } />
-      
-      {/* 404 redirect */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Protected routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <DashboardRoute />
+          </ProtectedRoute>
+        } />
+        <Route path="/wheel/:wheelId" element={
+          <ProtectedRoute>
+            <WheelEditorRoute />
+          </ProtectedRoute>
+        } />
+        
+        {/* 404 redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

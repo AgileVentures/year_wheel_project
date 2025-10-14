@@ -685,14 +685,26 @@ export default function ManualEditorDemo() {
                         {t('landing:manualDemo.modal.endDate')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
                       </label>
                       <div className="relative">
-                        <input
-                          type="date"
-                          value={isEditingDate ? editDateText : activityEndDate}
-                          readOnly
-                          className="w-full px-4 py-2.5 border border-blue-500 rounded-sm text-base text-gray-900 bg-white"
-                        />
+                        {isEditingDate ? (
+                          <input
+                            type="text"
+                            value={editDateText}
+                            readOnly
+                            placeholder="yyyy-mm-dd"
+                            className="w-full px-4 py-2.5 border border-blue-500 rounded-sm text-base text-gray-900 bg-white"
+                          />
+                        ) : (
+                          <input
+                            type="date"
+                            value={activityEndDate}
+                            readOnly
+                            className="w-full px-4 py-2.5 border border-blue-500 rounded-sm text-base text-gray-900 bg-white"
+                          />
+                        )}
                         {isEditingDate && (
-                          <span className="absolute top-3 right-12 bg-blue-600 w-0.5 h-5 animate-pulse"></span>
+                          <span className="absolute top-3 bg-blue-600 w-0.5 h-5 animate-pulse" style={{
+                            left: `${16 + editDateText.length * 8.5}px`
+                          }}></span>
                         )}
                       </div>
                     </div>

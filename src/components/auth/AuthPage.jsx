@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
+import LanguageSwitcher from '../LanguageSwitcher';
 
 function AuthPage() {
   const { t } = useTranslation(['auth']);
@@ -28,13 +29,16 @@ function AuthPage() {
       {/* Header with Logo */}
       <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity w-fit">
-            <img 
-              src="/year_wheel_logo.svg" 
-              alt="YearWheel" 
-              className="h-8 w-auto"
-            />
-          </Link>
+          <div className="flex justify-between items-center">
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <img 
+                src="/year_wheel_logo.svg" 
+                alt="YearWheel" 
+                className="h-8 w-auto"
+              />
+            </Link>
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 

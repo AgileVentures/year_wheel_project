@@ -21,18 +21,18 @@
     },
     "monthly": {
       "name": "Premium Monthly",
-      "price": "79",
-      "currency": "SEK",
+      "price": "7",
+      "currency": "EUR",
       "period": "/month",
       "description": "For flexibility"
     },
     "yearly": {
       "name": "Premium Annual",
-      "price": "779",
-      "currency": "SEK",
+      "price": "71",
+      "currency": "EUR",
       "period": "/year",
       "description": "Best value - Save 19%",
-      "savings": "Save {{amount}} SEK/year",
+      "savings": "Save {{amount}} EUR/year",
       "discount": "(Annual payment gives 19% discount)"
     }
   },
@@ -62,7 +62,7 @@
     "mostPopular": "Most popular",
     "savings": "Save 19%!",
     "perMonth": "/month",
-    "priceBreakdown": "{{price}} SEK/month"
+    "priceBreakdown": "{{price}} EUR/month"
   },
   "faq": {
     "title": "Frequently Asked Questions",

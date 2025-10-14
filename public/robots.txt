@@ -1,0 +1,10 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin and API endpoints
+Disallow: /api/
+Disallow: /.netlify/
+
+# Sitemap
+Sitemap: https://yearwheel.se/sitemap.xml

@@ -59,6 +59,7 @@
     "noOtherTeams": "No other teams available"
   },
   "navigation": {
+    "menu": "Menu",
     "dashboard": "Dashboard",
     "wheels": "Wheels",
     "teams": "Teams",

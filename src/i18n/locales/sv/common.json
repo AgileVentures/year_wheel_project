@@ -59,6 +59,7 @@
     "noOtherTeams": "Inga andra team tillgängliga"
   },
   "navigation": {
+    "menu": "Meny",
     "dashboard": "Översikt",
     "wheels": "Hjul",
     "teams": "Team",
