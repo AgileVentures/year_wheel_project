@@ -22,6 +22,8 @@ function PreviewWheelPage() {
   const [pages, setPages] = useState([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [currentPageItems, setCurrentPageItems] = useState([]);
+  const [zoomedMonth, setZoomedMonth] = useState(null);
+  const [zoomedQuarter, setZoomedQuarter] = useState(null);
 
   useEffect(() => {
     const loadWheel = async () => {
@@ -228,6 +230,10 @@ function PreviewWheelPage() {
             showLabels={wheelData.showLabels !== undefined ? wheelData.showLabels : false}
             weekRingDisplayMode={wheelData.weekRingDisplayMode || 'week-numbers'}
             organizationData={displayOrgData}
+            zoomedMonth={zoomedMonth}
+            zoomedQuarter={zoomedQuarter}
+            onSetZoomedMonth={setZoomedMonth}
+            onSetZoomedQuarter={setZoomedQuarter}
             readonly={true}
           />
         </div>
