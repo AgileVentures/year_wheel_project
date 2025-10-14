@@ -29,15 +29,6 @@ interface WheelContext {
   wheelId: string
   userId: string
   currentYear: number
-  currentPageId: string
-  // Store suggestions for "suggest then create" workflow
-  lastSuggestions?: Array<{
-    name: string
-    startDate: string
-    endDate: string
-    ring: string
-    group: string
-  }>
 }
 
 const CreateActivityInput = z.object({
@@ -675,12 +666,7 @@ async function updateActivity(
     const newActivityGroupId = updates.newActivityGroupId || firstItem.activity_id
 
     // Create new activity with updated dates
-    // Need to create a temporary context for the createActivity call
-    const tempCtx: RunContext<WheelContext> = {
-      context: { supabase, wheelId, userId: '', currentYear: new Date().getFullYear(), currentPageId: '' }
-    } as RunContext<WheelContext>
-    
-    const result = await createActivity(tempCtx, {
+    const result = await createActivity(supabase, wheelId, {
       name: newName,
       startDate: newStartDate,
       endDate: newEndDate,
@@ -785,21 +771,19 @@ function getCurrentDate() {
 
 // ═══════════════════════════════════════════════════════════════════
 // AGENT SYSTEM - MULTI-AGENT WITH HANDOFFS
-// All tools now receive RunContext<WheelContext> for proper context management
 // ═══════════════════════════════════════════════════════════════════
 
-function createAgentSystem() {
+function createAgentSystem(supabase: any, wheelId: string, currentPageId: string) {
   
   // ──────────────────────────────────────────────────────────────────
   // CONTEXT TOOLS (shared across agents)
   // ──────────────────────────────────────────────────────────────────
   
-  const getContextTool = tool<WheelContext>({
+  const getContextTool = tool({
     name: 'get_current_context',
     description: 'Get current rings, groups, and date. Call this when you need fresh IDs or date information.',
     parameters: z.object({}),
-    async execute(_input: {}, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute() {
       const { rings, groups } = await getCurrentRingsAndGroups(supabase, wheelId)
       const dateInfo = getCurrentDate()
       
@@ -815,35 +799,32 @@ function createAgentSystem() {
   // STRUCTURE AGENT - Handles rings and groups
   // ──────────────────────────────────────────────────────────────────
   
-  const createRingTool = tool<WheelContext>({
+  const createRingTool = tool({
     name: 'create_ring',
     description: 'Create a new ring. Use "outer" type for activity rings (most common), "inner" for text rings.',
     parameters: CreateRingInput,
-    async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof CreateRingInput>) {
       const result = await createRing(supabase, wheelId, input)
       return JSON.stringify(result)
     }
   })
 
-  const createGroupTool = tool<WheelContext>({
+  const createGroupTool = tool({
     name: 'create_activity_group',
     description: 'Create a new activity group for organizing activities.',
     parameters: CreateGroupInput,
-    async execute(input: z.infer<typeof CreateGroupInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof CreateGroupInput>) {
       const result = await createGroup(supabase, wheelId, input)
       return JSON.stringify(result)
     }
   })
 
   // Add update/delete ring tools
-  const updateRingTool = tool<WheelContext>({
+  const updateRingTool = tool({
     name: 'update_ring',
     description: 'Update an existing ring name or color',
     parameters: UpdateRingInput,
-    async execute(input: z.infer<typeof UpdateRingInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof UpdateRingInput>) {
       const result = await updateRing(supabase, wheelId, input.ringName, {
         newName: input.newName || undefined,
         newColor: input.newColor || undefined,
@@ -852,23 +833,21 @@ function createAgentSystem() {
     }
   })
 
-  const deleteRingTool = tool<WheelContext>({
+  const deleteRingTool = tool({
     name: 'delete_ring',
     description: 'Delete a ring by name. Will fail if ring has activities.',
     parameters: DeleteRingInput,
-    async execute(input: z.infer<typeof DeleteRingInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof DeleteRingInput>) {
       const result = await deleteRing(supabase, wheelId, input.name)
       return JSON.stringify(result)
     }
   })
 
-  const updateGroupTool = tool<WheelContext>({
+  const updateGroupTool = tool({
     name: 'update_activity_group',
     description: 'Update an existing activity group name or color',
     parameters: UpdateGroupInput,
-    async execute(input: z.infer<typeof UpdateGroupInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof UpdateGroupInput>) {
       const result = await updateGroup(supabase, wheelId, input.groupName, {
         newName: input.newName || undefined,
         newColor: input.newColor || undefined,
@@ -877,34 +856,31 @@ function createAgentSystem() {
     }
   })
 
-  const deleteGroupTool = tool<WheelContext>({
+  const deleteGroupTool = tool({
     name: 'delete_activity_group',
     description: 'Delete an activity group by name. Will fail if group has activities.',
     parameters: DeleteGroupInput,
-    async execute(input: z.infer<typeof DeleteGroupInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof DeleteGroupInput>) {
       const result = await deleteGroup(supabase, wheelId, input.name)
       return JSON.stringify(result)
     }
   })
 
-  const createLabelTool = tool<WheelContext>({
+  const createLabelTool = tool({
     name: 'create_label',
     description: 'Create a new label for categorizing activities',
     parameters: CreateLabelInput,
-    async execute(input: z.infer<typeof CreateLabelInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof CreateLabelInput>) {
       const result = await createLabel(supabase, wheelId, input)
       return JSON.stringify(result)
     }
   })
 
-  const updateLabelTool = tool<WheelContext>({
+  const updateLabelTool = tool({
     name: 'update_label',
     description: 'Update an existing label name or color',
     parameters: UpdateLabelInput,
-    async execute(input: z.infer<typeof UpdateLabelInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof UpdateLabelInput>) {
       const result = await updateLabel(supabase, wheelId, input.labelName, {
         newName: input.newName || undefined,
         newColor: input.newColor || undefined,
@@ -913,20 +889,20 @@ function createAgentSystem() {
     }
   })
 
-  const deleteLabelTool = tool<WheelContext>({
+  const deleteLabelTool = tool({
     name: 'delete_label',
     description: 'Delete a label by name. Can be deleted even if in use.',
     parameters: DeleteLabelInput,
-    async execute(input: z.infer<typeof DeleteLabelInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof DeleteLabelInput>) {
       const result = await deleteLabel(supabase, wheelId, input.name)
       return JSON.stringify(result)
     }
   })
 
-  const structureAgent = new Agent<WheelContext>({
+  const structureAgent = new Agent({
     name: 'Structure Agent',
     model: 'gpt-4o',
+    handoffDescription: 'Expert at creating, updating, and deleting rings, activity groups, and labels for organizing the Year Wheel structure',
     instructions: `You are the Structure Agent. Your job is to manage the structure of the Year Wheel (rings, activity groups, and labels).
 
 RESPONSIBILITIES:
@@ -976,22 +952,21 @@ EXAMPLES:
   // ACTIVITY AGENT - Handles creating/managing activities
   // ──────────────────────────────────────────────────────────────────
 
-  const createActivityTool = tool<WheelContext>({
+  const createActivityTool = tool({
     name: 'create_activity',
     description: 'Create an activity/event. Can span multiple years. Requires ring ID and activity group ID.',
     parameters: CreateActivityInput,
-    async execute(input: z.infer<typeof CreateActivityInput>, ctx: RunContext<WheelContext>) {
-      const result = await createActivity(ctx, input)
+    async execute(input: z.infer<typeof CreateActivityInput>) {
+      const result = await createActivity(supabase, wheelId, input)
       return JSON.stringify(result)
     }
   })
 
-  const updateActivityTool = tool<WheelContext>({
+  const updateActivityTool = tool({
     name: 'update_activity',
     description: 'Update an existing activity. Can change dates, name, ring, or activity group. Finds the activity by name.',
     parameters: UpdateActivityInput,
-    async execute(input: z.infer<typeof UpdateActivityInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof UpdateActivityInput>) {
       const result = await updateActivity(supabase, wheelId, input.activityName, {
         newName: input.newName || undefined,
         newStartDate: input.newStartDate || undefined,
@@ -1003,23 +978,21 @@ EXAMPLES:
     }
   })
 
-  const deleteActivityTool = tool<WheelContext>({
+  const deleteActivityTool = tool({
     name: 'delete_activity',
     description: 'Delete an activity by name. Searches for activities matching the name.',
     parameters: DeleteActivityInput,
-    async execute(input: z.infer<typeof DeleteActivityInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
+    async execute(input: z.infer<typeof DeleteActivityInput>) {
       const result = await deleteActivity(supabase, wheelId, input.name)
       return JSON.stringify(result)
     }
   })
 
-  const listActivitiesTool = tool<WheelContext>({
+  const listActivitiesTool = tool({
     name: 'list_activities',
     description: 'List all activities for the current page',
     parameters: z.object({}),
-    async execute(_input: {}, ctx: RunContext<WheelContext>) {
-      const { supabase, currentPageId } = ctx.context
+    async execute() {
       const { data: items, error } = await supabase
         .from('items')
         .select('name, start_date, end_date')
@@ -1035,9 +1008,10 @@ EXAMPLES:
     }
   })
 
-  const activityAgent = new Agent<WheelContext>({
+  const activityAgent = new Agent({
     name: 'Activity Agent',
     model: 'gpt-4o',
+    handoffDescription: 'Expert at creating, updating, deleting, and managing activities/events on the Year Wheel with smart date handling',
     instructions: `You are the Activity Agent. Your ONLY job is to CREATE activities immediately when asked.
 
 ⚠️ CRITICAL: DO NOT JUST SAY YOU DID IT - ACTUALLY CALL THE TOOLS!
@@ -1099,12 +1073,11 @@ Speak Swedish naturally. Be concise.`,
   // ANALYSIS AGENT - Provides insights
   // ──────────────────────────────────────────────────────────────────
 
-  const analyzeWheelTool = tool<WheelContext>({
+  const analyzeWheelTool = tool({
     name: 'analyze_wheel',
     description: 'Analyze the current wheel and provide insights about activity distribution',
     parameters: z.object({}),
-    async execute(_input: {}, ctx: RunContext<WheelContext>) {
-      const { supabase, currentPageId } = ctx.context
+    async execute() {
       // Get page's wheel_id
       const { data: page, error: pageError } = await supabase
         .from('wheel_pages')
@@ -1148,9 +1121,10 @@ Speak Swedish naturally. Be concise.`,
     }
   })
 
-  const analysisAgent = new Agent<WheelContext>({
+  const analysisAgent = new Agent({
     name: 'Analysis Agent',
     model: 'gpt-4o',
+    handoffDescription: 'Expert at analyzing the Year Wheel and providing insights about activity distribution, gaps, and recommendations',
     instructions: `You are the Analysis Agent. You provide insights about the Year Wheel.
 
 RESPONSIBILITIES:
@@ -1178,10 +1152,10 @@ Be conversational and helpful.`,
   })
 
   // ──────────────────────────────────────────────────────────────────
-  // MAIN ORCHESTRATOR AGENT - Using proper handoff() pattern
+  // MAIN ORCHESTRATOR AGENT
   // ──────────────────────────────────────────────────────────────────
 
-  const orchestratorAgent = Agent.create<WheelContext>({
+  const orchestratorAgent = Agent.create({
     name: 'Year Wheel Assistant',
     model: 'gpt-4o',
     instructions: `Du är Year Wheel Assistant - en AI-assistent för årsplanering.
@@ -1200,9 +1174,9 @@ ARBETSFLÖDE:
 3. Sammanfatta resultatet för användaren
 
 DELEGERINGSREGLER:
-- User säger "skapa ring" eller "föreslå struktur" → transfer_to_structure_agent
-- User säger "lägg till aktivitet" eller "skapa kampanj" → transfer_to_activity_agent
-- User säger "analysera" eller "hur ser det ut" → transfer_to_analysis_agent
+- User säger "skapa ring" eller "föreslå struktur" → Handoff to Structure Agent
+- User säger "lägg till aktivitet" eller "skapa kampanj" → Handoff to Activity Agent
+- User säger "analysera" eller "hur ser det ut" → Handoff to Analysis Agent
 
 VAR PROAKTIV:
 - Gissa INTE - delegera till rätt specialist
@@ -1211,26 +1185,16 @@ VAR PROAKTIV:
 
 EXEMPEL:
 User: "Skapa en ring för kampanjer"
-You: [Call transfer_to_structure_agent immediately]
+You: [Handoff to Structure Agent immediately]
 
 User: "Lägg till julkampanj i december"
-You: [Call transfer_to_activity_agent immediately]
+You: [Handoff to Activity Agent immediately]
 
 User: "Hur är aktiviteterna fördelade?"
-You: [Call transfer_to_analysis_agent immediately]
+You: [Handoff to Analysis Agent immediately]
 
 Prata svenska naturligt.`,
-    handoffs: [
-      handoff(structureAgent, {
-        toolDescriptionOverride: 'Transfer to Structure Agent when user wants to create, update, or delete rings, activity groups, or labels',
-      }),
-      handoff(activityAgent, {
-        toolDescriptionOverride: 'Transfer to Activity Agent when user wants to create, update, delete, or list activities/events',
-      }),
-      handoff(analysisAgent, {
-        toolDescriptionOverride: 'Transfer to Analysis Agent when user wants insights about activity distribution or wheel analysis',
-      }),
-    ],
+    handoffs: [structureAgent, activityAgent, analysisAgent],
   })
 
   return orchestratorAgent
@@ -1265,18 +1229,8 @@ serve(async (req: Request) => {
 
     console.log('[AI Assistant V2] Processing:', { userMessage, wheelId, currentPageId })
 
-    // Create agent system (no parameters - uses RunContext)
-    const orchestrator = createAgentSystem()
-
-    // Create wheel context that will be passed to all tools
-    const wheelContext: WheelContext = {
-      supabase,
-      wheelId,
-      userId: user.id,
-      currentYear: new Date().getFullYear(),
-      currentPageId,
-      lastSuggestions: undefined, // Will be populated by tools if needed
-    }
+    // Create agent system
+    const orchestrator = createAgentSystem(supabase, wheelId, currentPageId)
 
     // Build conversation history
     const messages = conversationHistory.map((msg: any) => ({
@@ -1284,25 +1238,26 @@ serve(async (req: Request) => {
       content: msg.content,
     }))
 
-    // Run agent with streaming enabled
-    const stream = await run(orchestrator, userMessage, {
-      stream: true,
-      context: wheelContext,
-      maxTurns: 20,
+    // Run agent with conversation history
+    const result = await run(orchestrator, userMessage, {
+      runConfig: {
+        maxTurns: 20,
+      },
+      context: {
+        messages,
+      }
     })
 
-    console.log('[AI Assistant V2] Streaming response started')
+    console.log('[AI Assistant V2] Result:', { finalOutput: result.finalOutput })
 
-    // Return streaming response as Server-Sent Events
     return new Response(
-      stream.toTextStream({ compatibleWithNodeStreams: true }),
+      JSON.stringify({
+        success: true,
+        message: result.finalOutput,
+        agentUsed: result.agent?.name || 'Year Wheel Assistant',
+      }),
       {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     )
