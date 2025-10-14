@@ -209,10 +209,10 @@ function CookieConsent() {
 
           {/* Links */}
           <div className="flex gap-4 text-sm mb-6">
-            <Link to="/privacy" className="text-gray-600 hover:text-gray-900 underline">
+            <Link to="/legal/privacy" className="text-gray-600 hover:text-gray-900 underline">
               {t('common:cookieConsent.privacyPolicy')}
             </Link>
-            <Link to="/cookies" className="text-gray-600 hover:text-gray-900 underline">
+            <Link to="/legal/cookies" className="text-gray-600 hover:text-gray-900 underline">
               {t('common:cookieConsent.cookiePolicy')}
             </Link>
           </div>

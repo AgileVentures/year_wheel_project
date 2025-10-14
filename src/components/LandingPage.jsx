@@ -896,8 +896,8 @@ function LandingPage() {
             <div>
               <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.legal')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="https://communitaslabs.io/privacy" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.privacy')}</a></li>
-                <li><a href="https://communitaslabs.io/terms" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.terms')}</a></li>
+                <li><Link to="/legal/privacy" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.privacy')}</Link></li>
+                <li><Link to="/legal/terms" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.terms')}</Link></li>
               </ul>
             </div>
           </div>
