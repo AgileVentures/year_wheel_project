@@ -1163,6 +1163,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   const handleRestoreVersion = async (versionData) => {
     try {
+      // CRITICAL: Block realtime updates during version restore to prevent race condition
+      // Set timestamp to far future to prevent realtime from overwriting restored data
+      lastSaveTimestamp.current = Date.now() + 10000; // Block for 10 seconds
+      
       // Create a version snapshot of current state before restoring
       if (wheelId) {
         await createVersion(
@@ -1201,9 +1205,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Save the restored state
       await handleSave();
       
+      // Reset the lastSaveTimestamp after save completes
+      lastSaveTimestamp.current = Date.now();
+      
       setShowVersionHistory(false);
     } catch (error) {
       console.error('Error restoring version:', error);
+      // Reset timestamp on error
+      lastSaveTimestamp.current = Date.now();
       const event = new CustomEvent('showToast', {
         detail: { message: 'Kunde inte återställa version', type: 'error' }
       });
