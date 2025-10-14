@@ -1,0 +1,292 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-10-14T10:30:00.000Z",
+  "title": "Utbildningsplan",
+  "year": "2026",
+  "colors": [
+    "#F5E6D3",
+    "#A8DCD1",
+    "#F4A896",
+    "#B8D4E8"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-terminer",
+        "activityId": "group-termin",
+        "labelId": null,
+        "name": "Höstterminen",
+        "startDate": "2026-08-17",
+        "endDate": "2026-12-18",
+        "time": null
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-terminer",
+        "activityId": "group-termin",
+        "labelId": null,
+        "name": "Vårterminen",
+        "startDate": "2026-01-11",
+        "endDate": "2026-06-05",
+        "time": null
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-terminer",
+        "activityId": "group-semester",
+        "labelId": null,
+        "name": "Sommarlov",
+        "startDate": "2026-06-06",
+        "endDate": "2026-08-16",
+        "time": null
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-terminer",
+        "activityId": "group-semester",
+        "labelId": null,
+        "name": "Jullov",
+        "startDate": "2026-12-19",
+        "endDate": "2027-01-10",
+        "time": null
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-kurser",
+        "activityId": "group-kurs",
+        "labelId": "label-skriftlig",
+        "name": "Svenska 1",
+        "startDate": "2026-08-17",
+        "endDate": "2026-10-30",
+        "time": null
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-kurser",
+        "activityId": "group-kurs",
+        "labelId": "label-skriftlig",
+        "name": "Matematik 1",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-27",
+        "time": null
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-kurser",
+        "activityId": "group-kurs",
+        "labelId": "label-muntlig",
+        "name": "Engelska 1",
+        "startDate": "2026-11-02",
+        "endDate": "2026-12-18",
+        "time": null
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-kurser",
+        "activityId": "group-kurs",
+        "labelId": "label-skriftlig",
+        "name": "Historia",
+        "startDate": "2026-01-11",
+        "endDate": "2026-03-12",
+        "time": null
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-kurser",
+        "activityId": "group-kurs",
+        "labelId": "label-muntlig",
+        "name": "Samhällskunskap",
+        "startDate": "2026-03-15",
+        "endDate": "2026-05-14",
+        "time": null
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-projekt",
+        "activityId": "group-projekt",
+        "labelId": "label-grupp",
+        "name": "Projektarbete",
+        "startDate": "2026-09-14",
+        "endDate": "2026-10-16",
+        "time": null
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-projekt",
+        "activityId": "group-prov",
+        "labelId": null,
+        "name": "Nationella prov",
+        "startDate": "2026-03-08",
+        "endDate": "2026-03-26",
+        "time": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-projekt",
+        "activityId": "group-projekt",
+        "labelId": "label-grupp",
+        "name": "Examensarbete",
+        "startDate": "2026-04-12",
+        "endDate": "2026-06-05",
+        "time": null
+      },
+      {
+        "id": "item-013",
+        "ringId": "ring-evenemang",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Höstlov",
+        "startDate": "2026-10-26",
+        "endDate": "2026-10-30",
+        "time": null
+      },
+      {
+        "id": "item-014",
+        "ringId": "ring-evenemang",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Sportlov",
+        "startDate": "2026-02-23",
+        "endDate": "2026-02-27",
+        "time": null
+      },
+      {
+        "id": "item-015",
+        "ringId": "ring-evenemang",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Påsklov",
+        "startDate": "2026-04-02",
+        "endDate": "2026-04-06",
+        "time": null
+      },
+      {
+        "id": "item-016",
+        "ringId": "ring-evenemang",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Studiebesök",
+        "startDate": "2026-05-11",
+        "endDate": "2026-05-15",
+        "time": null
+      }
+    ],
+    "rings": [
+      {
+        "id": "ring-terminer",
+        "name": "Terminer",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#F5E6D3"
+      },
+      {
+        "id": "ring-kurser",
+        "name": "Kurser",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb"
+      },
+      {
+        "id": "ring-projekt",
+        "name": "Projekt & Prov",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb"
+      },
+      {
+        "id": "ring-evenemang",
+        "name": "Evenemang",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#F5E6D3"
+      }
+    ],
+    "labels": [
+      {
+        "id": "label-skriftlig",
+        "name": "Skriftlig examination",
+        "color": "#8b5cf6",
+        "visible": true
+      },
+      {
+        "id": "label-muntlig",
+        "name": "Muntlig examination",
+        "color": "#10b981",
+        "visible": true
+      },
+      {
+        "id": "label-grupp",
+        "name": "Grupparbete",
+        "color": "#f59e0b",
+        "visible": true
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "group-termin",
+        "name": "Termin",
+        "color": "#94a3b8",
+        "visible": true
+      },
+      {
+        "id": "group-semester",
+        "name": "Semester/Lov",
+        "color": "#A8DCD1",
+        "visible": true
+      },
+      {
+        "id": "group-kurs",
+        "name": "Kurs",
+        "color": "#F5E6D3",
+        "visible": true
+      },
+      {
+        "id": "group-projekt",
+        "name": "Projekt",
+        "color": "#F4A896",
+        "visible": true
+      },
+      {
+        "id": "group-prov",
+        "name": "Prov",
+        "color": "#B8D4E8",
+        "visible": true
+      },
+      {
+        "id": "group-event",
+        "name": "Evenemang",
+        "color": "#fbbf24",
+        "visible": true
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": true,
+  "weekRingDisplayMode": "week-numbers"
+}

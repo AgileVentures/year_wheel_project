@@ -1,4 +1,7 @@
 {
+  "subscription": {
+    "admin": "Admin"
+  },
   "free": "Free",
   "premium": "Premium",
   "upgrade": "Upgrade",

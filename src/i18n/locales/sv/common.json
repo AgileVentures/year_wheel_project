@@ -116,7 +116,10 @@
     "saving": "Sparar...",
     "saveToDatabase": "Spara till databas",
     "saveToBrowser": "Spara till webbläsarlagring",
-    "showGuide": "Visa snabbguide"
+    "showGuide": "Visa snabbguide",
+    "template": "Template",
+    "markAsTemplate": "Markera som template",
+    "templateWheelVisibleOnLanding": "Template-hjul (synligt på startsidan)"
   },
   "cookieConsent": {
     "title": "Cookie-inställningar",

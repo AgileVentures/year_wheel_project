@@ -21,7 +21,7 @@ import PreviewWheelPage from "./components/PreviewWheelPage";
 import PricingPage from "./components/PricingPage";
 import LegalPage from "./components/LegalPage";
 import CookieConsent from "./components/CookieConsent";
-import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage } from "./services/wheelService";
+import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
@@ -174,6 +174,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isPublic, setIsPublic] = useState(false); // Public sharing toggle
+  const [isTemplate, setIsTemplate] = useState(false); // Template status (admin only)
+  const [isAdmin, setIsAdmin] = useState(false); // Admin status
   const [showVersionHistory, setShowVersionHistory] = useState(false); // Version history modal
   
   // Multi-page state
@@ -211,6 +213,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       if (wheelData) {
         setIsPublic(wheelData.is_public || false);
+        setIsTemplate(wheelData.is_template || false);
         
         // Load pages for this wheel
         const pagesData = await fetchPages(wheelId);
@@ -631,6 +634,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     autoSave();
   }, [title, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, autoSave]);
 
+  // Check admin status on mount
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const adminStatus = await checkIsAdmin();
+      setIsAdmin(adminStatus);
+    };
+    checkAdmin();
+  }, []);
+
   // Initial load on mount AND reload when reloadTrigger changes
   useEffect(() => {
     if (!wheelId) {
@@ -864,6 +876,35 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Kunde inte uppdatera delningsinställning', type: 'error' } 
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  const handleToggleTemplate = async () => {
+    if (!wheelId || !isAdmin) return;
+    
+    try {
+      const newIsTemplate = !isTemplate;
+      setIsTemplate(newIsTemplate);
+      
+      // Update in database
+      await toggleTemplateStatus(wheelId, newIsTemplate);
+      
+      const message = newIsTemplate 
+        ? 'Hjulet är nu markerat som template!' 
+        : 'Template-markering borttagen';
+      
+      const event = new CustomEvent('showToast', { 
+        detail: { message, type: 'success' } 
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error toggling template status:', error);
+      setIsTemplate(!isTemplate); // Revert on error
+      
+      const event = new CustomEvent('showToast', { 
+        detail: { message: error.message || 'Kunde inte uppdatera template-status', type: 'error' } 
       });
       window.dispatchEvent(event);
     }
@@ -1613,8 +1654,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onDownloadFormatChange={setDownloadFormat}
         activeUsers={activeUsers}
         isPublic={isPublic}
+        isTemplate={isTemplate}
+        isAdmin={isAdmin}
         wheelId={wheelId}
         onTogglePublic={handleTogglePublic}
+        onToggleTemplate={handleToggleTemplate}
         onVersionHistory={wheelId ? () => setShowVersionHistory(true) : null}
         onUndo={undo}
         onRedo={redo}

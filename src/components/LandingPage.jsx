@@ -9,6 +9,7 @@ import AIAssistantDemo from './AIAssistantDemo';
 import ManualEditorDemo from './ManualEditorDemo';
 import Hero from './Hero';
 import LanguageSwitcher from './LanguageSwitcher';
+import TemplateShowcase from './TemplateShowcase';
 
 function LandingPage() {
   const { t } = useTranslation(['landing', 'common']);
@@ -850,6 +851,9 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Template Showcase */}
+      <TemplateShowcase />
 
       {/* Footer */}
       <footer className="bg-gray-50 border-t border-gray-200 py-12 px-4 sm:px-6 lg:px-8">

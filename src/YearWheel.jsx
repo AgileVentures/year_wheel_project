@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-/* eslint-disable react/prop-types */import { useRef, useEffect, useState, useCallback } from "react";
+/* eslint-disable react/prop-types */import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
@@ -43,9 +43,9 @@ function YearWheel({
   const [editingItem, setEditingItem] = useState(null);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
   
-  const { t } = useTranslation(['common']);
+  const { t, i18n } = useTranslation(['common']);
   
-  const monthNames = [
+  const monthNames = useMemo(() => [
     t('common:monthsFull.january'),
     t('common:monthsFull.february'),
     t('common:monthsFull.march'),
@@ -58,7 +58,7 @@ function YearWheel({
     t('common:monthsFull.october'),
     t('common:monthsFull.november'),
     t('common:monthsFull.december')
-  ];
+  ], [t, i18n.language]);
 
   const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
   const zoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 50));

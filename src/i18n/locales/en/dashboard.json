@@ -19,7 +19,9 @@
     "shareWithTeam": "Share with team",
     "moveToTeam": "Move to another team",
     "makePersonal": "Make personal",
-    "sharedWith": "Shared with: {{team}}"
+    "sharedWith": "Shared with: {{team}}",
+    "showOnLanding": "Show on landing page",
+    "hideFromLanding": "Hide from landing page"
   },
   "messages": {
     "created": "New wheel created!",
@@ -27,10 +29,13 @@
     "duplicated": "Wheel duplicated!",
     "movedToTeam": "Wheel moved to team!",
     "madePersonal": "Wheel made personal!",
+    "addedToLanding": "Wheel now shown on landing page!",
+    "removedFromLanding": "Wheel hidden from landing page!",
     "createError": "Could not create wheel",
     "deleteError": "Could not delete wheel",
     "duplicateError": "Could not duplicate wheel",
     "moveError": "Could not move wheel",
+    "toggleError": "Could not update visibility",
     "confirmDelete": "Are you sure you want to delete \"{{title}}\"?"
   },
   "nav": {

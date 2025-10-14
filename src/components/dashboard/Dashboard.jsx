@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.jsx';
-import { fetchUserWheels, fetchTeamWheels, createWheel, deleteWheel, duplicateWheel } from '../../services/wheelService';
+import { fetchUserWheels, fetchTeamWheels, createWheel, deleteWheel, duplicateWheel, fetchTemplateWheels, checkIsAdmin } from '../../services/wheelService';
 import { getMyInvitations } from '../../services/teamService';
 import WheelCard from './WheelCard';
 import CreateWheelCard from './CreateWheelCard';
@@ -9,7 +9,7 @@ import CreateWheelModal from './CreateWheelModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
-import { Users, Mail, LayoutGrid, Crown, Shield } from 'lucide-react';
+import { Users, Mail, LayoutGrid, Crown, Shield, Sparkles } from 'lucide-react';
 import { useUsageLimits } from '../../hooks/useSubscription';
 import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionModal from '../subscription/SubscriptionModal';
@@ -69,6 +69,8 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const { t } = useTranslation(['dashboard', 'common', 'subscription']);
   const [wheels, setWheels] = useState([]);
   const [teamWheels, setTeamWheels] = useState([]);
+  const [templateWheels, setTemplateWheels] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -132,6 +134,21 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     }
   }, []); // Run only once on mount
 
+  // Check admin status on mount
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const adminStatus = await checkIsAdmin();
+      setIsAdmin(adminStatus);
+      
+      // Load templates if admin
+      if (adminStatus) {
+        const templates = await fetchTemplateWheels();
+        setTemplateWheels(templates);
+      }
+    };
+    checkAdmin();
+  }, []);
+
   useEffect(() => {
     if (currentView === 'wheels') {
       loadWheels();
@@ -148,6 +165,12 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       ]);
       setWheels(personalWheels);
       setTeamWheels(sharedWheels);
+      
+      // Reload templates if admin
+      if (isAdmin) {
+        const templates = await fetchTemplateWheels();
+        setTemplateWheels(templates);
+      }
     } catch (err) {
       console.error('Error loading wheels:', err);
       setError(t('dashboard:error'));
@@ -454,6 +477,33 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                           wheel={wheel}
                           onSelect={() => onSelectWheel(wheel.id)}
                           onUpdate={loadWheels}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Template Wheels Section (Admin Only) */}
+                {isAdmin && templateWheels.length > 0 && (
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Sparkles className="w-5 h-5 text-purple-600" />
+                      <h3 className="text-lg font-semibold text-gray-900">Template-hjul</h3>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                        Endast Admin
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Dessa hjul visas som mallar på startsidan och kan användas som exempel av alla användare.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {templateWheels.map((wheel) => (
+                        <WheelCard
+                          key={wheel.id}
+                          wheel={wheel}
+                          onSelect={() => onSelectWheel(wheel.id)}
+                          onUpdate={loadWheels}
+                          isTemplate={true}
                         />
                       ))}
                     </div>

@@ -15,12 +15,60 @@
 
 -- Add tables to the realtime publication
 -- This tells Supabase to broadcast INSERT, UPDATE, and DELETE events
+-- Use DO block to make this idempotent (won't fail if already added)
 
-alter publication supabase_realtime add table public.year_wheels;
-alter publication supabase_realtime add table public.wheel_rings;
-alter publication supabase_realtime add table public.activity_groups;
-alter publication supabase_realtime add table public.labels;
-alter publication supabase_realtime add table public.items;
+DO $$
+BEGIN
+  -- Add year_wheels if not already in publication
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'year_wheels'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.year_wheels;
+  END IF;
+
+  -- Add wheel_rings if not already in publication
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'wheel_rings'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.wheel_rings;
+  END IF;
+
+  -- Add activity_groups if not already in publication
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'activity_groups'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.activity_groups;
+  END IF;
+
+  -- Add labels if not already in publication
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'labels'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.labels;
+  END IF;
+
+  -- Add items if not already in publication
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'items'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.items;
+  END IF;
+END $$;
 
 -- =============================================
 -- STEP 2: Verify Realtime is Enabled

@@ -116,7 +116,10 @@
     "saving": "Saving...",
     "saveToDatabase": "Save to database",
     "saveToBrowser": "Save to browser storage",
-    "showGuide": "Show quick guide"
+    "showGuide": "Show quick guide",
+    "template": "Template",
+    "markAsTemplate": "Mark as template",
+    "templateWheelVisibleOnLanding": "Template wheel (visible on landing page)"
   },
   "cookieConsent": {
     "title": "Cookie Settings",

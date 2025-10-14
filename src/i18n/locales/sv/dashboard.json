@@ -19,7 +19,9 @@
     "shareWithTeam": "Dela med team",
     "moveToTeam": "Flytta till annat team",
     "makePersonal": "Gör personligt",
-    "sharedWith": "Delat med: {{team}}"
+    "sharedWith": "Delat med: {{team}}",
+    "showOnLanding": "Visa på startsidan",
+    "hideFromLanding": "Dölj från startsidan"
   },
   "messages": {
     "created": "Nytt hjul skapat!",
@@ -27,10 +29,13 @@
     "duplicated": "Hjul duplicerat!",
     "movedToTeam": "Hjul flyttat till team!",
     "madePersonal": "Hjul gjort personligt!",
+    "addedToLanding": "Hjul visas nu på startsidan!",
+    "removedFromLanding": "Hjul dolt från startsidan!",
     "createError": "Kunde inte skapa hjul",
     "deleteError": "Kunde inte radera hjul",
     "duplicateError": "Kunde inte duplicera hjul",
     "moveError": "Kunde inte flytta hjul",
+    "toggleError": "Kunde inte uppdatera synlighet",
     "confirmDelete": "Är du säker på att du vill radera \"{{title}}\"?"
   },
   "nav": {

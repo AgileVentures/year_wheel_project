@@ -144,6 +144,8 @@ export const fetchWheel = async (wheelId) => {
     year: wheel.year.toString(),
     colors: wheelColors,
     is_public: wheel.is_public,
+    is_template: wheel.is_template || false,
+    show_on_landing: wheel.show_on_landing || false,
     showWeekRing: wheel.show_week_ring,
     showMonthRing: wheel.show_month_ring,
     showRingNames: wheel.show_ring_names,
@@ -1071,5 +1073,137 @@ export const getPageCount = async (wheelId) => {
   } catch (error) {
     console.error('Error getting page count:', error);
     return 0;
+  }
+};
+
+/**
+ * Fetch all template wheels (public templates marked by admins)
+ * Can be called by anyone (including unauthenticated users)
+ */
+export const fetchTemplateWheels = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('year_wheels')
+      .select(`
+        *,
+        teams (
+          id,
+          name
+        )
+      `)
+      .eq('is_template', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching template wheels:', error);
+    return [];
+  }
+};
+
+/**
+ * Toggle template status for a wheel (admin only)
+ */
+export const toggleTemplateStatus = async (wheelId, isTemplate) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  // Check if user is admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.is_admin) {
+    throw new Error('Only admins can set template status');
+  }
+
+  const { data, error } = await supabase
+    .from('year_wheels')
+    .update({ is_template: isTemplate })
+    .eq('id', wheelId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Toggle show_on_landing status for a template wheel (admin only)
+ */
+export const toggleShowOnLanding = async (wheelId, showOnLanding) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  // Check if user is admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile?.is_admin) {
+    throw new Error('Only admins can control landing page visibility');
+  }
+
+  const { data, error } = await supabase
+    .from('year_wheels')
+    .update({ show_on_landing: showOnLanding })
+    .eq('id', wheelId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Fetch templates for landing page (public access)
+ * Returns only templates with show_on_landing = true
+ */
+export const fetchLandingPageTemplates = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('year_wheels')
+      .select(`
+        id,
+        title,
+        year,
+        colors,
+        created_at
+      `)
+      .eq('is_template', true)
+      .eq('show_on_landing', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching landing page templates:', error);
+    return [];
+  }
+};
+
+/**
+ * Check if current user is admin
+ */
+export const checkIsAdmin = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    return profile?.is_admin || false;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
   }
 };

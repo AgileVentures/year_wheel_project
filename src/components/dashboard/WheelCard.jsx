@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MoreVertical, Users, Calendar } from 'lucide-react';
+import { MoreVertical, Users, Calendar, Star } from 'lucide-react';
 import { getUserTeams, assignWheelToTeam, removeWheelFromTeam } from '../../services/teamService';
-import { fetchPages } from '../../services/wheelService';
+import { fetchPages, toggleShowOnLanding } from '../../services/wheelService';
 import { supabase } from '../../lib/supabase';
 
 function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false }) {
@@ -133,6 +133,32 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
     }
   };
 
+  const handleToggleShowOnLanding = async () => {
+    try {
+      setLoading(true);
+      await toggleShowOnLanding(wheel.id, !wheel.show_on_landing);
+      setShowMenu(false);
+      if (onUpdate) onUpdate();
+      
+      const messageKey = wheel.show_on_landing 
+        ? 'dashboard:messages.removedFromLanding' 
+        : 'dashboard:messages.addedToLanding';
+      
+      const event = new CustomEvent('showToast', { 
+        detail: { message: t(messageKey), type: 'success' } 
+      });
+      window.dispatchEvent(event);
+    } catch (err) {
+      console.error('Error toggling show on landing:', err);
+      const event = new CustomEvent('showToast', { 
+        detail: { message: t('dashboard:messages.toggleError'), type: 'error' } 
+      });
+      window.dispatchEvent(event);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div 
       className="bg-white border border-gray-200 rounded-sm p-5 hover:shadow-md transition-shadow cursor-pointer group"
@@ -240,6 +266,19 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
                 >
                   <Users className="w-4 h-4" />
                   {t('dashboard:wheel.shareWithTeam')}
+                </button>
+              )}
+              {wheel.is_template && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleShowOnLanding();
+                  }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2 border-b border-gray-200"
+                  disabled={loading}
+                >
+                  <Star className={`w-4 h-4 ${wheel.show_on_landing ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                  {wheel.show_on_landing ? t('dashboard:wheel.hideFromLanding') : t('dashboard:wheel.showOnLanding')}
                 </button>
               )}
               {onDelete && (

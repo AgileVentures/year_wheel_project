@@ -24,8 +24,11 @@ function Header({
   isSaving = false,
   activeUsers = [],
   isPublic = false,
+  isTemplate = false,
   wheelId = null,
   onTogglePublic,
+  onToggleTemplate,
+  isAdmin = false,
   onVersionHistory,
   onUndo,
   onRedo,
@@ -300,6 +303,22 @@ function Header({
               onTogglePublic={onTogglePublic}
             />
           </>
+        )}
+        
+        {/* Template Toggle (only show for admins) */}
+        {wheelId && isAdmin && onToggleTemplate && (
+          <button
+            onClick={onToggleTemplate}
+            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-sm transition-colors ${
+              isTemplate
+                ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={isTemplate ? t('common:header.templateWheelVisibleOnLanding') : t('common:header.markAsTemplate')}
+          >
+            <Sparkles size={14} />
+            {isTemplate ? t('common:header.template') : t('common:header.markAsTemplate')}
+          </button>
         )}
         
         {/* Version History (only show for database wheels) */}

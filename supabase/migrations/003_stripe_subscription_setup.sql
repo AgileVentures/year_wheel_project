@@ -35,23 +35,27 @@ ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscription_events ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS Policies for subscriptions
+DROP POLICY IF EXISTS "Users can view own subscription" ON public.subscriptions;
 CREATE POLICY "Users can view own subscription"
   ON public.subscriptions
   FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own subscription" ON public.subscriptions;
 CREATE POLICY "Users can update own subscription"
   ON public.subscriptions
   FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Service role can do everything (for webhooks)
+DROP POLICY IF EXISTS "Service role full access to subscriptions" ON public.subscriptions;
 CREATE POLICY "Service role full access to subscriptions"
   ON public.subscriptions
   FOR ALL
   USING (auth.jwt()->>'role' = 'service_role');
 
 -- 5. RLS Policies for subscription_events
+DROP POLICY IF EXISTS "Users can view own subscription events" ON public.subscription_events;
 CREATE POLICY "Users can view own subscription events"
   ON public.subscription_events
   FOR SELECT
@@ -61,6 +65,7 @@ CREATE POLICY "Users can view own subscription events"
     )
   );
 
+DROP POLICY IF EXISTS "Service role full access to events" ON public.subscription_events;
 CREATE POLICY "Service role full access to events"
   ON public.subscription_events
   FOR ALL
