@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 
 function AuthPage() {
+  const { t } = useTranslation(['auth']);
   // Check if coming from an invite link and whether it's a new user
   const hasInviteToken = sessionStorage.getItem('pendingInviteToken');
   const inviteIsNewUser = sessionStorage.getItem('inviteIsNewUser');
@@ -40,12 +42,12 @@ function AuthPage() {
       <div className="max-w-md mx-auto px-4 py-12">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {mode === 'signup' ? 'Skapa ditt konto' : 'Logga in'}
+            {mode === 'signup' ? t('auth:page.signupTitle') : t('auth:page.loginTitle')}
           </h1>
           <p className="text-gray-600">
             {mode === 'signup' 
-              ? 'Kom igång direkt – ingen kreditkort behövs' 
-              : 'Välkommen tillbaka!'}
+              ? t('auth:page.signupSubtitle')
+              : t('auth:page.loginSubtitle')}
           </p>
         </div>
 
@@ -60,29 +62,29 @@ function AuthPage() {
         {/* Quick benefits for signup mode */}
         {mode === 'signup' && (
           <div className="mt-8 bg-white rounded-sm border border-gray-200 p-6">
-            <p className="text-sm font-semibold text-gray-900 mb-4 text-center">Ingår i den kostnadsfria versionen:</p>
+            <p className="text-sm font-semibold text-gray-900 mb-4 text-center">{t('auth:page.freeBenefitsTitle')}</p>
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm text-gray-700">
                 <svg className="w-5 h-5 text-[#00A4A6] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>3 årshjul</span>
+                <span>{t('auth:page.benefit1')}</span>
               </li>
               <li className="flex items-start gap-3 text-sm text-gray-700">
                 <svg className="w-5 h-5 text-[#00A4A6] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>1 team med upp till 3 medlemmar</span>
+                <span>{t('auth:page.benefit2')}</span>
               </li>
               <li className="flex items-start gap-3 text-sm text-gray-700">
                 <svg className="w-5 h-5 text-[#00A4A6] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>Export som PNG och SVG</span>
+                <span>{t('auth:page.benefit3')}</span>
               </li>
             </ul>
             <p className="text-xs text-gray-500 text-center mt-4 pt-4 border-t border-gray-200">
-              Uppgradera när som helst för AI-assistans, obegränsade hjul och team
+              {t('auth:page.upgradeNote')}
             </p>
           </div>
         )}
@@ -91,7 +93,7 @@ function AuthPage() {
         {mode === 'login' && (
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
-              Inget konto ännu? <Link to="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium">Se våra planer</Link>
+              {t('auth:page.noAccount')} <Link to="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium">{t('auth:page.seePlans')}</Link>
             </p>
           </div>
         )}
@@ -99,7 +101,7 @@ function AuthPage() {
         {/* Footer */}
         <div className="text-center mt-12 pb-8">
           <p className="text-sm text-gray-500">
-            YearWheel Planner är en SaaS-tjänst skapad och driven av <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors">CommunitasLabs Inc</a>
+            {t('auth:provider.name')} {t('auth:provider.tagline')} <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors">{t('auth:provider.company')}</a>
           </p>
           {/* <p className="text-sm text-gray-400 mt-1">© 2025 YearWheel. Alla rättigheter reserverade.</p> */}
         </div>
