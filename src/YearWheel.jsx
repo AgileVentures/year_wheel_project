@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */import { useRef, useEffect, useState, useCallback } from "react";
+import { useTranslation } from 'react-i18next';
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
 import EditAktivitetModal from "./components/EditAktivitetModal";
@@ -42,9 +43,21 @@ function YearWheel({
   const [editingItem, setEditingItem] = useState(null);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
   
+  const { t } = useTranslation(['common']);
+  
   const monthNames = [
-    'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
-    'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
+    t('common:monthsFull.january'),
+    t('common:monthsFull.february'),
+    t('common:monthsFull.march'),
+    t('common:monthsFull.april'),
+    t('common:monthsFull.may'),
+    t('common:monthsFull.june'),
+    t('common:monthsFull.july'),
+    t('common:monthsFull.august'),
+    t('common:monthsFull.september'),
+    t('common:monthsFull.october'),
+    t('common:monthsFull.november'),
+    t('common:monthsFull.december')
   ];
 
   const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
@@ -197,6 +210,7 @@ function YearWheel({
         weekRingDisplayMode,
         zoomedMonth,
         zoomedQuarter,
+        monthNames,
         onItemClick: handleItemClick,
         onUpdateAktivitet: handleUpdateAktivitet,
       }
@@ -225,6 +239,7 @@ function YearWheel({
     weekRingDisplayMode,
     zoomedMonth,
     zoomedQuarter,
+    monthNames,
     handleItemClick,
     handleUpdateAktivitet,
     // organizationData excluded - updated via updateOrganizationData to prevent wheel recreation during drag

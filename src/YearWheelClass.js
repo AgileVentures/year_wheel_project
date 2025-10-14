@@ -64,7 +64,8 @@ class YearWheel {
       targetRingInfo: null, // Stores { ring, startRadius, endRadius, type }
     };
     
-    this.monthNames = [
+    // Use month names from options if provided, otherwise fallback to Swedish
+    this.monthNames = options.monthNames || [
       "Januari",
       "Februari",
       "Mars",

@@ -27,8 +27,6 @@ import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
 import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
-import calendarEvents from "./calendarEvents.json";
-import sampleOrgData from "./sampleOrganizationData.json";
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t } = useTranslation(['common']);
@@ -716,22 +714,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
   // DO NOT automatically apply colors here - it causes unwanted data overwrites and save loops
-
-  useEffect(() => {
-    // Filter events that overlap with the selected year
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31, 23, 59, 59);
-    
-    const yearEvents = calendarEvents.events.filter(event => {
-      const eventStart = new Date(event.startDate);
-      const eventEnd = new Date(event.endDate);
-      
-      // Include event if it overlaps with the selected year at all
-      return eventEnd >= yearStart && eventStart <= yearEnd;
-    });
-    
-    setYearEventsCollection(yearEvents);
-  }, [year]);
 
   const handleSave = useCallback(async () => {
     // If we have a wheelId, save to database

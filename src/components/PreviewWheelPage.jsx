@@ -182,9 +182,11 @@ function PreviewWheelPage() {
             year={String(displayYear)}
             title={wheelData.title}
             colors={wheelData.colors}
-            showWeekRing={wheelData.show_week_ring}
-            showMonthRing={wheelData.show_month_ring}
-            showRingNames={wheelData.show_ring_names}
+            showWeekRing={wheelData.showWeekRing}
+            showMonthRing={wheelData.showMonthRing}
+            showRingNames={wheelData.showRingNames}
+            showLabels={wheelData.showLabels !== undefined ? wheelData.showLabels : false}
+            weekRingDisplayMode={wheelData.weekRingDisplayMode || 'week-numbers'}
             organizationData={displayOrgData}
             readonly={true}
           />
