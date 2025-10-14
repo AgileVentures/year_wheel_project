@@ -496,15 +496,15 @@ async function listActivities(supabase: any, wheelId: string, currentPageId: str
 }
 
 // --- Create Ring ---
-async function createRing(supabase: any, wheelId: string, pageId: string, name: string, type: 'inner' | 'outer', color?: string) {
+async function createRing(supabase: any, wheelId: string, name: string, type: 'inner' | 'outer', color?: string) {
   const defaultColor = '#408cfb'
   const finalColor = color || defaultColor
 
-  // Check if ring with this name already exists on this page
+  // Check if ring with this name already exists on this wheel
   const { data: existingByName, error: checkError } = await supabase
     .from('wheel_rings')
     .select('id, name, ring_order')
-    .eq('page_id', pageId)
+    .eq('wheel_id', wheelId)
     .ilike('name', name)
     .maybeSingle()
 
@@ -521,11 +521,11 @@ async function createRing(supabase: any, wheelId: string, pageId: string, name: 
     }
   }
 
-  // Auto-calculate ring_order: get max ring_order for this page and add 1
+  // Auto-calculate ring_order: get max ring_order for this wheel and add 1
   const { data: existingRings, error: fetchError } = await supabase
     .from('wheel_rings')
     .select('ring_order')
-    .eq('page_id', pageId)
+    .eq('wheel_id', wheelId)
     .order('ring_order', { ascending: false })
     .limit(1)
 
@@ -541,13 +541,12 @@ async function createRing(supabase: any, wheelId: string, pageId: string, name: 
   const { data: ring, error } = await supabase
     .from('wheel_rings')
     .insert({
-      wheel_id: wheelId,  // Keep for convenience queries
-      page_id: pageId,    // Primary FK
+      wheel_id: wheelId,
       name,
       type,
       color: finalColor,
       visible: true,
-      orientation: 0,
+      orientation: type === 'inner' ? 'vertical' : null,
       ring_order: ringOrder,
     })
     .select()
@@ -566,12 +565,12 @@ async function createRing(supabase: any, wheelId: string, pageId: string, name: 
 }
 
 // --- Create Activity Group ---
-async function createActivityGroup(supabase: any, wheelId: string, pageId: string, name: string, color: string) {
-  // Check if group with this name already exists on this page
+async function createActivityGroup(supabase: any, wheelId: string, name: string, color: string) {
+  // Check if group with this name already exists on this wheel
   const { data: existing, error: checkError } = await supabase
     .from('activity_groups')
     .select('id, name')
-    .eq('page_id', pageId)
+    .eq('wheel_id', wheelId)
     .ilike('name', name)
     .maybeSingle()
 
@@ -591,8 +590,7 @@ async function createActivityGroup(supabase: any, wheelId: string, pageId: strin
   const { data: group, error } = await supabase
     .from('activity_groups')
     .insert({
-      wheel_id: wheelId,  // Keep for convenience queries
-      page_id: pageId,    // Primary FK
+      wheel_id: wheelId,
       name,
       color,
       visible: true,
@@ -1063,9 +1061,9 @@ LANGUAGE ADAPTATION:
           } else if (functionName === 'list_activities') {
             result = await listActivities(supabase, wheelId, currentPageId)
         } else if (functionName === 'create_ring') {
-          result = await createRing(supabase, wheelId, currentPageId, functionArgs.name, functionArgs.type, functionArgs.color)
+          result = await createRing(supabase, wheelId, functionArgs.name, functionArgs.type, functionArgs.color)
         } else if (functionName === 'create_activity_group') {
-          result = await createActivityGroup(supabase, wheelId, currentPageId, functionArgs.name, functionArgs.color)
+          result = await createActivityGroup(supabase, wheelId, functionArgs.name, functionArgs.color)
           } else if (functionName === 'suggest_wheel_structure') {
             result = await suggestWheelStructure(functionArgs.useCase)
           } else if (functionName === 'analyze_wheel') {
