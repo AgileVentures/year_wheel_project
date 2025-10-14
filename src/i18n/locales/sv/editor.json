@@ -300,7 +300,7 @@
   },
   "onboarding": {
     "welcome": {
-      "title": "Välkommen till YearWheel! 🎉",
+      "title": "Välkommen till YearWheel! ",
       "description": "Här kan du planera hela året på ett ställe. Låt oss visa dig hur det funkar i en snabb genomgång."
     },
     "innerRing": {
@@ -335,7 +335,7 @@
   },
   "aiOnboarding": {
     "welcome": {
-      "title": "Välkommen till AI-assistenten! 🤖✨",
+      "title": "Välkommen till AI-assistenten!",
       "description": "AI-assistenten hjälper dig att planera snabbare med naturligt språk. Fönstret kan flyttas och storleksändras för att passa ditt arbetsflöde."
     },
     "window": {
@@ -349,6 +349,18 @@
     "resize": {
       "title": "Ändra storlek 📏",
       "description": "Hovra över kanterna eller hörnen för att visa storleksändringshandtag. Dra för att göra fönstret större eller mindre."
+    },
+    "typeCommands": {
+      "title": "Skriv kommandon ✍️",
+      "description": "Använd naturligt språk för att berätta vad du vill göra. Exempel: 'Skapa en sommarkampanj från 1 juni till 31 augusti', 'Lägg till en innerring för mål', eller 'Ta bort aktiviteten julrea'."
+    },
+    "chatMessages": {
+      "title": "Konversation & Svar 💬",
+      "description": "AI:n svarar här och bekräftar åtgärder. Du kan se hela historiken av dina kommandon och AI:ns svar. Scrolla för att se tidigare meddelanden."
+    },
+    "aiActions": {
+      "title": "AI skapar, ändrar & tar bort ⚡",
+      "description": "AI-assistenten kan:\n• Skapa aktiviteter, ringar och aktivitetsgrupper\n• Redigera befintliga element (ändra datum, namn, färg)\n• Ta bort element\n• Föreslå strukturer och förbättringar\n\nÄndringarna syns direkt på ditt hjul!"
     },
     "complete": {
       "title": "Klart! 🎉",

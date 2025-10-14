@@ -300,7 +300,7 @@
   },
   "onboarding": {
     "welcome": {
-      "title": "Welcome to YearWheel! 🎉",
+      "title": "Welcome to YearWheel!",
       "description": "Here you can plan your entire year in one place. Let us show you how it works in a quick tour."
     },
     "innerRing": {
@@ -335,7 +335,7 @@
   },
   "aiOnboarding": {
     "welcome": {
-      "title": "Welcome to the AI Assistant! 🤖✨",
+      "title": "Welcome to the AI Assistant!",
       "description": "The AI assistant helps you plan faster using natural language. The window can be moved and resized to fit your workflow."
     },
     "window": {
@@ -349,6 +349,18 @@
     "resize": {
       "title": "Resize 📏",
       "description": "Hover over the edges or corners to reveal resize handles. Drag to make the window larger or smaller."
+    },
+    "typeCommands": {
+      "title": "Type Commands ✍️",
+      "description": "Use natural language to tell the AI what you want to do. Examples: 'Create a summer campaign from June 1 to August 31', 'Add an inner ring for goals', or 'Delete the Christmas sale activity'."
+    },
+    "chatMessages": {
+      "title": "Conversation & Responses 💬",
+      "description": "The AI responds here and confirms actions. You can see the full history of your commands and the AI's responses. Scroll to view previous messages."
+    },
+    "aiActions": {
+      "title": "AI Creates, Modifies & Deletes ⚡",
+      "description": "The AI assistant can:\n• Create activities, rings, and activity groups\n• Edit existing elements (change dates, names, colors)\n• Delete elements\n• Suggest structures and improvements\n\nChanges appear instantly on your wheel!"
     },
     "complete": {
       "title": "All Done! 🎉",

@@ -1,57 +1,10 @@
-/* Custom Driver.js styling to match YearWheel Tailwind design */
-
-/* Override driver.js default styles with Tailwind-inspired design */
-
-/* Ensure driver.js overlays appear above everything */
-.driver-overlay,
-.driver-popover-container,
-.driver-stage {
-  z-index: 1000 !important;
-}
-
-.driver-popover {
-  z-index: 1001 !important;
-}
-
-/* Popover container */
-.driver-popover {
-  background: white;
-  color: #1f2937; /* gray-800 */
-  border-radius: 0.25rem; /* rounded-sm */
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); /* shadow-xl */
-  border: 1px solid #e5e7eb; /* border-gray-200 */
-  max-width: 400px;
-  padding: 0;
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-/* Arrow styling */
-.driver-popover-arrow {
-  border-color: white;
-}
-
-.driver-popover-arrow-side-left,
-.driver-popover-arrow-side-right {
-  border-color: transparent white;
-}
-
-.driver-popover-arrow-side-top,
-.driver-popover-arrow-side-bottom {
-  border-color: white transparent;
-}
+/* Custom Driver.js styling - Text only */
 
 /* Title styling */
 .driver-popover-title {
   font-size: 1.125rem; /* text-lg */
   font-weight: 600; /* font-semibold */
   color: #111827; /* gray-900 */
-  padding: 1rem 1.5rem;
-  padding-bottom: 0.5rem;
-  margin: 0;
-  border-bottom: none;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 /* Description styling */
@@ -59,18 +12,6 @@
   font-size: 0.875rem; /* text-sm */
   line-height: 1.5rem;
   color: #4b5563; /* gray-600 */
-  padding: 0.5rem 1.5rem 1rem;
-  margin: 0;
-}
-
-/* Footer with buttons */
-.driver-popover-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb; /* border-gray-200 */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 /* Progress text */
@@ -80,192 +21,19 @@
   color: #6b7280; /* gray-500 */
 }
 
-/* Navigation buttons container */
-.driver-popover-navigation-btns {
-  display: flex;
-  gap: 0.5rem;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-/* Button base styles */
+/* Button text styles */
 .driver-popover-btn {
-  padding: 0.5rem 1rem;
   font-size: 0.875rem; /* text-sm */
   font-weight: 500; /* font-medium */
-  border-radius: 0.25rem; /* rounded-sm */
-  border: none;
-  cursor: pointer;
-  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
 }
 
-.driver-popover-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-}
-
-/* Close button (X) */
-.driver-popover-close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  background: transparent;
-  color: #9ca3af; /* gray-400 */
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  transition: all 150ms;
-  outline: none;
-  box-shadow: none;
-}
-
-.driver-popover-close-btn:hover {
-  background: #f3f4f6; /* gray-100 */
-  color: #4b5563; /* gray-600 */
-}
-
-.driver-popover-close-btn:focus {
-  outline: none;
-  box-shadow: none;
-}
-
-.driver-popover-close-btn:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-
-/* Previous button */
-.driver-popover-prev-btn {
-  background: white;
-  color: #4b5563; /* gray-600 */
-  border: 1px solid #d1d5db; /* border-gray-300 */
-}
-
-.driver-popover-prev-btn:hover {
-  background: #f9fafb; /* gray-50 */
-  border-color: #9ca3af; /* border-gray-400 */
-}
-
-.driver-popover-prev-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Next/Done button - Primary blue */
-.driver-popover-next-btn {
-  background: #2563eb; /* blue-600 */
-  color: white;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-
-.driver-popover-next-btn:hover {
-  background: #1d4ed8; /* blue-700 */
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-}
-
-.driver-popover-next-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Close button in footer (when used) */
-.driver-popover-btn[aria-label="Close"] {
-  background: #f3f4f6; /* gray-100 */
-  color: #4b5563; /* gray-600 */
-  border: 1px solid #d1d5db;
-}
-
-.driver-popover-btn[aria-label="Close"]:hover {
-  background: #e5e7eb; /* gray-200 */
-}
-
-/* Overlay background */
-.driver-overlay {
-  background: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-}
-
-/* Highlighted element */
-.driver-highlighted-element {
-  border-radius: 0.25rem; /* rounded-sm */
-  box-shadow: 0 0 0 2px #3b82f6, 0 0 0 4px rgba(59, 130, 246, 0.3); /* Blue glow */
-}
-
-/* Stage positioning (container for highlighted element) */
-.driver-stage {
-  border-radius: 0.25rem;
-}
-
-/* Smooth animations */
-.driver-popover,
-.driver-highlighted-element {
-  transition: all 200ms ease-in-out;
-}
-
-/* Custom: Add emoji/icon support in titles */
-.driver-popover-title::before {
-  content: "";
-  /* Icons/emojis will be added via translation strings */
-}
-
-/* Responsive adjustments */
+/* Responsive text adjustments */
 @media (max-width: 640px) {
-  .driver-popover {
-    max-width: calc(100vw - 2rem);
-    margin: 1rem;
-  }
-  
   .driver-popover-title {
     font-size: 1rem;
-    padding: 0.875rem 1rem;
   }
   
   .driver-popover-description {
     font-size: 0.8125rem;
-    padding: 0.5rem 1rem 0.875rem;
   }
-  
-  .driver-popover-footer {
-    padding: 0.875rem 1rem;
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .driver-popover-navigation-btns {
-    width: 100%;
-  }
-  
-  .driver-popover-btn {
-    flex: 1;
-  }
-}
-
-/* Animation for popover entrance */
-@keyframes driver-popover-fade-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.driver-popover {
-  animation: driver-popover-fade-in 200ms ease-out;
-}
-
-/* Disable body scroll when tour is active */
-body.driver-active {
-  overflow: hidden;
 }

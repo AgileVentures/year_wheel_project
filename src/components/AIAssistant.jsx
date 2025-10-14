@@ -405,7 +405,10 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 border-b border-gray-200">
+      <div 
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 border-b border-gray-200"
+        data-onboarding="ai-chat-messages"
+      >
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-sm p-3 ${
@@ -446,6 +449,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
             placeholder={t('editor:aiAssistant.placeholder')}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white"
             disabled={isLoading}
+            data-onboarding="ai-input-field"
           />
           <button
             type="submit"

@@ -63,7 +63,35 @@ function AIAssistantOnboarding({ shouldStart = false, onComplete, onSkip }) {
             align: 'center'
           }
         },
-        // Step 5: Completion
+        // Step 5: Type Commands
+        {
+          element: '[data-onboarding="ai-input-field"]',
+          popover: {
+            title: t('editor:aiOnboarding.typeCommands.title'),
+            description: t('editor:aiOnboarding.typeCommands.description'),
+            side: 'top',
+            align: 'center'
+          }
+        },
+        // Step 6: Chat & AI Responses
+        {
+          element: '[data-onboarding="ai-chat-messages"]',
+          popover: {
+            title: t('editor:aiOnboarding.chatMessages.title'),
+            description: t('editor:aiOnboarding.chatMessages.description'),
+            side: 'left',
+            align: 'center'
+          }
+        },
+        // Step 7: AI Actions
+        {
+          popover: {
+            title: t('editor:aiOnboarding.aiActions.title'),
+            description: t('editor:aiOnboarding.aiActions.description'),
+            showButtons: ['next', 'close'],
+          }
+        },
+        // Step 8: Completion
         {
           popover: {
             title: t('editor:aiOnboarding.complete.title'),
@@ -78,7 +106,7 @@ function AIAssistantOnboarding({ shouldStart = false, onComplete, onSkip }) {
       doneBtnText: t('common:actions.done'),
       onDestroyed: (element, step, options) => {
         // Called when tour is closed/completed
-        if (step.index === 4) {
+        if (step.index === 7) {
           // Completed all steps
           onComplete && onComplete();
         } else {
