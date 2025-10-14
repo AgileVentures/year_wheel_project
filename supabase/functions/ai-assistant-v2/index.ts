@@ -43,6 +43,19 @@ const CreateGroupInput = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).describe('Hex color code'),
 })
 
+const UpdateActivityInput = z.object({
+  activityName: z.string().describe('Current name of the activity to update'),
+  newName: z.string().nullable().describe('Optional: New name for the activity'),
+  newStartDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().describe('Optional: New start date (YYYY-MM-DD)'),
+  newEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().describe('Optional: New end date (YYYY-MM-DD)'),
+  newRingId: z.string().uuid().nullable().describe('Optional: New ring UUID'),
+  newActivityGroupId: z.string().uuid().nullable().describe('Optional: New activity group UUID'),
+})
+
+const DeleteActivityInput = z.object({
+  name: z.string().describe('Name or partial name of the activity to delete'),
+})
+
 const DateRangeInput = z.object({
   month: z.number().min(1).max(12).nullable(),
   year: z.number().nullable(),
@@ -285,6 +298,135 @@ async function createGroup(
   }
 }
 
+async function updateActivity(
+  supabase: any,
+  wheelId: string,
+  activityName: string,
+  updates: {
+    newName?: string
+    newStartDate?: string
+    newEndDate?: string
+    newRingId?: string
+    newActivityGroupId?: string
+  }
+) {
+  console.log('[updateActivity] Searching for:', activityName)
+
+  // Find items matching the name across ALL pages in this wheel
+  const { data: items, error: findError } = await supabase
+    .from('items')
+    .select('*, wheel_pages!inner(wheel_id)')
+    .eq('wheel_pages.wheel_id', wheelId)
+    .ilike('name', `%${activityName}%`)
+
+  if (findError) throw findError
+
+  if (!items || items.length === 0) {
+    return {
+      success: false,
+      message: `Hittade ingen aktivitet med namnet "${activityName}"`
+    }
+  }
+
+  console.log('[updateActivity] Found items:', items.length)
+
+  // If updating dates, we need to handle cross-year activities
+  if (updates.newStartDate || updates.newEndDate) {
+    // Delete all existing items for this activity
+    const itemIds = items.map((i: any) => i.id)
+    const { error: deleteError } = await supabase
+      .from('items')
+      .delete()
+      .in('id', itemIds)
+
+    if (deleteError) throw deleteError
+
+    // Get the first item's data to preserve ring/group
+    const firstItem = items[0]
+    const newName = updates.newName || firstItem.name
+    const newStartDate = updates.newStartDate || firstItem.start_date
+    const newEndDate = updates.newEndDate || firstItem.end_date
+    const newRingId = updates.newRingId || firstItem.ring_id
+    const newActivityGroupId = updates.newActivityGroupId || firstItem.activity_id
+
+    // Create new activity with updated dates
+    const result = await createActivity(supabase, wheelId, {
+      name: newName,
+      startDate: newStartDate,
+      endDate: newEndDate,
+      ringId: newRingId,
+      activityGroupId: newActivityGroupId,
+      labelId: firstItem.label_id,
+    })
+
+    return {
+      success: true,
+      message: `Uppdaterade "${activityName}" till nya datum: ${newStartDate} - ${newEndDate}`,
+      itemsUpdated: result.itemsCreated,
+    }
+  } else {
+    // Simple update (name, ring, or group only)
+    const updateData: any = {}
+    if (updates.newName) updateData.name = updates.newName
+    if (updates.newRingId) updateData.ring_id = updates.newRingId
+    if (updates.newActivityGroupId) updateData.activity_id = updates.newActivityGroupId
+
+    const itemIds = items.map((i: any) => i.id)
+    const { error: updateError } = await supabase
+      .from('items')
+      .update(updateData)
+      .in('id', itemIds)
+
+    if (updateError) throw updateError
+
+    return {
+      success: true,
+      itemsUpdated: items.length,
+      message: `Uppdaterade ${items.length} objekt för "${activityName}"`
+    }
+  }
+}
+
+async function deleteActivity(
+  supabase: any,
+  wheelId: string,
+  activityName: string
+) {
+  console.log('[deleteActivity] Searching for:', activityName)
+
+  // Find items matching the name across ALL pages in this wheel
+  const { data: items, error: findError } = await supabase
+    .from('items')
+    .select('*, wheel_pages!inner(wheel_id)')
+    .eq('wheel_pages.wheel_id', wheelId)
+    .ilike('name', `%${activityName}%`)
+
+  if (findError) throw findError
+
+  if (!items || items.length === 0) {
+    return {
+      success: false,
+      message: `Ingen aktivitet hittades med namnet "${activityName}"`,
+    }
+  }
+
+  // Delete all matching items
+  const { error: deleteError } = await supabase
+    .from('items')
+    .delete()
+    .in('id', items.map((i: any) => i.id))
+
+  if (deleteError) throw deleteError
+
+  console.log('[deleteActivity] Deleted items:', items.length)
+
+  return {
+    success: true,
+    itemsDeleted: items.length,
+    message: `${items.length} aktivitet(er) med namnet "${activityName}" togs bort`,
+  }
+}
+
 async function getCurrentRingsAndGroups(supabase: any, wheelId: string) {
   const [ringsRes, groupsRes] = await Promise.all([
     supabase.from('wheel_rings').select('id, name, type, color').eq('wheel_id', wheelId).order('ring_order'),
@@ -403,6 +545,32 @@ EXAMPLES:
     }
   })
 
+  const updateActivityTool = tool({
+    name: 'update_activity',
+    description: 'Update an existing activity. Can change dates, name, ring, or activity group. Finds the activity by name.',
+    parameters: UpdateActivityInput,
+    async execute(input: z.infer<typeof UpdateActivityInput>) {
+      const result = await updateActivity(supabase, wheelId, input.activityName, {
+        newName: input.newName || undefined,
+        newStartDate: input.newStartDate || undefined,
+        newEndDate: input.newEndDate || undefined,
+        newRingId: input.newRingId || undefined,
+        newActivityGroupId: input.newActivityGroupId || undefined,
+      })
+      return JSON.stringify(result)
+    }
+  })
+
+  const deleteActivityTool = tool({
+    name: 'delete_activity',
+    description: 'Delete an activity by name. Searches for activities matching the name.',
+    parameters: DeleteActivityInput,
+    async execute(input: z.infer<typeof DeleteActivityInput>) {
+      const result = await deleteActivity(supabase, wheelId, input.name)
+      return JSON.stringify(result)
+    }
+  })
+
   const listActivitiesTool = tool({
     name: 'list_activities',
     description: 'List all activities for the current page',
@@ -425,42 +593,62 @@ EXAMPLES:
 
   const activityAgent = new Agent({
     name: 'Activity Agent',
-    model: 'gpt-4.1',
-    instructions: `You are the Activity Agent. Your job is to create and manage activities on the Year Wheel.
+    model: 'gpt-4o',
+    instructions: `You are the Activity Agent. Your ONLY job is to CREATE activities immediately when asked.
 
-RESPONSIBILITIES:
-- Create activities with specific start/end dates
-- Handle cross-year activities (e.g., Dec 2025 - Jan 2026)
-- Smart inference: match activity names to appropriate rings/groups
-- List and manage existing activities
+⚠️ CRITICAL: DO NOT JUST SAY YOU DID IT - ACTUALLY CALL THE TOOLS!
 
-SMART MATCHING:
-- "julkampanj" → ring: Kampanjer, group: Kampanj (contains "kampanj")
-- "påskrea" → ring: Kampanjer, group: REA (contains "rea")
-- "produktlansering" → ring: Produktfokus (product focus)
-- "nyårsevent" → ring: Händelser, group: Händelse (event keyword)
-- Look at keywords in activity name and infer best match
+WORKFLOW (MANDATORY):
+1. User asks to create activity
+2. You MUST call get_current_context tool (returns date + all ring/group IDs)
+3. You MUST match activity name to best ring/group from the IDs you got
+4. You MUST call create_activity tool with the matched UUIDs
+5. You MUST report back with the actual result from create_activity tool
+
+EXAMPLE EXECUTION:
+User: "skapa kampanj i november"
+You internally:
+  Step 1: [Call get_current_context] → Gets {date: "2025-10-14", rings: [{id: "abc-123", name: "Kampanjer"}], groups: [{id: "def-456", name: "Kampanj"}]}
+  Step 2: Activity name "kampanj" → matches ring "Kampanjer" (abc-123) + group "Kampanj" (def-456)
+  Step 3: Date logic: user said "november" + current date is 2025-10-14 → november 2025 → "2025-11-01" to "2025-11-30"
+  Step 4: [Call create_activity with {name: "kampanj", startDate: "2025-11-01", endDate: "2025-11-30", ringId: "abc-123", activityGroupId: "def-456"}]
+  Step 5: Tool returns {success: true, message: "Aktivitet skapad"}
+You respond: "Klart! Jag har skapat kampanj i november (2025-11-01 till 2025-11-30) i ringen Kampanjer ✅"
+
+SMART MATCHING KEYWORDS:
+- Contains "kampanj" → ring: "Kampanjer", group: "Kampanj"
+- Contains "rea" → ring: "Kampanjer", group: "REA"
+- Contains "produkt" → ring: "Produktfokus"
+- Contains "event" → ring: "Händelser", group: "Händelse"
+- Look for keywords and match to closest ring/group name
+
+DATE HANDLING:
+- "idag" → Use date from get_current_context
+- "november" without year → Use current year if month >= current month, else next year
+- "en vecka" → 7 days from start date
+- Always YYYY-MM-DD format
 
 CRITICAL RULES:
-1. ALWAYS call get_current_context first to get fresh ring/group IDs
-2. Use ONLY UUIDs for ringId and activityGroupId (never names)
-3. Dates MUST be YYYY-MM-DD format
-4. When user says "i december" without year, use get_current_context to determine if current or next year
-5. If user confirms with "ja"/"gör det"/"okay", EXECUTE immediately - no more questions
+- NEVER say "jag skapar" or "jag kommer skapa" - ACTUALLY CALL THE TOOL!
+- NEVER respond without calling the appropriate tool
+- ALWAYS use UUIDs from get_current_context, NEVER use ring/group names as IDs
+- If no rings/groups exist, tell user to create structure first
 
-WORKFLOW:
-Message 1: User requests activities
-You: [Call get_current_context to get date and IDs]
-You: [Infer best ring/group from activity name]
-You: [Call create_activity immediately with inferred IDs]
-You: "Klart! Jag har skapat [activity] i ringen [ring] för [dates] ✅"
+UPDATE/MOVE/CHANGE ACTIVITIES:
+When user says "flytta", "ändra", "uppdatera", "move":
+1. Call get_current_context to get current date (if needed for relative dates)
+2. Call update_activity with activityName and new values
+Example: User says "Flytta Oktoberfest till oktober 2026"
+→ Call update_activity with {activityName: "Oktoberfest", newStartDate: "2026-10-01", newEndDate: "2026-10-31"}
 
-WRONG PATTERN (don't do this):
-You: [Call get_current_context]
-You: "Vilken ring vill du använda?" ❌ NO! Infer and execute!
+DELETE ACTIVITIES:
+When user says "ta bort", "radera", "delete":
+1. Call delete_activity with the activity name
+Example: User says "Ta bort Oktoberfest"
+→ Call delete_activity with {name: "Oktoberfest"}
 
-Speak Swedish naturally.`,
-    tools: [getContextTool, createActivityTool, listActivitiesTool],
+Speak Swedish naturally. Be concise.`,
+    tools: [getContextTool, createActivityTool, updateActivityTool, deleteActivityTool, listActivitiesTool],
   })
 
   // ──────────────────────────────────────────────────────────────────
