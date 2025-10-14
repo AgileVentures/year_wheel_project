@@ -4,16 +4,11 @@ import { useTranslation } from 'react-i18next';
 import YearWheel from "./YearWheel";
 import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
-import Toast from "./components/Toast";
-import VersionHistoryModal from "./components/VersionHistoryModal";
 import PageNavigator from "./components/PageNavigator";
-import AddPageModal from "./components/AddPageModal";
-import AIAssistant from "./components/AIAssistant";
-import EditorOnboarding from "./components/EditorOnboarding";
-import AIAssistantOnboarding from "./components/AIAssistantOnboarding";
+import Toast from "./components/Toast";
+import CookieConsent from "./components/CookieConsent";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
-import CookieConsent from "./components/CookieConsent";
 
 // Lazy load route components for better code splitting
 const LandingPage = lazy(() => import("./components/LandingPage"));
@@ -23,6 +18,13 @@ const InviteAcceptPage = lazy(() => import("./components/InviteAcceptPage"));
 const PreviewWheelPage = lazy(() => import("./components/PreviewWheelPage"));
 const PricingPage = lazy(() => import("./components/PricingPage"));
 const LegalPage = lazy(() => import("./components/LegalPage"));
+
+// Lazy load heavy editor components (only needed in editor route)
+const VersionHistoryModal = lazy(() => import("./components/VersionHistoryModal"));
+const AddPageModal = lazy(() => import("./components/AddPageModal"));
+const AIAssistant = lazy(() => import("./components/AIAssistant"));
+const EditorOnboarding = lazy(() => import("./components/EditorOnboarding"));
+const AIAssistantOnboarding = lazy(() => import("./components/AIAssistantOnboarding"));
 import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
@@ -1785,27 +1787,32 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       {/* Version History Modal */}
       {showVersionHistory && wheelId && (
-        <VersionHistoryModal
-          wheelId={wheelId}
-          onRestore={handleRestoreVersion}
-          onClose={() => setShowVersionHistory(false)}
-        />
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <VersionHistoryModal
+            wheelId={wheelId}
+            onRestore={handleRestoreVersion}
+            onClose={() => setShowVersionHistory(false)}
+          />
+        </Suspense>
       )}
 
       {/* Add Page Modal */}
       {showAddPageModal && (
-        <AddPageModal
-          currentPage={pages.find(p => p.id === currentPageId)}
-          onClose={() => setShowAddPageModal(false)}
-          onCreateBlank={handleCreateBlankPage}
-          onDuplicate={() => handleDuplicatePage(currentPageId)}
-          onCreateNextYear={handleCreateNextYear}
-        />
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <AddPageModal
+            currentPage={pages.find(p => p.id === currentPageId)}
+            onClose={() => setShowAddPageModal(false)}
+            onCreateBlank={handleCreateBlankPage}
+            onDuplicate={() => handleDuplicatePage(currentPageId)}
+            onCreateNextYear={handleCreateNextYear}
+          />
+        </Suspense>
       )}
 
       {/* AI Assistant (only for database wheels) */}
       {wheelId && (
-        <AIAssistant
+        <Suspense fallback={null}>
+          <AIAssistant
           wheelId={wheelId}
           currentPageId={currentPageId}
           onWheelUpdate={loadWheelData}
@@ -1841,34 +1848,39 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           isOpen={isAIOpen}
           onToggle={() => setIsAIOpen(!isAIOpen)}
         />
+        </Suspense>
       )}
 
       {/* Editor Onboarding Tour */}
-      <EditorOnboarding
-        shouldStart={showOnboarding}
-        onComplete={() => {
-          setShowOnboarding(false);
-          localStorage.setItem('yearwheel_onboarding_completed', 'true');
-        }}
-        onSkip={() => {
-          setShowOnboarding(false);
-          localStorage.setItem('yearwheel_onboarding_completed', 'true');
-        }}
-      />
+      <Suspense fallback={null}>
+        <EditorOnboarding
+          shouldStart={showOnboarding}
+          onComplete={() => {
+            setShowOnboarding(false);
+            localStorage.setItem('yearwheel_onboarding_completed', 'true');
+          }}
+          onSkip={() => {
+            setShowOnboarding(false);
+            localStorage.setItem('yearwheel_onboarding_completed', 'true');
+          }}
+        />
+      </Suspense>
 
       {/* AI Assistant Onboarding Tour - Only for database wheels */}
       {wheelId && (
-        <AIAssistantOnboarding
-          shouldStart={showAIOnboarding && isAIOpen}
-          onComplete={() => {
-            setShowAIOnboarding(false);
-            localStorage.setItem('yearwheel_ai_onboarding_completed', 'true');
-          }}
-          onSkip={() => {
-            setShowAIOnboarding(false);
-            localStorage.setItem('yearwheel_ai_onboarding_completed', 'true');
-          }}
-        />
+        <Suspense fallback={null}>
+          <AIAssistantOnboarding
+            shouldStart={showAIOnboarding && isAIOpen}
+            onComplete={() => {
+              setShowAIOnboarding(false);
+              localStorage.setItem('yearwheel_ai_onboarding_completed', 'true');
+            }}
+            onSkip={() => {
+              setShowAIOnboarding(false);
+              localStorage.setItem('yearwheel_ai_onboarding_completed', 'true');
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

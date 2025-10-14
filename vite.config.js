@@ -1,9 +1,42 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
+import fs from 'fs'
+import path from 'path'
+
+// Custom plugin to inline critical CSS and optimize loading
+const optimizeCSSPlugin = () => {
+  return {
+    name: 'optimize-css',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+        // Read critical CSS
+        const criticalCSS = fs.readFileSync(
+          path.resolve(__dirname, 'src/critical.css'),
+          'utf-8'
+        );
+        
+        // Inject critical CSS inline in head
+        html = html.replace(
+          '</head>',
+          `<style>${criticalCSS}</style></head>`
+        );
+        
+        // Replace CSS link tags with preload + async load pattern
+        html = html.replace(
+          /<link rel="stylesheet" crossorigin href="([^"]+\.css)">/g,
+          '<link rel="preload" as="style" href="$1" onload="this.onload=null;this.rel=\'stylesheet\'" /><noscript><link rel="stylesheet" href="$1" /></noscript>'
+        );
+        
+        return html;
+      }
+    }
+  };
+};
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), optimizeCSSPlugin()],
   build: {
     // Optimize chunk splitting for better performance
     rollupOptions: {
@@ -90,5 +123,18 @@ export default defineConfig({
       'i18next',
     ],
     exclude: ['@supabase/supabase-js'], // Don't pre-bundle large libraries
+  },
+  // Enable advanced tree-shaking
+  esbuild: {
+    // Drop console and debugger in production
+    drop: ['console', 'debugger'],
+    // Use legal comments for license compliance
+    legalComments: 'none',
+    // Minify identifiers
+    minifyIdentifiers: true,
+    // Minify syntax
+    minifySyntax: true,
+    // Minify whitespace
+    minifyWhitespace: true,
   },
 })

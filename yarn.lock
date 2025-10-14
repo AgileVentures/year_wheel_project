@@ -3900,6 +3900,11 @@ vfile@^6.0.0:
     "@types/unist" "^3.0.0"
     vfile-message "^4.0.0"
 
+vite-plugin-inline-css-modules@^0.0.8:
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/vite-plugin-inline-css-modules/-/vite-plugin-inline-css-modules-0.0.8.tgz#2642b00a80cb4b51af8700ac43b69a76ed02fe7f"
+  integrity sha512-RXpGZJ0YW69HjkOBw/1xVeVk677wZ/OPmAbvln2eFG+9dFfq9AQapCb/iZZey/oK8psoHiwb5x2HXv5FM2UPcw==
+
 vite@^5.0.8:
   version "5.0.12"
   resolved "https://registry.yarnpkg.com/vite/-/vite-5.0.12.tgz#8a2ffd4da36c132aec4adafe05d7adde38333c47"
