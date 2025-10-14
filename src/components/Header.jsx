@@ -53,6 +53,7 @@ function Header({
   const { t } = useTranslation(['common']);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   const handleCopyToClipboard = async (format) => {
     onDownloadFormatChange && onDownloadFormatChange(format);
@@ -65,10 +66,10 @@ function Header({
   };
   
   return (
-    <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between shadow-sm">
-      <div className="flex items-center gap-6">
-        {/* Symbol & Toggle Menu */}
-        <div className="flex items-center gap-4">
+    <header className="h-16 bg-white border-b border-gray-200 px-3 sm:px-6 flex items-center justify-between shadow-sm">
+      <div className="flex items-center gap-2 sm:gap-6">
+        {/* Toggle Menu & Back Button */}
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Always show toggle button */}
           <button
             onClick={onToggleSidebar}
@@ -79,14 +80,17 @@ function Header({
             {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
           </button>
           
-          {/* Logo - click to go back to dashboard if available */}
-          <img 
-            src="/year_wheel_symbol.svg" 
-            alt="YearWheel" 
-            className={`w-12 h-12 transition-transform ${onBackToDashboard ? 'hover:scale-110 cursor-pointer' : ''}`}
-            onClick={onBackToDashboard}
-            title={onBackToDashboard ? t('common:header.backToDashboard') : "YearWheel"}
-          />
+          {/* Back to Dashboard Button (if available) */}
+          {onBackToDashboard && (
+            <button
+              onClick={onBackToDashboard}
+              className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+              title={t('common:header.backToDashboard')}
+              aria-label={t('common:header.backToDashboard')}
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
         </div>
         
         {/* Page Navigator (if multi-page) or Year selector (legacy) */}
@@ -115,11 +119,11 @@ function Header({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Undo/Redo Buttons with Keyboard Hints */}
+      <div className="flex items-center gap-1 sm:gap-3">
+        {/* Undo/Redo Buttons with Keyboard Hints - Hidden on mobile */}
         {onUndo && onRedo && (
           <>
-            <div className="flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1">
               <button
                 onClick={onUndo}
                 disabled={!canUndo}
@@ -160,11 +164,12 @@ function Header({
               </button>
               {/* "Till sparning" button removed - use Historik feature instead for restoring saved versions */}
             </div>
-            <div className="w-px h-8 bg-gray-300"></div>
+            <div className="hidden md:block w-px h-8 bg-gray-300"></div>
           </>
         )}
         
-        {/* File Operations Dropdown */}
+        {/* File Operations Dropdown - Hidden on mobile */}
+        <div className="hidden md:block">
         <Dropdown
           trigger={
             <button 
@@ -193,9 +198,10 @@ function Header({
             variant="danger"
           />
         </Dropdown>
+        </div>
         
-        {/* Image Export with Format Selector */}
-        <div className="relative flex items-center gap-1" data-onboarding="export-share">
+        {/* Image Export with Format Selector - Hidden on mobile */}
+        <div className="hidden lg:flex relative items-center gap-1" data-onboarding="export-share">
           {/* Format Selector Dropdown */}
           <div className="relative">
             <button
@@ -285,31 +291,35 @@ function Header({
           </button>
         </div>
         
-        {/* Presence Indicator */}
+        {/* Presence Indicator - Hidden on small screens */}
         {activeUsers.length > 0 && (
           <>
-            <div className="w-px h-8 bg-gray-300"></div>
-            <PresenceIndicator activeUsers={activeUsers} />
+            <div className="hidden lg:block w-px h-8 bg-gray-300"></div>
+            <div className="hidden lg:block">
+              <PresenceIndicator activeUsers={activeUsers} />
+            </div>
           </>
         )}
         
-        {/* Public Share Toggle (only show for database wheels) */}
+        {/* Public Share Toggle (only show for database wheels) - Hidden on small screens */}
         {wheelId && onTogglePublic && (
           <>
-            <div className="w-px h-8 bg-gray-300"></div>
-            <PublicShareButton 
-              isPublic={isPublic}
-              wheelId={wheelId}
-              onTogglePublic={onTogglePublic}
-            />
+            <div className="hidden lg:block w-px h-8 bg-gray-300"></div>
+            <div className="hidden lg:block">
+              <PublicShareButton 
+                isPublic={isPublic}
+                wheelId={wheelId}
+                onTogglePublic={onTogglePublic}
+              />
+            </div>
           </>
         )}
         
-        {/* Template Toggle (only show for admins) */}
+        {/* Template Toggle (only show for admins) - Hidden on small screens */}
         {wheelId && isAdmin && onToggleTemplate && (
           <button
             onClick={onToggleTemplate}
-            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-sm transition-colors ${
+            className={`hidden lg:flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-sm transition-colors ${
               isTemplate
                 ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -321,13 +331,13 @@ function Header({
           </button>
         )}
         
-        {/* Version History (only show for database wheels) */}
+        {/* Version History (only show for database wheels) - Hidden on small screens */}
         {wheelId && onVersionHistory && (
           <>
-            <div className="w-px h-8 bg-gray-300"></div>
+            <div className="hidden lg:block w-px h-8 bg-gray-300"></div>
             <button
               onClick={onVersionHistory}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+              className="hidden lg:flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               title={t('common:header.versionHistory')}
             >
               <History size={14} />
@@ -347,33 +357,35 @@ function Header({
           </button>
         )}
 
-        {/* Onboarding Help Menu */}
+        {/* Onboarding Help Menu - Hidden on small screens */}
         {onStartOnboarding && (
           <>
-            <div className="w-px h-8 bg-gray-300"></div>
-            <OnboardingMenu
-              onStartEditorGuide={onStartOnboarding}
-              onStartAIGuide={onStartAIOnboarding}
-              showAIOption={!!wheelId && !!onToggleAI}
-            />
+            <div className="hidden lg:block w-px h-8 bg-gray-300"></div>
+            <div className="hidden lg:block">
+              <OnboardingMenu
+                onStartEditorGuide={onStartOnboarding}
+                onStartAIGuide={onStartAIOnboarding}
+                showAIOption={!!wheelId && !!onToggleAI}
+              />
+            </div>
           </>
         )}
         
-        <div className="w-px h-8 bg-gray-300"></div>
+        <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
         
-        {/* Language Switcher */}
+        {/* Language Switcher - Always visible */}
         <LanguageSwitcher />
         
-        <div className="w-px h-8 bg-gray-300"></div>
+        <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
         
         <button
           onClick={onSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
         >
           <Save size={14} />
-          <span>
+          <span className="hidden sm:inline">
             {isSaving ? t('common:header.saving') : t('common:actions.save')}
             {!isSaving && unsavedChangesCount > 0 && (
               <span className="ml-1 text-xs opacity-90">({unsavedChangesCount})</span>

@@ -6,6 +6,7 @@ import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap, Calenda
 import SubscriptionModal from './subscription/SubscriptionModal';
 import LanguageSwitcher from './LanguageSwitcher';
 import ComparisonTable from './ComparisonTable';
+import Footer from './Footer';
 
 function PricingPage() {
   const { t } = useTranslation(['landing', 'common']);
@@ -342,12 +343,7 @@ function PricingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-50 py-8 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
-          <p dangerouslySetInnerHTML={{ __html: t('landing:footer.createdBy') }} />
-        </div>
-      </footer>
+      <Footer variant="minimal" />
 
       {/* Subscription Modal */}
       {showSubscriptionModal && (

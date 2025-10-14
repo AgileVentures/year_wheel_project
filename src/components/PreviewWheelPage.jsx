@@ -160,15 +160,30 @@ function PreviewWheelPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Eye size={20} className="text-gray-500" />
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">
-                {wheelData.title}
-              </h1>
-              <p className="text-sm text-gray-500">
-                {t('common:previewWheelPage.publicShared')}
-              </p>
+          <div className="flex items-center gap-6">
+            {/* YearWheel Logo */}
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <img 
+                src="/year_wheel_logo.svg" 
+                alt="YearWheel" 
+                className="h-8 w-auto"
+              />
+            </Link>
+            
+            {/* Separator */}
+            <div className="w-px h-8 bg-gray-300" />
+            
+            {/* Wheel Info */}
+            <div className="flex items-center gap-3">
+              <Eye size={20} className="text-gray-500" />
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  {wheelData.title}
+                </h1>
+                <p className="text-sm text-gray-500">
+                  {t('common:previewWheelPage.publicShared')}
+                </p>
+              </div>
             </div>
           </div>
           
@@ -206,13 +221,6 @@ function PreviewWheelPage() {
                 </button>
               </div>
             )}
-            
-            <button
-              onClick={() => navigate('/')}
-              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-            >
-              {t('common:previewWheelPage.goToHome')}
-            </button>
           </div>
         </div>
       </div>

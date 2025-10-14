@@ -9,13 +9,104 @@ import CreateWheelModal from './CreateWheelModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
-import { Users, Mail, LayoutGrid, Crown, Shield, Sparkles } from 'lucide-react';
+import { Users, Mail, LayoutGrid, Crown, Shield, Sparkles, User, LogOut, ChevronDown } from 'lucide-react';
 import { useUsageLimits } from '../../hooks/useSubscription';
 import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionModal from '../subscription/SubscriptionModal';
 import UpgradePrompt from '../subscription/UpgradePrompt';
 import SubscriptionSettings from '../subscription/SubscriptionSettings';
 import LanguageSwitcher from '../LanguageSwitcher';
+import Footer from '../Footer';
+
+// User Menu Dropdown Component
+function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManageSubscription }) {
+  const { t } = useTranslation(['dashboard', 'common', 'subscription']);
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+        title={user?.email}
+        aria-label={t('dashboard:profile.title')}
+      >
+        <User size={20} />
+      </button>
+
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Dropdown Menu */}
+          <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-sm shadow-xl z-50">
+            <div className="px-4 py-3 border-b border-gray-200">
+              <p className="text-sm font-medium text-gray-900 truncate mb-2">{user?.email}</p>
+              
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2">
+                {isAdmin && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-sm text-xs font-semibold">
+                    <Shield size={12} />
+                    {t('subscription:subscription.admin')}
+                  </span>
+                )}
+                {isPremium && !isAdmin && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-sm text-xs font-semibold">
+                    <Crown size={12} />
+                    {t('dashboard:subscription.premium')}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                onShowProfile();
+              }}
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-3 text-gray-700 transition-colors"
+            >
+              <User size={18} />
+              {t('dashboard:profile.title')}
+            </button>
+            
+            {/* Subscription Management (for premium users) */}
+            {(isPremium || isAdmin) && onManageSubscription && (
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  onManageSubscription();
+                }}
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-3 text-gray-700 transition-colors"
+              >
+                <Crown size={18} />
+                {t('dashboard:subscription.manage')}
+              </button>
+            )}
+            
+            <div className="border-t border-gray-200" />
+            
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                onSignOut();
+              }}
+              className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-3 text-red-600 transition-colors"
+            >
+              <LogOut size={18} />
+              {t('common:navigation.logout')}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function Dashboard({ onSelectWheel }) {
   const [showProfile, setShowProfile] = useState(false);
@@ -271,34 +362,34 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex justify-between items-center">
-            {/* Left: Symbol & Navigation */}
-            <div className="flex items-center gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5">
+          <div className="flex justify-between items-center gap-4">
+            {/* Left: Logo & Navigation */}
+            <div className="flex items-center gap-3 sm:gap-8 min-w-0 flex-1">
               <img 
-                src="/year_wheel_symbol.svg" 
+                src="/year_wheel_logo.svg" 
                 alt="YearWheel" 
-                className="w-12 h-12 hover:scale-110 transition-transform"
+                className="h-6 sm:h-8 w-auto flex-shrink-0"
               />
               
               {/* Icon-based Navigation */}
-              <nav className="flex items-center gap-2">
+              <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
                 <button
                   onClick={() => setCurrentView('wheels')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-sm font-medium transition-all ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-medium transition-all whitespace-nowrap ${
                     currentView === 'wheels'
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                   title={t('dashboard:nav.myWheelsTitle')}
                 >
-                  <LayoutGrid className="w-5 h-5" />
-                  <span className="text-sm">{t('dashboard:nav.wheels')}</span>
+                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm">{t('dashboard:nav.wheels')}</span>
                   {currentView === 'wheels' && wheels.length > 0 && (
-                    <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
+                    <span className="bg-white/20 text-white text-xs px-1.5 sm:px-2 py-0.5 rounded-full">
                       {wheels.length}
                     </span>
                   )}
@@ -306,30 +397,30 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 
                 <button
                   onClick={() => setCurrentView('teams')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-sm font-medium transition-all ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-medium transition-all whitespace-nowrap ${
                     currentView === 'teams'
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                   title={t('dashboard:nav.myTeamsTitle')}
                 >
-                  <Users className="w-5 h-5" />
-                  <span className="text-sm">{t('dashboard:nav.teams')}</span>
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm">{t('dashboard:nav.teams')}</span>
                 </button>
                 
                 <button
                   onClick={() => setCurrentView('invitations')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-sm font-medium transition-all relative ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-medium transition-all relative whitespace-nowrap ${
                     currentView === 'invitations'
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                   title={t('common:navigation.invitations')}
                 >
-                  <Mail className="w-5 h-5" />
-                  <span className="text-sm">{t('dashboard:nav.invitations')}</span>
+                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                  <span className="text-xs sm:text-sm">{t('dashboard:nav.invitations')}</span>
                   {invitationCount > 0 && (
-                    <span className={`text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold ${
+                    <span className={`text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-semibold ${
                       currentView === 'invitations' 
                         ? 'bg-white text-blue-600' 
                         : 'bg-red-500 text-white'
@@ -341,32 +432,18 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
               </nav>
             </div>
             
-            {/* Right: Subscription & User Menu */}
-            <div className="flex items-center gap-3">
-              {/* Admin Badge */}
-              {!subscriptionLoading && isAdminUser && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-sm font-semibold shadow-md">
-                  <Shield size={18} />
-                  <span className="text-sm hidden sm:inline">{t('subscription:subscription.admin')}</span>
-                </div>
-              )}
-              
-              {/* Subscription Button */}
-              {!subscriptionLoading && !isAdminUser && (
+            {/* Right: User Menu */}
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+              {/* Subscription Button (only show for non-premium users) */}
+              {!subscriptionLoading && !isPremium && !isAdminUser && (
                 <button
-                  onClick={() => isPremium ? setShowSubscriptionSettings(true) : window.location.href = '/pricing'}
-                  className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-sm font-semibold transition-all
-                    ${isPremium 
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-md' 
-                      : 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-md hover:shadow-lg'
-                    }
-                  `}
-                  title={isPremium ? t('dashboard:subscription.manage') : t('dashboard:subscription.seePricing')}
+                  onClick={() => window.location.href = '/pricing'}
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-semibold transition-all bg-yellow-500 hover:bg-yellow-600 text-white shadow-md hover:shadow-lg"
+                  title={t('dashboard:subscription.seePricing')}
                 >
-                  <Crown size={18} className={isPremium ? 'animate-pulse' : ''} />
-                  <span className="text-sm hidden sm:inline">
-                    {isPremium ? t('dashboard:subscription.premium') : t('dashboard:subscription.upgrade')}
+                  <Crown size={16} className="sm:w-[18px] sm:h-[18px]" />
+                  <span className="text-xs sm:text-sm hidden md:inline">
+                    {t('dashboard:subscription.upgrade')}
                   </span>
                 </button>
               )}
@@ -374,35 +451,22 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
               {/* Language Switcher */}
               <LanguageSwitcher />
               
-              <span className="text-sm text-gray-600 hidden sm:inline">{user?.email}</span>
-              <button
-                onClick={onShowProfile}
-                className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
-                title={t('dashboard:profile.title')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-              </button>
-              <button
-                onClick={handleSignOut}
-                className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
-                title={t('common:navigation.logout')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-              </button>
+              {/* User Menu Dropdown */}
+              <UserMenu 
+                user={user}
+                onShowProfile={onShowProfile}
+                onSignOut={handleSignOut}
+                isPremium={isPremium}
+                isAdmin={isAdminUser}
+                onManageSubscription={() => setShowSubscriptionSettings(true)}
+              />
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {error}
@@ -564,6 +628,9 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
           onClose={() => setShowSubscriptionSettings(false)}
         />
       )}
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
