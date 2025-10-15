@@ -36,18 +36,9 @@ import {
 import { checkIsAdmin } from '../services/wheelService';
 
 export default function AdminPanel() {
-  const { t, i18n } = useTranslation(['admin', 'common']);
+  const { t } = useTranslation(['admin', 'common']);
   const navigate = useNavigate();
   const { user } = useAuth();
-  
-  // Debug: Check if admin namespace is loaded
-  useEffect(() => {
-    console.log('Admin namespace exists (sv):', i18n.hasResourceBundle('sv', 'admin'));
-    console.log('Admin namespace exists (en):', i18n.hasResourceBundle('en', 'admin'));
-    console.log('Current language:', i18n.language);
-    console.log('Loaded namespaces:', i18n.reportNamespaces?.getUsedNamespaces?.());
-    console.log('Test translation:', t('admin:title'), t('title'));
-  }, [i18n, t]);
   
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -524,7 +515,7 @@ export default function AdminPanel() {
             <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Users size={20} />
-                Recent Users
+                {t('recentUsers')}
               </h3>
               <div className="space-y-4">
                 {recentActivity.recentUsers.map((user) => (
@@ -545,7 +536,7 @@ export default function AdminPanel() {
             <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Circle size={20} />
-                Recent Wheels
+                {t('recentWheels')}
               </h3>
               <div className="space-y-4">
                 {recentActivity.recentWheels.map((wheel) => (
@@ -553,7 +544,7 @@ export default function AdminPanel() {
                     <div>
                       <div className="font-medium text-gray-900">{wheel.title}</div>
                       <div className="text-sm text-gray-500">
-                        by {wheel.profiles?.full_name || wheel.profiles?.email || 'Unknown'}
+                        {t('by')} {wheel.profiles?.full_name || wheel.profiles?.email || t('unknown')}
                       </div>
                     </div>
                     <div className="text-right">

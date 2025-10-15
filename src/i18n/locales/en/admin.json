@@ -33,5 +33,7 @@
   "lastSeen": "Last Seen",
   "free": "Free",
   "recentUsers": "Recent Users",
-  "recentWheels": "Recent Wheels"
+  "recentWheels": "Recent Wheels",
+  "by": "by",
+  "unknown": "Unknown"
 }
