@@ -9,7 +9,7 @@ export default function Hero() {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
-          src="/banner.jpg"
+          src="/banner.webp"
           alt="YearWheel Planning"
           className="w-full h-full object-cover"
           loading="eager"
