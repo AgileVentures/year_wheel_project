@@ -55,8 +55,22 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Redirect all routes to index.html for client-side routing
+# Cache sitemap and robots for 1 day
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "application/xml"
+
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "text/plain"
+
+# Redirect all routes to index.html for client-side routing (except static files)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
