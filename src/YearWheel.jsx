@@ -138,7 +138,18 @@ function YearWheel({
 
   const handleItemClick = useCallback((item, position) => {
     setSelectedItem(item);
-    setTooltipPosition(position);
+    
+    // Position tooltip at upper left of container with some padding
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left + 20,  // 20px padding from left edge
+        y: rect.top + 20    // 20px padding from top edge
+      });
+    } else {
+      // Fallback to click position if container ref not available
+      setTooltipPosition(position);
+    }
   }, []);
 
   const handleUpdateAktivitet = useCallback((updatedItem) => {

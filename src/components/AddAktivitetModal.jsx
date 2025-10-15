@@ -6,6 +6,7 @@ function AddAktivitetModal({ organizationData, onAddAktivitet, onClose }) {
   const { t } = useTranslation(['editor', 'common']);
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     ringId: organizationData.rings[0]?.id || '',
     activityId: organizationData.activityGroups[0]?.id || '',
     labelId: organizationData.labels[0]?.id || '',
@@ -48,7 +49,8 @@ function AddAktivitetModal({ organizationData, onAddAktivitet, onClose }) {
       labelId: formData.labelId,
       startDate: formData.startDate,
       endDate: formData.endDate,
-      ...(formData.time && { time: formData.time })
+      ...(formData.time && { time: formData.time }),
+      ...(formData.description && { description: formData.description })
     };
 
     onAddAktivitet(newItem);
@@ -204,6 +206,20 @@ function AddAktivitetModal({ organizationData, onAddAktivitet, onClose }) {
               onChange={(e) => handleChange('time', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               placeholder="e.g., 09:00 - 17:00"
+            />
+          </div>
+
+          {/* Description (optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('editor:modal.description')}
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+              placeholder={t('editor:modal.descriptionPlaceholder')}
+              rows={3}
             />
           </div>
 

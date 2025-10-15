@@ -1,8 +1,14 @@
-import { X, Edit2, Trash2 } from 'lucide-react';
+import { X, Edit2, Trash2, GripVertical } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClose, readonly = false }) {
   const { t, i18n } = useTranslation(['editor']);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [currentPosition, setCurrentPosition] = useState(position);
+  const tooltipRef = useRef(null);
+
   if (!item) return null;
 
   const ring = organizationData.rings.find(r => r.id === item.ringId);
@@ -11,24 +17,88 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
   const startDate = new Date(item.startDate);
   const endDate = new Date(item.endDate);
 
+  // Update position when prop changes
+  useEffect(() => {
+    setCurrentPosition(position);
+  }, [position]);
+
+  // Constrain position to viewport boundaries
+  const constrainToViewport = (pos) => {
+    if (!tooltipRef.current) return pos;
+    
+    const rect = tooltipRef.current.getBoundingClientRect();
+    const margin = 10;
+    
+    return {
+      x: Math.max(margin, Math.min(pos.x, window.innerWidth - rect.width - margin)),
+      y: Math.max(margin, Math.min(pos.y, window.innerHeight - rect.height - margin))
+    };
+  };
+
+  // Handle dragging
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging) {
+        const newPos = {
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y
+        };
+        setCurrentPosition(constrainToViewport(newPos));
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
+
+  const handleDragStart = (e) => {
+    if (tooltipRef.current && e.target.closest('.drag-handle')) {
+      const rect = tooltipRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+      setIsDragging(true);
+    }
+  };
+
   return (
     <div
-      className="fixed bg-white rounded-sm shadow-xl border border-gray-200 z-50 w-64"
+      ref={tooltipRef}
+      className="fixed bg-white rounded-sm shadow-xl border border-gray-200 z-50 w-80"
       style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        transform: 'translate(-50%, -100%) translateY(-10px)'
+        left: `${currentPosition.x}px`,
+        top: `${currentPosition.y}px`,
+        cursor: isDragging ? 'grabbing' : 'default'
       }}
+      onMouseDown={handleDragStart}
     >
-      {/* Header */}
+      {/* Header with drag handle */}
       <div className="flex items-start justify-between p-3 border-b border-gray-200">
+        <button
+          className="drag-handle p-0.5 hover:bg-gray-100 rounded transition-colors flex-shrink-0 cursor-grab active:cursor-grabbing mr-2"
+          title={t('editor:itemTooltip.dragToMove')}
+        >
+          <GripVertical size={16} className="text-gray-400" />
+        </button>
         <div className="flex-1 pr-2">
           <div className="flex items-center gap-2 mb-1">
             <div
               className="w-3 h-3 rounded flex-shrink-0"
               style={{ backgroundColor: activity?.color || '#D1D5DB' }}
             />
-            <h3 className="text-sm font-semibold text-gray-900 truncate">
+            <h3 className="text-sm font-semibold text-gray-900 break-words">
               {item.name}
             </h3>
           </div>
@@ -79,6 +149,14 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
           <div className="flex items-center justify-between">
             <span className="text-gray-500">{t('editor:itemTooltip.time')}:</span>
             <span className="text-gray-900 font-medium">{item.time}</span>
+          </div>
+        )}
+        {item.description && (
+          <div className="pt-2 border-t border-gray-100">
+            <span className="text-gray-500 block mb-1">{t('editor:itemTooltip.description')}:</span>
+            <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {item.description}
+            </p>
           </div>
         )}
       </div>
