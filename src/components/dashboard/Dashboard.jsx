@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { fetchUserWheels, fetchTeamWheels, createWheel, deleteWheel, duplicateWheel, fetchTemplateWheels, checkIsAdmin } from '../../services/wheelService';
@@ -90,6 +91,23 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManage
               </button>
             )}
             
+            {/* Admin Panel Link */}
+            {isAdmin && (
+              <>
+                <div className="border-t border-gray-200" />
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    window.location.href = '/admin';
+                  }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-3 text-gray-700 transition-colors"
+                >
+                  <Shield size={18} />
+                  Admin Panel
+                </button>
+              </>
+            )}
+            
             <div className="border-t border-gray-200" />
             
             <button
@@ -110,6 +128,7 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManage
 }
 
 function Dashboard({ onSelectWheel }) {
+  const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
   
   // Check URL params for initial view
