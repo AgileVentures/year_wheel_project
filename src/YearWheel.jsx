@@ -222,6 +222,7 @@ function YearWheel({
         zoomedMonth,
         zoomedQuarter,
         monthNames,
+        zoomLevel, // Pass zoom level for smart text scaling
         onItemClick: handleItemClick,
         onUpdateAktivitet: handleUpdateAktivitet,
       }
@@ -263,6 +264,13 @@ function YearWheel({
       yearWheel.updateOrganizationData(organizationData);
     }
   }, [organizationData, yearWheel]);
+
+  // Update zoom level for smart text scaling (without recreating wheel)
+  useEffect(() => {
+    if (yearWheel && yearWheel.updateZoomLevel) {
+      yearWheel.updateZoomLevel(zoomLevel);
+    }
+  }, [zoomLevel, yearWheel]);
 
   // Notify parent when wheel instance changes (only once per instance)
   useEffect(() => {

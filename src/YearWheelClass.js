@@ -40,11 +40,15 @@ class YearWheel {
     this.weekRingDisplayMode = options.weekRingDisplayMode || 'week-numbers'; // 'week-numbers' or 'dates'
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.zoomedQuarter = options.zoomedQuarter !== undefined && options.zoomedQuarter !== null ? options.zoomedQuarter : null;
+    this.zoomLevel = options.zoomLevel !== undefined ? options.zoomLevel : 100; // Zoom percentage (50-200), default 100%
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
     this.initAngle = -15 - 90;
     this.minRadius = size / 12; // Smaller center circle for better proportions
-    this.maxRadius = size / 2 - size / 30;
+    
+    // Dynamic maxRadius calculation based on outer rings
+    this.calculateMaxRadius();
+    
     this.hoveredItem = null; // Track currently hovered activity
     this.hoverRedrawPending = false; // Prevent excessive redraws on hover
     
@@ -116,6 +120,32 @@ class YearWheel {
     this.canvas.addEventListener("click", this.boundHandlers.handleClick);
   }
 
+  /**
+   * Calculate maximum radius dynamically based on outer rings
+   * Makes wheel larger when no outer rings exist, shrinks when outer rings are added
+   */
+  calculateMaxRadius() {
+    const visibleOuterRings = this.organizationData.rings.filter(r => r.visible && r.type === 'outer');
+    
+    if (visibleOuterRings.length === 0) {
+      // No outer rings: maximize space (use more of the canvas)
+      // Reduce padding from size/30 to size/50 for more space
+      this.maxRadius = this.size / 2 - this.size / 50;
+    } else {
+      // Has outer rings: only shrink slightly to maintain good proportions
+      // Outer rings will be drawn OUTSIDE this radius, extending toward the edge
+      // We only need a small reduction to ensure proper spacing
+      const outerRingSpace = visibleOuterRings.length * (this.size / 23);
+      
+      // Instead of subtracting full outer ring space, only shrink by 60% of it
+      // This keeps the inner wheel larger while still making room for outer rings
+      const shrinkAmount = outerRingSpace * 0.6;
+      const padding = this.size / 60; // Minimal padding
+      
+      this.maxRadius = (this.size / 2) - padding - shrinkAmount;
+    }
+  }
+
   // Generate cache key to detect when background needs redrawing
   getCacheKey() {
     const ringCount = this.organizationData.rings.filter(r => r.visible).length;
@@ -133,12 +163,29 @@ class YearWheel {
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
     this.organizationData = newOrganizationData;
+    
+    // Recalculate maxRadius in case outer rings were added/removed/toggled
+    this.calculateMaxRadius();
+    
     // Invalidate cache if ring structure changed
     this.invalidateCache();
     // DON'T redraw during drag - it will cause wheel to go blank
     // The drag handler (dragActivity) already calls create() to show preview
     if (!this.dragState || !this.dragState.isDragging) {
       this.create();
+    }
+  }
+
+  // Update zoom level and redraw (for smart text scaling)
+  updateZoomLevel(newZoomLevel) {
+    if (this.zoomLevel !== newZoomLevel) {
+      this.zoomLevel = newZoomLevel;
+      // Invalidate cache since text rendering will change
+      this.invalidateCache();
+      // Redraw with new zoom-adjusted text
+      if (!this.dragState || !this.dragState.isDragging) {
+        this.create();
+      }
     }
   }
 
@@ -929,15 +976,22 @@ class YearWheel {
     const centerAngle = (startRad + endRad) / 2;
     const middleRadius = startRadius + width / 2;
     
-    // Calculate available space
+    // Calculate available space in pixels
     const arcLength = middleRadius * Math.abs(angleLength); // Length along the arc
     const radialWidth = width; // Width perpendicular to arc
     
-    // Minimum thresholds - only skip EXTREMELY tiny segments
-    const MIN_ARC_LENGTH = this.size * 0.008; // 0.8% of canvas (very tiny)
-    const MIN_RADIAL_WIDTH = this.size * 0.005; // 0.5% of canvas (very tiny)
+    // Smart zoom: MUCH lower thresholds to show more items when zoomed
+    const zoomFactor = this.zoomLevel / 100;
     
-    if (arcLength < MIN_ARC_LENGTH || radialWidth < MIN_RADIAL_WIDTH) {
+    // Very aggressive thresholds - allow tiny segments to show text when zoomed
+    let arcLengthThreshold = this.size * 0.003;  // Was 0.008 - much lower now!
+    let radialWidthThreshold = this.size * 0.002; // Was 0.005 - much lower now!
+    
+    // Adjust thresholds inversely with zoom
+    arcLengthThreshold = arcLengthThreshold / zoomFactor;
+    radialWidthThreshold = radialWidthThreshold / zoomFactor;
+    
+    if (arcLength < arcLengthThreshold || radialWidth < radialWidthThreshold) {
       // Too small to render readable text - skip it
       return;
     }
@@ -945,30 +999,106 @@ class YearWheel {
     // Get text color with proper contrast
     const textColor = backgroundColor ? this.getContrastColor(backgroundColor) : "#FFFFFF";
     
-    // Calculate appropriate font size - keep it readable
-    // Use 70% of base font as standard, limited by available space
-    let activityFontSize = Math.min(
-      fontSize * 0.7,  // 70% of base font for good readability
-      radialWidth * 0.4,  // Max 40% of radial width
-      this.size / 40  // Absolute maximum (slightly larger)
+    // INTELLIGENT DISPLAY-AWARE FONT SIZING WITH PROPORTIONAL SCALING
+    const effectiveDisplaySize = this.size * zoomFactor;
+    
+    // STRICTER MINIMUM - Never go below readable size, prefer truncation
+    const absoluteMinFont = Math.max(12, effectiveDisplaySize / 200); // Raised from 8
+    const minDisplayFont = Math.max(14, effectiveDisplaySize / 180);  // Comfortable minimum
+    const maxDisplayFont = Math.min(50, effectiveDisplaySize / 45);
+    const reasonableMaxFont = Math.min(35, effectiveDisplaySize / 60);
+    
+    // TEXT CONTENT ANALYSIS
+    const textLength = text.length;
+    const hasSpaces = text.includes(' ');
+    const wordCount = hasSpaces ? text.split(/\s+/).length : 1;
+    
+    // Length penalty (more moderate - won't force too-small fonts)
+    let lengthPenalty = 1.0;
+    if (textLength > 15) lengthPenalty = 0.90;  // Was 0.85
+    else if (textLength > 10) lengthPenalty = 0.93; // Was 0.90
+    else if (textLength > 6) lengthPenalty = 0.96;  // Was 0.95
+    
+    // CONTAINER PROPORTIONALITY
+    const segmentArea = radialWidth * arcLength;
+    const wheelArea = this.size * this.size;
+    const areaRatio = segmentArea / wheelArea;
+    
+    // Size penalty for large segments (more moderate)
+    let sizePenalty = 1.0;
+    if (areaRatio > 0.15) sizePenalty = 0.88;      // Was 0.85
+    else if (areaRatio > 0.10) sizePenalty = 0.92; // Was 0.90
+    else if (areaRatio > 0.06) sizePenalty = 0.96; // Was 0.95
+    
+    // SPACE ANALYSIS
+    const maxTextWidth = radialWidth * 0.80;
+    const maxTextHeight = arcLength * 0.85;
+    
+    // Calculate initial font from space constraints
+    let testFontSize = Math.min(
+      maxTextWidth * 0.45,
+      maxTextHeight * 0.25,
+      reasonableMaxFont
     );
     
-    // Set minimum font size - don't make text too tiny
-    const minFontSize = this.size / 120;
-    activityFontSize = Math.max(activityFontSize, minFontSize);
+    // Apply penalties
+    testFontSize = testFontSize * lengthPenalty * sizePenalty;
     
+    // Enforce limits with stricter minimum
+    testFontSize = Math.max(testFontSize, minDisplayFont);
+    testFontSize = Math.min(testFontSize, maxDisplayFont);
+    
+    // If still below absolute minimum, use absolute minimum and truncate text instead
+    if (testFontSize < absoluteMinFont) {
+      testFontSize = absoluteMinFont;
+    }
+    
+    // Now try to fit the text at this font size
     this.context.save();
-    this.context.font = `500 ${activityFontSize}px Arial, sans-serif`;
+    this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
     this.context.fillStyle = textColor;
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
+    
+    const textWidth = this.context.measureText(text).width;
+    
+    // TRUNCATION STRATEGY: Don't scale below readable size
+    let displayText = text;
+    
+    if (textWidth > maxTextWidth) {
+      // Check if scaling would go below minimum
+      const scaleFactor = (maxTextWidth / textWidth) * 0.95;
+      const scaledFont = testFontSize * scaleFactor;
+      
+      if (scaledFont >= absoluteMinFont) {
+        // Scaling keeps us above minimum - safe to scale
+        testFontSize = scaledFont;
+        this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+      } else {
+        // Scaling would be too small - keep minimum font and truncate instead
+        testFontSize = absoluteMinFont;
+        this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+        
+        // Truncate text to fit width
+        let truncated = text;
+        let truncatedWidth = this.context.measureText(truncated + '…').width;
+        
+        while (truncatedWidth > maxTextWidth && truncated.length > 1) {
+          truncated = truncated.substring(0, truncated.length - 1);
+          truncatedWidth = this.context.measureText(truncated + '…').width;
+        }
+        
+        if (truncated.length < text.length) {
+          displayText = truncated + '…';
+        }
+      }
+    }
     
     // Position at center of segment
     const coord = this.moveToAngle(middleRadius, centerAngle);
     this.context.translate(coord.x, coord.y);
     
     // Determine rotation for perpendicular text
-    // Normalize angle to 0-2π
     let normalizedAngle = centerAngle % (Math.PI * 2);
     if (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
     
@@ -981,36 +1111,146 @@ class YearWheel {
     
     this.context.rotate(rotation);
     
-    // Calculate constraints
-    const maxTextWidth = radialWidth * 0.75; // Use 75% of available width for padding
-    const lineHeight = activityFontSize * 1.2;
-    const maxLines = Math.max(1, Math.floor((arcLength * 0.9) / lineHeight));
-    
-    // Measure full text
-    const fullTextWidth = this.context.measureText(text).width;
-    
-    if (fullTextWidth <= maxTextWidth) {
-      // Single line, fits completely
-      this.context.fillText(text, 0, 0);
-    } else {
-      // Need to wrap or truncate
-      const lines = this.wrapText(text, maxTextWidth, maxLines);
-      
-      // Calculate vertical centering
-      const totalHeight = lines.length * lineHeight;
-      const startY = -(totalHeight / 2) + (lineHeight / 2);
-      
-      // Draw each line
-      lines.forEach((line, index) => {
-        this.context.fillText(line, 0, startY + (index * lineHeight));
-      });
-    }
+    // Draw the potentially truncated text
+    this.context.fillText(displayText, 0, 0);
     
     this.context.restore();
   }
   
   /**
-   * Smart text wrapping with word boundaries and ellipsis
+   * Calculate optimal font size for text along an arc
+   * Binary search to find largest font where text fits within arc length
+   */
+  calculateOptimalFontSizeForArc(text, availableArcLength, minSize, maxSize) {
+    const testFontSize = (size) => {
+      this.context.font = `500 ${size}px Arial, sans-serif`;
+      const textWidth = this.context.measureText(text).width;
+      return textWidth <= availableArcLength;
+    };
+    
+    // Quick check: does it fit at max size?
+    if (testFontSize(maxSize)) {
+      return maxSize;
+    }
+    
+    // Quick check: does it fit at min size?
+    if (!testFontSize(minSize)) {
+      return minSize; // Use min even if it doesn't fit
+    }
+    
+    // Binary search for optimal size
+    let left = minSize;
+    let right = maxSize;
+    let bestSize = minSize;
+    
+    while (right - left > 0.5) {
+      const mid = (left + right) / 2;
+      
+      if (testFontSize(mid)) {
+        bestSize = mid;
+        left = mid;
+      } else {
+        right = mid;
+      }
+    }
+    
+    return bestSize;
+  }
+  
+  /**
+   * Calculate optimal font size to fit text in available space WITHOUT truncation
+   * Binary search to find largest font that allows full text to fit
+   */
+  calculateOptimalFontSize(text, maxWidth, maxHeight, minSize, maxSize) {
+    const testFontSize = (size) => {
+      this.context.font = `500 ${size}px Arial, sans-serif`;
+      const lineHeight = size * 1.2;
+      const maxLines = Math.floor(maxHeight / lineHeight);
+      
+      if (maxLines < 1) return false;
+      
+      // Try to wrap text at this font size
+      const lines = this.wrapTextNoTruncation(text, maxWidth, maxLines);
+      
+      // Check if all words fit
+      const allWordsFit = lines.join(' ').replace(/\s+/g, ' ') === text.replace(/\s+/g, ' ');
+      
+      // Check if total height fits
+      const totalHeight = lines.length * lineHeight;
+      const fits = allWordsFit && totalHeight <= maxHeight;
+      
+      return fits;
+    };
+    
+    // Binary search for optimal font size
+    let left = minSize;
+    let right = maxSize;
+    let bestSize = minSize;
+    
+    // Quick check: does it fit at max size?
+    if (testFontSize(maxSize)) {
+      return maxSize;
+    }
+    
+    // Quick check: does it fit at min size?
+    if (!testFontSize(minSize)) {
+      return minSize; // Even min size doesn't fit, but use it anyway
+    }
+    
+    // Binary search
+    while (right - left > 0.5) { // 0.5px precision
+      const mid = (left + right) / 2;
+      
+      if (testFontSize(mid)) {
+        bestSize = mid;
+        left = mid;
+      } else {
+        right = mid;
+      }
+    }
+    
+    return bestSize;
+  }
+  
+  /**
+   * Wrap text across multiple lines WITHOUT truncation
+   * Returns array of lines that fit within maxWidth
+   */
+  wrapTextNoTruncation(text, maxWidth, maxLines) {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let currentLine = '';
+    
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = this.context.measureText(testLine).width;
+      
+      if (testWidth > maxWidth && currentLine) {
+        // Line is full, save current line and start new one
+        lines.push(currentLine);
+        
+        // If we've reached max lines, stop here (rest won't fit)
+        if (lines.length >= maxLines) {
+          return lines;
+        }
+        
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    
+    // Add the last line
+    if (currentLine && lines.length < maxLines) {
+      lines.push(currentLine);
+    }
+    
+    return lines.length > 0 ? lines : [];
+  }
+  
+  /**
+   * Smart text wrapping with word boundaries and ellipsis (legacy, for fallback)
    * Returns array of lines that fit within maxWidth and maxLines constraints
    */
   wrapText(text, maxWidth, maxLines) {
@@ -1106,46 +1346,999 @@ class YearWheel {
   }
 
   /**
-   * Smart text orientation decision based on segment dimensions
-   * Chooses between horizontal (along arc) and vertical (perpendicular) 
-   * based on what will give the best readability for the available space
+   * HOLISTIC RENDERING EVALUATION v3
+   * Simulates complete rendering with real-world circular layout considerations
+   * Now supports multi-line wrapping for vertical text
+   * 
+   * Returns: {
+   *   fontSize: number,
+   *   truncated: boolean,
+   *   truncationPercent: number (0-100),
+   *   displayedText: string,
+   *   lineCount: number,
+   *   readabilityScore: number (0-100, higher is better),
+   *   details: { font, space, natural, penalty } - score breakdown
+   * }
    */
-  chooseTextOrientation(angularWidth, radialHeight, textLength) {
-    // Convert angular width from radians to degrees
-    const angularDegrees = (angularWidth * 180) / Math.PI;
+  evaluateRenderingSolution(text, orientation, arcLengthPx, radialHeight, middleRadius, allowWrapping = false) {
+    const zoomFactor = this.zoomLevel / 100;
+    const effectiveDisplaySize = this.size * zoomFactor;
     
-    // Calculate rough text-to-space ratio
-    const arcLengthRatio = textLength / angularDegrees; // chars per degree
-    const radialRatio = textLength * 8 / radialHeight; // rough char width estimate
+    // Displayed dimensions (what user sees)
+    const displayedArcLength = arcLengthPx * zoomFactor;
+    const displayedRadialHeight = radialHeight * zoomFactor;
     
-    // Decision logic:
+    const absoluteMinFont = Math.max(12, effectiveDisplaySize / 200);
+    const minDisplayFont = Math.max(14, effectiveDisplaySize / 180);
+    const maxDisplayFont = Math.min(50, effectiveDisplaySize / 45);
+    const reasonableMaxFont = Math.min(35, effectiveDisplaySize / 60);
     
-    // 1. Very wide segments (>60°) - prefer horizontal (along arc)
-    //    Text flows naturally around the circle
-    if (angularDegrees > 60) {
+    // Text analysis
+    const textLength = text.length;
+    let lengthPenalty = 1.0;
+    if (textLength > 15) lengthPenalty = 0.90;
+    else if (textLength > 10) lengthPenalty = 0.93;
+    else if (textLength > 6) lengthPenalty = 0.96;
+    
+    // Container proportionality
+    const segmentArea = radialHeight * arcLengthPx;
+    const wheelArea = this.size * this.size;
+    const areaRatio = segmentArea / wheelArea;
+    
+    let sizePenalty = 1.0;
+    if (areaRatio > 0.15) sizePenalty = 0.88;
+    else if (areaRatio > 0.10) sizePenalty = 0.92;
+    else if (areaRatio > 0.06) sizePenalty = 0.96;
+    
+    let fontSize, availableSpace, needsTruncation, truncationPercent, lineCount = 1;
+    
+    if (orientation === 'vertical') {
+      // VERTICAL: Text width limited by radial height, text height by arc length
+      const maxTextWidth = radialHeight * 0.80;
+      const maxTextHeight = arcLengthPx * 0.85;
+      
+      // MULTI-LINE WRAPPING SUPPORT
+      if (allowWrapping && text.includes(' ')) {
+        // Calculate font size for multi-line text
+        const words = text.split(/\s+/);
+        const wordCount = words.length;
+        
+        // Try to fit text in 2-3 lines depending on word count
+        const targetLines = wordCount >= 4 ? 3 : 2;
+        const lineHeight = maxTextHeight / (targetLines + 0.5); // +0.5 for spacing
+        
+        fontSize = Math.min(
+          maxTextWidth * 0.45,
+          lineHeight * 0.8, // Height per line
+          reasonableMaxFont
+        );
+        
+        fontSize = fontSize * lengthPenalty * sizePenalty;
+        fontSize = Math.max(fontSize, minDisplayFont);
+        fontSize = Math.min(fontSize, maxDisplayFont);
+        
+        if (fontSize < absoluteMinFont) fontSize = absoluteMinFont;
+        
+        // Simulate word wrapping
+        this.context.save();
+        this.context.font = `500 ${fontSize}px Arial, sans-serif`;
+        
+        let lines = [];
+        let currentLine = '';
+        
+        for (let i = 0; i < words.length; i++) {
+          const testLine = currentLine ? currentLine + ' ' + words[i] : words[i];
+          const testWidth = this.context.measureText(testLine).width;
+          
+          if (testWidth > maxTextWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = words[i];
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+        
+        this.context.restore();
+        
+        lineCount = lines.length;
+        const totalHeight = lineCount * fontSize * 1.2; // 1.2 line height
+        
+        needsTruncation = totalHeight > maxTextHeight;
+        truncationPercent = needsTruncation ? 
+          ((totalHeight - maxTextHeight) / totalHeight) * 100 : 0;
+        
+        // Check if any line is too wide (overflow)
+        this.context.save();
+        this.context.font = `500 ${fontSize}px Arial, sans-serif`;
+        const maxLineWidth = Math.max(...lines.map(line => this.context.measureText(line).width));
+        this.context.restore();
+        
+        if (maxLineWidth > maxTextWidth) {
+          // Lines overflow - partial truncation
+          truncationPercent = Math.max(truncationPercent, 
+            ((maxLineWidth - maxTextWidth) / maxLineWidth) * 100);
+        }
+        
+        availableSpace = maxTextHeight; // For scoring purposes
+        
+      } else {
+        // SINGLE LINE (original logic)
+        fontSize = Math.min(
+          maxTextWidth * 0.45,
+          maxTextHeight * 0.25,
+          reasonableMaxFont
+        );
+        
+        fontSize = fontSize * lengthPenalty * sizePenalty;
+        fontSize = Math.max(fontSize, minDisplayFont);
+        fontSize = Math.min(fontSize, maxDisplayFont);
+        
+        if (fontSize < absoluteMinFont) fontSize = absoluteMinFont;
+        
+        // Check if truncation needed
+        this.context.save();
+        this.context.font = `500 ${fontSize}px Arial, sans-serif`;
+        const textWidth = this.context.measureText(text).width;
+        this.context.restore();
+        
+        availableSpace = maxTextWidth;
+        needsTruncation = textWidth > availableSpace;
+        
+        if (needsTruncation) {
+          // Calculate how much we'd need to truncate
+          const charsNeeded = text.length;
+          const charsFit = Math.floor((availableSpace / textWidth) * text.length) - 1;
+          truncationPercent = ((charsNeeded - charsFit) / charsNeeded) * 100;
+        } else {
+          truncationPercent = 0;
+        }
+      }
+      
+    } else {
+      // HORIZONTAL: Text follows arc
+      const availableArcLength = middleRadius * (arcLengthPx / middleRadius) * 0.85;
+      const maxRadialHeight = radialHeight * 0.85;
+      
+      // MULTI-LINE HORIZONTAL SUPPORT (stacked arcs)
+      if (allowWrapping && text.includes(' ')) {
+        const words = text.split(/\s+/);
+        const wordCount = words.length;
+        
+        // Try to fit in 2-3 stacked arc lines
+        const targetLines = wordCount >= 4 ? 3 : 2;
+        const lineHeight = maxRadialHeight / (targetLines + 0.3); // +0.3 for spacing between arcs
+        
+        // Font size limited by line height and arc length per character
+        fontSize = Math.min(
+          lineHeight * 0.7, // Slightly smaller for multi-line readability
+          availableArcLength / (text.length / targetLines) * 0.9, // Assume even distribution
+          reasonableMaxFont
+        );
+        
+        fontSize = fontSize * lengthPenalty * sizePenalty;
+        fontSize = Math.max(fontSize, minDisplayFont);
+        fontSize = Math.min(fontSize, maxDisplayFont);
+        
+        if (fontSize < absoluteMinFont) fontSize = absoluteMinFont;
+        
+        // Simulate word wrapping for horizontal arc text
+        this.context.save();
+        this.context.font = `500 ${fontSize}px Arial, sans-serif`;
+        
+        let lines = [];
+        let currentLine = '';
+        
+        for (let i = 0; i < words.length; i++) {
+          const testLine = currentLine ? currentLine + ' ' + words[i] : words[i];
+          const testWidth = this.context.measureText(testLine).width;
+          
+          // Check if line fits in arc length
+          if (testWidth > availableArcLength && currentLine) {
+            lines.push(currentLine);
+            currentLine = words[i];
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+        
+        this.context.restore();
+        
+        lineCount = lines.length;
+        const totalRadialHeight = lineCount * fontSize * 1.3; // 1.3 spacing for arc stacking
+        
+        needsTruncation = totalRadialHeight > maxRadialHeight;
+        truncationPercent = needsTruncation ? 
+          ((totalRadialHeight - maxRadialHeight) / totalRadialHeight) * 100 : 0;
+        
+        // Check if any line is too long for arc
+        this.context.save();
+        this.context.font = `500 ${fontSize}px Arial, sans-serif`;
+        const maxLineWidth = Math.max(...lines.map(line => this.context.measureText(line).width));
+        this.context.restore();
+        
+        if (maxLineWidth > availableArcLength) {
+          // Lines overflow arc
+          truncationPercent = Math.max(truncationPercent, 
+            ((maxLineWidth - availableArcLength) / maxLineWidth) * 100);
+        }
+        
+        availableSpace = availableArcLength; // For scoring
+        
+      } else {
+        // SINGLE LINE HORIZONTAL (original logic)
+        fontSize = Math.min(
+          radialHeight * 0.45,
+          availableArcLength / text.length * 0.9,
+          reasonableMaxFont
+        );
+        
+        fontSize = fontSize * lengthPenalty * sizePenalty;
+        fontSize = Math.max(fontSize, minDisplayFont);
+        fontSize = Math.min(fontSize, maxDisplayFont);
+        
+        if (fontSize < absoluteMinFont) fontSize = absoluteMinFont;
+        
+        // Check if truncation needed
+        this.context.save();
+        this.context.font = `500 ${fontSize}px Arial, sans-serif`;
+        const textWidth = this.context.measureText(text).width;
+        this.context.restore();
+        
+        availableSpace = availableArcLength;
+        needsTruncation = textWidth > availableSpace;
+        
+        if (needsTruncation) {
+          const charsNeeded = text.length;
+          const charsFit = Math.floor((availableSpace / textWidth) * text.length) - 1;
+          truncationPercent = ((charsNeeded - charsFit) / charsNeeded) * 100;
+        } else {
+          truncationPercent = 0;
+        }
+      }
+    }
+    
+    // Determine actual displayed text
+    let displayedText = text;
+    if (needsTruncation && truncationPercent > 5) {
+      const charsNeeded = text.length;
+      const charsFit = Math.max(1, Math.floor((availableSpace / (needsTruncation ? this.context.measureText(text).width : 1)) * text.length) - 1);
+      displayedText = text.substring(0, charsFit) + '…';
+    }
+    
+    // ADVANCED SCORING SYSTEM
+    let fontScore = 0;
+    let spaceScore = 0;
+    let naturalScore = 0;
+    let penaltyScore = 0;
+    
+    // 1. FONT SIZE QUALITY (0-35 points) - CRITICAL FOR READABILITY
+    // Font size is MORE important than previously thought
+    // User preference: "horizontal multi-line with readable font preferable over horizontal single-line in small font"
+    // 
+    // CRITICAL FIX: Use ABSOLUTE font sizes, not zoom-dependent!
+    // Problem: At 150% zoom, sweetSpotMin became 30px, making 16-20px fonts score 0 points
+    // Solution: Use actual readable font sizes (14-28px) regardless of zoom
+    const sweetSpotMin = 16;  // Minimum comfortable reading size
+    const sweetSpotMax = 28;  // Maximum before getting too large
+    
+    if (fontSize >= sweetSpotMin && fontSize <= sweetSpotMax) {
+      // In sweet spot - full points
+      fontScore = 35;
+    } else if (fontSize >= minDisplayFont && fontSize < sweetSpotMin) {
+      // Below sweet spot - HARSH PENALTY for small fonts
+      // User: "truncation should win over too small font, especially on small containers"
+      // Small fonts are hard to read - truncation is better!
+      const ratio = (fontSize - minDisplayFont) / (sweetSpotMin - minDisplayFont);
+      if (ratio > 0.9) {
+        fontScore = 28 + (ratio * 7); // Very close to sweet spot: 28-35
+      } else if (ratio > 0.75) {
+        fontScore = 20 + (ratio * 8); // Readable but small: 20-28
+      } else if (ratio > 0.5) {
+        fontScore = 10 + (ratio * 10); // Getting small: 10-20
+      } else {
+        fontScore = 0 + (ratio * 10); // Very small font: 0-10 (almost as bad as truncation!)
+      }
+    } else if (fontSize > sweetSpotMax && fontSize <= reasonableMaxFont) {
+      // Above sweet spot - penalty varies with zoom
+      const ratio = (fontSize - sweetSpotMax) / (reasonableMaxFont - sweetSpotMax);
+      if (zoomFactor >= 1.5) {
+        // High zoom: smaller penalty for large fonts (they look better)
+        fontScore = 35 - (ratio * 3);
+      } else {
+        // Normal/low zoom: moderate penalty
+        fontScore = 35 - (ratio * 6);
+      }
+    } else if (fontSize < minDisplayFont) {
+      // Below minimum - EXTREME penalty (basically unreadable)
+      fontScore = 0; // Was 5, now 0 - truncation is better than this!
+    }
+    
+    // 2. SPACE UTILIZATION (0-25 points)
+    // Reward efficient use of available space without cramming
+    const utilizationRatio = needsTruncation ? 1.0 : 
+      (orientation === 'vertical' ? 
+        (this.context.measureText(text).width / availableSpace) : 
+        (this.context.measureText(text).width / availableSpace));
+    
+    if (utilizationRatio >= 0.5 && utilizationRatio <= 0.85) {
+      // Good utilization - not too cramped, not too sparse
+      spaceScore = 25;
+    } else if (utilizationRatio >= 0.35 && utilizationRatio < 0.5) {
+      // Sparse but acceptable
+      spaceScore = 20;
+    } else if (utilizationRatio > 0.85 && utilizationRatio < 1.0) {
+      // Tight but fits
+      spaceScore = 22;
+    } else if (utilizationRatio >= 1.0) {
+      // Doesn't fit - truncation needed
+      spaceScore = 10;
+    } else {
+      // Very sparse
+      spaceScore = 15;
+    }
+    
+    // 3. NATURAL FIT BONUS (0-50 points) - FAVOR COMPLETENESS **WITH READABLE FONT**
+    // User: "truncation should win over too small font, especially on small containers"
+    // Completeness is only valuable if the text is actually readable!
+    if (!needsTruncation) {
+      // No truncation - bonus depends on font readability
+      let baseCompleteness;
+      if (zoomFactor >= 1.5) {
+        baseCompleteness = 50; // Huge bonus at high zoom for full text
+      } else if (zoomFactor >= 1.0) {
+        baseCompleteness = 45; // Big bonus at normal zoom
+      } else {
+        baseCompleteness = 40; // Still big bonus at low zoom
+      }
+      
+      // PENALTY: If font is too small, completeness doesn't matter!
+      // Small unreadable text with no truncation is worse than larger truncated text
+      if (fontSize < minDisplayFont) {
+        // Unreadable font - completeness is worthless
+        naturalScore = 0;
+      } else if (fontSize < sweetSpotMin) {
+        // Below sweet spot - scale completeness bonus down
+        const fontQualityRatio = (fontSize - minDisplayFont) / (sweetSpotMin - minDisplayFont);
+        if (fontQualityRatio < 0.5) {
+          // Very small font (50% of range) - completeness barely matters
+          naturalScore = baseCompleteness * 0.2; // Only 20% of completeness bonus
+        } else if (fontQualityRatio < 0.75) {
+          // Small font (50-75%) - reduced completeness value
+          naturalScore = baseCompleteness * 0.5; // 50% of completeness bonus
+        } else {
+          // Close to sweet spot (75-100%) - most of completeness value
+          naturalScore = baseCompleteness * 0.85; // 85% of completeness bonus
+        }
+      } else {
+        // Font in sweet spot or above - full completeness bonus!
+        naturalScore = baseCompleteness;
+      }
+      
+      // MULTI-LINE BONUS: Successfully wrapped text is elegant and more readable
+      if (allowWrapping && lineCount >= 2) {
+        // Bonus scales with how well it wraps
+        if (orientation === 'horizontal') {
+          // HORIZONTAL MULTI-LINE: Extra bonus for preferred orientation with wrapping!
+          if (lineCount === 2) {
+            naturalScore += 15; // Perfect horizontal 2-line (can go to 65!)
+          } else if (lineCount === 3) {
+            naturalScore += 12; // Great horizontal 3-line (can go to 62!)
+          } else {
+            naturalScore += 8;  // Horizontal 4+ lines
+          }
+        } else {
+          // Vertical multi-line: good but not as preferred
+          if (lineCount === 2) {
+            naturalScore += 12; // Perfect 2-line split (can go to 62!)
+          } else if (lineCount === 3) {
+            naturalScore += 10; // Good 3-line split (can go to 60!)
+          } else {
+            naturalScore += 6;  // 4+ lines getting crowded
+          }
+        }
+      }
+    } else if (truncationPercent < 5) {
+      // Tiny truncation (< 5%) - barely noticeable, still good
+      if (zoomFactor >= 1.5) {
+        naturalScore = 25; // Acceptable at high zoom
+      } else if (zoomFactor < 0.8) {
+        naturalScore = 35; // More OK at low zoom
+      } else {
+        naturalScore = 30; // Normal zoom
+      }
+    } else if (truncationPercent < 10) {
+      // Minor truncation - noticeable, prefer to avoid
+      if (zoomFactor >= 1.5) {
+        naturalScore = 12; // Bad at high zoom
+      } else if (zoomFactor < 0.8) {
+        naturalScore = 25; // Tolerable at low zoom
+      } else {
+        naturalScore = 18; // Normal zoom
+      }
+    } else if (truncationPercent < 25) {
+      // Moderate truncation - poor readability
+      if (zoomFactor >= 1.5) {
+        naturalScore = 3;  // Really bad at high zoom
+      } else if (zoomFactor < 0.8) {
+        naturalScore = 15; // Acceptable at low zoom
+      } else {
+        naturalScore = 8; // Normal
+      }
+    } else if (truncationPercent < 40) {
+      // Heavy truncation - very poor
+      if (zoomFactor >= 1.5) {
+        naturalScore = 0;  // Unacceptable at high zoom
+      } else if (zoomFactor < 0.8) {
+        naturalScore = 10; // Tolerable at low zoom
+      } else {
+        naturalScore = 3;
+      }
+    } else {
+      // Severe truncation - terrible
+      if (zoomFactor < 0.8) {
+        naturalScore = 5;  // Last resort at low zoom
+      } else {
+        naturalScore = 0;  // Never acceptable otherwise
+      }
+    }
+    
+    // 4. ORIENTATION-SPECIFIC ADJUSTMENT (-20 to +25 points)
+    // CLEAR RULES FROM USER:
+    // - Wide containers: Prefer horizontal (even with wrapping/truncation)
+    // - Narrow containers: Prefer vertical with good font over horizontal with tiny font or truncation
+    // - Multi-line wrapping is valuable for achieving readable fonts
+    
+    // CRITICAL: Use ACTUAL container geometry (not zoom-adjusted) to determine wide/narrow
+    // The container shape doesn't change with zoom, only how we display it!
+    const actualAspectRatio = arcLengthPx / radialHeight;
+    const isWideContainer = actualAspectRatio > 1.5;  // Wide = prefer horizontal strongly
+    const isNarrowContainer = actualAspectRatio < 0.8; // Narrow = vertical might be better
+    
+    if (orientation === 'vertical') {
+      // Vertical orientation evaluation
+      
+      if (isWideContainer) {
+        // WIDE CONTAINER + VERTICAL = Wrong choice!
+        // Horizontal should be used in wide containers
+        penaltyScore -= 20; // Heavy penalty
+      } else if (isNarrowContainer) {
+        // NARROW CONTAINER + VERTICAL = Good choice if font is readable
+        // Vertical is appropriate here, give bonus if font is good
+        if (fontSize >= sweetSpotMin) {
+          penaltyScore += 10; // Vertical with good font in narrow container is great!
+        } else if (fontSize >= minDisplayFont * 1.1) {
+          penaltyScore += 5; // Decent font
+        }
+        // No penalty for choosing vertical in narrow container
+      } else {
+        // MEDIUM CONTAINER + VERTICAL = Acceptable but not preferred
+        // Small penalty, horizontal would be better
+        penaltyScore -= 5;
+      }
+      
+      // Multi-line vertical bonus (helps achieve better fonts)
+      // BUT: Don't give bonus in wide containers - vertical shouldn't be used there!
+      if (!isWideContainer && allowWrapping && lineCount >= 2 && fontSize >= sweetSpotMin) {
+        penaltyScore += 5; // Multi-line with good font is good (in narrow/medium containers)!
+      }
+      
+    } else {
+      // Horizontal orientation evaluation (generally preferred)
+      
+      if (isWideContainer) {
+        // WIDE CONTAINER + HORIZONTAL = Perfect choice!
+        penaltyScore += 15; // Big bonus for correct orientation
+        
+        // Extra bonus for multi-line in wide containers (shows full text better)
+        if (allowWrapping && lineCount >= 2) {
+          penaltyScore += 10; // Multi-line horizontal in wide container is excellent!
+        }
+      } else if (isNarrowContainer) {
+        // NARROW CONTAINER + HORIZONTAL = Can work well with multi-line!
+        // Use ABSOLUTE font threshold (not zoom-dependent sweetSpotMin!)
+        const absoluteSmallFont = Math.max(14, effectiveDisplaySize / 140); // ~14-17px
+        
+        if (allowWrapping && lineCount >= 2 && fontSize >= absoluteSmallFont) {
+          // HORIZONTAL MULTI-LINE in narrow container with good font = EXCELLENT!
+          // This shows more text than vertical while maintaining readability
+          penaltyScore += 15; // Big bonus for successful multi-line wrapping!
+        } else if (fontSize < absoluteSmallFont) {
+          // Font too small - vertical would be better
+          penaltyScore -= 15; // Heavy penalty for tiny font in narrow container
+        } else if (truncationPercent > 15) {
+          // Heavy truncation - vertical with good font would be better
+          penaltyScore -= 10; // Penalty for heavy truncation in narrow container
+        } else {
+          // Font is okay and truncation minimal - acceptable
+          penaltyScore += 5; // Small bonus for horizontal
+        }
+      } else {
+        // MEDIUM CONTAINER + HORIZONTAL = Good default choice
+        penaltyScore += 10; // Standard horizontal bonus
+        
+        // Multi-line bonus if achieves better font (use absolute threshold)
+        const absoluteGoodFont = Math.max(16, effectiveDisplaySize / 130); // ~16-19px
+        if (allowWrapping && lineCount >= 2 && fontSize >= absoluteGoodFont) {
+          penaltyScore += 8; // Multi-line with good font
+        }
+      }
+    }
+    
+    // TOTAL SCORE (0-155 scale)
+    // Font: 35, Space: 25, Natural: 50+15, Orientation: -20 to +25
+    // 
+    // WIDE CONTAINER scenarios:
+    // - Horizontal multi-line + good font: 35 + 25 + 65 + 25 = 150 ✅ BEST
+    // - Horizontal single + good font: 35 + 25 + 50 + 15 = 125 ✅ GOOD
+    // - Vertical (wrong choice): 35 + 25 + 50 - 20 = 90 ❌ BAD
+    //
+    // NARROW CONTAINER scenarios:
+    // - Vertical + good font: 35 + 25 + 50 + 10 = 120 ✅ BEST for narrow
+    // - Horizontal + tiny font: 10 + 25 + 10 - 15 = 30 ❌ BAD
+    // - Horizontal + truncation: 35 + 25 + 10 - 10 = 60 ❌ NOT GREAT
+    const totalScore = Math.max(0, Math.min(155, fontScore + spaceScore + naturalScore + penaltyScore));
+    
+    return {
+      fontSize,
+      truncated: needsTruncation,
+      truncationPercent,
+      displayedText,
+      lineCount,
+      allowWrapping,
+      readabilityScore: totalScore,
+      details: {
+        font: fontScore,
+        space: spaceScore,
+        natural: naturalScore,
+        penalty: penaltyScore
+      }
+    };
+  }
+
+  /**
+   * ITERATIVE OPTIMIZATION TEXT RENDERING DECISION v5
+   * Tests multiple strategies (full text + orientations, progressive truncation)
+   * Returns the best overall solution based on container dimensions
+   * 
+   * @param {number} angularWidth - Angle span in radians
+   * @param {number} radialHeight - Radial height in pixels
+   * @param {string} text - The actual text to render
+   * @param {number} middleRadius - Radius at center of segment for arc calculations
+   * @returns {string} 'vertical' or 'horizontal'
+   */
+  chooseTextOrientation(angularWidth, radialHeight, text, middleRadius) {
+    // Convert angular width to actual arc length in pixels
+    const arcLengthPx = middleRadius * angularWidth;
+    
+    const zoomFactor = this.zoomLevel / 100;
+    const effectiveDisplaySize = this.size * zoomFactor;
+    
+    // ZOOM-RESPONSIVE dimensions (what user actually sees)
+    const displayedArcLength = arcLengthPx * zoomFactor;
+    const displayedRadialHeight = radialHeight * zoomFactor;
+    const displayedAspectRatio = displayedArcLength / displayedRadialHeight;
+    
+    // ITERATIVE STRATEGY TESTING
+    // Test full text in both orientations, with and without line wrapping, then truncated versions
+    const strategies = [];
+    
+    const hasSpaces = text.includes(' ');
+    const wordCount = hasSpaces ? text.split(/\s+/).length : 1;
+    const textLength = text.length;
+    
+    // USER PREFERENCE: HORIZONTAL FIRST, VERTICAL AS FALLBACK
+    // "I prefer horizontal if there is space for that. multi line or not.
+    //  IF there is no space for horizontal, then we go with vertical."
+    
+    // Strategy 1: Full text, horizontal orientation (PREFERRED) - single-line
+    strategies.push({
+      text: text,
+      orientation: 'horizontal',
+      truncationLevel: 0,
+      allowWrapping: false,
+      description: 'Full horizontal single-line'
+    });
+    
+    // Strategy 2: Full text, horizontal multi-line (if multi-word)
+    // Note: Multi-line horizontal on arc is complex, evaluation will handle it
+    if (hasSpaces && wordCount >= 2) {
+      strategies.push({
+        text: text,
+        orientation: 'horizontal',
+        truncationLevel: 0,
+        allowWrapping: true,
+        description: 'Full horizontal multi-line'
+      });
+    }
+    
+    // Strategy 3: Full text, vertical multi-line (FALLBACK if horizontal doesn't fit)
+    if (hasSpaces && wordCount >= 2) {
+      strategies.push({
+        text: text,
+        orientation: 'vertical',
+        truncationLevel: 0,
+        allowWrapping: true,
+        description: 'Full vertical multi-line'
+      });
+    }
+    
+    // Strategy 4: Full text, vertical single-line (FALLBACK)
+    strategies.push({
+      text: text,
+      orientation: 'vertical',
+      truncationLevel: 0,
+      allowWrapping: false,
+      description: 'Full vertical single-line'
+    });
+    
+    // If text is long OR multi-word, test truncated versions as fallback
+    if (text.length > 8 || wordCount >= 3) {
+      // Try 90% length
+      const truncated90 = text.substring(0, Math.floor(text.length * 0.9)) + '…';
+      const has90Spaces = truncated90.includes(' ');
+      
+      // Horizontal first (PREFERRED)
+      strategies.push({
+        text: truncated90,
+        orientation: 'horizontal',
+        truncationLevel: 10,
+        allowWrapping: false,
+        description: '90% horizontal single-line'
+      });
+      
+      // Horizontal multi-line if has spaces
+      if (has90Spaces) {
+        strategies.push({
+          text: truncated90,
+          orientation: 'horizontal',
+          truncationLevel: 10,
+          allowWrapping: true,
+          description: '90% horizontal multi-line'
+        });
+      }
+      
+      // Vertical multi-line (FALLBACK)
+      if (has90Spaces) {
+        strategies.push({
+          text: truncated90,
+          orientation: 'vertical',
+          truncationLevel: 10,
+          allowWrapping: true,
+          description: '90% vertical multi-line'
+        });
+      }
+      
+      // Vertical single-line (FALLBACK)
+      strategies.push({
+        text: truncated90,
+        orientation: 'vertical',
+        truncationLevel: 10,
+        allowWrapping: false,
+        description: '90% vertical single-line'
+      });
+      
+      // Try 75% length for longer text
+      if (text.length > 12 || wordCount >= 4) {
+        const truncated75 = text.substring(0, Math.floor(text.length * 0.75)) + '…';
+        const has75Spaces = truncated75.includes(' ');
+        
+        // Horizontal first (PREFERRED)
+        strategies.push({
+          text: truncated75,
+          orientation: 'horizontal',
+          truncationLevel: 25,
+          allowWrapping: false,
+          description: '75% horizontal single-line'
+        });
+        
+        // Horizontal multi-line if has spaces
+        if (has75Spaces) {
+          strategies.push({
+            text: truncated75,
+            orientation: 'horizontal',
+            truncationLevel: 25,
+            allowWrapping: true,
+            description: '75% horizontal multi-line'
+          });
+        }
+        
+        // Vertical multi-line (FALLBACK)
+        if (has75Spaces) {
+          strategies.push({
+            text: truncated75,
+            orientation: 'vertical',
+            truncationLevel: 25,
+            allowWrapping: true,
+            description: '75% vertical multi-line'
+          });
+        }
+        
+        // Vertical single-line (FALLBACK)
+        strategies.push({
+          text: truncated75,
+          orientation: 'vertical',
+          truncationLevel: 25,
+          allowWrapping: false,
+          description: '75% vertical single-line'
+        });
+      }
+      
+      // Try 60% length only for very long text
+      if (text.length > 16) {
+        const truncated60 = text.substring(0, Math.floor(text.length * 0.6)) + '…';
+        const has60Spaces = truncated60.includes(' ');
+        
+        // Horizontal first (PREFERRED)
+        strategies.push({
+          text: truncated60,
+          orientation: 'horizontal',
+          truncationLevel: 40,
+          allowWrapping: false,
+          description: '60% horizontal single-line'
+        });
+        
+        // Horizontal multi-line if has spaces
+        if (has60Spaces) {
+          strategies.push({
+            text: truncated60,
+            orientation: 'horizontal',
+            truncationLevel: 40,
+            allowWrapping: true,
+            description: '60% horizontal multi-line'
+          });
+        }
+        
+        // Vertical multi-line (FALLBACK)
+        if (has60Spaces) {
+          strategies.push({
+            text: truncated60,
+            orientation: 'vertical',
+            truncationLevel: 40,
+            allowWrapping: true,
+            description: '60% vertical multi-line'
+          });
+        }
+        
+        // Vertical single-line (FALLBACK)
+        strategies.push({
+          text: truncated60,
+          orientation: 'vertical',
+          truncationLevel: 40,
+          allowWrapping: false,
+          description: '60% vertical single-line'
+        });
+      }
+    }
+    
+    // Calculate container geometry (used in debug logging)
+    const actualAspectRatio = arcLengthPx / radialHeight;
+    const isWideContainer = actualAspectRatio > 1.5;
+    const isNarrowContainer = actualAspectRatio < 0.8;
+    
+    // Evaluate all strategies with ZOOM-AWARE TRUNCATION PENALTIES
+    const evaluations = strategies.map(strategy => {
+      const evaluation = this.evaluateRenderingSolution(
+        strategy.text,
+        strategy.orientation,
+        arcLengthPx,
+        radialHeight,
+        middleRadius,
+        strategy.allowWrapping
+      );
+      
+      // ZOOM-AWARE TRUNCATION PENALTY
+      // Higher zoom = more space = much stronger penalty for truncation
+      let adjustedScore = evaluation.readabilityScore;
+      let zoomMultiplier = 0; // Initialize outside if block
+      
+      if (strategy.truncationLevel > 0) {
+        // AGGRESSIVE PENALTY - heavily discourage pre-truncation
+        // Base penalty: 5 points per 10% truncation (was 3)
+        let basePenalty = strategy.truncationLevel * 0.5;
+        
+        // ZOOM MULTIPLIER - dramatic increase at high zoom
+        if (zoomFactor >= 2.0) {
+          // 200% zoom: 4× penalty (we have 4× the space!)
+          zoomMultiplier = 4.0;
+        } else if (zoomFactor >= 1.75) {
+          // 175% zoom: 3.5× penalty
+          zoomMultiplier = 3.5;
+        } else if (zoomFactor >= 1.5) {
+          // 150% zoom: 3× penalty
+          zoomMultiplier = 3.0;
+        } else if (zoomFactor >= 1.25) {
+          // 125% zoom: 2.5× penalty
+          zoomMultiplier = 2.5;
+        } else if (zoomFactor >= 1.0) {
+          // 100% zoom: 2× penalty (much stricter)
+          zoomMultiplier = 2.0;
+        } else if (zoomFactor >= 0.75) {
+          // 75% zoom: 1.2× penalty (still prefer full text)
+          zoomMultiplier = 1.2;
+        } else {
+          // 50% zoom: 0.8× penalty (truncation more acceptable when cramped)
+          zoomMultiplier = 0.8;
+        }
+        
+        adjustedScore -= basePenalty * zoomMultiplier;
+      }
+      
+      return {
+        ...evaluation,
+        orientation: strategy.orientation,
+        originalScore: evaluation.readabilityScore,
+        adjustedScore: adjustedScore,
+        pretruncated: strategy.truncationLevel > 0,
+        truncationLevel: strategy.truncationLevel,
+        zoomPenaltyMultiplier: zoomMultiplier,
+        allowWrapping: strategy.allowWrapping,
+        lineCount: evaluation.lineCount,
+        description: strategy.description
+      };
+    });
+    
+    // Find best solution
+    let bestSolution = evaluations[0];
+    for (let i = 1; i < evaluations.length; i++) {
+      if (evaluations[i].adjustedScore > bestSolution.adjustedScore) {
+        bestSolution = evaluations[i];
+      }
+    }
+    
+    // DEBUG: Temporarily disabled
+    // Uncomment to see decision details for specific texts
+    /*
+    if (text.includes('Kampanj') || text.includes('Social')) {
+      console.log(`\n=== DECISION FOR: "${text}" (zoom: ${this.zoomLevel}%) ===`);
+      console.log(`Container: ${arcLengthPx.toFixed(1)}px × ${radialHeight.toFixed(1)}px, aspect: ${actualAspectRatio.toFixed(2)}`);
+      console.log(`Wide: ${isWideContainer}, Narrow: ${isNarrowContainer}`);
+      console.log('\nAll strategies:');
+      evaluations.forEach((e, i) => {
+        console.log(`${i+1}. ${e.description}`);
+        console.log(`   Font: ${e.fontSize.toFixed(1)}px, Lines: ${e.lineCount}, Truncated: ${e.truncated}`);
+        console.log(`   Scores: Font=${e.details.font.toFixed(1)}, Space=${e.details.space.toFixed(1)}, Natural=${e.details.natural.toFixed(1)}, Penalty=${e.details.penalty.toFixed(1)}`);
+        console.log(`   TOTAL: ${e.adjustedScore.toFixed(1)} ${e === bestSolution ? '← WINNER' : ''}`);
+      });
+      console.log(`\nChosen: ${bestSolution.orientation} (${bestSolution.description})`);
+    }
+    */
+    
+    // Store best solution for potential use in rendering
+    // (This allows renderer to know if it should use wrapping, pre-truncated text, etc.)
+    this._lastOrientationDecision = bestSolution;
+    
+    // EXTREME GEOMETRY OVERRIDE - Some cases have obvious answers
+    const isVeryTall = displayedAspectRatio < 0.35;
+    const isVeryWide = displayedAspectRatio > 5.0;
+    
+    if (isVeryTall && bestSolution.adjustedScore < 40) {
+      // Extremely tall + poor score: force vertical as only viable option
+      return 'vertical';
+    }
+    
+    if (isVeryWide && bestSolution.orientation === 'horizontal' && bestSolution.adjustedScore > 50) {
+      // Extremely wide + good horizontal solution: clear choice
       return 'horizontal';
     }
     
-    // 2. Wide radial height but narrow arc (<15°) - use vertical
-    //    Text fits better perpendicular
-    if (angularDegrees < 15 && radialHeight > this.size / 20) {
-      return 'vertical';
+    // QUALITY THRESHOLD CHECKING (adjusted for new scoring scale)
+    const MIN_ACCEPTABLE_SCORE = 40; // Slightly higher threshold
+    const GOOD_SCORE = 70; // Higher threshold for "good"
+    
+    // If best solution is actually good, use it confidently
+    if (bestSolution.adjustedScore >= GOOD_SCORE) {
+      return bestSolution.orientation;
     }
     
-    // 3. Medium segments (15-60°) - decide based on text length
-    //    Short text: horizontal looks better
-    //    Long text: vertical uses space more efficiently
-    if (angularDegrees >= 15 && angularDegrees <= 60) {
-      // If text is short relative to arc length, use horizontal
-      if (textLength < 15 || arcLengthRatio < 0.8) {
-        return 'horizontal';
+    // If best solution is acceptable but not great, do sanity checks
+    if (bestSolution.adjustedScore >= MIN_ACCEPTABLE_SCORE) {
+      // Check if there's a close runner-up with opposite orientation
+      const runnerUp = evaluations
+        .filter(e => e.orientation !== bestSolution.orientation)
+        .sort((a, b) => b.adjustedScore - a.adjustedScore)[0];
+      
+      // Zoom-aware closeness threshold
+      const closenessThreshold = zoomFactor >= 1.5 ? 10 : 8;
+      
+      if (runnerUp && Math.abs(runnerUp.adjustedScore - bestSolution.adjustedScore) < closenessThreshold) {
+        // Very close - apply tiebreaker heuristics
+        
+        // AT HIGH ZOOM: Strongly prefer non-truncated
+        if (zoomFactor >= 1.5) {
+          if (!bestSolution.pretruncated && runnerUp.pretruncated) {
+            return bestSolution.orientation;
+          }
+          if (bestSolution.pretruncated && !runnerUp.pretruncated) {
+            return runnerUp.orientation;
+          }
+          
+          // Also check natural truncation at high zoom
+          if (!bestSolution.truncated && runnerUp.truncated && runnerUp.truncationPercent > 5) {
+            return bestSolution.orientation;
+          }
+          if (bestSolution.truncated && !runnerUp.truncated) {
+            return runnerUp.orientation;
+          }
+        } else {
+          // Normal/low zoom: standard truncation preference
+          if (!bestSolution.pretruncated && runnerUp.pretruncated) {
+            return bestSolution.orientation;
+          }
+          if (bestSolution.pretruncated && !runnerUp.pretruncated) {
+            return runnerUp.orientation;
+          }
+        }
+        
+        // Prefer larger font if both similar quality
+        if (runnerUp.fontSize > bestSolution.fontSize * 1.2) {
+          return runnerUp.orientation;
+        }
+        
+        // Zoom-aware truncation preference
+        const truncDiffThreshold = zoomFactor >= 1.5 ? 10 : 15;
+        if (runnerUp.truncationPercent < bestSolution.truncationPercent - truncDiffThreshold) {
+          return runnerUp.orientation;
+        }
       }
-      // Long text in medium segment: use vertical
+      
+      // No close runner-up, use best solution
+      return bestSolution.orientation;
+    }
+    
+    // ALL SOLUTIONS POOR (< 35 points) - Choose lesser evil with container awareness
+    // At this point, container is too small for text - find best compromise
+    
+    // Group by orientation to find best of each type
+    const verticalBest = evaluations
+      .filter(e => e.orientation === 'vertical')
+      .sort((a, b) => b.adjustedScore - a.adjustedScore)[0];
+    
+    const horizontalBest = evaluations
+      .filter(e => e.orientation === 'horizontal')
+      .sort((a, b) => b.adjustedScore - a.adjustedScore)[0];
+    
+    // Compare best of each orientation
+    if (!verticalBest) return 'horizontal';
+    if (!horizontalBest) return 'vertical';
+    
+    const scoreDiff = horizontalBest.adjustedScore - verticalBest.adjustedScore;
+    
+    // Significant difference (>8 points) when both poor - choose clearly better one
+    if (scoreDiff > 8) return 'horizontal';
+    if (scoreDiff < -8) return 'vertical';
+    
+    // Very close when both poor - use container geometry
+    // Prioritize: 1) Larger font, 2) Less truncation, 3) Aspect ratio fit
+    
+    // 1. Font size priority
+    const fontDiff = horizontalBest.fontSize - verticalBest.fontSize;
+    const absoluteMinFont = Math.max(12, effectiveDisplaySize / 200);
+    
+    if (fontDiff > absoluteMinFont * 0.2) {
+      // Horizontal gives significantly larger font
+      return 'horizontal';
+    }
+    if (fontDiff < -absoluteMinFont * 0.2) {
+      // Vertical gives significantly larger font
       return 'vertical';
     }
     
-    // 4. Very narrow segments (<15°, small radial) - vertical with truncation
-    return 'vertical';
+    // 2. Truncation priority
+    const truncDiff = verticalBest.truncationPercent - horizontalBest.truncationPercent;
+    if (truncDiff > 20) return 'horizontal'; // Much less truncation
+    if (truncDiff < -20) return 'vertical';   // Much less truncation
+    
+    // 3. Aspect ratio fit - match orientation to container shape
+    if (displayedAspectRatio > 2.5) {
+      return 'horizontal'; // Wide container
+    } else if (displayedAspectRatio < 0.8) {
+      return 'vertical'; // Tall container
+    } else {
+      // Balanced container - use whichever has better score
+      return horizontalBest.adjustedScore >= verticalBest.adjustedScore ? 'horizontal' : 'vertical';
+    }
   }
 
   // Wrapper to adapt drawTextAlongArc to match setCircleSectionAktivitetTitle signature
@@ -1167,53 +2360,103 @@ class YearWheel {
     // Get text color with contrast
     const textColor = backgroundColor ? this.getContrastColor(backgroundColor) : "#FFFFFF";
     
-    // Use smaller font size for horizontal text (70% like vertical text does)
-    const adjustedFontSize = fontSize * 0.7;
+    // INTELLIGENT DISPLAY-AWARE FONT SIZING - match vertical logic
+    const zoomFactor = this.zoomLevel / 100;
+    const effectiveDisplaySize = this.size * zoomFactor;
     
-    // Measure text and truncate if needed to fit available arc length
+    // STRICTER MINIMUM - Match vertical text logic
+    const absoluteMinFont = Math.max(12, effectiveDisplaySize / 200);
+    const minDisplayFont = Math.max(14, effectiveDisplaySize / 180);
+    const maxDisplayFont = Math.min(50, effectiveDisplaySize / 45);
+    const reasonableMaxFont = Math.min(35, effectiveDisplaySize / 60);
+    
+    // TEXT CONTENT ANALYSIS
+    const textLength = text.length;
+    const hasSpaces = text.includes(' ');
+    
+    // Length penalty (more moderate)
+    let lengthPenalty = 1.0;
+    if (textLength > 15) lengthPenalty = 0.90;
+    else if (textLength > 10) lengthPenalty = 0.93;
+    else if (textLength > 6) lengthPenalty = 0.96;
+    
+    // CONTAINER PROPORTIONALITY (matching vertical text logic)
+    const arcLength = middleRadius * angleLength;
+    const radialWidth = width;
+    const segmentArea = radialWidth * arcLength;
+    const wheelArea = this.size * this.size;
+    const areaRatio = segmentArea / wheelArea;
+    
+    // Size penalty for large segments (more moderate)
+    let sizePenalty = 1.0;
+    if (areaRatio > 0.15) sizePenalty = 0.88;
+    else if (areaRatio > 0.10) sizePenalty = 0.92;
+    else if (areaRatio > 0.06) sizePenalty = 0.96;
+    
+    // Calculate available arc length
+    const availableArcLength = middleRadius * angleLength * 0.85;
+    
+    // Calculate font size to fit text in arc
+    let testFontSize = Math.min(
+      width * 0.45,
+      availableArcLength / text.length * 0.9,
+      reasonableMaxFont
+    );
+    
+    // Apply penalties
+    testFontSize = testFontSize * lengthPenalty * sizePenalty;
+    
+    // Enforce limits with stricter minimum
+    testFontSize = Math.max(testFontSize, minDisplayFont);
+    testFontSize = Math.min(testFontSize, maxDisplayFont);
+    
+    // If still below absolute minimum, use absolute minimum and truncate text instead
+    if (testFontSize < absoluteMinFont) {
+      testFontSize = absoluteMinFont;
+    }
+    
+    // Test if text fits at this size
     this.context.save();
-    this.context.font = `500 ${adjustedFontSize}px Arial, sans-serif`;
+    this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+    const textWidth = this.context.measureText(text).width;
+    this.context.restore();
     
-    // Calculate available arc length (use 88% for comfortable spacing)
-    const availableArcLength = middleRadius * angleLength * 0.88;
+    // TRUNCATION STRATEGY: Don't scale below readable size
     let displayText = text;
     
-    // Try to intelligently truncate at word boundaries if possible
-    if (this.context.measureText(displayText).width > availableArcLength) {
-      // First, try to fit whole words
-      const words = displayText.split(/\s+/);
-      let truncated = '';
-      let i = 0;
+    if (textWidth > availableArcLength) {
+      // Check if scaling would go below minimum
+      const scaleFactor = (availableArcLength / textWidth) * 0.95;
+      const scaledFont = testFontSize * scaleFactor;
       
-      while (i < words.length) {
-        const testText = truncated + (truncated ? ' ' : '') + words[i];
-        const testWidth = this.context.measureText(testText + '…').width;
-        
-        if (testWidth <= availableArcLength) {
-          truncated = testText;
-          i++;
-        } else {
-          break;
-        }
-      }
-      
-      // If we got at least one word, use it
-      if (truncated) {
-        displayText = truncated + '…';
+      if (scaledFont >= absoluteMinFont) {
+        // Scaling keeps us above minimum - safe to scale
+        testFontSize = scaledFont;
       } else {
-        // Fall back to character-by-character truncation
-        truncated = displayText;
-        while (truncated.length > 0 && this.context.measureText(truncated + '…').width > availableArcLength) {
-          truncated = truncated.slice(0, -1);
+        // Scaling would be too small - keep minimum font and truncate instead
+        testFontSize = absoluteMinFont;
+        this.context.save();
+        this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+        
+        // Truncate text to fit arc
+        let truncated = text;
+        let truncatedWidth = this.context.measureText(truncated + '…').width;
+        
+        while (truncatedWidth > availableArcLength && truncated.length > 1) {
+          truncated = truncated.substring(0, truncated.length - 1);
+          truncatedWidth = this.context.measureText(truncated + '…').width;
         }
-        displayText = truncated ? truncated + '…' : '';
+        
+        if (truncated.length < text.length) {
+          displayText = truncated + '…';
+        }
+        
+        this.context.restore();
       }
     }
     
-    this.context.restore();
-    
-    // Call the actual drawTextAlongArc with adapted parameters
-    this.drawTextAlongArc(displayText, middleRadius, startAngle, endAngle, adjustedFontSize, textColor);
+    // Draw the potentially truncated text with calculated font size
+    this.drawTextAlongArc(displayText, middleRadius, startAngle, endAngle, testFontSize, textColor);
   }
 
   // Draw text following the arc character by character with natural spacing
@@ -2364,7 +3607,8 @@ class YearWheel {
             
             // Decide text orientation based on activity dimensions
             const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));
-            const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name.length);
+            const middleRadius = itemStartRadius + itemWidth / 2;
+            const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name, middleRadius);
             
             // Choose appropriate text drawing function (use adapter for horizontal text)
             const textFunction = textOrientation === 'vertical' 
@@ -2586,7 +3830,8 @@ class YearWheel {
           
           // Decide text orientation based on activity dimensions
           const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));
-          const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name.length);
+          const middleRadius = itemStartRadius + itemWidth / 2;
+          const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name, middleRadius);
           
           // Choose appropriate text drawing function (use adapter for horizontal text)
           const textFunction = textOrientation === 'vertical' 
