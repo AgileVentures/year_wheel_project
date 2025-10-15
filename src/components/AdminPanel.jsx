@@ -260,8 +260,8 @@ export default function AdminPanel() {
             <div className="flex items-center gap-3">
               <Shield className="text-gray-900" size={32} />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{t('admin.title')}</h1>
-                <p className="text-sm text-gray-600 mt-1">{t('admin.subtitle')}</p>
+                <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+                <p className="text-sm text-gray-600 mt-1">{t('subtitle')}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -270,7 +270,7 @@ export default function AdminPanel() {
                 onClick={() => navigate('/dashboard')}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               >
-                {t('admin.backToDashboard')}
+                {t('backToDashboard')}
               </button>
             </div>
           </div>
@@ -290,7 +290,7 @@ export default function AdminPanel() {
               }`}
             >
               <Activity size={16} className="inline mr-2" />
-              {t('admin.overview')}
+              {t('overview')}
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -301,7 +301,7 @@ export default function AdminPanel() {
               }`}
             >
               <Users size={16} className="inline mr-2" />
-              {t('admin.users')}
+              {t('users')}
             </button>
             <button
               onClick={() => setActiveTab('activity')}
@@ -312,7 +312,7 @@ export default function AdminPanel() {
               }`}
             >
               <TrendingUp size={16} className="inline mr-2" />
-              {t('admin.activity')}
+              {t('activity')}
             </button>
           </div>
         </div>
@@ -331,11 +331,11 @@ export default function AdminPanel() {
                   <span className="text-xs text-gray-500">Total</span>
                 </div>
                 <div className="text-3xl font-bold text-gray-900">{stats?.users.total}</div>
-                <div className="text-sm text-gray-600 mt-1">{t('admin.totalUsers')}</div>
+                <div className="text-sm text-gray-600 mt-1">{t('totalUsers')}</div>
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>{t('admin.today')}: <strong className="text-gray-900">{stats?.users.today}</strong></span>
-                    <span>{t('admin.last7Days')}: <strong className="text-gray-900">{stats?.users.last7Days}</strong></span>
+                    <span>{t('today')}: <strong className="text-gray-900">{stats?.users.today}</strong></span>
+                    <span>{t('last7Days')}: <strong className="text-gray-900">{stats?.users.last7Days}</strong></span>
                   </div>
                 </div>
               </div>
@@ -344,14 +344,14 @@ export default function AdminPanel() {
               <div className="bg-white rounded-sm shadow-sm p-6 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <Circle className="text-green-600" size={24} />
-                  <span className="text-xs text-gray-500">{t('admin.created')}</span>
+                  <span className="text-xs text-gray-500">{t('created')}</span>
                 </div>
                 <div className="text-3xl font-bold text-gray-900">{stats?.wheels.total}</div>
-                <div className="text-sm text-gray-600 mt-1">{t('admin.totalWheels')}</div>
+                <div className="text-sm text-gray-600 mt-1">{t('totalWheels')}</div>
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>{t('admin.today')}: <strong className="text-gray-900">{stats?.wheels.today}</strong></span>
-                    <span>{t('admin.thisMonth')}: <strong className="text-gray-900">{stats?.wheels.thisMonth}</strong></span>
+                    <span>{t('today')}: <strong className="text-gray-900">{stats?.wheels.today}</strong></span>
+                    <span>{t('thisMonth')}: <strong className="text-gray-900">{stats?.wheels.thisMonth}</strong></span>
                   </div>
                 </div>
               </div>
@@ -360,14 +360,14 @@ export default function AdminPanel() {
               <div className="bg-white rounded-sm shadow-sm p-6 border border-gray-200 bg-gradient-to-br from-purple-50 to-white">
                 <div className="flex items-center justify-between mb-4">
                   <Crown className="text-purple-600" size={24} />
-                  <span className="text-xs text-gray-500">{t('admin.active')}</span>
+                  <span className="text-xs text-gray-500">{t('active')}</span>
                 </div>
                 <div className="text-3xl font-bold text-gray-900">{stats?.premium}</div>
-                <div className="text-sm text-gray-600 mt-1">{t('admin.premiumSubscribers')}</div>
+                <div className="text-sm text-gray-600 mt-1">{t('premiumSubscribers')}</div>
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>{t('admin.monthly')}: <strong className="text-gray-900">{subscriptionStats?.monthly || 0}</strong></span>
-                    <span>{t('admin.yearly')}: <strong className="text-gray-900">{subscriptionStats?.yearly || 0}</strong></span>
+                    <span>{t('monthly')}: <strong className="text-gray-900">{subscriptionStats?.monthly || 0}</strong></span>
+                    <span>{t('yearly')}: <strong className="text-gray-900">{subscriptionStats?.yearly || 0}</strong></span>
                   </div>
                 </div>
               </div>
@@ -376,14 +376,14 @@ export default function AdminPanel() {
               <div className="bg-white rounded-sm shadow-sm p-6 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <Globe className="text-teal-600" size={24} />
-                  <span className="text-xs text-gray-500">{t('admin.shared')}</span>
+                  <span className="text-xs text-gray-500">{t('shared')}</span>
                 </div>
                 <div className="text-3xl font-bold text-gray-900">{stats?.publicWheels}</div>
-                <div className="text-sm text-gray-600 mt-1">{t('admin.publicWheels')}</div>
+                <div className="text-sm text-gray-600 mt-1">{t('publicWheels')}</div>
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>{t('admin.templates')}: <strong className="text-gray-900">{stats?.templates}</strong></span>
-                    <span>{t('admin.teams')}: <strong className="text-gray-900">{stats?.teams}</strong></span>
+                    <span>{t('templates')}: <strong className="text-gray-900">{stats?.templates}</strong></span>
+                    <span>{t('teams')}: <strong className="text-gray-900">{stats?.teams}</strong></span>
                   </div>
                 </div>
               </div>
@@ -391,21 +391,21 @@ export default function AdminPanel() {
 
             {/* Growth Stats */}
             <div className="bg-white rounded-sm shadow-sm p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.monthOverview')}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('monthOverview')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <div className="text-2xl font-bold text-blue-600">{stats?.users.thisMonth}</div>
-                  <div className="text-sm text-gray-600">{t('admin.newUsers')}</div>
+                  <div className="text-sm text-gray-600">{t('newUsers')}</div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-green-600">{stats?.wheels.thisMonth}</div>
-                  <div className="text-sm text-gray-600">{t('admin.wheelsCreated')}</div>
+                  <div className="text-sm text-gray-600">{t('wheelsCreated')}</div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-purple-600">
                     {stats?.users.total > 0 ? ((stats?.premium / stats?.users.total) * 100).toFixed(1) : 0}%
                   </div>
-                  <div className="text-sm text-gray-600">{t('admin.conversionRate')}</div>
+                  <div className="text-sm text-gray-600">{t('conversionRate')}</div>
                 </div>
               </div>
             </div>
@@ -421,7 +421,7 @@ export default function AdminPanel() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
                     type="text"
-                    placeholder={t('admin.searchUsers')}
+                    placeholder={t('searchUsers')}
                     value={searchQuery}
                     onChange={handleSearch}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -431,7 +431,7 @@ export default function AdminPanel() {
                   onClick={loadData}
                   className="px-4 py-2 bg-gray-900 text-white rounded-sm hover:bg-gray-800 transition-colors"
                 >
-                  {t('admin.refresh')}
+                  {t('refresh')}
                 </button>
               </div>
             </div>
@@ -446,22 +446,22 @@ export default function AdminPanel() {
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('full_name')}
                       >
-                        {t('admin.user')}
+                        {t('user')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('admin.provider')}
+                        {t('provider')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('admin.plan')}
+                        {t('plan')}
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('created_at')}
                       >
-                        {t('admin.createdAt')}
+                        {t('createdAt')}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        {t('admin.lastSeen')}
+                        {t('lastSeen')}
                       </th>
                     </tr>
                   </thead>
