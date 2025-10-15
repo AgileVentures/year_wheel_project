@@ -2,6 +2,7 @@
 // Based on the original/legacy from kirkby's year-wheel project
 // See the YearWheelClassRedefined.js file for an attempt to make this more concise and readable
 import C2S from "canvas2svg";
+import { jsPDF } from "jspdf";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -2786,6 +2787,9 @@ class YearWheel {
         case "svg":
           this.downloadAsSVG();
           break;
+        case "pdf":
+          this.downloadAsPDF();
+          break;
         default:
           console.error("Unsupported format");
       }
@@ -2907,6 +2911,54 @@ class YearWheel {
     
     const fileName = this.generateFileName("svg");
     this.downloadFile(svgData, fileName, "image/svg+xml");
+  }
+
+  downloadAsPDF() {
+    // Create a high-quality canvas for PDF export
+    const pdfCanvas = this.copyCanvas(true); // White background for PDF
+    
+    // Calculate dimensions for PDF (A4 landscape or custom size based on wheel)
+    const imgWidth = this.canvas.width;
+    const imgHeight = this.canvas.height;
+    
+    // Create PDF with dimensions matching the canvas aspect ratio
+    // Use A4 landscape as base, or adjust based on canvas size
+    const pdfWidth = 297; // A4 landscape width in mm
+    const pdfHeight = 210; // A4 landscape height in mm
+    
+    // If the wheel is square or taller, use portrait or square format
+    const aspectRatio = imgWidth / imgHeight;
+    let finalWidth, finalHeight;
+    
+    if (aspectRatio > 1.2) {
+      // Landscape
+      finalWidth = pdfWidth;
+      finalHeight = pdfWidth / aspectRatio;
+    } else if (aspectRatio < 0.8) {
+      // Portrait
+      finalHeight = pdfWidth; // Use full width as height for portrait
+      finalWidth = finalHeight * aspectRatio;
+    } else {
+      // Square-ish, use square format
+      finalWidth = finalHeight = Math.min(pdfWidth, pdfHeight);
+    }
+    
+    // Create PDF document
+    const pdf = new jsPDF({
+      orientation: aspectRatio > 1 ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: [finalWidth, finalHeight]
+    });
+    
+    // Convert canvas to image data
+    const imgData = pdfCanvas.toDataURL('image/jpeg', 1.0);
+    
+    // Add image to PDF (fill the entire page)
+    pdf.addImage(imgData, 'JPEG', 0, 0, finalWidth, finalHeight);
+    
+    // Download the PDF
+    const fileName = this.generateFileName("pdf");
+    pdf.save(fileName);
   }
 
   copyCanvas(whiteBackground = false) {

@@ -77,6 +77,11 @@ export default defineConfig({
             return 'canvas';
           }
           
+          // PDF export library
+          if (id.includes('jspdf')) {
+            return 'pdf-export';
+          }
+          
           // Split large vendor modules
           if (id.includes('node_modules')) {
             return 'vendor';
@@ -121,8 +126,10 @@ export default defineConfig({
       'react-router-dom',
       'react-i18next',
       'i18next',
+      'jspdf',
     ],
-    exclude: ['@supabase/supabase-js'], // Don't pre-bundle large libraries
+    exclude: [], // Let Vite handle all dependencies
+    force: true, // Force re-optimization
   },
   // Enable advanced tree-shaking
   esbuild: {

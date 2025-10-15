@@ -210,7 +210,9 @@ function Header({
               title={t('common:header.selectImageFormat')}
             >
               <Image size={14} />
-              <span className="uppercase">{downloadFormat || 'PNG'}</span>
+              <span className="uppercase">
+                {downloadFormat === 'png-white' ? 'PNG' : (downloadFormat || 'PNG')}
+              </span>
               <ChevronDown size={14} />
             </button>
             
@@ -260,6 +262,16 @@ function Header({
                   >
                     <FileDown size={14} className="text-gray-500" />
                     {t('common:actions.export')} SVG
+                  </button>
+                  <button
+                    onClick={() => {
+                      onDownloadFormatChange && onDownloadFormatChange('pdf');
+                      setShowFormatDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                  >
+                    <FileDown size={14} className="text-gray-500" />
+                    {t('common:actions.export')} PDF
                   </button>
                 </div>
               </>
