@@ -36,7 +36,7 @@ import {
 import { checkIsAdmin } from '../services/wheelService';
 
 export default function AdminPanel() {
-  const { t } = useTranslation(['common']);
+  const { t } = useTranslation(['admin', 'common']);
   const navigate = useNavigate();
   const { user } = useAuth();
   
