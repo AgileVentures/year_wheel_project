@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { X, Check, Crown, Zap, Sparkles } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
 import { useTranslation } from 'react-i18next';
 import { createCheckoutSession } from '../../services/subscriptionService';
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
   const { t } = useTranslation(['subscription']);

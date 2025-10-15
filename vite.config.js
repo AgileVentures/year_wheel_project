@@ -52,9 +52,18 @@ export default defineConfig({
             return 'react-router';
           }
           
-          // Supabase
+          // Supabase - split into separate chunks
+          if (id.includes('node_modules/@supabase/supabase-js')) {
+            return 'supabase-client';
+          }
+          if (id.includes('node_modules/@supabase/postgrest-js')) {
+            return 'supabase-postgrest';
+          }
+          if (id.includes('node_modules/@supabase/realtime-js')) {
+            return 'supabase-realtime';
+          }
           if (id.includes('node_modules/@supabase')) {
-            return 'supabase';
+            return 'supabase-core';
           }
           
           // i18n libraries
@@ -67,23 +76,63 @@ export default defineConfig({
             return 'icons';
           }
           
+          // AI SDK (large library, split separately)
+          if (id.includes('node_modules/@ai-sdk') || id.includes('node_modules/ai/')) {
+            return 'ai-sdk';
+          }
+          
+          // Markdown rendering
+          if (id.includes('node_modules/react-markdown') || id.includes('node_modules/remark-')) {
+            return 'markdown';
+          }
+          
           // Date libraries (if any)
           if (id.includes('node_modules/date-fns') || id.includes('node_modules/dayjs')) {
             return 'date-utils';
           }
           
           // Canvas libraries
-          if (id.includes('canvas2svg') || id.includes('node_modules/canvas')) {
-            return 'canvas';
+          if (id.includes('canvas2svg')) {
+            return 'canvas-svg';
+          }
+          if (id.includes('node_modules/canvg')) {
+            return 'canvg';
           }
           
-          // PDF export library
-          if (id.includes('jspdf')) {
+          // PDF export library (lazy loaded, but split for when it's needed)
+          if (id.includes('jspdf') || id.includes('html2canvas')) {
             return 'pdf-export';
           }
           
-          // Split large vendor modules
+          // D3 library (if used)
+          if (id.includes('node_modules/d3')) {
+            return 'd3';
+          }
+          
+          // Utility libraries
+          if (id.includes('node_modules/immer') || id.includes('node_modules/fuse.js')) {
+            return 'utilities';
+          }
+          
+          // Driver.js (onboarding)
+          if (id.includes('node_modules/driver.js')) {
+            return 'onboarding';
+          }
+          
+          // Stripe (lazy loaded)
+          if (id.includes('node_modules/@stripe')) {
+            return 'stripe';
+          }
+          
+          // Remaining vendor modules - split by size
           if (id.includes('node_modules')) {
+            // Get package name
+            const match = id.match(/node_modules\/(@[^/]+\/[^/]+|[^/]+)\//);
+            if (match) {
+              const packageName = match[1];
+              // Group smaller packages together
+              return 'vendor-misc';
+            }
             return 'vendor';
           }
         },
@@ -126,10 +175,8 @@ export default defineConfig({
       'react-router-dom',
       'react-i18next',
       'i18next',
-      'jspdf',
     ],
-    exclude: [], // Let Vite handle all dependencies
-    force: true, // Force re-optimization
+    exclude: ['jspdf'], // Lazy loaded, don't pre-bundle
   },
   // Enable advanced tree-shaking
   esbuild: {

@@ -97,7 +97,7 @@ function LegalPage() {
         )}
 
         {!loading && !error && (
-          <article className="bg-white rounded-lg shadow-lg p-8 md:p-12">
+          <article className="bg-white rounded-sm shadow-lg p-8 md:p-12">
             <div className="prose prose-slate max-w-none
               prose-headings:font-bold prose-headings:text-gray-900
               prose-h1:text-3xl prose-h1:mb-8 prose-h1:mt-0 prose-h1:border-b-2 prose-h1:border-gray-200 prose-h1:pb-4

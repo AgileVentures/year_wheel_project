@@ -2,7 +2,6 @@
 // Based on the original/legacy from kirkby's year-wheel project
 // See the YearWheelClassRedefined.js file for an attempt to make this more concise and readable
 import C2S from "canvas2svg";
-import { jsPDF } from "jspdf";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -2913,7 +2912,10 @@ class YearWheel {
     this.downloadFile(svgData, fileName, "image/svg+xml");
   }
 
-  downloadAsPDF() {
+  async downloadAsPDF() {
+    // Dynamically import jsPDF only when PDF export is needed
+    const { jsPDF } = await import('jspdf');
+    
     // Create a high-quality canvas for PDF export
     const pdfCanvas = this.copyCanvas(true); // White background for PDF
     
