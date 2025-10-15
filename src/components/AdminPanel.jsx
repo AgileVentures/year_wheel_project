@@ -36,9 +36,18 @@ import {
 import { checkIsAdmin } from '../services/wheelService';
 
 export default function AdminPanel() {
-  const { t } = useTranslation(['admin', 'common']);
+  const { t, i18n } = useTranslation(['admin', 'common']);
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Debug: Check if admin namespace is loaded
+  useEffect(() => {
+    console.log('Admin namespace exists (sv):', i18n.hasResourceBundle('sv', 'admin'));
+    console.log('Admin namespace exists (en):', i18n.hasResourceBundle('en', 'admin'));
+    console.log('Current language:', i18n.language);
+    console.log('Loaded namespaces:', i18n.reportNamespaces?.getUsedNamespaces?.());
+    console.log('Test translation:', t('admin:title'), t('title'));
+  }, [i18n, t]);
   
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
