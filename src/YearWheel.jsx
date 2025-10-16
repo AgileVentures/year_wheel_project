@@ -296,17 +296,14 @@ function YearWheel({
       <div 
         ref={scrollContainerRef}
         className="flex-1 w-full overflow-auto bg-white"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
       >
         <div style={{ 
-          display: 'inline-block',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           minWidth: '100%',
           minHeight: '100%',
-          textAlign: 'center'
+          padding: zoomLevel > 100 ? '50%' : '0' // Add padding when zoomed to enable scrolling in all directions
         }}>
           <canvas
             ref={canvasRef}
@@ -314,59 +311,65 @@ function YearWheel({
               width: `${2000 * (zoomLevel / 100)}px`,
               height: `${2000 * (zoomLevel / 100)}px`,
               maxWidth: 'none',
-              aspectRatio: '1 / 1',
-              display: 'inline-block'
+              aspectRatio: '1 / 1'
             }}
             className="drop-shadow-2xl"
           />
         </div>
       </div>
       
-      {/* Navigation arrows - only show when zoomed in beyond fit */}
+      {/* Navigation cross - only show when zoomed in */}
       {zoomLevel > 100 && (
-        <div className="absolute top-4 right-4 flex flex-col gap-1 bg-white/90 backdrop-blur-sm rounded-sm shadow-lg p-1 border border-gray-200">
-          <button
-            onClick={panUp}
-            className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
-            title="Flytta upp"
-            aria-label="Pan up"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-            </svg>
-          </button>
-          <div className="flex gap-1">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="relative w-32 h-32 pointer-events-auto">
+            {/* Up arrow */}
             <button
-              onClick={panLeft}
-              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
-              title="Flytta vänster"
-              aria-label="Pan left"
+              onClick={panUp}
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
+              title="Flytta upp"
+              aria-label="Pan up"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
               </svg>
             </button>
+            
+            {/* Right arrow */}
             <button
               onClick={panRight}
-              className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
               title="Flytta höger"
               aria-label="Pan right"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            
+            {/* Down arrow */}
+            <button
+              onClick={panDown}
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
+              title="Flytta ner"
+              aria-label="Pan down"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* Left arrow */}
+            <button
+              onClick={panLeft}
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
+              title="Flytta vänster"
+              aria-label="Pan left"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           </div>
-          <button
-            onClick={panDown}
-            className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded transition-colors text-gray-700"
-            title="Flytta ner"
-            aria-label="Pan down"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
         </div>
       )}
       
