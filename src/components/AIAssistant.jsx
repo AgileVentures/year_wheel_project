@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, X, Send, Loader2 } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, Crown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 
-function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOpen, onToggle }) {
-  const { t } = useTranslation(['editor']);
+function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOpen, onToggle, isPremium = false }) {
+  const { t } = useTranslation(['editor', 'subscription']);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -443,26 +443,60 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 bg-white">
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t('editor:aiAssistant.placeholder')}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white"
-            disabled={isLoading}
-            data-onboarding="ai-input-field"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="bg-purple-600 text-white px-4 py-2 rounded-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-          >
-            {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-          </button>
+      {!isPremium ? (
+        <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-t border-amber-200">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+              <Crown size={20} className="text-white" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                {t('subscription:upgradePrompt.defaultTitle')}
+              </h4>
+              <p className="text-xs text-gray-700 mb-3">
+                {t('subscription:upgradePrompt.aiAssistant')}
+              </p>
+              <button
+                onClick={() => {
+                  // Navigate to pricing or show subscription modal
+                  window.location.href = '/pricing';
+                }}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all text-sm font-medium shadow-sm hover:shadow-md"
+              >
+                {t('subscription:upgrade')}
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-amber-200">
+            <input
+              value=""
+              placeholder={t('editor:aiAssistant.placeholder')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm bg-gray-100 cursor-not-allowed opacity-60"
+              disabled
+            />
+          </div>
         </div>
-        {/* <p className="text-xs text-gray-500 mt-2">💡 Tips: "skapa julkampanj 2025-12-15 till 2026-01-30"</p> */}
-      </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="p-4 bg-white">
+          <div className="flex gap-2">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t('editor:aiAssistant.placeholder')}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white"
+              disabled={isLoading}
+              data-onboarding="ai-input-field"
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="bg-purple-600 text-white px-4 py-2 rounded-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+            >
+              {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

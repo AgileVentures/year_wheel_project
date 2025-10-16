@@ -2017,6 +2017,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }}
           isOpen={isAIOpen}
           onToggle={() => setIsAIOpen(!isAIOpen)}
+          isPremium={isPremium}
         />
         </Suspense>
       )}
