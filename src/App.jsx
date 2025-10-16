@@ -1177,6 +1177,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       setPages(updatedPages);
       setShowAddPageModal(false);
       
+      // Switch to the new page to load data properly
+      setCurrentPageId(newPage.id);
+      setYear(String(nextYear));
+      
+      // Update organizationData with copied items (keep wheel-level structures)
+      setOrganizationData(prevData => ({
+        ...prevData,  // Keep rings, activityGroups, labels from wheel level
+        items: copiedItems  // Add copied items
+      }));
+      
       const event = new CustomEvent('showToast', {
         detail: { 
           message: `SmartCopy: ${copiedItems.length} aktiviteter kopierade till ${nextYear}!`, 
