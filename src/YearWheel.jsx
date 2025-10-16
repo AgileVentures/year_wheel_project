@@ -61,26 +61,59 @@ function YearWheel({
   ], [t, i18n.language]);
 
   const zoomIn = () => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    
+    // Get current scroll position as percentage of scrollable area
+    const scrollXPercent = container.scrollWidth > container.clientWidth
+      ? container.scrollLeft / (container.scrollWidth - container.clientWidth)
+      : 0.5;
+    const scrollYPercent = container.scrollHeight > container.clientHeight
+      ? container.scrollTop / (container.scrollHeight - container.clientHeight)
+      : 0.5;
+    
     setZoomLevel(prev => {
       const newZoom = Math.min(prev + 10, 200);
-      // Center scroll when zooming in past 100%
-      if (newZoom > 100 && prev <= 100) {
-        setTimeout(() => centerScroll(), 0);
-      }
+      
+      // After zoom change, restore scroll position
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          const c = scrollContainerRef.current;
+          c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
+          c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
+        }
+      }, 0);
+      
       return newZoom;
     });
   };
   
   const zoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 10, 50));
-  };
-  
-  const centerScroll = () => {
     if (!scrollContainerRef.current) return;
     const container = scrollContainerRef.current;
-    // Center the scroll position
-    container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
-    container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+    
+    // Get current scroll position as percentage of scrollable area
+    const scrollXPercent = container.scrollWidth > container.clientWidth
+      ? container.scrollLeft / (container.scrollWidth - container.clientWidth)
+      : 0.5;
+    const scrollYPercent = container.scrollHeight > container.clientHeight
+      ? container.scrollTop / (container.scrollHeight - container.clientHeight)
+      : 0.5;
+    
+    setZoomLevel(prev => {
+      const newZoom = Math.max(prev - 10, 50);
+      
+      // After zoom change, restore scroll position
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          const c = scrollContainerRef.current;
+          c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
+          c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
+        }
+      }, 0);
+      
+      return newZoom;
+    });
   };
   
   const fitToScreen = useCallback(() => {
@@ -414,7 +447,33 @@ function YearWheel({
               min="50"
               max="200"
               value={zoomLevel}
-              onChange={(e) => setZoomLevel(parseInt(e.target.value))}
+              onChange={(e) => {
+                if (!scrollContainerRef.current) {
+                  setZoomLevel(parseInt(e.target.value));
+                  return;
+                }
+                
+                const container = scrollContainerRef.current;
+                
+                // Get current scroll position as percentage
+                const scrollXPercent = container.scrollWidth > container.clientWidth
+                  ? container.scrollLeft / (container.scrollWidth - container.clientWidth)
+                  : 0.5;
+                const scrollYPercent = container.scrollHeight > container.clientHeight
+                  ? container.scrollTop / (container.scrollHeight - container.clientHeight)
+                  : 0.5;
+                
+                setZoomLevel(parseInt(e.target.value));
+                
+                // Restore scroll position after zoom
+                setTimeout(() => {
+                  if (scrollContainerRef.current) {
+                    const c = scrollContainerRef.current;
+                    c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
+                    c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
+                  }
+                }, 0);
+              }}
               className="w-32 h-2 bg-gray-200 rounded-sm appearance-none cursor-pointer"
               title={`${zoomLevel}%`}
             />
