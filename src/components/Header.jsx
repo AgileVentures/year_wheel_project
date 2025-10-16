@@ -392,13 +392,25 @@ function Header({
 
         {/* AI Assistant Toggle (only show for database wheels) */}
         {wheelId && onToggleAI && (
-          <button
-            onClick={onToggleAI}
-            className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-            title={t('common:header.aiAssistant')}
-          >
-            <Sparkles size={14} className="text-amber-500" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={onToggleAI}
+              disabled={!isPremium}
+              className={`p-2.5 rounded-sm transition-colors ${
+                isPremium 
+                  ? 'text-gray-700 hover:bg-gray-100' 
+                  : 'text-gray-400 cursor-not-allowed opacity-50'
+              }`}
+              title={isPremium ? t('common:header.aiAssistant') : `${t('common:header.aiAssistant')} - ${t('subscription:premium')}`}
+            >
+              <Sparkles size={14} className={isPremium ? "text-amber-500" : "text-gray-400"} />
+            </button>
+            {!isPremium && (
+              <span className="absolute -top-1 -right-1 px-1 py-0.5 text-[8px] font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-sm shadow-sm">
+                PRO
+              </span>
+            )}
+          </div>
         )}
 
         {/* Onboarding Help Menu - Hidden on small screens */}

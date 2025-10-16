@@ -1858,10 +1858,34 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onAddPage={handleAddPage}
         onDeletePage={handleDeletePage}
         // AI Assistant
-        onToggleAI={wheelId ? () => setIsAIOpen(!isAIOpen) : null}
+        onToggleAI={wheelId ? () => {
+          if (!isPremium) {
+            // Show upgrade prompt for non-premium users
+            const event = new CustomEvent('showToast', {
+              detail: { 
+                message: t('subscription:upgradePrompt.aiAssistant'), 
+                type: 'info' 
+              }
+            });
+            window.dispatchEvent(event);
+            return;
+          }
+          setIsAIOpen(!isAIOpen);
+        } : null}
         // Onboarding
         onStartOnboarding={() => setShowOnboarding(true)}
         onStartAIOnboarding={() => {
+          if (!isPremium) {
+            // Show upgrade prompt for non-premium users
+            const event = new CustomEvent('showToast', {
+              detail: { 
+                message: t('subscription:upgradePrompt.aiAssistant'), 
+                type: 'info' 
+              }
+            });
+            window.dispatchEvent(event);
+            return;
+          }
           // Ensure AI window is open before starting guide
           if (!isAIOpen) setIsAIOpen(true);
           // Small delay to let AI window render
