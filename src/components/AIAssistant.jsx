@@ -411,14 +411,16 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       >
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-sm p-3 ${
+            <div className={`max-w-[85%] rounded-lg p-3 shadow-sm ${
                 m.role === 'user' ? 'bg-blue-600 text-white' :
                 m.isError ? 'bg-red-50 text-red-800 border border-red-200' :
-                'bg-white text-gray-800 border border-gray-200'
+                'bg-white text-gray-900 border border-gray-200'
               }`}>
-              <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+              <div className={`text-sm leading-relaxed ${
+                m.role === 'user' ? 'text-white' : 'prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-800 prose-strong:text-gray-900 prose-code:text-gray-900'
+              }`}>
                 {m.role === 'user' ? (
-                  <div className="whitespace-pre-wrap">{m.content}</div>
+                  <div className="whitespace-pre-wrap text-white">{m.content}</div>
                 ) : (
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                 )}
