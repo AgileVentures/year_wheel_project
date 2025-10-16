@@ -2107,15 +2107,26 @@ class YearWheel {
     const wordCount = hasSpaces ? text.split(/\s+/).length : 1;
     const textLength = text.length;
     
-    // CORRECTED PRIORITY ORDER:
-    // NOTE: "Vertical" = perpendicular to arc (supports stacked multiline!)
-    //       "Horizontal" = follows the arc (curved text, NO multiline support)
-    // 1. VERTICAL multi-line (BEST - readable stacked text for multi-word phrases)
-    // 2. Vertical single-line (GOOD - clean perpendicular text)
-    // 3. Horizontal single-line (OK - follows arc, works for short text)
-    // 4. Horizontal curved long text (AVOID - hard to read when text wraps around arc)
+    // PRIORITY ORDER:
+    // NOTE: "Horizontal" = text follows arc (supports stacked multi-arc!)
+    //       "Vertical" = text perpendicular to arc (also supports multiline)
+    // 1. HORIZONTAL multi-line (BEST - readable stacked arcs for multi-word phrases)
+    // 2. Vertical multi-line (GOOD - readable stacked perpendicular text)
+    // 3. Horizontal single-line (OK - single curved arc)
+    // 4. Vertical single-line (OK - single perpendicular line)
     
-    // Strategy 1: Full text, VERTICAL multi-line (TOP PRIORITY for multi-word text!)
+    // Strategy 1: Full text, HORIZONTAL multi-line (TOP PRIORITY for multi-word text!)
+    if (hasSpaces) {
+      strategies.push({
+        text: text,
+        orientation: 'horizontal',
+        truncationLevel: 0,
+        allowWrapping: true,
+        description: 'Full horizontal multi-line'
+      });
+    }
+    
+    // Strategy 2: Full text, vertical multi-line (GOOD alternative)
     if (hasSpaces) {
       strategies.push({
         text: text,
@@ -2126,16 +2137,7 @@ class YearWheel {
       });
     }
     
-    // Strategy 2: Full text, vertical single-line (GOOD for any text)
-    strategies.push({
-      text: text,
-      orientation: 'vertical',
-      truncationLevel: 0,
-      allowWrapping: false,
-      description: 'Full vertical single-line'
-    });
-    
-    // Strategy 3: Full text, horizontal single-line (OK for short text)
+    // Strategy 3: Full text, horizontal single-line
     strategies.push({
       text: text,
       orientation: 'horizontal',
@@ -2144,8 +2146,14 @@ class YearWheel {
       description: 'Full horizontal single-line'
     });
     
-    // NOTE: Horizontal does NOT support multiline (text follows arc)
-    // So we skip "horizontal multi-line" strategies
+    // Strategy 4: Full text, vertical single-line
+    strategies.push({
+      text: text,
+      orientation: 'vertical',
+      truncationLevel: 0,
+      allowWrapping: false,
+      description: 'Full vertical single-line'
+    });
     
     // If text is long OR multi-word, test truncated versions as fallback
     if (text.length > 8 || wordCount >= 3) {
@@ -2153,7 +2161,18 @@ class YearWheel {
       const truncated90 = text.substring(0, Math.floor(text.length * 0.9)) + '…';
       const has90Spaces = truncated90.includes(' ');
       
-      // Vertical multi-line first (PREFERRED for multi-word)
+      // Horizontal multi-line first (PREFERRED)
+      if (has90Spaces) {
+        strategies.push({
+          text: truncated90,
+          orientation: 'horizontal',
+          truncationLevel: 10,
+          allowWrapping: true,
+          description: '90% horizontal multi-line'
+        });
+      }
+      
+      // Vertical multi-line
       if (has90Spaces) {
         strategies.push({
           text: truncated90,
@@ -2164,6 +2183,15 @@ class YearWheel {
         });
       }
       
+      // Horizontal single-line
+      strategies.push({
+        text: truncated90,
+        orientation: 'horizontal',
+        truncationLevel: 10,
+        allowWrapping: false,
+        description: '90% horizontal single-line'
+      });
+      
       // Vertical single-line
       strategies.push({
         text: truncated90,
@@ -2173,21 +2201,23 @@ class YearWheel {
         description: '90% vertical single-line'
       });
       
-      // Horizontal single-line (fallback)
-      strategies.push({
-        text: truncated90,
-        orientation: 'horizontal',
-        truncationLevel: 10,
-        allowWrapping: false,
-        description: '90% horizontal single-line'
-      });
-      
       // Try 75% length for longer text
       if (text.length > 12 || wordCount >= 4) {
         const truncated75 = text.substring(0, Math.floor(text.length * 0.75)) + '…';
         const has75Spaces = truncated75.includes(' ');
         
-        // Vertical multi-line first (PREFERRED)
+        // Horizontal multi-line first (PREFERRED)
+        if (has75Spaces) {
+          strategies.push({
+            text: truncated75,
+            orientation: 'horizontal',
+            truncationLevel: 25,
+            allowWrapping: true,
+            description: '75% horizontal multi-line'
+          });
+        }
+        
+        // Vertical multi-line
         if (has75Spaces) {
           strategies.push({
             text: truncated75,
@@ -2198,6 +2228,15 @@ class YearWheel {
           });
         }
         
+        // Horizontal single-line
+        strategies.push({
+          text: truncated75,
+          orientation: 'horizontal',
+          truncationLevel: 25,
+          allowWrapping: false,
+          description: '75% horizontal single-line'
+        });
+        
         // Vertical single-line
         strategies.push({
           text: truncated75,
@@ -2206,15 +2245,6 @@ class YearWheel {
           allowWrapping: false,
           description: '75% vertical single-line'
         });
-        
-        // Horizontal single-line (fallback)
-        strategies.push({
-          text: truncated75,
-          orientation: 'horizontal',
-          truncationLevel: 25,
-          allowWrapping: false,
-          description: '75% horizontal single-line'
-        });
       }
       
       // Try 60% length only for very long text
@@ -2222,7 +2252,18 @@ class YearWheel {
         const truncated60 = text.substring(0, Math.floor(text.length * 0.6)) + '…';
         const has60Spaces = truncated60.includes(' ');
         
-        // Vertical multi-line first (PREFERRED)
+        // Horizontal multi-line first (PREFERRED)
+        if (has60Spaces) {
+          strategies.push({
+            text: truncated60,
+            orientation: 'horizontal',
+            truncationLevel: 40,
+            allowWrapping: true,
+            description: '60% horizontal multi-line'
+          });
+        }
+        
+        // Vertical multi-line
         if (has60Spaces) {
           strategies.push({
             text: truncated60,
@@ -2233,6 +2274,15 @@ class YearWheel {
           });
         }
         
+        // Horizontal single-line
+        strategies.push({
+          text: truncated60,
+          orientation: 'horizontal',
+          truncationLevel: 40,
+          allowWrapping: false,
+          description: '60% horizontal single-line'
+        });
+        
         // Vertical single-line
         strategies.push({
           text: truncated60,
@@ -2240,15 +2290,6 @@ class YearWheel {
           truncationLevel: 40,
           allowWrapping: false,
           description: '60% vertical single-line'
-        });
-        
-        // Horizontal single-line (fallback)
-        strategies.push({
-          text: truncated60,
-          orientation: 'horizontal',
-          truncationLevel: 40,
-          allowWrapping: false,
-          description: '60% horizontal single-line'
         });
       }
     }
