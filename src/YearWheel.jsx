@@ -38,6 +38,7 @@ function YearWheel({
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [isWheelReady, setIsWheelReady] = useState(false); // Track if wheel is ready to show
   const [selectedItem, setSelectedItem] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
@@ -68,10 +69,7 @@ function YearWheel({
     
     const container = scrollContainerRef.current;
     
-    // Get current scroll position as percentage of scrollable area
-    const scrollXPercent = container.scrollWidth > container.clientWidth
-      ? container.scrollLeft / (container.scrollWidth - container.clientWidth)
-      : 0.5;
+    // Get current vertical scroll position as percentage of scrollable area
     const scrollYPercent = container.scrollHeight > container.clientHeight
       ? container.scrollTop / (container.scrollHeight - container.clientHeight)
       : 0.5;
@@ -79,11 +77,10 @@ function YearWheel({
     // Apply zoom change
     zoomChangeCallback();
     
-    // Restore scroll position after DOM updates
+    // Restore vertical scroll position after DOM updates (horizontal is auto-centered by flexbox)
     requestAnimationFrame(() => {
       if (scrollContainerRef.current) {
         const c = scrollContainerRef.current;
-        c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
         c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
       }
     });
@@ -117,12 +114,16 @@ function YearWheel({
     const optimalZoom = Math.min(widthZoom, heightZoom, 200);
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
     
-    // Reset pan offset when fitting to screen
+    // Center the vertical scroll position after zoom change
     setPanOffset({ x: 0, y: 0 });
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollLeft = 0;
-      scrollContainerRef.current.scrollTop = 0;
-    }
+    
+    // Center vertical scroll after zoom is applied (horizontal is auto-centered)
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        const container = scrollContainerRef.current;
+        container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+      }
+    }, 50);
   }, []);
   
   // Auto-fit on initial load
@@ -216,27 +217,36 @@ function YearWheel({
     }
   }, [zoomedMonth, zoomedQuarter]);
 
-  // Center scroll position on initial load and when container size changes
+  // Center vertical scroll position after wheel is created and layout is complete, then fade in
   useEffect(() => {
-    if (!scrollContainerRef.current) return;
+    if (!scrollContainerRef.current || !canvasRef.current || !yearWheel) return;
+    
+    // Start hidden
+    setIsWheelReady(false);
     
     const centerScrollPosition = () => {
       const container = scrollContainerRef.current;
       if (!container) return;
       
-      // Center the scroll
-      container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
-      container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+      // Center the vertical scroll only (horizontal is centered by flexbox)
+      const scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+      container.scrollTop = scrollTop;
     };
     
     // Center immediately
     centerScrollPosition();
     
-    // Also center after a brief delay to ensure layout is complete
-    const timer = setTimeout(centerScrollPosition, 50);
+    // Center again after delays to ensure it works
+    setTimeout(centerScrollPosition, 100);
+    setTimeout(centerScrollPosition, 200);
     
-    return () => clearTimeout(timer);
-  }, []);
+    // After everything is centered and settled, fade in
+    const readyTimer = setTimeout(() => {
+      setIsWheelReady(true);
+    }, 500);
+    
+    return () => clearTimeout(readyTimer);
+  }, [yearWheel]); // Re-center when wheel instance changes
   
   // Apply zoom to canvas display size (separate from wheel creation)
   // Base display size is 1000px at 100% zoom (50% of internal 2000px resolution)
@@ -355,20 +365,19 @@ function YearWheel({
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
       <div 
         ref={scrollContainerRef}
-        className="flex-1 w-full overflow-auto bg-white"
+        className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-white transition-opacity duration-500"
+        style={{ opacity: isWheelReady ? 1 : 0 }}
       >
         <div style={{ 
-          display: 'inline-block',
-          position: 'relative',
-          minWidth: '200%',
-          minHeight: '200%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: zoomLevel > 100 ? '200%' : '100%',
+          width: '100%',
+          paddingTop: zoomLevel > 100 ? '50%' : '0',
+          paddingBottom: zoomLevel > 100 ? '50%' : '0'
         }}>
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)'
-          }}>
             <canvas
               ref={canvasRef}
               style={{
@@ -379,7 +388,6 @@ function YearWheel({
               }}
               className="drop-shadow-2xl"
             />
-          </div>
         </div>
       </div>
       
