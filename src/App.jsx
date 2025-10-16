@@ -198,6 +198,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAIOnboarding, setShowAIOnboarding] = useState(false);
   
+  // Disable autosave when guides are running
+  useEffect(() => {
+    if (showOnboarding || showAIOnboarding) {
+      setAutoSaveEnabled(false);
+      console.log('[Onboarding] Auto-save disabled during guide');
+    } else {
+      setAutoSaveEnabled(true);
+      console.log('[Onboarding] Auto-save re-enabled');
+    }
+  }, [showOnboarding, showAIOnboarding]);
+  
   // Handler to enforce free user restrictions on export formats
   const handleDownloadFormatChange = (format) => {
     // Free users can only use 'png-white' and 'svg'
