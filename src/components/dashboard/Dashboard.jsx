@@ -176,8 +176,9 @@ function Dashboard({ onSelectWheel }) {
 }
 
 function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurrentView, invitationCount, onInvitationAccepted, refreshInvitations }) {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { t } = useTranslation(['dashboard', 'common', 'subscription']);
+  const { t } = useTranslation(['dashboard', 'common', 'subscription', 'auth']);
   const [wheels, setWheels] = useState([]);
   const [teamWheels, setTeamWheels] = useState([]);
   const [templateWheels, setTemplateWheels] = useState([]);
@@ -367,7 +368,16 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await signOut(() => {
+        // Show toast message
+        const event = new CustomEvent('showToast', {
+          detail: { message: t('auth:goodbyeMessage'), type: 'success' }
+        });
+        window.dispatchEvent(event);
+        
+        // Navigate to root path
+        navigate('/');
+      });
     } catch (err) {
       console.error('Error signing out:', err);
     }

@@ -690,7 +690,24 @@ function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 3 - Circular Overview */}
+            {/* Feature 3 - SmartCopy (PREMIUM) */}
+            <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#00A4A6] hover:shadow-xl transition-all relative overflow-hidden">
+              <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#1a3d1f] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
+                <Crown size={12} />
+                {t('landing:features.premium')}
+              </div>
+              <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
+                <Copy className="text-white" size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                {t('landing:features.smartCopy.title')}
+              </h3>
+              <p className="text-gray-600">
+                {t('landing:features.smartCopy.description')}
+              </p>
+            </div>
+
+            {/* Feature 4 - Circular Overview */}
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#36C2C6]/30 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
                 <TrendingUp className="text-white" size={24} />
@@ -703,7 +720,7 @@ function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 4 - Real-time Collaboration */}
+            {/* Feature 5 - Real-time Collaboration */}
             <div className="bg-gradient-to-br from-[#9FCB3E]/20 to-white p-8 rounded-sm border border-[#9FCB3E]/30 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-[#336B3E] rounded-sm flex items-center justify-center mb-6">
                 <Users className="text-white" size={24} />
@@ -716,7 +733,7 @@ function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 5 - Smart Rings */}
+            {/* Feature 6 - Smart Rings */}
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#2E9E97]/30 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-[#2E9E97] rounded-sm flex items-center justify-center mb-6">
                 <Zap className="text-white" size={24} />
@@ -729,7 +746,7 @@ function LandingPage() {
               </p>
             </div>
 
-            {/* Feature 6 - High Quality Export */}
+            {/* Feature 7 - High Quality Export */}
             <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#36C2C6]/30 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-[#36C2C6] rounded-sm flex items-center justify-center mb-6">
                 <Download className="text-white" size={24} />
@@ -805,7 +822,7 @@ function LandingPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-green-600 flex-shrink-0 mt-1" size={20} />
-                  <span className="text-gray-700">{t('subscription:plans.free.features.team')}</span>
+                  <span className="text-gray-700">{t('subscription:plans.free.features.teams')}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="text-green-600 flex-shrink-0 mt-1" size={20} />

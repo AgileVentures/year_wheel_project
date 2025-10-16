@@ -66,9 +66,11 @@ export function AuthProvider({ children }) {
   };
 
   // Sign out
-  const signOut = async () => {
+  const signOut = async (onSuccess) => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    // Call success callback if provided (for navigation and toast)
+    if (onSuccess) onSuccess();
   };
 
   const value = {

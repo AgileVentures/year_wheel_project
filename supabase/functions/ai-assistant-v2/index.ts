@@ -624,8 +624,7 @@ async function deleteLabel(supabase: any, wheelId: string, labelName: string) {
 }
 
 async function updateActivity(
-  supabase: any,
-  wheelId: string,
+  ctx: RunContext<WheelContext>,
   activityName: string,
   updates: {
     newName?: string
@@ -635,12 +634,13 @@ async function updateActivity(
     newActivityGroupId?: string
   }
 ) {
+  const { supabase, wheelId } = ctx.context
   console.log('[updateActivity] Searching for:', activityName)
 
   // Find items matching the name across ALL pages in this wheel
   const { data: items, error: findError } = await supabase
     .from('items')
-    .select('*, wheel_pages!inner(wheel_id)')
+    .select('*, wheel_pages!inner(wheel_id, year)')
     .eq('wheel_pages.wheel_id', wheelId)
     .ilike('name', `%${activityName}%`)
 
@@ -655,47 +655,8 @@ async function updateActivity(
 
   console.log('[updateActivity] Found items:', items.length)
 
-  // If updating dates, we need to handle cross-year activities
-  if (updates.newStartDate || updates.newEndDate) {
-    // Delete all existing items for this activity
-    const itemIds = items.map((i: any) => i.id)
-    const { error: deleteError } = await supabase
-      .from('items')
-      .delete()
-      .in('id', itemIds)
-
-    if (deleteError) throw deleteError
-
-    // Get the first item's data to preserve ring/group
-    const firstItem = items[0]
-    const newName = updates.newName || firstItem.name
-    const newStartDate = updates.newStartDate || firstItem.start_date
-    const newEndDate = updates.newEndDate || firstItem.end_date
-    const newRingId = updates.newRingId || firstItem.ring_id
-    const newActivityGroupId = updates.newActivityGroupId || firstItem.activity_id
-
-    // Create new activity with updated dates
-    // Need to create a temporary context for the createActivity call
-    const tempCtx: RunContext<WheelContext> = {
-      context: { supabase, wheelId, userId: '', currentYear: new Date().getFullYear(), currentPageId: '' }
-    } as RunContext<WheelContext>
-    
-    const result = await createActivity(tempCtx, {
-      name: newName,
-      startDate: newStartDate,
-      endDate: newEndDate,
-      ringId: newRingId,
-      activityGroupId: newActivityGroupId,
-      labelId: firstItem.label_id,
-    })
-
-    return {
-      success: true,
-      message: `Uppdaterade "${activityName}" till nya datum: ${newStartDate} - ${newEndDate}`,
-      itemsUpdated: result.itemsCreated,
-    }
-  } else {
-    // Simple update (name, ring, or group only)
+  // If only changing simple properties (name, ring, group) and NOT dates, do in-place update
+  if (!updates.newStartDate && !updates.newEndDate) {
     const updateData: any = {}
     if (updates.newName) updateData.name = updates.newName
     if (updates.newRingId) updateData.ring_id = updates.newRingId
@@ -709,11 +670,138 @@ async function updateActivity(
 
     if (updateError) throw updateError
 
+    let message = `Uppdaterade ${items.length} objekt för "${activityName}"`
+    if (updates.newName) message += ` → nytt namn: "${updates.newName}"`
+
     return {
       success: true,
       itemsUpdated: items.length,
-      message: `Uppdaterade ${items.length} objekt för "${activityName}"`
+      message
     }
+  }
+
+  // DATES ARE CHANGING - Need to recreate across potentially different years
+  const firstItem = items[0]
+  const oldStartDate = firstItem.start_date
+  const oldEndDate = firstItem.end_date
+  const newStartDate = updates.newStartDate || oldStartDate
+  const newEndDate = updates.newEndDate || oldEndDate
+  
+  const newStartYear = new Date(newStartDate).getFullYear()
+  const newEndYear = new Date(newEndDate).getFullYear()
+
+  // Get all existing rings and activity groups to preserve references
+  const finalRingId = updates.newRingId || firstItem.ring_id
+  const finalActivityGroupId = updates.newActivityGroupId || firstItem.activity_id
+  const finalLabelId = firstItem.label_id
+  const finalName = updates.newName || firstItem.name
+
+  // Fetch all pages for this wheel
+  const { data: pages, error: pagesError } = await supabase
+    .from('wheel_pages')
+    .select('*')
+    .eq('wheel_id', wheelId)
+    .order('year')
+
+  if (pagesError) throw pagesError
+
+  // Ensure all required pages exist
+  const allPages = pages || []
+  for (let year = newStartYear; year <= newEndYear; year++) {
+    const pageExists = allPages.find((p: { year: number }) => p.year === year)
+    if (!pageExists) {
+      const { data: newPage, error: pageError } = await supabase
+        .from('wheel_pages')
+        .insert({
+          wheel_id: wheelId,
+          year: year,
+          organization_data: { rings: [], activityGroups: [], labels: [], items: [] }
+        })
+        .select()
+        .single()
+      
+      if (pageError) {
+        throw new Error(`Kunde inte skapa sida för år ${year}: ${pageError.message}`)
+      }
+      allPages.push(newPage)
+    }
+  }
+
+  // Delete old items
+  const oldItemIds = items.map((i: any) => i.id)
+  const { error: deleteError } = await supabase
+    .from('items')
+    .delete()
+    .in('id', oldItemIds)
+
+  if (deleteError) throw deleteError
+
+  // Create new items across the new date range
+  const itemsCreated = []
+
+  if (newStartYear === newEndYear) {
+    // Single year activity
+    const page = allPages.find((p: { year: number }) => p.year === newStartYear)
+    if (!page) throw new Error(`Ingen sida hittades för år ${newStartYear}`)
+
+    const { data: newItem, error: insertError } = await supabase
+      .from('items')
+      .insert({
+        wheel_id: wheelId,
+        page_id: page.id,
+        ring_id: finalRingId,
+        activity_id: finalActivityGroupId,
+        label_id: finalLabelId,
+        name: finalName,
+        start_date: newStartDate,
+        end_date: newEndDate,
+      })
+      .select()
+      .single()
+
+    if (insertError) throw insertError
+    itemsCreated.push(newItem)
+  } else {
+    // Cross-year activity - split into segments
+    for (let year = newStartYear; year <= newEndYear; year++) {
+      const page = allPages.find((p: { year: number }) => p.year === year)
+      if (!page) throw new Error(`Ingen sida hittades för år ${year}`)
+
+      const segmentStart = year === newStartYear ? newStartDate : `${year}-01-01`
+      const segmentEnd = year === newEndYear ? newEndDate : `${year}-12-31`
+
+      const { data: newItem, error: insertError } = await supabase
+        .from('items')
+        .insert({
+          wheel_id: wheelId,
+          page_id: page.id,
+          ring_id: finalRingId,
+          activity_id: finalActivityGroupId,
+          label_id: finalLabelId,
+          name: finalName,
+          start_date: segmentStart,
+          end_date: segmentEnd,
+        })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+      itemsCreated.push(newItem)
+    }
+  }
+
+  let message = `Uppdaterade "${activityName}" (${oldStartDate} → ${newStartDate} till ${oldEndDate} → ${newEndDate})`
+  if (itemsCreated.length > 1) {
+    message += ` - nu spänner över ${itemsCreated.length} år`
+  }
+  if (updates.newName) {
+    message += ` - nytt namn: "${updates.newName}"`
+  }
+
+  return {
+    success: true,
+    itemsUpdated: itemsCreated.length,
+    message
   }
 }
 
@@ -988,11 +1076,10 @@ EXAMPLES:
 
   const updateActivityTool = tool<WheelContext>({
     name: 'update_activity',
-    description: 'Update an existing activity. Can change dates, name, ring, or activity group. Finds the activity by name.',
+    description: 'Update an existing activity. Can change dates, name, ring, or activity group. Supports moving activities across years and multi-year spans.',
     parameters: UpdateActivityInput,
     async execute(input: z.infer<typeof UpdateActivityInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await updateActivity(supabase, wheelId, input.activityName, {
+      const result = await updateActivity(ctx, input.activityName, {
         newName: input.newName || undefined,
         newStartDate: input.newStartDate || undefined,
         newEndDate: input.newEndDate || undefined,
@@ -1079,11 +1166,33 @@ CRITICAL RULES:
 - If no rings/groups exist, tell user to create structure first
 
 UPDATE/MOVE/CHANGE ACTIVITIES:
-When user says "flytta", "ändra", "uppdatera", "move":
-1. Call get_current_context to get current date (if needed for relative dates)
-2. Call update_activity with activityName and new values
-Example: User says "Flytta Oktoberfest till oktober 2026"
-→ Call update_activity with {activityName: "Oktoberfest", newStartDate: "2026-10-01", newEndDate: "2026-10-31"}
+When user says "flytta", "ändra", "uppdatera", "byt", "move", "change":
+✅ update_activity now FULLY SUPPORTS all date changes including:
+- Moving activities to different months (same year)
+- Moving activities to different years (cross-year)
+- Extending activities to span multiple years
+- All updates are seamless - old items are replaced with new segments
+
+Examples:
+✅ "Flytta Google kampanj till augusti" (same year)
+  → Call update_activity with {activityName: "Google", newStartDate: "2025-08-01", newEndDate: "2025-08-31"}
+
+✅ "Flytta Google till 2026" (cross-year move)
+  → Call update_activity with {activityName: "Google", newStartDate: "2026-01-01", newEndDate: "2026-12-31"}
+
+✅ "Gör så att kampanjen varar från november 2025 till mars 2026" (multi-year span)
+  → Call update_activity with {activityName: "kampanj", newStartDate: "2025-11-01", newEndDate: "2026-03-31"}
+
+✅ "Byt namn på Oktoberfest till Höstfest"
+  → Call update_activity with {activityName: "Oktoberfest", newName: "Höstfest"}
+
+✅ "Flytta kampanj till ringen Marknadsföring"
+  → First get_current_context to get ring ID, then update_activity with {activityName: "kampanj", newRingId: "..."}
+
+AUTOMATIC PAGE CREATION:
+- If moving activity to a year that doesn't have a page yet, the system auto-creates it
+- If extending activity to span years, all required pages are auto-created
+- User never needs to worry about page management
 
 DELETE ACTIVITIES:
 When user says "ta bort", "radera", "delete":

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { User, Mail, Key, ArrowLeft, Link as LinkIcon, Calendar, Sheet, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -11,8 +12,9 @@ import {
 } from '../services/integrationService';
 
 function ProfilePage({ onBack }) {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { t, i18n } = useTranslation(['common']);
+  const { t, i18n } = useTranslation(['common', 'auth']);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -130,7 +132,16 @@ function ProfilePage({ onBack }) {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await signOut(() => {
+        // Show toast message
+        const event = new CustomEvent('showToast', {
+          detail: { message: t('auth:goodbyeMessage'), type: 'success' }
+        });
+        window.dispatchEvent(event);
+        
+        // Navigate to root path
+        navigate('/');
+      });
     } catch (err) {
       console.error('Error signing out:', err);
     }

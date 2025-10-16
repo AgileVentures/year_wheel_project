@@ -56,6 +56,10 @@
       "title": "Google Integration",
       "description": "Synka aktiviteter direkt från Google Calendar och Google Sheets. Importera automatiskt och distribuera över flera år – allt uppdateras i realtid."
     },
+    "smartCopy": {
+      "title": "SmartCopy",
+      "description": "Kopiera hela årshjul eller enskilda sidor mellan år med ett klick. Perfekt för återkommande planering och mallar som utvecklas över tid."
+    },
     "circularOverview": {
       "title": "Cirkulär överblick",
       "description": "Se månader, veckor och dagar i ett intuitivt hjul. Upptäck säsongstoppar och resurstoppar som lätt försvinner i traditionella kalendrar."

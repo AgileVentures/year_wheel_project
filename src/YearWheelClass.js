@@ -1604,13 +1604,6 @@ class YearWheel {
         const words = text.split(/\s+/);
         const wordCount = words.length;
         
-        // Debug logging disabled for production
-        // const debugThisText = text.includes('Roadbar') || text.includes('sport');
-        // if (debugThisText) {
-        //   console.log(`\n🎯 STARTING horizontal multi-line evaluation for: "${text}"`);
-        //   console.log(`   Text length: ${text.length}, Words: ${wordCount}, Words array:`, words);
-        // }
-        
         // DECISION: Text has spaces, so we WANT multi-line rendering
         // Determine target lines based on word count and container geometry
         const aspectRatio = availableArcLength / maxRadialHeight;
@@ -1683,16 +1676,6 @@ class YearWheel {
           wrapThreshold = 0.70;
         }
         
-        // Debug logging disabled for production
-        // if (debugThisText) {
-        //   console.log(`\n🔍 BINARY SEARCH for "${text}" (length: ${text.length}):`);
-        //   console.log(`   Words: [${words.join(', ')}]`);
-        //   console.log(`   Target lines: ${targetLines}, Wrap threshold: ${wrapThreshold}`);
-        //   console.log(`   Available: ${availableArcLength.toFixed(1)}px × ${maxRadialHeight.toFixed(1)}px`);
-        //   console.log(`   Wrap width: ${(availableArcLength * wrapThreshold).toFixed(1)}px`);
-        //   console.log(`   Font range: ${minFontSize.toFixed(1)}px - ${maxFontSize.toFixed(1)}px`);
-        // }
-        
         for (let iteration = 0; iteration < 10; iteration++) {
           const testFontSize = (minFontSize + maxFontSize) / 2;
           
@@ -1727,18 +1710,11 @@ class YearWheel {
           const maxLineWidth = Math.max(...testLines.map(line => this.context.measureText(line).width));
           const fitsHorizontally = maxLineWidth <= availableArcLength * 0.98; // 98% to add small margin
           
-          // Debug logging disabled for production
-          // if (debugThisText) {
-          //   console.log(`   Iteration ${iteration}: Font ${testFontSize.toFixed(1)}px → ${testLineCount} lines (${testLines.join(' | ')})`);
-          //   console.log(`      Max line width: ${maxLineWidth.toFixed(1)}px, Fits: V=${fitsVertically}, H=${fitsHorizontally}`);
-          // }
-          
           // Check if this achieves our target AND fits the container
           if (testLineCount >= targetLines && fitsVertically && fitsHorizontally) {
             // Good! Multi-line wrapping that fits container
             bestFontSize = testFontSize;
             bestLineCount = testLineCount;
-            // if (debugThisText) console.log(`      ✓ ACCEPTED (${testLineCount} >= ${targetLines}), trying larger...`);
             minFontSize = testFontSize; // Try even larger
           } else if (testLineCount < targetLines && fitsVertically) {
             // Not enough lines - need tighter wrapping, try smaller font or accept 1 line
@@ -1747,23 +1723,14 @@ class YearWheel {
               // At minimum font, accept this as best we can do
               bestFontSize = testFontSize;
               bestLineCount = testLineCount;
-              // if (debugThisText) console.log(`      ⚠ At minimum font, accepting ${testLineCount} line(s)`);
               break;
             }
-            // if (debugThisText) console.log(`      ✗ Too few lines (${testLineCount} < ${targetLines}), trying smaller font...`);
             maxFontSize = testFontSize; // Try smaller to increase relative text width
           } else {
             // Doesn't fit (too many lines, lines too wide, or too tall)
-            // if (debugThisText) console.log(`      ✗ Doesn't fit, trying smaller...`);
             maxFontSize = testFontSize; // Try smaller
           }
         }
-        
-        // Debug logging disabled for production
-        // if (debugThisText) {
-        //   console.log(`   RESULT: Font ${bestFontSize.toFixed(1)}px, ${bestLineCount} lines\n`);
-        // }
-        
         // Use the font size found by binary search - it's already optimal for THIS container!
         // Don't apply generic penalties that ignore container geometry
         fontSize = bestFontSize;
@@ -1817,12 +1784,6 @@ class YearWheel {
           
           // Only reject if overflow is VERY significant (was 5%, now 15%)
           if (truncationPercent > 15) {
-            // Debug logging silenced for production
-            // if (debugThisText) {
-            //   console.log(`  ❌ REJECTED: ${!fitsHorizontally ? 'Horizontal' : 'Vertical'} overflow ${truncationPercent.toFixed(1)}%`);
-            //   console.log(`     Max line width: ${maxLineWidth.toFixed(1)}px, Available: ${(availableArcLength * 0.98).toFixed(1)}px`);
-            //   console.log(`     Total height: ${totalRadialHeight.toFixed(1)}px, Max: ${maxRadialHeight.toFixed(1)}px`);
-            // }
           }
         } else {
           needsTruncation = false;
@@ -2134,10 +2095,6 @@ class YearWheel {
     if (truncationPercent > 5) {
       // Logarithmic penalty that grows with overflow severity
       overflowPenalty = 80 + Math.min(60, truncationPercent * 2); // 80-140 point penalty
-      // Debug logging silenced for production
-      // if (debugThisText) {
-      //   console.log(`  💥 OVERFLOW PENALTY: -${overflowPenalty.toFixed(1)} points for ${truncationPercent.toFixed(1)}% overflow`);
-      // }
     }
     
     const totalScore = Math.max(0, Math.min(190, fontScore + spaceScore + naturalScore + penaltyScore - overflowPenalty));
@@ -2469,34 +2426,7 @@ class YearWheel {
       
       if (alternatives.length > 0) {
         const originalWinner = bestSolution;
-        bestSolution = alternatives[0];
-        
-        // Debug logging silenced for production
-        // if (text.includes('Kampanj') || text.includes('planering') || text.includes('Q1')) {
-        //   console.log(`\n⚠️ OVERFLOW REJECTION: "${originalWinner.description}" rejected (${originalWinner.truncationPercent.toFixed(1)}% overflow)`);
-        //   console.log(`   Switching to: "${bestSolution.description}" (${bestSolution.truncationPercent.toFixed(1)}% overflow)`);
-        // }
-      }
-    }
-    
-    // DEBUG: Enable to see decision details for specific texts
-    // Uncomment the block below to debug text rendering decisions
-    const debugText = text.includes('Roadbarfotasko + sport') || text.includes('sport') || text.includes('Erbjudande') || text.includes('Fördjup');
-    if (debugText) {
-      console.log(`\n=== DECISION FOR: "${text}" (zoom: ${this.zoomLevel}%) ===`);
-      console.log(`Canvas dimensions: ${arcLengthPx.toFixed(1)}px × ${radialHeight.toFixed(1)}px`);
-      console.log(`Normalized (geometry): ${normalizedArcLength.toFixed(1)}px × ${normalizedRadialHeight.toFixed(1)}px`);
-      console.log(`Aspect ratio: ${aspectRatio.toFixed(2)} - Wide: ${isWideContainer}, Narrow: ${isNarrowContainer}`);
-      console.log('\nTop 5 strategies:');
-      evaluations.slice(0, 5).forEach((e, i) => {
-        console.log(`${i+1}. ${e.description}`);
-        console.log(`   Font: ${e.fontSize.toFixed(1)}px, Lines: ${e.lineCount}, Wrapping: ${e.allowWrapping}`);
-        console.log(`   Truncated: ${e.truncated} (${e.truncationPercent.toFixed(1)}%)`);
-        console.log(`   Scores: Font=${e.details.font.toFixed(1)}, Space=${e.details.space.toFixed(1)}, Natural=${e.details.natural.toFixed(1)}, Penalty=${e.details.penalty.toFixed(1)}`);
-        console.log(`   ORIGINAL: ${e.originalScore.toFixed(1)}, ADJUSTED: ${e.adjustedScore.toFixed(1)} ${e === bestSolution ? '← WINNER' : ''}`);
-      });
-      console.log(`\nChosen: ${bestSolution.orientation} (${bestSolution.description})`);
-      console.log(`Will render: ${bestSolution.lineCount} line(s), Font: ${bestSolution.fontSize.toFixed(1)}px`);
+        bestSolution = alternatives[0];      }
     }
     
     // Store best solution for potential use in rendering
@@ -2509,13 +2439,11 @@ class YearWheel {
     
     if (isVeryTall && bestSolution.adjustedScore < 40) {
       // Extremely tall + poor score: force vertical as only viable option
-      // console.log('   OVERRIDE: Forcing vertical for very tall container');
       return 'vertical';
     }
     
     if (isVeryWide && bestSolution.orientation === 'horizontal' && bestSolution.adjustedScore > 50) {
       // Extremely wide + good horizontal solution: clear choice
-      // console.log('   OVERRIDE: Forcing horizontal for very wide container');
       return 'horizontal';
     }
     
@@ -2757,14 +2685,7 @@ class YearWheel {
     // MULTI-LINE RENDERING SUPPORT FOR HORIZONTAL TEXT
     // If renderDecision indicates multi-line, render stacked arcs
     if (renderDecision && renderDecision.allowWrapping && renderDecision.lineCount > 1) {
-      // Debug logging disabled for production
-      // if (text.includes('Roadbar') || text.includes('sport') || text.includes('Erbjudande') || text.includes('Fördjup')) {
-      //   console.log(`🎨 RENDERING "${text}" as MULTI-LINE:`);
-      //   console.log(`   renderDecision:`, renderDecision);
-      //   console.log(`   fontSize: ${renderDecision.fontSize}px`);
-      //   console.log(`   lineCount: ${renderDecision.lineCount}`);
-      //   console.log(`   availableArcLength: ${availableArcLength.toFixed(1)}px`);
-      // }
+  
       
       // Use pre-calculated decision for multi-line stacked arcs
       const words = text.split(/\s+/);
@@ -2809,12 +2730,6 @@ class YearWheel {
       }
       if (currentLine) lines.push(currentLine);
       this.context.restore();
-      
-      // Debug logging disabled for production
-      // if (text.includes('Roadbar') || text.includes('sport') || text.includes('Erbjudande') || text.includes('Fördjup')) {
-      //   console.log(`   Aspect ratio: ${aspectRatio.toFixed(2)}, wrapThreshold: ${wrapThreshold}, wrapWidth: ${wrapWidth.toFixed(1)}px`);
-      //   console.log(`   Wrapped into ${lines.length} lines:`, lines);
-      // }
       
       // Render each line on its own arc, stacked radially
       // Lines read OUTWARD (outer = first line, inner = last line)

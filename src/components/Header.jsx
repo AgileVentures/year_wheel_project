@@ -48,9 +48,11 @@ function Header({
   onToggleAI,
   // Onboarding props
   onStartOnboarding,
-  onStartAIOnboarding
+  onStartAIOnboarding,
+  // Premium status
+  isPremium = false
 }) {
-  const { t } = useTranslation(['common']);
+  const { t } = useTranslation(['common', 'subscription']);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -228,10 +230,20 @@ function Header({
                       onDownloadFormatChange && onDownloadFormatChange('png');
                       setShowFormatDropdown(false);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                    disabled={!isPremium}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
+                      !isPremium 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                        : 'hover:bg-gray-50'
+                    }`}
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    {t('common:header.pngTransparent')}
+                    <span className="flex-1">{t('common:header.pngTransparent')}</span>
+                    {!isPremium && (
+                      <span className="text-xs text-amber-600 font-medium">
+                        {t('subscription:premium')}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => {
@@ -248,10 +260,20 @@ function Header({
                       onDownloadFormatChange && onDownloadFormatChange('jpeg');
                       setShowFormatDropdown(false);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                    disabled={!isPremium}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
+                      !isPremium 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                        : 'hover:bg-gray-50'
+                    }`}
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    {t('common:actions.export')} JPEG
+                    <span className="flex-1">JPEG</span>
+                    {!isPremium && (
+                      <span className="text-xs text-amber-600 font-medium">
+                        {t('subscription:premium')}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => {
@@ -261,17 +283,27 @@ function Header({
                     className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    {t('common:actions.export')} SVG
+                    SVG
                   </button>
                   <button
                     onClick={() => {
                       onDownloadFormatChange && onDownloadFormatChange('pdf');
                       setShowFormatDropdown(false);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                    disabled={!isPremium}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
+                      !isPremium 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                        : 'hover:bg-gray-50'
+                    }`}
                   >
                     <FileDown size={14} className="text-gray-500" />
-                    {t('common:actions.export')} PDF
+                    <span className="flex-1">PDF</span>
+                    {!isPremium && (
+                      <span className="text-xs text-amber-600 font-medium">
+                        {t('subscription:premium')}
+                      </span>
+                    )}
                   </button>
                 </div>
               </>

@@ -176,7 +176,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showRingNames, setShowRingNames] = useState(true);
   const [showLabels, setShowLabels] = useState(false); // Default to false - labels shown on hover
   const [weekRingDisplayMode, setWeekRingDisplayMode] = useState('week-numbers'); // 'week-numbers' or 'dates'
-  const [downloadFormat, setDownloadFormat] = useState("png");
+  const [downloadFormat, setDownloadFormat] = useState(isPremium ? "png" : "png-white");
   const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
@@ -198,6 +198,27 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAIOnboarding, setShowAIOnboarding] = useState(false);
   
+  // Handler to enforce free user restrictions on export formats
+  const handleDownloadFormatChange = (format) => {
+    // Free users can only use 'png-white' and 'svg'
+    const allowedFormatsForFree = ['png-white', 'svg'];
+    const premiumFormats = ['png', 'jpeg', 'pdf'];
+    
+    if (!isPremium && premiumFormats.includes(format)) {
+      // Show toast to inform user
+      const event = new CustomEvent('showToast', {
+        detail: { 
+          message: t('subscription:upgradePrompt.defaultTitle'), 
+          type: 'info' 
+        }
+      });
+      window.dispatchEvent(event);
+      return; // Don't change the format
+    }
+    
+    setDownloadFormat(format);
+  };
+  
   // Track if we're currently loading data to prevent auto-save during load
   const isLoadingData = useRef(false);
   // Track if this is the initial load to prevent auto-save on mount
@@ -217,7 +238,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     try {
       const wheelData = await fetchWheel(wheelId);
-      console.log('📊 [App] Fetched wheel data (wheel-level only, no items)');
       
       if (wheelData) {
         setIsPublic(wheelData.is_public || false);
@@ -243,7 +263,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           
           // Fetch items for this specific page only
           const pageItems = await fetchPageData(pageToLoad.id);
-          console.log('📊 [App] Fetched page items:', pageItems?.length || 0);
           
           // Fetch rings, activity groups, and labels from database tables
           // CRITICAL: Use wheel_id - rings are SHARED across all pages!
@@ -263,10 +282,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             .select('*')
             .eq('wheel_id', wheelId);
           
-          console.log('📊 [App] Fetched from DB - Rings:', dbRings?.length, 'Groups:', dbActivityGroups?.length, 'Labels:', dbLabels?.length);
-          console.log('📊 [App] DB Rings:', dbRings);
-          console.log('📊 [App] DB Activity Groups:', dbActivityGroups);
-          console.log('📊 [App] Page Items:', pageItems);
           
           if (pageToLoad.organization_data) {
             const orgData = pageToLoad.organization_data;
@@ -313,11 +328,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               })),
               ...jsonbLabels.filter(l => !l.id.match(/^[0-9a-f-]{36}$/i)) // Keep client IDs like "label-123"
             ];
-            
-            console.log('📊 [App] Final orgData.rings:', orgData.rings);
-            console.log('📊 [App] Final orgData.activityGroups:', orgData.activityGroups);
-            console.log('📊 [App] Final orgData.items:', orgData.items);
-            
+                        
             // Backward compatibility: convert old 'activities' to 'activityGroups'
             if (orgData.activities && !orgData.activityGroups) {
               orgData.activityGroups = orgData.activities;
@@ -650,6 +661,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     };
     checkAdmin();
   }, []);
+
+  // Reset download format to free option if user loses premium access
+  useEffect(() => {
+    const premiumFormats = ['png', 'jpeg', 'pdf'];
+    if (!isPremium && premiumFormats.includes(downloadFormat)) {
+      setDownloadFormat('png-white'); // Reset to free option
+    }
+  }, [isPremium, downloadFormat]);
 
   // Initial load on mount AND reload when reloadTrigger changes
   useEffect(() => {
@@ -1803,7 +1822,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onYearChange={setYear}
         onDownloadImage={(toClipboard = false) => yearWheelRef && yearWheelRef.downloadImage(downloadFormat, toClipboard)}
         downloadFormat={downloadFormat}
-        onDownloadFormatChange={setDownloadFormat}
+        onDownloadFormatChange={handleDownloadFormatChange}
         activeUsers={activeUsers}
         isPublic={isPublic}
         isTemplate={isTemplate}
@@ -1820,6 +1839,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         redoLabel={redoLabel}
         undoToSave={undoToSave}
         unsavedChangesCount={unsavedChangesCount}
+        isPremium={isPremium}
         // Page navigation props
         pages={pages}
         currentPageId={currentPageId}

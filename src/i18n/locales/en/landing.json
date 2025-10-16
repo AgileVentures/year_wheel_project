@@ -56,6 +56,10 @@
       "title": "Google Integration",
       "description": "Sync activities directly from Google Calendar and Google Sheets. Import automatically and distribute across multiple years – everything updates in real-time."
     },
+    "smartCopy": {
+      "title": "SmartCopy",
+      "description": "Copy entire year wheels or individual pages between years with one click. Perfect for recurring planning and templates that evolve over time."
+    },
     "circularOverview": {
       "title": "Circular Overview",
       "description": "See months, weeks, and days in an intuitive wheel. Discover seasonal peaks and resource spikes that easily disappear in traditional calendars."
