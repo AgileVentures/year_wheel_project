@@ -60,8 +60,28 @@ function YearWheel({
     t('common:monthsFull.december')
   ], [t, i18n.language]);
 
-  const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
-  const zoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 50));
+  const zoomIn = () => {
+    setZoomLevel(prev => {
+      const newZoom = Math.min(prev + 10, 200);
+      // Center scroll when zooming in past 100%
+      if (newZoom > 100 && prev <= 100) {
+        setTimeout(() => centerScroll(), 0);
+      }
+      return newZoom;
+    });
+  };
+  
+  const zoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 10, 50));
+  };
+  
+  const centerScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    // Center the scroll position
+    container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+    container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+  };
   
   const fitToScreen = useCallback(() => {
     if (!containerRef.current) return;
@@ -298,38 +318,43 @@ function YearWheel({
         className="flex-1 w-full overflow-auto bg-white"
       >
         <div style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minWidth: '100%',
-          minHeight: '100%',
-          padding: zoomLevel > 100 ? '50%' : '0' // Add padding when zoomed to enable scrolling in all directions
+          display: 'inline-block',
+          position: 'relative',
+          minWidth: zoomLevel > 100 ? '200%' : '100%',
+          minHeight: zoomLevel > 100 ? '200%' : '100%',
         }}>
-          <canvas
-            ref={canvasRef}
-            style={{
-              width: `${2000 * (zoomLevel / 100)}px`,
-              height: `${2000 * (zoomLevel / 100)}px`,
-              maxWidth: 'none',
-              aspectRatio: '1 / 1'
-            }}
-            className="drop-shadow-2xl"
-          />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}>
+            <canvas
+              ref={canvasRef}
+              style={{
+                width: `${2000 * (zoomLevel / 100)}px`,
+                height: `${2000 * (zoomLevel / 100)}px`,
+                maxWidth: 'none',
+                aspectRatio: '1 / 1'
+              }}
+              className="drop-shadow-2xl"
+            />
+          </div>
         </div>
       </div>
       
-      {/* Navigation cross - only show when zoomed in */}
+      {/* Navigation cross - only show when zoomed in, positioned upper right */}
       {zoomLevel > 100 && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-          <div className="relative w-32 h-32 pointer-events-auto">
+        <div className="absolute top-4 right-4 pointer-events-none z-20">
+          <div className="relative w-28 h-28 pointer-events-auto">
             {/* Up arrow */}
             <button
               onClick={panUp}
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-9 h-9 flex items-center justify-center bg-white/95 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-300 transition-all hover:scale-110 text-gray-700"
               title="Flytta upp"
               aria-label="Pan up"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
               </svg>
             </button>
@@ -337,11 +362,11 @@ function YearWheel({
             {/* Right arrow */}
             <button
               onClick={panRight}
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-white/95 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-300 transition-all hover:scale-110 text-gray-700"
               title="Flytta höger"
               aria-label="Pan right"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -349,11 +374,11 @@ function YearWheel({
             {/* Down arrow */}
             <button
               onClick={panDown}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-9 h-9 flex items-center justify-center bg-white/95 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-300 transition-all hover:scale-110 text-gray-700"
               title="Flytta ner"
               aria-label="Pan down"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -361,11 +386,11 @@ function YearWheel({
             {/* Left arrow */}
             <button
               onClick={panLeft}
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-200 transition-all hover:scale-110 text-gray-700"
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-white/95 hover:bg-white backdrop-blur-sm rounded-full shadow-lg border border-gray-300 transition-all hover:scale-110 text-gray-700"
               title="Flytta vänster"
               aria-label="Pan left"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
             </button>

@@ -1153,51 +1153,79 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Keep original references to rings, activityGroups, and labels (shared at wheel level)
       const copiedItems = organizationData.items.map(item => ({
         ...item,
-        id: `${item.id}_copy_${nextYear}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
+        id: `item-copy-${nextYear}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique temporary ID
         startDate: adjustDateToNewYear(item.startDate, nextYear - currentYear),
-        endDate: adjustDateToNewYear(item.endDate, nextYear - currentYear)
+        endDate: adjustDateToNewYear(item.endDate, nextYear - currentYear),
+        pageId: null // Will be set when saving
         // ringId, activityId, labelId remain unchanged - they reference wheel-level structures
       }));
       
-      // Create new page with copied items
-      // Rings, activityGroups, and labels come from wheel level (not copied here)
+      console.log(`[SmartCopy] Creating new page for ${nextYear} with ${copiedItems.length} items`);
+      
+      // Create new page (empty organization_data initially)
       const newPage = await createPage(wheelId, {
         year: nextYear,
         title: `${nextYear}`,
         organizationData: {
-          rings: [], // Empty - will use wheel-level rings
-          activityGroups: [], // Empty - will use wheel-level activityGroups
-          labels: [], // Empty - will use wheel-level labels
-          items: copiedItems // Only items are copied with adjusted dates
+          rings: [],
+          activityGroups: [],
+          labels: [],
+          items: []
         }
       });
+      
+      console.log(`[SmartCopy] New page created with ID: ${newPage.id}`);
+      
+      // Now save the items to the database using saveWheelData
+      // This will insert items into the 'items' table (not just JSONB)
+      const itemsToSave = copiedItems.map(item => ({
+        ...item,
+        pageId: newPage.id // Set the page ID
+      }));
+      
+      console.log(`[SmartCopy] Saving ${itemsToSave.length} items to database...`);
+      
+      await saveWheelData(wheelId, {
+        rings: organizationData.rings || [],
+        activityGroups: organizationData.activityGroups || [],
+        labels: organizationData.labels || [],
+        items: itemsToSave
+      }, newPage.id);
+      
+      console.log(`[SmartCopy] Items saved successfully!`);
       
       // Sort pages by year after adding
       const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
       setPages(updatedPages);
       setShowAddPageModal(false);
       
-      // Switch to the new page to load data properly
+      // Switch to the new page
       setCurrentPageId(newPage.id);
       setYear(String(nextYear));
       
-      // Update organizationData with copied items (keep wheel-level structures)
+      // Fetch items from database to get the real UUIDs
+      const savedItems = await fetchPageData(newPage.id);
+      console.log(`[SmartCopy] Fetched ${savedItems.length} items from database`);
+      
+      // Update organizationData with saved items (keep wheel-level structures)
       setOrganizationData(prevData => ({
         ...prevData,  // Keep rings, activityGroups, labels from wheel level
-        items: copiedItems  // Add copied items
+        items: savedItems  // Use items from database with real UUIDs
       }));
+      
+      console.log('[SmartCopy] Complete! Page switched and items loaded.');
       
       const event = new CustomEvent('showToast', {
         detail: { 
-          message: `SmartCopy: ${copiedItems.length} aktiviteter kopierade till ${nextYear}!`, 
+          message: `SmartCopy: ${savedItems.length} aktiviteter kopierade till ${nextYear}!`, 
           type: 'success' 
         }
       });
       window.dispatchEvent(event);
     } catch (error) {
-      console.error('Error with SmartCopy:', error);
+      console.error('[SmartCopy] Error:', error);
       const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte utföra SmartCopy', type: 'error' }
+        detail: { message: `SmartCopy misslyckades: ${error.message}`, type: 'error' }
       });
       window.dispatchEvent(event);
     }
