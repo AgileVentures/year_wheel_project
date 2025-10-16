@@ -9,6 +9,7 @@ import Toast from "./components/Toast";
 import CookieConsent from "./components/CookieConsent";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
+import { useSubscription } from "./hooks/useSubscription.jsx";
 
 // Lazy load route components for better code splitting
 const LandingPage = lazy(() => import("./components/LandingPage"));
@@ -35,6 +36,8 @@ import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t } = useTranslation(['common']);
+  const { isPremium, loading: subscriptionLoading } = useSubscription();
+  
   // Undo/Redo for main editable states
   const {
     states: undoableStates,
@@ -1119,6 +1122,74 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   };
 
+  // SmartCopy: Create next year page with ALL activities copied and dates adjusted
+  const handleSmartCopy = async () => {
+    if (!wheelId) return;
+    
+    try {
+      // First, save the current page to ensure we have the latest data
+      if (currentPageId) {
+        await updatePage(currentPageId, {
+          organization_data: organizationData,
+          year: parseInt(year)
+        });
+      }
+      
+      // Find highest year from existing pages and add 1
+      const maxYear = pages.length > 0 
+        ? Math.max(...pages.map(p => p.year))
+        : parseInt(year);
+      const nextYear = maxYear + 1;
+      const currentYear = parseInt(year);
+      
+      // Helper function to adjust date to new year
+      const adjustDateToNewYear = (dateString, yearOffset) => {
+        const date = new Date(dateString);
+        date.setFullYear(date.getFullYear() + yearOffset);
+        return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+      };
+      
+      // Copy ALL items with new IDs and adjusted dates
+      const copiedItems = organizationData.items.map(item => ({
+        ...item,
+        id: `${item.id}_copy_${nextYear}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
+        startDate: adjustDateToNewYear(item.startDate, nextYear - currentYear),
+        endDate: adjustDateToNewYear(item.endDate, nextYear - currentYear)
+      }));
+      
+      // Create new page with copied items
+      const newPage = await createPage(wheelId, {
+        year: nextYear,
+        title: `${nextYear}`,
+        organizationData: {
+          rings: [], // Don't copy - rings are shared at wheel level
+          activityGroups: [], // Don't copy - groups are shared at wheel level
+          labels: [], // Don't copy - labels are shared at wheel level
+          items: copiedItems // Copy all items with adjusted dates!
+        }
+      });
+      
+      // Sort pages by year after adding
+      const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
+      setPages(updatedPages);
+      setShowAddPageModal(false);
+      
+      const event = new CustomEvent('showToast', {
+        detail: { 
+          message: `SmartCopy: ${copiedItems.length} aktiviteter kopierade till ${nextYear}!`, 
+          type: 'success' 
+        }
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Error with SmartCopy:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte utföra SmartCopy', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   // Duplicate a page
   const handleDuplicatePage = async (pageId) => {
     if (!wheelId) return;
@@ -1806,6 +1877,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onCreateBlank={handleCreateBlankPage}
             onDuplicate={() => handleDuplicatePage(currentPageId)}
             onCreateNextYear={handleCreateNextYear}
+            onSmartCopy={handleSmartCopy}
+            isPremium={isPremium}
           />
         </Suspense>
       )}

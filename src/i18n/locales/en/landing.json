@@ -7,6 +7,9 @@
     "login": "Log in",
     "getStarted": "Get started free"
   },
+  "philosophy": {
+    "text": "Planning is cyclical – activities recur, processes repeat, and patterns emerge. YearWheel helps you see connections between years, create structure, and build on previous experience."
+  },
   "hero": {
     "badge": "AI-powered annual planning",
     "title1": "Your year at a glance –",
@@ -97,6 +100,7 @@
       "features": [
         "AI assistant for planning",
         "Google Integration (Calendar & Sheets)",
+        "SmartCopy - copy all activities between years",
         "Unlimited year wheels",
         "Unlimited teams and members",
         "All export formats (PNG, SVG, PDF, JPG)",

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play, Share2, Menu, X } from 'lucide-react';
+import { Crown, Check, Sparkles, Zap, Users, Calendar, Download, TrendingUp, ArrowRight, Play, Share2, Menu, X, Copy } from 'lucide-react';
 import LoginForm from './auth/LoginForm';
 import SignupForm from './auth/SignupForm';
 import AIAssistantDemo from './AIAssistantDemo';
@@ -12,6 +12,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import TemplateShowcase from './TemplateShowcase';
 import ComparisonTable from './ComparisonTable';
 import Footer from './Footer';
+import PhilosophySection from './PhilosophySection';
 
 function LandingPage() {
   const { t, i18n } = useTranslation(['landing', 'common']);
@@ -252,6 +253,7 @@ function LandingPage() {
 
       {/* Hero Section */}
       <Hero />
+
 
       {/* Mobile Demo Message */}
       <section className="md:hidden py-16 px-4 bg-gradient-to-br from-[#A4E6E0] via-[#36C2C6] to-[#00A4A6] text-white">
@@ -636,6 +638,10 @@ function LandingPage() {
         </div>
       </section>
 
+
+      {/* Philosophy Section */}
+      <PhilosophySection />
+
       {/* Features Grid */}
       {/* Features Section */}
       <section id="features-section" className="py-20 px-4 sm:px-6 lg:px-8 scroll-mt-16">
@@ -850,7 +856,7 @@ function LandingPage() {
 
               <ul className="space-y-4 mb-8">
                 {t('landing:pricing.premium.features', { returnObjects: true }).map((feature, index) => {
-                  // Special icons for first two features (AI and Google Integration)
+                  // Special icons for first three features (AI, Google Integration, SmartCopy)
                   const getIcon = () => {
                     if (index === 0) {
                       return (
@@ -866,13 +872,20 @@ function LandingPage() {
                         </div>
                       );
                     }
+                    if (index === 2) {
+                      return (
+                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Copy className="text-[#00A4A6]" size={12} />
+                        </div>
+                      );
+                    }
                     return <Check className="text-white flex-shrink-0 mt-1" size={20} />;
                   };
 
                   return (
                     <li key={index} className="flex items-start gap-3">
                       {getIcon()}
-                      <span className={`text-white ${index < 2 ? 'font-semibold' : ''}`}>{feature}</span>
+                      <span className={`text-white ${index < 3 ? 'font-semibold' : ''}`}>{feature}</span>
                     </li>
                   );
                 })}

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap, Calendar } from 'lucide-react';
+import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap, Calendar, Copy } from 'lucide-react';
 import SubscriptionModal from './subscription/SubscriptionModal';
 import LanguageSwitcher from './LanguageSwitcher';
 import ComparisonTable from './ComparisonTable';
@@ -191,6 +191,7 @@ function PricingPage() {
                   const iconMap = [
                     <Sparkles className="w-3 h-3 text-[#00A4A6]" />,  // AI assistant
                     <Calendar className="w-3 h-3 text-[#00A4A6]" />,  // Google Integration
+                    <Copy className="w-3 h-3 text-[#00A4A6]" />,      // SmartCopy
                     <Zap className="w-3 h-3 text-[#00A4A6]" />,       // Unlimited wheels
                     <Users className="w-3 h-3 text-[#00A4A6]" />,     // Unlimited teams
                     <FileImage className="w-3 h-3 text-[#00A4A6]" />, // All export formats
@@ -206,7 +207,7 @@ function PricingPage() {
                     <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       {getIcon()}
                     </div>
-                    <span className={`text-white ${index < 2 ? 'font-semibold' : ''}`}>{feature}</span>
+                    <span className={`text-white ${index < 3 ? 'font-semibold' : ''}`}>{feature}</span>
                   </div>
                 );
               })}

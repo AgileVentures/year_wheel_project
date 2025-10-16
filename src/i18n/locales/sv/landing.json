@@ -7,6 +7,9 @@
     "login": "Logga in",
     "getStarted": "Kom igång gratis"
   },
+  "philosophy": {
+    "text": "Planering är cyklisk – aktiviteter återkommer, processer upprepas och mönster framträder. YearWheel hjälper dig att se sambanden mellan åren, skapa struktur och bygga vidare på tidigare erfarenheter."
+  },
   "hero": {
     "badge": "AI-assisterad årsplanering",
     "title1": "Året i en bild –",
@@ -97,6 +100,7 @@
       "features": [
         "AI-assistent för planering",
         "Google Integration (Calendar & Sheets)",
+        "SmartCopy - kopiera alla aktiviteter mellan år",
         "Obegränsade årshjul",
         "Obegränsade team och medlemmar",
         "Alla exportformat (PNG, SVG, PDF, JPG)",

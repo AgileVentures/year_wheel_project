@@ -1,4 +1,4 @@
-import { X, FileText, Copy, Calendar } from 'lucide-react';
+import { X, FileText, Copy, Calendar, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -11,7 +11,9 @@ export default function AddPageModal({
   onClose, 
   onCreateBlank, 
   onDuplicate, 
-  onCreateNextYear 
+  onCreateNextYear,
+  onSmartCopy,
+  isPremium = false
 }) {
   const { t } = useTranslation(['editor']);
   const currentYear = currentPage?.year || new Date().getFullYear();
@@ -24,11 +26,34 @@ export default function AddPageModal({
       title: t('editor:addPageModal.nextYearTitle', { year: nextYear }),
       description: t('editor:addPageModal.nextYearDescription', { year: nextYear }),
       color: 'green',
-      action: onCreateNextYear
+      action: onCreateNextYear,
+      isPremium: false
+    },
+    {
+      id: 'smart-copy',
+      icon: Sparkles,
+      title: t('editor:addPageModal.smartCopyTitle', { year: nextYear }),
+      description: t('editor:addPageModal.smartCopyDescription', { year: nextYear }),
+      color: 'purple',
+      action: onSmartCopy,
+      isPremium: true
     }
   ];
 
   const handleOptionClick = (option) => {
+    // Check if option is premium and user doesn't have access
+    if (option.isPremium && !isPremium) {
+      // Show upgrade prompt instead of executing action
+      const event = new CustomEvent('showToast', {
+        detail: { 
+          message: 'SmartCopy är en Premium-funktion. Uppgradera för att använda den!', 
+          type: 'info' 
+        }
+      });
+      window.dispatchEvent(event);
+      return;
+    }
+    
     option.action();
     onClose();
   };
@@ -51,10 +76,11 @@ export default function AddPageModal({
         <div className="p-6 space-y-3">
           {options.map((option) => {
             const Icon = option.icon;
+            const isLocked = option.isPremium && !isPremium;
             const colorClasses = {
-              blue: 'bg-blue-100 text-blue-600 hover:bg-blue-50 border-blue-200 hover:border-blue-400',
-              purple: 'bg-purple-100 text-purple-600 hover:bg-purple-50 border-purple-200 hover:border-purple-400',
-              green: 'bg-green-100 text-green-600 hover:bg-green-50 border-green-200 hover:border-green-400'
+              blue: isLocked ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-blue-100 text-blue-600 hover:bg-blue-50 border-blue-200 hover:border-blue-400',
+              purple: isLocked ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-purple-100 text-purple-600 hover:bg-purple-50 border-purple-200 hover:border-purple-400',
+              green: isLocked ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-green-100 text-green-600 hover:bg-green-50 border-green-200 hover:border-green-400'
             };
 
             return (
@@ -63,32 +89,52 @@ export default function AddPageModal({
                 onClick={() => handleOptionClick(option)}
                 className={`
                   w-full flex items-start gap-4 p-4 rounded-sm border-2 transition-all
-                  hover:shadow-md group
+                  relative
+                  ${isLocked ? '' : 'hover:shadow-md group'}
                   ${colorClasses[option.color]}
                 `}
               >
+                {/* Premium Badge */}
+                {option.isPremium && (
+                  <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
+                    isPremium 
+                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white' 
+                      : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    <Sparkles size={12} />
+                    Premium
+                  </div>
+                )}
+                
                 {/* Icon */}
                 <div className={`
                   flex-shrink-0 w-12 h-12 rounded-sm flex items-center justify-center
-                  bg-white shadow-sm group-hover:scale-110 transition-transform
+                  bg-white shadow-sm ${isLocked ? 'opacity-50' : 'group-hover:scale-110'} transition-transform
                 `}>
                   <Icon size={24} />
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 text-left">
-                  <h3 className="font-semibold text-gray-900 text-lg mb-1">
+                <div className="flex-1 text-left pr-20">
+                  <h3 className={`font-semibold text-lg mb-1 ${isLocked ? 'text-gray-500' : 'text-gray-900'}`}>
                     {option.title}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className={`text-sm ${isLocked ? 'text-gray-400' : 'text-gray-600'}`}>
                     {option.description}
                   </p>
+                  {isLocked && (
+                    <p className="text-xs text-purple-600 font-medium mt-2">
+                      🔒 Uppgradera till Premium för att använda denna funktion
+                    </p>
+                  )}
                 </div>
 
                 {/* Arrow indicator */}
-                <div className="flex-shrink-0 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all">
-                  →
-                </div>
+                {!isLocked && (
+                  <div className="flex-shrink-0 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all">
+                    →
+                  </div>
+                )}
               </button>
             );
           })}

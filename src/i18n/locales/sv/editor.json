@@ -191,6 +191,8 @@
     "title": "Lägg till ny sida",
     "nextYearTitle": "Nästa år ({{year}})",
     "nextYearDescription": "Skapa en tom sida för {{year}} med samma struktur (ringar delas automatiskt)",
+    "smartCopyTitle": "SmartCopy till {{year}}",
+    "smartCopyDescription": "Skapa en ny sida för {{year}} och kopiera ALLA aktiviteter från nuvarande år med justerade datum",
     "cancel": "Avbryt"
   },
   "calendarSidebar": {

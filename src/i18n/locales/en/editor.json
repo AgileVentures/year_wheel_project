@@ -191,6 +191,8 @@
     "title": "Add New Page",
     "nextYearTitle": "Next year ({{year}})",
     "nextYearDescription": "Create an empty page for {{year}} with the same structure (rings are shared automatically)",
+    "smartCopyTitle": "SmartCopy to {{year}}",
+    "smartCopyDescription": "Create a new page for {{year}} and copy ALL activities from the current year with adjusted dates",
     "cancel": "Cancel"
   },
   "calendarSidebar": {
