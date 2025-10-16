@@ -373,10 +373,12 @@ function YearWheel({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: zoomLevel > 100 ? '200%' : '100%',
+          // Smooth progressive padding based on zoom level (no hard cutoff!)
+          // At 100%: 0% padding, At 150%: 25% padding, At 200%: 50% padding
+          minHeight: zoomLevel > 100 ? `${100 + (zoomLevel - 100)}%` : '100%',
           width: '100%',
-          paddingTop: zoomLevel > 100 ? '50%' : '0',
-          paddingBottom: zoomLevel > 100 ? '50%' : '0'
+          paddingTop: zoomLevel > 100 ? `${(zoomLevel - 100) / 2}%` : '0',
+          paddingBottom: zoomLevel > 100 ? `${(zoomLevel - 100) / 2}%` : '0'
         }}>
             <canvas
               ref={canvasRef}

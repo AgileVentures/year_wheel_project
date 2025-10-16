@@ -1442,10 +1442,10 @@ class YearWheel {
     // ABSOLUTE font size thresholds (for scoring only, not for calculation)
     const absoluteMinFont = 12;  // Absolute minimum - anything smaller is unreadable
     const minDisplayFont = 14;   // Comfortable minimum for body text
-    const sweetSpotMin = 16;     // Start of ideal reading range
-    const sweetSpotMax = 28;     // End of ideal reading range
-    const reasonableMaxFont = 35; // Maximum before looking too large
-    const maxDisplayFont = 50;    // Absolute maximum
+    const sweetSpotMin = 15;     // Start of ideal reading range (lowered from 16)
+    const sweetSpotMax = 26;     // End of ideal reading range (middle ground)
+    const reasonableMaxFont = 32; // Maximum before looking too large (middle ground)
+    const maxDisplayFont = 40;    // Absolute maximum (middle ground)
     
     // Text analysis
     const textLength = text.length;
@@ -1472,15 +1472,16 @@ class YearWheel {
     const isMultiLine = allowWrapping && hasSpaces;
     
     if (isMultiLine) {
-      // VERY lenient for multi-line - we WANT it to use available space!
-      if (areaRatio > 0.15) sizePenalty = 0.96;      // was 0.88 - much more favorable
-      else if (areaRatio > 0.10) sizePenalty = 0.98; // was 0.92 - much more favorable
-      else if (areaRatio > 0.06) sizePenalty = 0.99; // was 0.96 - barely any penalty
+      // Lenient for multi-line - we want to encourage it!
+      if (areaRatio > 0.15) sizePenalty = 0.96;      // Some penalty for very large
+      else if (areaRatio > 0.10) sizePenalty = 0.98; // Small penalty for large
+      else sizePenalty = 1.00;                       // No penalty otherwise
     } else if (isShortSingleWord) {
-      // Lenient for short single words (like "Höstnyheter")
-      if (areaRatio > 0.15) sizePenalty = 0.94;      // was 0.88 - less harsh
-      else if (areaRatio > 0.10) sizePenalty = 0.96; // was 0.92 - less harsh
-      else if (areaRatio > 0.06) sizePenalty = 0.98; // was 0.96 - less harsh
+      // Moderate for short single words
+      if (areaRatio > 0.15) sizePenalty = 0.92;      // Penalty for very large
+      else if (areaRatio > 0.10) sizePenalty = 0.95; // Some penalty for large
+      else if (areaRatio > 0.06) sizePenalty = 0.98; // Minimal for medium
+      else sizePenalty = 0.99;                       // Almost none for small
     } else {
       // Keep stricter penalties for long single-line text (encourages wrapping)
       if (areaRatio > 0.15) sizePenalty = 0.88;
@@ -1603,31 +1604,103 @@ class YearWheel {
         const words = text.split(/\s+/);
         const wordCount = words.length;
         
+        // Debug logging disabled for production
+        // const debugThisText = text.includes('Roadbar') || text.includes('sport');
+        // if (debugThisText) {
+        //   console.log(`\n🎯 STARTING horizontal multi-line evaluation for: "${text}"`);
+        //   console.log(`   Text length: ${text.length}, Words: ${wordCount}, Words array:`, words);
+        // }
+        
         // DECISION: Text has spaces, so we WANT multi-line rendering
-        // Determine target lines based on word count
-        const targetLines = wordCount >= 4 ? 3 : 2;
+        // Determine target lines based on word count and container geometry
+        const aspectRatio = availableArcLength / maxRadialHeight;
+        let targetLines;
+        
+        if (wordCount >= 5) {
+          targetLines = 3;
+        } else if (wordCount >= 3) {
+          // For 3-4 words: prefer 2 lines, but allow 3 if needed
+          targetLines = aspectRatio > 3.0 ? 2 : 2; // Always try for 2 first
+        } else {
+          targetLines = 2;
+        }
+        
         const lineHeight = maxRadialHeight / (targetLines + 0.3); // +0.3 for spacing between arcs
         
         // Calculate font size that achieves multi-line wrapping with readability
-        // Strategy: Find largest readable font where text wraps to targetLines
-        // Constraints: 14px min, 28px max for readability
-        let minFontSize = minDisplayFont; // 14px
+        // Strategy: Find LARGEST font where text wraps to AT LEAST targetLines
+        // Key insight: We PREFER multi-line, so bias toward larger fonts that force wrapping!
+        let minFontSize = minDisplayFont; // 14px base
         let maxFontSize = Math.min(
           lineHeight * 0.7,  // From radial height (conservative)
-          sweetSpotMax,      // 28px max for readability
-          reasonableMaxFont  // 35px absolute max
+          sweetSpotMax,      // 26px max for readability
+          reasonableMaxFont  // 32px absolute max
         );
+        
+        // CRITICAL FIX: For wide containers with short text, FORCE larger fonts to ensure wrapping!
+        // The problem: Short text fits on one line even at small fonts with wide wrap threshold
+        // Solution: Boost minimum font ONLY for short text, keep normal range for longer text
+        if (aspectRatio > 3.0) {
+          // Very wide container - adjust font range based on text length
+          if (text.length < 30) {
+            // Short text - boost minimum to force readable multi-line
+            minFontSize = Math.max(minFontSize, sweetSpotMin + 3); // 18px min for short text
+            maxFontSize = Math.min(maxFontSize, reasonableMaxFont); // Cap at 32px
+          } else if (text.length < 50) {
+            // Medium text - slight boost
+            minFontSize = Math.max(minFontSize, sweetSpotMin); // 15px min for medium
+            maxFontSize = Math.min(maxFontSize, sweetSpotMax + 2); // Cap at 28px
+          } else {
+            // Long text - use normal range to avoid huge text
+            minFontSize = Math.max(minFontSize, minDisplayFont); // 14px min for long
+            maxFontSize = Math.min(maxFontSize, sweetSpotMax); // Cap at 26px
+          }
+        }
+        
         let bestFontSize = minFontSize;
         let bestLineCount = 1;
         
         // Binary search for optimal font that achieves targetLines wrapping
+        // CRITICAL: For wide containers, wrap at NARROWER threshold to force multi-line!
+        // Calculate threshold based on text length AND word count for balanced results
+        let wrapThreshold;
+        if (aspectRatio > 3.0) {
+          // Very wide: Adjust wrapping threshold based on text characteristics
+          if (text.length < 25 && wordCount <= 3) {
+            // Very short text (like "Roadbarfotasko + sport") - very aggressive
+            wrapThreshold = 0.25; // Only 25% of width per line!
+          } else if (text.length < 40) {
+            // Short-medium text - moderately aggressive
+            wrapThreshold = 0.35; // ~35% per line
+          } else if (text.length < 60) {
+            // Medium text - balanced
+            wrapThreshold = 0.45; // ~45% per line
+          } else {
+            // Long text - more generous to avoid too many lines
+            wrapThreshold = 0.55; // ~55% per line
+          }
+        } else {
+          wrapThreshold = 0.70;
+        }
+        
+        // Debug logging disabled for production
+        // if (debugThisText) {
+        //   console.log(`\n🔍 BINARY SEARCH for "${text}" (length: ${text.length}):`);
+        //   console.log(`   Words: [${words.join(', ')}]`);
+        //   console.log(`   Target lines: ${targetLines}, Wrap threshold: ${wrapThreshold}`);
+        //   console.log(`   Available: ${availableArcLength.toFixed(1)}px × ${maxRadialHeight.toFixed(1)}px`);
+        //   console.log(`   Wrap width: ${(availableArcLength * wrapThreshold).toFixed(1)}px`);
+        //   console.log(`   Font range: ${minFontSize.toFixed(1)}px - ${maxFontSize.toFixed(1)}px`);
+        // }
+        
         for (let iteration = 0; iteration < 10; iteration++) {
           const testFontSize = (minFontSize + maxFontSize) / 2;
           
           this.context.save();
           this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
           
-          // Simulate wrapping at this font size
+          // Simulate wrapping at this font size with TIGHTER threshold
+          const wrapWidth = availableArcLength * wrapThreshold;
           let testLines = [];
           let currentLine = '';
           
@@ -1635,7 +1708,7 @@ class YearWheel {
             const testLine = currentLine ? currentLine + ' ' + word : word;
             const testWidth = this.context.measureText(testLine).width;
             
-            if (testWidth > availableArcLength && currentLine) {
+            if (testWidth > wrapWidth && currentLine) {
               testLines.push(currentLine);
               currentLine = word;
             } else {
@@ -1650,24 +1723,46 @@ class YearWheel {
           
           this.context.restore();
           
-          // Check max line width to ensure it fits horizontally
+          // Check max line width to ensure it fits horizontally (use full width for validation)
           const maxLineWidth = Math.max(...testLines.map(line => this.context.measureText(line).width));
           const fitsHorizontally = maxLineWidth <= availableArcLength * 0.98; // 98% to add small margin
+          
+          // Debug logging disabled for production
+          // if (debugThisText) {
+          //   console.log(`   Iteration ${iteration}: Font ${testFontSize.toFixed(1)}px → ${testLineCount} lines (${testLines.join(' | ')})`);
+          //   console.log(`      Max line width: ${maxLineWidth.toFixed(1)}px, Fits: V=${fitsVertically}, H=${fitsHorizontally}`);
+          // }
           
           // Check if this achieves our target AND fits the container
           if (testLineCount >= targetLines && fitsVertically && fitsHorizontally) {
             // Good! Multi-line wrapping that fits container
             bestFontSize = testFontSize;
             bestLineCount = testLineCount;
+            // if (debugThisText) console.log(`      ✓ ACCEPTED (${testLineCount} >= ${targetLines}), trying larger...`);
             minFontSize = testFontSize; // Try even larger
           } else if (testLineCount < targetLines && fitsVertically) {
-            // Font too small, fits on fewer lines - try larger to force wrapping
-            minFontSize = testFontSize;
+            // Not enough lines - need tighter wrapping, try smaller font or accept 1 line
+            // If we're already at min font and still only 1 line, container is too wide
+            if (testFontSize <= minDisplayFont + 1) {
+              // At minimum font, accept this as best we can do
+              bestFontSize = testFontSize;
+              bestLineCount = testLineCount;
+              // if (debugThisText) console.log(`      ⚠ At minimum font, accepting ${testLineCount} line(s)`);
+              break;
+            }
+            // if (debugThisText) console.log(`      ✗ Too few lines (${testLineCount} < ${targetLines}), trying smaller font...`);
+            maxFontSize = testFontSize; // Try smaller to increase relative text width
           } else {
             // Doesn't fit (too many lines, lines too wide, or too tall)
+            // if (debugThisText) console.log(`      ✗ Doesn't fit, trying smaller...`);
             maxFontSize = testFontSize; // Try smaller
           }
         }
+        
+        // Debug logging disabled for production
+        // if (debugThisText) {
+        //   console.log(`   RESULT: Font ${bestFontSize.toFixed(1)}px, ${bestLineCount} lines\n`);
+        // }
         
         // Use the font size found by binary search - it's already optimal for THIS container!
         // Don't apply generic penalties that ignore container geometry
@@ -1677,10 +1772,11 @@ class YearWheel {
         fontSize = Math.max(fontSize, absoluteMinFont);
         fontSize = Math.min(fontSize, reasonableMaxFont);
         
-        // Final wrapping simulation with chosen font
+        // Final wrapping simulation with chosen font using same wrap threshold
         this.context.save();
         this.context.font = `500 ${fontSize}px Arial, sans-serif`;
         
+        const finalWrapWidth = availableArcLength * wrapThreshold;
         let lines = [];
         let currentLine = '';
         
@@ -1688,7 +1784,7 @@ class YearWheel {
           const testLine = currentLine ? currentLine + ' ' + word : word;
           const testWidth = this.context.measureText(testLine).width;
           
-          if (testWidth > availableArcLength && currentLine) {
+          if (testWidth > finalWrapWidth && currentLine) {
             lines.push(currentLine);
             currentLine = word;
           } else {
@@ -1783,42 +1879,29 @@ class YearWheel {
     let penaltyScore = 0;
     
     // 1. FONT SIZE QUALITY (0-35 points) - CRITICAL FOR READABILITY
-    // Font size is MORE important than previously thought
-    // User preference: "horizontal multi-line with readable font preferable over horizontal single-line in small font"
+    // Moderate approach: readable range is 14-26px, with sweet spot 15-26px
     // 
     // Use the absolute font size constants defined at function start
-    // sweetSpotMin = 16, sweetSpotMax = 28 (regardless of zoom)
+    // sweetSpotMin = 15, sweetSpotMax = 26 (regardless of zoom)
     
     if (fontSize >= sweetSpotMin && fontSize <= sweetSpotMax) {
       // In sweet spot - full points
       fontScore = 35;
     } else if (fontSize >= minDisplayFont && fontSize < sweetSpotMin) {
-      // Below sweet spot - HARSH PENALTY for small fonts
-      // User: "truncation should win over too small font, especially on small containers"
-      // Small fonts are hard to read - truncation is better!
-      const ratio = (fontSize - minDisplayFont) / (sweetSpotMin - minDisplayFont);
-      if (ratio > 0.9) {
-        fontScore = 28 + (ratio * 7); // Very close to sweet spot: 28-35
-      } else if (ratio > 0.75) {
-        fontScore = 20 + (ratio * 8); // Readable but small: 20-28
-      } else if (ratio > 0.5) {
-        fontScore = 10 + (ratio * 10); // Getting small: 10-20
-      } else {
-        fontScore = 0 + (ratio * 10); // Very small font: 0-10 (almost as bad as truncation!)
-      }
+      // Just below sweet spot (14-15px) - very minor penalty
+      fontScore = 32;
     } else if (fontSize > sweetSpotMax && fontSize <= reasonableMaxFont) {
-      // Above sweet spot - penalty varies with zoom
+      // Above sweet spot (26-32px) - moderate penalty
       const ratio = (fontSize - sweetSpotMax) / (reasonableMaxFont - sweetSpotMax);
-      if (zoomFactor >= 1.5) {
-        // High zoom: smaller penalty for large fonts (they look better)
-        fontScore = 35 - (ratio * 3);
-      } else {
-        // Normal/low zoom: moderate penalty
-        fontScore = 35 - (ratio * 6);
-      }
+      fontScore = 35 - (ratio * 8); // 27-35 points
+    } else if (fontSize > reasonableMaxFont) {
+      // Above reasonable max (>32px) - stronger penalty
+      const ratio = Math.min(1, (fontSize - reasonableMaxFont) / (maxDisplayFont - reasonableMaxFont));
+      fontScore = 20 - (ratio * 10); // 10-20 points
     } else if (fontSize < minDisplayFont) {
-      // Below minimum - EXTREME penalty (basically unreadable)
-      fontScore = 0; // Was 5, now 0 - truncation is better than this!
+      // Below minimum (<14px) - moderate penalty
+      const ratio = fontSize / minDisplayFont;
+      fontScore = 20 * ratio; // 0-20 points based on how far below
     }
     
     // 2. SPACE UTILIZATION (0-25 points)
@@ -1883,27 +1966,28 @@ class YearWheel {
       }
       
       // MULTI-LINE BONUS: Successfully wrapped text is elegant and more readable
+      // THIS IS THE KEY: Multi-word text MUST use multi-line when possible!
       if (allowWrapping && lineCount >= 2) {
         // Bonus scales with how well it wraps
         if (orientation === 'horizontal') {
-          // HORIZONTAL MULTI-LINE: MASSIVE bonus for preferred orientation with wrapping!
+          // HORIZONTAL MULTI-LINE: DOMINANT preference for multi-word text!
           if (lineCount === 2) {
-            naturalScore += 35; // Perfect horizontal 2-line (was 25 - HUGE preference!)
+            naturalScore += 60; // MASSIVE bonus for perfect 2-line horizontal!
           } else if (lineCount === 3) {
-            naturalScore += 30; // Great horizontal 3-line (was 20 - VERY preferred!)
+            naturalScore += 55; // Huge bonus for 3-line horizontal
           } else if (lineCount === 4) {
-            naturalScore += 18; // Horizontal 4-line (still good)
+            naturalScore += 40; // Strong bonus for 4-line
           } else {
-            naturalScore += 10; // Horizontal 5+ lines (acceptable)
+            naturalScore += 25; // Still good for 5+ lines
           }
         } else {
-          // Vertical multi-line: good but not as preferred
+          // Vertical multi-line: good alternative when horizontal doesn't fit
           if (lineCount === 2) {
-            naturalScore += 12; // Perfect 2-line split (can go to 62!)
+            naturalScore += 35; // Good vertical 2-line bonus
           } else if (lineCount === 3) {
-            naturalScore += 10; // Good 3-line split (can go to 60!)
+            naturalScore += 30; // Vertical 3-line
           } else {
-            naturalScore += 6;  // 4+ lines getting crowded
+            naturalScore += 20; // Vertical 4+ lines
           }
         }
       }
@@ -2112,10 +2196,10 @@ class YearWheel {
     // PRIORITY ORDER:
     // NOTE: "Horizontal" = text follows arc (supports stacked multi-arc!)
     //       "Vertical" = text perpendicular to arc (also supports multiline)
-    // 1. HORIZONTAL multi-line (BEST - readable stacked arcs for multi-word phrases)
-    // 2. Vertical multi-line (GOOD - readable stacked perpendicular text)
-    // 3. Horizontal single-line (OK - single curved arc)
-    // 4. Vertical single-line (OK - single perpendicular line)
+    // 1. HORIZONTAL multi-line (TOP PRIORITY - readable stacked arcs for multi-word phrases)
+    // 2. HORIZONTAL single-line (SECOND - clean curved arc)
+    // 3. Vertical multi-line (OK - readable stacked perpendicular text)
+    // 4. Vertical single-line (LAST - single perpendicular line)
     
     // Strategy 1: Full text, HORIZONTAL multi-line (TOP PRIORITY for multi-word text!)
     if (hasSpaces) {
@@ -2128,7 +2212,16 @@ class YearWheel {
       });
     }
     
-    // Strategy 2: Full text, vertical multi-line (GOOD alternative)
+    // Strategy 2: Full text, horizontal single-line (SECOND PRIORITY)
+    strategies.push({
+      text: text,
+      orientation: 'horizontal',
+      truncationLevel: 0,
+      allowWrapping: false,
+      description: 'Full horizontal single-line'
+    });
+    
+    // Strategy 3: Full text, vertical multi-line (THIRD)
     if (hasSpaces) {
       strategies.push({
         text: text,
@@ -2139,16 +2232,7 @@ class YearWheel {
       });
     }
     
-    // Strategy 3: Full text, horizontal single-line
-    strategies.push({
-      text: text,
-      orientation: 'horizontal',
-      truncationLevel: 0,
-      allowWrapping: false,
-      description: 'Full horizontal single-line'
-    });
-    
-    // Strategy 4: Full text, vertical single-line
+    // Strategy 4: Full text, vertical single-line (LAST)
     strategies.push({
       text: text,
       orientation: 'vertical',
@@ -2397,23 +2481,23 @@ class YearWheel {
     
     // DEBUG: Enable to see decision details for specific texts
     // Uncomment the block below to debug text rendering decisions
-    // const debugText = text.includes('Q4 Kampanj') || text.includes('planering');
-    // if (debugText) {
-    //   console.log(`\n=== DECISION FOR: "${text}" (zoom: ${this.zoomLevel}%) ===`);
-    //   console.log(`Canvas dimensions: ${arcLengthPx.toFixed(1)}px × ${radialHeight.toFixed(1)}px`);
-    //   console.log(`Normalized (geometry): ${normalizedArcLength.toFixed(1)}px × ${normalizedRadialHeight.toFixed(1)}px`);
-    //   console.log(`Aspect ratio: ${aspectRatio.toFixed(2)} - Wide: ${isWideContainer}, Narrow: ${isNarrowContainer}`);
-    //   console.log('\nTop 5 strategies:');
-    //   evaluations.slice(0, 5).forEach((e, i) => {
-    //     console.log(`${i+1}. ${e.description}`);
-    //     console.log(`   Font: ${e.fontSize.toFixed(1)}px, Lines: ${e.lineCount}, Wrapping: ${e.allowWrapping}`);
-    //     console.log(`   Truncated: ${e.truncated} (${e.truncationPercent.toFixed(1)}%)`);
-    //     console.log(`   Scores: Font=${e.details.font.toFixed(1)}, Space=${e.details.space.toFixed(1)}, Natural=${e.details.natural.toFixed(1)}, Penalty=${e.details.penalty.toFixed(1)}`);
-    //     console.log(`   ORIGINAL: ${e.originalScore.toFixed(1)}, ADJUSTED: ${e.adjustedScore.toFixed(1)} ${e === bestSolution ? '← WINNER' : ''}`);
-    //   });
-    //   console.log(`\nChosen: ${bestSolution.orientation} (${bestSolution.description})`);
-    //   console.log(`Will render: ${bestSolution.lineCount} line(s), Font: ${bestSolution.fontSize.toFixed(1)}px`);
-    // }
+    const debugText = text.includes('Roadbarfotasko + sport') || text.includes('sport') || text.includes('Erbjudande') || text.includes('Fördjup');
+    if (debugText) {
+      console.log(`\n=== DECISION FOR: "${text}" (zoom: ${this.zoomLevel}%) ===`);
+      console.log(`Canvas dimensions: ${arcLengthPx.toFixed(1)}px × ${radialHeight.toFixed(1)}px`);
+      console.log(`Normalized (geometry): ${normalizedArcLength.toFixed(1)}px × ${normalizedRadialHeight.toFixed(1)}px`);
+      console.log(`Aspect ratio: ${aspectRatio.toFixed(2)} - Wide: ${isWideContainer}, Narrow: ${isNarrowContainer}`);
+      console.log('\nTop 5 strategies:');
+      evaluations.slice(0, 5).forEach((e, i) => {
+        console.log(`${i+1}. ${e.description}`);
+        console.log(`   Font: ${e.fontSize.toFixed(1)}px, Lines: ${e.lineCount}, Wrapping: ${e.allowWrapping}`);
+        console.log(`   Truncated: ${e.truncated} (${e.truncationPercent.toFixed(1)}%)`);
+        console.log(`   Scores: Font=${e.details.font.toFixed(1)}, Space=${e.details.space.toFixed(1)}, Natural=${e.details.natural.toFixed(1)}, Penalty=${e.details.penalty.toFixed(1)}`);
+        console.log(`   ORIGINAL: ${e.originalScore.toFixed(1)}, ADJUSTED: ${e.adjustedScore.toFixed(1)} ${e === bestSolution ? '← WINNER' : ''}`);
+      });
+      console.log(`\nChosen: ${bestSolution.orientation} (${bestSolution.description})`);
+      console.log(`Will render: ${bestSolution.lineCount} line(s), Font: ${bestSolution.fontSize.toFixed(1)}px`);
+    }
     
     // Store best solution for potential use in rendering
     // (This allows renderer to know if it should use wrapping, pre-truncated text, etc.)
@@ -2673,20 +2757,50 @@ class YearWheel {
     // MULTI-LINE RENDERING SUPPORT FOR HORIZONTAL TEXT
     // If renderDecision indicates multi-line, render stacked arcs
     if (renderDecision && renderDecision.allowWrapping && renderDecision.lineCount > 1) {
+      // Debug logging disabled for production
+      // if (text.includes('Roadbar') || text.includes('sport') || text.includes('Erbjudande') || text.includes('Fördjup')) {
+      //   console.log(`🎨 RENDERING "${text}" as MULTI-LINE:`);
+      //   console.log(`   renderDecision:`, renderDecision);
+      //   console.log(`   fontSize: ${renderDecision.fontSize}px`);
+      //   console.log(`   lineCount: ${renderDecision.lineCount}`);
+      //   console.log(`   availableArcLength: ${availableArcLength.toFixed(1)}px`);
+      // }
+      
       // Use pre-calculated decision for multi-line stacked arcs
       const words = text.split(/\s+/);
+      const wordCount = words.length;
       const lines = [];
       let currentLine = '';
+      
+      // Calculate wrapping threshold - MUST match the evaluation logic!
+      const aspectRatio = availableArcLength / width;
+      const targetLines = wordCount >= 4 ? 3 : 2;
+      let wrapThreshold;
+      if (aspectRatio > 3.0) {
+        const textLength = text.length;
+        if (textLength < 25 && wordCount <= 3) {
+          wrapThreshold = 0.25;
+        } else if (textLength < 40) {
+          wrapThreshold = 0.35;
+        } else if (textLength < 60) {
+          wrapThreshold = 0.45;
+        } else {
+          wrapThreshold = 0.55;
+        }
+      } else {
+        wrapThreshold = 0.70;
+      }
+      const wrapWidth = availableArcLength * wrapThreshold;
       
       this.context.save();
       this.context.font = `500 ${renderDecision.fontSize}px Arial, sans-serif`;
       
-      // Wrap text into lines
+      // Wrap text into lines with SAME threshold used during evaluation
       for (let word of words) {
         const testLine = currentLine ? currentLine + ' ' + word : word;
         const testWidth = this.context.measureText(testLine).width;
         
-        if (testWidth > availableArcLength && currentLine) {
+        if (testWidth > wrapWidth && currentLine) {
           lines.push(currentLine);
           currentLine = word;
         } else {
@@ -2695,6 +2809,12 @@ class YearWheel {
       }
       if (currentLine) lines.push(currentLine);
       this.context.restore();
+      
+      // Debug logging disabled for production
+      // if (text.includes('Roadbar') || text.includes('sport') || text.includes('Erbjudande') || text.includes('Fördjup')) {
+      //   console.log(`   Aspect ratio: ${aspectRatio.toFixed(2)}, wrapThreshold: ${wrapThreshold}, wrapWidth: ${wrapWidth.toFixed(1)}px`);
+      //   console.log(`   Wrapped into ${lines.length} lines:`, lines);
+      // }
       
       // Render each line on its own arc, stacked radially
       // Lines read OUTWARD (outer = first line, inner = last line)
