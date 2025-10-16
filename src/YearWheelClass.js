@@ -14,7 +14,7 @@ class YearWheel {
     this.size = size;
     this.events = events;
     this.options = options;
-    this.organizationData = options.organizationData || { items: [], rings: [], activityGroups: [] };
+    this.organizationData = options.organizationData || { items: [], rings: [], activityGroups: [], labels: [] };
     // Backward compatibility: convert old 'activities' to 'activityGroups'
     if (this.organizationData.activities && !this.organizationData.activityGroups) {
       this.organizationData.activityGroups = this.organizationData.activities;
