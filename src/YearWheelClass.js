@@ -1708,19 +1708,19 @@ class YearWheel {
         const maxLineWidth = Math.max(...lines.map(line => this.context.measureText(line).width));
         this.context.restore();
         
-        // CRITICAL: Reject solution if text doesn't fit bounds
-        const fitsVertically = totalRadialHeight <= maxRadialHeight;
-        const fitsHorizontally = maxLineWidth <= availableArcLength * 0.98; // 2% safety margin
+        // LENIENT VALIDATION: Check if text fits with generous margins
+        const fitsVertically = totalRadialHeight <= maxRadialHeight * 1.05; // 5% tolerance
+        const fitsHorizontally = maxLineWidth <= availableArcLength * 1.02; // 2% tolerance (was 0.98)
         
         if (!fitsVertically || !fitsHorizontally) {
-          // Solution doesn't fit - mark as failed and heavily penalize
+          // Solution doesn't fit - mark as failed but be lenient
           needsTruncation = true;
           truncationPercent = !fitsHorizontally ? 
             ((maxLineWidth - availableArcLength) / maxLineWidth) * 100 : 
             ((totalRadialHeight - maxRadialHeight) / totalRadialHeight) * 100;
           
-          // If overflow is significant, this solution should be rejected in favor of vertical
-          if (truncationPercent > 5) {
+          // Only reject if overflow is VERY significant (was 5%, now 15%)
+          if (truncationPercent > 15) {
             // Debug logging silenced for production
             // if (debugThisText) {
             //   console.log(`  ❌ REJECTED: ${!fitsHorizontally ? 'Horizontal' : 'Vertical'} overflow ${truncationPercent.toFixed(1)}%`);
@@ -1886,13 +1886,15 @@ class YearWheel {
       if (allowWrapping && lineCount >= 2) {
         // Bonus scales with how well it wraps
         if (orientation === 'horizontal') {
-          // HORIZONTAL MULTI-LINE: Extra bonus for preferred orientation with wrapping!
+          // HORIZONTAL MULTI-LINE: MASSIVE bonus for preferred orientation with wrapping!
           if (lineCount === 2) {
-            naturalScore += 25; // Perfect horizontal 2-line (was 15 - now even more preferred!)
+            naturalScore += 35; // Perfect horizontal 2-line (was 25 - HUGE preference!)
           } else if (lineCount === 3) {
-            naturalScore += 20; // Great horizontal 3-line (was 12 - now much better!)
+            naturalScore += 30; // Great horizontal 3-line (was 20 - VERY preferred!)
+          } else if (lineCount === 4) {
+            naturalScore += 18; // Horizontal 4-line (still good)
           } else {
-            naturalScore += 8;  // Horizontal 4+ lines
+            naturalScore += 10; // Horizontal 5+ lines (acceptable)
           }
         } else {
           // Vertical multi-line: good but not as preferred
