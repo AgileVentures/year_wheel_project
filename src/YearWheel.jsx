@@ -60,8 +60,12 @@ function YearWheel({
     t('common:monthsFull.december')
   ], [t, i18n.language]);
 
-  const zoomIn = () => {
-    if (!scrollContainerRef.current) return;
+  const maintainScrollCenter = useCallback((zoomChangeCallback) => {
+    if (!scrollContainerRef.current) {
+      zoomChangeCallback();
+      return;
+    }
+    
     const container = scrollContainerRef.current;
     
     // Get current scroll position as percentage of scrollable area
@@ -72,47 +76,28 @@ function YearWheel({
       ? container.scrollTop / (container.scrollHeight - container.clientHeight)
       : 0.5;
     
-    setZoomLevel(prev => {
-      const newZoom = Math.min(prev + 10, 200);
-      
-      // After zoom change, restore scroll position
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          const c = scrollContainerRef.current;
-          c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
-          c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
-        }
-      }, 0);
-      
-      return newZoom;
+    // Apply zoom change
+    zoomChangeCallback();
+    
+    // Restore scroll position after DOM updates
+    requestAnimationFrame(() => {
+      if (scrollContainerRef.current) {
+        const c = scrollContainerRef.current;
+        c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
+        c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
+      }
+    });
+  }, []);
+  
+  const zoomIn = () => {
+    maintainScrollCenter(() => {
+      setZoomLevel(prev => Math.min(prev + 10, 200));
     });
   };
   
   const zoomOut = () => {
-    if (!scrollContainerRef.current) return;
-    const container = scrollContainerRef.current;
-    
-    // Get current scroll position as percentage of scrollable area
-    const scrollXPercent = container.scrollWidth > container.clientWidth
-      ? container.scrollLeft / (container.scrollWidth - container.clientWidth)
-      : 0.5;
-    const scrollYPercent = container.scrollHeight > container.clientHeight
-      ? container.scrollTop / (container.scrollHeight - container.clientHeight)
-      : 0.5;
-    
-    setZoomLevel(prev => {
-      const newZoom = Math.max(prev - 10, 50);
-      
-      // After zoom change, restore scroll position
-      setTimeout(() => {
-        if (scrollContainerRef.current) {
-          const c = scrollContainerRef.current;
-          c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
-          c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
-        }
-      }, 0);
-      
-      return newZoom;
+    maintainScrollCenter(() => {
+      setZoomLevel(prev => Math.max(prev - 10, 50));
     });
   };
   
@@ -231,6 +216,28 @@ function YearWheel({
     }
   }, [zoomedMonth, zoomedQuarter]);
 
+  // Center scroll position on initial load and when container size changes
+  useEffect(() => {
+    if (!scrollContainerRef.current) return;
+    
+    const centerScrollPosition = () => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      
+      // Center the scroll
+      container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+      container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+    };
+    
+    // Center immediately
+    centerScrollPosition();
+    
+    // Also center after a brief delay to ensure layout is complete
+    const timer = setTimeout(centerScrollPosition, 50);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   // Apply zoom to canvas display size (separate from wheel creation)
   // Base display size is 1000px at 100% zoom (50% of internal 2000px resolution)
   useEffect(() => {
@@ -353,8 +360,8 @@ function YearWheel({
         <div style={{ 
           display: 'inline-block',
           position: 'relative',
-          minWidth: zoomLevel > 100 ? '200%' : '100%',
-          minHeight: zoomLevel > 100 ? '200%' : '100%',
+          minWidth: '200%',
+          minHeight: '200%',
         }}>
           <div style={{
             position: 'absolute',
@@ -448,31 +455,10 @@ function YearWheel({
               max="200"
               value={zoomLevel}
               onChange={(e) => {
-                if (!scrollContainerRef.current) {
-                  setZoomLevel(parseInt(e.target.value));
-                  return;
-                }
-                
-                const container = scrollContainerRef.current;
-                
-                // Get current scroll position as percentage
-                const scrollXPercent = container.scrollWidth > container.clientWidth
-                  ? container.scrollLeft / (container.scrollWidth - container.clientWidth)
-                  : 0.5;
-                const scrollYPercent = container.scrollHeight > container.clientHeight
-                  ? container.scrollTop / (container.scrollHeight - container.clientHeight)
-                  : 0.5;
-                
-                setZoomLevel(parseInt(e.target.value));
-                
-                // Restore scroll position after zoom
-                setTimeout(() => {
-                  if (scrollContainerRef.current) {
-                    const c = scrollContainerRef.current;
-                    c.scrollLeft = scrollXPercent * (c.scrollWidth - c.clientWidth);
-                    c.scrollTop = scrollYPercent * (c.scrollHeight - c.clientHeight);
-                  }
-                }, 0);
+                const newValue = parseInt(e.target.value);
+                maintainScrollCenter(() => {
+                  setZoomLevel(newValue);
+                });
               }}
               className="w-32 h-2 bg-gray-200 rounded-sm appearance-none cursor-pointer"
               title={`${zoomLevel}%`}
