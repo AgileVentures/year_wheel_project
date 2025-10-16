@@ -1150,22 +1150,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       };
       
       // Copy ALL items with new IDs and adjusted dates
+      // Keep original references to rings, activityGroups, and labels (shared at wheel level)
       const copiedItems = organizationData.items.map(item => ({
         ...item,
         id: `${item.id}_copy_${nextYear}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID
         startDate: adjustDateToNewYear(item.startDate, nextYear - currentYear),
         endDate: adjustDateToNewYear(item.endDate, nextYear - currentYear)
+        // ringId, activityId, labelId remain unchanged - they reference wheel-level structures
       }));
       
       // Create new page with copied items
+      // Rings, activityGroups, and labels come from wheel level (not copied here)
       const newPage = await createPage(wheelId, {
         year: nextYear,
         title: `${nextYear}`,
         organizationData: {
-          rings: [], // Don't copy - rings are shared at wheel level
-          activityGroups: [], // Don't copy - groups are shared at wheel level
-          labels: [], // Don't copy - labels are shared at wheel level
-          items: copiedItems // Copy all items with adjusted dates!
+          rings: [], // Empty - will use wheel-level rings
+          activityGroups: [], // Empty - will use wheel-level activityGroups
+          labels: [], // Empty - will use wheel-level labels
+          items: copiedItems // Only items are copied with adjusted dates
         }
       });
       
