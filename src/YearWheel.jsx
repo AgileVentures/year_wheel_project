@@ -295,18 +295,31 @@ function YearWheel({
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
       <div 
         ref={scrollContainerRef}
-        className="flex-1 flex items-center justify-center w-full overflow-auto bg-white"
+        className="flex-1 w-full overflow-auto bg-white"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
       >
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: `${2000 * (zoomLevel / 100)}px`,
-            height: `${2000 * (zoomLevel / 100)}px`,
-            maxWidth: 'none',
-            aspectRatio: '1 / 1',
-          }}
-          className="drop-shadow-2xl"
-        />
+        <div style={{ 
+          display: 'inline-block',
+          minWidth: '100%',
+          minHeight: '100%',
+          textAlign: 'center'
+        }}>
+          <canvas
+            ref={canvasRef}
+            style={{
+              width: `${2000 * (zoomLevel / 100)}px`,
+              height: `${2000 * (zoomLevel / 100)}px`,
+              maxWidth: 'none',
+              aspectRatio: '1 / 1',
+              display: 'inline-block'
+            }}
+            className="drop-shadow-2xl"
+          />
+        </div>
       </div>
       
       {/* Navigation arrows - only show when zoomed in beyond fit */}
