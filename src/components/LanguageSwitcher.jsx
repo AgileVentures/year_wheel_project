@@ -1,13 +1,32 @@
 import { useTranslation } from 'react-i18next';
 
+// SVG flag components for better cross-platform support
+const SwedishFlag = () => (
+  <svg className="w-5 h-4" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="16" height="10" fill="#006AA7"/>
+    <rect x="5" width="2" height="10" fill="#FECC00"/>
+    <rect y="4" width="16" height="2" fill="#FECC00"/>
+  </svg>
+);
+
+const BritishFlag = () => (
+  <svg className="w-5 h-4" viewBox="0 0 60 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="60" height="30" fill="#012169"/>
+    <path d="M0 0L60 30M60 0L0 30" stroke="white" strokeWidth="6"/>
+    <path d="M0 0L60 30M60 0L0 30" stroke="#C8102E" strokeWidth="4"/>
+    <path d="M30 0V30M0 15H60" stroke="white" strokeWidth="10"/>
+    <path d="M30 0V30M0 15H60" stroke="#C8102E" strokeWidth="6"/>
+  </svg>
+);
+
 const languages = {
   sv: {
-    flag: '🇸🇪',
+    flag: <SwedishFlag />,
     name: 'Svenska',
     code: 'SV'
   },
   en: {
-    flag: '🇬🇧',
+    flag: <BritishFlag />,
     name: 'English',
     code: 'EN'
   }
@@ -30,7 +49,7 @@ export default function LanguageSwitcher({ className = '' }) {
       title={`${otherLang.name}`}
       aria-label={`Switch language to ${otherLang.name}`}
     >
-      <span className="text-xl leading-none" role="img" aria-label={currentLang.name}>
+      <span className="flex items-center" role="img" aria-label={currentLang.name}>
         {currentLang.flag}
       </span>
       <span className="text-sm font-medium hidden sm:inline">{currentLang.code}</span>
