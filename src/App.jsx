@@ -247,6 +247,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
     
+    console.log('[loadWheelData] LOADING wheel:', wheelId);
     isLoadingData.current = true; // Prevent auto-save during load
     
     try {
@@ -278,6 +279,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           
           // Fetch items for this specific page only
           const pageItems = await fetchPageData(pageToLoad.id);
+          console.log('[loadWheelData] Loaded', pageItems.length, 'items for page', pageToLoad.id, 'Sample:', pageItems[0]);
           
           // Fetch rings, activity groups, and labels from database tables
           // CRITICAL: Use wheel_id - rings are SHARED across all pages!
@@ -303,6 +305,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             
             // Replace items with page-specific items from database
             orgData.items = pageItems;
+            console.log('[loadWheelData] Set orgData.items to', pageItems.length, 'items');
             
             // Replace rings, activityGroups, labels with database versions (using UUIDs)
             // Keep any client-ID entities from JSONB for backward compatibility
@@ -417,6 +420,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             }
             
             orgDataToSet = orgData;
+            console.log('[loadWheelData] Final orgData set:', {
+              items: orgData.items.length,
+              rings: orgData.rings.length,
+              activityGroups: orgData.activityGroups.length,
+              labels: orgData.labels.length
+            });
           }
         }
         
@@ -441,6 +450,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           setUndoableStates(updates, 'Ladda hjul');
           // Immediately block again to prevent other effects
           isLoadingData.current = true;
+          
+          // CRITICAL: Clear history after load to ensure we start with a clean slate
+          // This prevents undoing to an empty initial state
+          setTimeout(() => {
+            console.log('[loadWheelData] Clearing history after data load to prevent blank wheel on undo');
+            clearHistory();
+          }, 100); // Short delay to ensure state is fully updated
         }
         
         // Load other settings
@@ -2068,6 +2084,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         {/* Main Canvas Area */}
         <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
           <div className="w-full h-full flex items-center justify-center">
+            {console.log('[WheelEditor] Rendering YearWheel - items:', organizationData?.items?.length, 'rings:', organizationData?.rings?.length, 'groups:', organizationData?.activityGroups?.length)}
             <YearWheel
               title={title}
               year={year}
@@ -2268,6 +2285,19 @@ function AppContent() {
       // console.log('Redirecting to invite page:', `/invite/${pendingToken}`);
       return `/invite/${pendingToken}`;
     }
+    
+    // Check for pending template copy
+    const pendingCopy = localStorage.getItem('pendingTemplateCopy');
+    if (pendingCopy) {
+      try {
+        const intent = JSON.parse(pendingCopy);
+        return `/preview-wheel/${intent.wheelId}`;
+      } catch (error) {
+        console.error('[App] Error parsing pending template copy:', error);
+        localStorage.removeItem('pendingTemplateCopy');
+      }
+    }
+    
     return '/dashboard';
   };
 

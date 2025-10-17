@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchWheel, fetchPages, fetchPageData } from '../services/wheelService';
+import { fetchWheel, fetchPages, fetchPageData, createWheel, createPage, saveWheelData } from '../services/wheelService';
 import YearWheel from '../YearWheel';
-import { Eye, Lock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { Eye, Lock, ChevronLeft, ChevronRight, Calendar, Copy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import { useAuth } from '../hooks/useAuth';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -15,6 +16,7 @@ function PreviewWheelPage() {
   const { wheelId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation(['common']);
+  const { user } = useAuth();
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,6 +26,8 @@ function PreviewWheelPage() {
   const [currentPageItems, setCurrentPageItems] = useState([]);
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
+  const [isCopying, setIsCopying] = useState(false);
+  const pendingCopyProcessedRef = useRef(false);
 
   useEffect(() => {
     const loadWheel = async () => {
@@ -107,6 +111,226 @@ function PreviewWheelPage() {
     loadPageItems();
   }, [currentPageIndex, pages]);
 
+  // Copy template to user's account
+  const handleCopyTemplate = async () => {
+    if (!user) {
+      // Store template copy intent in localStorage for post-authentication
+      const templateIntent = {
+        wheelId: wheelId,
+        wheelTitle: wheelData.title,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('pendingTemplateCopy', JSON.stringify(templateIntent));
+      console.log('[PreviewWheelPage] Stored template copy intent:', templateIntent);
+      
+      const event = new CustomEvent('showToast', {
+        detail: { message: t('common:previewWheelPage.loginToCopy'), type: 'info' }
+      });
+      window.dispatchEvent(event);
+      
+      // Redirect to auth page
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      setIsCopying(true);
+      console.log('[PreviewWheelPage] Starting template copy...');
+
+      // Create new wheel with template data (use template's year, not current year!)
+      const templateYear = wheelData.year;
+      const newWheelId = await createWheel({
+        title: `${wheelData.title} (${t('common:previewWheelPage.copy')})`,
+        year: templateYear, // Use template's year, not current year!
+        colors: wheelData.colors,
+        showWeekRing: wheelData.showWeekRing,
+        showMonthRing: wheelData.showMonthRing,
+        showRingNames: wheelData.showRingNames,
+        showLabels: wheelData.showLabels,
+        weekRingDisplayMode: wheelData.weekRingDisplayMode
+        // Note: NOT passing organizationData here - will be set via pages
+      });
+
+      console.log('[PreviewWheelPage] New wheel created:', newWheelId, 'Year:', templateYear);
+      let totalItemsCopied = 0;
+
+      // CRITICAL: Create ID mappings for rings, groups, labels (like file import)
+      const idMapping = {
+        rings: {},
+        activityGroups: {},
+        labels: {}
+      };
+
+      // Regenerate ring IDs and create mapping
+      const newRings = wheelData.organizationData.rings.map(ring => {
+        const oldId = ring.id;
+        const newId = crypto.randomUUID();
+        idMapping.rings[oldId] = newId;
+        return { ...ring, id: newId };
+      });
+
+      // Regenerate activity group IDs and create mapping
+      const newActivityGroups = wheelData.organizationData.activityGroups.map(group => {
+        const oldId = group.id;
+        const newId = crypto.randomUUID();
+        idMapping.activityGroups[oldId] = newId;
+        return { ...group, id: newId };
+      });
+
+      // Regenerate label IDs and create mapping
+      const newLabels = wheelData.organizationData.labels.map(label => {
+        const oldId = label.id;
+        const newId = crypto.randomUUID();
+        idMapping.labels[oldId] = newId;
+        return { ...label, id: newId };
+      });
+
+      console.log('[PreviewWheelPage] Created ID mappings:', {
+        rings: Object.keys(idMapping.rings).length,
+        activityGroups: Object.keys(idMapping.activityGroups).length,
+        labels: Object.keys(idMapping.labels).length
+      });
+
+      // Copy all pages with their items (keep original years!)
+      for (const page of pages) {
+        console.log('[PreviewWheelPage] Processing page:', page.id, 'Year:', page.year);
+        
+        // Fetch items for this page
+        const pageItems = await fetchPageData(page.id);
+        console.log('[PreviewWheelPage] Fetched items for page:', pageItems.length);
+        
+        // Create new page for the new wheel FIRST (keep original year!)
+        const newPage = await createPage(newWheelId, {
+          year: page.year, // Keep template's page year!
+          title: page.title,
+          organizationData: {
+            rings: newRings, // Use rings with new IDs
+            activityGroups: newActivityGroups, // Use groups with new IDs
+            labels: newLabels, // Use labels with new IDs
+            items: [] // Will be saved separately
+          },
+          overrideColors: page.override_colors,
+          overrideShowWeekRing: page.override_show_week_ring,
+          overrideShowMonthRing: page.override_show_month_ring,
+          overrideShowRingNames: page.override_show_ring_names
+        });
+        
+        console.log('[PreviewWheelPage] New page created:', newPage.id, 'Year:', newPage.year);
+        
+        // Copy items with new IDs, remapped foreign keys, AND new pageId
+        const adjustedItems = pageItems.map(item => ({
+          ...item,
+          id: crypto.randomUUID(), // New ID for new wheel
+          pageId: newPage.id, // CRITICAL: Use new page ID, not template's pageId!
+          ringId: idMapping.rings[item.ringId] || item.ringId,
+          activityId: idMapping.activityGroups[item.activityId] || item.activityId,
+          labelId: item.labelId ? (idMapping.labels[item.labelId] || item.labelId) : null
+          // startDate and endDate stay the same!
+        }));
+        
+        console.log('[PreviewWheelPage] Sample item with remapped IDs and new pageId:', adjustedItems[0]);
+
+        // Save items to the new page
+        if (adjustedItems.length > 0) {
+          console.log('[PreviewWheelPage] Saving', adjustedItems.length, 'items to page:', newPage.id);
+          await saveWheelData(newWheelId, {
+            rings: newRings, // Use rings with new IDs
+            activityGroups: newActivityGroups, // Use groups with new IDs
+            labels: newLabels, // Use labels with new IDs
+            items: adjustedItems
+          }, newPage.id);
+          console.log('[PreviewWheelPage] Items saved successfully');
+          totalItemsCopied += adjustedItems.length;
+        } else {
+          console.log('[PreviewWheelPage] No items to save for this page');
+        }
+      }
+
+      console.log('[PreviewWheelPage] Template copy complete. Total items:', totalItemsCopied);
+
+      const successMessage = totalItemsCopied > 0 
+        ? `${t('common:previewWheelPage.templateCopied')} (${totalItemsCopied} aktiviteter)`
+        : t('common:previewWheelPage.templateCopied');
+      
+      const event = new CustomEvent('showToast', {
+        detail: { message: successMessage, type: 'success' }
+      });
+      window.dispatchEvent(event);
+      
+      navigate(`/dashboard/wheel/${newWheelId}`);
+    } catch (error) {
+      console.error('[PreviewWheelPage] Error copying template:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: t('common:previewWheelPage.copyFailed'), type: 'error' }
+      });
+      window.dispatchEvent(event);
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  // Check for pending template copy after authentication
+  useEffect(() => {
+    const checkPendingCopy = async () => {
+      console.log('[PreviewWheelPage] Checking pending copy...', {
+        user: !!user,
+        wheelData: !!wheelData,
+        pagesLength: pages.length,
+        wheelId,
+        processed: pendingCopyProcessedRef.current
+      });
+
+      if (!user || !wheelData || !pages.length || pendingCopyProcessedRef.current) {
+        return;
+      }
+
+      const pendingCopy = localStorage.getItem('pendingTemplateCopy');
+      console.log('[PreviewWheelPage] Pending copy from localStorage:', pendingCopy);
+      
+      if (!pendingCopy) return;
+
+      try {
+        const intent = JSON.parse(pendingCopy);
+        console.log('[PreviewWheelPage] Parsed intent:', intent);
+        
+        // Check if this is the wheel the user wanted to copy
+        if (intent.wheelId === wheelId) {
+          console.log('[PreviewWheelPage] wheelId matches! Proceeding with copy...');
+          
+          // Mark as processed to prevent double-execution
+          pendingCopyProcessedRef.current = true;
+          
+          // Clear the pending copy first
+          localStorage.removeItem('pendingTemplateCopy');
+          
+          // Show info toast
+          const event = new CustomEvent('showToast', {
+            detail: { 
+              message: t('common:previewWheelPage.processingTemplate'), 
+              type: 'info' 
+            }
+          });
+          window.dispatchEvent(event);
+          
+          // Small delay to ensure all data is loaded
+          setTimeout(() => {
+            console.log('[PreviewWheelPage] Triggering handleCopyTemplate...');
+            handleCopyTemplate();
+          }, 1000);
+        } else {
+          console.log('[PreviewWheelPage] wheelId mismatch. Intent:', intent.wheelId, 'Current:', wheelId);
+        }
+      } catch (error) {
+        console.error('[PreviewWheelPage] Error processing pending copy:', error);
+        localStorage.removeItem('pendingTemplateCopy');
+      }
+    };
+
+    checkPendingCopy();
+  }, [user, wheelData, pages, wheelId, t]);
+
+
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -188,6 +412,28 @@ function PreviewWheelPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Copy Template Button (for all users) */}
+            <button
+              onClick={handleCopyTemplate}
+              disabled={isCopying}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t('common:previewWheelPage.copyTemplateTooltip')}
+            >
+              {isCopying ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span className="text-sm font-medium">{t('common:previewWheelPage.copying')}</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={16} />
+                  <span className="text-sm font-medium">
+                    {user ? t('common:previewWheelPage.copyTemplate') : t('common:previewWheelPage.useTemplate')}
+                  </span>
+                </>
+              )}
+            </button>
+            
             {/* Language Switcher */}
             <LanguageSwitcher />
             

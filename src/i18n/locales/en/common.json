@@ -189,7 +189,16 @@
     "nextYear": "Next year",
     "readOnlyInfo": "This is a read-only preview.",
     "createYourOwn": "Create your own year wheel",
-    "errorLoading": "An error occurred while loading the wheel."
+    "errorLoading": "An error occurred while loading the wheel.",
+    "copyTemplate": "Copy template",
+    "useTemplate": "Use this template",
+    "copyTemplateTooltip": "Copy this template to my wheels",
+    "copying": "Copying...",
+    "copy": "Copy",
+    "templateCopied": "Template copied to your wheels!",
+    "copyFailed": "Failed to copy template",
+    "loginToCopy": "Log in to use this template",
+    "processingTemplate": "Creating your wheel from template..."
   },
   "footer": {
     "tagline": "Make yearly planning simple, clear, and effective for the whole team"

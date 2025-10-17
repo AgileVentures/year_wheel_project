@@ -192,6 +192,34 @@ export function useUndoRedo(initialState, options = {}) {
         return false;
       }
       
+      // SAFETY: Prevent undoing to a state with empty items if current state has items
+      // This prevents the wheel from going blank due to bad initial history state
+      // CRITICAL: Get current state from the current history entry, not from closure
+      const currentState = currentHist[currentIdx]?.state;
+      const targetState = historyEntry.state;
+      
+      console.log('[UNDO SAFETY CHECK]', {
+        currentItems: currentState?.organizationData?.items?.length || 0,
+        targetItems: targetState?.organizationData?.items?.length || 0,
+        currentIdx,
+        newIndex
+      });
+      
+      if (currentState?.organizationData?.items?.length > 0 && 
+          (!targetState?.organizationData?.items || targetState.organizationData.items.length === 0)) {
+        console.warn('[UNDO SAFETY] Preventing undo to empty state. Current items:', 
+          currentState.organizationData.items.length, 'Target items:', 
+          targetState?.organizationData?.items?.length || 0);
+        
+        // Show a toast to inform the user
+        const event = new CustomEvent('showToast', {
+          detail: { message: 'Kan inte ångra längre (initial tillstånd)', type: 'info' }
+        });
+        window.dispatchEvent(event);
+        
+        return false;
+      }
+      
       // Set flag IMMEDIATELY before any state updates
       isUndoRedoAction.current = true;
       
@@ -231,6 +259,34 @@ export function useUndoRedo(initialState, options = {}) {
       const historyEntry = currentHist[newIndex];
       if (!historyEntry) {
         console.error('Redo failed: history entry not found at index', newIndex);
+        return false;
+      }
+      
+      // SAFETY: Prevent redoing to a state with empty items if current state has items
+      // This prevents the wheel from going blank due to bad history state
+      // CRITICAL: Get current state from the current history entry, not from closure
+      const currentState = currentHist[currentIdx]?.state;
+      const targetState = historyEntry.state;
+      
+      console.log('[REDO SAFETY CHECK]', {
+        currentItems: currentState?.organizationData?.items?.length || 0,
+        targetItems: targetState?.organizationData?.items?.length || 0,
+        currentIdx,
+        newIndex
+      });
+      
+      if (currentState?.organizationData?.items?.length > 0 && 
+          (!targetState?.organizationData?.items || targetState.organizationData.items.length === 0)) {
+        console.warn('[REDO SAFETY] Preventing redo to empty state. Current items:', 
+          currentState.organizationData.items.length, 'Target items:', 
+          targetState?.organizationData?.items?.length || 0);
+        
+        // Show a toast to inform the user
+        const event = new CustomEvent('showToast', {
+          detail: { message: 'Kan inte göra om till tomt tillstånd', type: 'info' }
+        });
+        window.dispatchEvent(event);
+        
         return false;
       }
       

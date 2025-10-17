@@ -189,7 +189,16 @@
     "nextYear": "Nästa år",
     "readOnlyInfo": "Detta är en skrivskyddad förhandsgranskning.",
     "createYourOwn": "Skapa ditt eget årshjul",
-    "errorLoading": "Ett fel uppstod vid laddning av hjulet."
+    "errorLoading": "Ett fel uppstod vid laddning av hjulet.",
+    "copyTemplate": "Kopiera mall",
+    "useTemplate": "Använd denna mall",
+    "copyTemplateTooltip": "Kopiera denna mall till mina hjul",
+    "copying": "Kopierar...",
+    "copy": "Kopia",
+    "templateCopied": "Mall kopierad till dina hjul!",
+    "copyFailed": "Misslyckades med att kopiera mall",
+    "loginToCopy": "Logga in för att använda denna mall",
+    "processingTemplate": "Skapar ditt hjul från mallen..."
   },
   "footer": {
     "tagline": "Gör årsplanering enkel, tydlig och effektiv för hela teamet"

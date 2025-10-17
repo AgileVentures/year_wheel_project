@@ -189,8 +189,8 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [showCreateModal, setShowCreateModal] = useState(false);
   
   // Subscription state
-  const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading } = useUsageLimits();
-  const { isAdmin: isAdminUser, refresh: refreshSubscription } = useSubscription();
+  const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading, refresh: refreshSubscription } = useUsageLimits();
+  const { isAdmin: isAdminUser } = useSubscription();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
@@ -209,6 +209,12 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
         detail: { message: t('subscription:messages.activated'), type: 'success' } 
       });
       window.dispatchEvent(event);
+      
+      // Refresh subscription data
+      refreshSubscription();
+      
+      // Clean URL
+      window.history.replaceState({}, '', '/dashboard');
       
       // Poll subscription status (webhook might take a few seconds)
       let attempts = 0;
@@ -246,6 +252,26 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       return () => clearInterval(pollSubscription);
     }
   }, []); // Run only once on mount
+
+  // Check for pending template copy after authentication
+  useEffect(() => {
+    const pendingCopy = localStorage.getItem('pendingTemplateCopy');
+    
+    if (pendingCopy && user) {
+      console.log('[Dashboard] Found pending template copy, redirecting to preview page...');
+      
+      try {
+        const intent = JSON.parse(pendingCopy);
+        console.log('[Dashboard] Template intent:', intent);
+        
+        // Redirect to the preview page where the copy will be executed
+        navigate(`/preview-wheel/${intent.wheelId}`);
+      } catch (error) {
+        console.error('[Dashboard] Error parsing pending template copy:', error);
+        localStorage.removeItem('pendingTemplateCopy');
+      }
+    }
+  }, [user, navigate]);
 
   // Check admin status on mount
   useEffect(() => {
