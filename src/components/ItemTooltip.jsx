@@ -1,6 +1,7 @@
 import { X, Edit2, Trash2, GripVertical } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { showConfirmDialog } from '../utils/dialogs';
 
 function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClose, readonly = false }) {
   const { t, i18n } = useTranslation(['editor']);
@@ -175,8 +176,15 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
             <span>{t('editor:itemTooltip.edit')}</span>
           </button>
           <button
-            onClick={() => {
-              if (confirm(t('editor:itemTooltip.deleteConfirm', { name: item.name }))) {
+            onClick={async () => {
+              const confirmed = await showConfirmDialog({
+                title: t('editor:itemTooltip.deleteTitle', { defaultValue: 'Radera aktivitet' }),
+                message: t('editor:itemTooltip.deleteConfirm', { name: item.name }),
+                confirmText: t('editor:itemTooltip.deleteButton', { defaultValue: 'Radera' }),
+                cancelText: t('editor:itemTooltip.cancel', { defaultValue: 'Avbryt' }),
+                confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+              });
+              if (confirmed) {
                 onDelete(item.id);
                 onClose();
               }

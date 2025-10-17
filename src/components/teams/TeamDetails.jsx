@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import InviteMemberModal from './InviteMemberModal';
 import WheelCard from '../dashboard/WheelCard';
+import { showConfirmDialog, showToast } from '../../utils/dialogs';
 
 const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWheel }) => {
   const { t, i18n } = useTranslation(['teams']);
@@ -79,12 +80,20 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       onTeamDeleted(teamId);
     } catch (err) {
       console.error('Error deleting team:', err);
-      alert(t('teams:messages.errorDeleteTeam') + ': ' + err.message);
+      showToast(t('teams:messages.errorDeleteTeam') + ': ' + err.message, 'error');
     }
   };
 
   const handleRemoveMember = async (memberId, userId) => {
-    if (!confirm(t('teams:messages.removeMemberConfirm'))) return;
+    const confirmed = await showConfirmDialog({
+      title: t('teams:messages.removeMemberTitle', { defaultValue: 'Ta bort medlem' }),
+      message: t('teams:messages.removeMemberConfirm'),
+      confirmText: t('common:actions.remove', { defaultValue: 'Ta bort' }),
+      cancelText: t('common:actions.cancel', { defaultValue: 'Avbryt' }),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (!confirmed) return;
     
     try {
       await removeTeamMember(teamId, userId);
@@ -92,7 +101,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       setMemberMenuOpen(null);
     } catch (err) {
       console.error('Error removing member:', err);
-      alert(t('teams:messages.errorRemoveMember') + ': ' + err.message);
+      showToast(t('teams:messages.errorRemoveMember') + ': ' + err.message, 'error');
     }
   };
 
@@ -105,12 +114,20 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       setMemberMenuOpen(null);
     } catch (err) {
       console.error('Error changing role:', err);
-      alert(t('teams:messages.errorChangeRole') + ': ' + err.message);
+      showToast(t('teams:messages.errorChangeRole') + ': ' + err.message, 'error');
     }
   };
 
   const handleCancelInvitation = async (inviteId) => {
-    if (!confirm(t('teams:messages.cancelInviteConfirm'))) return;
+    const confirmed = await showConfirmDialog({
+      title: t('teams:messages.cancelInviteTitle', { defaultValue: 'Avbryt inbjudan' }),
+      message: t('teams:messages.cancelInviteConfirm'),
+      confirmText: t('common:actions.cancel', { defaultValue: 'Avbryt inbjudan' }),
+      cancelText: t('common:actions.back', { defaultValue: 'Tillbaka' }),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (!confirmed) return;
     
     try {
       await cancelInvitation(inviteId);
@@ -118,7 +135,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       setInviteMenuOpen(null);
     } catch (err) {
       console.error('Error canceling invitation:', err);
-      alert(t('teams:messages.errorCancelInvitation') + ': ' + err.message);
+      showToast(t('teams:messages.errorCancelInvitation') + ': ' + err.message, 'error');
     }
   };
 

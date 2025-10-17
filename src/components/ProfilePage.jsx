@@ -10,6 +10,7 @@ import {
   initiateGoogleOAuth, 
   disconnectProvider 
 } from '../services/integrationService';
+import { showConfirmDialog, showToast } from '../utils/dialogs';
 
 function ProfilePage({ onBack }) {
   const navigate = useNavigate();
@@ -114,7 +115,15 @@ function ProfilePage({ onBack }) {
   };
 
   const handleDisconnectGoogle = async (provider) => {
-    if (!confirm(t('common:profilePage.disconnectConfirm'))) {
+    const confirmed = await showConfirmDialog({
+      title: t('common:profilePage.disconnectTitle', { defaultValue: 'Koppla från integration' }),
+      message: t('common:profilePage.disconnectConfirm'),
+      confirmText: t('common:actions.disconnect', { defaultValue: 'Koppla från' }),
+      cancelText: t('common:actions.cancel', { defaultValue: 'Avbryt' }),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (!confirmed) {
       return;
     }
 

@@ -60,8 +60,11 @@ export function useUndoRedo(initialState, options = {}) {
   /**
    * Add state to history with optional label
    * Uses Immer to create immutable snapshots efficiently
+   * 
+   * @param {*} newState - New state to add to history
+   * @param {string|Object} label - Either a string (legacy) or { type, params } object for i18n
    */
-  const addToHistory = useCallback((newState, label = 'Ändring') => {
+  const addToHistory = useCallback((newState, label = { type: 'change' }) => {
     if (isUndoRedoAction.current) {
       return; // Don't add to history during undo/redo
     }
@@ -80,7 +83,12 @@ export function useUndoRedo(initialState, options = {}) {
       return;
     }
 
-    console.log('[HISTORY] Adding to history:', label);
+    // Normalize label to always be an object with { type, params }
+    const normalizedLabel = typeof label === 'string' 
+      ? { type: 'legacyString', text: label } // Legacy support for old string labels
+      : label;
+
+    console.log('[HISTORY] Adding to history:', normalizedLabel);
 
     // CRITICAL: Update both history and currentIndex atomically
     // Use ref to get current index to avoid stale closure
@@ -92,9 +100,9 @@ export function useUndoRedo(initialState, options = {}) {
         // Remove any future history (we're creating a new timeline)
         draft.splice(currentIdx + 1);
         
-        // Add new state with label (Immer freeze ensures deep immutability)
+        // Add new state with normalized label object (Immer freeze ensures deep immutability)
         // freeze() creates a deeply frozen copy, preventing accidental mutations
-        draft.push({ state: freeze(newState, true), label });
+        draft.push({ state: freeze(newState, true), label: normalizedLabel });
         
         // Limit history size and adjust save index if needed
         if (draft.length > limit) {

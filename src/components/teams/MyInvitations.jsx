@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Mail, Check, X, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getMyInvitations, acceptInvitation, declineInvitation } from '../../services/teamService';
+import { showConfirmDialog, showToast } from '../../utils/dialogs';
 
 const MyInvitations = ({ onInvitationAccepted }) => {
   const { t, i18n } = useTranslation(['teams']);
@@ -38,14 +39,22 @@ const MyInvitations = ({ onInvitationAccepted }) => {
       }
     } catch (err) {
       console.error('Error accepting invitation:', err);
-      alert(t('teams:myInvitations.errorAccept') + ': ' + err.message);
+      showToast(t('teams:myInvitations.errorAccept') + ': ' + err.message, 'error');
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleDecline = async (invitationId) => {
-    if (!confirm(t('teams:myInvitations.confirmDecline'))) return;
+    const confirmed = await showConfirmDialog({
+      title: t('teams:myInvitations.declineTitle', { defaultValue: 'Avböj inbjudan' }),
+      message: t('teams:myInvitations.confirmDecline'),
+      confirmText: t('common:actions.decline', { defaultValue: 'Avböj' }),
+      cancelText: t('common:actions.cancel', { defaultValue: 'Avbryt' }),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (!confirmed) return;
     
     try {
       setProcessingId(invitationId);
@@ -53,7 +62,7 @@ const MyInvitations = ({ onInvitationAccepted }) => {
       setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
     } catch (err) {
       console.error('Error declining invitation:', err);
-      alert(t('teams:myInvitations.errorDecline') + ': ' + err.message);
+      showToast(t('teams:myInvitations.errorDecline') + ': ' + err.message, 'error');
     } finally {
       setProcessingId(null);
     }

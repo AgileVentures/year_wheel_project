@@ -411,7 +411,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       >
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-lg p-3 shadow-sm ${
+            <div className={`max-w-[85%]  rounded-sm p-3 shadow-sm ${
                 m.role === 'user' ? 'bg-blue-600 text-white' :
                 m.isError ? 'bg-red-50 text-red-800 border border-red-200' :
                 'bg-white text-gray-900 border border-gray-200'
@@ -461,7 +461,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                   // Navigate to pricing or show subscription modal
                   window.location.href = '/pricing';
                 }}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg hover:from-amber-600 hover:to-orange-700 transition-all text-sm font-medium shadow-sm hover:shadow-md"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2  rounded-sm hover:from-amber-600 hover:to-orange-700 transition-all text-sm font-medium shadow-sm hover:shadow-md"
               >
                 {t('subscription:upgrade')}
               </button>

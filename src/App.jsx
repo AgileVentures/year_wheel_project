@@ -6,10 +6,13 @@ import OrganizationPanel from "./components/OrganizationPanel";
 import Header from "./components/Header";
 import PageNavigator from "./components/PageNavigator";
 import Toast from "./components/Toast";
+import ConfirmDialog from "./components/ConfirmDialog";
 import CookieConsent from "./components/CookieConsent";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import { useSubscription } from "./hooks/useSubscription.jsx";
+import { showConfirmDialog, showToast } from "./utils/dialogs";
+import { CHANGE_TYPES, getHistoryLabel, detectOrganizationChange } from "./constants/historyChangeTypes";
 
 // Lazy load route components for better code splitting
 const LandingPage = lazy(() => import("./components/LandingPage"));
@@ -27,7 +30,7 @@ const AddPageModal = lazy(() => import("./components/AddPageModal"));
 const AIAssistant = lazy(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazy(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazy(() => import("./components/AIAssistantOnboarding"));
-import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
+import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
@@ -108,72 +111,32 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     setUndoableStates(prevStates => ({
       ...prevStates,
       title: typeof value === 'function' ? value(prevStates.title) : value
-    }), 'Ändra titel');
+    }), { type: CHANGE_TYPES.CHANGE_TITLE });
   }, [setUndoableStates]);
-  
+
   const setYear = useCallback((value) => {
     setUndoableStates(prevStates => ({
       ...prevStates,
       year: typeof value === 'function' ? value(prevStates.year) : value
-    }), 'Ändra år');
+    }), { type: CHANGE_TYPES.CHANGE_YEAR });
   }, [setUndoableStates]);
   
   const setColors = useCallback((value) => {
     setUndoableStates(prevStates => ({
       ...prevStates,
       colors: typeof value === 'function' ? value(prevStates.colors) : value
-    }), 'Ändra färger');
-  }, [setUndoableStates]);
-  
-  const setOrganizationData = useCallback((value, explicitLabel) => {
-    // CRITICAL FIX: We need to pass label calculation to setUndoableStates properly
-    // First, we do a pre-calculation to get both the new data AND the label
+    }), { type: CHANGE_TYPES.CHANGE_COLORS });
+  }, [setUndoableStates]);  const setOrganizationData = useCallback((value, explicitLabel) => {
+    // Pre-calculate the new data and detect changes for auto-labeling
     let finalLabel = explicitLabel;
-    let newOrgDataForLabel;
     
-    // Pre-calculate if we need auto-label
     if (!finalLabel) {
-      // Get current state to compare
       const currentOrgData = undoableStates?.organizationData;
-      newOrgDataForLabel = typeof value === 'function' ? value(currentOrgData) : value;
+      const newOrgData = typeof value === 'function' ? value(currentOrgData) : value;
       
-      if (currentOrgData) {
-        const oldData = currentOrgData;
-        // Detect what changed
-        if (newOrgDataForLabel.rings?.length !== oldData.rings?.length) {
-          finalLabel = newOrgDataForLabel.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
-        } else if (newOrgDataForLabel.activityGroups?.length !== oldData.activityGroups?.length) {
-          finalLabel = newOrgDataForLabel.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
-        } else if (newOrgDataForLabel.labels?.length !== oldData.labels?.length) {
-          finalLabel = newOrgDataForLabel.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
-        } else if (newOrgDataForLabel.items?.length !== oldData.items?.length) {
-          finalLabel = newOrgDataForLabel.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
-        } else {
-          // Check for property changes in items (updates)
-          const itemChanged = newOrgDataForLabel.items?.some(item => {
-            const oldItem = oldData.items?.find(old => old.id === item.id);
-            if (!oldItem) return true;
-            return item.name !== oldItem.name || 
-                   item.startDate !== oldItem.startDate || 
-                   item.endDate !== oldItem.endDate ||
-                   item.ringId !== oldItem.ringId ||
-                   item.activityId !== oldItem.activityId;
-          });
-          
-          if (itemChanged) {
-            finalLabel = 'Uppdatera aktivitet';
-          } else {
-            // Check for visibility changes
-            const ringVisChanged = newOrgDataForLabel.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
-            const agVisChanged = newOrgDataForLabel.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
-            if (ringVisChanged) finalLabel = 'Växla ringsynlighet';
-            else if (agVisChanged) finalLabel = 'Växla aktivitetssynlighet';
-            else finalLabel = 'Ändra organisationsdata';
-          }
-        }
-      } else {
-        finalLabel = 'Ändra';
-      }
+      // Use the detection helper to determine change type
+      const changeType = detectOrganizationChange(currentOrgData, newOrgData);
+      finalLabel = { type: changeType };
     }
     
     // Now update state with the calculated label
@@ -192,7 +155,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         ...prevStates,
         organizationData: newOrgData 
       };
-    }, finalLabel || 'Ändra');
+    }, finalLabel);
   }, [setUndoableStates, undoableStates]);
   
   // Other non-undoable states
@@ -773,6 +736,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     };
   }, []); // Empty deps = only on mount/unmount
 
+  // Warn user before closing/reloading page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires returnValue to be set
+        return ''; // Some browsers show this message
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
     if (wheelId) return; // Skip if we have a wheelId
@@ -1342,14 +1319,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Delete a page
   const handleDeletePage = async (pageId) => {
     if (pages.length <= 1) {
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kan inte radera sista sidan', type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('Kan inte radera sista sidan', 'error');
       return;
     }
     
-    if (!confirm('Är du säker på att du vill radera denna sida?')) return;
+    const confirmed = await showConfirmDialog({
+      title: 'Radera sida',
+      message: 'Är du säker på att du vill radera denna sida?',
+      confirmText: 'Radera',
+      cancelText: 'Avbryt',
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (!confirmed) return;
     
     try {
       await deletePage(pageId);
@@ -1445,8 +1427,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   };
 
-  const handleReset = () => {
-    if (!confirm('Är du säker på att du vill återställa allt? All data kommer att raderas.')) return;
+  const handleReset = async () => {
+    const confirmed = await showConfirmDialog({
+      title: 'Återställ hjul',
+      message: 'Är du säker på att du vill återställa allt? All data kommer att raderas.',
+      confirmText: 'Återställ',
+      cancelText: 'Avbryt',
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (!confirmed) return;
     
     // Reset to clean state with one initial inner ring
     setTitle("Nytt hjul");
@@ -1536,7 +1526,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const handleDragStart = useCallback((item) => {
     console.log('[DRAG START] Beginning batch mode for:', item?.name);
     isDraggingRef.current = true;
-    const label = item ? `Dra ${item.name}` : 'Dra aktivitet';
+    const label = item 
+      ? { type: 'dragItem', params: { name: item.name } }
+      : { type: 'dragActivity' };
     startBatch(label);
     console.log('[DRAG START] Batch mode started');
   }, [startBatch]);
@@ -1550,7 +1542,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     // Calculate label inside functional update to avoid stale closure
     // BUT: Don't use label if we're in batch mode (drag) - the batch label will be used instead
-    let calculatedLabel = wasDragging ? undefined : 'Ändra aktivitet';
+    let calculatedLabel = wasDragging ? undefined : { type: 'changeActivity' };
     let actuallyChanged = false;
     
     setOrganizationData(prevData => {
@@ -1568,20 +1560,23 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Create descriptive label based on what changed (only if NOT dragging)
         if (!wasDragging) {
           if (ringChanged && datesChanged) {
-            calculatedLabel = `Flytta och ändra ${updatedItem.name}`;
+            calculatedLabel = { type: 'moveAndChange', params: { name: updatedItem.name } };
           } else if (ringChanged) {
             // Find ring names for more context
             const newRing = prevData.rings.find(r => r.id === updatedItem.ringId);
             if (newRing) {
-              calculatedLabel = `Flytta ${updatedItem.name} till ${newRing.name}`;
+              calculatedLabel = { 
+                type: 'moveToRing', 
+                params: { name: updatedItem.name, ring: newRing.name }
+              };
             } else {
-              calculatedLabel = `Flytta ${updatedItem.name}`;
+              calculatedLabel = { type: 'moveItem', params: { name: updatedItem.name } };
             }
           } else if (datesChanged) {
-            calculatedLabel = `Ändra datum för ${updatedItem.name}`;
+            calculatedLabel = { type: 'changeDates', params: { name: updatedItem.name } };
           } else {
             // Fallback for other changes (name, color, etc.)
-            calculatedLabel = `Redigera ${updatedItem.name}`;
+            calculatedLabel = { type: 'editItem', params: { name: updatedItem.name } };
           }
         }
       }
@@ -1604,22 +1599,42 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if (actuallyChanged) {
         console.log('[UPDATE] Drag resulted in changes, ending batch mode');
         endBatch();
+        // Optimized auto-save: only update the changed item instead of full wheel save
+        setTimeout(async () => {
+          if (wheelId && currentPageId) {
+            try {
+              console.log('[DRAG SAVE] Saving single item to database:', updatedItem.name);
+              // Create empty ID maps since we're only updating one item with existing UUIDs
+              await updateSingleItem(wheelId, currentPageId, updatedItem, new Map(), new Map(), new Map());
+              console.log('[DRAG SAVE] ✓ Item saved successfully');
+              
+              // Update the save timestamp to prevent realtime overwrites
+              lastSaveTimestamp.current = Date.now();
+              
+              // Mark as saved in undo/redo history
+              markSaved();
+            } catch (error) {
+              console.error('[DRAG SAVE] Failed to save item:', error);
+              showToast('Kunde inte spara ändringen', 'error');
+            }
+          }
+        }, 100); // Small delay to ensure state is fully updated
       } else {
         console.log('[UPDATE] Drag did NOT result in changes, canceling batch mode');
         cancelBatch();
       }
       console.log('[UPDATE] Batch mode ended');
     }
-  }, [setOrganizationData, endBatch, cancelBatch]);
+  }, [setOrganizationData, endBatch, cancelBatch, wheelId, currentPageId, markSaved, t]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
     // Calculate label inside functional update to avoid stale closure
-    let calculatedLabel = 'Ta bort aktivitet';
+    let calculatedLabel = { type: 'removeActivity' };
     
     setOrganizationData(prevData => {
       const itemToDelete = prevData.items.find(item => item.id === itemId);
       if (itemToDelete) {
-        calculatedLabel = `Ta bort ${itemToDelete.name}`;
+        calculatedLabel = { type: 'removeItem', params: { name: itemToDelete.name } };
       }
       
       return {
@@ -1903,6 +1918,39 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // console.log('[App] Updated lastSaveTimestamp to prevent realtime overwrites');
   }, [setColors]);
 
+  // Wrapper for back to dashboard that checks for unsaved changes
+  const handleBackToDashboard = useCallback(() => {
+    if (hasUnsavedChanges) {
+      // Show custom confirm dialog
+      const event = new CustomEvent('showConfirmDialog', {
+        detail: {
+          title: t('common:confirmLeave.title', { defaultValue: 'Osparade ändringar' }),
+          message: t('common:confirmLeave.message', { 
+            defaultValue: 'Du har osparade ändringar. Är du säker på att du vill lämna utan att spara?' 
+          }),
+          confirmText: t('common:confirmLeave.confirm', { defaultValue: 'Lämna ändå' }),
+          cancelText: t('common:confirmLeave.cancel', { defaultValue: 'Avbryt' }),
+          confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white',
+          onConfirm: () => {
+            // User confirmed - proceed to dashboard
+            if (onBackToDashboard) {
+              onBackToDashboard();
+            }
+          },
+          onCancel: () => {
+            // User cancelled - do nothing
+          }
+        }
+      });
+      window.dispatchEvent(event);
+    } else {
+      // No unsaved changes - go directly to dashboard
+      if (onBackToDashboard) {
+        onBackToDashboard();
+      }
+    }
+  }, [hasUnsavedChanges, onBackToDashboard, t]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1916,7 +1964,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       <Header 
         onSave={handleSave}
         isSaving={isSaving}
-        onBackToDashboard={wheelId ? onBackToDashboard : null}
+        onBackToDashboard={wheelId ? handleBackToDashboard : null}
         onSaveToFile={handleSaveToFile}
         onLoadFromFile={handleLoadFromFile}
         onReset={handleReset}
@@ -2271,6 +2319,7 @@ function App() {
       <AuthProvider>
         <AppContent />
         <CookieConsent />
+        <ConfirmDialog />
       </AuthProvider>
     </BrowserRouter>
   );

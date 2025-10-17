@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import { showToast } from '../utils/dialogs';
 import {
   Users,
   Activity,
@@ -138,7 +139,7 @@ export default function AdminPanel() {
       loadData(); // Reload data
     } catch (error) {
       console.error('Error toggling admin status:', error);
-      alert('Failed to update admin status');
+      showToast('Failed to update admin status', 'error');
     }
   };
 

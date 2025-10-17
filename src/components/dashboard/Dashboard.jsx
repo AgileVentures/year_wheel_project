@@ -19,6 +19,7 @@ import SubscriptionSettings from '../subscription/SubscriptionSettings';
 import LanguageSwitcher from '../LanguageSwitcher';
 import Footer from '../Footer';
 import MobileNav from './MobileNav';
+import { showConfirmDialog, showToast } from '../../utils/dialogs';
 
 // User Menu Dropdown Component
 function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManageSubscription }) {
@@ -325,7 +326,15 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   };
 
   const handleDeleteWheel = async (wheelId, wheelTitle) => {
-    if (!confirm(t('dashboard:messages.confirmDelete', { title: wheelTitle }))) return;
+    const confirmed = await showConfirmDialog({
+      title: t('dashboard:messages.deleteTitle', { defaultValue: 'Radera hjul' }),
+      message: t('dashboard:messages.confirmDelete', { title: wheelTitle }),
+      confirmText: t('common:actions.delete', { defaultValue: 'Radera' }),
+      cancelText: t('common:actions.cancel', { defaultValue: 'Avbryt' }),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (!confirmed) return;
     
     try {
       await deleteWheel(wheelId);
@@ -333,16 +342,10 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       // CRITICAL: Refresh subscription to update wheel count
       await refreshSubscription();
       // Show success feedback
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.deleted'), type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.deleted'), 'success');
     } catch (err) {
       console.error('Error deleting wheel:', err);
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.deleteError'), type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.deleteError'), 'error');
     }
   };
 

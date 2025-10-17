@@ -193,5 +193,38 @@
   },
   "footer": {
     "tagline": "Gör årsplanering enkel, tydlig och effektiv för hela teamet"
+  },
+  "history": {
+    "changeTitle": "Ändra titel",
+    "changeYear": "Ändra år",
+    "changeColors": "Ändra färger",
+    "addRing": "Lägg till ring",
+    "removeRing": "Ta bort ring",
+    "changeRingName": "Ändra ringnamn",
+    "changeRingColor": "Ändra ringfärg",
+    "toggleRingVisibility": "Växla ringsynlighet",
+    "addActivityGroup": "Lägg till aktivitetsgrupp",
+    "removeActivityGroup": "Ta bort aktivitetsgrupp",
+    "changeActivityGroupName": "Ändra aktivitetsgruppnamn",
+    "changeActivityGroupColor": "Ändra aktivitetsgruppfärg",
+    "toggleActivityVisibility": "Växla aktivitetssynlighet",
+    "addLabel": "Lägg till etikett",
+    "removeLabel": "Ta bort etikett",
+    "changeLabelName": "Ändra etikettnamn",
+    "changeLabelColor": "Ändra etikettfärg",
+    "addActivity": "Lägg till aktivitet",
+    "removeActivity": "Ta bort aktivitet",
+    "updateActivity": "Uppdatera aktivitet",
+    "changeOrganization": "Ändra organisationsdata",
+    "change": "Ändra",
+    "dragItem": "Dra {{name}}",
+    "dragActivity": "Dra aktivitet",
+    "changeActivity": "Ändra aktivitet",
+    "moveAndChange": "Flytta och ändra {{name}}",
+    "moveToRing": "Flytta {{name}} till {{ring}}",
+    "moveItem": "Flytta {{name}}",
+    "changeDates": "Ändra datum för {{name}}",
+    "editItem": "Redigera {{name}}",
+    "removeItem": "Ta bort {{name}}"
   }
 }

@@ -193,5 +193,38 @@
   },
   "footer": {
     "tagline": "Make yearly planning simple, clear, and effective for the whole team"
+  },
+  "history": {
+    "changeTitle": "Change title",
+    "changeYear": "Change year",
+    "changeColors": "Change colors",
+    "addRing": "Add ring",
+    "removeRing": "Remove ring",
+    "changeRingName": "Change ring name",
+    "changeRingColor": "Change ring color",
+    "toggleRingVisibility": "Toggle ring visibility",
+    "addActivityGroup": "Add activity group",
+    "removeActivityGroup": "Remove activity group",
+    "changeActivityGroupName": "Change activity group name",
+    "changeActivityGroupColor": "Change activity group color",
+    "toggleActivityVisibility": "Toggle activity visibility",
+    "addLabel": "Add label",
+    "removeLabel": "Remove label",
+    "changeLabelName": "Change label name",
+    "changeLabelColor": "Change label color",
+    "addActivity": "Add activity",
+    "removeActivity": "Remove activity",
+    "updateActivity": "Update activity",
+    "changeOrganization": "Change organization data",
+    "change": "Change",
+    "dragItem": "Drag {{name}}",
+    "dragActivity": "Drag activity",
+    "changeActivity": "Change activity",
+    "moveAndChange": "Move and change {{name}}",
+    "moveToRing": "Move {{name}} to {{ring}}",
+    "moveItem": "Move {{name}}",
+    "changeDates": "Change dates for {{name}}",
+    "editItem": "Edit {{name}}",
+    "removeItem": "Remove {{name}}"
   }
 }

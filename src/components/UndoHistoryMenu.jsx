@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { History, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { getHistoryLabel } from '../constants/historyChangeTypes';
 
 /**
  * UndoHistoryMenu Component
@@ -139,13 +140,19 @@ export default function UndoHistoryMenu({
                     }
                   `}
                   disabled={entry.isCurrent}
-                  title={entry.isCurrent ? 'Nuvarande position' : entry.isPast ? 'Klicka för att ångra till här' : 'Klicka för att gör om till här'}
+                  title={
+                    entry.isCurrent 
+                      ? t('common:history.currentPosition', { defaultValue: 'Nuvarande position' })
+                      : entry.isPast 
+                        ? t('common:history.clickToUndo', { defaultValue: 'Klicka för att ångra till här' })
+                        : t('common:history.clickToRedo', { defaultValue: 'Klicka för att gör om till här' })
+                  }
                 >
                   <div className="flex items-center gap-2">
                     {entry.isPast && <span className="text-gray-400">←</span>}
                     {entry.isFuture && <span className="text-gray-400">→</span>}
                     <span className="truncate flex-1">
-                      {entry.label || t('common:actions.unknownAction', { defaultValue: 'Okänd åtgärd' })}
+                      {getHistoryLabel(t, entry.label) || t('common:actions.unknownAction', { defaultValue: 'Okänd åtgärd' })}
                     </span>
                     {entry.isCurrent && (
                       <span className="ml-2 text-xs text-blue-600 font-normal">

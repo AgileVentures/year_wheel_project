@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { getUserTeams } from '../../services/teamService';
+import { showToast } from '../../utils/dialogs';
 
 export default function CreateWheelModal({ onClose, onCreate }) {
   const { t } = useTranslation(['dashboard', 'common']);
@@ -41,7 +42,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
       onClose();
     } catch (err) {
       console.error('Error creating wheel:', err);
-      alert(t('dashboard:messages.createError') + ': ' + err.message);
+      showToast(t('dashboard:messages.createError') + ': ' + err.message, 'error');
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import { Crown, Calendar, CreditCard, X, CheckCircle, AlertCircle } from 'lucide
 import { useTranslation } from 'react-i18next';
 import { useSubscription } from '../../hooks/useSubscription';
 import { createPortalSession, cancelSubscription } from '../../services/subscriptionService';
+import { showToast } from '../../utils/dialogs';
 
 export default function SubscriptionSettings({ onClose }) {
   const { t, i18n } = useTranslation(['subscription']);
@@ -16,7 +17,7 @@ export default function SubscriptionSettings({ onClose }) {
       window.location.href = url;
     } catch (error) {
       console.error('Error opening billing portal:', error);
-      alert(t('subscription:settings.alerts.billingError'));
+      showToast(t('subscription:settings.alerts.billingError'), 'error');
     }
   };
 
@@ -27,10 +28,10 @@ export default function SubscriptionSettings({ onClose }) {
       await refresh();
       setShowCancelConfirm(false);
       
-      alert(t('subscription:settings.alerts.canceled'));
+      showToast(t('subscription:settings.alerts.canceled'), 'success');
     } catch (error) {
       console.error('Error canceling subscription:', error);
-      alert(t('subscription:settings.alerts.cancelError'));
+      showToast(t('subscription:settings.alerts.cancelError'), 'error');
     } finally {
       setCanceling(false);
     }

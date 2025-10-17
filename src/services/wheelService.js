@@ -752,6 +752,78 @@ const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, p
 };
 
 /**
+ * Update a single item in the database (optimized for drag operations)
+ * @param {string} wheelId - The wheel ID
+ * @param {string} pageId - The page ID
+ * @param {object} item - The item to update
+ * @param {Map} ringIdMap - Ring ID mappings (oldId -> newId)
+ * @param {Map} activityIdMap - Activity ID mappings (oldId -> newId)
+ * @param {Map} labelIdMap - Label ID mappings (oldId -> newId)
+ * @returns {Promise<void>}
+ */
+export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Map(), activityIdMap = new Map(), labelIdMap = new Map()) => {
+  console.log(`[updateSingleItem] Updating item "${item.name}" (ID: ${item.id})`);
+  
+  // Map old IDs to new database UUIDs
+  let ringId = ringIdMap.get(item.ringId) || item.ringId;
+  let activityId = activityIdMap.get(item.activityId) || item.activityId;
+  let labelId = item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null;
+  
+  // Validate that ring_id and activity_id exist
+  const isValidUUID = (id) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  
+  // If IDs are still not valid UUIDs, throw error
+  if (!isValidUUID(ringId)) {
+    throw new Error(`Invalid ring_id for item "${item.name}": ${item.ringId} -> ${ringId}`);
+  }
+  
+  if (!isValidUUID(activityId)) {
+    throw new Error(`Invalid activity_id for item "${item.name}": ${item.activityId} -> ${activityId}`);
+  }
+  
+  // Validate labelId if present
+  if (labelId && !isValidUUID(labelId)) {
+    console.warn(`Item "${item.name}" - invalid label_id, setting to null: ${item.labelId} -> ${labelId}`);
+    labelId = null;
+  }
+  
+  const itemData = {
+    wheel_id: wheelId,
+    ring_id: ringId,
+    activity_id: activityId,
+    label_id: labelId || null,
+    name: item.name,
+    start_date: item.startDate,
+    end_date: item.endDate,
+    time: item.time || null,
+    page_id: item.pageId || pageId || null,
+  };
+  
+  console.log(`[updateSingleItem] Item data:`, itemData);
+  
+  // Check if item exists in database
+  const isNew = !item.id || item.id.startsWith('item-');
+  
+  if (isNew) {
+    console.log(`[updateSingleItem] Inserting new item "${item.name}"`);
+    const { error } = await supabase.from('items').insert(itemData);
+    if (error) {
+      console.error(`Error inserting item "${item.name}":`, error);
+      throw error;
+    }
+    console.log(`[updateSingleItem] ✓ Successfully inserted item "${item.name}"`);
+  } else {
+    console.log(`[updateSingleItem] Updating existing item "${item.name}"`);
+    const { error } = await supabase.from('items').update(itemData).eq('id', item.id);
+    if (error) {
+      console.error(`Error updating item "${item.name}":`, error);
+      throw error;
+    }
+    console.log(`[updateSingleItem] ✓ Successfully updated item "${item.name}"`);
+  }
+};
+
+/**
  * Delete a wheel (and all related data via CASCADE)
  */
 export const deleteWheel = async (wheelId) => {

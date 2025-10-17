@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Check, Crown, Zap, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { createCheckoutSession } from '../../services/subscriptionService';
+import { showToast } from '../../utils/dialogs';
 
 export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
   const { t } = useTranslation(['subscription']);
@@ -33,7 +34,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
       }
     } catch (error) {
       console.error('Error starting checkout:', error);
-      alert(t('subscription:messages.error'));
+      showToast(t('subscription:messages.error'), 'error');
     } finally {
       setLoading(false);
     }

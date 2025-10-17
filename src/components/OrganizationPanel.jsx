@@ -6,6 +6,7 @@ import AddAktivitetModal from './AddAktivitetModal';
 import EditAktivitetModal from './EditAktivitetModal';
 import RingIntegrationModal from './RingIntegrationModal';
 import { getRingIntegrations } from '../services/integrationService';
+import { showConfirmDialog } from '../utils/dialogs';
 
 function OrganizationPanel({ 
   organizationData,
@@ -34,6 +35,64 @@ function OrganizationPanel({
   const [integrationRing, setIntegrationRing] = useState(null); // Ring being configured for integration
   const [ringIntegrations, setRingIntegrations] = useState({}); // Track which rings have integrations: {ringId: true/false}
   const loadingIntegrationsRef = useRef(false);
+  
+  // Local state for title to avoid updating history on every keystroke
+  const [localTitle, setLocalTitle] = useState(title || '');
+  
+  // Local state for ring names, activity group names, and label names
+  const [localRingNames, setLocalRingNames] = useState({});
+  const [localActivityGroupNames, setLocalActivityGroupNames] = useState({});
+  const [localLabelNames, setLocalLabelNames] = useState({});
+  
+  // Track which fields are currently being edited (have focus)
+  const editingFieldRef = useRef({ type: null, id: null });
+  
+  // Sync local title when prop changes (e.g., from undo/redo or load)
+  useEffect(() => {
+    setLocalTitle(title || '');
+  }, [title]);
+  
+  // Sync local ring names when organizationData changes (but not while editing)
+  useEffect(() => {
+    const ringNamesMap = {};
+    organizationData.rings.forEach(ring => {
+      // Only update if we're not currently editing this specific ring
+      if (editingFieldRef.current.type === 'ring' && editingFieldRef.current.id === ring.id) {
+        ringNamesMap[ring.id] = localRingNames[ring.id] || ring.name;
+      } else {
+        ringNamesMap[ring.id] = ring.name;
+      }
+    });
+    setLocalRingNames(ringNamesMap);
+  }, [organizationData.rings]);
+  
+  // Sync local activity group names when organizationData changes (but not while editing)
+  useEffect(() => {
+    const groupNamesMap = {};
+    (organizationData.activityGroups || []).forEach(group => {
+      // Only update if we're not currently editing this specific group
+      if (editingFieldRef.current.type === 'activityGroup' && editingFieldRef.current.id === group.id) {
+        groupNamesMap[group.id] = localActivityGroupNames[group.id] || group.name;
+      } else {
+        groupNamesMap[group.id] = group.name;
+      }
+    });
+    setLocalActivityGroupNames(groupNamesMap);
+  }, [organizationData.activityGroups]);
+  
+  // Sync local label names when organizationData changes (but not while editing)
+  useEffect(() => {
+    const labelNamesMap = {};
+    organizationData.labels.forEach(label => {
+      // Only update if we're not currently editing this specific label
+      if (editingFieldRef.current.type === 'label' && editingFieldRef.current.id === label.id) {
+        labelNamesMap[label.id] = localLabelNames[label.id] || label.name;
+      } else {
+        labelNamesMap[label.id] = label.name;
+      }
+    });
+    setLocalLabelNames(labelNamesMap);
+  }, [organizationData.labels]);
   
   // Load integration status for all rings
   useEffect(() => {
@@ -381,6 +440,21 @@ function OrganizationPanel({
   };
 
   const handleRingNameChange = (ringId, newName) => {
+    // Update local state immediately
+    setLocalRingNames(prev => ({ ...prev, [ringId]: newName }));
+  };
+  
+  const handleRingNameFocus = (ringId) => {
+    // Mark this field as being edited
+    editingFieldRef.current = { type: 'ring', id: ringId };
+  };
+  
+  const handleRingNameBlur = (ringId) => {
+    // Clear editing state
+    editingFieldRef.current = { type: null, id: null };
+    
+    // Commit to global state on blur
+    const newName = localRingNames[ringId];
     const updatedRings = organizationData.rings.map(ring =>
       ring.id === ringId ? { ...ring, name: newName } : ring
     );
@@ -439,6 +513,21 @@ function OrganizationPanel({
   };
 
   const handleActivityGroupNameChange = (groupId, newName) => {
+    // Update local state immediately
+    setLocalActivityGroupNames(prev => ({ ...prev, [groupId]: newName }));
+  };
+  
+  const handleActivityGroupNameFocus = (groupId) => {
+    // Mark this field as being edited
+    editingFieldRef.current = { type: 'activityGroup', id: groupId };
+  };
+  
+  const handleActivityGroupNameBlur = (groupId) => {
+    // Clear editing state
+    editingFieldRef.current = { type: null, id: null };
+    
+    // Commit to global state on blur
+    const newName = localActivityGroupNames[groupId];
     const updatedGroups = (organizationData.activityGroups || []).map(group =>
       group.id === groupId ? { ...group, name: newName } : group
     );
@@ -471,6 +560,21 @@ function OrganizationPanel({
   };
 
   const handleLabelNameChange = (labelId, newName) => {
+    // Update local state immediately
+    setLocalLabelNames(prev => ({ ...prev, [labelId]: newName }));
+  };
+  
+  const handleLabelNameFocus = (labelId) => {
+    // Mark this field as being edited
+    editingFieldRef.current = { type: 'label', id: labelId };
+  };
+  
+  const handleLabelNameBlur = (labelId) => {
+    // Clear editing state
+    editingFieldRef.current = { type: null, id: null };
+    
+    // Commit to global state on blur
+    const newName = localLabelNames[labelId];
     const updatedLabels = organizationData.labels.map(label =>
       label.id === labelId ? { ...label, name: newName } : label
     );
@@ -520,8 +624,14 @@ function OrganizationPanel({
           </label>
           <input
             type="text"
-            value={title || ''}
-            onChange={(e) => onTitleChange && onTitleChange(e.target.value)}
+            value={localTitle}
+            onChange={(e) => setLocalTitle(e.target.value)}
+            onBlur={(e) => {
+              const trimmedValue = e.target.value.trim();
+              if (trimmedValue !== title) {
+                onTitleChange && onTitleChange(trimmedValue || title);
+              }
+            }}
             placeholder={t('editor:wheelTitle.placeholder')}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -676,8 +786,15 @@ function OrganizationPanel({
                             <Edit2 size={14} />
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm(t('editor:activities.confirmDelete', { name: item.name }))) {
+                            onClick={async () => {
+                              const confirmed = await showConfirmDialog({
+                                title: t('editor:activities.deleteTitle', { defaultValue: 'Radera aktivitet' }),
+                                message: t('editor:activities.confirmDelete', { name: item.name }),
+                                confirmText: t('common:actions.delete', { defaultValue: 'Radera' }),
+                                cancelText: t('common:actions.cancel', { defaultValue: 'Avbryt' }),
+                                confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+                              });
+                              if (confirmed) {
                                 handleDeleteAktivitet(item.id);
                               }
                             }}
@@ -862,8 +979,10 @@ function OrganizationPanel({
                     />
                     <input
                       type="text"
-                      value={ring.name}
+                      value={localRingNames[ring.id] || ring.name}
                       onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
+                      onFocus={() => handleRingNameFocus(ring.id)}
+                      onBlur={() => handleRingNameBlur(ring.id)}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -975,8 +1094,10 @@ function OrganizationPanel({
                     />
                     <input
                       type="text"
-                      value={ring.name}
+                      value={localRingNames[ring.id] || ring.name}
                       onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
+                      onFocus={() => handleRingNameFocus(ring.id)}
+                      onBlur={() => handleRingNameBlur(ring.id)}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -1089,8 +1210,10 @@ function OrganizationPanel({
                     />
                     <input
                       type="text"
-                      value={group.name}
+                      value={localActivityGroupNames[group.id] || group.name}
                       onChange={(e) => handleActivityGroupNameChange(group.id, e.target.value)}
+                      onFocus={() => handleActivityGroupNameFocus(group.id)}
+                      onBlur={() => handleActivityGroupNameBlur(group.id)}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -1174,8 +1297,10 @@ function OrganizationPanel({
                     />
                     <input
                       type="text"
-                      value={label.name}
+                      value={localLabelNames[label.id] || label.name}
                       onChange={(e) => handleLabelNameChange(label.id, e.target.value)}
+                      onFocus={() => handleLabelNameFocus(label.id)}
+                      onBlur={() => handleLabelNameBlur(label.id)}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
