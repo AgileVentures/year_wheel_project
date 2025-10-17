@@ -6,6 +6,7 @@ import PublicShareButton from './PublicShareButton';
 import PageNavigator from './PageNavigator';
 import LanguageSwitcher from './LanguageSwitcher';
 import OnboardingMenu from './OnboardingMenu';
+import UndoHistoryMenu from './UndoHistoryMenu';
 import { useState } from 'react';
 
 function Header({ 
@@ -36,6 +37,9 @@ function Header({
   canRedo = false,
   undoLabel = '',
   redoLabel = '',
+  undoHistory = [],
+  currentHistoryIndex = 0,
+  onJumpToHistory,
   undoToSave,
   unsavedChangesCount = 0,
   // Page navigation props
@@ -122,49 +126,19 @@ function Header({
       </div>
 
       <div className="flex items-center gap-1 sm:gap-3">
-        {/* Undo/Redo Buttons with Keyboard Hints - Hidden on mobile */}
+        {/* History Menu - Hidden on mobile */}
         {onUndo && onRedo && (
           <>
             <div className="hidden md:flex items-center gap-1">
-              <button
-                onClick={onUndo}
-                disabled={!canUndo}
-                className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed group relative"
-                title={`${t('common:actions.undo')}${undoLabel ? ': ' + undoLabel : ''} (Ctrl+Z)`}
-                aria-label={t('common:actions.undo')}
-              >
-                <Undo size={14} />
-                {/* Show descriptive label if available */}
-                {undoLabel && canUndo && (
-                  <span className="text-xs max-w-[120px] truncate">
-                    {undoLabel}
-                  </span>
-                )}
-                {/* Keyboard hint tooltip */}
-                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                  Ctrl+Z{undoLabel && ` • ${undoLabel}`}
-                </span>
-              </button>
-              <button
-                onClick={onRedo}
-                disabled={!canRedo}
-                className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed group relative"
-                title={`${t('common:actions.redo')}${redoLabel ? ': ' + redoLabel : ''} (Ctrl+Shift+Z)`}
-                aria-label={t('common:actions.redo')}
-              >
-                <Redo size={14} />
-                {/* Show descriptive label if available */}
-                {redoLabel && canRedo && (
-                  <span className="text-xs max-w-[120px] truncate">
-                    {redoLabel}
-                  </span>
-                )}
-                {/* Keyboard hint tooltip */}
-                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                  Ctrl+Shift+Z{redoLabel && ` • ${redoLabel}`}
-                </span>
-              </button>
-              {/* "Till sparning" button removed - use Historik feature instead for restoring saved versions */}
+              <UndoHistoryMenu
+                history={undoHistory}
+                currentIndex={currentHistoryIndex}
+                jumpToIndex={onJumpToHistory}
+                undo={onUndo}
+                redo={onRedo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+              />
             </div>
             <div className="hidden md:block w-px h-8 bg-gray-300"></div>
           </>

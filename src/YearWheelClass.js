@@ -531,18 +531,37 @@ class YearWheel {
     while (rawAngle < 0) rawAngle += 360;
     while (rawAngle >= 360) rawAngle -= 360;
     
-    // Each month is 30 degrees (360 / 12)
-    const monthFloat = rawAngle / 30;
-    const month = Math.floor(monthFloat);
-    const dayFloat = (monthFloat - month) * 30; // 0-30 range
-    
-    // Calculate actual day considering days in month
-    const daysInMonth = new Date(this.year, month + 1, 0).getDate();
-    const day = Math.max(1, Math.min(daysInMonth, Math.round((dayFloat / 30) * daysInMonth + 1)));
-    
-    // Create date (months are 0-indexed in JavaScript Date)
-    const date = new Date(this.year, month, day);
-    return date;
+    // Handle zoomed views (quarter or month)
+    if (this.zoomedMonth !== null) {
+      // Single month zoom: 360 degrees = 1 month
+      const daysInMonth = new Date(this.year, this.zoomedMonth + 1, 0).getDate();
+      const dayFloat = (rawAngle / 360) * daysInMonth;
+      const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat + 1)));
+      return new Date(this.year, this.zoomedMonth, day);
+    } else if (this.zoomedQuarter !== null) {
+      // Quarter zoom: 360 degrees = 3 months (each month = 120 degrees)
+      const quarterStartMonth = this.zoomedQuarter * 3;
+      const monthInQuarter = Math.floor(rawAngle / 120); // 0, 1, or 2
+      const angleInMonth = rawAngle - (monthInQuarter * 120); // 0-120
+      const month = quarterStartMonth + monthInQuarter;
+      
+      const daysInMonth = new Date(this.year, month + 1, 0).getDate();
+      const dayFloat = (angleInMonth / 120) * daysInMonth;
+      const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat + 1)));
+      return new Date(this.year, month, day);
+    } else {
+      // Full year view: Each month is 30 degrees (360 / 12)
+      const monthFloat = rawAngle / 30;
+      const month = Math.floor(monthFloat);
+      const dayFloat = (monthFloat - month) * 30; // 0-30 range
+      
+      // Calculate actual day considering days in month
+      const daysInMonth = new Date(this.year, month + 1, 0).getDate();
+      const day = Math.max(1, Math.min(daysInMonth, Math.round((dayFloat / 30) * daysInMonth + 1)));
+      
+      // Create date (months are 0-indexed in JavaScript Date)
+      return new Date(this.year, month, day);
+    }
   }
 
   // Detect which part of activity is clicked: 'resize-start', 'move', or 'resize-end'
@@ -3126,6 +3145,11 @@ class YearWheel {
           previewEndAngle: itemRegion.endAngle,
         };
         
+        // Notify parent that drag has started (for undo/redo batch mode)
+        if (this.options.onDragStart) {
+          this.options.onDragStart(freshItem);
+        }
+        
         // Set cursor based on drag mode
         if (dragMode === 'resize-start' || dragMode === 'resize-end') {
           this.canvas.style.cursor = 'ew-resize';
@@ -3883,7 +3907,12 @@ class YearWheel {
             let itemEndDate = new Date(item.endDate);
             
             // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
-            if (itemEndDate < minDate || itemStartDate > maxDate) return;
+            if (itemEndDate < minDate || itemStartDate > maxDate) {
+              console.log('[FILTER] Skipping item outside date range:', item.name, 
+                'dates:', item.startDate, '-', item.endDate,
+                'visible range:', minDate.toISOString().split('T')[0], '-', maxDate.toISOString().split('T')[0]);
+              return;
+            }
             
             // Clip item dates to visible boundaries
             if (itemStartDate < minDate) itemStartDate = minDate;
@@ -4111,7 +4140,12 @@ class YearWheel {
           let itemEndDate = new Date(item.endDate);
           
           // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
-          if (itemEndDate < minDate || itemStartDate > maxDate) return;
+          if (itemEndDate < minDate || itemStartDate > maxDate) {
+            console.log('[FILTER INNER] Skipping item outside date range:', item.name,
+              'dates:', item.startDate, '-', item.endDate,
+              'visible range:', minDate.toISOString().split('T')[0], '-', maxDate.toISOString().split('T')[0]);
+            return;
+          }
           
           // Clip item dates to visible boundaries
           if (itemStartDate < minDate) itemStartDate = minDate;

@@ -18,12 +18,14 @@ import { produce, current, freeze } from 'immer';
  * @param {Object} options - Configuration options
  * @param {number} options.limit - Max history entries (default: 50)
  * @param {boolean} options.enableKeyboard - Enable keyboard shortcuts (default: true)
+ * @param {Object} options.shouldSkipHistory - Ref that indicates whether to skip adding to history
  * @returns {Object} { state, setState, undo, redo, canUndo, canRedo, clear, historyLength, currentIndex }
  */
 export function useUndoRedo(initialState, options = {}) {
   const {
-    limit = 50,
-    enableKeyboard = true
+    limit = 10,
+    enableKeyboard = true,
+    shouldSkipHistory = null
   } = options;
 
   // Current state
@@ -32,6 +34,16 @@ export function useUndoRedo(initialState, options = {}) {
   // History stacks with metadata (using Immer freeze for immutability)
   const [history, setHistory] = useState([{ state: freeze(initialState, true), label: 'Start' }]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // Refs to track current values synchronously (prevents stale closures)
+  const historyRef = useRef(history);
+  const currentIndexRef = useRef(currentIndex);
+  
+  // Update refs whenever state changes
+  useEffect(() => {
+    historyRef.current = history;
+    currentIndexRef.current = currentIndex;
+  }, [history, currentIndex]);
   
   // Flag to prevent adding to history during undo/redo
   const isUndoRedoAction = useRef(false);
@@ -43,6 +55,7 @@ export function useUndoRedo(initialState, options = {}) {
   const isBatchMode = useRef(false);
   const batchModeLabel = useRef('');
   const batchModeState = useRef(null);
+  const batchModeInitialState = useRef(null);
 
   /**
    * Add state to history with optional label
@@ -53,18 +66,31 @@ export function useUndoRedo(initialState, options = {}) {
       return; // Don't add to history during undo/redo
     }
 
+    // Check if caller wants to skip history (e.g., during data load)
+    if (shouldSkipHistory?.current) {
+      console.log('[HISTORY] Skipping history during load/import');
+      return;
+    }
+
     // In batch mode, just store the latest state without adding to history yet
     if (isBatchMode.current) {
+      console.log('[BATCH] In batch mode, storing state instead of adding to history');
       // Use Immer freeze to ensure immutability in batch mode
       batchModeState.current = freeze(newState, true);
       return;
     }
 
+    console.log('[HISTORY] Adding to history:', label);
+
+    // CRITICAL: Update both history and currentIndex atomically
+    // Use ref to get current index to avoid stale closure
+    const currentIdx = currentIndexRef.current;
+    
     setHistory(prev => {
       // Use Immer produce to create new history array immutably
-      return produce(prev, draft => {
+      const newHistory = produce(prev, draft => {
         // Remove any future history (we're creating a new timeline)
-        draft.splice(currentIndex + 1);
+        draft.splice(currentIdx + 1);
         
         // Add new state with label (Immer freeze ensures deep immutability)
         // freeze() creates a deeply frozen copy, preventing accidental mutations
@@ -85,13 +111,13 @@ export function useUndoRedo(initialState, options = {}) {
           }
         }
       });
+      
+      // Update current index based on new history length
+      setCurrentIndex(newHistory.length - 1);
+      
+      return newHistory;
     });
-    
-    setCurrentIndex(prev => {
-      const newIndex = prev + 1;
-      return newIndex >= limit ? limit - 1 : newIndex;
-    });
-  }, [currentIndex, limit]);
+  }, [limit]);
 
   /**
    * Set state WITHOUT debouncing for immediate undo history
@@ -139,57 +165,85 @@ export function useUndoRedo(initialState, options = {}) {
    * Undo to previous state
    */
   const undo = useCallback(() => {
-    if (currentIndex > 0 && history.length > 0) {
-      isUndoRedoAction.current = true;
-      const newIndex = currentIndex - 1;
-      const historyEntry = history[newIndex];
+    // CRITICAL: Use refs to access current values, not stale closures
+    const currentIdx = currentIndexRef.current;
+    const currentHist = historyRef.current;
+    
+    if (currentIdx > 0 && currentHist.length > 0) {
+      const newIndex = currentIdx - 1;
       
-      // Safety check: ensure history entry exists
+      // Bounds check with current values
+      if (newIndex < 0 || newIndex >= currentHist.length) {
+        console.error('Undo failed: index out of bounds', newIndex, 'history length:', currentHist.length);
+        return false;
+      }
+      
+      const historyEntry = currentHist[newIndex];
       if (!historyEntry) {
         console.error('Undo failed: history entry not found at index', newIndex);
         return false;
       }
       
+      // Set flag IMMEDIATELY before any state updates
+      isUndoRedoAction.current = true;
+      
+      // Update both index and state
       setCurrentIndex(newIndex);
       setStateInternal(historyEntry.state);
       
-      // Reset flag after state update
-      setTimeout(() => {
-        isUndoRedoAction.current = false;
-      }, 0);
+      // Keep flag set for longer to ensure all effects complete
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          isUndoRedoAction.current = false;
+        });
+      });
       
       return historyEntry.label || 'Ändring';
     }
     return false;
-  }, [currentIndex, history]);
+  }, []); // No dependencies - use refs instead
 
   /**
    * Redo to next state
    */
   const redo = useCallback(() => {
-    if (currentIndex < history.length - 1 && history.length > 0) {
-      isUndoRedoAction.current = true;
-      const newIndex = currentIndex + 1;
-      const historyEntry = history[newIndex];
+    // CRITICAL: Use refs to access current values, not stale closures
+    const currentIdx = currentIndexRef.current;
+    const currentHist = historyRef.current;
+    
+    if (currentIdx < currentHist.length - 1 && currentHist.length > 0) {
+      const newIndex = currentIdx + 1;
       
-      // Safety check: ensure history entry exists
+      // Bounds check with current values
+      if (newIndex < 0 || newIndex >= currentHist.length) {
+        console.error('Redo failed: index out of bounds', newIndex, 'history length:', currentHist.length);
+        return false;
+      }
+      
+      const historyEntry = currentHist[newIndex];
       if (!historyEntry) {
         console.error('Redo failed: history entry not found at index', newIndex);
         return false;
       }
       
+      // Set flag IMMEDIATELY before any state updates
+      isUndoRedoAction.current = true;
+      
+      // Update both index and state
       setCurrentIndex(newIndex);
       setStateInternal(historyEntry.state);
       
-      // Reset flag after state update
-      setTimeout(() => {
-        isUndoRedoAction.current = false;
-      }, 0);
+      // Keep flag set for longer to ensure all effects complete
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          isUndoRedoAction.current = false;
+        });
+      });
       
       return historyEntry.label || 'Ändring';
     }
     return false;
-  }, [currentIndex, history]);
+  }, []); // No dependencies - use refs instead
   /**
    * Mark current position as a save point
    */
@@ -239,33 +293,94 @@ export function useUndoRedo(initialState, options = {}) {
    * Uses Immer freeze to preserve initial state
    */
   const startBatch = useCallback((label = 'Gruppoperation') => {
+    console.log('[BATCH] Starting batch mode:', label, 'Current state keys:', Object.keys(state));
     isBatchMode.current = true;
     batchModeLabel.current = label;
-    // Freeze initial state to prevent mutations
-    batchModeState.current = freeze(state, true);
+    // Freeze CURRENT state as the "before batch" state
+    batchModeInitialState.current = freeze(state, true);
+    batchModeState.current = null;
+    console.log('[BATCH] Batch mode active, initial state frozen');
   }, [state]);
 
   /**
    * End batch mode - commit accumulated changes as single history entry
+   * The final state is what's currently in batchModeState (from accumulated updates)
+   * OR the current state if no updates happened during batch
    */
   const endBatch = useCallback(() => {
-    if (isBatchMode.current && batchModeState.current !== null) {
-      // Commit the batch as a single history entry
-      addToHistory(batchModeState.current, batchModeLabel.current);
-      setStateInternal(batchModeState.current);
+    console.log('[BATCH] Ending batch mode, isBatchMode:', isBatchMode.current);
+    if (isBatchMode.current) {
+      // Use the accumulated state if available, otherwise current state
+      const finalState = batchModeState.current !== null ? batchModeState.current : state;
+      
+      console.log('[BATCH] Final state:', finalState ? 'exists' : 'null', 'Initial state:', batchModeInitialState.current ? 'exists' : 'null');
+      
+      // Debug: Log specific fields to see what changed
+      if (finalState && batchModeInitialState.current) {
+        const initialItems = batchModeInitialState.current.organizationData?.items || [];
+        const finalItems = finalState.organizationData?.items || [];
+        console.log('[BATCH DEBUG] Initial items count:', initialItems.length, 'Final items count:', finalItems.length);
+        if (initialItems.length > 0 && finalItems.length > 0) {
+          const firstInitialItem = initialItems[0];
+          const firstFinalItem = finalItems[0];
+          console.log('[BATCH DEBUG] First item dates - Initial:', firstInitialItem?.startDate, firstInitialItem?.endDate, 'Final:', firstFinalItem?.startDate, firstFinalItem?.endDate);
+        }
+      }
+      
+      // Only add to history if state actually changed
+      const initialState = batchModeInitialState.current;
+      if (initialState !== null) {
+        // Compare using JSON - but ensure we're comparing different objects
+        const initialJSON = JSON.stringify(initialState);
+        const finalJSON = JSON.stringify(finalState);
+        
+        console.log('[BATCH] Comparing states - Initial length:', initialJSON.length, 'Final length:', finalJSON.length, 'Equal:', initialJSON === finalJSON);
+        
+        if (initialJSON !== finalJSON) {
+          console.log('[BATCH] State changed during batch, adding to history with label:', batchModeLabel.current);
+          
+          // CRITICAL: Reset batch mode BEFORE calling addToHistory
+          // Otherwise addToHistory will see isBatchMode=true and store to batchModeState instead!
+          const labelToUse = batchModeLabel.current;
+          isBatchMode.current = false;
+          batchModeLabel.current = '';
+          batchModeState.current = null;
+          batchModeInitialState.current = null;
+          
+          addToHistory(finalState, labelToUse);
+          // Update the actual state to the final state
+          setStateInternal(finalState);
+          console.log('[BATCH] History updated and state set');
+        } else {
+          console.log('[BATCH] No state change detected - states are identical');
+          // Still need to reset batch mode
+          isBatchMode.current = false;
+          batchModeLabel.current = '';
+          batchModeState.current = null;
+          batchModeInitialState.current = null;
+        }
+      } else {
+        console.log('[BATCH] Initial state was null, cannot compare');
+        // Still need to reset batch mode
+        isBatchMode.current = false;
+        batchModeLabel.current = '';
+        batchModeState.current = null;
+        batchModeInitialState.current = null;
+      }
     }
-    isBatchMode.current = false;
-    batchModeLabel.current = '';
-    batchModeState.current = null;
-  }, [addToHistory]);
+    console.log('[BATCH] Batch mode reset');
+  }, [addToHistory, state]);
 
   /**
    * Cancel batch mode - discard accumulated changes
    */
   const cancelBatch = useCallback(() => {
+    console.log('[BATCH] Canceling batch mode - discarding changes');
     isBatchMode.current = false;
     batchModeLabel.current = '';
     batchModeState.current = null;
+    batchModeInitialState.current = null; // Reset initial state too
+    console.log('[BATCH] Batch mode canceled and reset');
   }, []);
 
   /**
@@ -289,6 +404,36 @@ export function useUndoRedo(initialState, options = {}) {
   // Get descriptive labels for UI with safety checks
   const undoLabel = canUndo && history[currentIndex - 1] ? (history[currentIndex - 1].label || '') : '';
   const redoLabel = canRedo && history[currentIndex + 1] ? (history[currentIndex + 1].label || '') : '';
+
+  /**
+   * Jump to specific history index
+   */
+  const jumpToIndex = useCallback((index) => {
+    const currentHist = historyRef.current;
+    
+    if (index >= 0 && index < currentHist.length) {
+      const entry = currentHist[index];
+      if (entry) {
+        // Set flag to prevent this from being added to history
+        isUndoRedoAction.current = true;
+        
+        // Update both index and state
+        setCurrentIndex(index);
+        // State is already frozen when stored, no need to call current()
+        setStateInternal(entry.state);
+        
+        // Keep flag set for longer to ensure all effects complete
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            isUndoRedoAction.current = false;
+          });
+        });
+        
+        return entry.label;
+      }
+    }
+    return null;
+  }, []);
 
   /**
    * Keyboard shortcuts
@@ -361,7 +506,9 @@ export function useUndoRedo(initialState, options = {}) {
     endBatch,
     cancelBatch,
     historyLength: history.length,
-    currentIndex
+    currentIndex,
+    history, // Expose history for menu
+    jumpToIndex
   };
 }
 
@@ -392,7 +539,10 @@ export function useMultiStateUndoRedo(initialStates, options = {}) {
     unsavedChangesCount,
     startBatch,
     endBatch,
-    cancelBatch
+    cancelBatch,
+    history,
+    currentIndex,
+    jumpToIndex
   } = useUndoRedo(initialStates, options);
 
   /**
@@ -429,6 +579,9 @@ export function useMultiStateUndoRedo(initialStates, options = {}) {
     unsavedChangesCount,
     startBatch,
     endBatch,
-    cancelBatch
+    cancelBatch,
+    history,
+    currentIndex,
+    jumpToIndex
   };
 }

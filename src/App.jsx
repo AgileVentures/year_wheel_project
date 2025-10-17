@@ -38,6 +38,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t } = useTranslation(['common']);
   const { isPremium, loading: subscriptionLoading } = useSubscription();
   
+  // Flag to prevent history during data load operations
+  const isLoadingData = useRef(false);
+  
   // Undo/Redo for main editable states
   const {
     states: undoableStates,
@@ -55,7 +58,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     unsavedChangesCount,
     startBatch,
     endBatch,
-    cancelBatch
+    cancelBatch,
+    history,
+    currentIndex,
+    jumpToIndex
   } = useMultiStateUndoRedo({
     title: "Nytt hjul",
     year: "2025",
@@ -81,8 +87,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       items: []
     }
   }, {
-    limit: 50, // Keep 50 undo steps (reduced for memory efficiency)
-    enableKeyboard: true
+    limit: 10, // Keep last 10 undo steps
+    enableKeyboard: true,
+    shouldSkipHistory: isLoadingData // Skip history during data load
   });
 
   // Extract states from undo-managed object
@@ -99,52 +106,80 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Wrapper functions for setting undo-tracked state
   const setTitle = useCallback((value) => {
     setUndoableStates(prevStates => ({
+      ...prevStates,
       title: typeof value === 'function' ? value(prevStates.title) : value
-    }));
+    }), 'Ändra titel');
   }, [setUndoableStates]);
   
   const setYear = useCallback((value) => {
     setUndoableStates(prevStates => ({
+      ...prevStates,
       year: typeof value === 'function' ? value(prevStates.year) : value
-    }));
+    }), 'Ändra år');
   }, [setUndoableStates]);
   
   const setColors = useCallback((value) => {
     setUndoableStates(prevStates => ({
+      ...prevStates,
       colors: typeof value === 'function' ? value(prevStates.colors) : value
-    }));
+    }), 'Ändra färger');
   }, [setUndoableStates]);
   
-  const setOrganizationData = useCallback((value, label) => {
-    // We need to calculate label inside the functional update
-    // but pass it as the second parameter to setUndoableStates
-    let calculatedLabel = label;
+  const setOrganizationData = useCallback((value, explicitLabel) => {
+    // CRITICAL FIX: We need to pass label calculation to setUndoableStates properly
+    // First, we do a pre-calculation to get both the new data AND the label
+    let finalLabel = explicitLabel;
+    let newOrgDataForLabel;
     
+    // Pre-calculate if we need auto-label
+    if (!finalLabel) {
+      // Get current state to compare
+      const currentOrgData = undoableStates?.organizationData;
+      newOrgDataForLabel = typeof value === 'function' ? value(currentOrgData) : value;
+      
+      if (currentOrgData) {
+        const oldData = currentOrgData;
+        // Detect what changed
+        if (newOrgDataForLabel.rings?.length !== oldData.rings?.length) {
+          finalLabel = newOrgDataForLabel.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
+        } else if (newOrgDataForLabel.activityGroups?.length !== oldData.activityGroups?.length) {
+          finalLabel = newOrgDataForLabel.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
+        } else if (newOrgDataForLabel.labels?.length !== oldData.labels?.length) {
+          finalLabel = newOrgDataForLabel.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
+        } else if (newOrgDataForLabel.items?.length !== oldData.items?.length) {
+          finalLabel = newOrgDataForLabel.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
+        } else {
+          // Check for property changes in items (updates)
+          const itemChanged = newOrgDataForLabel.items?.some(item => {
+            const oldItem = oldData.items?.find(old => old.id === item.id);
+            if (!oldItem) return true;
+            return item.name !== oldItem.name || 
+                   item.startDate !== oldItem.startDate || 
+                   item.endDate !== oldItem.endDate ||
+                   item.ringId !== oldItem.ringId ||
+                   item.activityId !== oldItem.activityId;
+          });
+          
+          if (itemChanged) {
+            finalLabel = 'Uppdatera aktivitet';
+          } else {
+            // Check for visibility changes
+            const ringVisChanged = newOrgDataForLabel.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
+            const agVisChanged = newOrgDataForLabel.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
+            if (ringVisChanged) finalLabel = 'Växla ringsynlighet';
+            else if (agVisChanged) finalLabel = 'Växla aktivitetssynlighet';
+            else finalLabel = 'Ändra organisationsdata';
+          }
+        }
+      } else {
+        finalLabel = 'Ändra';
+      }
+    }
+    
+    // Now update state with the calculated label
     setUndoableStates(prevStates => {
       const currentOrgData = prevStates.organizationData;
       const newOrgData = typeof value === 'function' ? value(currentOrgData) : value;
-      
-      // Auto-generate label if not provided (only if we need to)
-      if (!calculatedLabel && currentOrgData) {
-        const oldData = currentOrgData;
-        // Detect what changed
-        if (newOrgData.rings?.length !== oldData.rings?.length) {
-          calculatedLabel = newOrgData.rings.length > oldData.rings.length ? 'Lägg till ring' : 'Ta bort ring';
-        } else if (newOrgData.activityGroups?.length !== oldData.activityGroups?.length) {
-          calculatedLabel = newOrgData.activityGroups.length > oldData.activityGroups.length ? 'Lägg till aktivitetsgrupp' : 'Ta bort aktivitetsgrupp';
-        } else if (newOrgData.labels?.length !== oldData.labels?.length) {
-          calculatedLabel = newOrgData.labels.length > oldData.labels.length ? 'Lägg till etikett' : 'Ta bort etikett';
-        } else if (newOrgData.items?.length !== oldData.items?.length) {
-          calculatedLabel = newOrgData.items.length > oldData.items.length ? 'Lägg till aktivitet' : 'Ta bort aktivitet';
-        } else {
-          // Check for visibility changes
-          const ringVisChanged = newOrgData.rings?.some((r, i) => r.visible !== oldData.rings?.[i]?.visible);
-          const agVisChanged = newOrgData.activityGroups?.some((ag, i) => ag.visible !== oldData.activityGroups?.[i]?.visible);
-          if (ringVisChanged) calculatedLabel = 'Växla ringsynlighet';
-          else if (agVisChanged) calculatedLabel = 'Växla aktivitetssynlighet';
-          else calculatedLabel = 'Ändra organisationsdata';
-        }
-      }
       
       // CRITICAL: Update ref immediately so auto-save gets the latest data
       latestValuesRef.current = {
@@ -152,9 +187,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         organizationData: newOrgData
       };
       
-      return { organizationData: newOrgData };
-    }, calculatedLabel || 'Ändra');
-  }, [setUndoableStates]);
+      // CRITICAL: Spread previous states to preserve all fields
+      return { 
+        ...prevStates,
+        organizationData: newOrgData 
+      };
+    }, finalLabel || 'Ändra');
+  }, [setUndoableStates, undoableStates]);
   
   // Other non-undoable states
   const [zoomedMonth, setZoomedMonth] = useState(null);
@@ -230,8 +269,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     setDownloadFormat(format);
   };
   
-  // Track if we're currently loading data to prevent auto-save during load
-  const isLoadingData = useRef(false);
   // Track if this is the initial load to prevent auto-save on mount
   const isInitialLoad = useRef(true);
   // Track if data came from realtime update to prevent save loop
@@ -240,6 +277,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const lastSaveTimestamp = useRef(0);
   // Track if we're currently saving to prevent realtime reload during save (ref for logic, state for UI)
   const isSavingRef = useRef(false);
+  // Track if we're currently dragging an item (for batch undo/redo)
+  const isDraggingRef = useRef(false);
 
   // Load wheel data function (memoized to avoid recreating)
   const loadWheelData = useCallback(async () => {
@@ -260,6 +299,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         // Prepare data to update
         let orgDataToSet = null;
+        let yearToLoad = null; // Will be set from page data or wheel data
         
         // If we have pages, load data from first page (or current page if set)
         if (pagesData.length > 0) {
@@ -270,7 +310,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             : pagesData[0];
           
           setCurrentPageId(pageToLoad.id);
-          setYear(String(pageToLoad.year || new Date().getFullYear()));
+          // IMPORTANT: Year will be set via setUndoableStates() to avoid creating history entry
+          yearToLoad = String(pageToLoad.year || new Date().getFullYear());
           
           // Fetch items for this specific page only
           const pageItems = await fetchPageData(pageToLoad.id);
@@ -375,7 +416,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
         } else {
           // Fallback: Load from wheel's organization data (legacy support)
-          setYear(String(wheelData.year || new Date().getFullYear()));
+          yearToLoad = String(wheelData.year || new Date().getFullYear());
           
           // Load organization data
           if (wheelData.organizationData) {
@@ -416,7 +457,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
         }
         
-        // CRITICAL: Update title, colors AND organizationData together in ONE call to prevent race condition
+        // CRITICAL: Update title, colors, year AND organizationData together in ONE call to prevent race condition
         const updates = {};
         if (wheelData.title !== undefined) {
           updates.title = wheelData.title || 'Nytt hjul';
@@ -424,12 +465,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (wheelData.colors) {
           updates.colors = wheelData.colors;
         }
+        if (yearToLoad) {
+          updates.year = yearToLoad;
+        }
         if (orgDataToSet) {
           updates.organizationData = orgDataToSet;
         }
         
         if (Object.keys(updates).length > 0) {
-          setUndoableStates(updates);
+          // Allow loaded data to be added to history
+          isLoadingData.current = false;
+          setUndoableStates(updates, 'Ladda hjul');
+          // Immediately block again to prevent other effects
+          isLoadingData.current = true;
         }
         
         // Load other settings
@@ -451,11 +499,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     } finally {
-      // Reset flags after load completes
-      isLoadingData.current = false;
-      isRealtimeUpdate.current = false;
+      // CRITICAL: Keep isLoadingData true for a bit longer to prevent
+      // realtime subscriptions and other effects from adding to history
+      // Reset after a delay to allow everything to settle (match isInitialLoad timeout)
+      setTimeout(() => {
+        isLoadingData.current = false;
+        isRealtimeUpdate.current = false;
+        // Mark as saved once everything has settled
+        markSaved();
+      }, 550); // Slightly longer than isInitialLoad (500ms) to ensure all effects settle
     }
-  }, [wheelId]); // Only depend on wheelId - NOT on currentPageId
+  }, [wheelId, markSaved]); // Only depend on wheelId - NOT on currentPageId
 
   // Throttled reload for realtime updates (max once per second)
   const throttledReload = useThrottledCallback(() => {
@@ -487,13 +541,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // This flag will be reset in loadWheelData's finally block
     isRealtimeUpdate.current = true;
     
-    // Clear undo history since remote changes invalidate local history
-    clearHistory();
+    // NOTE: We do NOT clear history here anymore!
+    // Realtime updates should not wipe local undo history
+    // History is only cleared on initial load (in loadWheelData)
     
     // Reload the wheel data when any change occurs
     // Throttled to prevent too many reloads
     throttledReload();
-  }, [throttledReload, clearHistory]);
+  }, [throttledReload]);
 
   // Enable realtime sync for this page (not wheel!)
   // CRITICAL: Pass currentPageId to filter by page, not wheel
@@ -1477,10 +1532,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     window.dispatchEvent(event);
   };
 
+  // Handle drag start - begin batch mode for undo/redo
+  const handleDragStart = useCallback((item) => {
+    console.log('[DRAG START] Beginning batch mode for:', item?.name);
+    isDraggingRef.current = true;
+    const label = item ? `Dra ${item.name}` : 'Dra aktivitet';
+    startBatch(label);
+    console.log('[DRAG START] Batch mode started');
+  }, [startBatch]);
+
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
+    console.log('[UPDATE] Received update for:', updatedItem.name, 'isDragging:', isDraggingRef.current);
+    
+    // If we're in drag mode, we need to check if dates actually changed
+    const wasDragging = isDraggingRef.current;
+    
     // Calculate label inside functional update to avoid stale closure
-    let calculatedLabel = 'Ändra aktivitet';
+    // BUT: Don't use label if we're in batch mode (drag) - the batch label will be used instead
+    let calculatedLabel = wasDragging ? undefined : 'Ändra aktivitet';
+    let actuallyChanged = false;
     
     setOrganizationData(prevData => {
       const oldItem = prevData.items.find(item => item.id === updatedItem.id);
@@ -1491,22 +1562,27 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const datesChanged = oldItem.startDate !== updatedItem.startDate || 
                             oldItem.endDate !== updatedItem.endDate;
         
-        // Create descriptive label based on what changed
-        if (ringChanged && datesChanged) {
-          calculatedLabel = `Flytta och ändra ${updatedItem.name}`;
-        } else if (ringChanged) {
-          // Find ring names for more context
-          const newRing = prevData.rings.find(r => r.id === updatedItem.ringId);
-          if (newRing) {
-            calculatedLabel = `Flytta ${updatedItem.name} till ${newRing.name}`;
+        // Track if anything actually changed
+        actuallyChanged = ringChanged || datesChanged || oldItem.name !== updatedItem.name;
+        
+        // Create descriptive label based on what changed (only if NOT dragging)
+        if (!wasDragging) {
+          if (ringChanged && datesChanged) {
+            calculatedLabel = `Flytta och ändra ${updatedItem.name}`;
+          } else if (ringChanged) {
+            // Find ring names for more context
+            const newRing = prevData.rings.find(r => r.id === updatedItem.ringId);
+            if (newRing) {
+              calculatedLabel = `Flytta ${updatedItem.name} till ${newRing.name}`;
+            } else {
+              calculatedLabel = `Flytta ${updatedItem.name}`;
+            }
+          } else if (datesChanged) {
+            calculatedLabel = `Ändra datum för ${updatedItem.name}`;
           } else {
-            calculatedLabel = `Flytta ${updatedItem.name}`;
+            // Fallback for other changes (name, color, etc.)
+            calculatedLabel = `Redigera ${updatedItem.name}`;
           }
-        } else if (datesChanged) {
-          calculatedLabel = `Ändra datum för ${updatedItem.name}`;
-        } else {
-          // Fallback for other changes (name, color, etc.)
-          calculatedLabel = `Redigera ${updatedItem.name}`;
         }
       }
       
@@ -1517,7 +1593,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         )
       };
     }, calculatedLabel);
-  }, [setOrganizationData]);
+    
+    console.log('[UPDATE] State updated, wasDragging:', wasDragging, 'actuallyChanged:', actuallyChanged);
+    
+    // If this was a drag operation, end the batch
+    // But only if something actually changed
+    if (wasDragging) {
+      isDraggingRef.current = false;
+      
+      if (actuallyChanged) {
+        console.log('[UPDATE] Drag resulted in changes, ending batch mode');
+        endBatch();
+      } else {
+        console.log('[UPDATE] Drag did NOT result in changes, canceling batch mode');
+        cancelBatch();
+      }
+      console.log('[UPDATE] Batch mode ended');
+    }
+  }, [setOrganizationData, endBatch, cancelBatch]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
     // Calculate label inside functional update to avoid stale closure
@@ -1848,6 +1941,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         canRedo={canRedo}
         undoLabel={undoLabel}
         redoLabel={redoLabel}
+        undoHistory={history}
+        currentHistoryIndex={currentIndex}
+        onJumpToHistory={jumpToIndex}
         undoToSave={undoToSave}
         unsavedChangesCount={unsavedChangesCount}
         isPremium={isPremium}
@@ -1943,6 +2039,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               onSetZoomedMonth={setZoomedMonth}
               onSetZoomedQuarter={setZoomedQuarter}
               onWheelReady={setYearWheelRef}
+              onDragStart={handleDragStart}
               onUpdateAktivitet={handleUpdateAktivitet}
               onDeleteAktivitet={handleDeleteAktivitet}
             />

@@ -24,6 +24,7 @@ function YearWheel({
   onSetZoomedMonth,
   onSetZoomedQuarter,
   onWheelReady,
+  onDragStart,
   onUpdateAktivitet,
   onDeleteAktivitet,
   readonly = false,
@@ -166,14 +167,16 @@ function YearWheel({
   };
 
   // Use refs to avoid recreating callbacks (which would destroy the wheel instance)
+  const onDragStartRef = useRef(onDragStart);
   const onUpdateAktivitetRef = useRef(onUpdateAktivitet);
   const onDeleteAktivitetRef = useRef(onDeleteAktivitet);
 
   // Keep refs up to date
   useEffect(() => {
+    onDragStartRef.current = onDragStart;
     onUpdateAktivitetRef.current = onUpdateAktivitet;
     onDeleteAktivitetRef.current = onDeleteAktivitet;
-  }, [onUpdateAktivitet, onDeleteAktivitet]);
+  }, [onDragStart, onUpdateAktivitet, onDeleteAktivitet]);
 
   const handleItemClick = useCallback((item, position) => {
     setSelectedItem(item);
@@ -190,6 +193,12 @@ function YearWheel({
       setTooltipPosition(position);
     }
   }, []);
+
+  const handleDragStart = useCallback((item) => {
+    if (onDragStartRef.current) {
+      onDragStartRef.current(item);
+    }
+  }, []); // Empty deps - uses ref
 
   const handleUpdateAktivitet = useCallback((updatedItem) => {
     if (onUpdateAktivitetRef.current) {
@@ -294,6 +303,7 @@ function YearWheel({
         monthNames,
         zoomLevel, // Pass zoom level for smart text scaling
         onItemClick: handleItemClick,
+        onDragStart: handleDragStart,
         onUpdateAktivitet: handleUpdateAktivitet,
       }
     );
@@ -323,6 +333,7 @@ function YearWheel({
     zoomedQuarter,
     monthNames,
     handleItemClick,
+    handleDragStart,
     handleUpdateAktivitet,
     // organizationData excluded - updated via updateOrganizationData to prevent wheel recreation during drag
   ]);
