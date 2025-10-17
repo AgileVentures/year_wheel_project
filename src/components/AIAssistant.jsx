@@ -225,7 +225,8 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
           rings: wheelContext.stats.rings,
           activityGroups: wheelContext.stats.activityGroups,
           items: wheelContext.stats.items
-        })
+        }),
+        sdkFormat: false // Initial greeting is not from SDK
       };
       setMessages([greeting]);
     }
@@ -271,6 +272,13 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         throw new Error(t('editor:aiAssistant.noSession'));
       }
 
+      // Build SDK conversation history (exclude current user message, will be added by backend)
+      // Only send messages that came from SDK (have the correct AgentInputItem format)
+      const sdkHistory = messages
+        .slice(0, -1) // Exclude current user message
+        .filter(msg => msg.sdkFormat) // Only messages from SDK
+        .map(msg => msg.sdkItem); // Extract the original SDK item
+
       // Call AI Assistant V2 edge function (using OpenAI Agents SDK)
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant-v2`, {
         method: 'POST',
@@ -280,7 +288,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         },
         body: JSON.stringify({
           userMessage: userMessage.content,
-          conversationHistory: messages, // Send all messages including current one
+          conversationHistory: sdkHistory,
           wheelId,
           currentPageId
         })
@@ -314,11 +322,28 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       // Clean up the response before displaying
       assistantMessage = cleanAIResponse(assistantMessage);
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: assistantMessage,
-        id: Date.now()
-      }]);
+      // If backend returned conversationHistory, rebuild messages from it
+      if (result.conversationHistory && Array.isArray(result.conversationHistory)) {
+        // Convert SDK history format to our UI format
+        const uiMessages = result.conversationHistory.map((item, index) => ({
+          id: Date.now() + index,
+          role: item.role,
+          content: typeof item.content === 'string' ? item.content : 
+                   Array.isArray(item.content) ? item.content.map(c => c.text || c).join('') : 
+                   JSON.stringify(item.content),
+          sdkFormat: true, // Mark as coming from SDK
+          sdkItem: item // Store original SDK format for next request
+        }));
+        setMessages(uiMessages);
+      } else {
+        // Fallback: just append assistant message
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: assistantMessage,
+          id: Date.now(),
+          sdkFormat: false
+        }]);
+      }
 
       console.log('[AI] Reloading...');
       if (onWheelUpdate) await onWheelUpdate();

@@ -12,6 +12,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { Agent, run, tool, handoff, RunContext } from 'https://esm.sh/@openai/agents@0.1.9'
 // @ts-ignore
 import { z } from 'https://esm.sh/zod@3'
+// @ts-ignore
+import OpenAI from 'https://esm.sh/openai@4.73.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,13 +33,11 @@ interface WheelContext {
   currentYear: number
   currentPageId: string
   // Store suggestions for "suggest then create" workflow
-  lastSuggestions?: Array<{
-    name: string
-    startDate: string
-    endDate: string
-    ring: string
-    group: string
-  }>
+  lastSuggestions?: {
+    rings: Array<{ name: string; type: string; description?: string }>
+    activityGroups: Array<{ name: string; color: string; description?: string }>
+    activities: Array<{ name: string; startDate: string; endDate: string; ring: string; group: string; description?: string }>
+  }
 }
 
 const CreateActivityInput = z.object({
@@ -106,6 +106,16 @@ const UpdateLabelInput = z.object({
 
 const DeleteLabelInput = z.object({
   name: z.string().describe('Name or partial name of the label to delete'),
+})
+
+const CreateYearPageInput = z.object({
+  year: z.number().describe('Year for the new page (e.g., 2026)'),
+  copyStructure: z.boolean().default(true).describe('Whether to copy rings and activity groups from current page'),
+})
+
+const SmartCopyYearInput = z.object({
+  sourceYear: z.number().describe('Year to copy from'),
+  targetYear: z.number().describe('New year to create'),
 })
 
 const DateRangeInput = z.object({
@@ -871,6 +881,188 @@ function getCurrentDate() {
   }
 }
 
+async function createYearPage(
+  supabase: any,
+  wheelId: string,
+  year: number,
+  copyStructure: boolean
+) {
+  // Check if page already exists
+  const { data: existing } = await supabase
+    .from('wheel_pages')
+    .select('id, year')
+    .eq('wheel_id', wheelId)
+    .eq('year', year)
+    .maybeSingle()
+
+  if (existing) {
+    return {
+      success: false,
+      message: `En sida för år ${year} finns redan`,
+      pageId: existing.id
+    }
+  }
+
+  // Get next page order
+  const { data: nextOrder, error: orderError } = await supabase
+    .rpc('get_next_page_order', { p_wheel_id: wheelId })
+
+  if (orderError) throw orderError
+
+  // Get current rings and groups if copying structure
+  let organizationData = {
+    rings: [],
+    activityGroups: [],
+    labels: [],
+    items: []
+  }
+
+  if (copyStructure) {
+    const { rings, groups } = await getCurrentRingsAndGroups(supabase, wheelId)
+    const { data: labels } = await supabase
+      .from('labels')
+      .select('id, name, color')
+      .eq('wheel_id', wheelId)
+
+    organizationData = {
+      rings: rings.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        type: r.type,
+        color: r.color,
+        visible: true,
+        orientation: r.type === 'inner' ? 'vertical' : null
+      })),
+      activityGroups: groups.map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        color: g.color,
+        visible: true
+      })),
+      labels: (labels || []).map((l: any) => ({
+        id: l.id,
+        name: l.name,
+        color: l.color,
+        visible: true
+      })),
+      items: []
+    }
+  }
+
+  // Create new page
+  const { data: newPage, error: pageError } = await supabase
+    .from('wheel_pages')
+    .insert({
+      wheel_id: wheelId,
+      page_order: nextOrder,
+      year: year,
+      title: `${year}`,
+      organization_data: organizationData
+    })
+    .select()
+    .single()
+
+  if (pageError) throw pageError
+
+  return {
+    success: true,
+    message: `Sida för år ${year} skapad${copyStructure ? ' med struktur kopierad' : ''}`,
+    pageId: newPage.id,
+    year: year
+  }
+}
+
+async function smartCopyYear(
+  supabase: any,
+  wheelId: string,
+  sourceYear: number,
+  targetYear: number
+) {
+  // Check if target year already exists
+  const { data: existingTarget } = await supabase
+    .from('wheel_pages')
+    .select('id')
+    .eq('wheel_id', wheelId)
+    .eq('year', targetYear)
+    .maybeSingle()
+
+  if (existingTarget) {
+    return {
+      success: false,
+      message: `En sida för år ${targetYear} finns redan`
+    }
+  }
+
+  // Get source page
+  const { data: sourcePage, error: sourceError } = await supabase
+    .from('wheel_pages')
+    .select('*')
+    .eq('wheel_id', wheelId)
+    .eq('year', sourceYear)
+    .single()
+
+  if (sourceError || !sourcePage) {
+    return {
+      success: false,
+      message: `Hittade ingen sida för år ${sourceYear}`
+    }
+  }
+
+  // Get source page items
+  const { data: sourceItems, error: itemsError } = await supabase
+    .from('items')
+    .select('*')
+    .eq('page_id', sourcePage.id)
+
+  if (itemsError) throw itemsError
+
+  // Create new page with structure
+  const createResult = await createYearPage(supabase, wheelId, targetYear, true)
+  if (!createResult.success) {
+    return createResult
+  }
+
+  const newPageId = createResult.pageId
+  const yearOffset = targetYear - sourceYear
+
+  // Helper function to adjust dates
+  const adjustDate = (dateString: string) => {
+    const date = new Date(dateString)
+    date.setFullYear(date.getFullYear() + yearOffset)
+    return date.toISOString().split('T')[0]
+  }
+
+  // Copy all items with adjusted dates
+  const itemsToInsert = (sourceItems || []).map((item: any) => ({
+    wheel_id: wheelId,
+    page_id: newPageId,
+    ring_id: item.ring_id,
+    activity_id: item.activity_id,
+    label_id: item.label_id,
+    name: item.name,
+    start_date: adjustDate(item.start_date),
+    end_date: adjustDate(item.end_date),
+    time: item.time
+  }))
+
+  if (itemsToInsert.length > 0) {
+    const { error: insertError } = await supabase
+      .from('items')
+      .insert(itemsToInsert)
+
+    if (insertError) throw insertError
+  }
+
+  return {
+    success: true,
+    message: `Sida för år ${targetYear} skapad med ${itemsToInsert.length} aktivitet(er) kopierade från ${sourceYear}`,
+    pageId: newPageId,
+    itemsCopied: itemsToInsert.length,
+    year: targetYear
+  }
+}
+
+
 // ═══════════════════════════════════════════════════════════════════
 // AGENT SYSTEM - MULTI-AGENT WITH HANDOFFS
 // All tools now receive RunContext<WheelContext> for proper context management
@@ -1012,6 +1204,28 @@ function createAgentSystem() {
     }
   })
 
+  const createYearPageTool = tool<WheelContext>({
+    name: 'create_year_page',
+    description: 'Create a new year page. Can copy structure (rings, groups, labels) from current pages or start blank.',
+    parameters: CreateYearPageInput,
+    async execute(input: z.infer<typeof CreateYearPageInput>, ctx: RunContext<WheelContext>) {
+      const { supabase, wheelId } = ctx.context
+      const result = await createYearPage(supabase, wheelId, input.year, input.copyStructure)
+      return JSON.stringify(result)
+    }
+  })
+
+  const smartCopyYearTool = tool<WheelContext>({
+    name: 'smart_copy_year',
+    description: 'Create a new year page and copy ALL activities from a source year with dates automatically adjusted to the new year.',
+    parameters: SmartCopyYearInput,
+    async execute(input: z.infer<typeof SmartCopyYearInput>, ctx: RunContext<WheelContext>) {
+      const { supabase, wheelId } = ctx.context
+      const result = await smartCopyYear(supabase, wheelId, input.sourceYear, input.targetYear)
+      return JSON.stringify(result)
+    }
+  })
+
   const structureAgent = new Agent<WheelContext>({
     name: 'Structure Agent',
     model: 'gpt-4o',
@@ -1021,6 +1235,8 @@ RESPONSIBILITIES:
 - Create, update, and delete rings (outer type for activities, inner for text/labels)
 - Create, update, and delete activity groups (categories for organizing activities)
 - Create, update, and delete labels (optional tags for activities)
+- Create new year pages (blank or with structure copied)
+- Smart copy years (copy all activities with adjusted dates)
 - Suggest wheel structures based on use cases
 
 RING COLORS (defaults):
@@ -1029,6 +1245,12 @@ RING COLORS (defaults):
 - Orange (#f59e0b) - Energy/urgency/highlights
 - Red (#ef4444) - Critical/urgent/sales
 - Purple (#8b5cf6) - Premium/creative
+
+YEAR PAGE MANAGEMENT:
+- "Skapa år 2026" → create_year_page with copyStructure: true (copies rings/groups from current pages)
+- "Skapa tom sida för 2027" → create_year_page with copyStructure: false  
+- "Kopiera 2025 till 2026" → smart_copy_year (copies ALL activities with dates adjusted)
+- Smart copy automatically adjusts all dates: if activity was Jan 15 2025, it becomes Jan 15 2026
 
 WORKFLOW:
 1. When user requests structure operations, execute them immediately
@@ -1045,7 +1267,9 @@ EXAMPLES:
 - "Skapa ring Kampanjer" → Create outer ring "Kampanjer" with blue
 - "Föreslå struktur för marknadsföring" → Create: Kampanjer, Innehåll, Event rings + REA, Produktlansering groups
 - "Byt namn på ringen Kampanjer till Marketing" → update_ring
-- "Ta bort gruppen REA" → delete_activity_group`,
+- "Ta bort gruppen REA" → delete_activity_group
+- "Skapa år 2026" → create_year_page with year: 2026, copyStructure: true
+- "Kopiera alla aktiviteter från 2025 till 2026" → smart_copy_year with sourceYear: 2025, targetYear: 2026`,
     tools: [
       getContextTool, 
       createRingTool, 
@@ -1056,7 +1280,9 @@ EXAMPLES:
       deleteGroupTool,
       createLabelTool,
       updateLabelTool,
-      deleteLabelTool
+      deleteLabelTool,
+      createYearPageTool,
+      smartCopyYearTool
     ],
   })
 
@@ -1210,24 +1436,33 @@ Speak Swedish naturally. Be concise.`,
 
   const analyzeWheelTool = tool<WheelContext>({
     name: 'analyze_wheel',
-    description: 'Analyze the current wheel and provide insights about activity distribution',
-    parameters: z.object({}),
-    async execute(_input: {}, ctx: RunContext<WheelContext>) {
+    description: 'Analyze the current wheel and provide AI-powered insights about domain, activity distribution, and quality assessment',
+    parameters: z.object({
+      includeAIInsights: z.boolean().default(true).describe('Whether to include AI-powered domain analysis and quality assessment')
+    }),
+    async execute(input: { includeAIInsights?: boolean }, ctx: RunContext<WheelContext>) {
       const { supabase, currentPageId } = ctx.context
       // Get page's wheel_id
       const { data: page, error: pageError } = await supabase
         .from('wheel_pages')
-        .select('wheel_id')
+        .select('wheel_id, year')
         .eq('id', currentPageId)
         .single()
       
       if (pageError || !page) throw new Error('Kunde inte hitta sida')
       
-      // Fetch data
+      // Fetch data with joins for complete information
       const [ringsRes, groupsRes, itemsRes] = await Promise.all([
-        supabase.from('wheel_rings').select('*').eq('wheel_id', page.wheel_id),
+        supabase.from('wheel_rings').select('*').eq('wheel_id', page.wheel_id).order('ring_order'),
         supabase.from('activity_groups').select('*').eq('wheel_id', page.wheel_id),
-        supabase.from('items').select('*').eq('page_id', currentPageId),
+        supabase.from('items')
+          .select(`
+            *,
+            wheel_rings!inner(name, type),
+            activity_groups!inner(name, color)
+          `)
+          .eq('page_id', currentPageId)
+          .order('start_date'),
       ])
 
       if (ringsRes.error || groupsRes.error || itemsRes.error) {
@@ -1238,7 +1473,7 @@ Speak Swedish naturally. Be concise.`,
       const groups = groupsRes.data || []
       const items = itemsRes.data || []
 
-      // Analyze by quarter
+      // Basic statistical analysis
       const quarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 }
       items.forEach((item: any) => {
         const month = new Date(item.start_date).getMonth()
@@ -1248,11 +1483,124 @@ Speak Swedish naturally. Be concise.`,
         else quarters.Q4++
       })
 
-      return JSON.stringify({
+      const ringDistribution: Record<string, number> = {}
+      const groupDistribution: Record<string, number> = {}
+      
+      items.forEach((item: any) => {
+        const ringName = item.wheel_rings?.name || 'Unknown'
+        const groupName = item.activity_groups?.name || 'Unknown'
+        ringDistribution[ringName] = (ringDistribution[ringName] || 0) + 1
+        groupDistribution[groupName] = (groupDistribution[groupName] || 0) + 1
+      })
+
+      const basicStats = {
+        year: page.year,
         rings: rings.length,
         groups: groups.length,
         activities: items.length,
         quarters,
+        ringDistribution,
+        groupDistribution,
+      }
+
+      // AI-powered domain analysis and quality assessment
+      if (input.includeAIInsights && items.length > 0) {
+        try {
+          const openai = new OpenAI({
+            apiKey: Deno.env.get('OPENAI_API_KEY'),
+          })
+
+          // Prepare activity summary for AI analysis
+          const activitySummary = items.map((item: any) => ({
+            name: item.name,
+            group: item.activity_groups?.name || 'Unknown',
+            ring: item.wheel_rings?.name || 'Unknown',
+            duration: `${item.start_date} till ${item.end_date}`,
+            startMonth: new Date(item.start_date).toLocaleString('sv-SE', { month: 'long' }),
+            endMonth: new Date(item.end_date).toLocaleString('sv-SE', { month: 'long' })
+          }))
+
+          const analysisPrompt = `Analysera denna Year Wheel planeringsdata:
+
+**AKTIVITETER (${items.length} st):**
+${JSON.stringify(activitySummary, null, 2)}
+
+**FÖRDELNING PER KVARTAL:**
+${JSON.stringify(quarters, null, 2)}
+
+**GRUPPFÖRDELNING:**
+${JSON.stringify(groupDistribution, null, 2)}
+
+**RINGFÖRDELNING:**
+${JSON.stringify(ringDistribution, null, 2)}
+
+Ge en strukturerad analys med:
+
+1. **DOMÄNIDENTIFIERING**: 
+   - Vilket huvudsakligt område/domän representerar detta hjul? (t.ex. "Produktlansering", "Marknadsföringsstrategi", "Personlig utveckling", "Utbildningsplanering")
+   - Vilka teman syns i aktiviteterna?
+
+2. **KVALITETSBEDÖMNING**:
+   - Är aktiviteterna lämpliga för denna domän?
+   - Är de tillräckligt specifika eller för vaga?
+   - Saknas kritiska aktiviteter som borde finnas?
+   - Är tidsplaneringen realistisk för varje aktivitet?
+   - Finns det beroenden som borde beaktas?
+
+3. **BÄSTA PRAXIS**:
+   - Vad kännetecknar god planering inom denna domän?
+   - Specifika förbättringar för svaga aktiviteter
+   - Luckor i nuvarande planering
+   - Rekommenderade faser eller milstolpar som saknas
+
+4. **REKOMMENDATIONER** (topp 3):
+   - Konkreta, handlingsbara förbättringar
+   - Aktiviteter att lägga till, ta bort eller omstrukturera
+   - Tidsplaneringsförbättringar
+
+Var konkret och åsiktsstark. Använd domänexpertis. Svara på svenska.`
+
+          const response = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'Du är en expert på planering och projektledning som utvärderar planeringskvalitet inom olika domäner som affärsverksamhet, personlig utveckling, utbildning, marknadsföring och mer. Du ger konkreta, åsiktsstarka råd baserade på bästa praxis.'
+              },
+              {
+                role: 'user',
+                content: analysisPrompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 1500
+          })
+
+          const aiInsights = response.choices[0].message.content
+
+          return JSON.stringify({
+            success: true,
+            basicStats,
+            aiInsights,
+            message: 'Analys klar med AI-drivna domäninsikter och kvalitetsbedömning'
+          })
+        } catch (aiError) {
+          console.error('[analyze_wheel] AI analysis failed:', aiError)
+          return JSON.stringify({
+            success: true,
+            basicStats,
+            aiInsights: null,
+            aiError: (aiError as Error).message,
+            message: 'Grundläggande analys klar (AI-insikter ej tillgängliga)'
+          })
+        }
+      }
+
+      return JSON.stringify({
+        success: true,
+        basicStats,
+        aiInsights: null,
+        message: 'Grundläggande statistisk analys klar'
       })
     }
   })
@@ -1260,30 +1608,424 @@ Speak Swedish naturally. Be concise.`,
   const analysisAgent = new Agent<WheelContext>({
     name: 'Analysis Agent',
     model: 'gpt-4o',
-    instructions: `You are the Analysis Agent. You provide insights about the Year Wheel.
+    instructions: `Du är Analysis Agent. Du analyserar Year Wheel och ger insikter om domän, aktivitetsfördelning och kvalitet.
 
-RESPONSIBILITIES:
-- Analyze activity distribution across quarters
-- Identify gaps and imbalances
-- Provide recommendations
+ANSVAR:
+- Analysera aktivitetsfördelning över kvartal och ringar
+- Identifiera domän och tema för hjulet
+- Bedöma kvalitet på aktiviteter mot bästa praxis
+- Ge konkreta rekommendationer för förbättring
 
-OUTPUT FORMAT (Swedish):
-📊 **Översikt:**
-- Ringar: X
-- Aktivitetsgrupper: Y
-- Aktiviteter: Z
+ARBETSFLÖDE:
+1. Anropa analyze_wheel tool (inkluderar AI-analys automatiskt)
+2. Ta emot basicStats (statistik) och aiInsights (AI-analys)
+3. Presentera resultatet på ett lättläst sätt
 
-📅 **Per kvartal:**
-- Q1 (jan-mar): X aktiviteter
-- Q2 (apr-jun): Y aktiviteter
-- Q3 (jul-sep): Z aktiviteter
-- Q4 (okt-dec): W aktiviteter
+OUTPUTFORMAT (Svenska):
 
-💡 **Tips:**
-- [Provide actionable recommendations]
+📊 **Översikt för år {year}:**
+- Ringar: {X} st
+- Aktivitetsgrupper: {Y} st  
+- Aktiviteter: {Z} st
 
-Be conversational and helpful.`,
+📅 **Fördelning per kvartal:**
+- Q1 (jan-mar): {X} aktiviteter
+- Q2 (apr-jun): {Y} aktiviteter
+- Q3 (jul-sep): {Z} aktiviteter
+- Q4 (okt-dec): {W} aktiviteter
+
+🎯 **AI-ANALYS:**
+{Presentera aiInsights från verktyget - formatera den snyggt}
+
+💡 **Sammanfattning:**
+{Kort sammanfattning av key takeaways}
+
+VIKTIGT:
+- Visa alltid både statistik OCH AI-insikter
+- Formatera AI-analysen så den är lätt att läsa
+- Om AI-analys misslyckas, visa bara statistik och förklara varför
+- Var samtalsam och hjälpsam
+
+EXEMPEL på bra output:
+"📊 **Översikt för år 2025:**
+- Ringar: 3 st (Kampanjer, Produkter, Event)
+- Aktivitetsgrupper: 5 st
+- Aktiviteter: 12 st
+
+📅 **Fördelning per kvartal:**
+- Q1: 4 aktiviteter
+- Q2: 3 aktiviteter  
+- Q3: 2 aktiviteter ⚠️ (lägst!)
+- Q4: 3 aktiviteter
+
+🎯 **AI-ANALYS:**
+
+**Domän:** Marknadsföringsstrategi för e-handel
+
+**Kvalitetsbedömning:**
+✅ Bra spridning av kampanjer över året
+⚠️ \"Produktlansering\" är för vag - vad ska lanseras exakt?
+❌ Saknas: Resultatuppföljning efter kampanjer
+
+**Rekommendationer:**
+1. Lägg till \"Kampanjanalys\" 1-2 veckor efter varje stor kampanj
+2. Byt ut \"Produktlansering\" mot \"Sommarkollektion 2025 - Lansering\"
+3. Fyll Q3 med mer innehåll - det är för tomt just nu
+
+💡 **Sammanfattning:** Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans mellan kvartalen!"`,
     tools: [analyzeWheelTool],
+  })
+
+  // ──────────────────────────────────────────────────────────────────
+  // PLANNING AGENT - AI-powered suggestions for new projects
+  // ──────────────────────────────────────────────────────────────────
+
+  const suggestPlanTool = tool<WheelContext>({
+    name: 'suggest_plan',
+    description: 'AI-powered suggestion of complete planning structure (rings, activity groups, activities) for a specific goal/project',
+    parameters: z.object({
+      goal: z.string().describe('User\'s goal or project description (e.g., "Lansera en SaaS-applikation", "Marknadsföra ny produkt")'),
+      startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Project start date (YYYY-MM-DD)'),
+      endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Project end date (YYYY-MM-DD)'),
+    }),
+    async execute(input: { goal: string; startDate: string; endDate: string }, ctx: RunContext<WheelContext>) {
+      try {
+        const openai = new OpenAI({
+          apiKey: Deno.env.get('OPENAI_API_KEY'),
+        })
+
+        const suggestionPrompt = `Generera en komplett projektplan för: "${input.goal}"
+
+Tidsperiod: ${input.startDate} till ${input.endDate}
+
+Skapa en strukturerad JSON-response med:
+
+1. **RINGAR** (2-4 ringar för att organisera aktiviteter):
+   - Name (t.ex. "Strategi", "Exekvering", "Tillväxt")
+   - Type ("inner" för textringar, "outer" för aktivitetsringar - använd främst outer)
+   - Description (varför denna ring behövs)
+
+2. **AKTIVITETSGRUPPER** (4-8 kategorier):
+   - Name (t.ex. "Produktutveckling", "Marknadsföring", "Försäljning")
+   - Color (hex-kod som matchar kategorins syfte):
+     * Blå (#3B82F6) - Produkt/Tech
+     * Grön (#10B981) - Tillväxt/Framgång
+     * Orange (#F59E0B) - Marknadsföring/Energy
+     * Röd (#EF4444) - Kritiskt/Brådskande
+     * Lila (#8B5CF6) - Premium/Kreativt
+     * Gul (#EAB308) - Planering/Research
+   - Description (vad denna grupp innehåller)
+
+3. **AKTIVITETER** (15-25 nyckelmilstolpar/uppgifter):
+   - Name (specifik och handlingsbar)
+   - StartDate (YYYY-MM-DD, inom projekttidsramen)
+   - EndDate (YYYY-MM-DD, realistisk varaktighet)
+   - Ring (vilket ringnamn den tillhör)
+   - Group (vilket gruppnamn den tillhör)
+   - Description (varför denna aktivitet är viktig)
+
+VIKTIGT:
+- Sprid aktiviteter jämnt över tidslinjen
+- Använd realistiska varaktigheter (t.ex. "Betatestning" = 4 veckor, inte 1 dag)
+- Inkludera pre-lansering, lansering och post-lanseringsfaser
+- Tänk på beroenden (t.ex. "Produktutveckling" före "Betatestning")
+
+DOMÄNSPECIFIKA RIKTLINJER:
+- SaaS: MVP, testning, lansering, marknadsföring, kundsupport, analytics
+- Marknadsföring: strategi, innehållsskapande, kampanjer, analys
+- Personliga mål: lärande, övning, milstolpar, reflektion
+- Utbildning: planering, innehållsskapande, genomförande, utvärdering
+
+Returnera ENDAST giltig JSON i detta format:
+{
+  "rings": [
+    { "name": "Strategi", "type": "inner", "description": "Planering och analys" }
+  ],
+  "activityGroups": [
+    { "name": "Produktutveckling", "color": "#3B82F6", "description": "Bygga och förbättra produkten" }
+  ],
+  "activities": [
+    { 
+      "name": "Bygga MVP", 
+      "startDate": "2025-10-01", 
+      "endDate": "2025-12-31",
+      "ring": "Strategi",
+      "group": "Produktutveckling",
+      "description": "Utveckla minimum viable product med kärnfunktioner"
+    }
+  ]
+}`
+
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: 'Du är en expert på projektplanering. Svara ALLTID med giltig JSON endast, ingen annan text.'
+            },
+            {
+              role: 'user',
+              content: suggestionPrompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 4000,
+          response_format: { type: "json_object" }
+        })
+
+        const suggestions = JSON.parse(response.choices[0].message.content || '{}')
+
+        // Store suggestions in context for potential later use
+        ctx.context.lastSuggestions = suggestions
+
+        return JSON.stringify({
+          success: true,
+          suggestions,
+          message: `Genererat förslag med ${suggestions.rings?.length || 0} ringar, ${suggestions.activityGroups?.length || 0} grupper och ${suggestions.activities?.length || 0} aktiviteter`
+        })
+      } catch (error) {
+        console.error('[suggest_plan] Error:', error)
+        return JSON.stringify({
+          success: false,
+          error: (error as Error).message,
+          message: 'Kunde inte generera förslag'
+        })
+      }
+    }
+  })
+
+  const applySuggestedPlanTool = tool<WheelContext>({
+    name: 'apply_suggested_plan',
+    description: 'Creates rings, activity groups, and activities from AI suggestions. Use this after suggest_plan when user confirms they want to apply the suggestions.',
+    parameters: z.object({
+      suggestions: z.object({
+        rings: z.array(z.object({
+          name: z.string(),
+          type: z.enum(['inner', 'outer']),
+          description: z.string().nullable().optional()
+        })),
+        activityGroups: z.array(z.object({
+          name: z.string(),
+          color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+          description: z.string().nullable().optional()
+        })),
+        activities: z.array(z.object({
+          name: z.string(),
+          startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          ring: z.string(),
+          group: z.string(),
+          description: z.string().nullable().optional()
+        }))
+      })
+    }),
+    async execute(input: { suggestions: any }, ctx: RunContext<WheelContext>) {
+      const { supabase, wheelId } = ctx.context
+      const { suggestions } = input
+
+      try {
+        const createdRings = new Map<string, string>() // ring name -> ringId
+        const createdGroups = new Map<string, string>() // group name -> groupId
+        const errors: string[] = []
+
+        // 1. Create rings
+        console.log('[apply_suggested_plan] Creating rings:', suggestions.rings?.length || 0)
+        for (const ring of suggestions.rings || []) {
+          try {
+            const result = await createRing(supabase, wheelId, {
+              name: ring.name,
+              type: ring.type,
+              color: ring.type === 'outer' ? '#408cfb' : null
+            })
+            
+            if (result.success && result.ringId) {
+              createdRings.set(ring.name, result.ringId)
+              console.log('[apply_suggested_plan] Created ring:', ring.name, '→', result.ringId)
+            }
+          } catch (error) {
+            console.error('[apply_suggested_plan] Error creating ring:', ring.name, error)
+            errors.push(`Ring "${ring.name}": ${(error as Error).message}`)
+          }
+        }
+
+        // 2. Create activity groups
+        console.log('[apply_suggested_plan] Creating activity groups:', suggestions.activityGroups?.length || 0)
+        for (const group of suggestions.activityGroups || []) {
+          try {
+            const result = await createGroup(supabase, wheelId, {
+              name: group.name,
+              color: group.color
+            })
+            
+            if (result.success && result.groupId) {
+              createdGroups.set(group.name, result.groupId)
+              console.log('[apply_suggested_plan] Created group:', group.name, '→', result.groupId)
+            }
+          } catch (error) {
+            console.error('[apply_suggested_plan] Error creating group:', group.name, error)
+            errors.push(`Grupp "${group.name}": ${(error as Error).message}`)
+          }
+        }
+
+        // 3. Create activities
+        console.log('[apply_suggested_plan] Creating activities:', suggestions.activities?.length || 0)
+        let activitiesCreated = 0
+        
+        for (const activity of suggestions.activities || []) {
+          try {
+            const ringId = createdRings.get(activity.ring)
+            const groupId = createdGroups.get(activity.group)
+
+            if (!ringId) {
+              errors.push(`Aktivitet "${activity.name}": Ring "${activity.ring}" hittades inte`)
+              continue
+            }
+            if (!groupId) {
+              errors.push(`Aktivitet "${activity.name}": Grupp "${activity.group}" hittades inte`)
+              continue
+            }
+
+            const result = await createActivity(ctx, {
+              name: activity.name,
+              startDate: activity.startDate,
+              endDate: activity.endDate,
+              ringId: ringId,
+              activityGroupId: groupId,
+              labelId: null
+            })
+
+            if (result.success) {
+              activitiesCreated += result.itemsCreated || 1
+              console.log('[apply_suggested_plan] Created activity:', activity.name)
+            }
+          } catch (error) {
+            console.error('[apply_suggested_plan] Error creating activity:', activity.name, error)
+            errors.push(`Aktivitet "${activity.name}": ${(error as Error).message}`)
+          }
+        }
+
+        const summary = {
+          success: true,
+          created: {
+            rings: createdRings.size,
+            groups: createdGroups.size,
+            activities: activitiesCreated
+          },
+          errors: errors.length > 0 ? errors : undefined,
+          message: `✅ Skapade: ${createdRings.size} ringar, ${createdGroups.size} grupper, ${activitiesCreated} aktiviteter${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+        }
+
+        console.log('[apply_suggested_plan] Summary:', summary)
+        return JSON.stringify(summary)
+      } catch (error) {
+        console.error('[apply_suggested_plan] Fatal error:', error)
+        return JSON.stringify({
+          success: false,
+          error: (error as Error).message,
+          message: 'Kunde inte applicera förslag'
+        })
+      }
+    }
+  })
+
+  const planningAgent = new Agent<WheelContext>({
+    name: 'Planning Agent',
+    model: 'gpt-4o',
+    instructions: `Du är Planning Agent. Du hjälper användare att skapa kompletta planeringsstrukturer för nya projekt och mål.
+
+ANSVAR:
+- Generera AI-drivna förslag på ringar, aktivitetsgrupper och aktiviteter
+- Basera förslag på domänspecifik expertis
+- Skapa realistiska tidsplaner
+- Föreslå lämpliga färgkoder och struktur
+- Applicera förslag när användaren godkänner
+
+ARBETSFLÖDE:
+1. Anropa suggest_plan med användarens mål och tidsperiod
+2. Presentera förslagen på ett lättläst sätt
+3. Vänta på användarens godkännande
+4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan
+
+VIKTIGT:
+- Presentera förslagen tydligt så användaren kan granska dem
+- Förklara varför varje del är viktig
+- VÄNTA på godkännande innan du anropar apply_suggested_plan
+- När du applicerar, använd suggestions från senaste suggest_plan
+
+OUTPUTFORMAT (Svenska):
+
+🎯 **Projektplan för: {goal}**
+📅 **Period:** {startDate} till {endDate}
+
+**🔵 RINGAR ({X} st):**
+1. {Ring namn} ({type}) - {beskrivning}
+
+**🎨 AKTIVITETSGRUPPER ({Y} st):**
+1. {Grupp namn} 🔴 - {beskrivning}
+
+**📋 AKTIVITETER ({Z} st):**
+
+**Q1 (Jan-Mar):**
+- {Aktivitet} ({startdatum} till {slutdatum}) i {ring} / {grupp}
+
+**Q2 (Apr-Jun):**
+...
+
+💡 **Översikt:**
+{Kort förklaring av planens logik och struktur}
+
+❓ **Vill du att jag skapar denna struktur på ditt hjul?** (Svara "ja" för att applicera)
+
+EXEMPEL på bra output:
+"🎯 **Projektplan för: Lansera SaaS-applikation**
+📅 **Period:** 2025-10-01 till 2026-12-31
+
+**🔵 RINGAR (3 st):**
+1. Strategi (inner) - Planering och analys
+2. Produkt (outer) - Produktutveckling och lansering  
+3. Marknad (outer) - Marknadsföring och tillväxt
+
+**🎨 AKTIVITETSGRUPPER (5 st):**
+1. Produktutveckling 🔵 - Bygga och förbättra produkten
+2. Marknadsföring 🟠 - Skapa medvetenhet och driva trafik
+3. Försäljning 🟢 - Konvertera leads till kunder
+4. Kundsupport 🟣 - Hjälpa och behålla kunder
+5. Analytics 🟡 - Mäta och optimera
+
+**📋 AKTIVITETER (18 st):**
+
+**Q4 2025 (Okt-Dec):**
+- Bygga MVP (2025-10-01 till 2025-12-31) i Produkt / Produktutveckling
+- Marknadsundersökning (2025-10-01 till 2025-10-31) i Strategi / Analytics
+- Lansera landningssida (2025-11-15 till 2025-11-20) i Marknad / Marknadsföring
+
+**Q1 2026 (Jan-Mar):**
+- Betatestning (2026-01-05 till 2026-02-05) i Produkt / Produktutveckling
+- SEO-optimering (2026-01-01 till 2026-03-31) i Marknad / Marknadsföring
+- Sätt upp kundsupport (2026-02-01 till 2026-02-15) i Marknad / Kundsupport
+
+**Q2 2026 (Apr-Jun):**
+- Offentlig lansering (2026-04-01 till 2026-04-05) i Produkt / Produktutveckling
+- Lanseringskampanj (2026-04-01 till 2026-04-30) i Marknad / Marknadsföring
+- Första försäljningsutskick (2026-04-15 till 2026-05-15) i Marknad / Försäljning
+
+**Q3-Q4 2026:**
+... (fortsättning)
+
+💡 **Översikt:**
+Denna plan fokuserar på en typisk SaaS-lansering: börjar med MVP-utveckling i Q4 2025, går genom betatestning i Q1 2026, lanserar publikt i Q2 2026, och fokuserar sedan på tillväxt och optimering resten av året. Varje fas bygger på den föregående.
+
+❓ **Vill du att jag skapar denna struktur på ditt hjul?**"
+
+EFTER APPLICERING:
+När apply_suggested_plan är klar, ge användaren en sammanfattning:
+"✅ **Klart!** Jag har skapat:
+- {X} ringar
+- {Y} aktivitetsgrupper
+- {Z} aktiviteter
+
+Din projektplan är nu redo! Du kan börja justera och anpassa den efter dina behov."`,
+    tools: [getContextTool, suggestPlanTool, applySuggestedPlanTool],
   })
 
   // ──────────────────────────────────────────────────────────────────
@@ -1298,46 +2040,91 @@ Be conversational and helpful.`,
 DIN ROLL:
 Du hjälper användare att planera och organisera aktiviteter i ett cirkulärt årshjul.
 
-DINA SPECIALISTER:
-1. Structure Agent - Skapar ringar och aktivitetsgrupper
-2. Activity Agent - Skapar och hanterar aktiviteter
-3. Analysis Agent - Analyserar hjulet och ger insikter
+DINA SPECIALISTER (4 st):
+1. **Structure Agent** - Skapar ringar, aktivitetsgrupper och etiketter
+2. **Activity Agent** - Skapar och hanterar aktiviteter/events
+3. **Analysis Agent** - Analyserar hjulet och ger AI-drivna insikter
+4. **Planning Agent** - Genererar kompletta projektplaner med AI
 
 ARBETSFLÖDE:
 1. Lyssna på användarens behov
-2. Delegera till rätt specialist (handoff)
-3. Sammanfatta resultatet för användaren
+2. Delegera till rätt specialist (handoff) - GÖR DETTA OMEDELBART
+3. Låt specialisten göra jobbet
 
-DELEGERINGSREGLER:
-- User säger "skapa ring" eller "föreslå struktur" → transfer_to_structure_agent
-- User säger "lägg till aktivitet" eller "skapa kampanj" → transfer_to_activity_agent
-- User säger "analysera" eller "hur ser det ut" → transfer_to_analysis_agent
+DELEGERINGSREGLER (KRITISKA):
 
-VAR PROAKTIV:
-- Gissa INTE - delegera till rätt specialist
-- Håll svar korta innan handoff
-- Låt specialisterna göra jobbet
+→ **Transfer to Structure Agent** när:
+- "skapa ring", "ny ring", "lägg till ring"
+- "skapa aktivitetsgrupp", "ny grupp"
+- "skapa etikett", "ny label"
+- "ändra färg på", "byt namn på ring/grupp"
+- "ta bort ring/grupp/etikett"
+- "föreslå struktur för befintligt hjul"
 
-EXEMPEL:
+→ **Transfer to Activity Agent** när:
+- "lägg till aktivitet", "skapa aktivitet", "ny aktivitet"
+- "skapa kampanj", "lägg till event", "schemalägg"
+- "flytta aktivitet", "ändra datum", "byt ring"
+- "ta bort aktivitet", "radera"
+- "lista aktiviteter", "visa aktiviteter"
+
+→ **Transfer to Analysis Agent** när:
+- "analysera", "hur ser det ut", "ge insikter"
+- "vilken domän", "kvalitetsbedömning"
+- "hur är fördelningen", "statistik"
+- "ge rekommendationer", "tips"
+
+→ **Transfer to Planning Agent** när:
+- "föreslå aktiviteter för", "skapa plan för"
+- "generera projektplan", "AI-förslag"
+- "jag vill lansera", "jag ska starta"
+- "hjälp mig planera", "skapa struktur för nytt projekt"
+- Användaren beskriver ett NYT projekt/mål som behöver komplett planering
+
+EXEMPEL PÅ RÄTT DELEGERING:
+
 User: "Skapa en ring för kampanjer"
-You: [Call transfer_to_structure_agent immediately]
+→ [Transfer to Structure Agent OMEDELBART]
 
 User: "Lägg till julkampanj i december"
-You: [Call transfer_to_activity_agent immediately]
+→ [Transfer to Activity Agent OMEDELBART]
 
 User: "Hur är aktiviteterna fördelade?"
-You: [Call transfer_to_analysis_agent immediately]
+→ [Transfer to Analysis Agent OMEDELBART]
+
+User: "Föreslå aktiviteter för att lansera en SaaS från oktober till december"
+→ [Transfer to Planning Agent OMEDELBART]
+
+User: "Jag ska starta en marknadsföringskampanj, vad behöver jag?"
+→ [Transfer to Planning Agent OMEDELBART]
+
+VIKTIGT:
+- GÖR HANDOFF OMEDELBART - prata inte för mycket innan
+- Håll din intro KORT (max 1 mening)
+- Låt specialisten göra ALLT arbete
+- Försök INTE lösa uppgiften själv
+
+FELAKTIGT ❌:
+User: "Skapa ring Kampanjer"
+You: "Javisst! För att skapa en ring behöver jag veta vilken typ... [lång förklaring]"
+
+KORREKT ✅:
+User: "Skapa ring Kampanjer"
+You: [Call transfer_to_structure_agent DIREKT]
 
 Prata svenska naturligt.`,
     handoffs: [
       handoff(structureAgent, {
-        toolDescriptionOverride: 'Transfer to Structure Agent when user wants to create, update, or delete rings, activity groups, or labels',
+        toolDescriptionOverride: 'Transfer to Structure Agent when user wants to create, update, or delete rings, activity groups, or labels. Also for structural suggestions for existing wheels.',
       }),
       handoff(activityAgent, {
-        toolDescriptionOverride: 'Transfer to Activity Agent when user wants to create, update, delete, or list activities/events',
+        toolDescriptionOverride: 'Transfer to Activity Agent when user wants to create, update, delete, or list activities/events. Also for moving or rescheduling activities.',
       }),
       handoff(analysisAgent, {
-        toolDescriptionOverride: 'Transfer to Analysis Agent when user wants insights about activity distribution or wheel analysis',
+        toolDescriptionOverride: 'Transfer to Analysis Agent when user wants insights about activity distribution, domain identification, quality assessment, or recommendations for existing wheels.',
+      }),
+      handoff(planningAgent, {
+        toolDescriptionOverride: 'Transfer to Planning Agent when user wants AI-generated suggestions for a NEW project/goal with complete structure (rings, groups, activities). Use for "suggest activities for", "create plan for", "help me plan", etc.',
       }),
     ],
   })
@@ -1367,45 +2154,71 @@ serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { userMessage, conversationHistory = [], wheelId, currentPageId } = await req.json()
+    const { userMessage, conversationHistory, wheelId, currentPageId } = await req.json()
     if (!userMessage || !wheelId) {
       throw new Error('Missing required fields: userMessage, wheelId')
     }
 
-    console.log('[AI Assistant V2] Processing:', { userMessage, wheelId, currentPageId })
+    // Validate and use conversation history (should be AgentInputItem[] from result.history)
+    const history: any[] = Array.isArray(conversationHistory) ? conversationHistory : []
+
+    console.log('[AI Assistant V2] Processing:', { 
+      userMessage, 
+      wheelId, 
+      currentPageId,
+      historyLength: history.length
+    })
 
     // Create agent system (no parameters - uses RunContext)
     const orchestrator = createAgentSystem()
+
+    // Fetch current wheel page data for context
+    const { data: pageData, error: pageError } = await supabase
+      .from('wheel_pages')
+      .select('*')
+      .eq('id', currentPageId || wheelId)
+      .single()
+
+    if (pageError) throw pageError
 
     // Create wheel context that will be passed to all tools
     const wheelContext: WheelContext = {
       supabase,
       wheelId,
       userId: user.id,
-      currentYear: new Date().getFullYear(),
-      currentPageId,
+      currentYear: pageData.year,
+      currentPageId: currentPageId || wheelId,
       lastSuggestions: undefined, // Will be populated by tools if needed
     }
 
-    // Build conversation history
-    const messages = conversationHistory.map((msg: any) => ({
-      role: msg.role,
-      content: msg.content,
-    }))
+    // Build thread: history + new user message
+    // IMPORTANT: We send result.history back to frontend, which is already in correct AgentInputItem format
+    // Just append new user message and pass to run()
+    const thread = [
+      ...history,
+      { role: 'user', content: userMessage }
+    ]
 
-    // Run agent with RunContext
-    const result = await run(orchestrator, userMessage, {
+    // Run agent with conversation thread
+    const result = await run(orchestrator, thread, {
       context: wheelContext,
       maxTurns: 20,
     })
 
-    console.log('[AI Assistant V2] Result:', { finalOutput: result.finalOutput })
+    console.log('[AI Assistant V2] Result:', { 
+      finalOutput: result.finalOutput,
+      agentUsed: result.agent?.name,
+      newHistoryLength: result.history.length
+    })
 
+    // Return response with updated history
+    // Frontend will store result.history and send it back on next request
     return new Response(
       JSON.stringify({
         success: true,
         message: result.finalOutput,
         agentUsed: result.agent?.name || 'Year Wheel Assistant',
+        conversationHistory: result.history, // Send back complete history for next turn
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

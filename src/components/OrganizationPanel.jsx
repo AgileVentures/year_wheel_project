@@ -1,4 +1,4 @@
-import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon } from 'lucide-react';
+import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon, Info } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
@@ -35,6 +35,7 @@ function OrganizationPanel({
   const [integrationRing, setIntegrationRing] = useState(null); // Ring being configured for integration
   const [ringIntegrations, setRingIntegrations] = useState({}); // Track which rings have integrations: {ringId: true/false}
   const loadingIntegrationsRef = useRef(false);
+  const [infoDialog, setInfoDialog] = useState(null); // { title, content } for info dialog
   
   // Local state for title to avoid updating history on every keystroke
   const [localTitle, setLocalTitle] = useState(title || '');
@@ -941,24 +942,32 @@ function OrganizationPanel({
         <>
         {/* INNERRINGAR Section */}
         <div className="px-4 py-3 border-b border-gray-200">
-          <button
-            onClick={() => toggleSection('innerRings')}
-            className="w-full flex items-center justify-between mb-2"
-          >
-            <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              {t('editor:rings.innerRings')}
-            </h2>
-            <ChevronDown 
-              size={14} 
-              className={`text-gray-400 transition-transform ${expandedSections.innerRings ? 'rotate-180' : ''}`}
-            />
-          </button>
+          <div className="w-full flex items-center justify-between mb-2">
+            <button
+              onClick={() => setInfoDialog({
+                title: t('editor:rings.innerRings'),
+                content: t('editor:rings.innerDescription')
+              })}
+              className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+            >
+              <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                {t('editor:rings.innerRings')}
+              </h2>
+              <Info size={12} className="text-blue-600" />
+            </button>
+            <button
+              onClick={() => toggleSection('innerRings')}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+            >
+              <ChevronDown 
+                size={14} 
+                className={`text-gray-400 transition-transform ${expandedSections.innerRings ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
 
           {expandedSections.innerRings && (
             <>
-              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                {t('editor:rings.innerDescription')}
-              </p>
 
               <div className="space-y-1 mb-2">
                 {filteredInnerRings.map((ring) => (
@@ -1056,24 +1065,32 @@ function OrganizationPanel({
 
         {/* YTTERRINGAR Section */}
         <div className="px-4 py-3 border-b border-gray-200">
-          <button
-            onClick={() => toggleSection('outerRings')}
-            className="w-full flex items-center justify-between mb-2"
-          >
-            <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              {t('editor:rings.outerRings')}
-            </h2>
-            <ChevronDown 
-              size={14} 
-              className={`text-gray-400 transition-transform ${expandedSections.outerRings ? 'rotate-180' : ''}`}
-            />
-          </button>
+          <div className="w-full flex items-center justify-between mb-2">
+            <button
+              onClick={() => setInfoDialog({
+                title: t('editor:rings.outerRings'),
+                content: t('editor:rings.outerDescription')
+              })}
+              className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+            >
+              <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                {t('editor:rings.outerRings')}
+              </h2>
+              <Info size={12} className="text-blue-600" />
+            </button>
+            <button
+              onClick={() => toggleSection('outerRings')}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+            >
+              <ChevronDown 
+                size={14} 
+                className={`text-gray-400 transition-transform ${expandedSections.outerRings ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
 
           {expandedSections.outerRings && (
             <>
-              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                {t('editor:rings.outerDescription')}
-              </p>
 
               <div className="space-y-1 mb-2">
                 {filteredOuterRings.map((ring) => (
@@ -1171,24 +1188,32 @@ function OrganizationPanel({
 
         {/* AKTIVITETSGRUPPER Section */}
         <div className="px-4 py-3 border-b border-gray-200" data-onboarding="activity-groups">
-          <button
-            onClick={() => toggleSection('activityGroups')}
-            className="w-full flex items-center justify-between mb-2"
-          >
-            <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              {t('editor:activityGroups.title')}
-            </h2>
-            <ChevronDown 
-              size={14} 
-              className={`text-gray-400 transition-transform ${expandedSections.activityGroups ? 'rotate-180' : ''}`}
-            />
-          </button>
+          <div className="w-full flex items-center justify-between mb-2">
+            <button
+              onClick={() => setInfoDialog({
+                title: t('editor:activityGroups.title'),
+                content: t('editor:activityGroups.description')
+              })}
+              className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+            >
+              <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                {t('editor:activityGroups.title')}
+              </h2>
+              <Info size={12} className="text-blue-600" />
+            </button>
+            <button
+              onClick={() => toggleSection('activityGroups')}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+            >
+              <ChevronDown 
+                size={14} 
+                className={`text-gray-400 transition-transform ${expandedSections.activityGroups ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
 
           {expandedSections.activityGroups && (
             <>
-              <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                {t('editor:activityGroups.description')}
-              </p>
 
               <div className="space-y-1 mb-2">
                 {filteredActivityGroups.map((group) => (
@@ -1653,6 +1678,34 @@ function OrganizationPanel({
             setIntegrationRing(null);
           }}
         />
+      )}
+
+      {/* Info Dialog */}
+      {infoDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-sm shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-base font-semibold text-gray-900">{infoDialog.title}</h2>
+              <button
+                onClick={() => setInfoDialog(null)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <X size={20} className="text-gray-600" />
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-gray-700 leading-relaxed">{infoDialog.content}</p>
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setInfoDialog(null)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                {t('common:actions.ok', { defaultValue: 'OK' })}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
