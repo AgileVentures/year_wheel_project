@@ -204,10 +204,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   useEffect(() => {
     if (showOnboarding || showAIOnboarding) {
       setAutoSaveEnabled(false);
-      console.log('[Onboarding] Auto-save disabled during guide');
     } else {
       setAutoSaveEnabled(true);
-      console.log('[Onboarding] Auto-save re-enabled');
     }
   }, [showOnboarding, showAIOnboarding]);
   
@@ -247,7 +245,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const loadWheelData = useCallback(async () => {
     if (!wheelId) return;
     
-    console.log('[loadWheelData] LOADING wheel:', wheelId);
     isLoadingData.current = true; // Prevent auto-save during load
     
     try {
@@ -279,7 +276,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           
           // Fetch items for this specific page only
           const pageItems = await fetchPageData(pageToLoad.id);
-          console.log('[loadWheelData] Loaded', pageItems.length, 'items for page', pageToLoad.id, 'Sample:', pageItems[0]);
           
           // Fetch rings, activity groups, and labels from database tables
           // CRITICAL: Use wheel_id - rings are SHARED across all pages!
@@ -305,7 +301,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             
             // Replace items with page-specific items from database
             orgData.items = pageItems;
-            console.log('[loadWheelData] Set orgData.items to', pageItems.length, 'items');
             
             // Replace rings, activityGroups, labels with database versions (using UUIDs)
             // Keep any client-ID entities from JSONB for backward compatibility
@@ -420,12 +415,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             }
             
             orgDataToSet = orgData;
-            console.log('[loadWheelData] Final orgData set:', {
-              items: orgData.items.length,
-              rings: orgData.rings.length,
-              activityGroups: orgData.activityGroups.length,
-              labels: orgData.labels.length
-            });
           }
         }
         
@@ -454,7 +443,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           // CRITICAL: Clear history after load to ensure we start with a clean slate
           // This prevents undoing to an empty initial state
           setTimeout(() => {
-            console.log('[loadWheelData] Clearing history after data load to prevent blank wheel on undo');
             clearHistory();
           }, 100); // Short delay to ensure state is fully updated
         }
@@ -672,9 +660,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
       
-      console.log('[AutoSave] Metadata saved (lightweight)');
     } catch (error) {
-      console.error('[AutoSave] Error:', error);
       // Show error toast only on failure
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Auto-sparning misslyckades', type: 'error' } 
@@ -1075,7 +1061,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         // Fetch page-specific items from database
         const pageItems = await fetchPageData(pageId);
-        console.log(`📊 [PageChange] Loaded ${pageItems?.length || 0} items for page ${newPage.year}`);
         
         // CRITICAL: Keep wheel-level data (rings, groups, labels) unchanged
         // Only update page-specific data (items, year)
@@ -1238,7 +1223,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // ringId, activityId, labelId remain unchanged - they reference wheel-level structures
       }));
       
-      console.log(`[SmartCopy] Creating new page for ${nextYear} with ${copiedItems.length} items`);
       
       // Create new page (empty organization_data initially)
       const newPage = await createPage(wheelId, {
@@ -1252,7 +1236,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       });
       
-      console.log(`[SmartCopy] New page created with ID: ${newPage.id}`);
       
       // Now save the items to the database using saveWheelData
       // This will insert items into the 'items' table (not just JSONB)
@@ -1261,7 +1244,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         pageId: newPage.id // Set the page ID
       }));
       
-      console.log(`[SmartCopy] Saving ${itemsToSave.length} items to database...`);
       
       await saveWheelData(wheelId, {
         rings: organizationData.rings || [],
@@ -1270,7 +1252,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         items: itemsToSave
       }, newPage.id);
       
-      console.log(`[SmartCopy] Items saved successfully!`);
       
       // Sort pages by year after adding
       const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
@@ -1283,7 +1264,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // Fetch items from database to get the real UUIDs
       const savedItems = await fetchPageData(newPage.id);
-      console.log(`[SmartCopy] Fetched ${savedItems.length} items from database`);
       
       // Update organizationData with saved items (keep wheel-level structures)
       setOrganizationData(prevData => ({
@@ -1291,7 +1271,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         items: savedItems  // Use items from database with real UUIDs
       }));
       
-      console.log('[SmartCopy] Complete! Page switched and items loaded.');
       
       const event = new CustomEvent('showToast', {
         detail: { 
@@ -1301,7 +1280,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
       window.dispatchEvent(event);
     } catch (error) {
-      console.error('[SmartCopy] Error:', error);
       const event = new CustomEvent('showToast', {
         detail: { message: `SmartCopy misslyckades: ${error.message}`, type: 'error' }
       });
@@ -1540,19 +1518,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
-    console.log('[DRAG START] Beginning batch mode for:', item?.name);
     isDraggingRef.current = true;
     const label = item 
       ? { type: 'dragItem', params: { name: item.name } }
       : { type: 'dragActivity' };
     startBatch(label);
-    console.log('[DRAG START] Batch mode started');
   }, [startBatch]);
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    console.log('[UPDATE] Received update for:', updatedItem.name, 'isDragging:', isDraggingRef.current);
-    
     // If we're in drag mode, we need to check if dates actually changed
     const wasDragging = isDraggingRef.current;
     
@@ -1605,7 +1579,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       };
     }, calculatedLabel);
     
-    console.log('[UPDATE] State updated, wasDragging:', wasDragging, 'actuallyChanged:', actuallyChanged);
     
     // If this was a drag operation, end the batch
     // But only if something actually changed
@@ -1619,10 +1592,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         setTimeout(async () => {
           if (wheelId && currentPageId) {
             try {
-              console.log('[DRAG SAVE] Saving single item to database:', updatedItem.name);
               // Create empty ID maps since we're only updating one item with existing UUIDs
               await updateSingleItem(wheelId, currentPageId, updatedItem, new Map(), new Map(), new Map());
-              console.log('[DRAG SAVE] ✓ Item saved successfully');
               
               // Update the save timestamp to prevent realtime overwrites
               lastSaveTimestamp.current = Date.now();
@@ -1630,16 +1601,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               // Mark as saved in undo/redo history
               markSaved();
             } catch (error) {
-              console.error('[DRAG SAVE] Failed to save item:', error);
               showToast('Kunde inte spara ändringen', 'error');
             }
           }
         }, 100); // Small delay to ensure state is fully updated
       } else {
-        console.log('[UPDATE] Drag did NOT result in changes, canceling batch mode');
         cancelBatch();
       }
-      console.log('[UPDATE] Batch mode ended');
     }
   }, [setOrganizationData, endBatch, cancelBatch, wheelId, currentPageId, markSaved, t]);
 
@@ -1746,13 +1714,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               };
             });
             
-            console.log('[FileImport] Regenerated all UUIDs to prevent cross-wheel conflicts');
-            // console.log('[FileImport] Processed organization data from file:', {
-            //   rings: processedOrgData.rings.length,
-            //   activityGroups: processedOrgData.activityGroups.length,
-            //   labels: processedOrgData.labels.length,
-            //   items: processedOrgData.items.length,
-            // });
           } else {
             // Use default structure if not present in file
             processedOrgData = { 
@@ -1789,15 +1750,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               
               // Save organization data using the PROCESSED data (for backward compatibility)
               // CRITICAL: Get ID mappings to update items with database UUIDs
-              console.log('[FileImport] Before saveWheelData - items:', processedOrgData.items.length);
-              console.log('[FileImport] Sample item before save:', processedOrgData.items[0]);
               
               const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, processedOrgData, currentPageId);
               
-              console.log('[FileImport] ID Mappings received:');
-              console.log('  - Rings:', Array.from(ringIdMap.entries()));
-              console.log('  - Activity Groups:', Array.from(activityIdMap.entries()));
-              console.log('  - Labels:', Array.from(labelIdMap.entries()));
               
               // Update items with the database UUIDs from sync functions
               processedOrgData.rings = processedOrgData.rings.map(ring => ({
@@ -2084,7 +2039,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         {/* Main Canvas Area */}
         <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
           <div className="w-full h-full flex items-center justify-center">
-            {console.log('[WheelEditor] Rendering YearWheel - items:', organizationData?.items?.length, 'rings:', organizationData?.rings?.length, 'groups:', organizationData?.activityGroups?.length)}
             <YearWheel
               title={title}
               year={year}
@@ -2149,7 +2103,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           currentPageId={currentPageId}
           onWheelUpdate={loadWheelData}
           onPageChange={(pageId) => {
-            console.log('🔄 [App] AI requested page change to:', pageId);
             // Update currentPageId and trigger a reload
             // Use React's state callback to ensure we reload after state is set
             setCurrentPageId(pageId);
@@ -2170,7 +2123,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                   }
                   
                   setOrganizationData(orgData);
-                  console.log('✅ [App] Successfully loaded page:', pageToLoad.year);
                 }
               } catch (error) {
                 console.error('❌ [App] Error loading page:', error);

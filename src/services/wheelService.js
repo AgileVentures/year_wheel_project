@@ -762,7 +762,6 @@ const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, p
  * @returns {Promise<void>}
  */
 export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Map(), activityIdMap = new Map(), labelIdMap = new Map()) => {
-  console.log(`[updateSingleItem] Updating item "${item.name}" (ID: ${item.id})`);
   
   // Map old IDs to new database UUIDs
   let ringId = ringIdMap.get(item.ringId) || item.ringId;
@@ -799,27 +798,22 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     page_id: item.pageId || pageId || null,
   };
   
-  console.log(`[updateSingleItem] Item data:`, itemData);
   
   // Check if item exists in database
   const isNew = !item.id || item.id.startsWith('item-');
   
   if (isNew) {
-    console.log(`[updateSingleItem] Inserting new item "${item.name}"`);
     const { error } = await supabase.from('items').insert(itemData);
     if (error) {
       console.error(`Error inserting item "${item.name}":`, error);
       throw error;
     }
-    console.log(`[updateSingleItem] ✓ Successfully inserted item "${item.name}"`);
   } else {
-    console.log(`[updateSingleItem] Updating existing item "${item.name}"`);
     const { error } = await supabase.from('items').update(itemData).eq('id', item.id);
     if (error) {
       console.error(`Error updating item "${item.name}":`, error);
       throw error;
     }
-    console.log(`[updateSingleItem] ✓ Successfully updated item "${item.name}"`);
   }
 };
 

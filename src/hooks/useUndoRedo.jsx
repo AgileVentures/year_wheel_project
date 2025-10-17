@@ -71,13 +71,11 @@ export function useUndoRedo(initialState, options = {}) {
 
     // Check if caller wants to skip history (e.g., during data load)
     if (shouldSkipHistory?.current) {
-      console.log('[HISTORY] Skipping history during load/import');
       return;
     }
 
     // In batch mode, just store the latest state without adding to history yet
     if (isBatchMode.current) {
-      console.log('[BATCH] In batch mode, storing state instead of adding to history');
       // Use Immer freeze to ensure immutability in batch mode
       batchModeState.current = freeze(newState, true);
       return;
@@ -88,7 +86,6 @@ export function useUndoRedo(initialState, options = {}) {
       ? { type: 'legacyString', text: label } // Legacy support for old string labels
       : label;
 
-    console.log('[HISTORY] Adding to history:', normalizedLabel);
 
     // CRITICAL: Update both history and currentIndex atomically
     // Use ref to get current index to avoid stale closure
@@ -357,13 +354,11 @@ export function useUndoRedo(initialState, options = {}) {
    * Uses Immer freeze to preserve initial state
    */
   const startBatch = useCallback((label = 'Gruppoperation') => {
-    console.log('[BATCH] Starting batch mode:', label, 'Current state keys:', Object.keys(state));
     isBatchMode.current = true;
     batchModeLabel.current = label;
     // Freeze CURRENT state as the "before batch" state
     batchModeInitialState.current = freeze(state, true);
     batchModeState.current = null;
-    console.log('[BATCH] Batch mode active, initial state frozen');
   }, [state]);
 
   /**
@@ -372,22 +367,16 @@ export function useUndoRedo(initialState, options = {}) {
    * OR the current state if no updates happened during batch
    */
   const endBatch = useCallback(() => {
-    console.log('[BATCH] Ending batch mode, isBatchMode:', isBatchMode.current);
     if (isBatchMode.current) {
       // Use the accumulated state if available, otherwise current state
       const finalState = batchModeState.current !== null ? batchModeState.current : state;
-      
-      console.log('[BATCH] Final state:', finalState ? 'exists' : 'null', 'Initial state:', batchModeInitialState.current ? 'exists' : 'null');
-      
       // Debug: Log specific fields to see what changed
       if (finalState && batchModeInitialState.current) {
         const initialItems = batchModeInitialState.current.organizationData?.items || [];
         const finalItems = finalState.organizationData?.items || [];
-        console.log('[BATCH DEBUG] Initial items count:', initialItems.length, 'Final items count:', finalItems.length);
         if (initialItems.length > 0 && finalItems.length > 0) {
           const firstInitialItem = initialItems[0];
           const firstFinalItem = finalItems[0];
-          console.log('[BATCH DEBUG] First item dates - Initial:', firstInitialItem?.startDate, firstInitialItem?.endDate, 'Final:', firstFinalItem?.startDate, firstFinalItem?.endDate);
         }
       }
       
@@ -398,10 +387,8 @@ export function useUndoRedo(initialState, options = {}) {
         const initialJSON = JSON.stringify(initialState);
         const finalJSON = JSON.stringify(finalState);
         
-        console.log('[BATCH] Comparing states - Initial length:', initialJSON.length, 'Final length:', finalJSON.length, 'Equal:', initialJSON === finalJSON);
         
         if (initialJSON !== finalJSON) {
-          console.log('[BATCH] State changed during batch, adding to history with label:', batchModeLabel.current);
           
           // CRITICAL: Reset batch mode BEFORE calling addToHistory
           // Otherwise addToHistory will see isBatchMode=true and store to batchModeState instead!
@@ -414,9 +401,7 @@ export function useUndoRedo(initialState, options = {}) {
           addToHistory(finalState, labelToUse);
           // Update the actual state to the final state
           setStateInternal(finalState);
-          console.log('[BATCH] History updated and state set');
         } else {
-          console.log('[BATCH] No state change detected - states are identical');
           // Still need to reset batch mode
           isBatchMode.current = false;
           batchModeLabel.current = '';
@@ -424,7 +409,6 @@ export function useUndoRedo(initialState, options = {}) {
           batchModeInitialState.current = null;
         }
       } else {
-        console.log('[BATCH] Initial state was null, cannot compare');
         // Still need to reset batch mode
         isBatchMode.current = false;
         batchModeLabel.current = '';
@@ -432,19 +416,16 @@ export function useUndoRedo(initialState, options = {}) {
         batchModeInitialState.current = null;
       }
     }
-    console.log('[BATCH] Batch mode reset');
   }, [addToHistory, state]);
 
   /**
    * Cancel batch mode - discard accumulated changes
    */
   const cancelBatch = useCallback(() => {
-    console.log('[BATCH] Canceling batch mode - discarding changes');
     isBatchMode.current = false;
     batchModeLabel.current = '';
     batchModeState.current = null;
     batchModeInitialState.current = null; // Reset initial state too
-    console.log('[BATCH] Batch mode canceled and reset');
   }, []);
 
   /**

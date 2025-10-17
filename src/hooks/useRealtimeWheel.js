@@ -64,7 +64,6 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
       return;
     }
 
-    console.log(`[Realtime] Setting up subscriptions - Wheel: ${wheelId}, Page: ${pageId}`);
 
     // Create a unique channel for this wheel+page combination
     const channel = supabase.channel(`wheel:${wheelId}:page:${pageId}`);
@@ -130,7 +129,7 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
         } else if (status === 'TIMED_OUT') {
           console.error('[Realtime] Subscription timed out');
         } else if (status === 'CLOSED') {
-          // console.log('[Realtime] Channel closed');
+          console.log('[Realtime] Channel closed');
         }
       });
 
