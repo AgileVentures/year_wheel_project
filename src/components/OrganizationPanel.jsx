@@ -1,4 +1,4 @@
-import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon, Info } from 'lucide-react';
+import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon, Info, GripVertical } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
@@ -36,6 +36,8 @@ function OrganizationPanel({
   const [ringIntegrations, setRingIntegrations] = useState({}); // Track which rings have integrations: {ringId: true/false}
   const loadingIntegrationsRef = useRef(false);
   const [infoDialog, setInfoDialog] = useState(null); // { title, content } for info dialog
+  const [draggedRing, setDraggedRing] = useState(null); // Track which ring is being dragged
+  const [dragOverSection, setDragOverSection] = useState(null); // Track which section is being dragged over ('inner' or 'outer')
   
   // Local state for title to avoid updating history on every keystroke
   const [localTitle, setLocalTitle] = useState(title || '');
@@ -493,6 +495,130 @@ function OrganizationPanel({
       ...prev,
       [ringId]: !prev[ringId]
     }));
+  };
+
+  // Drag and Drop handlers for changing ring type and reordering
+  const handleDragStart = (e, ring) => {
+    setDraggedRing(ring);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedRing(null);
+    setDragOverSection(null);
+  };
+
+  const handleDragOver = (e, sectionType) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSection(sectionType);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverSection(null);
+  };
+
+  const handleDragOverRing = (e, targetRing) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedRing && draggedRing.id !== targetRing.id) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
+
+  const handleDropOnRing = (e, targetRing) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedRing || draggedRing.id === targetRing.id) {
+      return;
+    }
+
+    const rings = [...organizationData.rings];
+    const draggedIndex = rings.findIndex(r => r.id === draggedRing.id);
+    const targetIndex = rings.findIndex(r => r.id === targetRing.id);
+
+    // If dragging within same type (reordering)
+    if (draggedRing.type === targetRing.type) {
+      // Remove dragged ring
+      const [removed] = rings.splice(draggedIndex, 1);
+      // Insert at target position
+      rings.splice(targetIndex, 0, removed);
+      
+      onOrganizationChange({ ...organizationData, rings });
+      setDraggedRing(null);
+      return;
+    }
+
+    // If dragging to different type (type conversion)
+    const updatedRing = { ...draggedRing, type: targetRing.type };
+    
+    // When converting to outer ring, ensure it has a color
+    if (targetRing.type === 'outer' && !updatedRing.color) {
+      updatedRing.color = '#' + Math.floor(Math.random()*16777215).toString(16);
+    }
+    
+    // When converting to inner ring, ensure it has data and orientation
+    if (targetRing.type === 'inner') {
+      if (!updatedRing.data) {
+        updatedRing.data = Array.from({ length: 12 }, () => [""]);
+      }
+      if (!updatedRing.orientation) {
+        updatedRing.orientation = 'vertical';
+      }
+    }
+
+    // Remove from old position
+    rings.splice(draggedIndex, 1);
+    // Insert at target position
+    rings.splice(targetIndex, 0, updatedRing);
+
+    onOrganizationChange({ ...organizationData, rings });
+    setDraggedRing(null);
+  };
+
+  const handleDrop = (e, targetType) => {
+    e.preventDefault();
+    setDragOverSection(null);
+
+    if (!draggedRing) {
+      return;
+    }
+
+    // If same type, don't do anything (reordering is handled by handleDropOnRing)
+    if (draggedRing.type === targetType) {
+      setDraggedRing(null);
+      return;
+    }
+
+    // Update ring type (dropping on empty space in different section)
+    const updatedRings = organizationData.rings.map(ring => {
+      if (ring.id === draggedRing.id) {
+        const updatedRing = { ...ring, type: targetType };
+        
+        // When converting to outer ring, ensure it has a color
+        if (targetType === 'outer' && !updatedRing.color) {
+          updatedRing.color = '#' + Math.floor(Math.random()*16777215).toString(16);
+        }
+        
+        // When converting to inner ring, ensure it has data and orientation
+        if (targetType === 'inner') {
+          if (!updatedRing.data) {
+            updatedRing.data = Array.from({ length: 12 }, () => [""]);
+          }
+          if (!updatedRing.orientation) {
+            updatedRing.orientation = 'vertical';
+          }
+        }
+        
+        return updatedRing;
+      }
+      return ring;
+    });
+
+    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    setDraggedRing(null);
   };
 
   // Activity Group management
@@ -969,22 +1095,37 @@ function OrganizationPanel({
           {expandedSections.innerRings && (
             <>
 
-              <div className="space-y-1 mb-2">
+              <div 
+                className={`space-y-1 mb-2 rounded-sm transition-colors ${
+                  dragOverSection === 'inner' ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
+                }`}
+                onDragOver={(e) => handleDragOver(e, 'inner')}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, 'inner')}
+              >
                 {filteredInnerRings.map((ring) => (
                   <div
                     key={ring.id}
-                    className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, ring)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleDragOverRing(e, ring)}
+                    onDrop={(e) => handleDropOnRing(e, ring)}
+                    className={`group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors cursor-move ${
+                      draggedRing?.id === ring.id ? 'opacity-50' : ''
+                    } ${
+                      draggedRing && draggedRing.id !== ring.id && draggedRing.type === 'inner' 
+                        ? 'border-t-2 border-blue-400' 
+                        : ''
+                    }`}
                   >
+                    <GripVertical size={14} className="text-gray-400 flex-shrink-0" />
                     <input
                       type="checkbox"
                       checked={ring.visible}
                       onChange={() => toggleRing(ring.id)}
                       className="w-3 h-3 rounded"
-                    />
-                    <div
-                      className="w-4 h-4 rounded border border-gray-300"
-                      style={{ backgroundColor: ring.color || '#cccccc' }}
-                      title={t('editor:rings.colorTooltip', { color: ring.color || '#cccccc' })}
+                      onClick={(e) => e.stopPropagation()}
                     />
                     <input
                       type="text"
@@ -992,6 +1133,7 @@ function OrganizationPanel({
                       onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
                       onFocus={() => handleRingNameFocus(ring.id)}
                       onBlur={() => handleRingNameBlur(ring.id)}
+                      onMouseDown={(e) => e.stopPropagation()}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -1092,22 +1234,42 @@ function OrganizationPanel({
           {expandedSections.outerRings && (
             <>
 
-              <div className="space-y-1 mb-2">
+              <div 
+                className={`space-y-1 mb-2 rounded-sm transition-colors ${
+                  dragOverSection === 'outer' ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
+                }`}
+                onDragOver={(e) => handleDragOver(e, 'outer')}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, 'outer')}
+              >
                 {filteredOuterRings.map((ring) => (
                   <div
                     key={ring.id}
-                    className="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, ring)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => handleDragOverRing(e, ring)}
+                    onDrop={(e) => handleDropOnRing(e, ring)}
+                    className={`group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-50 transition-colors cursor-move ${
+                      draggedRing?.id === ring.id ? 'opacity-50' : ''
+                    } ${
+                      draggedRing && draggedRing.id !== ring.id && draggedRing.type === 'outer' 
+                        ? 'border-t-2 border-blue-400' 
+                        : ''
+                    }`}
                   >
+                    <GripVertical size={14} className="text-gray-400 flex-shrink-0" />
                     <input
                       type="checkbox"
                       checked={ring.visible}
                       onChange={() => toggleRing(ring.id)}
                       className="w-3 h-3 rounded"
+                      onClick={(e) => e.stopPropagation()}
                     />
                     <div
-                      className="w-4 h-4 rounded border border-gray-300"
+                      className="w-4 h-4 rounded border border-gray-300 flex-shrink-0"
                       style={{ backgroundColor: ring.color || '#cccccc' }}
-                      title={t('editor:rings.colorTooltip', { color: ring.color || '#cccccc' })}
+                      title={ring.color || '#cccccc'}
                     />
                     <input
                       type="text"
@@ -1115,6 +1277,7 @@ function OrganizationPanel({
                       onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
                       onFocus={() => handleRingNameFocus(ring.id)}
                       onBlur={() => handleRingNameBlur(ring.id)}
+                      onMouseDown={(e) => e.stopPropagation()}
                       className="flex-1 text-xs text-gray-700 bg-transparent border-none focus:outline-none focus:bg-white focus:px-1"
                     />
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
