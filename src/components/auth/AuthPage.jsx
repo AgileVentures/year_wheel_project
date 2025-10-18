@@ -44,17 +44,6 @@ function AuthPage() {
 
       {/* Main Content - Centered Single Column */}
       <div className="max-w-md mx-auto px-4 py-12">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {mode === 'signup' ? t('auth:page.signupTitle') : t('auth:page.loginTitle')}
-          </h1>
-          <p className="text-gray-600">
-            {mode === 'signup' 
-              ? t('auth:page.signupSubtitle')
-              : t('auth:page.loginSubtitle')}
-          </p>
-        </div>
-
         <div className="bg-white rounded-sm shadow-xl p-8 border border-gray-200">
           {mode === 'login' ? (
             <LoginForm onToggleMode={() => setMode('signup')} />

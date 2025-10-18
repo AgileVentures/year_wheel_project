@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { memo } from 'react';
 
-export default function Hero() {
+function Hero() {
   const { t } = useTranslation(['landing']);
   
   return (
@@ -89,3 +90,5 @@ export default function Hero() {
     </section>
   );
 }
+
+export default memo(Hero);

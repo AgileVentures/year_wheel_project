@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export default function ManualEditorDemo() {
+function ManualEditorDemo() {
   const { t } = useTranslation(['landing']);
   const [demoStep, setDemoStep] = useState(0);
   const [restartKey, setRestartKey] = useState(0); // Key to trigger restart
@@ -735,3 +735,5 @@ export default function ManualEditorDemo() {
     </div>
   );
 }
+
+export default memo(ManualEditorDemo);

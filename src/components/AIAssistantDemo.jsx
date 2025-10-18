@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export default function AIAssistantDemo() {
+function AIAssistantDemo() {
   const { t } = useTranslation(['landing']);
   
   // Conversation animation state
@@ -404,3 +404,5 @@ export default function AIAssistantDemo() {
     </div>
   );
 }
+
+export default memo(AIAssistantDemo);
