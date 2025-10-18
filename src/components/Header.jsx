@@ -7,6 +7,7 @@ import PageNavigator from './PageNavigator';
 import LanguageSwitcher from './LanguageSwitcher';
 import OnboardingMenu from './OnboardingMenu';
 import UndoHistoryMenu from './UndoHistoryMenu';
+import TemplateSelectionModal from './TemplateSelectionModal';
 import { useState } from 'react';
 
 function Header({ 
@@ -53,6 +54,8 @@ function Header({
   // Onboarding props
   onStartOnboarding,
   onStartAIOnboarding,
+  // Template functionality
+  onTemplateSelect,
   // Premium status
   isPremium = false
 }) {
@@ -60,6 +63,7 @@ function Header({
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   
   const handleCopyToClipboard = async (format) => {
     onDownloadFormatChange && onDownloadFormatChange(format);
@@ -167,6 +171,13 @@ function Header({
             onClick={onSaveToFile}
           />
           <DropdownDivider />
+          {onTemplateSelect && (
+            <DropdownItem
+              icon={Sparkles}
+              label={t('common:header.useTemplate')}
+              onClick={() => setShowTemplateModal(true)}
+            />
+          )}
           <DropdownItem
             icon={RotateCcw}
             label={t('common:header.resetAll')}
@@ -423,6 +434,13 @@ function Header({
           </span>
         </button>
       </div>
+
+      {/* Template Selection Modal */}
+      <TemplateSelectionModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onTemplateSelect={onTemplateSelect}
+      />
     </header>
   );
 }

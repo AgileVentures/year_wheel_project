@@ -30,8 +30,8 @@
     "paletteClassic": "Klassisk",
     "displayOptions": "Visningsalternativ",
     "showRingNames": "Visa ringnamn",
-    "showLabelsAlways": "Visa etiketter alltid",
-    "showLabelsHint": "Om av: visa endast vid hovring",
+    "showLabelsAlways": "Visa etiketter alltid på hjulet",
+    "showLabelsHint": "Rekommenderat av - använd etiketter för filtrering och visa vid hovring",
     "weekRingDisplay": "Veckoringvisning",
     "weekRingDisplayHint": "Veckonummer eller datumintervall",
     "weekNumbers": "Veckonummer",
@@ -78,9 +78,10 @@
     "description": "Aktivitetsgrupper används för att färgkoda aktiviteter på hjulet. Varje aktivitet måste tillhöra en grupp."
   },
   "labels": {
-    "title": "LABELS",
+    "title": "ETIKETTER",
     "add": "Lägg till etikett",
-    "none": "Inga etiketter"
+    "none": "Inga etiketter",
+    "description": "Etiketter används för att organisera och filtrera aktiviteter. Växla synlighet för att filtrera vyn."
   },
   "undoLabels": {
     "moveToRing": "Flytta {{name}} till {{ring}}",
@@ -305,6 +306,14 @@
       "title": "AI-assistent Guide",
       "description": "Upptäck AI-funktionerna"
     }
+  },
+  "templateModal": {
+    "title": "Välj mall",
+    "description": "Välj en befintlig mall som utgångspunkt för ditt hjul",
+    "noTemplates": "Inga mallar tillgängliga för tillfället",
+    "preview": "Förhandsgranska",
+    "selected": "Vald",
+    "useTemplate": "Använd mall"
   },
   "onboarding": {
     "welcome": {

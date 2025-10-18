@@ -14,7 +14,10 @@ class YearWheel {
     this.size = size;
     this.events = events;
     this.options = options;
-    this.organizationData = options.organizationData || { items: [], rings: [], activityGroups: [], labels: [] };
+    // Deep copy organizationData to prevent read-only property issues
+    this.organizationData = options.organizationData 
+      ? JSON.parse(JSON.stringify(options.organizationData))
+      : { items: [], rings: [], activityGroups: [], labels: [] };
     // Backward compatibility: convert old 'activities' to 'activityGroups'
     if (this.organizationData.activities && !this.organizationData.activityGroups) {
       this.organizationData.activityGroups = this.organizationData.activities;
@@ -36,7 +39,7 @@ class YearWheel {
     this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showRingNames = options.showRingNames !== undefined ? options.showRingNames : true;
-    this.showLabels = options.showLabels !== undefined ? options.showLabels : true;
+    this.showLabels = options.showLabels !== undefined ? options.showLabels : false; // Default false for cleaner UX
     this.weekRingDisplayMode = options.weekRingDisplayMode || 'week-numbers'; // 'week-numbers' or 'dates'
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.zoomedQuarter = options.zoomedQuarter !== undefined && options.zoomedQuarter !== null ? options.zoomedQuarter : null;

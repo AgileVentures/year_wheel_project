@@ -837,7 +837,41 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         // CRITICAL: Always call saveWheelData to sync to database tables
         // This syncs rings, activity groups, labels, and items to their respective tables
-        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrganizationData, currentCurrentPageId);
+        
+        // If no currentPageId exists (single-page wheel or after template load), find or create a page
+        let pageIdToUse = currentCurrentPageId;
+        if (!pageIdToUse && wheelId) {
+          console.log('[handleSave] No currentPageId, checking for existing pages...');
+          
+          // First, get current pages to check if one exists for this year
+          const existingPages = await fetchPages(wheelId);
+          const pageForYear = existingPages.find(p => p.year === parseInt(currentYear));
+          
+          if (pageForYear) {
+            console.log('[handleSave] Found existing page for year', currentYear, ':', pageForYear.id);
+            pageIdToUse = pageForYear.id;
+            
+            // Update local state to use existing page
+            setCurrentPageId(pageForYear.id);
+            setPages(existingPages);
+          } else {
+            console.log('[handleSave] No page found for year', currentYear, ', creating new page...');
+            const defaultPage = await createPage(wheelId, {
+              year: parseInt(currentYear),
+              title: currentYear,
+              organizationData: currentOrganizationData
+            });
+            pageIdToUse = defaultPage.id;
+            
+            // Update local state to reflect the new page
+            setCurrentPageId(defaultPage.id);
+            setPages([...existingPages, defaultPage]);
+            
+            console.log('[handleSave] Created new page:', defaultPage.id);
+          }
+        }
+        
+        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrganizationData, pageIdToUse);
         
         // Update local state with new database UUIDs (replace temporary IDs)
         const updatedOrgData = {
@@ -1483,6 +1517,139 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     window.dispatchEvent(event);
   };
 
+  const handleTemplateSelect = async (templateId) => {
+    const confirmed = await showConfirmDialog({
+      title: 'Använd mall',
+      message: 'Detta kommer att ersätta det nuvarande hjulet med den valda mallen. Alla ändringar som inte är sparade går förlorade. Fortsätt?',
+      confirmText: 'Fortsätt',
+      cancelText: 'Avbryt',
+      confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
+    });
+    
+    if (!confirmed) return;
+
+    try {
+      setIsSaving(true);
+      
+      // Fetch template data
+      const templateData = await fetchWheel(templateId);
+      const templatePages = await fetchPages(templateId);
+      
+      if (!templateData || !templatePages || templatePages.length === 0) {
+        throw new Error('Template data not found');
+      }
+
+      console.log('[Editor] Loading template:', templateData.title, 'Pages:', templatePages.length);
+
+      // Set wheel-level data from template
+      setTitle(`${templateData.title} (Kopia)`);
+      setYear(String(templateData.year));
+      setColors(templateData.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]);
+      setShowWeekRing(templateData.show_week_ring);
+      setShowMonthRing(templateData.show_month_ring);
+      setShowRingNames(templateData.show_ring_names);
+      setShowLabels(templateData.show_labels);
+      setWeekRingDisplayMode(templateData.week_ring_display_mode || 'week-numbers');
+
+      // Helper function to convert template data to new client IDs
+      const convertTemplateData = (templateOrgData) => {
+        // Deep copy to avoid read-only property issues
+        const orgData = JSON.parse(JSON.stringify(templateOrgData));
+        
+        // Create ID mapping for consistent references
+        const ringIdMap = new Map();
+        const groupIdMap = new Map();
+        const labelIdMap = new Map();
+        
+        // CRITICAL: Clear all IDs and create new client-side IDs
+        if (orgData.rings) {
+          orgData.rings = orgData.rings.map((ring, index) => {
+            const newId = `ring-${index + 1}`;
+            ringIdMap.set(ring.id, newId);
+            return { ...ring, id: newId };
+          });
+        }
+        
+        if (orgData.activityGroups) {
+          orgData.activityGroups = orgData.activityGroups.map((group, index) => {
+            const newId = `group-${index + 1}`;
+            groupIdMap.set(group.id, newId);
+            return { ...group, id: newId };
+          });
+        }
+        
+        if (orgData.labels) {
+          orgData.labels = orgData.labels.map((label, index) => {
+            const newId = `label-${index + 1}`;
+            labelIdMap.set(label.id, newId);
+            return { ...label, id: newId };
+          });
+        }
+        
+        if (orgData.items) {
+          orgData.items = orgData.items.map((item, index) => ({
+            ...item,
+            id: `item-${index + 1}`, // Use client-side ID
+            pageId: null, // Clear page reference
+            // Update references using the mapping
+            ringId: ringIdMap.get(item.ringId) || item.ringId,
+            activityId: groupIdMap.get(item.activityId) || item.activityId,
+            labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
+          }));
+        }
+        
+        return orgData;
+      };
+
+      // For multi-page wheels, load the first page
+      if (templatePages.length > 1) {
+        const firstPage = templatePages[0];
+        const orgData = convertTemplateData(firstPage.organization_data);
+        
+        setOrganizationData(orgData);
+        setCurrentPageId(null); // Will create new pages when saved
+        
+        // Store template pages for reference but clear current page ID
+        setPages(templatePages);
+      } else {
+        // Single page template - load organization data from first page
+        const templateOrgData = templatePages[0].organization_data;
+        const orgData = convertTemplateData(templateOrgData);
+        
+        setOrganizationData(orgData);
+        setPages([]);
+        setCurrentPageId(null);
+      }
+
+      // Update rings data for backward compatibility
+      const rings = templatePages[0].organization_data.rings || [];
+      const newRingsData = rings.map(ring => ({
+        data: ring.data || Array.from({ length: 12 }, () => [""]),
+        orientation: ring.orientation || "vertical"
+      }));
+      setRingsData(newRingsData);
+
+      // Clear history and mark as saved
+      clearHistory();
+      markSaved();
+
+      const successMessage = `Mall "${templateData.title}" har laddats!`;
+      const event = new CustomEvent('showToast', {
+        detail: { message: successMessage, type: 'success' }
+      });
+      window.dispatchEvent(event);
+
+    } catch (error) {
+      console.error('Error loading template:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte ladda mallen. Försök igen.', type: 'error' }
+      });
+      window.dispatchEvent(event);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSaveToFile = () => {
     const dataToSave = {
       version: "1.0",
@@ -1972,6 +2139,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onPageChange={handlePageChange}
         onAddPage={handleAddPage}
         onDeletePage={handleDeletePage}
+        // Template functionality
+        onTemplateSelect={handleTemplateSelect}
         // AI Assistant
         onToggleAI={wheelId ? () => {
           if (!isPremium) {

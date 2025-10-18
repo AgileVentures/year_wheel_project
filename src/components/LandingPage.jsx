@@ -21,7 +21,11 @@ const LandingPage = () => {
   const featuresRef = useRef(null);
   const pricingRef = useRef(null);
   const aboutRef = useRef(null);
+  const templatesRef = useRef(null);
+  const comparisonRef = useRef(null);
+  const authRef = useRef(null);
   const [authMode, setAuthMode] = useState('signup');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -49,14 +53,29 @@ const LandingPage = () => {
     setAuthMode('signup');
   }, []);
 
+  const scrollToTemplates = useCallback(() => {
+    templatesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  const scrollToComparison = useCallback(() => {
+    comparisonRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  const scrollToAuth = useCallback(() => {
+    authRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <LandingNavigation 
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        setAuthMode={setAuthMode}
         scrollToFeatures={scrollToFeatures}
+        scrollToTemplates={scrollToTemplates}
         scrollToPricing={scrollToPricing}
-        scrollToAbout={scrollToAbout}
-        switchToLogin={switchToLogin}
-        switchToSignup={switchToSignup}
+        scrollToComparison={scrollToComparison}
+        scrollToAuth={scrollToAuth}
       />
       
       <main>
@@ -72,19 +91,25 @@ const LandingPage = () => {
           <PricingSection />
         </div>
 
-        <TemplateShowcase />
+        <div ref={templatesRef}>
+          <TemplateShowcase />
+        </div>
         
         <div ref={aboutRef}>
           <PhilosophySection />
         </div>
 
-        <ComparisonTable />
+        <div ref={comparisonRef}>
+          <ComparisonTable />
+        </div>
 
-        <AuthSection 
-          authMode={authMode}
-          switchToLogin={switchToLogin}
-          switchToSignup={switchToSignup}
-        />
+        <div ref={authRef}>
+          <AuthSection 
+            authMode={authMode}
+            switchToLogin={switchToLogin}
+            switchToSignup={switchToSignup}
+          />
+        </div>
       </main>
 
       <Footer />

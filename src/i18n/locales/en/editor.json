@@ -30,8 +30,8 @@
     "paletteClassic": "Classic",
     "displayOptions": "Display Options",
     "showRingNames": "Show ring names",
-    "showLabelsAlways": "Always show labels",
-    "showLabelsHint": "If off: show only on hover",
+    "showLabelsAlways": "Always show labels on wheel",
+    "showLabelsHint": "Recommended off - use labels for filtering and show on hover",
     "weekRingDisplay": "Week ring display",
     "weekRingDisplayHint": "Week numbers or date ranges",
     "weekNumbers": "Week numbers",
@@ -80,7 +80,8 @@
   "labels": {
     "title": "LABELS",
     "add": "Add label",
-    "none": "No labels"
+    "none": "No labels",
+    "description": "Labels are used to organize and filter activities. Toggle visibility to filter the view."
   },
   "undoLabels": {
     "moveToRing": "Move {{name}} to {{ring}}",
@@ -305,6 +306,14 @@
       "title": "AI Assistant Guide",
       "description": "Discover AI features"
     }
+  },
+  "templateModal": {
+    "title": "Choose Template",
+    "description": "Select an existing template as a starting point for your wheel",
+    "noTemplates": "No templates available at the moment",
+    "preview": "Preview",
+    "selected": "Selected",
+    "useTemplate": "Use Template"
   },
   "onboarding": {
     "welcome": {

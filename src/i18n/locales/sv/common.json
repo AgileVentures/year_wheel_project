@@ -120,7 +120,8 @@
     "showGuide": "Visa snabbguide",
     "template": "Template",
     "markAsTemplate": "Markera som template",
-    "templateWheelVisibleOnLanding": "Template-hjul (synligt på startsidan)"
+    "templateWheelVisibleOnLanding": "Template-hjul (synligt på startsidan)",
+    "useTemplate": "Använd mall"
   },
   "cookieConsent": {
     "title": "Cookie-inställningar",

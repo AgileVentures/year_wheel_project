@@ -120,7 +120,8 @@
     "showGuide": "Show quick guide",
     "template": "Template",
     "markAsTemplate": "Mark as template",
-    "templateWheelVisibleOnLanding": "Template wheel (visible on landing page)"
+    "templateWheelVisibleOnLanding": "Template wheel (visible on landing page)",
+    "useTemplate": "Use template"
   },
   "cookieConsent": {
     "title": "Cookie Settings",

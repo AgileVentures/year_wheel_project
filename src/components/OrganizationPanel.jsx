@@ -1454,9 +1454,14 @@ function OrganizationPanel({
             onClick={() => toggleSection('labels')}
             className="w-full flex items-center justify-between mb-2"
           >
-            <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              {t('editor:labels.title')}
-            </h2>
+            <div>
+              <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                {t('editor:labels.title')}
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                {t('editor:labels.description')}
+              </p>
+            </div>
             <ChevronDown 
               size={14} 
               className={`text-gray-400 transition-transform ${expandedSections.labels ? 'rotate-180' : ''}`}
