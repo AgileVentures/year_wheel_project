@@ -230,9 +230,6 @@ function YearWheel({
   useEffect(() => {
     if (!scrollContainerRef.current || !canvasRef.current || !yearWheel) return;
     
-    // Start hidden
-    setIsWheelReady(false);
-    
     const centerScrollPosition = () => {
       const container = scrollContainerRef.current;
       if (!container) return;
@@ -242,19 +239,17 @@ function YearWheel({
       container.scrollTop = scrollTop;
     };
     
-    // Center immediately
+    // Center immediately and show wheel right after centering
     centerScrollPosition();
     
-    // Center again after delays to ensure it works
-    setTimeout(centerScrollPosition, 100);
-    setTimeout(centerScrollPosition, 200);
-    
-    // After everything is centered and settled, fade in
-    const readyTimer = setTimeout(() => {
-      setIsWheelReady(true);
-    }, 500);
-    
-    return () => clearTimeout(readyTimer);
+    // Use requestAnimationFrame for smoother timing
+    requestAnimationFrame(() => {
+      centerScrollPosition();
+      // Show wheel after one frame to ensure centering is complete
+      requestAnimationFrame(() => {
+        setIsWheelReady(true);
+      });
+    });
   }, [yearWheel]); // Re-center when wheel instance changes
   
   // Apply zoom to canvas display size (separate from wheel creation)
@@ -273,6 +268,9 @@ function YearWheel({
   // Create and render the wheel
   useEffect(() => {
     if (!canvasRef.current) return;
+    
+    // Set wheel as not ready immediately when starting new creation
+    setIsWheelReady(false);
     
     const canvas = canvasRef.current;
     // Fixed render size at 2000px for high quality (square canvas)
@@ -307,6 +305,7 @@ function YearWheel({
         onUpdateAktivitet: handleUpdateAktivitet,
       }
     );
+    
     setYearWheel(newYearWheel);
     newYearWheel.create();
 
@@ -376,7 +375,7 @@ function YearWheel({
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
       <div 
         ref={scrollContainerRef}
-        className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-white transition-opacity duration-500"
+        className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-white transition-opacity duration-150"
         style={{ opacity: isWheelReady ? 1 : 0 }}
       >
         <div style={{ 
