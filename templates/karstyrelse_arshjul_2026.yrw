@@ -1,0 +1,132 @@
+{
+  "version": "2.0",
+  "title": "Kårstyrelsens årshjul",
+  "year": "2026",
+  "colors": ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"],
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": false,
+  "weekRingDisplayMode": "week-numbers",
+  "organizationData": {
+    "rings": [
+      {"id": "ring-inner-1", "name": "Administration & Styrning", "type": "inner", "visible": true, "orientation": "vertical", "data": [[""], [""], [""], [""], [""], [""], [""], [""], [""], [""], [""], [""]]},
+      {"id": "ring-inner-2", "name": "Verksamhet & Aktiviteter", "type": "inner", "visible": true, "orientation": "vertical", "data": [[""], [""], [""], [""], [""], [""], [""], [""], [""], [""], [""], [""]]},
+      {"id": "ring-inner-3", "name": "Kommunikation & Engagemang", "type": "inner", "visible": true, "orientation": "vertical", "data": [[""], [""], [""], [""], [""], [""], [""], [""], [""], [""], [""], [""]]},
+      {"id": "ring-outer-1", "name": "Återkommande uppgifter", "type": "outer", "visible": true}
+    ],
+    "activityGroups": [
+      {"id": "group-admin", "name": "Administration", "visible": true, "color": "#E8F4FD"},
+      {"id": "group-ekonomi", "name": "Ekonomi", "visible": true, "color": "#FFF2CC"},
+      {"id": "group-styrelse", "name": "Styrelsemöten", "visible": true, "color": "#D5E8D4"},
+      {"id": "group-verksamhet", "name": "Verksamhetsplanering", "visible": true, "color": "#F8CECC"},
+      {"id": "group-aktivitet", "name": "Aktiviteter", "visible": true, "color": "#E1D5E7"},
+      {"id": "group-kommunikation", "name": "Kommunikation", "visible": true, "color": "#DAE8FC"},
+      {"id": "group-foralder", "name": "Föräldraengagemang", "visible": true, "color": "#FFE6CC"}
+    ],
+    "labels": [],
+    "items": [
+      {"id": "item-jan-admin-1", "name": "Redovisning kommunbidrag", "startDate": "2026-01-15", "endDate": "2026-01-31", "ringId": "ring-inner-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      {"id": "item-jan-admin-2", "name": "Se över behörigheter Google Drive", "startDate": "2026-01-20", "endDate": "2026-01-25", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      {"id": "item-jan-verk-1", "name": "Genomgång årets jubilarer", "startDate": "2026-01-10", "endDate": "2026-01-15", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-jan-verk-2", "name": "Uppdatera info ledare i Scoutnet", "startDate": "2026-01-20", "endDate": "2026-01-31", "ringId": "ring-inner-2", "activityId": "group-admin", "labelId": null, "pageId": null},
+      {"id": "item-jan-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-01-25", "endDate": "2026-01-31", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      {"id": "item-jan-komm-2", "name": "Information föräldraengagemang", "startDate": "2026-01-15", "endDate": "2026-01-20", "ringId": "ring-inner-3", "activityId": "group-foralder", "labelId": null, "pageId": null},
+      {"id": "item-feb-admin-1", "name": "Planering S:t Georg", "startDate": "2026-02-01", "endDate": "2026-02-15", "ringId": "ring-inner-1", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-feb-admin-2", "name": "Beställning förtjänstmärken", "startDate": "2026-02-10", "endDate": "2026-02-20", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      {"id": "item-feb-verk-1", "name": "Kårhajksförberedelser", "startDate": "2026-02-15", "endDate": "2026-02-28", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      {"id": "item-feb-verk-2", "name": "Avstämning lägergruppen", "startDate": "2026-02-20", "endDate": "2026-02-25", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-feb-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-02-25", "endDate": "2026-02-28", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      {"id": "item-feb-komm-2", "name": "Hantera föräldraengagemang", "startDate": "2026-02-10", "endDate": "2026-02-20", "ringId": "ring-inner-3", "activityId": "group-foralder", "labelId": null, "pageId": null},
+      
+      {"id": "item-mar-admin-1", "name": "Anmäl delegater distriktsstämman", "startDate": "2026-03-01", "endDate": "2026-03-10", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      
+      {"id": "item-mar-verk-1", "name": "Förberedelser kårhajk", "startDate": "2026-03-01", "endDate": "2026-03-20", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      {"id": "item-mar-verk-2", "name": "Avstämning inför marknad", "startDate": "2026-03-15", "endDate": "2026-03-25", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      {"id": "item-mar-verk-3", "name": "Planera höstterminens datum", "startDate": "2026-03-20", "endDate": "2026-03-31", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      
+      {"id": "item-mar-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-03-25", "endDate": "2026-03-31", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      
+      {"id": "item-apr-admin-1", "name": "Möte med valberedningen", "startDate": "2026-04-01", "endDate": "2026-04-10", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-apr-admin-2", "name": "Skicka ansökan statsbidrag", "startDate": "2026-04-15", "endDate": "2026-04-30", "ringId": "ring-inner-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      
+      {"id": "item-apr-verk-1", "name": "Arbetsdag styrelsen", "startDate": "2026-04-12", "endDate": "2026-04-12", "ringId": "ring-inner-2", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-apr-verk-2", "name": "Planera ledaravslutning", "startDate": "2026-04-20", "endDate": "2026-04-30", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      
+      {"id": "item-apr-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-04-25", "endDate": "2026-04-30", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      
+      {"id": "item-maj-admin-1", "name": "Utvärdera verksamhetsplan", "startDate": "2026-05-01", "endDate": "2026-05-15", "ringId": "ring-inner-1", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-maj-admin-2", "name": "Planera inför kårstämman", "startDate": "2026-05-10", "endDate": "2026-05-25", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-maj-admin-3", "name": "Utvärdering styrelsens år", "startDate": "2026-05-15", "endDate": "2026-05-31", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-maj-admin-4", "name": "Översyn medlemsavgifter", "startDate": "2026-05-20", "endDate": "2026-05-31", "ringId": "ring-inner-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      
+      {"id": "item-maj-verk-1", "name": "Planera kåruppstart höst", "startDate": "2026-05-01", "endDate": "2026-05-15", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-maj-verk-2", "name": "Avstämning ledaravslutning", "startDate": "2026-05-20", "endDate": "2026-05-25", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      
+      {"id": "item-maj-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-05-25", "endDate": "2026-05-31", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      
+      {"id": "item-jun-admin-1", "name": "Bokningar Ljungslätt till kalender", "startDate": "2026-06-01", "endDate": "2026-06-15", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      
+      {"id": "item-jun-komm-1", "name": "Ev månadsbrev till scouterna", "startDate": "2026-06-25", "endDate": "2026-06-30", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      
+      {"id": "item-jul-admin-1", "name": "Skriv verksamhetsberättelse", "startDate": "2026-07-01", "endDate": "2026-07-20", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-jul-admin-2", "name": "Uppdatera hemsida kalender", "startDate": "2026-07-15", "endDate": "2026-07-31", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      
+      {"id": "item-aug-admin-1", "name": "Färdigställ handlingar kårstämma", "startDate": "2026-08-01", "endDate": "2026-08-15", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-aug-admin-2", "name": "Se över kåravgiften", "startDate": "2026-08-10", "endDate": "2026-08-20", "ringId": "ring-inner-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      {"id": "item-aug-admin-3", "name": "Tillfråga ordförande kårstämma", "startDate": "2026-08-15", "endDate": "2026-08-25", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-aug-admin-4", "name": "Uppdatera info Scoutnet", "startDate": "2026-08-20", "endDate": "2026-08-31", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      {"id": "item-aug-admin-5", "name": "Se över behörigheter Google Drive", "startDate": "2026-08-25", "endDate": "2026-08-31", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      
+
+      {"id": "item-aug-verk-1", "name": "Avstämning inför kåruppstart", "startDate": "2026-08-01", "endDate": "2026-08-15", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-aug-verk-2", "name": "Avstämning inför marknad", "startDate": "2026-08-15", "endDate": "2026-08-25", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      
+
+      {"id": "item-aug-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-08-25", "endDate": "2026-08-31", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      {"id": "item-aug-komm-2", "name": "Information föräldraengagemang", "startDate": "2026-08-15", "endDate": "2026-08-25", "ringId": "ring-inner-3", "activityId": "group-foralder", "labelId": null, "pageId": null},
+      {"id": "item-aug-komm-3", "name": "Förbered föräldramöte", "startDate": "2026-08-20", "endDate": "2026-08-31", "ringId": "ring-inner-3", "activityId": "group-foralder", "labelId": null, "pageId": null},
+      
+
+      {"id": "item-sep-admin-1", "name": "Se över elavtal", "startDate": "2026-09-01", "endDate": "2026-09-10", "ringId": "ring-inner-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      {"id": "item-sep-admin-2", "name": "Skicka kallelse kårstämma", "startDate": "2026-09-05", "endDate": "2026-09-15", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-sep-admin-3", "name": "Behandla motioner kårstämma", "startDate": "2026-09-10", "endDate": "2026-09-20", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-sep-admin-4", "name": "Konstituerande möte", "startDate": "2026-09-25", "endDate": "2026-09-30", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-sep-admin-5", "name": "Uppdatera styrelsen Scoutnet", "startDate": "2026-09-20", "endDate": "2026-09-30", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      
+      {"id": "item-sep-verk-1", "name": "Förbered julförsäljning", "startDate": "2026-09-15", "endDate": "2026-09-30", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      
+      {"id": "item-sep-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-09-25", "endDate": "2026-09-30", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      {"id": "item-sep-komm-2", "name": "Hantera föräldraengagemang", "startDate": "2026-09-10", "endDate": "2026-09-20", "ringId": "ring-inner-3", "activityId": "group-foralder", "labelId": null, "pageId": null},
+      
+      {"id": "item-okt-admin-1", "name": "Anmäl delegater distriktsstämma", "startDate": "2026-10-01", "endDate": "2026-10-10", "ringId": "ring-inner-1", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-okt-admin-2", "name": "Se över elavtal", "startDate": "2026-10-05", "endDate": "2026-10-15", "ringId": "ring-inner-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      {"id": "item-okt-admin-3", "name": "Bemanna kårens funktionärer", "startDate": "2026-10-10", "endDate": "2026-10-20", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      
+      {"id": "item-okt-verk-1", "name": "Arbetsdag styrelsen", "startDate": "2026-10-05", "endDate": "2026-10-05", "ringId": "ring-inner-2", "activityId": "group-styrelse", "labelId": null, "pageId": null},
+      {"id": "item-okt-verk-2", "name": "Förbered julpyssel", "startDate": "2026-10-15", "endDate": "2026-10-25", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      {"id": "item-okt-verk-3", "name": "Planera vårterminens datum", "startDate": "2026-10-20", "endDate": "2026-10-31", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-okt-verk-4", "name": "Utse lägergrupp nästa sommar", "startDate": "2026-10-25", "endDate": "2026-10-31", "ringId": "ring-inner-2", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      
+      {"id": "item-okt-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-10-25", "endDate": "2026-10-31", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      
+      {"id": "item-nov-verk-1", "name": "Avstämning inför marknad", "startDate": "2026-11-01", "endDate": "2026-11-10", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      {"id": "item-nov-verk-2", "name": "Planera julfest och trettondagslunk", "startDate": "2026-11-15", "endDate": "2026-11-30", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      
+      {"id": "item-nov-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-11-25", "endDate": "2026-11-30", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      
+      {"id": "item-dec-admin-1", "name": "Bokningar Ljungslätt till kalender", "startDate": "2026-12-01", "endDate": "2026-12-15", "ringId": "ring-inner-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      {"id": "item-dec-admin-2", "name": "Se över medlemsavgifter", "startDate": "2026-12-10", "endDate": "2026-12-20", "ringId": "ring-inner-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      
+      {"id": "item-dec-verk-1", "name": "Planera vårens försäljning", "startDate": "2026-12-15", "endDate": "2026-12-31", "ringId": "ring-inner-2", "activityId": "group-aktivitet", "labelId": null, "pageId": null},
+      
+      {"id": "item-dec-komm-1", "name": "Månadsbrev till scouterna", "startDate": "2026-12-20", "endDate": "2026-12-31", "ringId": "ring-inner-3", "activityId": "group-kommunikation", "labelId": null, "pageId": null},
+      
+      {"id": "item-outer-1", "name": "Se över ledarbemanningen", "startDate": "2026-01-15", "endDate": "2026-01-31", "ringId": "ring-outer-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      {"id": "item-outer-2", "name": "Se över ledarbemanningen", "startDate": "2026-06-15", "endDate": "2026-06-30", "ringId": "ring-outer-1", "activityId": "group-admin", "labelId": null, "pageId": null},
+      {"id": "item-outer-3", "name": "Sätta arrangemangsavgifter", "startDate": "2026-02-01", "endDate": "2026-02-15", "ringId": "ring-outer-1", "activityId": "group-ekonomi", "labelId": null, "pageId": null},
+      {"id": "item-outer-4", "name": "Kårutbildarens uppgifter", "startDate": "2026-03-01", "endDate": "2026-03-31", "ringId": "ring-outer-1", "activityId": "group-verksamhet", "labelId": null, "pageId": null},
+      {"id": "item-outer-5", "name": "Kårutbildarens uppgifter", "startDate": "2026-09-01", "endDate": "2026-09-30", "ringId": "ring-outer-1", "activityId": "group-verksamhet", "labelId": null, "pageId": null}
+    ]
+  }
+}

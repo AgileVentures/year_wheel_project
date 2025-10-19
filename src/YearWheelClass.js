@@ -511,6 +511,34 @@ class YearWheel {
     };
   }
 
+  /**
+   * Calculate overlap groups for proportional height allocation
+   * Returns information about how many items overlap at each position
+   */
+  calculateOverlapGroups(items) {
+    const overlapInfo = new Map(); // itemId -> { overlapCount, items: [overlapping items] }
+    
+    items.forEach(item => {
+      const itemStart = new Date(item.startDate);
+      const itemEnd = new Date(item.endDate);
+      
+      // Find all items that overlap with this one (including itself)
+      const overlappingItems = items.filter(otherItem => {
+        const otherStart = new Date(otherItem.startDate);
+        const otherEnd = new Date(otherItem.endDate);
+        return this.dateRangesOverlap(itemStart, itemEnd, otherStart, otherEnd);
+      });
+      
+      overlapInfo.set(item.id, {
+        overlapCount: overlappingItems.length,
+        items: overlappingItems,
+        index: overlappingItems.findIndex(i => i.id === item.id) // Position within the overlap group
+      });
+    });
+    
+    return overlapInfo;
+  }
+
   toRadians(deg) {
     return (deg * Math.PI) / 180;
   }
@@ -1026,7 +1054,7 @@ class YearWheel {
     let arcLengthThreshold = this.size * 0.003;  // Was 0.008 - much lower now!
     let radialWidthThreshold = this.size * 0.002; // Was 0.005 - much lower now!
     
-    // Adjust thresholds inversely with zoom
+    // Adjust thresholds inversely with zoom - higher zoom allows rendering of smaller text
     arcLengthThreshold = arcLengthThreshold / zoomFactor;
     radialWidthThreshold = radialWidthThreshold / zoomFactor;
     
@@ -2048,10 +2076,10 @@ class YearWheel {
     //
     // RULE: "for readability we prefer horizontal multi line if it is possible. always."
     
-    // Use NORMALIZED dimensions (geometry-based) to determine container shape
-    // This ensures zoom doesn't affect aspect ratio calculation
-    const normalizedArcLength = arcLengthPx / zoomFactor;
-    const normalizedRadialHeight = radialHeight / zoomFactor;
+    // Use EFFECTIVE dimensions (accounting for zoom) to determine container shape
+    // Higher zoom = more effective space for text rendering
+    const normalizedArcLength = arcLengthPx * zoomFactor;
+    const normalizedRadialHeight = radialHeight * zoomFactor;
     const aspectRatio = normalizedArcLength / normalizedRadialHeight;
     const isWideContainer = aspectRatio > 1.5;
     const isNarrowContainer = aspectRatio < 0.8;
@@ -2173,14 +2201,12 @@ class YearWheel {
     
     const zoomFactor = this.zoomLevel / 100;
     
-    // CRITICAL FIX: Normalize dimensions by zoom to get GEOMETRY-BASED sizes
-    // The canvas scales with zoom, but we want decisions based on the segment's
-    // intrinsic proportions, not its displayed size!
-    // At 100% zoom: arcLengthPx = 100, radialHeight = 50
-    // At 150% zoom: arcLengthPx = 150, radialHeight = 75
-    // But the segment SHAPE is the same! So normalize back to 100% zoom.
-    const normalizedArcLength = arcLengthPx / zoomFactor;
-    const normalizedRadialHeight = radialHeight / zoomFactor;
+    // ZOOM-ENHANCED SPACE CALCULATION
+    // User expectation: More zoom = more space for text = better rendering quality
+    // At 150% zoom, we have 1.5x more canvas space, so text should fit better!
+    // Keep the actual dimensions that include zoom scaling - don't normalize away the benefit
+    const effectiveArcLength = arcLengthPx; // Keep zoom-enhanced dimensions
+    const effectiveRadialHeight = radialHeight; // Keep zoom-enhanced dimensions
     
     // ITERATIVE STRATEGY TESTING
     // Test full text in both orientations, with and without line wrapping, then truncated versions
@@ -2377,56 +2403,62 @@ class YearWheel {
       }
     }
     
-    // Calculate container geometry using NORMALIZED dimensions
-    // This ensures the same segment has the same aspect ratio at all zoom levels
-    const aspectRatio = normalizedArcLength / normalizedRadialHeight;
+    // Calculate container geometry using EFFECTIVE dimensions (includes zoom benefit)
+    // Higher zoom gives better text space - embrace this rather than normalizing it away
+    const aspectRatio = effectiveArcLength / effectiveRadialHeight;
     const isWideContainer = aspectRatio > 1.5;
     const isNarrowContainer = aspectRatio < 0.8;
     
-    // Evaluate all strategies using NORMALIZED dimensions
-    // This ensures consistent decisions regardless of zoom level
+    // Evaluate all strategies using EFFECTIVE dimensions (zoom-enhanced)
+    // This allows high zoom to improve text quality as user expects
     const evaluations = strategies.map(strategy => {
       const evaluation = this.evaluateRenderingSolution(
         strategy.text,
         strategy.orientation,
-        normalizedArcLength,
-        normalizedRadialHeight,
-        middleRadius / zoomFactor, // Also normalize middleRadius
+        effectiveArcLength,
+        effectiveRadialHeight,
+        middleRadius, // Keep actual middleRadius (includes zoom scaling)
         strategy.allowWrapping
       );
       
-      // ZOOM-AWARE TRUNCATION PENALTY
-      // Higher zoom = more space = much stronger penalty for truncation
+      // ZOOM-AWARE QUALITY ENHANCEMENT
+      // Higher zoom = more space = reward good text quality, penalize truncation heavily
       let adjustedScore = evaluation.readabilityScore;
       let zoomMultiplier = 0; // Initialize outside if block
       
+      // BONUS for high-quality solutions at high zoom (no pre-truncation)
+      if (strategy.truncationLevel === 0 && zoomFactor > 1.0) {
+        const qualityBonus = (zoomFactor - 1.0) * 10; // +10 points per 100% zoom increase
+        adjustedScore += qualityBonus;
+      }
+      
+      // PENALTY for pre-truncated solutions (especially at high zoom)
       if (strategy.truncationLevel > 0) {
-        // AGGRESSIVE PENALTY - heavily discourage pre-truncation
-        // Base penalty: 5 points per 10% truncation (was 3)
+        // Base penalty: 5 points per 10% truncation
         let basePenalty = strategy.truncationLevel * 0.5;
         
-        // ZOOM MULTIPLIER - dramatic increase at high zoom
+        // ZOOM MULTIPLIER - exponentially penalize truncation at high zoom
         if (zoomFactor >= 2.0) {
-          // 200% zoom: 4× penalty (we have 4× the space!)
-          zoomMultiplier = 4.0;
+          // 200% zoom: 5× penalty (we have 4× the space!)
+          zoomMultiplier = 5.0;
         } else if (zoomFactor >= 1.75) {
-          // 175% zoom: 3.5× penalty
-          zoomMultiplier = 3.5;
+          // 175% zoom: 4× penalty  
+          zoomMultiplier = 4.0;
         } else if (zoomFactor >= 1.5) {
           // 150% zoom: 3× penalty
           zoomMultiplier = 3.0;
         } else if (zoomFactor >= 1.25) {
-          // 125% zoom: 2.5× penalty
-          zoomMultiplier = 2.5;
-        } else if (zoomFactor >= 1.0) {
-          // 100% zoom: 2× penalty (much stricter)
+          // 125% zoom: 2× penalty
           zoomMultiplier = 2.0;
+        } else if (zoomFactor >= 1.0) {
+          // 100% zoom: 1.5× penalty (baseline)
+          zoomMultiplier = 1.5;
         } else if (zoomFactor >= 0.75) {
-          // 75% zoom: 1.2× penalty (still prefer full text)
-          zoomMultiplier = 1.2;
+          // 75% zoom: 1× penalty (standard)
+          zoomMultiplier = 1.0;
         } else {
-          // 50% zoom: 0.8× penalty (truncation more acceptable when cramped)
-          zoomMultiplier = 0.8;
+          // 50% zoom: 0.7× penalty (truncation more acceptable when cramped)
+          zoomMultiplier = 0.7;
         }
         
         adjustedScore -= basePenalty * zoomMultiplier;
@@ -2487,6 +2519,18 @@ class YearWheel {
       return 'horizontal';
     }
     
+    // DEBUG: Log strategy evaluation for zoom analysis
+    if (text.includes('Roadbarfotasko') && zoomFactor >= 1.5) {
+      console.log(`\n🔍 ZOOM DEBUG (${zoomFactor.toFixed(1)}x zoom) for "${text}"`);
+      console.log(`Available space: ${availableArcLength.toFixed(1)} × ${radialWidth.toFixed(1)} (aspect: ${aspectRatio.toFixed(2)})`);
+      console.log('Top 3 strategies:');
+      evaluations.slice(0, 3).forEach((e, i) => {
+        console.log(`  ${i+1}. ${e.description}: score ${e.adjustedScore.toFixed(1)} (original: ${e.originalScore.toFixed(1)}, zoom penalty: ${e.zoomPenaltyMultiplier?.toFixed(1) || 'none'})`);
+        console.log(`     Lines: ${e.lineCount}, Fit: ${(100-e.truncationPercent).toFixed(1)}%, Font: ${e.fontSize?.toFixed(1) || 'unknown'}px`);
+      });
+      console.log(`Winner: ${bestSolution.description} (${bestSolution.orientation})`);
+    }
+
     // QUALITY THRESHOLD CHECKING (adjusted for new scoring scale)
     const MIN_ACCEPTABLE_SCORE = 40; // Slightly higher threshold
     const GOOD_SCORE = 70; // Higher threshold for "good"
@@ -4237,36 +4281,9 @@ class YearWheel {
       // Draw activities in the content area
       if (visibleInnerRings.length > 0 && ringItems.length > 0) {
         
-        // Assign items to tracks to handle overlaps
-        const { maxTracks, itemToTrack } = this.assignActivitiesToTracks(ringItems);
+        // Calculate overlaps for proportional height allocation
+        const overlapGroups = this.calculateOverlapGroups(ringItems);
         const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
-        
-        // Calculate which items actually have overlaps (are in tracks > 0)
-        const itemsWithOverlaps = new Set();
-        itemToTrack.forEach((track, itemId) => {
-          if (track > 0) {
-            // This item is in a higher track, so it overlaps with something
-            itemsWithOverlaps.add(itemId);
-            // Also mark items in track 0 that this overlaps with
-            const overlappingItem = ringItems.find(i => i.id === itemId);
-            if (overlappingItem) {
-              ringItems.forEach(otherItem => {
-                if (otherItem.id !== itemId && itemToTrack.get(otherItem.id) === 0) {
-                  const overlap = this.dateRangesOverlap(
-                    new Date(overlappingItem.startDate),
-                    new Date(overlappingItem.endDate),
-                    new Date(otherItem.startDate),
-                    new Date(otherItem.endDate)
-                  );
-                  if (overlap) itemsWithOverlaps.add(otherItem.id);
-                }
-              });
-            }
-          }
-        });
-        
-        // Default track height for overlapping items
-        const overlapTrackHeight = maxTracks > 0 ? ringContentHeight / maxTracks : ringContentHeight;
         
         ringItems.forEach((item) => {
           // Skip the item being dragged - it will be drawn as a preview instead
@@ -4317,30 +4334,19 @@ class YearWheel {
             itemColor = this.getHoverColor(itemColor);
           }
           
-          // Get track assignment for this item
-          const trackIndex = itemToTrack.get(item.id) || 0;
+          // Get overlap information for proportional height allocation
+          const overlapInfo = overlapGroups.get(item.id);
+          const overlapCount = overlapInfo ? overlapInfo.overlapCount : 1;
+          const overlapIndex = overlapInfo ? overlapInfo.index : 0;
           
-          // Determine height: full height if no overlaps, partial height if overlaps
-          const hasOverlap = itemsWithOverlaps.has(item.id);
-          const itemHeight = hasOverlap ? overlapTrackHeight : ringContentHeight;
-          const itemStartRadius = hasOverlap 
-            ? eventRadius + (trackIndex * overlapTrackHeight)
-            : eventRadius;
-          const itemWidth = itemHeight - trackGap; // Subtract tiny gap between tracks
+          // Calculate proportional height: 2 overlaps = 50% each, 3 overlaps = 33% each, etc.
+          const proportionalHeight = ringContentHeight / overlapCount;
+          const itemStartRadius = eventRadius + (overlapIndex * proportionalHeight);
+          const itemWidth = proportionalHeight - trackGap; // Subtract tiny gap between items
           
-          // Decide text orientation based on activity dimensions
-          const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));
-          const middleRadius = itemStartRadius + itemWidth / 2;
-          const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name, middleRadius);
-          
-          // Get the pre-calculated rendering decision (stored by chooseTextOrientation)
-          const renderDecision = this._lastOrientationDecision;
-          
-          // Choose appropriate text drawing function (use adapter for horizontal text)
-          const textFunction = textOrientation === 'vertical' 
-            ? this.setCircleSectionAktivitetTitle.bind(this)
-            : this.drawTextAlongArcAdapter.bind(this);
-          
+          // Use existing text system - setCircleSectionAktivitetTitle handles sizing and truncation automatically
+          const textFunction = this.setCircleSectionAktivitetTitle.bind(this);
+            
           // Draw the item block with modern styling
           this.setCircleSectionHTML({
             startRadius: itemStartRadius,
@@ -4349,11 +4355,10 @@ class YearWheel {
             endAngle: adjustedEndAngle,
             color: itemColor,
             textFunction: textFunction,
-            text: item.name,
+            text: item.name, // Original text - textFunction will handle sizing and truncation
             fontSize: this.size / 62,
-            isVertical: textOrientation === 'vertical',
-            highlight: isHovered,
-            renderDecision: renderDecision, // Pass the decision to renderer
+            isVertical: true, // Default to vertical, textFunction will decide optimal orientation
+            highlight: isHovered
           });
           
           // Collect label indicator to draw last (on top)
