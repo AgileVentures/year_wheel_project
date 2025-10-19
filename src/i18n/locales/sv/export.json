@@ -1,0 +1,67 @@
+{
+  "title": "Exportera data",
+  "description": "Exportera årshjulets aktiviteter till olika format",
+  "loading": "Laddar...",
+  "selectFormat": "Välj exportformat",
+  "exportButton": "Exportera",
+  "exporting": "Exporterar...",
+  "noData": "Inga aktiviteter att exportera",
+  "notConnected": "Inte ansluten",
+  "openInGoogleSheets": "Öppna i Google Sheets",
+  
+  "formats": {
+    "excel": {
+      "description": "Ladda ner som Excel-fil"
+    },
+    "csv": {
+      "description": "Kommaseparerad textfil"
+    },
+    "googleSheets": {
+      "description": "Skapa nytt Google Sheets-dokument"
+    }
+  },
+  
+  "options": {
+    "title": "Inkludera i export",
+    "customizeHint": "Anpassa kolumnnamn genom att skriva i fälten nedan",
+    "basicInfo": "Grundläggande information",
+    "dateTimeDetails": "Datum- och tidsdetaljer",
+    "includeRingNames": "Inkludera ringnamn",
+    "includeActivityGroups": "Inkludera aktivitetsgrupper",
+    "includeLabels": "Inkludera etiketter",
+    "includeDescription": "Inkludera beskrivning",
+    "includeTime": "Inkludera tid",
+    "includeStartMonth": "Inkludera startmånad",
+    "includeEndMonth": "Inkludera slutmånad",
+    "includeStartWeek": "Inkludera startvecka",
+    "includeEndWeek": "Inkludera slutvecka"
+  },
+  
+  "googleSheets": {
+    "sheetName": "Bladnamn",
+    "createNewSpreadsheet": "Skapa nytt kalkylblad"
+  },
+  
+  "preview": {
+    "title": "Förhandsgranskning",
+    "activities": "aktiviteter",
+    "showingFirst": "Visar de första {{count}} av {{total}} aktiviteter"
+  },
+  
+  "success": {
+    "excel": "Excel-fil skapad: {{filename}}",
+    "csv": "CSV-fil skapad: {{filename}}",
+    "googleSheets": "Data exporterad till Google Sheets!"
+  },
+  
+  "toast": {
+    "fileDownloaded": "Fil nedladdad!",
+    "googleSheets": "Exporterad till Google Sheets!"
+  },
+  
+  "errors": {
+    "exportFailed": "Export misslyckades",
+    "noGoogleSheetsAuth": "Du måste först ansluta ditt Google Sheets-konto i profilinställningarna",
+    "premiumRequired": "Google Sheets export kräver Premium-konto"
+  }
+}

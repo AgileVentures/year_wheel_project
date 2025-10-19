@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
@@ -13,7 +13,8 @@ import { useState } from 'react';
 function Header({ 
   onSave, 
   onSaveToFile, 
-  onLoadFromFile, 
+  onLoadFromFile,
+  onExportData,
   onReset, 
   isSidebarOpen, 
   onToggleSidebar, 
@@ -170,6 +171,13 @@ function Header({
             label={t('common:header.exportFile')}
             onClick={onSaveToFile}
           />
+          {onExportData && (
+            <DropdownItem
+              icon={FileSpreadsheet}
+              label={t('common:header.exportData')}
+              onClick={onExportData}
+            />
+          )}
           <DropdownDivider />
           {onTemplateSelect && (
             <DropdownItem

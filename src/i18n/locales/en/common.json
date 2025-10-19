@@ -105,6 +105,7 @@
     "fileOperations": "File operations",
     "importFile": "Import (.yrw)",
     "exportFile": "Export (.yrw)",
+    "exportData": "Export data (Excel/Sheets)",
     "resetAll": "Reset all",
     "selectImageFormat": "Select image format",
     "pngTransparent": "PNG (Transparent)",

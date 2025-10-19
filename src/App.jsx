@@ -27,6 +27,7 @@ const AdminPanel = lazy(() => import("./components/AdminPanel"));
 // Lazy load heavy editor components (only needed in editor route)
 const VersionHistoryModal = lazy(() => import("./components/VersionHistoryModal"));
 const AddPageModal = lazy(() => import("./components/AddPageModal"));
+const ExportDataModal = lazy(() => import("./components/ExportDataModal"));
 const AIAssistant = lazy(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazy(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazy(() => import("./components/AIAssistantOnboarding"));
@@ -187,6 +188,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [isTemplate, setIsTemplate] = useState(false); // Template status (admin only)
   const [isAdmin, setIsAdmin] = useState(false); // Admin status
   const [showVersionHistory, setShowVersionHistory] = useState(false); // Version history modal
+  const [showExportModal, setShowExportModal] = useState(false); // Export data modal
   
   // Multi-page state
   const [pages, setPages] = useState([]);
@@ -2105,6 +2107,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onBackToDashboard={wheelId ? handleBackToDashboard : null}
         onSaveToFile={handleSaveToFile}
         onLoadFromFile={handleLoadFromFile}
+        onExportData={() => setShowExportModal(true)}
         onReset={handleReset}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -2259,6 +2262,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onDuplicate={() => handleDuplicatePage(currentPageId)}
             onCreateNextYear={handleCreateNextYear}
             onSmartCopy={handleSmartCopy}
+            isPremium={isPremium}
+          />
+        </Suspense>
+      )}
+
+      {/* Export Data Modal */}
+      {showExportModal && (
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <ExportDataModal
+            organizationData={organizationData}
+            year={year}
+            title={title}
+            onClose={() => setShowExportModal(false)}
             isPremium={isPremium}
           />
         </Suspense>

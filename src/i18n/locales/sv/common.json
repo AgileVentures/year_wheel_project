@@ -105,6 +105,7 @@
     "fileOperations": "Filoperationer",
     "importFile": "Importera (.yrw)",
     "exportFile": "Exportera (.yrw)",
+    "exportData": "Exportera data (Excel/Sheets)",
     "resetAll": "Återställ allt",
     "selectImageFormat": "Välj bildformat",
     "pngTransparent": "PNG (Transparent)",

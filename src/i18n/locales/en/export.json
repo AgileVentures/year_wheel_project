@@ -1,0 +1,67 @@
+{
+  "title": "Export Data",
+  "description": "Export year wheel activities to various formats",
+  "loading": "Loading...",
+  "selectFormat": "Select export format",
+  "exportButton": "Export",
+  "exporting": "Exporting...",
+  "noData": "No activities to export",
+  "notConnected": "Not connected",
+  "openInGoogleSheets": "Open in Google Sheets",
+  
+  "formats": {
+    "excel": {
+      "description": "Download as Excel file"
+    },
+    "csv": {
+      "description": "Comma-separated text file"
+    },
+    "googleSheets": {
+      "description": "Create new Google Sheets document"
+    }
+  },
+  
+  "options": {
+    "title": "Include in Export",
+    "customizeHint": "Customize column names by typing in the fields below",
+    "basicInfo": "Basic Information",
+    "dateTimeDetails": "Date & Time Details",
+    "includeRingNames": "Include ring names",
+    "includeActivityGroups": "Include activity groups",
+    "includeLabels": "Include labels",
+    "includeDescription": "Include description",
+    "includeTime": "Include time",
+    "includeStartMonth": "Include start month",
+    "includeEndMonth": "Include end month",
+    "includeStartWeek": "Include start week",
+    "includeEndWeek": "Include end week"
+  },
+  
+  "googleSheets": {
+    "sheetName": "Sheet name",
+    "createNewSpreadsheet": "Create new spreadsheet"
+  },
+  
+  "preview": {
+    "title": "Preview",
+    "activities": "activities",
+    "showingFirst": "Showing first {{count}} of {{total}} activities"
+  },
+  
+  "success": {
+    "excel": "Excel file created: {{filename}}",
+    "csv": "CSV file created: {{filename}}",
+    "googleSheets": "Data exported to Google Sheets!"
+  },
+  
+  "toast": {
+    "fileDownloaded": "File downloaded!",
+    "googleSheets": "Exported to Google Sheets!"
+  },
+  
+  "errors": {
+    "exportFailed": "Export failed",
+    "noGoogleSheetsAuth": "You must first connect your Google Sheets account in profile settings",
+    "premiumRequired": "Google Sheets export requires a Premium account"
+  }
+}
