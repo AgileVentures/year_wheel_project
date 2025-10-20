@@ -14,10 +14,7 @@ class YearWheel {
     this.size = size;
     this.events = events;
     this.options = options;
-    // Deep copy organizationData to prevent read-only property issues
-    this.organizationData = options.organizationData 
-      ? JSON.parse(JSON.stringify(options.organizationData))
-      : { items: [], rings: [], activityGroups: [], labels: [] };
+    this.organizationData = options.organizationData || { items: [], rings: [], activityGroups: [], labels: [] };
     // Backward compatibility: convert old 'activities' to 'activityGroups'
     if (this.organizationData.activities && !this.organizationData.activityGroups) {
       this.organizationData.activityGroups = this.organizationData.activities;
@@ -39,7 +36,7 @@ class YearWheel {
     this.showWeekRing = options.showWeekRing !== undefined ? options.showWeekRing : true;
     this.showMonthRing = options.showMonthRing !== undefined ? options.showMonthRing : true;
     this.showRingNames = options.showRingNames !== undefined ? options.showRingNames : true;
-    this.showLabels = options.showLabels !== undefined ? options.showLabels : false; // Default false for cleaner UX
+    this.showLabels = options.showLabels !== undefined ? options.showLabels : true;
     this.weekRingDisplayMode = options.weekRingDisplayMode || 'week-numbers'; // 'week-numbers' or 'dates'
     this.zoomedMonth = options.zoomedMonth !== undefined && options.zoomedMonth !== null ? options.zoomedMonth : null;
     this.zoomedQuarter = options.zoomedQuarter !== undefined && options.zoomedQuarter !== null ? options.zoomedQuarter : null;
@@ -104,7 +101,7 @@ class YearWheel {
     
     // Performance optimization: Throttle hover detection
     this.lastHoverCheck = 0;
-    this.hoverThrottleMs = 8; // ~120fps max for hover checks (more responsive)
+    this.hoverThrottleMs = 16; // ~60fps max for hover checks
 
     // Store bound event handlers for cleanup
     this.boundHandlers = {
@@ -460,7 +457,7 @@ class YearWheel {
 
   // Assign activities to non-overlapping tracks using greedy interval scheduling
   assignActivitiesToTracks(items) {
-    if (items.length === 0) return { tracks: [], maxTracks: 0, itemToTrack: new Map() };
+    if (items.length === 0) return { tracks: [], maxTracks: 0 };
 
     // Sort items by start date
     const sortedItems = [...items].sort((a, b) => 
@@ -511,34 +508,6 @@ class YearWheel {
     };
   }
 
-  /**
-   * Calculate overlap groups for proportional height allocation
-   * Returns information about how many items overlap at each position
-   */
-  calculateOverlapGroups(items) {
-    const overlapInfo = new Map(); // itemId -> { overlapCount, items: [overlapping items] }
-    
-    items.forEach(item => {
-      const itemStart = new Date(item.startDate);
-      const itemEnd = new Date(item.endDate);
-      
-      // Find all items that overlap with this one (including itself)
-      const overlappingItems = items.filter(otherItem => {
-        const otherStart = new Date(otherItem.startDate);
-        const otherEnd = new Date(otherItem.endDate);
-        return this.dateRangesOverlap(itemStart, itemEnd, otherStart, otherEnd);
-      });
-      
-      overlapInfo.set(item.id, {
-        overlapCount: overlappingItems.length,
-        items: overlappingItems,
-        index: overlappingItems.findIndex(i => i.id === item.id) // Position within the overlap group
-      });
-    });
-    
-    return overlapInfo;
-  }
-
   toRadians(deg) {
     return (deg * Math.PI) / 180;
   }
@@ -562,37 +531,18 @@ class YearWheel {
     while (rawAngle < 0) rawAngle += 360;
     while (rawAngle >= 360) rawAngle -= 360;
     
-    // Handle zoomed views (quarter or month)
-    if (this.zoomedMonth !== null) {
-      // Single month zoom: 360 degrees = 1 month
-      const daysInMonth = new Date(this.year, this.zoomedMonth + 1, 0).getDate();
-      const dayFloat = (rawAngle / 360) * daysInMonth;
-      const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat + 1)));
-      return new Date(this.year, this.zoomedMonth, day);
-    } else if (this.zoomedQuarter !== null) {
-      // Quarter zoom: 360 degrees = 3 months (each month = 120 degrees)
-      const quarterStartMonth = this.zoomedQuarter * 3;
-      const monthInQuarter = Math.floor(rawAngle / 120); // 0, 1, or 2
-      const angleInMonth = rawAngle - (monthInQuarter * 120); // 0-120
-      const month = quarterStartMonth + monthInQuarter;
-      
-      const daysInMonth = new Date(this.year, month + 1, 0).getDate();
-      const dayFloat = (angleInMonth / 120) * daysInMonth;
-      const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat + 1)));
-      return new Date(this.year, month, day);
-    } else {
-      // Full year view: Each month is 30 degrees (360 / 12)
-      const monthFloat = rawAngle / 30;
-      const month = Math.floor(monthFloat);
-      const dayFloat = (monthFloat - month) * 30; // 0-30 range
-      
-      // Calculate actual day considering days in month
-      const daysInMonth = new Date(this.year, month + 1, 0).getDate();
-      const day = Math.max(1, Math.min(daysInMonth, Math.round((dayFloat / 30) * daysInMonth + 1)));
-      
-      // Create date (months are 0-indexed in JavaScript Date)
-      return new Date(this.year, month, day);
-    }
+    // Each month is 30 degrees (360 / 12)
+    const monthFloat = rawAngle / 30;
+    const month = Math.floor(monthFloat);
+    const dayFloat = (monthFloat - month) * 30; // 0-30 range
+    
+    // Calculate actual day considering days in month
+    const daysInMonth = new Date(this.year, month + 1, 0).getDate();
+    const day = Math.max(1, Math.min(daysInMonth, Math.round((dayFloat / 30) * daysInMonth + 1)));
+    
+    // Create date (months are 0-indexed in JavaScript Date)
+    const date = new Date(this.year, month, day);
+    return date;
   }
 
   // Detect which part of activity is clicked: 'resize-start', 'move', or 'resize-end'
@@ -600,7 +550,6 @@ class YearWheel {
     // Get angle of click relative to center
     const dx = x - this.center.x;
     const dy = y - this.center.y;
-    const clickRadius = Math.sqrt(dx * dx + dy * dy);
     let clickAngle = Math.atan2(dy, dx);
     
     // Account for rotation
@@ -617,33 +566,16 @@ class YearWheel {
     // Calculate relative position within activity (0 to 1)
     let relativeAngle = clickAngle - startAngle;
     if (relativeAngle < 0) relativeAngle += Math.PI * 2;
+    const relativePosition = relativeAngle / angleSpan;
     
-    // Use PIXEL-based detection for resize zones
-    // Calculate the arc length at the middle of the activity's radius
-    const avgRadius = (itemRegion.startRadius + itemRegion.endRadius) / 2;
-    const totalArcLength = angleSpan * avgRadius; // Arc length in pixels
-    const currentArcPosition = relativeAngle * avgRadius; // Position along arc in pixels
-    
-    // Resize zones: 10 pixels from each edge (regardless of activity size)
-    const resizeZonePixels = 10;
-    const minActivityAngle = this.toRadians(7); // Minimum 7° (1 week)
-    
-    let zone;
-    
-    if (angleSpan < minActivityAngle) {
-      // Activity too small - only allow move
-      zone = 'move';
-    } else if (currentArcPosition < resizeZonePixels) {
-      // Within 15 pixels from start edge
-      zone = 'resize-start';
-    } else if ((totalArcLength - currentArcPosition) < resizeZonePixels) {
-      // Within 15 pixels from end edge
-      zone = 'resize-end';
+    // Zones: left 10%, middle 80%, right 10%
+    if (relativePosition < 0.1) {
+      return 'resize-start';
+    } else if (relativePosition > 0.9) {
+      return 'resize-end';
     } else {
-      zone = 'move';
+      return 'move';
     }
-    
-    return zone;
   }
 
   // Calculate text color based on background luminance for better contrast
@@ -672,6 +604,31 @@ class YearWheel {
     const newB = Math.floor(b * 0.25 + 255 * 0.75);
     
     return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+  }
+
+  // Split text into wrappable segments (on spaces AND hyphens)
+  // "Verksamhets- & Aktiviteter" → ["Verksamhets-", "&", "Aktiviteter"]
+  splitTextForWrapping(text) {
+    // Split on spaces first
+    const parts = [];
+    const spaceSplit = text.split(/\s+/);
+    
+    for (let part of spaceSplit) {
+      // Check if this part contains a hyphen (but not at the end)
+      if (part.includes('-') && !part.endsWith('-')) {
+        // Split on hyphen but keep it attached to the first part
+        const hyphenIndex = part.indexOf('-');
+        parts.push(part.substring(0, hyphenIndex + 1)); // "Verksamhets-"
+        const remainder = part.substring(hyphenIndex + 1);
+        if (remainder) {
+          parts.push(remainder); // Rest after hyphen
+        }
+      } else {
+        parts.push(part);
+      }
+    }
+    
+    return parts.filter(p => p.length > 0);
   }
 
   // Detect which ring a point (x, y) is within based on radius
@@ -1054,7 +1011,7 @@ class YearWheel {
     let arcLengthThreshold = this.size * 0.003;  // Was 0.008 - much lower now!
     let radialWidthThreshold = this.size * 0.002; // Was 0.005 - much lower now!
     
-    // Adjust thresholds inversely with zoom - higher zoom allows rendering of smaller text
+    // Adjust thresholds inversely with zoom
     arcLengthThreshold = arcLengthThreshold / zoomFactor;
     radialWidthThreshold = radialWidthThreshold / zoomFactor;
     
@@ -1069,11 +1026,12 @@ class YearWheel {
     // INTELLIGENT DISPLAY-AWARE FONT SIZING WITH PROPORTIONAL SCALING
     const effectiveDisplaySize = this.size * zoomFactor;
     
-    // STRICTER MINIMUM - Never go below readable size, prefer truncation
-    const absoluteMinFont = Math.max(12, effectiveDisplaySize / 200); // Raised from 8
-    const minDisplayFont = Math.max(14, effectiveDisplaySize / 180);  // Comfortable minimum
-    const maxDisplayFont = Math.min(50, effectiveDisplaySize / 45);
-    const reasonableMaxFont = Math.min(35, effectiveDisplaySize / 60);
+    // ZOOM-AWARE CONSTRAINTS - Scale with display but cap appropriately
+    // At high zoom, don't let fonts grow unbounded - cap based on actual rendered size
+    const absoluteMinFont = Math.max(12, Math.min(effectiveDisplaySize / 200, 16));
+    const minDisplayFont = Math.max(14, Math.min(effectiveDisplaySize / 180, 18));
+    const maxDisplayFont = Math.min(50, Math.max(20, effectiveDisplaySize / 45));
+    const reasonableMaxFont = Math.min(35, Math.max(18, effectiveDisplaySize / 60));
     
     // TEXT CONTENT ANALYSIS
     const textLength = text.length;
@@ -1097,31 +1055,45 @@ class YearWheel {
     else if (areaRatio > 0.10) sizePenalty = 0.92; // Was 0.90
     else if (areaRatio > 0.06) sizePenalty = 0.96; // Was 0.95
     
-    // SPACE ANALYSIS
-    const maxTextWidth = radialWidth * 0.80;
+    // SPACE ANALYSIS - Use aggressive margins from start
+    const maxTextWidth = radialWidth * 0.85;  // Match wrapping threshold
     const maxTextHeight = arcLength * 0.85;
     
-    // Calculate initial font from space constraints
-    let testFontSize = Math.min(
-      maxTextWidth * 0.45,
-      maxTextHeight * 0.25,
-      reasonableMaxFont
-    );
+    // SMART FONT CALCULATION: Find largest font where text actually fits
+    // Don't just use geometry - measure actual text width!
+    let testFontSize = reasonableMaxFont; // Start with reasonable max
     
-    // Apply penalties
-    testFontSize = testFontSize * lengthPenalty * sizePenalty;
+    // Binary search for optimal font size that fits the text
+    let minFont = minDisplayFont;
+    let maxFont = reasonableMaxFont;
     
-    // Enforce limits with stricter minimum
-    testFontSize = Math.max(testFontSize, minDisplayFont);
-    testFontSize = Math.min(testFontSize, maxDisplayFont);
+    this.context.save();
     
-    // If still below absolute minimum, use absolute minimum and truncate text instead
-    if (testFontSize < absoluteMinFont) {
-      testFontSize = absoluteMinFont;
+    for (let iteration = 0; iteration < 10; iteration++) {
+      testFontSize = (minFont + maxFont) / 2;
+      this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+      const measuredWidth = this.context.measureText(text).width;
+      
+      if (measuredWidth <= maxTextWidth * 0.95) {
+        // Text fits! Try larger
+        minFont = testFontSize;
+      } else {
+        // Too big, go smaller
+        maxFont = testFontSize;
+      }
     }
     
-    // Now try to fit the text at this font size
-    this.context.save();
+    // Use the largest font that fit
+    testFontSize = minFont;
+    
+    // Apply length penalty only if text is very long
+    if (textLength > 15) testFontSize *= 0.95;
+    
+    // Enforce absolute limits
+    testFontSize = Math.max(testFontSize, absoluteMinFont);
+    testFontSize = Math.min(testFontSize, maxDisplayFont);
+    
+    // Set final font
     this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
     this.context.fillStyle = textColor;
     this.context.textAlign = 'center';
@@ -1129,36 +1101,22 @@ class YearWheel {
     
     const textWidth = this.context.measureText(text).width;
     
-    // TRUNCATION STRATEGY: Don't scale below readable size
+    // TRUNCATION STRATEGY: Only truncate if absolutely necessary
     let displayText = text;
     
     if (textWidth > maxTextWidth) {
-      // Check if scaling would go below minimum
-      const scaleFactor = (maxTextWidth / textWidth) * 0.95;
-      const scaledFont = testFontSize * scaleFactor;
+      // Text still too wide even after font optimization
+      // Only now do we truncate
+      let truncated = text;
+      this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+      let truncatedWidth = this.context.measureText(truncated + '…').width;
       
-      if (scaledFont >= absoluteMinFont) {
-        // Scaling keeps us above minimum - safe to scale
-        testFontSize = scaledFont;
-        this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
-      } else {
-        // Scaling would be too small - keep minimum font and truncate instead
-        testFontSize = absoluteMinFont;
-        this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
-        
-        // Truncate text to fit width
-        let truncated = text;
-        let truncatedWidth = this.context.measureText(truncated + '…').width;
-        
-        while (truncatedWidth > maxTextWidth && truncated.length > 1) {
-          truncated = truncated.substring(0, truncated.length - 1);
-          truncatedWidth = this.context.measureText(truncated + '…').width;
-        }
-        
-        if (truncated.length < text.length) {
-          displayText = truncated + '…';
-        }
+      while (truncatedWidth > maxTextWidth * 0.90 && truncated.length > 1) {
+        truncated = truncated.substring(0, truncated.length - 1);
+        truncatedWidth = this.context.measureText(truncated + '…').width;
       }
+      
+      displayText = truncated.length < text.length ? truncated + '…' : truncated;
     }
     
     // MULTI-LINE RENDERING SUPPORT
@@ -1167,18 +1125,20 @@ class YearWheel {
     
     if (renderDecision && renderDecision.allowWrapping && renderDecision.lineCount > 1) {
       // Use the pre-calculated decision to render multi-line text
-      const words = text.split(/\s+/);
+      // Split on spaces AND hyphens for better wrapping
+      const words = this.splitTextForWrapping(text);
       linesToRender = [];
       let currentLine = '';
       
       this.context.save();
       this.context.font = `500 ${renderDecision.fontSize}px Arial, sans-serif`;
       
+      // Wrap text into lines
       for (let word of words) {
         const testLine = currentLine ? currentLine + ' ' + word : word;
         const testWidth = this.context.measureText(testLine).width;
         
-        if (testWidth > maxTextWidth && currentLine) {
+        if (testWidth > maxTextWidth * 0.85 && currentLine) { // Use 85% for aggressive containment
           linesToRender.push(currentLine);
           currentLine = word;
         } else {
@@ -1186,11 +1146,53 @@ class YearWheel {
         }
       }
       if (currentLine) linesToRender.push(currentLine);
-      this.context.restore();
       
-      // Update font size from decision
-      testFontSize = renderDecision.fontSize;
-      this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+      // CRITICAL: Check if all lines fit vertically
+      const lineHeight = renderDecision.fontSize * 1.2;
+      const totalHeight = linesToRender.length * lineHeight;
+      
+      if (totalHeight > maxTextHeight * 0.95) {
+        // Too many lines! Fall back to single-line with truncation
+        this.context.restore();
+        linesToRender = [displayText];
+        if (textWidth > maxTextWidth) {
+          // Truncate to fit
+          let truncated = text;
+          this.context.save();
+          this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+          let truncatedWidth = this.context.measureText(truncated + '…').width;
+          while (truncatedWidth > maxTextWidth * 0.90 && truncated.length > 1) {
+            truncated = truncated.substring(0, truncated.length - 1);
+            truncatedWidth = this.context.measureText(truncated + '…').width;
+          }
+          this.context.restore();
+          linesToRender = [truncated + '…'];
+        }
+      } else {
+        // Lines fit! Validate each line width
+        const maxLineWidth = Math.max(...linesToRender.map(line => this.context.measureText(line).width));
+        if (maxLineWidth > maxTextWidth * 0.90) {
+          // A line is too wide, truncate longest line
+          linesToRender = linesToRender.map(line => {
+            const lineWidth = this.context.measureText(line).width;
+            if (lineWidth > maxTextWidth * 0.90) {
+              let truncated = line;
+              let truncatedWidth = this.context.measureText(truncated + '…').width;
+              while (truncatedWidth > maxTextWidth * 0.90 && truncated.length > 1) {
+                truncated = truncated.substring(0, truncated.length - 1);
+                truncatedWidth = this.context.measureText(truncated + '…').width;
+              }
+              return truncated + '…';
+            }
+            return line;
+          });
+        }
+        this.context.restore();
+        
+        // Update font size from decision
+        testFontSize = renderDecision.fontSize;
+        this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+      }
     } else if (!renderDecision && text.includes(' ') && testFontSize >= 14) {
       // Fallback: attempt basic wrapping if no decision provided
       const words = text.split(/\s+/);
@@ -1507,13 +1509,14 @@ class YearWheel {
     // based on the actual segment geometry, not the displayed size
     // This ensures text that fits at 100% zoom doesn't suddenly get vertical at 150% zoom!
     
-    // ABSOLUTE font size thresholds (for scoring only, not for calculation)
-    const absoluteMinFont = 12;  // Absolute minimum - anything smaller is unreadable
-    const minDisplayFont = 14;   // Comfortable minimum for body text
-    const sweetSpotMin = 15;     // Start of ideal reading range (lowered from 16)
-    const sweetSpotMax = 26;     // End of ideal reading range (middle ground)
-    const reasonableMaxFont = 32; // Maximum before looking too large (middle ground)
-    const maxDisplayFont = 40;    // Absolute maximum (middle ground)
+    // ZOOM-AWARE font size thresholds - MUST match rendering logic!
+    const effectiveDisplaySize = this.size * zoomFactor;
+    const absoluteMinFont = Math.max(12, effectiveDisplaySize / 200);  // Matches vertical rendering
+    const minDisplayFont = Math.max(14, effectiveDisplaySize / 180);   // Matches vertical rendering
+    const sweetSpotMin = 16;     // Start of ideal reading range
+    const sweetSpotMax = 28;     // End of ideal reading range
+    const reasonableMaxFont = Math.min(35, effectiveDisplaySize / 60); // Matches rendering
+    const maxDisplayFont = Math.min(50, effectiveDisplaySize / 45);    // Matches rendering
     
     // Text analysis
     const textLength = text.length;
@@ -1540,16 +1543,15 @@ class YearWheel {
     const isMultiLine = allowWrapping && hasSpaces;
     
     if (isMultiLine) {
-      // Lenient for multi-line - we want to encourage it!
-      if (areaRatio > 0.15) sizePenalty = 0.96;      // Some penalty for very large
-      else if (areaRatio > 0.10) sizePenalty = 0.98; // Small penalty for large
-      else sizePenalty = 1.00;                       // No penalty otherwise
+      // VERY lenient for multi-line - we WANT it to use available space!
+      if (areaRatio > 0.15) sizePenalty = 0.96;      // was 0.88 - much more favorable
+      else if (areaRatio > 0.10) sizePenalty = 0.98; // was 0.92 - much more favorable
+      else if (areaRatio > 0.06) sizePenalty = 0.99; // was 0.96 - barely any penalty
     } else if (isShortSingleWord) {
-      // Moderate for short single words
-      if (areaRatio > 0.15) sizePenalty = 0.92;      // Penalty for very large
-      else if (areaRatio > 0.10) sizePenalty = 0.95; // Some penalty for large
-      else if (areaRatio > 0.06) sizePenalty = 0.98; // Minimal for medium
-      else sizePenalty = 0.99;                       // Almost none for small
+      // Lenient for short single words (like "Höstnyheter")
+      if (areaRatio > 0.15) sizePenalty = 0.94;      // was 0.88 - less harsh
+      else if (areaRatio > 0.10) sizePenalty = 0.96; // was 0.92 - less harsh
+      else if (areaRatio > 0.06) sizePenalty = 0.98; // was 0.96 - less harsh
     } else {
       // Keep stricter penalties for long single-line text (encourages wrapping)
       if (areaRatio > 0.15) sizePenalty = 0.88;
@@ -1567,7 +1569,8 @@ class YearWheel {
       // MULTI-LINE WRAPPING SUPPORT
       if (allowWrapping && text.includes(' ')) {
         // Calculate font size for multi-line text
-        const words = text.split(/\s+/);
+        // Split on spaces AND hyphens to match rendering
+        const words = this.splitTextForWrapping(text);
         const wordCount = words.length;
         
         // Try to fit text in 2-3 lines depending on word count
@@ -1586,18 +1589,23 @@ class YearWheel {
         
         if (fontSize < absoluteMinFont) fontSize = absoluteMinFont;
         
-        // Simulate word wrapping
+        // Simulate word wrapping - MUST match rendering logic exactly!
+        // Use aggressive safety margin (85%) to ensure text stays contained
+        const wrappingThreshold = maxTextWidth * 0.85;
+        
         this.context.save();
         this.context.font = `500 ${fontSize}px Arial, sans-serif`;
         
         let lines = [];
         let currentLine = '';
         
+        // Use words from splitTextForWrapping above
         for (let i = 0; i < words.length; i++) {
           const testLine = currentLine ? currentLine + ' ' + words[i] : words[i];
           const testWidth = this.context.measureText(testLine).width;
           
-          if (testWidth > maxTextWidth && currentLine) {
+          // Use same threshold as rendering for consistent line counts
+          if (testWidth > wrappingThreshold && currentLine) {
             lines.push(currentLine);
             currentLine = words[i];
           } else {
@@ -1669,89 +1677,38 @@ class YearWheel {
       
       // MULTI-LINE HORIZONTAL SUPPORT (stacked arcs)
       if (allowWrapping && text.includes(' ')) {
-        const words = text.split(/\s+/);
+        // Split on spaces AND hyphens to match rendering
+        const words = this.splitTextForWrapping(text);
         const wordCount = words.length;
         
         // DECISION: Text has spaces, so we WANT multi-line rendering
-        // Determine target lines based on word count and container geometry
-        const aspectRatio = availableArcLength / maxRadialHeight;
-        let targetLines;
-        
-        if (wordCount >= 5) {
-          targetLines = 3;
-        } else if (wordCount >= 3) {
-          // For 3-4 words: prefer 2 lines, but allow 3 if needed
-          targetLines = aspectRatio > 3.0 ? 2 : 2; // Always try for 2 first
-        } else {
-          targetLines = 2;
-        }
-        
+        // Determine target lines based on word count
+        const targetLines = wordCount >= 4 ? 3 : 2;
         const lineHeight = maxRadialHeight / (targetLines + 0.3); // +0.3 for spacing between arcs
         
         // Calculate font size that achieves multi-line wrapping with readability
-        // Strategy: Find LARGEST font where text wraps to AT LEAST targetLines
-        // Key insight: We PREFER multi-line, so bias toward larger fonts that force wrapping!
-        let minFontSize = minDisplayFont; // 14px base
+        // Strategy: Find largest readable font where text wraps to targetLines
+        // Constraints: 14px min, 28px max for readability
+        let minFontSize = minDisplayFont; // 14px
         let maxFontSize = Math.min(
           lineHeight * 0.7,  // From radial height (conservative)
-          sweetSpotMax,      // 26px max for readability
-          reasonableMaxFont  // 32px absolute max
+          sweetSpotMax,      // 28px max for readability
+          reasonableMaxFont  // 35px absolute max
         );
-        
-        // CRITICAL FIX: For wide containers with short text, FORCE larger fonts to ensure wrapping!
-        // The problem: Short text fits on one line even at small fonts with wide wrap threshold
-        // Solution: Boost minimum font ONLY for short text, keep normal range for longer text
-        if (aspectRatio > 3.0) {
-          // Very wide container - adjust font range based on text length
-          if (text.length < 30) {
-            // Short text - boost minimum to force readable multi-line
-            minFontSize = Math.max(minFontSize, sweetSpotMin + 3); // 18px min for short text
-            maxFontSize = Math.min(maxFontSize, reasonableMaxFont); // Cap at 32px
-          } else if (text.length < 50) {
-            // Medium text - slight boost
-            minFontSize = Math.max(minFontSize, sweetSpotMin); // 15px min for medium
-            maxFontSize = Math.min(maxFontSize, sweetSpotMax + 2); // Cap at 28px
-          } else {
-            // Long text - use normal range to avoid huge text
-            minFontSize = Math.max(minFontSize, minDisplayFont); // 14px min for long
-            maxFontSize = Math.min(maxFontSize, sweetSpotMax); // Cap at 26px
-          }
-        }
-        
         let bestFontSize = minFontSize;
         let bestLineCount = 1;
         
-        // Binary search for optimal font that achieves targetLines wrapping
-        // CRITICAL: For wide containers, wrap at NARROWER threshold to force multi-line!
-        // Calculate threshold based on text length AND word count for balanced results
-        let wrapThreshold;
-        if (aspectRatio > 3.0) {
-          // Very wide: Adjust wrapping threshold based on text characteristics
-          if (text.length < 25 && wordCount <= 3) {
-            // Very short text (like "Roadbarfotasko + sport") - very aggressive
-            wrapThreshold = 0.25; // Only 25% of width per line!
-          } else if (text.length < 40) {
-            // Short-medium text - moderately aggressive
-            wrapThreshold = 0.35; // ~35% per line
-          } else if (text.length < 60) {
-            // Medium text - balanced
-            wrapThreshold = 0.45; // ~45% per line
-          } else {
-            // Long text - more generous to avoid too many lines
-            wrapThreshold = 0.55; // ~55% per line
-          }
-        } else {
-          wrapThreshold = 0.70;
-        }
+        // CRITICAL: Use aggressive safety margin (82%) to ensure text stays contained
+        const wrappingThreshold = availableArcLength * 0.82;
         
+        // Binary search for optimal font that achieves targetLines wrapping
         for (let iteration = 0; iteration < 10; iteration++) {
           const testFontSize = (minFontSize + maxFontSize) / 2;
           
           this.context.save();
           this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
           
-          // Simulate wrapping at this font size with TIGHTER threshold
-          const wrapWidth = availableArcLength * wrapThreshold;
+          // Simulate wrapping at this font size - MUST match rendering exactly
           let testLines = [];
           let currentLine = '';
           
@@ -1759,7 +1716,8 @@ class YearWheel {
             const testLine = currentLine ? currentLine + ' ' + word : word;
             const testWidth = this.context.measureText(testLine).width;
             
-            if (testWidth > wrapWidth && currentLine) {
+            // Use same threshold as rendering for consistent line counts
+            if (testWidth > wrappingThreshold && currentLine) {
               testLines.push(currentLine);
               currentLine = word;
             } else {
@@ -1774,7 +1732,7 @@ class YearWheel {
           
           this.context.restore();
           
-          // Check max line width to ensure it fits horizontally (use full width for validation)
+          // Check max line width to ensure it fits horizontally
           const maxLineWidth = Math.max(...testLines.map(line => this.context.measureText(line).width));
           const fitsHorizontally = maxLineWidth <= availableArcLength * 0.98; // 98% to add small margin
           
@@ -1785,20 +1743,14 @@ class YearWheel {
             bestLineCount = testLineCount;
             minFontSize = testFontSize; // Try even larger
           } else if (testLineCount < targetLines && fitsVertically) {
-            // Not enough lines - need tighter wrapping, try smaller font or accept 1 line
-            // If we're already at min font and still only 1 line, container is too wide
-            if (testFontSize <= minDisplayFont + 1) {
-              // At minimum font, accept this as best we can do
-              bestFontSize = testFontSize;
-              bestLineCount = testLineCount;
-              break;
-            }
-            maxFontSize = testFontSize; // Try smaller to increase relative text width
+            // Font too small, fits on fewer lines - try larger to force wrapping
+            minFontSize = testFontSize;
           } else {
             // Doesn't fit (too many lines, lines too wide, or too tall)
             maxFontSize = testFontSize; // Try smaller
           }
         }
+        
         // Use the font size found by binary search - it's already optimal for THIS container!
         // Don't apply generic penalties that ignore container geometry
         fontSize = bestFontSize;
@@ -1807,11 +1759,10 @@ class YearWheel {
         fontSize = Math.max(fontSize, absoluteMinFont);
         fontSize = Math.min(fontSize, reasonableMaxFont);
         
-        // Final wrapping simulation with chosen font using same wrap threshold
+        // Final wrapping simulation with chosen font - uses same wrappingThreshold from above!
         this.context.save();
         this.context.font = `500 ${fontSize}px Arial, sans-serif`;
         
-        const finalWrapWidth = availableArcLength * wrapThreshold;
         let lines = [];
         let currentLine = '';
         
@@ -1819,7 +1770,8 @@ class YearWheel {
           const testLine = currentLine ? currentLine + ' ' + word : word;
           const testWidth = this.context.measureText(testLine).width;
           
-          if (testWidth > finalWrapWidth && currentLine) {
+          // Use same threshold as binary search and rendering
+          if (testWidth > wrappingThreshold && currentLine) {
             lines.push(currentLine);
             currentLine = word;
           } else {
@@ -1852,6 +1804,12 @@ class YearWheel {
           
           // Only reject if overflow is VERY significant (was 5%, now 15%)
           if (truncationPercent > 15) {
+            // Debug logging silenced for production
+            // if (debugThisText) {
+            //   console.log(`  ❌ REJECTED: ${!fitsHorizontally ? 'Horizontal' : 'Vertical'} overflow ${truncationPercent.toFixed(1)}%`);
+            //   console.log(`     Max line width: ${maxLineWidth.toFixed(1)}px, Available: ${(availableArcLength * 0.98).toFixed(1)}px`);
+            //   console.log(`     Total height: ${totalRadialHeight.toFixed(1)}px, Max: ${maxRadialHeight.toFixed(1)}px`);
+            // }
           }
         } else {
           needsTruncation = false;
@@ -1908,29 +1866,42 @@ class YearWheel {
     let penaltyScore = 0;
     
     // 1. FONT SIZE QUALITY (0-35 points) - CRITICAL FOR READABILITY
-    // Moderate approach: readable range is 14-26px, with sweet spot 15-26px
+    // Font size is MORE important than previously thought
+    // User preference: "horizontal multi-line with readable font preferable over horizontal single-line in small font"
     // 
     // Use the absolute font size constants defined at function start
-    // sweetSpotMin = 15, sweetSpotMax = 26 (regardless of zoom)
+    // sweetSpotMin = 16, sweetSpotMax = 28 (regardless of zoom)
     
     if (fontSize >= sweetSpotMin && fontSize <= sweetSpotMax) {
       // In sweet spot - full points
       fontScore = 35;
     } else if (fontSize >= minDisplayFont && fontSize < sweetSpotMin) {
-      // Just below sweet spot (14-15px) - very minor penalty
-      fontScore = 32;
+      // Below sweet spot - HARSH PENALTY for small fonts
+      // User: "truncation should win over too small font, especially on small containers"
+      // Small fonts are hard to read - truncation is better!
+      const ratio = (fontSize - minDisplayFont) / (sweetSpotMin - minDisplayFont);
+      if (ratio > 0.9) {
+        fontScore = 28 + (ratio * 7); // Very close to sweet spot: 28-35
+      } else if (ratio > 0.75) {
+        fontScore = 20 + (ratio * 8); // Readable but small: 20-28
+      } else if (ratio > 0.5) {
+        fontScore = 10 + (ratio * 10); // Getting small: 10-20
+      } else {
+        fontScore = 0 + (ratio * 10); // Very small font: 0-10 (almost as bad as truncation!)
+      }
     } else if (fontSize > sweetSpotMax && fontSize <= reasonableMaxFont) {
-      // Above sweet spot (26-32px) - moderate penalty
+      // Above sweet spot - penalty varies with zoom
       const ratio = (fontSize - sweetSpotMax) / (reasonableMaxFont - sweetSpotMax);
-      fontScore = 35 - (ratio * 8); // 27-35 points
-    } else if (fontSize > reasonableMaxFont) {
-      // Above reasonable max (>32px) - stronger penalty
-      const ratio = Math.min(1, (fontSize - reasonableMaxFont) / (maxDisplayFont - reasonableMaxFont));
-      fontScore = 20 - (ratio * 10); // 10-20 points
+      if (zoomFactor >= 1.5) {
+        // High zoom: smaller penalty for large fonts (they look better)
+        fontScore = 35 - (ratio * 3);
+      } else {
+        // Normal/low zoom: moderate penalty
+        fontScore = 35 - (ratio * 6);
+      }
     } else if (fontSize < minDisplayFont) {
-      // Below minimum (<14px) - moderate penalty
-      const ratio = fontSize / minDisplayFont;
-      fontScore = 20 * ratio; // 0-20 points based on how far below
+      // Below minimum - EXTREME penalty (basically unreadable)
+      fontScore = 0; // Was 5, now 0 - truncation is better than this!
     }
     
     // 2. SPACE UTILIZATION (0-25 points)
@@ -1995,28 +1966,27 @@ class YearWheel {
       }
       
       // MULTI-LINE BONUS: Successfully wrapped text is elegant and more readable
-      // THIS IS THE KEY: Multi-word text MUST use multi-line when possible!
       if (allowWrapping && lineCount >= 2) {
         // Bonus scales with how well it wraps
         if (orientation === 'horizontal') {
-          // HORIZONTAL MULTI-LINE: DOMINANT preference for multi-word text!
+          // HORIZONTAL MULTI-LINE: MASSIVE bonus for preferred orientation with wrapping!
           if (lineCount === 2) {
-            naturalScore += 60; // MASSIVE bonus for perfect 2-line horizontal!
+            naturalScore += 35; // Perfect horizontal 2-line (was 25 - HUGE preference!)
           } else if (lineCount === 3) {
-            naturalScore += 55; // Huge bonus for 3-line horizontal
+            naturalScore += 30; // Great horizontal 3-line (was 20 - VERY preferred!)
           } else if (lineCount === 4) {
-            naturalScore += 40; // Strong bonus for 4-line
+            naturalScore += 18; // Horizontal 4-line (still good)
           } else {
-            naturalScore += 25; // Still good for 5+ lines
+            naturalScore += 10; // Horizontal 5+ lines (acceptable)
           }
         } else {
-          // Vertical multi-line: good alternative when horizontal doesn't fit
+          // Vertical multi-line: good but not as preferred
           if (lineCount === 2) {
-            naturalScore += 35; // Good vertical 2-line bonus
+            naturalScore += 12; // Perfect 2-line split (can go to 62!)
           } else if (lineCount === 3) {
-            naturalScore += 30; // Vertical 3-line
+            naturalScore += 10; // Good 3-line split (can go to 60!)
           } else {
-            naturalScore += 20; // Vertical 4+ lines
+            naturalScore += 6;  // 4+ lines getting crowded
           }
         }
       }
@@ -2076,10 +2046,10 @@ class YearWheel {
     //
     // RULE: "for readability we prefer horizontal multi line if it is possible. always."
     
-    // Use EFFECTIVE dimensions (accounting for zoom) to determine container shape
-    // Higher zoom = more effective space for text rendering
-    const normalizedArcLength = arcLengthPx * zoomFactor;
-    const normalizedRadialHeight = radialHeight * zoomFactor;
+    // Use NORMALIZED dimensions (geometry-based) to determine container shape
+    // This ensures zoom doesn't affect aspect ratio calculation
+    const normalizedArcLength = arcLengthPx / zoomFactor;
+    const normalizedRadialHeight = radialHeight / zoomFactor;
     const aspectRatio = normalizedArcLength / normalizedRadialHeight;
     const isWideContainer = aspectRatio > 1.5;
     const isNarrowContainer = aspectRatio < 0.8;
@@ -2163,6 +2133,10 @@ class YearWheel {
     if (truncationPercent > 5) {
       // Logarithmic penalty that grows with overflow severity
       overflowPenalty = 80 + Math.min(60, truncationPercent * 2); // 80-140 point penalty
+      // Debug logging silenced for production
+      // if (debugThisText) {
+      //   console.log(`  💥 OVERFLOW PENALTY: -${overflowPenalty.toFixed(1)} points for ${truncationPercent.toFixed(1)}% overflow`);
+      // }
     }
     
     const totalScore = Math.max(0, Math.min(190, fontScore + spaceScore + naturalScore + penaltyScore - overflowPenalty));
@@ -2201,12 +2175,14 @@ class YearWheel {
     
     const zoomFactor = this.zoomLevel / 100;
     
-    // ZOOM-ENHANCED SPACE CALCULATION
-    // User expectation: More zoom = more space for text = better rendering quality
-    // At 150% zoom, we have 1.5x more canvas space, so text should fit better!
-    // Keep the actual dimensions that include zoom scaling - don't normalize away the benefit
-    const effectiveArcLength = arcLengthPx; // Keep zoom-enhanced dimensions
-    const effectiveRadialHeight = radialHeight; // Keep zoom-enhanced dimensions
+    // CRITICAL FIX: Normalize dimensions by zoom to get GEOMETRY-BASED sizes
+    // The canvas scales with zoom, but we want decisions based on the segment's
+    // intrinsic proportions, not its displayed size!
+    // At 100% zoom: arcLengthPx = 100, radialHeight = 50
+    // At 150% zoom: arcLengthPx = 150, radialHeight = 75
+    // But the segment SHAPE is the same! So normalize back to 100% zoom.
+    const normalizedArcLength = arcLengthPx / zoomFactor;
+    const normalizedRadialHeight = radialHeight / zoomFactor;
     
     // ITERATIVE STRATEGY TESTING
     // Test full text in both orientations, with and without line wrapping, then truncated versions
@@ -2219,10 +2195,10 @@ class YearWheel {
     // PRIORITY ORDER:
     // NOTE: "Horizontal" = text follows arc (supports stacked multi-arc!)
     //       "Vertical" = text perpendicular to arc (also supports multiline)
-    // 1. HORIZONTAL multi-line (TOP PRIORITY - readable stacked arcs for multi-word phrases)
-    // 2. HORIZONTAL single-line (SECOND - clean curved arc)
-    // 3. Vertical multi-line (OK - readable stacked perpendicular text)
-    // 4. Vertical single-line (LAST - single perpendicular line)
+    // 1. HORIZONTAL multi-line (BEST - readable stacked arcs for multi-word phrases)
+    // 2. Vertical multi-line (GOOD - readable stacked perpendicular text)
+    // 3. Horizontal single-line (OK - single curved arc)
+    // 4. Vertical single-line (OK - single perpendicular line)
     
     // Strategy 1: Full text, HORIZONTAL multi-line (TOP PRIORITY for multi-word text!)
     if (hasSpaces) {
@@ -2235,16 +2211,7 @@ class YearWheel {
       });
     }
     
-    // Strategy 2: Full text, horizontal single-line (SECOND PRIORITY)
-    strategies.push({
-      text: text,
-      orientation: 'horizontal',
-      truncationLevel: 0,
-      allowWrapping: false,
-      description: 'Full horizontal single-line'
-    });
-    
-    // Strategy 3: Full text, vertical multi-line (THIRD)
+    // Strategy 2: Full text, vertical multi-line (GOOD alternative)
     if (hasSpaces) {
       strategies.push({
         text: text,
@@ -2255,7 +2222,16 @@ class YearWheel {
       });
     }
     
-    // Strategy 4: Full text, vertical single-line (LAST)
+    // Strategy 3: Full text, horizontal single-line
+    strategies.push({
+      text: text,
+      orientation: 'horizontal',
+      truncationLevel: 0,
+      allowWrapping: false,
+      description: 'Full horizontal single-line'
+    });
+    
+    // Strategy 4: Full text, vertical single-line
     strategies.push({
       text: text,
       orientation: 'vertical',
@@ -2403,62 +2379,56 @@ class YearWheel {
       }
     }
     
-    // Calculate container geometry using EFFECTIVE dimensions (includes zoom benefit)
-    // Higher zoom gives better text space - embrace this rather than normalizing it away
-    const aspectRatio = effectiveArcLength / effectiveRadialHeight;
+    // Calculate container geometry using NORMALIZED dimensions
+    // This ensures the same segment has the same aspect ratio at all zoom levels
+    const aspectRatio = normalizedArcLength / normalizedRadialHeight;
     const isWideContainer = aspectRatio > 1.5;
     const isNarrowContainer = aspectRatio < 0.8;
     
-    // Evaluate all strategies using EFFECTIVE dimensions (zoom-enhanced)
-    // This allows high zoom to improve text quality as user expects
+    // Evaluate all strategies using NORMALIZED dimensions
+    // This ensures consistent decisions regardless of zoom level
     const evaluations = strategies.map(strategy => {
       const evaluation = this.evaluateRenderingSolution(
         strategy.text,
         strategy.orientation,
-        effectiveArcLength,
-        effectiveRadialHeight,
-        middleRadius, // Keep actual middleRadius (includes zoom scaling)
+        normalizedArcLength,
+        normalizedRadialHeight,
+        middleRadius / zoomFactor, // Also normalize middleRadius
         strategy.allowWrapping
       );
       
-      // ZOOM-AWARE QUALITY ENHANCEMENT
-      // Higher zoom = more space = reward good text quality, penalize truncation heavily
+      // ZOOM-AWARE TRUNCATION PENALTY
+      // Higher zoom = more space = much stronger penalty for truncation
       let adjustedScore = evaluation.readabilityScore;
       let zoomMultiplier = 0; // Initialize outside if block
       
-      // BONUS for high-quality solutions at high zoom (no pre-truncation)
-      if (strategy.truncationLevel === 0 && zoomFactor > 1.0) {
-        const qualityBonus = (zoomFactor - 1.0) * 10; // +10 points per 100% zoom increase
-        adjustedScore += qualityBonus;
-      }
-      
-      // PENALTY for pre-truncated solutions (especially at high zoom)
       if (strategy.truncationLevel > 0) {
-        // Base penalty: 5 points per 10% truncation
+        // AGGRESSIVE PENALTY - heavily discourage pre-truncation
+        // Base penalty: 5 points per 10% truncation (was 3)
         let basePenalty = strategy.truncationLevel * 0.5;
         
-        // ZOOM MULTIPLIER - exponentially penalize truncation at high zoom
+        // ZOOM MULTIPLIER - dramatic increase at high zoom
         if (zoomFactor >= 2.0) {
-          // 200% zoom: 5× penalty (we have 4× the space!)
-          zoomMultiplier = 5.0;
-        } else if (zoomFactor >= 1.75) {
-          // 175% zoom: 4× penalty  
+          // 200% zoom: 4× penalty (we have 4× the space!)
           zoomMultiplier = 4.0;
+        } else if (zoomFactor >= 1.75) {
+          // 175% zoom: 3.5× penalty
+          zoomMultiplier = 3.5;
         } else if (zoomFactor >= 1.5) {
           // 150% zoom: 3× penalty
           zoomMultiplier = 3.0;
         } else if (zoomFactor >= 1.25) {
-          // 125% zoom: 2× penalty
-          zoomMultiplier = 2.0;
+          // 125% zoom: 2.5× penalty
+          zoomMultiplier = 2.5;
         } else if (zoomFactor >= 1.0) {
-          // 100% zoom: 1.5× penalty (baseline)
-          zoomMultiplier = 1.5;
+          // 100% zoom: 2× penalty (much stricter)
+          zoomMultiplier = 2.0;
         } else if (zoomFactor >= 0.75) {
-          // 75% zoom: 1× penalty (standard)
-          zoomMultiplier = 1.0;
+          // 75% zoom: 1.2× penalty (still prefer full text)
+          zoomMultiplier = 1.2;
         } else {
-          // 50% zoom: 0.7× penalty (truncation more acceptable when cramped)
-          zoomMultiplier = 0.7;
+          // 50% zoom: 0.8× penalty (truncation more acceptable when cramped)
+          zoomMultiplier = 0.8;
         }
         
         adjustedScore -= basePenalty * zoomMultiplier;
@@ -2498,8 +2468,35 @@ class YearWheel {
       
       if (alternatives.length > 0) {
         const originalWinner = bestSolution;
-        bestSolution = alternatives[0];      }
+        bestSolution = alternatives[0];
+        
+        // Debug logging silenced for production
+        // if (text.includes('Kampanj') || text.includes('planering') || text.includes('Q1')) {
+        //   console.log(`\n⚠️ OVERFLOW REJECTION: "${originalWinner.description}" rejected (${originalWinner.truncationPercent.toFixed(1)}% overflow)`);
+        //   console.log(`   Switching to: "${bestSolution.description}" (${bestSolution.truncationPercent.toFixed(1)}% overflow)`);
+        // }
+      }
     }
+    
+    // DEBUG: Enable to see decision details for specific texts
+    // Uncomment the block below to debug text rendering decisions
+    // const debugText = text.includes('Q4 Kampanj') || text.includes('planering');
+    // if (debugText) {
+    //   console.log(`\n=== DECISION FOR: "${text}" (zoom: ${this.zoomLevel}%) ===`);
+    //   console.log(`Canvas dimensions: ${arcLengthPx.toFixed(1)}px × ${radialHeight.toFixed(1)}px`);
+    //   console.log(`Normalized (geometry): ${normalizedArcLength.toFixed(1)}px × ${normalizedRadialHeight.toFixed(1)}px`);
+    //   console.log(`Aspect ratio: ${aspectRatio.toFixed(2)} - Wide: ${isWideContainer}, Narrow: ${isNarrowContainer}`);
+    //   console.log('\nTop 5 strategies:');
+    //   evaluations.slice(0, 5).forEach((e, i) => {
+    //     console.log(`${i+1}. ${e.description}`);
+    //     console.log(`   Font: ${e.fontSize.toFixed(1)}px, Lines: ${e.lineCount}, Wrapping: ${e.allowWrapping}`);
+    //     console.log(`   Truncated: ${e.truncated} (${e.truncationPercent.toFixed(1)}%)`);
+    //     console.log(`   Scores: Font=${e.details.font.toFixed(1)}, Space=${e.details.space.toFixed(1)}, Natural=${e.details.natural.toFixed(1)}, Penalty=${e.details.penalty.toFixed(1)}`);
+    //     console.log(`   ORIGINAL: ${e.originalScore.toFixed(1)}, ADJUSTED: ${e.adjustedScore.toFixed(1)} ${e === bestSolution ? '← WINNER' : ''}`);
+    //   });
+    //   console.log(`\nChosen: ${bestSolution.orientation} (${bestSolution.description})`);
+    //   console.log(`Will render: ${bestSolution.lineCount} line(s), Font: ${bestSolution.fontSize.toFixed(1)}px`);
+    // }
     
     // Store best solution for potential use in rendering
     // (This allows renderer to know if it should use wrapping, pre-truncated text, etc.)
@@ -2511,26 +2508,16 @@ class YearWheel {
     
     if (isVeryTall && bestSolution.adjustedScore < 40) {
       // Extremely tall + poor score: force vertical as only viable option
+      // console.log('   OVERRIDE: Forcing vertical for very tall container');
       return 'vertical';
     }
     
     if (isVeryWide && bestSolution.orientation === 'horizontal' && bestSolution.adjustedScore > 50) {
       // Extremely wide + good horizontal solution: clear choice
+      // console.log('   OVERRIDE: Forcing horizontal for very wide container');
       return 'horizontal';
     }
     
-    // DEBUG: Log strategy evaluation for zoom analysis
-    if (text.includes('Roadbarfotasko') && zoomFactor >= 1.5) {
-      console.log(`\n🔍 ZOOM DEBUG (${zoomFactor.toFixed(1)}x zoom) for "${text}"`);
-      console.log(`Available space: ${availableArcLength.toFixed(1)} × ${radialWidth.toFixed(1)} (aspect: ${aspectRatio.toFixed(2)})`);
-      console.log('Top 3 strategies:');
-      evaluations.slice(0, 3).forEach((e, i) => {
-        console.log(`  ${i+1}. ${e.description}: score ${e.adjustedScore.toFixed(1)} (original: ${e.originalScore.toFixed(1)}, zoom penalty: ${e.zoomPenaltyMultiplier?.toFixed(1) || 'none'})`);
-        console.log(`     Lines: ${e.lineCount}, Fit: ${(100-e.truncationPercent).toFixed(1)}%, Font: ${e.fontSize?.toFixed(1) || 'unknown'}px`);
-      });
-      console.log(`Winner: ${bestSolution.description} (${bestSolution.orientation})`);
-    }
-
     // QUALITY THRESHOLD CHECKING (adjusted for new scoring scale)
     const MIN_ACCEPTABLE_SCORE = 40; // Slightly higher threshold
     const GOOD_SCORE = 70; // Higher threshold for "good"
@@ -2675,56 +2662,49 @@ class YearWheel {
     const zoomFactor = this.zoomLevel / 100;
     const effectiveDisplaySize = this.size * zoomFactor;
     
-    // STRICTER MINIMUM - Match vertical text logic
-    const absoluteMinFont = Math.max(12, effectiveDisplaySize / 200);
-    const minDisplayFont = Math.max(14, effectiveDisplaySize / 180);
-    const maxDisplayFont = Math.min(50, effectiveDisplaySize / 45);
-    const reasonableMaxFont = Math.min(35, effectiveDisplaySize / 60);
+    // ZOOM-AWARE CONSTRAINTS - Match vertical rendering, cap growth at high zoom
+    const absoluteMinFont = Math.max(12, Math.min(effectiveDisplaySize / 200, 16));
+    const minDisplayFont = Math.max(14, Math.min(effectiveDisplaySize / 180, 18));
+    const maxDisplayFont = Math.min(50, Math.max(20, effectiveDisplaySize / 45));
+    const reasonableMaxFont = Math.min(35, Math.max(18, effectiveDisplaySize / 60));
     
     // TEXT CONTENT ANALYSIS
     const textLength = text.length;
     const hasSpaces = text.includes(' ');
     
-    // Length penalty (more moderate)
-    let lengthPenalty = 1.0;
-    if (textLength > 15) lengthPenalty = 0.90;
-    else if (textLength > 10) lengthPenalty = 0.93;
-    else if (textLength > 6) lengthPenalty = 0.96;
+    // Calculate available arc length with aggressive margin
+    const availableArcLength = middleRadius * angleLength * 0.82; // Match wrapping threshold
     
-    // CONTAINER PROPORTIONALITY (matching vertical text logic)
-    const arcLength = middleRadius * angleLength;
-    const radialWidth = width;
-    const segmentArea = radialWidth * arcLength;
-    const wheelArea = this.size * this.size;
-    const areaRatio = segmentArea / wheelArea;
+    // SMART FONT CALCULATION: Binary search for largest font where text fits
+    let testFontSize = reasonableMaxFont;
+    let minFont = minDisplayFont;
+    let maxFont = reasonableMaxFont;
     
-    // Size penalty for large segments (more moderate)
-    let sizePenalty = 1.0;
-    if (areaRatio > 0.15) sizePenalty = 0.88;
-    else if (areaRatio > 0.10) sizePenalty = 0.92;
-    else if (areaRatio > 0.06) sizePenalty = 0.96;
+    this.context.save();
     
-    // Calculate available arc length
-    const availableArcLength = middleRadius * angleLength * 0.85;
-    
-    // Calculate font size to fit text in arc
-    let testFontSize = Math.min(
-      width * 0.45,
-      availableArcLength / text.length * 0.9,
-      reasonableMaxFont
-    );
-    
-    // Apply penalties
-    testFontSize = testFontSize * lengthPenalty * sizePenalty;
-    
-    // Enforce limits with stricter minimum
-    testFontSize = Math.max(testFontSize, minDisplayFont);
-    testFontSize = Math.min(testFontSize, maxDisplayFont);
-    
-    // If still below absolute minimum, use absolute minimum and truncate text instead
-    if (testFontSize < absoluteMinFont) {
-      testFontSize = absoluteMinFont;
+    for (let iteration = 0; iteration < 10; iteration++) {
+      testFontSize = (minFont + maxFont) / 2;
+      this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
+      const measuredWidth = this.context.measureText(text).width;
+      
+      if (measuredWidth <= availableArcLength * 0.95) {
+        // Text fits! Try larger
+        minFont = testFontSize;
+      } else {
+        // Too big, go smaller
+        maxFont = testFontSize;
+      }
     }
+    
+    // Use the largest font that fit
+    testFontSize = minFont;
+    
+    // Apply length penalty only if text is very long
+    if (textLength > 15) testFontSize *= 0.95;
+    
+    // Enforce absolute limits
+    testFontSize = Math.max(testFontSize, absoluteMinFont);
+    testFontSize = Math.min(testFontSize, maxDisplayFont);
     
     // Test if text fits at this size
     this.context.save();
@@ -2769,43 +2749,22 @@ class YearWheel {
     // MULTI-LINE RENDERING SUPPORT FOR HORIZONTAL TEXT
     // If renderDecision indicates multi-line, render stacked arcs
     if (renderDecision && renderDecision.allowWrapping && renderDecision.lineCount > 1) {
-  
-      
       // Use pre-calculated decision for multi-line stacked arcs
-      const words = text.split(/\s+/);
-      const wordCount = words.length;
+      // Split on spaces AND hyphens for better wrapping
+      const words = this.splitTextForWrapping(text);
       const lines = [];
       let currentLine = '';
-      
-      // Calculate wrapping threshold - MUST match the evaluation logic!
-      const aspectRatio = availableArcLength / width;
-      const targetLines = wordCount >= 4 ? 3 : 2;
-      let wrapThreshold;
-      if (aspectRatio > 3.0) {
-        const textLength = text.length;
-        if (textLength < 25 && wordCount <= 3) {
-          wrapThreshold = 0.25;
-        } else if (textLength < 40) {
-          wrapThreshold = 0.35;
-        } else if (textLength < 60) {
-          wrapThreshold = 0.45;
-        } else {
-          wrapThreshold = 0.55;
-        }
-      } else {
-        wrapThreshold = 0.70;
-      }
-      const wrapWidth = availableArcLength * wrapThreshold;
       
       this.context.save();
       this.context.font = `500 ${renderDecision.fontSize}px Arial, sans-serif`;
       
-      // Wrap text into lines with SAME threshold used during evaluation
+      // Wrap text into lines with aggressive safety margin to prevent overflow
       for (let word of words) {
         const testLine = currentLine ? currentLine + ' ' + word : word;
         const testWidth = this.context.measureText(testLine).width;
         
-        if (testWidth > wrapWidth && currentLine) {
+        // Use 82% of available width to ensure text stays contained
+        if (testWidth > availableArcLength * 0.82 && currentLine) {
           lines.push(currentLine);
           currentLine = word;
         } else {
@@ -2813,17 +2772,59 @@ class YearWheel {
         }
       }
       if (currentLine) lines.push(currentLine);
-      this.context.restore();
       
-      // Render each line on its own arc, stacked radially
-      // Lines read OUTWARD (outer = first line, inner = last line)
-      const lineHeight = renderDecision.fontSize * 1.3; // Spacing between arc lines
+      // VALIDATE MULTI-LINE FIT BEFORE RENDERING
+      const lineHeight = renderDecision.fontSize * 1.3;
       const totalHeight = lines.length * lineHeight;
-      let currentRadius = middleRadius + totalHeight / 2 - lineHeight / 2; // Start OUTER
+      const maxRadialHeight = width * 0.95; // 95% safety margin
       
-      for (let line of lines) {
-        this.drawTextAlongArc(line, currentRadius, startAngle, endAngle, renderDecision.fontSize, textColor);
-        currentRadius -= lineHeight; // Move INWARD for next line
+      // Check if multi-line fits radially
+      if (totalHeight > maxRadialHeight) {
+        // Too many lines - fall back to single-line with truncation
+        this.context.restore();
+        
+        // Truncate text to fit
+        let truncated = text;
+        let truncatedWidth = this.context.measureText(truncated + '…').width;
+        
+        while (truncatedWidth > availableArcLength * 0.85 && truncated.length > 1) {
+          truncated = truncated.substring(0, truncated.length - 1);
+          truncatedWidth = this.context.measureText(truncated + '…').width;
+        }
+        
+        const finalText = truncated.length < text.length ? truncated + '…' : truncated;
+        this.drawTextAlongArc(finalText, middleRadius, startAngle, endAngle, renderDecision.fontSize, textColor);
+      } else {
+        // Validate and truncate individual lines if needed
+        const validatedLines = lines.map(line => {
+          const lineWidth = this.context.measureText(line).width;
+          
+          if (lineWidth > availableArcLength * 0.82) {
+            // Line too wide - truncate it
+            let truncated = line;
+            let truncatedWidth = this.context.measureText(truncated + '…').width;
+            
+            while (truncatedWidth > availableArcLength * 0.82 && truncated.length > 1) {
+              truncated = truncated.substring(0, truncated.length - 1);
+              truncatedWidth = this.context.measureText(truncated + '…').width;
+            }
+            
+            return truncated.length < line.length ? truncated + '…' : truncated;
+          }
+          
+          return line;
+        });
+        
+        this.context.restore();
+        
+        // Render validated lines on stacked arcs
+        // Lines read OUTWARD (outer = first line, inner = last line)
+        let currentRadius = middleRadius + totalHeight / 2 - lineHeight / 2; // Start OUTER
+        
+        for (let line of validatedLines) {
+          this.drawTextAlongArc(line, currentRadius, startAngle, endAngle, renderDecision.fontSize, textColor);
+          currentRadius -= lineHeight; // Move INWARD for next line
+        }
       }
     } else if (!renderDecision && hasSpaces && testFontSize >= 14 && textWidth > availableArcLength * 1.3) {
       // Fallback: attempt basic multi-line if text is significantly too long
@@ -3197,47 +3198,25 @@ class YearWheel {
         const dragMode = this.detectDragZone(x, y, itemRegion);
         const freshItem = this.organizationData.items.find(i => i.id === itemRegion.item.id);
         
-        // Calculate mouse angle at drag start in SCREEN coordinates
-        // We'll draw the preview in rotated context, so use raw screen angle
-        const dx = x - this.center.x;
-        const dy = y - this.center.y;
-        let startMouseAngle = Math.atan2(dy, dx);
-        
-        // Normalize to 0-2π
-        while (startMouseAngle < 0) startMouseAngle += Math.PI * 2;
-        while (startMouseAngle >= Math.PI * 2) startMouseAngle -= Math.PI * 2;
-        
-        // Convert stored angles (non-rotated) to screen angles (rotated) for preview
-        const screenStartAngle = itemRegion.startAngle + this.rotationAngle;
-        const screenEndAngle = itemRegion.endAngle + this.rotationAngle;
-        
         this.dragState = {
           isDragging: true,
           dragMode: dragMode,
           draggedItem: freshItem,
           draggedItemRegion: itemRegion,
-          startMouseAngle: startMouseAngle,
-          currentMouseAngle: startMouseAngle,
-          initialStartAngle: screenStartAngle,  // Screen coordinates
-          initialEndAngle: screenEndAngle,      // Screen coordinates
-          previewStartAngle: screenStartAngle,  // Screen coordinates
-          previewEndAngle: screenEndAngle,      // Screen coordinates
+          startMouseAngle: this.getMouseAngle(event),
+          currentMouseAngle: this.getMouseAngle(event),
+          initialStartAngle: itemRegion.startAngle,
+          initialEndAngle: itemRegion.endAngle,
+          previewStartAngle: itemRegion.startAngle,
+          previewEndAngle: itemRegion.endAngle,
         };
-        
-        // Notify parent that drag has started (for undo/redo batch mode)
-        if (this.options.onDragStart) {
-          this.options.onDragStart(freshItem);
-        }
         
         // Set cursor based on drag mode
         if (dragMode === 'resize-start' || dragMode === 'resize-end') {
           this.canvas.style.cursor = 'ew-resize';
         } else {
-          this.canvas.style.cursor = 'grabbing'; // Use grabbing cursor for better UX
+          this.canvas.style.cursor = 'move';
         }
-        
-        // Immediate visual feedback - redraw with drag state active
-        this.create();
         
         return; // Don't start wheel rotation
       }
@@ -3247,7 +3226,6 @@ class YearWheel {
     this.isDragging = true;
     this.lastMouseAngle = this.getMouseAngle(event);
     this.dragStartAngle = this.rotationAngle;
-    this.canvas.style.cursor = 'grabbing'; // Show grabbing cursor during wheel rotation
   }
 
   drag(event) {
@@ -3267,102 +3245,60 @@ class YearWheel {
   dragActivity(event) {
     if (!this.dragState.isDragging) return;
 
-    // Get current mouse position and convert to angle
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
+    const currentMouseAngle = this.getMouseAngle(event);
+    this.dragState.currentMouseAngle = currentMouseAngle;
     
-    // Calculate mouse angle relative to center
-    // Since we now draw preview in rotated context, we DON'T subtract rotation here
-    const dx = x - this.center.x;
-    const dy = y - this.center.y;
-    const rawMouseAngle = Math.atan2(dy, dx);
+    // Calculate angle difference (this is relative to the rotated coordinate system)
+    const angleDiff = currentMouseAngle - this.dragState.startMouseAngle;
     
-    // DON'T subtract rotationAngle - the preview will be drawn in rotated context
-    let mouseAngle = rawMouseAngle;
-    
-    // Normalize angle to 0-2π range
-    while (mouseAngle < 0) mouseAngle += Math.PI * 2;
-    while (mouseAngle >= Math.PI * 2) mouseAngle -= Math.PI * 2;
-    
-    // Store for reference
-    this.dragState.currentMouseAngle = mouseAngle;
-    
-    // Minimum activity size (1 week)
-    const minWeekAngle = this.toRadians((7 / 365) * 360);
-    
-    // Update preview angles based on drag mode
+    // Detect target ring if in move mode (allow ring switching)
     if (this.dragState.dragMode === 'move') {
-      // Detect target ring for ring switching
+      const rect = this.canvas.getBoundingClientRect();
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      
       const targetRingInfo = this.detectTargetRing(x, y);
       this.dragState.targetRingInfo = targetRingInfo;
       this.dragState.targetRing = targetRingInfo ? targetRingInfo.ring : null;
-      
-      // Calculate the angle difference from start to current mouse position
-      // DON'T normalize to shortest path - we want to follow the actual drag direction
-      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
-      
-      // Apply the delta directly to both start and end angles
-      this.dragState.previewStartAngle = this.dragState.initialStartAngle + angleDelta;
-      this.dragState.previewEndAngle = this.dragState.initialEndAngle + angleDelta;
-      
-      // Normalize both angles to 0-2π for consistent rendering
-      while (this.dragState.previewStartAngle < 0) this.dragState.previewStartAngle += Math.PI * 2;
-      while (this.dragState.previewStartAngle >= Math.PI * 2) this.dragState.previewStartAngle -= Math.PI * 2;
-      while (this.dragState.previewEndAngle < 0) this.dragState.previewEndAngle += Math.PI * 2;
-      while (this.dragState.previewEndAngle >= Math.PI * 2) this.dragState.previewEndAngle -= Math.PI * 2;
-      
+    }
+    
+    // Update preview angles based on drag mode - NO CLAMPING during drag for smooth UX
+    if (this.dragState.dragMode === 'move') {
+      // Move entire activity - follow mouse freely
+      this.dragState.previewStartAngle = this.dragState.initialStartAngle + angleDiff;
+      this.dragState.previewEndAngle = this.dragState.initialEndAngle + angleDiff;
     } else if (this.dragState.dragMode === 'resize-start') {
-      // Resize start edge - move start angle to mouse position, keep end fixed
-      this.dragState.previewStartAngle = mouseAngle;
+      // Resize start (left edge) - keep end fixed
+      const newStartAngle = this.dragState.initialStartAngle + angleDiff;
+      const minWeekAngle = this.toRadians((7 / 365) * 360); // 1 week minimum
+      
+      // Keep end angle fixed at initial position
       this.dragState.previewEndAngle = this.dragState.initialEndAngle;
       
-      // Normalize end angle to 0-2π
-      while (this.dragState.previewEndAngle < 0) this.dragState.previewEndAngle += Math.PI * 2;
-      while (this.dragState.previewEndAngle >= Math.PI * 2) this.dragState.previewEndAngle -= Math.PI * 2;
-      
-      // Ensure minimum size and correct order
-      let span = this.dragState.previewEndAngle - this.dragState.previewStartAngle;
-      
-      // Handle angle wraparound
-      if (span < 0) span += Math.PI * 2;
-      
-      // Enforce minimum size
-      if (span < minWeekAngle || span > Math.PI * 1.9) {
-        // Either too small or went backwards
-        this.dragState.previewStartAngle = this.dragState.previewEndAngle - minWeekAngle;
+      // Don't allow start to go past end (maintain minimum width)
+      if (newStartAngle < this.dragState.initialEndAngle - minWeekAngle) {
+        this.dragState.previewStartAngle = newStartAngle;
+      } else {
+        // Clamp to minimum width
+        this.dragState.previewStartAngle = this.dragState.initialEndAngle - minWeekAngle;
       }
-      
-      // Normalize start angle to 0-2π
-      while (this.dragState.previewStartAngle < 0) this.dragState.previewStartAngle += Math.PI * 2;
-      while (this.dragState.previewStartAngle >= Math.PI * 2) this.dragState.previewStartAngle -= Math.PI * 2;
-      
     } else if (this.dragState.dragMode === 'resize-end') {
-      // Resize end edge - move end angle to mouse position, keep start fixed
+      // Resize end (right edge) - keep start fixed
+      const newEndAngle = this.dragState.initialEndAngle + angleDiff;
+      const minWeekAngle = this.toRadians((7 / 365) * 360); // 1 week minimum
+      
+      // Keep start angle fixed at initial position
       this.dragState.previewStartAngle = this.dragState.initialStartAngle;
-      this.dragState.previewEndAngle = mouseAngle;
       
-      // Normalize start angle to 0-2π
-      while (this.dragState.previewStartAngle < 0) this.dragState.previewStartAngle += Math.PI * 2;
-      while (this.dragState.previewStartAngle >= Math.PI * 2) this.dragState.previewStartAngle -= Math.PI * 2;
-      
-      // Ensure minimum size and correct order
-      let span = this.dragState.previewEndAngle - this.dragState.previewStartAngle;
-      
-      // Handle angle wraparound
-      if (span < 0) span += Math.PI * 2;
-      
-      // Enforce minimum size
-      if (span < minWeekAngle || span > Math.PI * 1.9) {
-        // Either too small or went backwards
-        this.dragState.previewEndAngle = this.dragState.previewStartAngle + minWeekAngle;
+      // Don't allow end to go before start (maintain minimum width)
+      if (newEndAngle > this.dragState.initialStartAngle + minWeekAngle) {
+        this.dragState.previewEndAngle = newEndAngle;
+      } else {
+        // Clamp to minimum width
+        this.dragState.previewEndAngle = this.dragState.initialStartAngle + minWeekAngle;
       }
-      
-      // Normalize end angle to 0-2π
-      while (this.dragState.previewEndAngle < 0) this.dragState.previewEndAngle += Math.PI * 2;
-      while (this.dragState.previewEndAngle >= Math.PI * 2) this.dragState.previewEndAngle -= Math.PI * 2;
     }
     
     // Redraw with preview immediately for responsive dragging
@@ -3384,13 +3320,9 @@ class YearWheel {
   stopActivityDrag() {
     if (!this.dragState.isDragging) return;
 
-    // Convert screen angles back to data angles by removing rotation
-    const dataStartAngle = this.dragState.previewStartAngle - this.rotationAngle;
-    const dataEndAngle = this.dragState.previewEndAngle - this.rotationAngle;
-    
     // Convert preview angles to dates
-    let newStartDate = this.angleToDate(this.toDegrees(dataStartAngle));
-    let newEndDate = this.angleToDate(this.toDegrees(dataEndAngle));
+    let newStartDate = this.angleToDate(this.toDegrees(this.dragState.previewStartAngle));
+    let newEndDate = this.angleToDate(this.toDegrees(this.dragState.previewEndAngle));
     
     // Clamp dates to current year (Jan 1 - Dec 31)
     const yearStart = new Date(this.year, 0, 1);
@@ -3457,23 +3389,23 @@ class YearWheel {
   }
 
   handleMouseMove(event) {
-    // Handle activity dragging - NO THROTTLING for smooth dragging
+    // Handle activity dragging
     if (this.dragState.isDragging) {
       this.dragActivity(event);
       return;
     }
 
-    // Handle wheel rotation dragging - NO THROTTLING for smooth rotation
+    // Handle wheel rotation dragging
     if (this.isDragging) {
       this.drag(event);
       return;
     }
 
-    // Handle hover detection for activities (throttled only when NOT dragging)
+    // Handle hover detection for activities (throttled to prevent excessive redraws)
     const now = Date.now();
     const timeSinceLastCheck = now - this.lastHoverCheck;
     
-    // Throttle hover checks to ~120fps max (reduced from 60fps for better responsiveness)
+    // Throttle hover checks to ~60fps max
     if (timeSinceLastCheck < this.hoverThrottleMs) {
       return; // Skip this hover check
     }
@@ -3510,7 +3442,7 @@ class YearWheel {
       if (hoverZone === 'resize-start' || hoverZone === 'resize-end') {
         newCursor = 'ew-resize'; // East-west resize cursor for edges
       } else {
-        newCursor = 'grab'; // Grab cursor for middle (better UX than 'move')
+        newCursor = 'move'; // Move cursor for middle
       }
     }
 
@@ -3591,11 +3523,8 @@ class YearWheel {
     const dy = y - this.center.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Add small padding to hit area for easier grabbing (5 pixels)
-    const hitPadding = 5;
-    
-    // Check if within radius range (with padding)
-    if (distance < region.startRadius - hitPadding || distance > region.endRadius + hitPadding) {
+    // Check if within radius range
+    if (distance < region.startRadius || distance > region.endRadius) {
       return false;
     }
 
@@ -3607,12 +3536,9 @@ class YearWheel {
     while (angle < 0) angle += Math.PI * 2;
     while (angle >= Math.PI * 2) angle -= Math.PI * 2;
 
-    // Check if within angle range (with small angular padding for easier grabbing)
-    // Add 0.5 degree padding on each side
-    const anglePadding = this.toRadians(0.5);
-    
-    let startAngle = region.startAngle - anglePadding;
-    let endAngle = region.endAngle + anglePadding;
+    // Check if within angle range
+    let startAngle = region.startAngle;
+    let endAngle = region.endAngle;
     
     // Normalize angles
     while (startAngle < 0) startAngle += Math.PI * 2;
@@ -3638,7 +3564,8 @@ class YearWheel {
     this.drawRotatingElements();
     // Draw static elements (title and year)
     this.drawStaticElements();
-    // Drag preview is now drawn inside drawRotatingElements()
+    // Draw drag preview if dragging
+    this.drawDragPreview();
   }
 
   drawDragPreview() {
@@ -3651,87 +3578,65 @@ class YearWheel {
     const activityGroup = this.organizationData.activityGroups.find(a => a.id === item.activityId);
     const itemColor = activityGroup ? activityGroup.color : '#B8D4E8';
     
-    // Get preview angles (these are in RADIANS, in non-rotated coordinate system)
+    // Draw semi-transparent preview
+    this.context.save();
+    this.context.globalAlpha = 0.5;
+    
+    // Clip preview angles to year boundaries for visual display
+    // Year boundaries in angles (initAngle offset already applied)
+    const yearStartAngle = this.toRadians(this.initAngle); // January 1st
+    const yearEndAngle = this.toRadians(this.initAngle + 360); // December 31st
+    
     let startAngle = this.dragState.previewStartAngle;
     let endAngle = this.dragState.previewEndAngle;
     
-    // Normalize angles to 0-2π range
-    while (startAngle < 0) startAngle += Math.PI * 2;
-    while (startAngle >= Math.PI * 2) startAngle -= Math.PI * 2;
-    while (endAngle < 0) endAngle += Math.PI * 2;
-    while (endAngle >= Math.PI * 2) endAngle -= Math.PI * 2;
+    // Clip to year boundaries for visual display only
+    if (startAngle < yearStartAngle) startAngle = yearStartAngle;
+    if (endAngle > yearEndAngle) endAngle = yearEndAngle;
     
-    // Calculate span and ensure it's drawn correctly
-    let angleSpan = endAngle - startAngle;
-    
-    // If span is negative, we're wrapping around 0 (2π)
-    // In this case, don't draw across the wrap point - adjust endAngle
-    if (angleSpan < 0) {
-      // Activity wraps around the 0/2π boundary
-      // Keep it on one side by adjusting the end angle
-      endAngle = startAngle + (angleSpan + Math.PI * 2);
-    }
-    
-    // Ensure span is reasonable (not almost full circle from backwards drag)
-    angleSpan = endAngle - startAngle;
-    if (angleSpan > Math.PI * 1.95 || angleSpan < 0.01) {
-      // Don't draw if span is invalid
-      return;
-    }
-    
-    // Use target ring radius if dragging to a different ring, otherwise use original
-    let startRadius = region.startRadius;
-    let endRadius = region.endRadius;
-
-    
-    // Draw semi-transparent preview
-    // Apply the EXACT same rotation transform as drawRotatingElements()
-    this.context.save();
-    this.context.translate(this.center.x, this.center.y);
-    this.context.rotate(this.rotationAngle);
-    this.context.translate(-this.center.x, -this.center.y);
-    
-    this.context.globalAlpha = 0.6;
-    
-    console.log('[DRAW PREVIEW]', {
-      startAngle: (startAngle * 180 / Math.PI).toFixed(1) + '°',
-      endAngle: (endAngle * 180 / Math.PI).toFixed(1) + '°',
-      startRadius: startRadius.toFixed(0),
-      endRadius: endRadius.toFixed(0),
-      centerX: this.center.x.toFixed(0),
-      centerY: this.center.y.toFixed(0)
-    });
-    
-    // Draw preview arc
-    this.context.beginPath();
-    this.context.arc(this.center.x, this.center.y, startRadius, startAngle, endAngle, false);
-    this.context.arc(this.center.x, this.center.y, endRadius, endAngle, startAngle, true);
-    this.context.closePath();
-    this.context.fillStyle = itemColor;
-    this.context.fill();
-    
-    // Draw dashed border to indicate preview
-    this.context.globalAlpha = 0.9;
-    this.context.strokeStyle = '#3B82F6'; // Blue border
-    this.context.lineWidth = 2;
-    this.context.setLineDash([5, 5]);
-    this.context.stroke();
-    this.context.setLineDash([]);
-    
-    // If dragging to a different ring, highlight the target ring
-    if (this.dragState.targetRing && this.dragState.targetRing.id !== this.dragState.draggedItem.ringId) {
-      this.context.globalAlpha = 0.3;
-      this.context.strokeStyle = '#10B981'; // Green to indicate valid drop zone
-      this.context.lineWidth = 3;
+    // Only draw if there's visible range within the year
+    if (startAngle < yearEndAngle && endAngle > yearStartAngle) {
+      // Use target ring radius if dragging to a different ring, otherwise use original
+      let startRadius = region.startRadius;
+      let endRadius = region.endRadius;
+      
+      if (this.dragState.targetRingInfo && this.dragState.targetRing) {
+        // Show preview in target ring location
+        startRadius = this.dragState.targetRingInfo.startRadius;
+        endRadius = this.dragState.targetRingInfo.endRadius;
+      }
+      
+      // Draw preview arc
+      this.context.beginPath();
+      this.context.arc(this.center.x, this.center.y, startRadius, startAngle, endAngle, false);
+      this.context.arc(this.center.x, this.center.y, endRadius, endAngle, startAngle, true);
+      this.context.closePath();
+      this.context.fillStyle = itemColor;
+      this.context.fill();
+      
+      // Draw dashed border to indicate preview
+      this.context.globalAlpha = 0.8;
+      this.context.strokeStyle = '#3B82F6'; // Blue border
+      this.context.lineWidth = 2;
+      this.context.setLineDash([5, 5]);
+      this.context.stroke();
       this.context.setLineDash([]);
       
-      // Draw ring outline
-      this.context.beginPath();
-      this.context.arc(this.center.x, this.center.y, startRadius, 0, Math.PI * 2);
-      this.context.stroke();
-      this.context.beginPath();
-      this.context.arc(this.center.x, this.center.y, endRadius, 0, Math.PI * 2);
-      this.context.stroke();
+      // If dragging to a different ring, highlight the target ring
+      if (this.dragState.targetRing && this.dragState.targetRing.id !== this.dragState.draggedItem.ringId) {
+        this.context.globalAlpha = 0.3;
+        this.context.strokeStyle = '#10B981'; // Green to indicate valid drop zone
+        this.context.lineWidth = 3;
+        this.context.setLineDash([]);
+        
+        // Draw ring outline
+        this.context.beginPath();
+        this.context.arc(this.center.x, this.center.y, startRadius, 0, Math.PI * 2);
+        this.context.stroke();
+        this.context.beginPath();
+        this.context.arc(this.center.x, this.center.y, endRadius, 0, Math.PI * 2);
+        this.context.stroke();
+      }
     }
     
     this.context.restore();
@@ -3927,8 +3832,6 @@ class YearWheel {
     // Clear clickable items and labels to draw before redrawing
     this.clickableItems = [];
     this.labelsToDraw = [];
-    // Store actual rendered ring positions for accurate drag target detection
-    this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
     
     this.context.save();
     this.context.translate(this.center.x, this.center.y);
@@ -4009,13 +3912,6 @@ class YearWheel {
           currentRadius -= outerRingTotalHeight; // Reserve space for whole ring
           const ringStartRadius = currentRadius;
           
-          // Store the ACTUAL rendered position for this ring
-          this.renderedRingPositions.set(ring.id, {
-            startRadius: ringStartRadius,
-            endRadius: ringStartRadius + outerRingContentHeight,
-            type: 'outer'
-          });
-          
           // Filter items for this ring that also have visible activity group (label is optional)
           const ringItems = this.organizationData.items.filter(item => {
             const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
@@ -4052,8 +3948,33 @@ class YearWheel {
             }
           });
           
-          // Default track height for overlapping items
-          const overlapTrackHeight = maxTracks > 0 ? outerRingContentHeight / maxTracks : outerRingContentHeight;
+          // Calculate overlap groups and their maximum overlap counts
+          // For each item, find the maximum number of simultaneous overlaps in its time range
+          const itemOverlapInfo = new Map();
+          
+          ringItems.forEach(item => {
+            const itemStart = new Date(item.startDate);
+            const itemEnd = new Date(item.endDate);
+            
+            // Find all items that overlap with this one
+            const overlappingItems = ringItems.filter(otherItem => {
+              if (otherItem.id === item.id) return true; // Include self
+              const otherStart = new Date(otherItem.startDate);
+              const otherEnd = new Date(otherItem.endDate);
+              return this.dateRangesOverlap(itemStart, itemEnd, otherStart, otherEnd);
+            });
+            
+            // Find the maximum overlap count for this group
+            // Use the highest track index + 1 as the definitive overlap count
+            const tracksUsed = overlappingItems.map(i => itemToTrack.get(i.id) || 0);
+            const highestTrack = Math.max(...tracksUsed);
+            const maxOverlapInGroup = highestTrack + 1; // Number of tracks = highest index + 1
+            
+            itemOverlapInfo.set(item.id, {
+              overlapCount: maxOverlapInGroup,
+              overlappingItems: overlappingItems
+            });
+          });
           
           // Always draw background for ALL outer rings using palette colors
           this.context.beginPath();
@@ -4068,21 +3989,11 @@ class YearWheel {
           this.context.closePath();
           
           ringItems.forEach((item) => {
-            // Skip the item being dragged - it will be drawn as a preview instead
-            if (this.dragState.isDragging && this.dragState.draggedItem && item.id === this.dragState.draggedItem.id) {
-              return;
-            }
-            
             let itemStartDate = new Date(item.startDate);
             let itemEndDate = new Date(item.endDate);
             
             // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
-            if (itemEndDate < minDate || itemStartDate > maxDate) {
-              console.log('[FILTER] Skipping item outside date range:', item.name, 
-                'dates:', item.startDate, '-', item.endDate,
-                'visible range:', minDate.toISOString().split('T')[0], '-', maxDate.toISOString().split('T')[0]);
-              return;
-            }
+            if (itemEndDate < minDate || itemStartDate > maxDate) return;
             
             // Clip item dates to visible boundaries
             if (itemStartDate < minDate) itemStartDate = minDate;
@@ -4123,11 +4034,16 @@ class YearWheel {
             // Get track assignment for this item
             const trackIndex = itemToTrack.get(item.id) || 0;
             
-            // Determine height: full height if no overlaps, partial height if overlaps
-            const hasOverlap = itemsWithOverlaps.has(item.id);
-            const itemHeight = hasOverlap ? overlapTrackHeight : outerRingContentHeight;
+            // Get pre-calculated overlap info for this item
+            const overlapInfo = itemOverlapInfo.get(item.id);
+            const localOverlapCount = overlapInfo ? overlapInfo.overlapCount : 1;
+            
+            // Determine height based on LOCAL overlaps in this specific region
+            const hasOverlap = localOverlapCount > 1;
+            const localTrackHeight = hasOverlap ? outerRingContentHeight / localOverlapCount : outerRingContentHeight;
+            const itemHeight = localTrackHeight;
             const itemStartRadius = hasOverlap 
-              ? ringStartRadius + (trackIndex * overlapTrackHeight)
+              ? ringStartRadius + (trackIndex * localTrackHeight)
               : ringStartRadius;
             const itemWidth = itemHeight - trackGap; // Subtract tiny gap between tracks
             
@@ -4252,13 +4168,6 @@ class YearWheel {
       // Each ring has two parts: content area (for activities) + name band
       const ringContentHeight = contentAreaHeight;
       
-      // Store the ACTUAL rendered position for this ring
-      this.renderedRingPositions.set(ring.id, {
-        startRadius: eventRadius,
-        endRadius: eventRadius + ringContentHeight,
-        type: 'inner'
-      });
-      
       // Get items for this ring
       const ringItems = this.organizationData.items.filter(item => {
         const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
@@ -4281,23 +4190,43 @@ class YearWheel {
       // Draw activities in the content area
       if (visibleInnerRings.length > 0 && ringItems.length > 0) {
         
-        // Calculate overlaps for proportional height allocation
-        const overlapGroups = this.calculateOverlapGroups(ringItems);
+        // Assign items to tracks to handle overlaps
+        const { maxTracks, itemToTrack } = this.assignActivitiesToTracks(ringItems);
         const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
         
-        ringItems.forEach((item) => {
-          // Skip the item being dragged - it will be drawn as a preview instead
-          if (this.dragState.isDragging && this.dragState.draggedItem && item.id === this.dragState.draggedItem.id) {
-            return;
-          }
+        // Calculate overlap groups and their maximum overlap counts (INNER RINGS)
+        const itemOverlapInfo = new Map();
+        
+        ringItems.forEach(item => {
+          const itemStart = new Date(item.startDate);
+          const itemEnd = new Date(item.endDate);
           
+          // Find all items that overlap with this one
+          const overlappingItems = ringItems.filter(otherItem => {
+            if (otherItem.id === item.id) return true; // Include self
+            const otherStart = new Date(otherItem.startDate);
+            const otherEnd = new Date(otherItem.endDate);
+            return this.dateRangesOverlap(itemStart, itemEnd, otherStart, otherEnd);
+          });
+          
+          // Find the maximum overlap count for this group
+          // Use the highest track index + 1 as the definitive overlap count
+          const tracksUsed = overlappingItems.map(i => itemToTrack.get(i.id) || 0);
+          const highestTrack = Math.max(...tracksUsed);
+          const maxOverlapInGroup = highestTrack + 1; // Number of tracks = highest index + 1
+          
+          itemOverlapInfo.set(item.id, {
+            overlapCount: maxOverlapInGroup,
+            overlappingItems: overlappingItems
+          });
+        });
+        
+        ringItems.forEach((item) => {
           let itemStartDate = new Date(item.startDate);
           let itemEndDate = new Date(item.endDate);
           
           // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
-          if (itemEndDate < minDate || itemStartDate > maxDate) {
-            return;
-          }
+          if (itemEndDate < minDate || itemStartDate > maxDate) return;
           
           // Clip item dates to visible boundaries
           if (itemStartDate < minDate) itemStartDate = minDate;
@@ -4334,19 +4263,35 @@ class YearWheel {
             itemColor = this.getHoverColor(itemColor);
           }
           
-          // Get overlap information for proportional height allocation
-          const overlapInfo = overlapGroups.get(item.id);
-          const overlapCount = overlapInfo ? overlapInfo.overlapCount : 1;
-          const overlapIndex = overlapInfo ? overlapInfo.index : 0;
+          // Get track assignment for this item
+          const trackIndex = itemToTrack.get(item.id) || 0;
           
-          // Calculate proportional height: 2 overlaps = 50% each, 3 overlaps = 33% each, etc.
-          const proportionalHeight = ringContentHeight / overlapCount;
-          const itemStartRadius = eventRadius + (overlapIndex * proportionalHeight);
-          const itemWidth = proportionalHeight - trackGap; // Subtract tiny gap between items
+          // Get pre-calculated overlap info for this item (INNER RINGS)
+          const overlapInfo = itemOverlapInfo.get(item.id);
+          const localOverlapCount = overlapInfo ? overlapInfo.overlapCount : 1;
           
-          // Use existing text system - setCircleSectionAktivitetTitle handles sizing and truncation automatically
-          const textFunction = this.setCircleSectionAktivitetTitle.bind(this);
-            
+          // Determine height based on LOCAL overlaps in this specific region
+          const hasOverlap = localOverlapCount > 1;
+          const localTrackHeight = hasOverlap ? ringContentHeight / localOverlapCount : ringContentHeight;
+          const itemHeight = localTrackHeight;
+          const itemStartRadius = hasOverlap 
+            ? eventRadius + (trackIndex * localTrackHeight)
+            : eventRadius;
+          const itemWidth = itemHeight - trackGap; // Subtract tiny gap between tracks
+          
+          // Decide text orientation based on activity dimensions
+          const angularWidth = Math.abs(this.toRadians(adjustedEndAngle) - this.toRadians(adjustedStartAngle));
+          const middleRadius = itemStartRadius + itemWidth / 2;
+          const textOrientation = this.chooseTextOrientation(angularWidth, itemWidth, item.name, middleRadius);
+          
+          // Get the pre-calculated rendering decision (stored by chooseTextOrientation)
+          const renderDecision = this._lastOrientationDecision;
+          
+          // Choose appropriate text drawing function (use adapter for horizontal text)
+          const textFunction = textOrientation === 'vertical' 
+            ? this.setCircleSectionAktivitetTitle.bind(this)
+            : this.drawTextAlongArcAdapter.bind(this);
+          
           // Draw the item block with modern styling
           this.setCircleSectionHTML({
             startRadius: itemStartRadius,
@@ -4355,10 +4300,11 @@ class YearWheel {
             endAngle: adjustedEndAngle,
             color: itemColor,
             textFunction: textFunction,
-            text: item.name, // Original text - textFunction will handle sizing and truncation
+            text: item.name,
             fontSize: this.size / 62,
-            isVertical: true, // Default to vertical, textFunction will decide optimal orientation
-            highlight: isHovered
+            isVertical: textOrientation === 'vertical',
+            highlight: isHovered,
+            renderDecision: renderDecision, // Pass the decision to renderer
           });
           
           // Collect label indicator to draw last (on top)
@@ -4518,77 +4464,6 @@ class YearWheel {
       this.innerRingNamesToDraw = [];
     }
 
-    // Draw drag preview INSIDE the rotated context
-    this.drawDragPreviewInRotatedContext();
-
-    this.context.restore();
-  }
-
-  // Draw drag preview in the already-rotated context
-  drawDragPreviewInRotatedContext() {
-    if (!this.dragState.isDragging || !this.dragState.draggedItemRegion) return;
-
-    const region = this.dragState.draggedItemRegion;
-    const item = this.dragState.draggedItem;
-    
-    // Get activity group color
-    const activityGroup = this.organizationData.activityGroups.find(a => a.id === item.activityId);
-    const itemColor = activityGroup ? activityGroup.color : '#B8D4E8';
-    
-    // Get preview angles
-    let startAngle = this.dragState.previewStartAngle;
-    let endAngle = this.dragState.previewEndAngle;
-    
-    // Normalize angles
-    while (startAngle < 0) startAngle += Math.PI * 2;
-    while (startAngle >= Math.PI * 2) startAngle -= Math.PI * 2;
-    while (endAngle < 0) endAngle += Math.PI * 2;
-    while (endAngle >= Math.PI * 2) endAngle -= Math.PI * 2;
-    
-    // Calculate span
-    let angleSpan = endAngle - startAngle;
-    if (angleSpan < 0) {
-      endAngle = startAngle + (angleSpan + Math.PI * 2);
-    }
-    
-    angleSpan = endAngle - startAngle;
-    if (angleSpan > Math.PI * 1.95 || angleSpan < 0.01) {
-      return;
-    }
-    
-    // Use the item's actual dimensions
-    let startRadius = region.startRadius;
-    let endRadius = region.endRadius;
-    const itemWidth = endRadius - startRadius;
-    
-    // If switching to a different ring, use the STORED rendered position (not detectTargetRing)
-    if (this.dragState.targetRing && this.dragState.targetRing.id !== item.ringId) {
-      const targetRingPosition = this.renderedRingPositions.get(this.dragState.targetRing.id);
-      if (targetRingPosition) {
-        startRadius = targetRingPosition.startRadius;
-        endRadius = startRadius + itemWidth;
-      }
-    }
-    
-    // Draw preview (we're already in the rotated context - no transform needed!)
-    this.context.save();
-    this.context.globalAlpha = 0.6;
-    
-    this.context.beginPath();
-    this.context.arc(this.center.x, this.center.y, startRadius, startAngle, endAngle, false);
-    this.context.arc(this.center.x, this.center.y, endRadius, endAngle, startAngle, true);
-    this.context.closePath();
-    this.context.fillStyle = itemColor;
-    this.context.fill();
-    
-    // Dashed border
-    this.context.globalAlpha = 0.9;
-    this.context.strokeStyle = '#3B82F6';
-    this.context.lineWidth = 2;
-    this.context.setLineDash([5, 5]);
-    this.context.stroke();
-    this.context.setLineDash([]);
-    
     this.context.restore();
   }
 
