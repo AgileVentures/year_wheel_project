@@ -61,7 +61,8 @@ function OrganizationPanel({
     organizationData.rings.forEach(ring => {
       // Only update if we're not currently editing this specific ring
       if (editingFieldRef.current.type === 'ring' && editingFieldRef.current.id === ring.id) {
-        ringNamesMap[ring.id] = localRingNames[ring.id] || ring.name;
+        // Preserve the current local value (even if empty) while editing
+        ringNamesMap[ring.id] = localRingNames[ring.id] !== undefined ? localRingNames[ring.id] : ring.name;
       } else {
         ringNamesMap[ring.id] = ring.name;
       }
@@ -75,7 +76,8 @@ function OrganizationPanel({
     (organizationData.activityGroups || []).forEach(group => {
       // Only update if we're not currently editing this specific group
       if (editingFieldRef.current.type === 'activityGroup' && editingFieldRef.current.id === group.id) {
-        groupNamesMap[group.id] = localActivityGroupNames[group.id] || group.name;
+        // Preserve the current local value (even if empty) while editing
+        groupNamesMap[group.id] = localActivityGroupNames[group.id] !== undefined ? localActivityGroupNames[group.id] : group.name;
       } else {
         groupNamesMap[group.id] = group.name;
       }
@@ -1129,7 +1131,7 @@ function OrganizationPanel({
                     />
                     <input
                       type="text"
-                      value={localRingNames[ring.id] || ring.name}
+                      value={localRingNames[ring.id] !== undefined ? localRingNames[ring.id] : ring.name}
                       onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
                       onFocus={() => handleRingNameFocus(ring.id)}
                       onBlur={() => handleRingNameBlur(ring.id)}
@@ -1273,7 +1275,7 @@ function OrganizationPanel({
                     />
                     <input
                       type="text"
-                      value={localRingNames[ring.id] || ring.name}
+                      value={localRingNames[ring.id] !== undefined ? localRingNames[ring.id] : ring.name}
                       onChange={(e) => handleRingNameChange(ring.id, e.target.value)}
                       onFocus={() => handleRingNameFocus(ring.id)}
                       onBlur={() => handleRingNameBlur(ring.id)}
@@ -1398,7 +1400,7 @@ function OrganizationPanel({
                     />
                     <input
                       type="text"
-                      value={localActivityGroupNames[group.id] || group.name}
+                      value={localActivityGroupNames[group.id] !== undefined ? localActivityGroupNames[group.id] : group.name}
                       onChange={(e) => handleActivityGroupNameChange(group.id, e.target.value)}
                       onFocus={() => handleActivityGroupNameFocus(group.id)}
                       onBlur={() => handleActivityGroupNameBlur(group.id)}

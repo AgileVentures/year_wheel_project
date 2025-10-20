@@ -227,7 +227,11 @@
     },
     "zoomInMonth": "Zoom in month",
     "edit": "Edit",
-    "noActivitiesThisMonth": "No activities this month"
+    "noActivitiesThisMonth": "No activities this month",
+    "noActivitiesThisDay": "No activities this day",
+    "showAll": "Show all",
+    "activitiesCount_one": "{{count}} activity this month",
+    "activitiesCount_other": "{{count}} activities this month"
   },
   "editorPanel": {
     "general": "General",

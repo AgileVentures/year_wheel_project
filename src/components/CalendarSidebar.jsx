@@ -9,6 +9,7 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
   const [selectedYear, setSelectedYear] = useState(parseInt(year));
   const [editingAktivitet, setEditingAktivitet] = useState(null);
   const [isZoomedToMonth, setIsZoomedToMonth] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null); // Track selected day for filtering
 
   const months = [
     t('editor:calendarSidebar.months.january'),
@@ -76,7 +77,35 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
     });
   };
 
-  const events = getEventsForMonth();
+  // Get events for a specific day
+  const getEventsForDay = (day) => {
+    if (!organizationData?.items || !day) return [];
+    
+    const dayStart = new Date(selectedYear, currentMonth, day, 0, 0, 0);
+    const dayEnd = new Date(selectedYear, currentMonth, day, 23, 59, 59);
+    
+    return organizationData.items.filter(item => {
+      const itemStart = new Date(item.startDate);
+      const itemEnd = new Date(item.endDate);
+      return itemEnd >= dayStart && itemStart <= dayEnd;
+    });
+  };
+
+  // Check if a day has events
+  const dayHasEvents = (day) => {
+    return getEventsForDay(day).length > 0;
+  };
+
+  // Get events to display (filtered by selected day if applicable)
+  const events = selectedDay ? getEventsForDay(selectedDay) : getEventsForMonth();
+
+  // Handle day click
+  const handleDayClick = (day) => {
+    if (day) {
+      // Toggle: if same day clicked, deselect; otherwise select new day
+      setSelectedDay(selectedDay === day ? null : day);
+    }
+  };
 
   // Generate calendar grid
   const daysInMonth = getDaysInMonth(selectedYear, currentMonth);
@@ -172,23 +201,61 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1">
-          {calendarDays.map((day, index) => (
-            <div
-              key={index}
-              className={`aspect-square flex items-center justify-center text-xs ${
-                day
-                  ? 'text-gray-900 hover:bg-gray-100 rounded cursor-pointer'
-                  : ''
-              }`}
-            >
-              {day || ''}
-            </div>
-          ))}
+          {calendarDays.map((day, index) => {
+            const hasEvents = day && dayHasEvents(day);
+            const isSelected = day === selectedDay;
+            
+            return (
+              <div
+                key={index}
+                onClick={() => handleDayClick(day)}
+                className={`aspect-square flex flex-col items-center justify-center text-xs relative ${
+                  day
+                    ? `cursor-pointer rounded transition-colors ${
+                        isSelected 
+                          ? 'bg-blue-500 text-white font-medium' 
+                          : hasEvents
+                            ? 'text-gray-900 hover:bg-blue-50 font-medium'
+                            : 'text-gray-500 hover:bg-gray-100'
+                      }`
+                    : ''
+                }`}
+              >
+                {day && (
+                  <>
+                    <span>{day}</span>
+                    {hasEvents && !isSelected && (
+                      <div className="w-1 h-1 rounded-full bg-blue-500 mt-0.5" />
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Events List */}
       <div className="flex-1 overflow-y-auto p-4">
+        <div className="mb-3 pb-3 border-b border-gray-200">
+          {selectedDay ? (
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium text-gray-700">
+                {selectedDay} {months[currentMonth]} {selectedYear}
+              </div>
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="text-xs text-blue-600 hover:text-blue-700"
+              >
+                {t('editor:calendarSidebar.showAll')}
+              </button>
+            </div>
+          ) : (
+            <div className="text-sm font-medium text-gray-700">
+              {t('editor:calendarSidebar.activitiesCount', { count: events.length })}
+            </div>
+          )}
+        </div>
         {events.length > 0 ? (
           <div className="space-y-3">
             {events.map(event => {
@@ -241,7 +308,10 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
           </div>
         ) : (
           <div className="text-center text-sm text-gray-400 py-8">
-            {t('editor:calendarSidebar.noActivitiesThisMonth')}
+            {selectedDay 
+              ? t('editor:calendarSidebar.noActivitiesThisDay')
+              : t('editor:calendarSidebar.noActivitiesThisMonth')
+            }
           </div>
         )}
       </div>

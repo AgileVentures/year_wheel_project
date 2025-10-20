@@ -227,7 +227,11 @@
     },
     "zoomInMonth": "Zooma in månad",
     "edit": "Redigera",
-    "noActivitiesThisMonth": "Inga aktiviteter denna månad"
+    "noActivitiesThisMonth": "Inga aktiviteter denna månad",
+    "noActivitiesThisDay": "Inga aktiviteter denna dag",
+    "showAll": "Visa alla",
+    "activitiesCount_one": "{{count}} aktivitet denna månad",
+    "activitiesCount_other": "{{count}} aktiviteter denna månad"
   },
   "editorPanel": {
     "general": "Allmänt",
