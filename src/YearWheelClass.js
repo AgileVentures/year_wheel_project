@@ -457,7 +457,7 @@ class YearWheel {
 
   // Assign activities to non-overlapping tracks using greedy interval scheduling
   assignActivitiesToTracks(items) {
-    if (items.length === 0) return { tracks: [], maxTracks: 0 };
+    if (items.length === 0) return { tracks: [], maxTracks: 0, itemToTrack: new Map() };
 
     // Sort items by start date
     const sortedItems = [...items].sort((a, b) => 
