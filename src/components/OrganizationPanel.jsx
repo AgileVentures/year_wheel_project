@@ -916,7 +916,7 @@ function OrganizationPanel({
                             onClick={async () => {
                               const confirmed = await showConfirmDialog({
                                 title: t('editor:activities.deleteTitle', { defaultValue: 'Radera aktivitet' }),
-                                message: t('editor:activities.confirmDelete', { name: item.name }),
+                                message: t('editor:activities.deleteConfirmMessage', { name: item.name }),
                                 confirmText: t('common:actions.delete', { defaultValue: 'Radera' }),
                                 cancelText: t('common:actions.cancel', { defaultValue: 'Avbryt' }),
                                 confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'

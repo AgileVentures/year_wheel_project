@@ -43,7 +43,9 @@
     "addActivity": "Lägg till aktivitet",
     "edit": "Redigera aktivitet",
     "delete": "Radera aktivitet",
+    "deleteTitle": "Radera aktivitet",
     "confirmDelete": "Radera \"{{name}}\"?",
+    "deleteConfirmMessage": "Är du säker på att du vill radera \"{{name}}\"? Denna åtgärd kan inte ångras.",
     "none": "Inga aktiviteter ännu",
     "empty": "Inga aktiviteter ännu",
     "noSearchResults": "Inga aktiviteter matchar din sökning",
@@ -112,7 +114,10 @@
     "dragToMove": "Dra för att flytta",
     "edit": "Redigera",
     "delete": "Radera",
-    "deleteConfirm": "Radera \"{name}\"?"
+    "deleteTitle": "Radera aktivitet",
+    "deleteConfirm": "Är du säker på att du vill radera \"{{name}}\"? Denna åtgärd kan inte ångras.",
+    "deleteButton": "Radera",
+    "cancel": "Avbryt"
   },
   "editActivityModal": {
     "title": "Redigera aktivitet",

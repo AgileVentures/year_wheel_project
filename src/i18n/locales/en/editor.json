@@ -43,7 +43,9 @@
     "addActivity": "Add activity",
     "edit": "Edit activity",
     "delete": "Delete activity",
+    "deleteTitle": "Delete activity",
     "confirmDelete": "Delete \"{{name}}\"?",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "none": "No activities yet",
     "empty": "No activities yet",
     "noSearchResults": "No activities match your search",
@@ -112,7 +114,10 @@
     "dragToMove": "Drag to move",
     "edit": "Edit",
     "delete": "Delete",
-    "deleteConfirm": "Delete \"{name}\"?"
+    "deleteTitle": "Delete activity",
+    "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "deleteButton": "Delete",
+    "cancel": "Cancel"
   },
   "editActivityModal": {
     "title": "Edit activity",
