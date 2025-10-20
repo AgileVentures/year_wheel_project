@@ -550,6 +550,7 @@ class YearWheel {
     // Get angle of click relative to center
     const dx = x - this.center.x;
     const dy = y - this.center.y;
+    const clickRadius = Math.sqrt(dx * dx + dy * dy);
     let clickAngle = Math.atan2(dy, dx);
     
     // Account for rotation
@@ -559,23 +560,56 @@ class YearWheel {
     while (clickAngle < 0) clickAngle += Math.PI * 2;
     while (clickAngle >= Math.PI * 2) clickAngle -= Math.PI * 2;
     
-    const startAngle = itemRegion.startAngle;
-    const endAngle = itemRegion.endAngle;
-    const angleSpan = endAngle - startAngle;
+    let startAngle = itemRegion.startAngle;
+    let endAngle = itemRegion.endAngle;
     
-    // Calculate relative position within activity (0 to 1)
+    // Normalize item angles
+    while (startAngle < 0) startAngle += Math.PI * 2;
+    while (startAngle >= Math.PI * 2) startAngle -= Math.PI * 2;
+    while (endAngle < 0) endAngle += Math.PI * 2;
+    while (endAngle >= Math.PI * 2) endAngle -= Math.PI * 2;
+    
+    // Calculate angle span, handling wraparound
+    let angleSpan = endAngle - startAngle;
+    if (angleSpan < 0) angleSpan += Math.PI * 2;
+    
+    // Calculate relative position within activity
     let relativeAngle = clickAngle - startAngle;
     if (relativeAngle < 0) relativeAngle += Math.PI * 2;
-    const relativePosition = relativeAngle / angleSpan;
     
-    // Zones: left 10%, middle 80%, right 10%
-    if (relativePosition < 0.1) {
-      return 'resize-start';
-    } else if (relativePosition > 0.9) {
-      return 'resize-end';
-    } else {
-      return 'move';
+    // Handle wraparound case: if relativeAngle is larger than angleSpan,
+    // the click is actually outside this activity (wraparound confusion)
+    if (relativeAngle > angleSpan) {
+      // Click is outside the activity, shouldn't happen but handle gracefully
+      relativeAngle = angleSpan / 2; // Default to middle
     }
+    
+    // Use PIXEL-based detection for resize zones
+    // Calculate the arc length at the middle of the activity's radius
+    const avgRadius = (itemRegion.startRadius + itemRegion.endRadius) / 2;
+    const totalArcLength = angleSpan * avgRadius; // Arc length in pixels
+    const currentArcPosition = relativeAngle * avgRadius; // Position along arc in pixels
+    
+    // Resize zones: 15 pixels from each edge (more forgiving than 10px)
+    const resizeZonePixels = 15;
+    const minActivityAngle = this.toRadians(7); // Minimum 7° (1 week)
+    
+    let zone;
+    
+    if (angleSpan < minActivityAngle) {
+      // Activity too small - only allow move
+      zone = 'move';
+    } else if (currentArcPosition < resizeZonePixels) {
+      // Within 15 pixels from start edge
+      zone = 'resize-start';
+    } else if ((totalArcLength - currentArcPosition) < resizeZonePixels) {
+      // Within 15 pixels from end edge
+      zone = 'resize-end';
+    } else {
+      zone = 'move';
+    }
+    
+    return zone;
   }
 
   // Calculate text color based on background luminance for better contrast
@@ -3198,25 +3232,47 @@ class YearWheel {
         const dragMode = this.detectDragZone(x, y, itemRegion);
         const freshItem = this.organizationData.items.find(i => i.id === itemRegion.item.id);
         
+        // Calculate mouse angle at drag start in SCREEN coordinates
+        // We'll draw the preview in rotated context, so use raw screen angle
+        const dx = x - this.center.x;
+        const dy = y - this.center.y;
+        let startMouseAngle = Math.atan2(dy, dx);
+        
+        // Normalize to 0-2π
+        while (startMouseAngle < 0) startMouseAngle += Math.PI * 2;
+        while (startMouseAngle >= Math.PI * 2) startMouseAngle -= Math.PI * 2;
+        
+        // Convert stored angles (non-rotated) to screen angles (rotated) for preview
+        const screenStartAngle = itemRegion.startAngle + this.rotationAngle;
+        const screenEndAngle = itemRegion.endAngle + this.rotationAngle;
+        
         this.dragState = {
           isDragging: true,
           dragMode: dragMode,
           draggedItem: freshItem,
           draggedItemRegion: itemRegion,
-          startMouseAngle: this.getMouseAngle(event),
-          currentMouseAngle: this.getMouseAngle(event),
-          initialStartAngle: itemRegion.startAngle,
-          initialEndAngle: itemRegion.endAngle,
-          previewStartAngle: itemRegion.startAngle,
-          previewEndAngle: itemRegion.endAngle,
+          startMouseAngle: startMouseAngle,
+          currentMouseAngle: startMouseAngle,
+          initialStartAngle: screenStartAngle,  // Screen coordinates
+          initialEndAngle: screenEndAngle,      // Screen coordinates
+          previewStartAngle: screenStartAngle,  // Screen coordinates
+          previewEndAngle: screenEndAngle,      // Screen coordinates
         };
+        
+        // Notify parent that drag has started (for undo/redo batch mode)
+        if (this.onDragStart) {
+          this.onDragStart();
+        }
         
         // Set cursor based on drag mode
         if (dragMode === 'resize-start' || dragMode === 'resize-end') {
           this.canvas.style.cursor = 'ew-resize';
         } else {
-          this.canvas.style.cursor = 'move';
+          this.canvas.style.cursor = 'grabbing'; // Use grabbing cursor for better UX
         }
+        
+        // Immediate visual feedback - redraw with drag state active
+        this.create();
         
         return; // Don't start wheel rotation
       }
@@ -3226,6 +3282,7 @@ class YearWheel {
     this.isDragging = true;
     this.lastMouseAngle = this.getMouseAngle(event);
     this.dragStartAngle = this.rotationAngle;
+    this.canvas.style.cursor = 'grabbing'; // Show grabbing cursor during wheel rotation
   }
 
   drag(event) {
@@ -3245,63 +3302,93 @@ class YearWheel {
   dragActivity(event) {
     if (!this.dragState.isDragging) return;
 
-    const currentMouseAngle = this.getMouseAngle(event);
-    this.dragState.currentMouseAngle = currentMouseAngle;
+    // Get current mouse position and convert to angle
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
     
-    // Calculate angle difference (this is relative to the rotated coordinate system)
-    const angleDiff = currentMouseAngle - this.dragState.startMouseAngle;
+    // Calculate mouse angle relative to center
+    // Since we now draw preview in rotated context, we DON'T subtract rotation here
+    const dx = x - this.center.x;
+    const dy = y - this.center.y;
+    const rawMouseAngle = Math.atan2(dy, dx);
     
-    // Detect target ring if in move mode (allow ring switching)
+    // DON'T subtract rotationAngle - the preview will be drawn in rotated context
+    let mouseAngle = rawMouseAngle;
+    
+    // Normalize angle to 0-2π range
+    while (mouseAngle < 0) mouseAngle += Math.PI * 2;
+    while (mouseAngle >= Math.PI * 2) mouseAngle -= Math.PI * 2;
+    
+    // Store for reference
+    this.dragState.currentMouseAngle = mouseAngle;
+    
+    // Minimum activity size (1 week)
+    const minWeekAngle = this.toRadians((7 / 365) * 360);
+    
+    // Update preview angles based on drag mode
     if (this.dragState.dragMode === 'move') {
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      const x = (event.clientX - rect.left) * scaleX;
-      const y = (event.clientY - rect.top) * scaleY;
-      
+      // Detect target ring for ring switching
       const targetRingInfo = this.detectTargetRing(x, y);
       this.dragState.targetRingInfo = targetRingInfo;
       this.dragState.targetRing = targetRingInfo ? targetRingInfo.ring : null;
-    }
-    
-    // Update preview angles based on drag mode - NO CLAMPING during drag for smooth UX
-    if (this.dragState.dragMode === 'move') {
-      // Move entire activity - follow mouse freely
-      this.dragState.previewStartAngle = this.dragState.initialStartAngle + angleDiff;
-      this.dragState.previewEndAngle = this.dragState.initialEndAngle + angleDiff;
-    } else if (this.dragState.dragMode === 'resize-start') {
-      // Resize start (left edge) - keep end fixed
-      const newStartAngle = this.dragState.initialStartAngle + angleDiff;
-      const minWeekAngle = this.toRadians((7 / 365) * 360); // 1 week minimum
       
-      // Keep end angle fixed at initial position
+      // Calculate the angle difference from start to current mouse position
+      // DON'T normalize to shortest path - we want to follow the actual drag direction
+      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
+      
+      // Apply the delta directly to both start and end angles
+      this.dragState.previewStartAngle = this.dragState.initialStartAngle + angleDelta;
+      this.dragState.previewEndAngle = this.dragState.initialEndAngle + angleDelta;
+      
+      // Normalize both angles to 0-2π for consistent rendering
+      while (this.dragState.previewStartAngle < 0) this.dragState.previewStartAngle += Math.PI * 2;
+      while (this.dragState.previewStartAngle >= Math.PI * 2) this.dragState.previewStartAngle -= Math.PI * 2;
+      while (this.dragState.previewEndAngle < 0) this.dragState.previewEndAngle += Math.PI * 2;
+      while (this.dragState.previewEndAngle >= Math.PI * 2) this.dragState.previewEndAngle -= Math.PI * 2;
+    } else if (this.dragState.dragMode === 'resize-start') {
+      // Resize start - calculate delta and apply to start angle only
+      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
+      let newStartAngle = this.dragState.initialStartAngle + angleDelta;
+      
+      // Normalize
+      while (newStartAngle < 0) newStartAngle += Math.PI * 2;
+      while (newStartAngle >= Math.PI * 2) newStartAngle -= Math.PI * 2;
+      
+      // Keep end fixed
       this.dragState.previewEndAngle = this.dragState.initialEndAngle;
       
-      // Don't allow start to go past end (maintain minimum width)
-      if (newStartAngle < this.dragState.initialEndAngle - minWeekAngle) {
+      // Calculate span and enforce minimum
+      let span = this.dragState.previewEndAngle - newStartAngle;
+      if (span < 0) span += Math.PI * 2;
+      
+      if (span >= minWeekAngle) {
         this.dragState.previewStartAngle = newStartAngle;
-      } else {
-        // Clamp to minimum width
-        this.dragState.previewStartAngle = this.dragState.initialEndAngle - minWeekAngle;
       }
     } else if (this.dragState.dragMode === 'resize-end') {
-      // Resize end (right edge) - keep start fixed
-      const newEndAngle = this.dragState.initialEndAngle + angleDiff;
-      const minWeekAngle = this.toRadians((7 / 365) * 360); // 1 week minimum
+      // Resize end - calculate delta and apply to end angle only
+      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
+      let newEndAngle = this.dragState.initialEndAngle + angleDelta;
       
-      // Keep start angle fixed at initial position
+      // Normalize
+      while (newEndAngle < 0) newEndAngle += Math.PI * 2;
+      while (newEndAngle >= Math.PI * 2) newEndAngle -= Math.PI * 2;
+      
+      // Keep start fixed
       this.dragState.previewStartAngle = this.dragState.initialStartAngle;
       
-      // Don't allow end to go before start (maintain minimum width)
-      if (newEndAngle > this.dragState.initialStartAngle + minWeekAngle) {
+      // Calculate span and enforce minimum
+      let span = newEndAngle - this.dragState.previewStartAngle;
+      if (span < 0) span += Math.PI * 2;
+      
+      if (span >= minWeekAngle) {
         this.dragState.previewEndAngle = newEndAngle;
-      } else {
-        // Clamp to minimum width
-        this.dragState.previewEndAngle = this.dragState.initialStartAngle + minWeekAngle;
       }
     }
     
-    // Redraw with preview immediately for responsive dragging
+    // Redraw with new preview position
     this.create();
   }
 
@@ -3320,9 +3407,19 @@ class YearWheel {
   stopActivityDrag() {
     if (!this.dragState.isDragging) return;
 
-    // Convert preview angles to dates
-    let newStartDate = this.angleToDate(this.toDegrees(this.dragState.previewStartAngle));
-    let newEndDate = this.angleToDate(this.toDegrees(this.dragState.previewEndAngle));
+    // Convert screen angles back to logical angles by subtracting rotation
+    let logicalStartAngle = this.dragState.previewStartAngle - this.rotationAngle;
+    let logicalEndAngle = this.dragState.previewEndAngle - this.rotationAngle;
+    
+    // Normalize logical angles
+    while (logicalStartAngle < 0) logicalStartAngle += Math.PI * 2;
+    while (logicalStartAngle >= Math.PI * 2) logicalStartAngle -= Math.PI * 2;
+    while (logicalEndAngle < 0) logicalEndAngle += Math.PI * 2;
+    while (logicalEndAngle >= Math.PI * 2) logicalEndAngle -= Math.PI * 2;
+    
+    // Convert logical angles to dates
+    let newStartDate = this.angleToDate(this.toDegrees(logicalStartAngle));
+    let newEndDate = this.angleToDate(this.toDegrees(logicalEndAngle));
     
     // Clamp dates to current year (Jan 1 - Dec 31)
     const yearStart = new Date(this.year, 0, 1);
@@ -3564,11 +3661,16 @@ class YearWheel {
     this.drawRotatingElements();
     // Draw static elements (title and year)
     this.drawStaticElements();
-    // Draw drag preview if dragging
-    this.drawDragPreview();
+    // Drag preview is now drawn inside drawRotatingElements()
   }
 
   drawDragPreview() {
+    // This function is kept for compatibility but does nothing
+    // Preview is now drawn inside drawRotatingElements() via drawDragPreviewInRotatedContext()
+  }
+
+  // Draw drag preview in the already-rotated context
+  drawDragPreviewInRotatedContext() {
     if (!this.dragState.isDragging || !this.dragState.draggedItemRegion) return;
 
     const region = this.dragState.draggedItemRegion;
@@ -3578,66 +3680,65 @@ class YearWheel {
     const activityGroup = this.organizationData.activityGroups.find(a => a.id === item.activityId);
     const itemColor = activityGroup ? activityGroup.color : '#B8D4E8';
     
-    // Draw semi-transparent preview
-    this.context.save();
-    this.context.globalAlpha = 0.5;
-    
-    // Clip preview angles to year boundaries for visual display
-    // Year boundaries in angles (initAngle offset already applied)
-    const yearStartAngle = this.toRadians(this.initAngle); // January 1st
-    const yearEndAngle = this.toRadians(this.initAngle + 360); // December 31st
-    
+    // Get preview angles
     let startAngle = this.dragState.previewStartAngle;
     let endAngle = this.dragState.previewEndAngle;
     
-    // Clip to year boundaries for visual display only
-    if (startAngle < yearStartAngle) startAngle = yearStartAngle;
-    if (endAngle > yearEndAngle) endAngle = yearEndAngle;
+    // Normalize angles to 0-2π
+    while (startAngle < 0) startAngle += Math.PI * 2;
+    while (startAngle >= Math.PI * 2) startAngle -= Math.PI * 2;
+    while (endAngle < 0) endAngle += Math.PI * 2;
+    while (endAngle >= Math.PI * 2) endAngle -= Math.PI * 2;
     
-    // Only draw if there's visible range within the year
-    if (startAngle < yearEndAngle && endAngle > yearStartAngle) {
-      // Use target ring radius if dragging to a different ring, otherwise use original
-      let startRadius = region.startRadius;
-      let endRadius = region.endRadius;
-      
-      if (this.dragState.targetRingInfo && this.dragState.targetRing) {
-        // Show preview in target ring location
-        startRadius = this.dragState.targetRingInfo.startRadius;
-        endRadius = this.dragState.targetRingInfo.endRadius;
-      }
-      
-      // Draw preview arc
-      this.context.beginPath();
-      this.context.arc(this.center.x, this.center.y, startRadius, startAngle, endAngle, false);
-      this.context.arc(this.center.x, this.center.y, endRadius, endAngle, startAngle, true);
-      this.context.closePath();
-      this.context.fillStyle = itemColor;
-      this.context.fill();
-      
-      // Draw dashed border to indicate preview
-      this.context.globalAlpha = 0.8;
-      this.context.strokeStyle = '#3B82F6'; // Blue border
-      this.context.lineWidth = 2;
-      this.context.setLineDash([5, 5]);
-      this.context.stroke();
-      this.context.setLineDash([]);
-      
-      // If dragging to a different ring, highlight the target ring
-      if (this.dragState.targetRing && this.dragState.targetRing.id !== this.dragState.draggedItem.ringId) {
-        this.context.globalAlpha = 0.3;
-        this.context.strokeStyle = '#10B981'; // Green to indicate valid drop zone
-        this.context.lineWidth = 3;
-        this.context.setLineDash([]);
-        
-        // Draw ring outline
-        this.context.beginPath();
-        this.context.arc(this.center.x, this.center.y, startRadius, 0, Math.PI * 2);
-        this.context.stroke();
-        this.context.beginPath();
-        this.context.arc(this.center.x, this.center.y, endRadius, 0, Math.PI * 2);
-        this.context.stroke();
+    // Calculate span - handle wraparound
+    let angleSpan = endAngle - startAngle;
+    if (angleSpan < 0) {
+      angleSpan += Math.PI * 2;
+    }
+    
+    // Validate angle span
+    if (angleSpan > Math.PI * 1.95 || angleSpan < 0.01) {
+      return;
+    }
+    
+    // Ensure endAngle is properly set for drawing
+    if (endAngle < startAngle) {
+      endAngle = startAngle + angleSpan;
+    }
+    
+    // Use the item's actual dimensions
+    let startRadius = region.startRadius;
+    let endRadius = region.endRadius;
+    const itemWidth = endRadius - startRadius;
+    
+    // If switching to a different ring, use the STORED rendered position
+    if (this.dragState.targetRing && this.dragState.targetRing.id !== item.ringId) {
+      const targetRingPosition = this.renderedRingPositions.get(this.dragState.targetRing.id);
+      if (targetRingPosition) {
+        // Use the target ring's position
+        startRadius = targetRingPosition.startRadius;
+        endRadius = startRadius + itemWidth;
       }
     }
+    
+    // Draw preview (we're already in the rotated context - no transform needed!)
+    this.context.save();
+    this.context.globalAlpha = 0.6;
+    
+    this.context.beginPath();
+    this.context.arc(this.center.x, this.center.y, startRadius, startAngle, endAngle, false);
+    this.context.arc(this.center.x, this.center.y, endRadius, endAngle, startAngle, true);
+    this.context.closePath();
+    this.context.fillStyle = itemColor;
+    this.context.fill();
+    
+    // Dashed border
+    this.context.globalAlpha = 0.9;
+    this.context.strokeStyle = '#3B82F6';
+    this.context.lineWidth = 2;
+    this.context.setLineDash([5, 5]);
+    this.context.stroke();
+    this.context.setLineDash([]);
     
     this.context.restore();
   }
@@ -3832,6 +3933,8 @@ class YearWheel {
     // Clear clickable items and labels to draw before redrawing
     this.clickableItems = [];
     this.labelsToDraw = [];
+    // Store actual rendered ring positions for accurate drag target detection
+    this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
     
     this.context.save();
     this.context.translate(this.center.x, this.center.y);
@@ -3912,6 +4015,13 @@ class YearWheel {
           currentRadius -= outerRingTotalHeight; // Reserve space for whole ring
           const ringStartRadius = currentRadius;
           
+          // Store the ACTUAL rendered position for this ring
+          this.renderedRingPositions.set(ring.id, {
+            startRadius: ringStartRadius,
+            endRadius: ringStartRadius + outerRingContentHeight,
+            type: 'outer'
+          });
+          
           // Filter items for this ring that also have visible activity group (label is optional)
           const ringItems = this.organizationData.items.filter(item => {
             const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
@@ -3989,6 +4099,11 @@ class YearWheel {
           this.context.closePath();
           
           ringItems.forEach((item) => {
+            // Skip the item being dragged - it will be drawn as a preview instead
+            if (this.dragState.isDragging && this.dragState.draggedItem && item.id === this.dragState.draggedItem.id) {
+              return;
+            }
+            
             let itemStartDate = new Date(item.startDate);
             let itemEndDate = new Date(item.endDate);
             
@@ -4168,6 +4283,13 @@ class YearWheel {
       // Each ring has two parts: content area (for activities) + name band
       const ringContentHeight = contentAreaHeight;
       
+      // Store the ACTUAL rendered position for this ring
+      this.renderedRingPositions.set(ring.id, {
+        startRadius: eventRadius,
+        endRadius: eventRadius + ringContentHeight,
+        type: 'inner'
+      });
+      
       // Get items for this ring
       const ringItems = this.organizationData.items.filter(item => {
         const hasVisibleActivityGroup = visibleActivityGroups.some(a => a.id === item.activityId);
@@ -4222,6 +4344,11 @@ class YearWheel {
         });
         
         ringItems.forEach((item) => {
+          // Skip the item being dragged - it will be drawn as a preview instead
+          if (this.dragState.isDragging && this.dragState.draggedItem && item.id === this.dragState.draggedItem.id) {
+            return;
+          }
+          
           let itemStartDate = new Date(item.startDate);
           let itemEndDate = new Date(item.endDate);
           
@@ -4463,6 +4590,9 @@ class YearWheel {
       // Clear the array for next render
       this.innerRingNamesToDraw = [];
     }
+
+    // Draw drag preview INSIDE the rotated context
+    this.drawDragPreviewInRotatedContext();
 
     this.context.restore();
   }
