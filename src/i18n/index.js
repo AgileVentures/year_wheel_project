@@ -14,6 +14,7 @@ import svIntegration from './locales/sv/integration.json';
 import svComparison from './locales/sv/comparison.json';
 import svAdmin from './locales/sv/admin.json';
 import svExport from './locales/sv/export.json';
+import svSupport from './locales/sv/support.json';
 
 // Import English translations
 import enCommon from './locales/en/common.json';
@@ -27,6 +28,7 @@ import enIntegration from './locales/en/integration.json';
 import enComparison from './locales/en/comparison.json';
 import enAdmin from './locales/en/admin.json';
 import enExport from './locales/en/export.json';
+import enSupport from './locales/en/support.json';
 
 i18n
   .use(LanguageDetector)
@@ -45,6 +47,7 @@ i18n
         comparison: svComparison,
         admin: svAdmin,
         export: svExport,
+        support: svSupport,
       },
       en: {
         common: enCommon,
@@ -58,6 +61,7 @@ i18n
         comparison: enComparison,
         admin: enAdmin,
         export: enExport,
+        support: enSupport,
       },
     },
     lng: 'sv', // Default language
