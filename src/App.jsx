@@ -725,6 +725,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       setTimeout(() => {
         isInitialLoad.current = false;
       }, 500);
+      
+      // Check if this is a first-time user (no onboarding completed flag)
+      const hasCompletedOnboarding = localStorage.getItem('yearwheel_onboarding_completed');
+      if (!hasCompletedOnboarding) {
+        // Show onboarding for all first-time users (database wheels)
+        setTimeout(() => setShowOnboarding(true), 1500); // Delay to let UI render (1.5s after load)
+      }
     });
     
     // NO CLEANUP - we don't want to reset state on reload
