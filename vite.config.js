@@ -109,6 +109,32 @@ export default defineConfig({
             return 'd3';
           }
           
+          // Recharts and its dependencies (large chart library)
+          if (id.includes('node_modules/recharts')) {
+            return 'recharts';
+          }
+          if (id.includes('node_modules/react-redux') || id.includes('node_modules/@reduxjs/toolkit')) {
+            return 'redux';
+          }
+          if (id.includes('node_modules/victory-') || id.includes('node_modules/d3-')) {
+            return 'chart-utils';
+          }
+          
+          // OpenAI/AI SDK (potentially large)
+          if (id.includes('node_modules/openai') || id.includes('node_modules/@openai')) {
+            return 'openai';
+          }
+          
+          // Zod validation library
+          if (id.includes('node_modules/zod')) {
+            return 'zod';
+          }
+          
+          // XLSX (Excel library - large)
+          if (id.includes('node_modules/xlsx')) {
+            return 'xlsx';
+          }
+          
           // Utility libraries
           if (id.includes('node_modules/immer') || id.includes('node_modules/fuse.js')) {
             return 'utilities';
@@ -142,8 +168,8 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
-    // Increase chunk size warning limit
-    chunkSizeWarningLimit: 600,
+    // Increase chunk size warning limit (recharts is large but lazy loaded)
+    chunkSizeWarningLimit: 1000,
     // Disable source maps in production for smaller bundles
     sourcemap: false,
     // Use terser for better minification
@@ -176,7 +202,11 @@ export default defineConfig({
       'react-i18next',
       'i18next',
     ],
-    exclude: ['jspdf'], // Lazy loaded, don't pre-bundle
+    exclude: [
+      'jspdf', // Lazy loaded, don't pre-bundle
+      'xlsx', // Lazy loaded for Excel export
+      'recharts', // Lazy loaded on forecast page
+    ],
   },
   // Enable advanced tree-shaking
   esbuild: {
