@@ -37,6 +37,14 @@ const optimizeCSSPlugin = () => {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), optimizeCSSPlugin()],
+  resolve: {
+    alias: {
+      // Ensure single React instance
+      'react': path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+    },
+    dedupe: ['react', 'react-dom'],
+  },
   build: {
     // Optimize chunk splitting for better performance
     rollupOptions: {
