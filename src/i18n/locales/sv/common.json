@@ -8,6 +8,7 @@
     "remove": "Ta bort",
     "close": "Stäng",
     "back": "Tillbaka",
+    "backToHome": "Tillbaka till start",
     "update": "Uppdatera",
     "create": "Skapa",
     "search": "Sök",
@@ -25,7 +26,9 @@
     "more": "Mer alternativ",
     "next": "Nästa",
     "previous": "Föregående",
-    "done": "Klart"
+    "done": "Klart",
+    "showAll": "Visa alla",
+    "hideAll": "Dölj alla"
   },
   "labels": {
     "name": "Namn",

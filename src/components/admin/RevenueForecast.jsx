@@ -378,7 +378,7 @@ export default function RevenueForecast() {
               onMouseLeave={() => setShowTooltip(false)}
             />
             {showTooltip && (
-              <div className="absolute left-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-3 z-50">
+              <div className="absolute left-0 top-6 w-64 bg-gray-900 text-white text-xs rounded-sm shadow-lg p-3 z-50">
                 <div className="font-semibold mb-1">CAC inkluderar:</div>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Marknadsföringskostnader (annonser, SEO, content)</li>

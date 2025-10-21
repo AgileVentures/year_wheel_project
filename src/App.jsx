@@ -22,6 +22,7 @@ const InviteAcceptPage = lazy(() => import("./components/InviteAcceptPage"));
 const PreviewWheelPage = lazy(() => import("./components/PreviewWheelPage"));
 const PricingPage = lazy(() => import("./components/PricingPage"));
 const LegalPage = lazy(() => import("./components/LegalPage"));
+const SupportPage = lazy(() => import("./components/SupportPage"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
 
@@ -2460,6 +2461,7 @@ function AppContent() {
         <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
         <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/support" element={<SupportPage />} />
         <Route path="/legal/:document" element={<LegalPage />} />
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />

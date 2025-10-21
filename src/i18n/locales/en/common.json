@@ -8,6 +8,7 @@
     "remove": "Remove",
     "close": "Close",
     "back": "Back",
+    "backToHome": "Back to home",
     "update": "Update",
     "create": "Create",
     "search": "Search",
@@ -25,7 +26,9 @@
     "more": "More options",
     "next": "Next",
     "previous": "Previous",
-    "done": "Done"
+    "done": "Done",
+    "showAll": "Show all",
+    "hideAll": "Hide all"
   },
   "labels": {
     "name": "Name",

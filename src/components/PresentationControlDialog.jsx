@@ -202,7 +202,7 @@ function PresentationControlDialog({
   return (
     <div
       ref={dialogRef}
-      className="fixed bg-white rounded-lg shadow-2xl border-2 border-gray-300 z-50"
+      className="fixed bg-white rounded-sm shadow-2xl border-2 border-gray-300 z-50"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
