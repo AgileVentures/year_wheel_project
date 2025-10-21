@@ -149,47 +149,44 @@ function PresentationControlDialog({
   const handleDragOver = (e, item, type) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (draggedItem && draggedItem.type === type) {
+    
+    // Allow drag over if both are rings (inner or outer)
+    if (draggedItem && 
+        (draggedItem.type === 'innerRing' || draggedItem.type === 'outerRing') &&
+        (type === 'innerRing' || type === 'outerRing')) {
       setDragOverItem({ item, type });
     }
   };
 
   const handleDragEnd = () => {
-    if (draggedItem && dragOverItem && draggedItem.type === dragOverItem.type) {
-      const type = draggedItem.type;
+    if (draggedItem && dragOverItem) {
+      const draggedType = draggedItem.type;
+      const targetType = dragOverItem.type;
       
-      if (type === 'innerRing' || type === 'outerRing') {
-        // Reorder rings
+      // Allow dragging between inner and outer rings
+      if ((draggedType === 'innerRing' || draggedType === 'outerRing') && 
+          (targetType === 'innerRing' || targetType === 'outerRing')) {
+        
         const rings = [...organizationData.rings];
-        const draggedIndex = rings.findIndex(r => r.id === draggedItem.item.id);
-        const targetIndex = rings.findIndex(r => r.id === dragOverItem.item.id);
+        const draggedRing = rings.find(r => r.id === draggedItem.item.id);
+        const targetRing = rings.find(r => r.id === dragOverItem.item.id);
         
-        if (draggedIndex !== -1 && targetIndex !== -1) {
-          const [removed] = rings.splice(draggedIndex, 1);
-          rings.splice(targetIndex, 0, removed);
-          onOrganizationChange({ ...organizationData, rings });
-        }
-      } else if (type === 'activityGroup') {
-        // Reorder activity groups
-        const groups = [...(organizationData.activityGroups || [])];
-        const draggedIndex = groups.findIndex(g => g.id === draggedItem.item.id);
-        const targetIndex = groups.findIndex(g => g.id === dragOverItem.item.id);
-        
-        if (draggedIndex !== -1 && targetIndex !== -1) {
-          const [removed] = groups.splice(draggedIndex, 1);
-          groups.splice(targetIndex, 0, removed);
-          onOrganizationChange({ ...organizationData, activityGroups: groups });
-        }
-      } else if (type === 'label') {
-        // Reorder labels
-        const labels = [...organizationData.labels];
-        const draggedIndex = labels.findIndex(l => l.id === draggedItem.item.id);
-        const targetIndex = labels.findIndex(l => l.id === dragOverItem.item.id);
-        
-        if (draggedIndex !== -1 && targetIndex !== -1) {
-          const [removed] = labels.splice(draggedIndex, 1);
-          labels.splice(targetIndex, 0, removed);
-          onOrganizationChange({ ...organizationData, labels });
+        if (draggedRing && targetRing) {
+          // If dragging to opposite section, change the ring type
+          if (draggedType !== targetType) {
+            const newType = targetType === 'innerRing' ? 'inner' : 'outer';
+            draggedRing.type = newType;
+          }
+          
+          // Reorder within the rings array
+          const draggedIndex = rings.findIndex(r => r.id === draggedItem.item.id);
+          const targetIndex = rings.findIndex(r => r.id === dragOverItem.item.id);
+          
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+            const [removed] = rings.splice(draggedIndex, 1);
+            rings.splice(targetIndex, 0, removed);
+            onOrganizationChange({ ...organizationData, rings });
+          }
         }
       }
     }
@@ -271,7 +268,8 @@ function PresentationControlDialog({
               {expandedSections.innerRings && (
                 <div className="border-t border-gray-200 p-1 space-y-0.5">
                   {innerRings.map(ring => {
-                    const isDraggedOver = dragOverItem?.item.id === ring.id && dragOverItem?.type === 'innerRing';
+                    const isDraggedOver = dragOverItem?.item.id === ring.id && 
+                                         (dragOverItem?.type === 'innerRing' || dragOverItem?.type === 'outerRing');
                     return (
                       <div
                         key={ring.id}
@@ -337,7 +335,8 @@ function PresentationControlDialog({
               {expandedSections.outerRings && (
                 <div className="border-t border-gray-200 p-1 space-y-0.5">
                   {outerRings.map(ring => {
-                    const isDraggedOver = dragOverItem?.item.id === ring.id && dragOverItem?.type === 'outerRing';
+                    const isDraggedOver = dragOverItem?.item.id === ring.id && 
+                                         (dragOverItem?.type === 'innerRing' || dragOverItem?.type === 'outerRing');
                     return (
                       <div
                         key={ring.id}
@@ -402,39 +401,28 @@ function PresentationControlDialog({
               
               {expandedSections.activityGroups && (
                 <div className="border-t border-gray-200 p-1 space-y-0.5">
-                  {organizationData.activityGroups.map(group => {
-                    const isDraggedOver = dragOverItem?.item.id === group.id && dragOverItem?.type === 'activityGroup';
-                    return (
-                      <div
-                        key={group.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, group, 'activityGroup')}
-                        onDragOver={(e) => handleDragOver(e, group, 'activityGroup')}
-                        onDragEnd={handleDragEnd}
-                        onDragLeave={handleDragLeave}
-                        className={`no-drag flex items-center justify-between p-1.5 hover:bg-gray-50 rounded transition-colors cursor-move ${
-                          isDraggedOver ? 'bg-blue-50 border-2 border-blue-300' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                          <GripVertical size={12} className="text-gray-400 flex-shrink-0" />
-                          <input
-                            type="checkbox"
-                            checked={group.visible}
-                            onChange={() => toggleActivityGroup(group.id)}
-                            className="no-drag flex-shrink-0"
-                            style={{ width: '14px', height: '14px' }}
-                          />
-                          <div
-                            className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-                            style={{ backgroundColor: group.color }}
-                          />
-                          <span className="text-xs truncate">{group.name}</span>
-                          <span className="text-xs text-gray-400 flex-shrink-0">({countActivityGroupItems(group.id)})</span>
-                        </div>
+                  {organizationData.activityGroups.map(group => (
+                    <div
+                      key={group.id}
+                      className="no-drag flex items-center justify-between p-1.5 hover:bg-gray-50 rounded transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={group.visible}
+                          onChange={() => toggleActivityGroup(group.id)}
+                          className="no-drag flex-shrink-0"
+                          style={{ width: '14px', height: '14px' }}
+                        />
+                        <div
+                          className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                          style={{ backgroundColor: group.color }}
+                        />
+                        <span className="text-xs truncate">{group.name}</span>
+                        <span className="text-xs text-gray-400 flex-shrink-0">({countActivityGroupItems(group.id)})</span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -472,39 +460,28 @@ function PresentationControlDialog({
               
               {expandedSections.labels && (
                 <div className="border-t border-gray-200 p-1 space-y-0.5">
-                  {organizationData.labels.map(label => {
-                    const isDraggedOver = dragOverItem?.item.id === label.id && dragOverItem?.type === 'label';
-                    return (
-                      <div
-                        key={label.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, label, 'label')}
-                        onDragOver={(e) => handleDragOver(e, label, 'label')}
-                        onDragEnd={handleDragEnd}
-                        onDragLeave={handleDragLeave}
-                        className={`no-drag flex items-center justify-between p-1.5 hover:bg-gray-50 rounded transition-colors cursor-move ${
-                          isDraggedOver ? 'bg-blue-50 border-2 border-blue-300' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                          <GripVertical size={12} className="text-gray-400 flex-shrink-0" />
-                          <input
-                            type="checkbox"
-                            checked={label.visible}
-                            onChange={() => toggleLabel(label.id)}
-                            className="no-drag flex-shrink-0"
-                            style={{ width: '14px', height: '14px' }}
-                          />
-                          <div
-                            className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
-                            style={{ backgroundColor: label.color }}
-                          />
-                          <span className="text-xs truncate">{label.name}</span>
-                          <span className="text-xs text-gray-400 flex-shrink-0">({countLabelItems(label.id)})</span>
-                        </div>
+                  {organizationData.labels.map(label => (
+                    <div
+                      key={label.id}
+                      className="no-drag flex items-center justify-between p-1.5 hover:bg-gray-50 rounded transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={label.visible}
+                          onChange={() => toggleLabel(label.id)}
+                          className="no-drag flex-shrink-0"
+                          style={{ width: '14px', height: '14px' }}
+                        />
+                        <div
+                          className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                          style={{ backgroundColor: label.color }}
+                        />
+                        <span className="text-xs truncate">{label.name}</span>
+                        <span className="text-xs text-gray-400 flex-shrink-0">({countLabelItems(label.id)})</span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
