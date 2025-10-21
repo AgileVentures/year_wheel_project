@@ -88,7 +88,7 @@ You have the right to:
 - **Restriction**: Restrict processing of your data
 - **Withdraw Consent**: At any time
 
-To exercise your rights, contact us at: privacy@yearwheel.app
+To exercise your rights, contact us at: hey@communitaslabs.io
 
 ## 8. International Data Transfers
 
@@ -121,9 +121,8 @@ We may update this policy from time to time. For significant changes:
 
 For privacy questions or concerns about this policy:
 
-**Email**: privacy@yearwheel.app  
-**Postal Address**: CommunitasLabs Inc, [Address]  
-**Data Protection Officer**: dpo@yearwheel.app
+**Email**: hey@communitaslabs.io  
+**Postal Address**: CommunitasLabs Inc, [Address]
 
 **EU Representative**: [Name and address if applicable]
 

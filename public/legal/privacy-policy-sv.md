@@ -164,7 +164,7 @@ Begränsa behandling av dina uppgifter
 **Återkalla samtycke**  
 När som helst
 
-> För att utöva dina rättigheter, kontakta oss på: **privacy@yearwheel.app**
+> För att utöva dina rättigheter, kontakta oss på: **hey@communitaslabs.io**
 
 ---
 
@@ -218,13 +218,10 @@ Vi kan uppdatera denna policy då och då. Vid väsentliga ändringar:
 För frågor om integritet eller denna policy:
 
 **E-post**  
-privacy@yearwheel.app
+hey@communitaslabs.io
 
 **Postadress**  
 CommunitasLabs Inc, [Adress]
-
-**Dataskyddsombud**  
-dpo@yearwheel.app
 
 **EU-representant**  
 [Namn och adress om tillämpligt]

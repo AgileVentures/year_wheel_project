@@ -183,9 +183,10 @@ Vår underlåtenhet att upprätthålla en rättighet utgör inte en eftergift.
 
 För frågor om dessa Villkor:
 
-**E-post**: legal@yearwheel.app  
-**Support**: support@yearwheel.app  
-**Postadress**: CommunitasLabs Inc, [Adress]
+**E-post**: hey@communitaslabs.io  
+**Support**: hey@communitaslabs.io  
+**Postadress**: CommunitasLabs Inc, 1111B S Governors Ave #26534, Dover, DE 19904, US  
+**Telefon**: +1 (302) 467-1070
 
 ---
 

@@ -183,9 +183,10 @@ Our failure to enforce a right does not constitute a waiver.
 
 For questions about these Terms:
 
-**Email**: legal@yearwheel.app  
-**Support**: support@yearwheel.app  
-**Postal Address**: CommunitasLabs Inc, [Address]
+**Email**: hey@communitaslabs.io  
+**Support**: hey@communitaslabs.io  
+**Postal Address**: CommunitasLabs Inc, 1111B S Governors Ave #26534, Dover, DE 19904, US  
+**Phone**: +1 (302) 467-1070
 
 ---
 
