@@ -134,7 +134,7 @@ function Header({
         {/* History Menu - Hidden on mobile */}
         {onUndo && onRedo && (
           <>
-            <div className="hidden md:flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1" data-onboarding="undo-redo">
               <UndoHistoryMenu
                 history={undoHistory}
                 currentIndex={currentHistoryIndex}
@@ -432,6 +432,7 @@ function Header({
           disabled={isSaving}
           className="flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
+          data-onboarding="save-button"
         >
           <Save size={14} />
           <span className="hidden sm:inline">

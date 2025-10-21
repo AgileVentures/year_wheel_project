@@ -792,8 +792,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     // Check if this is a first-time user (no onboarding completed flag)
     const hasCompletedOnboarding = localStorage.getItem('yearwheel_onboarding_completed');
-    if (!hasCompletedOnboarding && !wheelId) {
-      // Only show onboarding for local/new users, not for existing database wheels
+    if (!hasCompletedOnboarding) {
+      // Show onboarding for all first-time users (both local and database wheels)
       setTimeout(() => setShowOnboarding(true), 1000); // Delay to let UI render
     }
   }, [wheelId]);

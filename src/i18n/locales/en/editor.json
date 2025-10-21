@@ -345,9 +345,17 @@
       "title": "Add Activity",
       "description": "Create an activity by selecting a ring, dates, and activity group. The activity will appear immediately in the wheel. You can edit it later by clicking on it."
     },
+    "undoRedo": {
+      "title": "Undo & Redo",
+      "description": "Made a mistake? Use the undo button (or Ctrl/Cmd+Z) to revert changes. You can also redo with Ctrl/Cmd+Y. Click the history icon to jump to any previous state."
+    },
+    "saveButton": {
+      "title": "Save Your Work",
+      "description": "Click save to store your wheel. For database wheels, changes are automatically saved after 3 seconds of inactivity. The number shows unsaved changes."
+    },
     "exportShare": {
       "title": "Export & Share",
-      "description": "Export your wheel as PNG, JPEG, or SVG. You can also share it with others via a public link or copy it to the clipboard."
+      "description": "Export your wheel as PNG, JPEG, or SVG. You can also copy the image directly to the clipboard for quick sharing. Click the download icon to save to file."
     },
     "complete": {
       "title": "All done! You're ready!",

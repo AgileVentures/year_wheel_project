@@ -345,9 +345,17 @@
       "title": "Lägg till Aktivitet",
       "description": "Skapa en aktivitet genom att välja ring, datum och aktivitetsgrupp. Aktiviteten syns direkt i hjulet. Du kan redigera den senare genom att klicka på den."
     },
+    "undoRedo": {
+      "title": "Ångra & Gör om",
+      "description": "Gjort ett misstag? Använd ångra-knappen (eller Ctrl/Cmd+Z) för att återställa ändringar. Du kan också göra om med Ctrl/Cmd+Y. Klicka på historikikonen för att hoppa till något tidigare tillstånd."
+    },
+    "saveButton": {
+      "title": "Spara ditt arbete",
+      "description": "Klicka på spara för att lagra ditt hjul. För databashjul sparas ändringar automatiskt efter 3 sekunders inaktivitet. Siffran visar osparade ändringar."
+    },
     "exportShare": {
       "title": "Exportera & Dela",
-      "description": "Exportera ditt hjul som PNG, JPEG eller SVG. Du kan också dela det med andra via en publik länk eller kopiera till urklipp."
+      "description": "Exportera ditt hjul som PNG, JPEG eller SVG. Du kan också kopiera bilden direkt till urklipp för snabb delning. Klicka på nedladdningsikonen för att spara till fil."
     },
     "complete": {
       "title": "Klart! Nu är du redo!",

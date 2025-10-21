@@ -74,7 +74,27 @@ function EditorOnboarding({ shouldStart = false, onComplete, onSkip }) {
             align: 'center'
           }
         },
-        // Step 6: Export & Share
+        // Step 6: Undo/Redo Functionality
+        {
+          element: '[data-onboarding="undo-redo"]',
+          popover: {
+            title: t('editor:onboarding.undoRedo.title'),
+            description: t('editor:onboarding.undoRedo.description'),
+            side: 'bottom',
+            align: 'start'
+          }
+        },
+        // Step 7: Save Button
+        {
+          element: '[data-onboarding="save-button"]',
+          popover: {
+            title: t('editor:onboarding.saveButton.title'),
+            description: t('editor:onboarding.saveButton.description'),
+            side: 'bottom',
+            align: 'end'
+          }
+        },
+        // Step 8: Export & Share (Image/Copy)
         {
           element: '[data-onboarding="export-share"]',
           popover: {
@@ -84,7 +104,7 @@ function EditorOnboarding({ shouldStart = false, onComplete, onSkip }) {
             align: 'end'
           }
         },
-        // Step 7: Completion
+        // Step 9: Completion
         {
           popover: {
             title: t('editor:onboarding.complete.title'),
@@ -99,8 +119,8 @@ function EditorOnboarding({ shouldStart = false, onComplete, onSkip }) {
       doneBtnText: t('common:actions.done'),
       onDestroyed: (element, step, options) => {
         // Called when tour is closed/completed
-        if (step.index === 6) {
-          // Completed all steps
+        if (step.index === 8) {
+          // Completed all steps (updated from 6 to 8 for new steps)
           onComplete && onComplete();
         } else {
           // Skipped
