@@ -1,8 +1,34 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Line, Bar, Pie } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 import { TrendingUp, Users, DollarSign, Target, Percent, Calendar, Settings, Shield, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import LanguageSwitcher from '../LanguageSwitcher';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function RevenueForecast() {
   const navigate = useNavigate();
@@ -655,12 +681,42 @@ export default function RevenueForecast() {
               {useQuarterAverage ? 'Visar medelvärde per kvartal' : 'Visar slutvärde per kvartal'}
             </div>
           </div>
-          <div className="w-full h-[350px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <TrendingUp className="mx-auto mb-3 text-gray-400" size={48} />
-              <p className="text-gray-600 font-medium">MRR Line Chart</p>
-              <p className="text-sm text-gray-500 mt-1">Chart placeholder - coming soon</p>
-            </div>
+          <div className="h-[350px]">
+            <Line
+              data={{
+                labels: displayQuarters.map(q => q.quarter),
+                datasets: [{
+                  label: 'MRR',
+                  data: displayQuarters.map(q => showSEK ? q.displayMrrSEK : q.displayMrrUSD),
+                  borderColor: currentScenario.color,
+                  backgroundColor: currentScenario.color + '20',
+                  tension: 0.4,
+                  borderWidth: 3,
+                  pointRadius: 4,
+                  pointHoverRadius: 6,
+                }]
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: true, position: 'top' },
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => `MRR: ${formatCurrency(context.parsed.y)}`
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: (value) => formatCurrency(value).replace(' kr', 'k').replace(' $', 'k')
+                    }
+                  }
+                }
+              }}
+            />
           </div>
           
           {/* Monthly drilldown section */}
@@ -722,23 +778,70 @@ export default function RevenueForecast() {
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-sm shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Användartillväxt</h2>
-            <div className="w-full h-[300px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <Users className="mx-auto mb-3 text-gray-400" size={48} />
-                <p className="text-gray-600 font-medium">User Growth Bar Chart</p>
-                <p className="text-sm text-gray-500 mt-1">Chart placeholder - coming soon</p>
-              </div>
+            <div className="h-[300px]">
+              <Bar
+                data={{
+                  labels: displayQuarters.map(q => q.quarter),
+                  datasets: [
+                    {
+                      label: 'Gratis',
+                      data: displayQuarters.map(q => q.displayFreeUsers),
+                      backgroundColor: '#94a3b8',
+                    },
+                    {
+                      label: 'Betalande',
+                      data: displayQuarters.map(q => q.displayPayingUsers),
+                      backgroundColor: currentScenario.color,
+                    }
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: true, position: 'top' },
+                  },
+                  scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                  }
+                }}
+              />
             </div>
           </div>
 
           <div className="bg-white rounded-sm shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Prenumerationsmix (Månad 24)</h2>
-            <div className="w-full h-[300px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-              <div className="text-center">
-                <Percent className="mx-auto mb-3 text-gray-400" size={48} />
-                <p className="text-gray-600 font-medium">Subscription Mix Pie Chart</p>
-                <p className="text-sm text-gray-500 mt-1">Chart placeholder - coming soon</p>
-              </div>
+            <div className="h-[300px]">
+              <Pie
+                data={{
+                  labels: billingMixData.map(d => d.name),
+                  datasets: [{
+                    data: billingMixData.map(d => d.value),
+                    backgroundColor: billingMixData.map(d => d.color),
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                  }]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => {
+                          const label = context.label || '';
+                          const value = context.parsed || 0;
+                          const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                          const percentage = ((value / total) * 100).toFixed(0);
+                          return `${label}: ${percentage}%`;
+                        }
+                      }
+                    }
+                  }
+                }}
+              />
             </div>
             <div className="mt-4 text-center text-sm text-gray-600">
               <div className="font-semibold text-lg text-gray-900 mb-1">
