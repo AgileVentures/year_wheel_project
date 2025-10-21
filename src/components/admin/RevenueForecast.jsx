@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Users, DollarSign, Target, Percent, Calendar, Settings, Shield, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import LanguageSwitcher from '../LanguageSwitcher';
 
@@ -656,26 +655,13 @@ export default function RevenueForecast() {
               {useQuarterAverage ? 'Visar medelvärde per kvartal' : 'Visar slutvärde per kvartal'}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={displayQuarters}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="quarter" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" tickFormatter={(val) => formatCurrency(val).replace(' kr', 'k').replace(' $', 'k')} />
-              <Tooltip 
-                formatter={(value) => [formatCurrency(value), 'MRR']}
-                contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb' }}
-              />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey={showSEK ? "displayMrrSEK" : "displayMrrUSD"}
-                stroke={currentScenario.color} 
-                strokeWidth={3}
-                name="MRR"
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="w-full h-[350px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <TrendingUp className="mx-auto mb-3 text-gray-400" size={48} />
+              <p className="text-gray-600 font-medium">MRR Line Chart</p>
+              <p className="text-sm text-gray-500 mt-1">Chart placeholder - coming soon</p>
+            </div>
+          </div>
           
           {/* Monthly drilldown section */}
           <div className="mt-6 space-y-2">
@@ -736,45 +722,29 @@ export default function RevenueForecast() {
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-sm shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Användartillväxt</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={displayQuarters}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="quarter" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
-                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb' }} />
-                <Legend />
-                <Bar dataKey="displayFreeUsers" stackId="a" fill="#94a3b8" name="Gratis" />
-                <Bar dataKey="displayPayingUsers" stackId="a" fill={currentScenario.color} name="Betalande" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="w-full h-[300px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <Users className="mx-auto mb-3 text-gray-400" size={48} />
+                <p className="text-gray-600 font-medium">User Growth Bar Chart</p>
+                <p className="text-sm text-gray-500 mt-1">Chart placeholder - coming soon</p>
+              </div>
+            </div>
           </div>
 
           <div className="bg-white rounded-sm shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Prenumerationsmix (Månad 24)</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={billingMixData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => name + ': ' + (percent * 100).toFixed(0) + '%'}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {billingMixData.map((entry, index) => (
-                    <Cell key={'cell-' + index} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="w-full h-[300px] bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <Percent className="mx-auto mb-3 text-gray-400" size={48} />
+                <p className="text-gray-600 font-medium">Subscription Mix Pie Chart</p>
+                <p className="text-sm text-gray-500 mt-1">Chart placeholder - coming soon</p>
+              </div>
+            </div>
             <div className="mt-4 text-center text-sm text-gray-600">
               <div className="font-semibold text-lg text-gray-900 mb-1">
-                {latestQuarter?.annualPercentage}% väljer årsprenumeration
+                {latestQuarter?.displayAnnualPercentage || 0}% väljer årsprenumeration
               </div>
-              <div>Årlig: {formatNumber(latestQuarter?.annualPayers || 0)} | Månadsvis: {formatNumber(latestQuarter?.monthlyPayers || 0)}</div>
+              <div>Årlig: {formatNumber(latestQuarter?.displayAnnualPayers || 0)} | Månadsvis: {formatNumber(latestQuarter?.displayMonthlyPayers || 0)}</div>
             </div>
           </div>
         </div>
