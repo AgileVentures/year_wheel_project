@@ -4138,12 +4138,29 @@ class YearWheel {
         );
       }
     } else {
-      // Draw year text in center (bold, large)
+      // Draw year or filtered period text in center (bold, large)
       this.context.fillStyle = "#1E293B";
-      this.context.font = `700 ${this.size / 30}px Arial, sans-serif`;
       this.context.textAlign = "center";
       this.context.textBaseline = "middle";
-      this.context.fillText(this.year, this.center.x, this.center.y, this.size);
+      
+      let centerText = this.year;
+      let fontSize = this.size / 30;
+      
+      // Show filtered period when zoomed
+      if (this.zoomedMonth !== null) {
+        // Single month view: "April 2026"
+        const monthName = this.monthNames[this.zoomedMonth];
+        centerText = `${monthName} ${this.year}`;
+        fontSize = this.size / 40; // Slightly smaller for longer text
+      } else if (this.zoomedQuarter !== null) {
+        // Quarter view: "Q3 2026"
+        const quarterNum = this.zoomedQuarter + 1;
+        centerText = `Q${quarterNum} ${this.year}`;
+        fontSize = this.size / 35; // Slightly smaller
+      }
+      
+      this.context.font = `700 ${fontSize}px Arial, sans-serif`;
+      this.context.fillText(centerText, this.center.x, this.center.y, this.size);
     }
 
     this.context.restore();
@@ -4950,9 +4967,26 @@ class YearWheel {
 
     // NOW draw week ring AFTER inner rings (so it's on top)
     if (this.showWeekRing) {
-      // Get data based on display mode: week numbers or date ranges
+      // Determine if we're in a filtered view (month or quarter)
+      const isFiltered = this.zoomedMonth !== null || this.zoomedQuarter !== null;
+      
+      // Use the display mode as-is (respect user's toggle choice)
+      const effectiveDisplayMode = this.weekRingDisplayMode;
+      
+      // Special mode for month filter with dates: show individual days instead of weeks
+      const showDays = this.zoomedMonth !== null && effectiveDisplayMode === "dates";
+      
+      // Get data based on display mode and filter state
       let weekData;
-      if (this.weekRingDisplayMode === "dates") {
+      let numberOfIntervals;
+      
+      if (showDays) {
+        // Month filter with dates mode: show individual days (1-31)
+        const year = parseInt(this.year);
+        const daysInMonth = new Date(year, this.zoomedMonth + 1, 0).getDate();
+        weekData = Array.from({length: daysInMonth}, (_, i) => (i + 1).toString());
+        numberOfIntervals = daysInMonth;
+      } else if (effectiveDisplayMode === "dates") {
         // Generate date ranges (DD-DD format)
         const allDateRanges = this.generateWeekDateRanges();
         // Filter for current zoom level (similar to getWeeksForZoom logic)
@@ -4988,30 +5022,62 @@ class YearWheel {
         } else {
           weekData = allDateRanges;
         }
+        numberOfIntervals = weekData.length;
       } else {
         // Default: week numbers
         weekData = this.getWeeksForZoom();
+        numberOfIntervals = weekData.length;
       }
-
-      const numberOfWeeks = weekData.length;
 
       // Use lighter version of third template color (or second if only 2 colors)
       const weekBaseColor =
         this.sectionColors[2] || this.sectionColors[1] || this.sectionColors[0];
-      const weekColors = Array(numberOfWeeks).fill(weekBaseColor);
+      const weekColors = Array(numberOfIntervals).fill(weekBaseColor);
+
+      // Adaptive font size: larger when filtered (more space per week/day)
+      // Full year: size/85, Month view (days): size/55, Quarter (weeks): size/60
+      let adaptiveFontSize;
+      if (showDays) {
+        // Single month with daily divisions: moderate size
+        adaptiveFontSize = this.size / 55;
+      } else if (this.zoomedMonth !== null) {
+        // Single month with weekly divisions: larger
+        adaptiveFontSize = this.size / 45;
+      } else if (this.zoomedQuarter !== null) {
+        // Quarter: moderately larger
+        adaptiveFontSize = this.size / 60;
+      } else {
+        // Full year: standard size
+        adaptiveFontSize = this.size / 85;
+      }
+
+      // Adaptive spacing: add visible gaps between segments when filtered
+      // Full year: no gaps (too cluttered), Quarter: visible gaps, Month: more visible gaps
+      let segmentSpacing = 0;
+      if (showDays) {
+        // Month filter with days: clear visible gaps (1 degree = clear separation)
+        segmentSpacing = 1.0; // degrees
+      } else if (this.zoomedMonth !== null) {
+        // Month filter with weeks: visible gaps
+        segmentSpacing = 0.8; // degrees
+      } else if (this.zoomedQuarter !== null) {
+        // Quarter filter with weeks: subtle but visible gaps
+        segmentSpacing = 0.5; // degrees
+      }
+      // Full year: 0 (no gaps)
 
       this.addMonthlyCircleSection({
         startRadius: weekStartRadius,
         width: weekRingWidth,
-        spacingAngle: 0, // Seamless
+        spacingAngle: segmentSpacing, // Adaptive spacing for visual segmentation
         color: null,
         textFunction: this.setCircleSectionSmallTitle.bind(this), // Use smaller text function
         texts: weekData,
-        fontSize: this.size / 85, // Smaller, more subtle
+        fontSize: adaptiveFontSize, // Adaptive based on filter state
         colors: weekColors,
         isVertical: true,
         lineHeight: this.lineHeight,
-        numberOfIntervals: numberOfWeeks,
+        numberOfIntervals: numberOfIntervals,
       });
     }
 
