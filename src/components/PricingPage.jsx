@@ -348,7 +348,7 @@ function PricingPage() {
         </div>
       </section>
 
-      <Footer variant="minimal" />
+      <Footer />
 
       {/* Subscription Modal */}
       {showSubscriptionModal && (
