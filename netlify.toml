@@ -10,7 +10,9 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    # Allow embedding in Google Apps Script sidebars (Google Docs, Sheets, Slides)
+    # Remove X-Frame-Options in favor of modern CSP frame-ancestors directive
+    Content-Security-Policy = "frame-ancestors 'self' https://*.google.com https://*.googleusercontent.com https://script.google.com"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"

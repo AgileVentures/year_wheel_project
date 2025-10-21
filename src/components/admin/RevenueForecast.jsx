@@ -685,34 +685,90 @@ export default function RevenueForecast() {
             <Line
               data={{
                 labels: displayQuarters.map(q => q.quarter),
-                datasets: [{
-                  label: 'MRR',
-                  data: displayQuarters.map(q => showSEK ? q.displayMrrSEK : q.displayMrrUSD),
-                  borderColor: currentScenario.color,
-                  backgroundColor: currentScenario.color + '20',
-                  tension: 0.4,
-                  borderWidth: 3,
-                  pointRadius: 4,
-                  pointHoverRadius: 6,
-                }]
+                datasets: [
+                  {
+                    label: 'MRR',
+                    data: displayQuarters.map(q => showSEK ? q.displayMrrSEK : q.displayMrrUSD),
+                    borderColor: currentScenario.color,
+                    backgroundColor: currentScenario.color + '20',
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    yAxisID: 'y',
+                  },
+                  {
+                    label: 'ARR',
+                    data: displayQuarters.map(q => showSEK ? q.displayArrSEK : q.displayArrUSD),
+                    borderColor: '#10b981',
+                    backgroundColor: '#10b98120',
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    borderDash: [5, 5],
+                    yAxisID: 'y',
+                  },
+                  {
+                    label: 'Betalande Användare',
+                    data: displayQuarters.map(q => q.displayPayingUsers),
+                    borderColor: '#8b5cf6',
+                    backgroundColor: '#8b5cf620',
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    yAxisID: 'y1',
+                  }
+                ]
               }}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                  mode: 'index',
+                  intersect: false,
+                },
                 plugins: {
                   legend: { display: true, position: 'top' },
                   tooltip: {
                     callbacks: {
-                      label: (context) => `MRR: ${formatCurrency(context.parsed.y)}`
+                      label: (context) => {
+                        const label = context.dataset.label || '';
+                        if (label === 'Betalande Användare') {
+                          return `${label}: ${formatNumber(context.parsed.y)}`;
+                        }
+                        return `${label}: ${formatCurrency(context.parsed.y)}`;
+                      }
                     }
                   }
                 },
                 scales: {
                   y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
                     beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Intäkter (' + (showSEK ? 'kr' : '$') + ')'
+                    },
                     ticks: {
                       callback: (value) => formatCurrency(value).replace(' kr', 'k').replace(' $', 'k')
                     }
+                  },
+                  y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: 'Användare'
+                    },
+                    grid: {
+                      drawOnChartArea: false,
+                    },
                   }
                 }
               }}
