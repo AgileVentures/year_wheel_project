@@ -1,17 +1,31 @@
 # Year Wheel POC - AI Coding Agent Instructions
 
 ## Project Overview
-Year Wheel POC is a React-based circular calendar visualization tool for planning and displaying activities across a year. Built with Vite, it features interactive canvas-based rendering, drag-and-rotate controls, and multi-ring organization of events.
+YearWheel Planner is a modern, AI-powered annual planning SaaS application built with React, Supabase, and OpenAI. Users can visualize entire years in an interactive circular calendar with team collaboration, Google integrations, and natural language AI planning. The application supports multi-year projects, real-time collaboration, version control, and premium subscription features via Stripe.
+
+## Documentation
+We do NOT need summary documents. We do NOT need partial implementation guides. We do NOT need debugging checklists. We do NOT need quick reference guides. 
 
 ## Core Architecture
 
+### Tech Stack
+- **Frontend**: React 18.2, Vite 5.0, TailwindCSS 3, React Router 7.9
+- **Backend**: Supabase (PostgreSQL, Auth, Storage, Realtime, Edge Functions)
+- **AI**: OpenAI GPT-4.1 via Vercel AI SDK for natural language planning
+- **Payments**: Stripe for subscription management
+- **Integrations**: Google Calendar API, Google Sheets API
+- **State Management**: Custom undo/redo system with `useMultiStateUndoRedo` hook
+- **Canvas**: HTML5 Canvas API with `canvas2svg` (v1.0.16) for SVG export
+
 ### Canvas Rendering Engine
-- **Active implementation**: `YearWheelClass.js` (~1500 lines) - handles ALL rendering logic
+- **Active implementation**: `YearWheelClass.js` (~5272 lines) - handles ALL rendering logic
 - **Do NOT modify**: `archive/YearWheelClassRedefined.js` - unused refactoring attempt
-- Uses HTML5 Canvas API with `canvas2svg` for SVG export
 - Drawing flow: `create()` → `drawRotatingElements()` (months, rings, items) → `drawStaticElements()` (center year/title)
+- Export formats: PNG, SVG, PDF, JPG with high-resolution support
 
 ### Data Model (Critical)
+
+**Frontend organizationData Structure** (used in canvas rendering):
 ```javascript
 organizationData = {
   rings: [{ id, name, type: 'inner'|'outer', visible, orientation }],
@@ -22,19 +36,171 @@ organizationData = {
 ```
 **Key constraint**: Items MUST link to visible activityGroups to be rendered. Labels are optional.
 
-### Component Hierarchy
+**Supabase Database Schema** (PostgreSQL):
+
+Core Tables:
+- `year_wheels` - Main wheel configurations
+  - Columns: id, user_id, team_id, title, year, colors (JSONB), show_week_ring, show_month_ring, show_ring_names, week_ring_display_mode ('week-numbers'|'dates'), show_labels, is_public, is_template, show_on_landing, share_token, created_at, updated_at
+  - Settings: Week/month ring visibility, label display mode, public sharing
+  
+- `wheel_pages` - Multi-year pages (1 page = 1 year wheel)
+  - Columns: id, wheel_id (FK), page_order, year, title, organization_data (JSONB), override_colors, override_show_week_ring, override_show_month_ring, override_show_ring_names, created_at, updated_at
+  - CRITICAL: organization_data JSONB contains complete state: {rings, activityGroups, labels, items}
+  
+- `wheel_rings` - Ring definitions (inner/outer bands)
+  - Columns: id, page_id (FK), wheel_id (nullable, legacy), name, type ('inner'|'outer'), color, visible, ring_order, orientation ('vertical'|'horizontal'), created_at
+  - Scoped to page_id (not wheel_id) for proper multi-year isolation
+  
+- `activity_groups` - Activity categories with colors
+  - Columns: id, page_id (FK), wheel_id (nullable, legacy), name, color, visible, created_at
+  - Scoped to page_id - each year page has its own activity groups
+  
+- `labels` - Optional item labels
+  - Columns: id, page_id (FK), wheel_id (nullable, legacy), name, color, visible, created_at
+  - Scoped to page_id for multi-year isolation
+  
+- `items` - Activities/events placed on the wheel
+  - Columns: id, wheel_id (FK), page_id (FK), ring_id (FK), activity_id (FK), label_id (FK nullable), name, start_date, end_date, time, description, source ('manual'|'google_calendar'|'google_sheets'), external_id, sync_metadata (JSONB), created_at, updated_at
+  - MUST reference page_id, ring_id, and activity_id (label_id optional)
+  
+- `ring_data` - Month-specific content for inner rings (text arrays)
+  - Columns: id, ring_id (FK), month_index (0-11), content (TEXT[]), created_at
+
+Collaboration Tables:
+- `teams` - Team definitions
+  - Columns: id, name, description, owner_id (FK auth.users), created_at, updated_at
+  
+- `team_members` - Team membership
+  - Columns: id, team_id (FK), user_id (FK auth.users), role ('owner'|'admin'|'member'), joined_at
+  - Unique constraint: (team_id, user_id)
+  
+- `team_invitations` - Email-based team invitations
+  - Columns: id, team_id (FK), email, invited_by (FK auth.users), token (unique), status ('pending'|'accepted'|'declined'|'expired'), expires_at, created_at
+
+Version Control:
+- `wheel_versions` - Complete version history snapshots
+  - Columns: id, wheel_id (FK), version_number, snapshot_data (JSONB), created_by (FK auth.users), created_at, change_description, is_auto_save, metadata (JSONB)
+  - Unique constraint: (wheel_id, version_number)
+
+User Management:
+- `profiles` - Extended user data
+  - Columns: id (FK auth.users), email, full_name, avatar_url, is_admin, created_at, updated_at
+  - Auto-created on user signup via trigger
+  
+- `subscriptions` - Stripe subscription management
+  - Columns: id, user_id (FK auth.users), stripe_customer_id, stripe_subscription_id, stripe_price_id, plan_type ('free'|'monthly'|'yearly'), status ('active'|'inactive'|'canceled'|'past_due'|'trialing'), current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at
+  - Unique constraint: user_id
+  
+- `subscription_events` - Stripe webhook audit log
+  - Columns: id, subscription_id (FK), event_type, stripe_event_id (unique), event_data (JSONB), created_at
+
+Google Integrations:
+- `user_integrations` - OAuth tokens for external services
+  - Columns: id, user_id (FK auth.users), provider ('google_calendar'|'google_sheets'|'google'), access_token, refresh_token, token_expires_at, scope (TEXT[]), provider_user_id, provider_user_email, created_at, updated_at
+  - Unique constraint: (user_id, provider)
+  
+- `ring_integrations` - Maps rings to external data sources
+  - Columns: id, ring_id (FK), user_integration_id (FK), integration_type ('calendar'|'sheet'), config (JSONB: calendar_id, spreadsheet_id, sheet_name), mapping_config (JSONB), sync_enabled, sync_frequency ('manual'|'hourly'|'daily'), last_synced_at, last_sync_status ('success'|'error'|'pending'), last_sync_error, created_at, updated_at
+  - Unique constraint: (ring_id, integration_type)
+
+**Key Relationships:**
+- Wheels → Pages (1:many) - Multi-year support
+- Wheels → Teams (many:1) - Team collaboration
+- Wheels → Versions (1:many) - Version control
+- Pages contain complete organizationData as JSONB (rings, activityGroups, labels, items)
+- Items reference page_id, ring_id, activity_id (required), label_id (optional)
+- Rings/ActivityGroups/Labels reference page_id (NOT wheel_id) for proper year isolation
+
+**Critical Database Functions:**
+- `is_premium_user(user_id)` - Checks active subscription OR is_admin flag
+- `is_admin(user_id)` - Checks profiles.is_admin (currently: thomas@freefoot.se)
+- `can_create_wheel(user_id)` - Free: 2 wheels, Premium: unlimited
+- `can_add_team_member(wheel_id, user_id)` - Free: 3 members, Premium: unlimited
+- `get_next_page_order(wheel_id)` - Returns next sequential page_order for new pages
+- `duplicate_wheel_page(page_id)` - Clones page with incremented year
+- `get_template_wheels()` - Fetches all template wheels (admin panel)
+- `get_landing_page_templates()` - Fetches public templates (show_on_landing = true)
+
+**Data Flow:**
+1. Frontend loads wheel + selected page from Supabase
+2. Page's `organization_data` JSONB populates organizationData state
+3. YearWheelClass renders from organizationData structure
+4. Changes update page.organization_data via wheelService.updatePage()
+5. Real-time updates via `useRealtimeWheel` hook (Supabase Realtime)
+
+**Migration Notes:**
+- Migration 013 (Oct 2025): Moved rings/activityGroups/labels from wheel_id to page_id scope
+- Items now require page_id (backfilled based on start_date year)
+- Google integrations add source, external_id, sync_metadata to items table
+- Premium features enforced via RLS policies + helper functions
+
+### Application Structure
 ```
-App.jsx (main state container)
-├── Header.jsx (save/load/export controls)
-├── OrganizationPanel.jsx (sidebar with 3 views: disc/liste/kalender)
-│   ├── AddAktivitetModal.jsx
-│   └── EditAktivitetModal.jsx
-└── YearWheel.jsx (canvas wrapper + zoom controls)
-    ├── YearWheelClass.js (rendering engine)
-    └── ItemTooltip.jsx (hover/click details)
+App.jsx (main container with routing, auth, undo/redo state)
+├── Routes (React Router 7.9)
+│   ├── LandingPage.jsx (public marketing site)
+│   ├── AuthPage.jsx (login/signup)
+│   ├── Dashboard.jsx (wheel cards, team management)
+│   ├── WheelEditor (main editor - loaded in App.jsx)
+│   ├── PricingPage.jsx (subscription plans)
+│   ├── AdminPanel.jsx (admin controls)
+│   └── PreviewWheelPage.jsx (public sharing)
+└── WheelEditor Component Tree
+    ├── Header.jsx (save/version/export controls)
+    ├── PageNavigator.jsx (multi-year navigation)
+    ├── OrganizationPanel.jsx (sidebar: disc/liste/kalender views)
+    │   ├── AddAktivitetModal.jsx / EditAktivitetModal.jsx
+    │   ├── AddItemModal.jsx / EditItemModal.jsx
+    │   └── RingIntegrationModal.jsx
+    ├── YearWheel.jsx (canvas wrapper + zoom controls)
+    │   ├── YearWheelClass.js (rendering engine)
+    │   └── ItemTooltip.jsx (hover/click details)
+    ├── AIAssistant.jsx (natural language planning)
+    ├── VersionHistoryModal.jsx (version control)
+    ├── ExportDataModal.jsx (PNG/SVG/PDF/JPG export)
+    └── EditorOnboarding.jsx (user onboarding flow)
 ```
 
 ## Critical Patterns
+
+### Drag and Drop System (Restored Oct 2025)
+**Complete pixel-based drag/drop implementation with screen coordinate system**
+
+Key Functions:
+- `detectDragZone(x, y, itemRegion)` - Pixel-based (15px) resize zone detection with angle wraparound handling
+- `startDrag(event)` - Calculates screen angles (includes rotation), sets up drag state, provides immediate visual feedback
+- `dragActivity(event)` - Screen-space calculations, handles move/resize-start/resize-end modes
+- `stopActivityDrag()` - Converts screen angles back to logical angles, updates data
+- `drawDragPreviewInRotatedContext()` - Draws preview in rotated canvas context with dashed border (called from drawRotatingElements)
+
+**Critical Implementation Details:**
+- Screen angles = logical angles + rotationAngle
+- Preview drawn inside rotated context to avoid misalignment
+- `renderedRingPositions` Map tracks actual ring positions during rendering
+- Dragged items are SKIPPED in main render loops (only preview is shown)
+- Minimum 1-week width enforced: ~5.75° (~7 days)
+- Resize zones: 15 pixels from edges (arc length calculated at average radius)
+- Angle wraparound safety: validates angleSpan to prevent detection errors
+
+**Coordinate System Architecture:**
+```javascript
+// Logical coordinates (data storage):
+item.startAngle, item.endAngle // Rotation-agnostic
+
+// Screen coordinates (visual rendering):
+screenAngle = logicalAngle + this.rotationAngle
+
+// During drag:
+this.dragState = {
+  screenStartAngle,  // Includes rotation
+  screenEndAngle,    // Includes rotation
+  targetRingId,
+  mode: 'move' | 'resize-start' | 'resize-end'
+}
+
+// On drag end:
+logicalAngle = screenAngle - this.rotationAngle
+```
 
 ### ISO Week Numbers
 Week generation uses proper ISO 8601 standard (fixed Oct 2025). When modifying date logic:
@@ -85,9 +251,11 @@ yarn preview      # Preview production build
 No test runner configured. Manual testing via browser.
 
 ### State Persistence
-- **localStorage**: `yearWheelData` key stores all wheel state
-- **File export**: `.yrw` files (JSON format) with versioning
-- Data migration: Handles legacy `activities` → `activityGroups` rename (see App.jsx:66-70)
+- **Supabase Database**: Primary storage for wheels, pages, team data, versions
+- **Real-time Collaboration**: `useRealtimeWheel` and `useWheelPresence` hooks for live updates
+- **Undo/Redo System**: `useMultiStateUndoRedo` with 10-step history, keyboard shortcuts (Cmd/Ctrl+Z/Y)
+- **File export**: `.yrw` files (JSON format) with versioning for backup/sharing
+- **Data migration**: Handles legacy `activities` → `activityGroups` rename (see App.jsx:66-70)
 
 ### Adding New Activity Items
 1. Ensure activityGroup exists and is visible
@@ -136,20 +304,21 @@ let angle = Math.atan2(dy, dx) - this.rotationAngle;
 ## File Organization Rules
 
 ### Active vs Archived Code
-- `src/*.jsx` and `src/YearWheelClass.js` → ACTIVE
+- `src/components/*.jsx`, `src/YearWheelClass.js`, `src/hooks/*`, `src/services/*` → ACTIVE
 - `archive/*` → Do NOT import or modify
-- Unused legacy components: `MonthTextarea.jsx`, `RingButton.jsx`, `GeneralInputs.jsx`, `ColorPicker.jsx`, `ActionInputs.jsx`, `RingManager.jsx`, `Ring.jsx` (not imported by App.jsx)
+- **Cleaned up Oct 2025**: Removed unused legacy components (MonthTextarea, RingButton, GeneralInputs, ColorPicker, ActionInputs, RingManager, Ring)
 
-### Swedish Language Convention
-UI text uses Swedish (e.g., "Aktivitetsgrupp", "Spara", "Återställ"). Maintain this consistency when adding features. Comments and code can be in English.
+### Swedish/English Language Convention
+UI text uses Swedish (e.g., "Aktivitetsgrupp", "Spara", "Återställ") but the application is being internationalized. Maintain this consistency when adding features. Comments and code can be in English. i18n implementation in progress (see `src/i18n/`).
 
-## Future Migration Context
-Comprehensive Supabase integration planning exists in:
-- `SUPABASE_GUIDE.md` - Step-by-step database setup
-- `ARCHITECTURE.md` - Complete schema and migration plan
-- `PROJECT_SUMMARY.md` - Analysis of current state
+## Future Features & Migration Context
+Comprehensive documentation exists in project root:
+- `README.md` - Full feature list, tech stack, getting started guide
+- `SUPABASE_GUIDE.md` - Database setup (if exists)
+- `ARCHITECTURE.md` - Schema and migration plan (if exists)
+- `I18N_PROGRESS.md` - Internationalization status
 
-When implementing auth or multi-user features, reference these documents for PostgreSQL schema, RLS policies, and React hooks architecture.
+When implementing new features, reference these documents for PostgreSQL schema, RLS policies, React hooks architecture, and planned features.
 
 ## Color Philosophy
 - Month ring: Dark grays (`#334155`, `#3B4252`) for readability
