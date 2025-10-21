@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { fetchWheel, fetchPages, fetchPageData, createWheel, createPage, saveWheelData } from '../services/wheelService';
 import YearWheel from '../YearWheel';
-import { Eye, Lock, ChevronLeft, ChevronRight, Calendar, Copy } from 'lucide-react';
+import { Eye, Lock, ChevronLeft, ChevronRight, Calendar, Copy, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../hooks/useAuth';
+import PresentationControlDialog from './PresentationControlDialog';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -17,6 +18,10 @@ function PreviewWheelPage() {
   const navigate = useNavigate();
   const { t } = useTranslation(['common']);
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  
+  // Check if we're in presentation mode
+  const isPresentationMode = searchParams.get('presentation') === 'true';
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,6 +33,10 @@ function PreviewWheelPage() {
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
   const [isCopying, setIsCopying] = useState(false);
   const pendingCopyProcessedRef = useRef(false);
+  const [showControlDialog, setShowControlDialog] = useState(false);
+  
+  // Local state for organizationData to allow toggling visibility
+  const [localOrgData, setLocalOrgData] = useState(null);
 
   useEffect(() => {
     const loadWheel = async () => {
@@ -52,6 +61,7 @@ function PreviewWheelPage() {
           items: data.organizationData.items.length 
         });
         setWheelData(data);
+        setLocalOrgData(data.organizationData); // Initialize local org data
         
         // Fetch all pages for this wheel
         try {
@@ -110,6 +120,16 @@ function PreviewWheelPage() {
 
     loadPageItems();
   }, [currentPageIndex, pages]);
+
+  // Update localOrgData when currentPageItems change
+  useEffect(() => {
+    if (wheelData && localOrgData) {
+      setLocalOrgData(prev => ({
+        ...prev,
+        items: currentPageItems
+      }));
+    }
+  }, [currentPageItems, wheelData]);
 
   // Copy template to user's account
   const handleCopyTemplate = async () => {
@@ -369,15 +389,22 @@ function PreviewWheelPage() {
   const displayYear = currentPage?.year || wheelData.year;
   
   // Merge wheel-level data with page-specific items
-  const displayOrgData = {
+  const displayOrgData = localOrgData ? {
+    ...localOrgData,
+    items: currentPageItems, // Use items fetched separately
+  } : {
     rings: wheelData.organizationData.rings,
     activityGroups: wheelData.organizationData.activityGroups,
     labels: wheelData.organizationData.labels,
-    items: currentPageItems, // Use items fetched separately
+    items: currentPageItems,
   };
   
   const canGoPrev = currentPageIndex > 0;
   const canGoNext = currentPageIndex < pages.length - 1;
+
+  const handleOrgDataChange = (newOrgData) => {
+    setLocalOrgData(newOrgData);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -394,78 +421,97 @@ function PreviewWheelPage() {
               />
             </Link>
             
-            {/* Separator */}
-            <div className="w-px h-8 bg-gray-300" />
-            
-            {/* Wheel Info */}
-            <div className="flex items-center gap-3">
-              <Eye size={20} className="text-gray-500" />
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">
-                  {wheelData.title}
-                </h1>
-                <p className="text-sm text-gray-500">
-                  {t('common:previewWheelPage.publicShared')}
-                </p>
-              </div>
-            </div>
+            {/* Show wheel info only if NOT in presentation mode */}
+            {!isPresentationMode && (
+              <>
+                {/* Separator */}
+                <div className="w-px h-8 bg-gray-300" />
+                
+                {/* Wheel Info */}
+                <div className="flex items-center gap-3">
+                  <Eye size={20} className="text-gray-500" />
+                  <div>
+                    <h1 className="text-lg font-semibold text-gray-900">
+                      {wheelData.title}
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                      {t('common:previewWheelPage.publicShared')}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Copy Template Button (for all users) */}
-            <button
-              onClick={handleCopyTemplate}
-              disabled={isCopying}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={t('common:previewWheelPage.copyTemplateTooltip')}
-            >
-              {isCopying ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  <span className="text-sm font-medium">{t('common:previewWheelPage.copying')}</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={16} />
-                  <span className="text-sm font-medium">
-                    {user ? t('common:previewWheelPage.copyTemplate') : t('common:previewWheelPage.useTemplate')}
-                  </span>
-                </>
-              )}
-            </button>
-            
-            {/* Language Switcher */}
-            <LanguageSwitcher />
-            
-            {/* Page Navigator (only show if multiple pages) */}
-            {pages.length > 1 && (
-              <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+            {/* Show controls button in presentation mode */}
+            {isPresentationMode ? (
+              <button
+                onClick={() => setShowControlDialog(!showControlDialog)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
+                title={t('common:previewWheelPage.showControls')}
+              >
+                <Settings size={16} />
+                <span className="text-sm font-medium">{t('common:previewWheelPage.controls')}</span>
+              </button>
+            ) : (
+              <>
+                {/* Copy Template Button (for all users) */}
                 <button
-                  onClick={() => setCurrentPageIndex(currentPageIndex - 1)}
-                  disabled={!canGoPrev}
-                  className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={t('common:previewWheelPage.previousYear')}
+                  onClick={handleCopyTemplate}
+                  disabled={isCopying}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common:previewWheelPage.copyTemplateTooltip')}
                 >
-                  <ChevronLeft size={18} className="text-gray-600" />
+                  {isCopying ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      <span className="text-sm font-medium">{t('common:previewWheelPage.copying')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={16} />
+                      <span className="text-sm font-medium">
+                        {user ? t('common:previewWheelPage.copyTemplate') : t('common:previewWheelPage.useTemplate')}
+                      </span>
+                    </>
+                  )}
                 </button>
                 
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-sm min-w-[120px]">
-                  <Calendar size={16} className="text-gray-500" />
-                  <span className="font-semibold text-gray-900">{displayYear}</span>
-                  <span className="text-xs text-gray-500 ml-auto">
-                    {currentPageIndex + 1}/{pages.length}
-                  </span>
-                </div>
+                {/* Language Switcher */}
+                <LanguageSwitcher />
                 
-                <button
-                  onClick={() => setCurrentPageIndex(currentPageIndex + 1)}
-                  disabled={!canGoNext}
-                  className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={t('common:previewWheelPage.nextYear')}
-                >
-                  <ChevronRight size={18} className="text-gray-600" />
-                </button>
-              </div>
+                {/* Page Navigator (only show if multiple pages) */}
+                {pages.length > 1 && (
+                  <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
+                    <button
+                      onClick={() => setCurrentPageIndex(currentPageIndex - 1)}
+                      disabled={!canGoPrev}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={t('common:previewWheelPage.previousYear')}
+                    >
+                      <ChevronLeft size={18} className="text-gray-600" />
+                    </button>
+                    
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-sm min-w-[120px]">
+                      <Calendar size={16} className="text-gray-500" />
+                      <span className="font-semibold text-gray-900">{displayYear}</span>
+                      <span className="text-xs text-gray-500 ml-auto">
+                        {currentPageIndex + 1}/{pages.length}
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPageIndex(currentPageIndex + 1)}
+                      disabled={!canGoNext}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={t('common:previewWheelPage.nextYear')}
+                    >
+                      <ChevronRight size={18} className="text-gray-600" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -492,16 +538,27 @@ function PreviewWheelPage() {
           />
         </div>
 
-        {/* Info Footer */}
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>
-            {t('common:previewWheelPage.readOnlyInfo')}
-            <Link to="/" className="text-blue-600 hover:text-blue-700 ml-1">
-              {t('common:previewWheelPage.createYourOwn')}
-            </Link>
-          </p>
-        </div>
+        {/* Info Footer - hide in presentation mode */}
+        {!isPresentationMode && (
+          <div className="mt-6 text-center text-sm text-gray-500">
+            <p>
+              {t('common:previewWheelPage.readOnlyInfo')}
+              <Link to="/" className="text-blue-600 hover:text-blue-700 ml-1">
+                {t('common:previewWheelPage.createYourOwn')}
+              </Link>
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Presentation Control Dialog */}
+      {isPresentationMode && showControlDialog && localOrgData && (
+        <PresentationControlDialog
+          organizationData={displayOrgData}
+          onOrganizationChange={handleOrgDataChange}
+          onClose={() => setShowControlDialog(false)}
+        />
+      )}
     </div>
   );
 }

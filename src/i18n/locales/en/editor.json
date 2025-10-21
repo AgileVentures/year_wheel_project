@@ -5,6 +5,13 @@
     "placeholder": "Name your wheel...",
     "autoSave": "Auto-saved"
   },
+  "organizationPanel": {
+    "presentationControls": "Presentation Controls",
+    "innerRings": "Inner Rings",
+    "outerRings": "Outer Rings",
+    "activityGroups": "Activity Groups",
+    "labels": "Labels"
+  },
   "tabs": {
     "disc": "Disc",
     "list": "List",

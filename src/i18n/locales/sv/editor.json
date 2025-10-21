@@ -5,6 +5,13 @@
     "placeholder": "Namnge ditt hjul...",
     "autoSave": "Sparas automatiskt"
   },
+  "organizationPanel": {
+    "presentationControls": "Presentationskontroller",
+    "innerRings": "Inre Ringar",
+    "outerRings": "Yttre Ringar",
+    "activityGroups": "Aktivitetsgrupper",
+    "labels": "Etiketter"
+  },
   "tabs": {
     "disc": "Skiva",
     "list": "Lista",

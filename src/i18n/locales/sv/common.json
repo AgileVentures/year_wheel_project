@@ -200,7 +200,9 @@
     "templateCopied": "Mall kopierad till dina hjul!",
     "copyFailed": "Misslyckades med att kopiera mall",
     "loginToCopy": "Logga in för att använda denna mall",
-    "processingTemplate": "Skapar ditt hjul från mallen..."
+    "processingTemplate": "Skapar ditt hjul från mallen...",
+    "showControls": "Visa presentationskontroller",
+    "controls": "Kontroller"
   },
   "footer": {
     "tagline": "Gör årsplanering enkel, tydlig och effektiv för hela teamet"
