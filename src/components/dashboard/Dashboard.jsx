@@ -10,7 +10,7 @@ import CreateWheelModal from './CreateWheelModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
-import { Users, Mail, LayoutGrid, Crown, Shield, Sparkles, User, LogOut, ChevronDown } from 'lucide-react';
+import { Users, Mail, LayoutGrid, Crown, Shield, Sparkles, User, LogOut, ChevronDown, TrendingUp } from 'lucide-react';
 import { useUsageLimits } from '../../hooks/useSubscription';
 import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionModal from '../subscription/SubscriptionModal';
@@ -105,6 +105,16 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManage
                 >
                   <Shield size={18} />
                   Admin Panel
+                </button>
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    window.location.href = '/forecasts';
+                  }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-3 text-gray-700 transition-colors"
+                >
+                  <TrendingUp size={18} />
+                  Revenue Forecasts
                 </button>
               </>
             )}
