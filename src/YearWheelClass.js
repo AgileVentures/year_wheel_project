@@ -4302,13 +4302,19 @@ class YearWheel {
    * Cluster items by ISO week for year view
    * Groups all items within the same week into a single visual block
    */
-  clusterItemsByWeek(items) {
-    const weekGroups = new Map(); // Key: "YYYY-WW", Value: { items[], weekStart, weekEnd, ringId, activityId }
+  clusterItemsByWeek(items, draggedItemId = null) {
+    // If only one item or less, or if we're dragging, don't cluster
+    if (items.length <= 1 || draggedItemId) {
+      return items;
+    }
+
+    const weekGroups = new Map(); // Key: "YYYY-WW-ringId", Value: { items[], weekStart, weekEnd, ringId, activityId }
 
     items.forEach((item) => {
       const startDate = new Date(item.startDate);
       const { year, week } = this.getISOWeek(startDate);
-      const key = `${year}-${String(week).padStart(2, '0')}`;
+      // Include ringId in key to cluster per ring
+      const key = `${year}-${String(week).padStart(2, '0')}-${item.ringId}`;
 
       if (!weekGroups.has(key)) {
         const weekStart = this.getWeekStart(year, week);
@@ -4316,10 +4322,10 @@ class YearWheel {
         weekEnd.setDate(weekEnd.getDate() + 6); // Sunday
 
         weekGroups.set(key, {
-          id: `week-${key}-${item.ringId}`,
+          id: `week-${key}`,
           ringId: item.ringId,
-          activityId: item.activityId, // Use first item's activity
-          labelId: null, // Don't show labels for clusters
+          activityId: item.activityId, // Use first item's activity for coloring
+          labelId: item.labelId || null,
           name: item.name, // Use first item's name
           startDate: weekStart.toISOString().split('T')[0],
           endDate: weekEnd.toISOString().split('T')[0],
@@ -4337,6 +4343,11 @@ class YearWheel {
     const moreText = lang === 'en' ? 'more' : 'mer';
     
     return Array.from(weekGroups.values()).map((cluster) => {
+      // If only one item in cluster, return the original item instead
+      if (cluster.items.length === 1) {
+        return cluster.items[0];
+      }
+
       const additionalCount = cluster.items.length - 1;
       const displayName = additionalCount > 0 
         ? `${cluster.name} (${additionalCount} ${moreText})`
@@ -4485,9 +4496,10 @@ class YearWheel {
             );
           });
 
-          // Cluster by week if in full year view (not zoomed)
+          // Cluster by week if in full year view (not zoomed) and not dragging
           if (this.zoomedMonth === null && this.zoomedQuarter === null) {
-            ringItems = this.clusterItemsByWeek(ringItems);
+            const draggedItemId = this.dragState?.draggedItem?.id || null;
+            ringItems = this.clusterItemsByWeek(ringItems, draggedItemId);
           }
 
           // Assign items to tracks to handle overlaps
@@ -4804,9 +4816,10 @@ class YearWheel {
         return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
       });
 
-      // Cluster by week if in full year view (not zoomed)
+      // Cluster by week if in full year view (not zoomed) and not dragging
       if (this.zoomedMonth === null && this.zoomedQuarter === null) {
-        ringItems = this.clusterItemsByWeek(ringItems);
+        const draggedItemId = this.dragState?.draggedItem?.id || null;
+        ringItems = this.clusterItemsByWeek(ringItems, draggedItemId);
       }
 
       // Draw subtle background for ALL inner rings using palette color
