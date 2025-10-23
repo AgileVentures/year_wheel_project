@@ -39,6 +39,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
   const [integrationType, setIntegrationType] = useState(''); // 'calendar' or 'sheet'
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState('');
+  const [aggregateByWeek, setAggregateByWeek] = useState(true); // New: week aggregation toggle
   const [spreadsheetId, setSpreadsheetId] = useState('');
   const [sheetName, setSheetName] = useState('Sheet1');
   const [validatedSheet, setValidatedSheet] = useState(null);
@@ -78,6 +79,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       if (calendarInt) {
         setIntegrationType('calendar');
         setSelectedCalendarId(calendarInt.config.calendar_id || '');
+        setAggregateByWeek(calendarInt.config.aggregate_by_week !== false); // Default true
       } else if (sheetInt) {
         setIntegrationType('sheet');
         setSpreadsheetId(sheetInt.config.spreadsheet_id || '');
@@ -165,7 +167,8 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           user_integration_id: calendarAuth.id,
           integration_type: 'calendar',
           config: {
-            calendar_id: selectedCalendarId
+            calendar_id: selectedCalendarId,
+            aggregate_by_week: aggregateByWeek
           },
           sync_enabled: true
         });
@@ -442,6 +445,29 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 <p className="mt-1 text-xs text-gray-500">
                   {t('integration:ringIntegrationModal.calendar.importDescription')}
                 </p>
+              </div>
+
+              {/* Week Aggregation Toggle */}
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-sm border border-gray-200">
+                <input
+                  type="checkbox"
+                  id="aggregate-by-week"
+                  checked={aggregateByWeek}
+                  onChange={(e) => setAggregateByWeek(e.target.checked)}
+                  className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <div className="flex-1">
+                  <label htmlFor="aggregate-by-week" className="block text-sm font-medium text-gray-700 cursor-pointer">
+                    Group events by week
+                  </label>
+                  <p className="text-xs text-gray-600 mt-1">
+                    When enabled, all events within each week are bundled into a single item showing the total count. 
+                    This prevents clutter on the year view while maintaining readability.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    Recommended: Enabled (default)
+                  </p>
+                </div>
               </div>
 
               {calendarIntegration && (

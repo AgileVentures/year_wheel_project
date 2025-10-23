@@ -184,10 +184,117 @@ serve(async (req) => {
 })
 
 /**
+ * Get ISO week number for a date
+ */
+function getISOWeek(date: Date): { year: number; week: number } {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+  return { year: d.getUTCFullYear(), week: weekNo }
+}
+
+/**
+ * Get Monday of a given ISO week
+ */
+function getWeekStart(year: number, week: number): Date {
+  const jan4 = new Date(Date.UTC(year, 0, 4))
+  const dayOffset = (jan4.getUTCDay() || 7) - 1
+  const weekStart = new Date(jan4.getTime() - dayOffset * 86400000)
+  weekStart.setUTCDate(weekStart.getUTCDate() + (week - 1) * 7)
+  return weekStart
+}
+
+/**
+ * Create week-aggregated items from calendar events
+ * Groups all events within each ISO week into a single item
+ */
+async function createWeekAggregatedItems(events, pages, ringIntegration, activityGroup, calendarId) {
+  // Group events by ISO week and year
+  const weekGroups = new Map() // Key: "YYYY-WW", Value: { page, events[], weekStart, weekEnd }
+
+  for (const event of events) {
+    if (!event.start || (!event.start.date && !event.start.dateTime)) continue
+
+    const startDate = event.start.date || event.start.dateTime.split('T')[0]
+    const date = new Date(startDate)
+    const { year, week } = getISOWeek(date)
+    
+    const key = `${year}-${String(week).padStart(2, '0')}`
+    
+    if (!weekGroups.has(key)) {
+      const page = pages.find(p => p.year === year)
+      if (!page) {
+        console.warn(`[createWeekAggregatedItems] No page for year ${year}, skipping week ${week}`)
+        continue
+      }
+
+      const weekStart = getWeekStart(year, week)
+      const weekEnd = new Date(weekStart)
+      weekEnd.setUTCDate(weekEnd.getUTCDate() + 6) // Sunday
+
+      weekGroups.set(key, {
+        year,
+        week,
+        page,
+        events: [],
+        weekStart: weekStart.toISOString().split('T')[0],
+        weekEnd: weekEnd.toISOString().split('T')[0],
+      })
+    }
+
+    weekGroups.get(key).events.push(event)
+  }
+
+  console.log(`[createWeekAggregatedItems] Created ${weekGroups.size} week groups`)
+
+  // Create aggregated items
+  const itemsToCreate = []
+  
+  for (const [key, group] of weekGroups) {
+    const eventCount = group.events.length
+    const eventNames = group.events.map(e => e.summary || 'Untitled').slice(0, 5) // First 5 names
+    
+    itemsToCreate.push({
+      wheel_id: ringIntegration.ring.wheel_id,
+      page_id: group.page.id,
+      ring_id: ringIntegration.ring_id,
+      activity_id: activityGroup.id,
+      name: `Week ${group.week} (${eventCount} event${eventCount > 1 ? 's' : ''})`,
+      start_date: group.weekStart,
+      end_date: group.weekEnd,
+      description: eventNames.join(', ') + (eventCount > 5 ? `, +${eventCount - 5} more` : ''),
+      source: 'google_calendar',
+      external_id: `week_${key}`,
+      sync_metadata: {
+        calendar_id: calendarId,
+        is_week_aggregation: true,
+        event_count: eventCount,
+        events: group.events.map(e => ({
+          id: e.id,
+          summary: e.summary,
+          start: e.start.date || e.start.dateTime,
+          end: e.end?.date || e.end?.dateTime,
+          htmlLink: e.htmlLink,
+        })),
+      },
+    })
+  }
+
+  if (itemsToCreate.length === 0) {
+    return []
+  }
+
+  return itemsToCreate
+}
+
+/**
  * Sync data from Google Calendar
  */
 async function syncCalendarData(accessToken, ringIntegration, supabaseClient, userId) {
   const calendarId = ringIntegration.config.calendar_id || 'primary'
+  const aggregateByWeek = ringIntegration.config.aggregate_by_week !== false // Default true
   
   // Fetch ALL pages for this wheel to create items on correct pages by year
   const { data: pages, error: pagesError } = await supabaseClient
@@ -202,6 +309,7 @@ async function syncCalendarData(accessToken, ringIntegration, supabaseClient, us
   }
 
   console.log('[syncCalendarData] Found pages:', pages.map(p => ({ id: p.id, year: p.year })))
+  console.log('[syncCalendarData] Aggregate by week:', aggregateByWeek)
 
   // Get min/max years from pages to fetch wide date range
   const minYear = pages[0].year
@@ -251,7 +359,35 @@ async function syncCalendarData(accessToken, ringIntegration, supabaseClient, us
     .eq('ring_id', ringIntegration.ring_id)
     .eq('source', 'google_calendar')
 
-  // Create items from events, mapping to correct page based on year
+  // Group events by week if aggregation is enabled
+  if (aggregateByWeek) {
+    const aggregatedItems = await createWeekAggregatedItems(
+      events,
+      pages,
+      ringIntegration,
+      activityGroup,
+      calendarId
+    )
+    
+    if (aggregatedItems.length === 0) {
+      return []
+    }
+
+    // Insert aggregated items
+    const { data: createdItems, error: insertError } = await supabaseClient
+      .from('items')
+      .insert(aggregatedItems)
+      .select()
+
+    if (insertError) {
+      console.error('Error inserting aggregated items:', insertError)
+      throw insertError
+    }
+
+    return createdItems || []
+  }
+
+  // Create items from events, mapping to correct page based on year (legacy daily mode)
   const itemsToCreate = events
     .filter(event => {
       // Filter out events without dates

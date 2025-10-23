@@ -1105,7 +1105,17 @@ function OrganizationPanel({
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, 'inner')}
               >
-                {filteredInnerRings.map((ring) => (
+                {filteredInnerRings.length === 0 ? (
+                  <div className="px-3 py-4 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50">
+                    <p className="text-xs text-gray-500 mb-1">
+                      {t('editor:rings.noInnerRings')}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {t('editor:rings.dragHereOrAdd')}
+                    </p>
+                  </div>
+                ) : (
+                  filteredInnerRings.map((ring) => (
                   <div
                     key={ring.id}
                     draggable
@@ -1164,7 +1174,8 @@ function OrganizationPanel({
                       </button>
                     )}
                   </div>
-                ))}
+                ))
+                )}
               </div>
 
               <div className="flex items-center justify-between text-xs">
@@ -1244,7 +1255,17 @@ function OrganizationPanel({
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, 'outer')}
               >
-                {filteredOuterRings.map((ring) => (
+                {filteredOuterRings.length === 0 ? (
+                  <div className="px-3 py-4 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50">
+                    <p className="text-xs text-gray-500 mb-1">
+                      {t('editor:rings.noOuterRings')}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {t('editor:rings.dragHereOrAdd')}
+                    </p>
+                  </div>
+                ) : (
+                  filteredOuterRings.map((ring) => (
                   <div
                     key={ring.id}
                     draggable
@@ -1308,7 +1329,8 @@ function OrganizationPanel({
                       </button>
                     )}
                   </div>
-                ))}
+                ))
+                )}
               </div>
 
               <div className="flex items-center justify-between text-xs">

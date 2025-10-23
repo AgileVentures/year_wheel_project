@@ -79,7 +79,10 @@
     "outerDescription": "Outer rings appear outside the months. Use them to categorize events by departments, teams, or audiences.",
     "colorTooltip": "Color: {{color}} (change via color palette in settings)",
     "integrationConnected": "Data source connected - click to manage",
-    "integrationConnect": "Connect data source"
+    "integrationConnect": "Connect data source",
+    "noInnerRings": "No inner rings yet",
+    "noOuterRings": "No outer rings yet",
+    "dragHereOrAdd": "Drag rings here or click + to add"
   },
   "activityGroups": {
     "title": "ACTIVITY GROUPS",

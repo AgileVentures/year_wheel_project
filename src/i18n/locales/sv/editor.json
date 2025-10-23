@@ -79,7 +79,10 @@
     "outerDescription": "Ytterringar visas utanför månaderna. Använd dem för att kategorisera händelser i avdelningar, team eller målgrupper.",
     "colorTooltip": "Färg: {{color}} (ändras via färgpalett i inställningar)",
     "integrationConnected": "Datakälla ansluten - klicka för att hantera",
-    "integrationConnect": "Koppla datakälla"
+    "integrationConnect": "Koppla datakälla",
+    "noInnerRings": "Inga innerringar ännu",
+    "noOuterRings": "Inga ytterringar ännu",
+    "dragHereOrAdd": "Dra ringar hit eller klicka på + för att lägga till"
   },
   "activityGroups": {
     "title": "AKTIVITETSGRUPPER",

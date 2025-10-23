@@ -358,6 +358,37 @@ class YearWheel {
     return weeks;
   }
 
+  /**
+   * Get ISO week number for a date
+   * Returns { year, week }
+   */
+  getISOWeek(date) {
+    const tempDate = new Date(date.getTime());
+    tempDate.setHours(0, 0, 0, 0);
+    // Set to nearest Thursday: current date + 4 - current day number
+    // Make Sunday's day number 7
+    tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+    // Get first day of year
+    const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+    // Calculate full weeks to nearest Thursday
+    const weekNo = Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
+    return { year: tempDate.getFullYear(), week: weekNo };
+  }
+
+  /**
+   * Get the Monday (start) of a given ISO week
+   */
+  getWeekStart(year, week) {
+    // January 4th is always in week 1
+    const jan4 = new Date(year, 0, 4);
+    // Get the Monday of week 1
+    const dayOffset = (jan4.getDay() || 7) - 1; // 0=Mon, 6=Sun
+    const week1Monday = new Date(jan4.getTime() - dayOffset * 86400000);
+    // Add (week - 1) weeks
+    const weekStart = new Date(week1Monday.getTime() + (week - 1) * 7 * 86400000);
+    return weekStart;
+  }
+
   // Get month names for the current zoom level
   getMonthsForZoom() {
     if (this.zoomedMonth !== null) {
@@ -4267,6 +4298,57 @@ class YearWheel {
     }
   }
 
+  /**
+   * Cluster items by ISO week for year view
+   * Groups all items within the same week into a single visual block
+   */
+  clusterItemsByWeek(items) {
+    const weekGroups = new Map(); // Key: "YYYY-WW", Value: { items[], weekStart, weekEnd, ringId, activityId }
+
+    items.forEach((item) => {
+      const startDate = new Date(item.startDate);
+      const { year, week } = this.getISOWeek(startDate);
+      const key = `${year}-${String(week).padStart(2, '0')}`;
+
+      if (!weekGroups.has(key)) {
+        const weekStart = this.getWeekStart(year, week);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6); // Sunday
+
+        weekGroups.set(key, {
+          id: `week-${key}-${item.ringId}`,
+          ringId: item.ringId,
+          activityId: item.activityId, // Use first item's activity
+          labelId: null, // Don't show labels for clusters
+          name: item.name, // Use first item's name
+          startDate: weekStart.toISOString().split('T')[0],
+          endDate: weekEnd.toISOString().split('T')[0],
+          items: [],
+          isCluster: true,
+        });
+      }
+
+      weekGroups.get(key).items.push(item);
+    });
+
+    // Convert to array of cluster objects with count in name
+    // Use language from document or default to Swedish
+    const lang = document.documentElement.lang || 'sv';
+    const moreText = lang === 'en' ? 'more' : 'mer';
+    
+    return Array.from(weekGroups.values()).map((cluster) => {
+      const additionalCount = cluster.items.length - 1;
+      const displayName = additionalCount > 0 
+        ? `${cluster.name} (${additionalCount} ${moreText})`
+        : cluster.name;
+      
+      return {
+        ...cluster,
+        name: displayName,
+      };
+    });
+  }
+
   // Function to draw rotating elements
   drawRotatingElements() {
     // Clear clickable items and labels to draw before redrawing
@@ -4391,7 +4473,7 @@ class YearWheel {
           });
 
           // Filter items for this ring that also have visible activity group (label is optional)
-          const ringItems = this.organizationData.items.filter((item) => {
+          let ringItems = this.organizationData.items.filter((item) => {
             const hasVisibleActivityGroup = visibleActivityGroups.some(
               (a) => a.id === item.activityId
             );
@@ -4402,6 +4484,11 @@ class YearWheel {
               item.ringId === ring.id && hasVisibleActivityGroup && labelOk
             );
           });
+
+          // Cluster by week if in full year view (not zoomed)
+          if (this.zoomedMonth === null && this.zoomedQuarter === null) {
+            ringItems = this.clusterItemsByWeek(ringItems);
+          }
 
           // Assign items to tracks to handle overlaps
           const { maxTracks, itemToTrack } =
@@ -4708,7 +4795,7 @@ class YearWheel {
       });
 
       // Get items for this ring
-      const ringItems = this.organizationData.items.filter((item) => {
+      let ringItems = this.organizationData.items.filter((item) => {
         const hasVisibleActivityGroup = visibleActivityGroups.some(
           (a) => a.id === item.activityId
         );
@@ -4716,6 +4803,11 @@ class YearWheel {
           !item.labelId || visibleLabels.some((l) => l.id === item.labelId);
         return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
       });
+
+      // Cluster by week if in full year view (not zoomed)
+      if (this.zoomedMonth === null && this.zoomedQuarter === null) {
+        ringItems = this.clusterItemsByWeek(ringItems);
+      }
 
       // Draw subtle background for ALL inner rings using palette color
       this.context.beginPath();
