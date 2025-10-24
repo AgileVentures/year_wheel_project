@@ -1288,13 +1288,25 @@ export const toggleTemplateStatus = async (wheelId, isTemplate) => {
     .from('year_wheels')
     .update({ 
       is_template: isTemplate,
-      is_public: isTemplate // Templates must be public to be viewable
+      is_public: isTemplate, // Templates must be public to be viewable
+      show_on_landing: isTemplate // Automatically show templates on landing page
     })
     .eq('id', wheelId)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('[toggleTemplateStatus] Error:', error);
+    throw error;
+  }
+  
+  console.log('[toggleTemplateStatus] Success:', {
+    wheelId,
+    is_template: data.is_template,
+    is_public: data.is_public,
+    show_on_landing: data.show_on_landing
+  });
+  
   return data;
 };
 

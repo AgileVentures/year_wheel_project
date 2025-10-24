@@ -1,0 +1,372 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-10-24T10:00:00.000Z",
+  "title": "HR Year overview",
+  "year": "2026",
+  "colors": [
+    "#E8B4B8",
+    "#A8D5E2",
+    "#F5D6C6",
+    "#C9B8D4"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-recruitment",
+        "activityId": "group-recruitment",
+        "labelId": null,
+        "name": "Spring Recruitment Campaign",
+        "startDate": "2026-01-06",
+        "endDate": "2026-02-14",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-recruitment",
+        "activityId": "group-recruitment",
+        "labelId": null,
+        "name": "Summer Internship Hiring",
+        "startDate": "2026-04-01",
+        "endDate": "2026-05-23",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-onboarding",
+        "activityId": "group-onboarding",
+        "labelId": null,
+        "name": "New Employee Onboarding",
+        "startDate": "2026-09-08",
+        "endDate": "2026-10-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-onboarding",
+        "activityId": "group-onboarding",
+        "labelId": null,
+        "name": "Executive Search & Onboarding",
+        "startDate": "2026-10-13",
+        "endDate": "2026-11-14",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-retention",
+        "activityId": "group-retention",
+        "labelId": null,
+        "name": "Employee Engagement Survey",
+        "startDate": "2026-02-17",
+        "endDate": "2026-03-21",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-retention",
+        "activityId": "group-retention",
+        "labelId": null,
+        "name": "Career Development Plans",
+        "startDate": "2026-04-07",
+        "endDate": "2026-04-25",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-retention",
+        "activityId": "group-retention",
+        "labelId": null,
+        "name": "Mid-Year Check-ins",
+        "startDate": "2026-06-02",
+        "endDate": "2026-06-20",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-retention",
+        "activityId": "group-retention",
+        "labelId": null,
+        "name": "Team Building Activities",
+        "startDate": "2026-08-11",
+        "endDate": "2026-09-05",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-retention",
+        "activityId": "group-retention",
+        "labelId": null,
+        "name": "Year-End Recognition Program",
+        "startDate": "2026-11-03",
+        "endDate": "2026-11-28",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-internal-hr",
+        "activityId": "group-internal",
+        "labelId": null,
+        "name": "Q1 Planning & Budget",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-internal-hr",
+        "activityId": "group-internal",
+        "labelId": null,
+        "name": "Q2 Strategic Review",
+        "startDate": "2026-04-01",
+        "endDate": "2026-06-30",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-internal-hr",
+        "activityId": "group-internal",
+        "labelId": null,
+        "name": "Q3 Performance Analysis",
+        "startDate": "2026-07-01",
+        "endDate": "2026-09-30",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-013",
+        "ringId": "ring-internal-hr",
+        "activityId": "group-internal",
+        "labelId": null,
+        "name": "Q4 Annual Reviews",
+        "startDate": "2026-10-01",
+        "endDate": "2026-12-31",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-014",
+        "ringId": "ring-internal-hr",
+        "activityId": "group-holidays",
+        "labelId": null,
+        "name": "Summer Holidays",
+        "startDate": "2026-06-23",
+        "endDate": "2026-08-08",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-015",
+        "ringId": "ring-internal-hr",
+        "activityId": "group-holidays",
+        "labelId": null,
+        "name": "Autumn Holidays",
+        "startDate": "2026-10-20",
+        "endDate": "2026-11-07",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-016",
+        "ringId": "ring-operation-hr",
+        "activityId": "group-operation",
+        "labelId": null,
+        "name": "HR Systems Audit",
+        "startDate": "2026-03-10",
+        "endDate": "2026-03-28",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-017",
+        "ringId": "ring-operation-hr",
+        "activityId": "group-operation",
+        "labelId": null,
+        "name": "Compensation & Benefits Review",
+        "startDate": "2026-05-05",
+        "endDate": "2026-05-30",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-018",
+        "ringId": "ring-operation-hr",
+        "activityId": "group-operation",
+        "labelId": null,
+        "name": "Policy Updates & Compliance",
+        "startDate": "2026-08-18",
+        "endDate": "2026-09-12",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-019",
+        "ringId": "ring-operation-hr",
+        "activityId": "group-training",
+        "labelId": null,
+        "name": "Leadership Development Program",
+        "startDate": "2026-09-22",
+        "endDate": "2026-10-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-020",
+        "ringId": "ring-org-dev",
+        "activityId": "group-development",
+        "labelId": null,
+        "name": "Organizational Design Review",
+        "startDate": "2026-01-13",
+        "endDate": "2026-02-21",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-021",
+        "ringId": "ring-org-dev",
+        "activityId": "group-development",
+        "labelId": null,
+        "name": "Culture & Values Workshop",
+        "startDate": "2026-03-03",
+        "endDate": "2026-04-04",
+        "time": null,
+        "pageId": null
+      }
+    ],
+    "rings": [
+      {
+        "id": "ring-recruitment",
+        "name": "Rekrytering",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#E8B4B8"
+      },
+      {
+        "id": "ring-onboarding",
+        "name": "Introduktion",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#E8B4B8"
+      },
+      {
+        "id": "ring-retention",
+        "name": "Retention",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#A8D5E2"
+      },
+      {
+        "id": "ring-internal-hr",
+        "name": "Intern HR",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb"
+      },
+      {
+        "id": "ring-operation-hr",
+        "name": "Operativ HR",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb"
+      },
+      {
+        "id": "ring-org-dev",
+        "name": "Organisationsutveckling",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb"
+      }
+    ],
+    "labels": [],
+    "activityGroups": [
+      {
+        "id": "group-recruitment",
+        "name": "Recruitment",
+        "color": "#E8B4B8",
+        "visible": true
+      },
+      {
+        "id": "group-onboarding",
+        "name": "Onboarding",
+        "color": "#C9B8D4",
+        "visible": true
+      },
+      {
+        "id": "group-retention",
+        "name": "Retention",
+        "color": "#A8D5E2",
+        "visible": true
+      },
+      {
+        "id": "group-internal",
+        "name": "Internal Planning",
+        "color": "#F5D6C6",
+        "visible": true
+      },
+      {
+        "id": "group-holidays",
+        "name": "Holidays",
+        "color": "#FFD8A8",
+        "visible": true
+      },
+      {
+        "id": "group-operation",
+        "name": "Operations",
+        "color": "#F5D6C6",
+        "visible": true
+      },
+      {
+        "id": "group-training",
+        "name": "Training",
+        "color": "#C9B8D4",
+        "visible": true
+      },
+      {
+        "id": "group-development",
+        "name": "Development",
+        "color": "#F5D6C6",
+        "visible": true
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": false,
+  "weekRingDisplayMode": "week-numbers"
+}

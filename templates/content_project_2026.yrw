@@ -1,0 +1,420 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-10-24T11:00:00.000Z",
+  "title": "Innehållsproduktion & Projekt",
+  "year": "2026",
+  "colors": [
+    "#7FA5BE",
+    "#B5D8A6",
+    "#D4C5E8",
+    "#F5E5A8"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-projects",
+        "activityId": "group-project",
+        "labelId": null,
+        "name": "Project A",
+        "startDate": "2026-01-05",
+        "endDate": "2026-02-27",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-projects",
+        "activityId": "group-project",
+        "labelId": null,
+        "name": "Project A - Part 1",
+        "startDate": "2026-01-05",
+        "endDate": "2026-01-30",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-projects",
+        "activityId": "group-project",
+        "labelId": null,
+        "name": "Project B",
+        "startDate": "2026-03-02",
+        "endDate": "2026-04-24",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-projects",
+        "activityId": "group-project",
+        "labelId": null,
+        "name": "Project B - Part 2",
+        "startDate": "2026-03-16",
+        "endDate": "2026-04-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-projects",
+        "activityId": "group-project",
+        "labelId": null,
+        "name": "Project C",
+        "startDate": "2026-08-03",
+        "endDate": "2026-10-02",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Blog",
+        "startDate": "2026-01-12",
+        "endDate": "2026-02-06",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Course",
+        "startDate": "2026-02-09",
+        "endDate": "2026-03-06",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Webinar",
+        "startDate": "2026-03-09",
+        "endDate": "2026-03-27",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Podcast",
+        "startDate": "2026-03-30",
+        "endDate": "2026-04-24",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Webinar",
+        "startDate": "2026-04-27",
+        "endDate": "2026-05-22",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Newsletter",
+        "startDate": "2026-05-25",
+        "endDate": "2026-06-19",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Social Campaign",
+        "startDate": "2026-06-22",
+        "endDate": "2026-07-17",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-013",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Webinar",
+        "startDate": "2026-08-03",
+        "endDate": "2026-08-28",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-014",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Podcast",
+        "startDate": "2026-08-31",
+        "endDate": "2026-09-25",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-015",
+        "ringId": "ring-activities",
+        "activityId": "group-activity",
+        "labelId": null,
+        "name": "Newsletter",
+        "startDate": "2026-09-28",
+        "endDate": "2026-10-23",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-016",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Annual Tax Return",
+        "startDate": "2026-01-05",
+        "endDate": "2026-02-13",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-017",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Annual Accounts",
+        "startDate": "2026-02-16",
+        "endDate": "2026-03-13",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-018",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Course",
+        "startDate": "2026-03-16",
+        "endDate": "2026-04-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-019",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Fair",
+        "startDate": "2026-04-13",
+        "endDate": "2026-05-08",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-020",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Course Evaluation",
+        "startDate": "2026-05-11",
+        "endDate": "2026-06-05",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-021",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Webinar",
+        "startDate": "2026-06-08",
+        "endDate": "2026-07-03",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-022",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Fair",
+        "startDate": "2026-07-06",
+        "endDate": "2026-07-31",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-023",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Holidays",
+        "startDate": "2026-08-03",
+        "endDate": "2026-08-28",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-024",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Start-up",
+        "startDate": "2026-08-31",
+        "endDate": "2026-09-25",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-025",
+        "ringId": "ring-content",
+        "activityId": "group-content",
+        "labelId": null,
+        "name": "Quarterback review",
+        "startDate": "2026-09-28",
+        "endDate": "2026-10-23",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-026",
+        "ringId": "ring-quarters",
+        "activityId": "group-quarter",
+        "labelId": null,
+        "name": "Q1",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-027",
+        "ringId": "ring-quarters",
+        "activityId": "group-quarter",
+        "labelId": null,
+        "name": "Q2",
+        "startDate": "2026-04-01",
+        "endDate": "2026-06-30",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-028",
+        "ringId": "ring-quarters",
+        "activityId": "group-quarter",
+        "labelId": null,
+        "name": "Q3",
+        "startDate": "2026-07-01",
+        "endDate": "2026-09-30",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-029",
+        "ringId": "ring-quarters",
+        "activityId": "group-quarter",
+        "labelId": null,
+        "name": "Q4",
+        "startDate": "2026-10-01",
+        "endDate": "2026-12-31",
+        "time": null,
+        "pageId": null
+      }
+    ],
+    "rings": [
+      {
+        "id": "ring-projects",
+        "name": "Projects",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#7FA5BE"
+      },
+      {
+        "id": "ring-activities",
+        "name": "Activities",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#B5D8A6"
+      },
+      {
+        "id": "ring-content",
+        "name": "Content",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb"
+      },
+      {
+        "id": "ring-quarters",
+        "name": "Quarters",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb"
+      }
+    ],
+    "labels": [],
+    "activityGroups": [
+      {
+        "id": "group-project",
+        "name": "Projects",
+        "color": "#7FA5BE",
+        "visible": true
+      },
+      {
+        "id": "group-activity",
+        "name": "Activities",
+        "color": "#B5D8A6",
+        "visible": true
+      },
+      {
+        "id": "group-content",
+        "name": "Content",
+        "color": "#D4C5E8",
+        "visible": true
+      },
+      {
+        "id": "group-quarter",
+        "name": "Quarters",
+        "color": "#F5E5A8",
+        "visible": true
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": false,
+  "weekRingDisplayMode": "week-numbers"
+}

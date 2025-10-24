@@ -456,27 +456,29 @@ function PreviewWheelPage() {
               </button>
             ) : (
               <>
-                {/* Copy Template Button (for all users) */}
-                <button
-                  onClick={handleCopyTemplate}
-                  disabled={isCopying}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={t('common:previewWheelPage.copyTemplateTooltip')}
-                >
-                  {isCopying ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      <span className="text-sm font-medium">{t('common:previewWheelPage.copying')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={16} />
-                      <span className="text-sm font-medium">
-                        {user ? t('common:previewWheelPage.copyTemplate') : t('common:previewWheelPage.useTemplate')}
-                      </span>
-                    </>
-                  )}
-                </button>
+                {/* Copy Template Button (only show for templates) */}
+                {wheelData.is_template && (
+                  <button
+                    onClick={handleCopyTemplate}
+                    disabled={isCopying}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={t('common:previewWheelPage.copyTemplateTooltip')}
+                  >
+                    {isCopying ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span className="text-sm font-medium">{t('common:previewWheelPage.copying')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={16} />
+                        <span className="text-sm font-medium">
+                          {user ? t('common:previewWheelPage.copyTemplate') : t('common:previewWheelPage.useTemplate')}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
                 
                 {/* Language Switcher */}
                 <LanguageSwitcher />
