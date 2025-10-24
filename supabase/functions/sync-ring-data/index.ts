@@ -594,6 +594,8 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
         ? row[columnMapping.description]
         : null
       
+      console.log(`[syncSheetData] Row ${index + 2}: name="${name}", start="${startDateRaw}", end="${endDateRaw}", description="${description}", columnMapping:`, columnMapping)
+      
       const startDate = parseDate(startDateRaw, defaultYear)
       const endDate = parseDate(endDateRaw, defaultYear)
       

@@ -221,6 +221,7 @@ export const fetchPageData = async (pageId) => {
     startDate: i.start_date,
     endDate: i.end_date,
     time: i.time,
+    description: i.description, // ⚠️ CRITICAL: Include description from synced items
     pageId: i.page_id, // ⚠️ CRITICAL: Must preserve page_id for save cycle
   }));
 };

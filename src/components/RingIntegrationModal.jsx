@@ -309,9 +309,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       setSyncing(true);
       setError('');
       
-      console.log('[RingIntegration] Starting sync for integration:', integrationId);
       const result = await syncRingData(integrationId);
-      console.log('[RingIntegration] Sync result:', result);
       
       setSuccess(t('integration:ringIntegrationModal.sync.syncComplete', { count: result.itemCount }));
       

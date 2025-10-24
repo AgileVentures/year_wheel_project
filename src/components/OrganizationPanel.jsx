@@ -1864,10 +1864,13 @@ function OrganizationPanel({
           onClose={() => setIntegrationRing(null)}
           onSyncComplete={async () => {
             // Reload wheel data to get synced items
+            console.log('[OrganizationPanel] Sync complete, reloading wheel data...');
             if (onReloadData) {
               await onReloadData();
+              console.log('[OrganizationPanel] Wheel data reloaded successfully');
             }
-            setIntegrationRing(null);
+            // Don't close modal automatically - let user see the success message
+            // setIntegrationRing(null);
           }}
         />
       )}
