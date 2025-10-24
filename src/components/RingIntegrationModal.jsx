@@ -3,7 +3,7 @@
  * Configure Google Calendar or Google Sheets sync for a ring
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Calendar, Sheet, Loader2, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -13,12 +13,16 @@ import {
   deleteRingIntegration,
   listGoogleCalendars,
   validateGoogleSheet,
+  fetchGoogleSheetHeaders,
   syncRingData,
   getUserIntegrationByProvider
 } from '../services/integrationService';
 
 function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
   const { t, i18n } = useTranslation(['integration']);
+  
+  // Get wheel year from ring context (assuming ring has wheel_id and year info)
+  const [wheelYear, setWheelYear] = React.useState(new Date().getFullYear());
   
   // Validate that ring has a proper UUID before allowing integration
   const isValidUUID = (id) => {
@@ -43,6 +47,15 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
   const [spreadsheetId, setSpreadsheetId] = useState('');
   const [sheetName, setSheetName] = useState('Sheet1');
   const [validatedSheet, setValidatedSheet] = useState(null);
+  
+  // Sheet column mapping
+  const [sheetHeaders, setSheetHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({
+    name: 0,        // Default: Column A (index 0)
+    startDate: 1,   // Default: Column B (index 1)
+    endDate: 2,     // Default: Column C (index 2)
+    description: 3  // Default: Column D (index 3)
+  });
   
   // Sync state
   const [syncing, setSyncing] = useState(false);
@@ -84,6 +97,11 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
         setIntegrationType('sheet');
         setSpreadsheetId(sheetInt.config.spreadsheet_id || '');
         setSheetName(sheetInt.config.sheet_name || 'Sheet1');
+        
+        // Load column mapping if exists
+        if (sheetInt.mapping_config) {
+          setColumnMapping(sheetInt.mapping_config);
+        }
       }
 
     } catch (err) {
@@ -125,6 +143,48 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
     } catch (err) {
       setError(t('integration:ringIntegrationModal.errors.validateSheetFailed') + ': ' + err.message);
       setValidatedSheet(null);
+    }
+  };
+
+  const handleFetchHeaders = async () => {
+    if (!spreadsheetId || !sheetName) {
+      setError('Please enter spreadsheet ID and sheet name first');
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccess('');
+      
+      // Call new service function to fetch first row
+      const headers = await fetchGoogleSheetHeaders(spreadsheetId, sheetName);
+      setSheetHeaders(headers);
+      
+      // Try to auto-detect column mapping based on common header names
+      const autoMapping = {};
+      headers.forEach((header, index) => {
+        const lowerHeader = header.toLowerCase();
+        if (lowerHeader.includes('name') || lowerHeader.includes('activity') || lowerHeader.includes('title')) {
+          autoMapping.name = index;
+        } else if (lowerHeader.includes('start') || lowerHeader.includes('från') || lowerHeader.includes('begin')) {
+          autoMapping.startDate = index;
+        } else if (lowerHeader.includes('end') || lowerHeader.includes('till') || lowerHeader.includes('slut')) {
+          autoMapping.endDate = index;
+        } else if (lowerHeader.includes('description') || lowerHeader.includes('note') || lowerHeader.includes('beskrivning')) {
+          autoMapping.description = index;
+        }
+      });
+      
+      // Apply auto-detected mappings if found
+      if (Object.keys(autoMapping).length > 0) {
+        setColumnMapping(prev => ({ ...prev, ...autoMapping }));
+        setSuccess('Headers loaded - column mapping auto-detected');
+      } else {
+        setSuccess('Headers loaded - please configure column mapping');
+      }
+    } catch (err) {
+      setError('Failed to fetch headers: ' + err.message);
+      setSheetHeaders([]);
     }
   };
 
@@ -207,8 +267,9 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
           config: {
             spreadsheet_id: spreadsheetId,
             sheet_name: sheetName,
-            range: 'A:D' // Default range
+            range: 'A:Z' // Wider range to accommodate all columns
           },
+          mapping_config: columnMapping, // Store column mapping
           sync_enabled: true
         };
 
@@ -575,26 +636,168 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 )}
               </div>
 
-              <div className="p-3 bg-blue-50 rounded-sm text-sm text-blue-800">
-                <div className="font-medium mb-1">{t('integration:ringIntegrationModal.sheets.expectedFormat')}</div>
-                <table className="w-full text-xs border border-blue-200 bg-white">
-                  <thead>
-                    <tr className="bg-blue-100">
-                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnName')}</th>
-                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnStartDate')}</th>
-                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnEndDate')}</th>
-                      <th className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.columnNotes')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleName')}</td>
-                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleStartDate')}</td>
-                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleEndDate')}</td>
-                      <td className="border border-blue-200 px-2 py-1">{t('integration:ringIntegrationModal.sheets.exampleNotes')}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              {/* Column Mapping Configuration */}
+              <div className="space-y-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-lg shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                      <Sheet size={16} className="text-green-600" />
+                      {t('integration:ringIntegrationModal.sheets.columnMapping.title')}
+                    </h3>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {t('integration:ringIntegrationModal.sheets.columnMapping.subtitle')}
+                    </p>
+                  </div>
+                  {validatedSheet && (
+                    <button
+                      onClick={handleFetchHeaders}
+                      className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-sm font-medium transition-colors shadow-sm flex items-center gap-1"
+                    >
+                      <RefreshCw size={12} />
+                      {t('integration:ringIntegrationModal.sheets.columnMapping.loadHeaders')}
+                    </button>
+                  )}
+                </div>
+
+                {sheetHeaders.length > 0 && (
+                  <div className="text-xs bg-green-50 p-3 rounded-md border border-green-200">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle size={14} className="text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-green-900 mb-1">
+                          {t('integration:ringIntegrationModal.sheets.columnMapping.foundColumns', { count: sheetHeaders.length })}
+                        </div>
+                        <div className="text-green-700 font-mono text-xs">
+                          {sheetHeaders.map((header, idx) => (
+                            <span key={idx} className="inline-block mr-2 mb-1 px-1.5 py-0.5 bg-green-100 rounded">
+                              {String.fromCharCode(65 + idx)}: {header}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Name Column */}
+                  <div className="bg-white p-3 rounded-md border border-gray-200">
+                    <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                      {t('integration:ringIntegrationModal.sheets.columnMapping.activityName')} <span className="text-red-500">*</span>
+                      <span className="text-xs text-gray-500 font-normal">{t('integration:ringIntegrationModal.sheets.columnMapping.activityNameHint')}</span>
+                    </label>
+                    {sheetHeaders.length > 0 ? (
+                      <select
+                        value={columnMapping.name}
+                        onChange={(e) => setColumnMapping(prev => ({ ...prev, name: parseInt(e.target.value) }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        {sheetHeaders.map((header, index) => (
+                          <option key={index} value={index}>
+                            {String.fromCharCode(65 + index)}: {header}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-sm text-gray-600 py-2 px-3 bg-gray-50 rounded border border-gray-200">
+                        {t('integration:ringIntegrationModal.sheets.columnMapping.currentColumn', { letter: String.fromCharCode(65 + columnMapping.name) })} • {t('integration:ringIntegrationModal.sheets.columnMapping.loadHeadersPrompt')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Date Columns - Side by Side */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Start Date Column */}
+                    <div className="bg-white p-3 rounded-md border border-gray-200">
+                      <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                        {t('integration:ringIntegrationModal.sheets.columnMapping.startDate')} <span className="text-red-500">*</span>
+                      </label>
+                      {sheetHeaders.length > 0 ? (
+                        <select
+                          value={columnMapping.startDate}
+                          onChange={(e) => setColumnMapping(prev => ({ ...prev, startDate: parseInt(e.target.value) }))}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                          {sheetHeaders.map((header, index) => (
+                            <option key={index} value={index}>
+                              {String.fromCharCode(65 + index)}: {header}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="text-sm text-gray-600 py-2 px-3 bg-gray-50 rounded border border-gray-200">
+                          {t('integration:ringIntegrationModal.sheets.columnMapping.currentColumn', { letter: String.fromCharCode(65 + columnMapping.startDate) })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* End Date Column */}
+                    <div className="bg-white p-3 rounded-md border border-gray-200">
+                      <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                        {t('integration:ringIntegrationModal.sheets.columnMapping.endDate')} <span className="text-red-500">*</span>
+                      </label>
+                      {sheetHeaders.length > 0 ? (
+                        <select
+                          value={columnMapping.endDate}
+                          onChange={(e) => setColumnMapping(prev => ({ ...prev, endDate: parseInt(e.target.value) }))}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                          {sheetHeaders.map((header, index) => (
+                            <option key={index} value={index}>
+                              {String.fromCharCode(65 + index)}: {header}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="text-sm text-gray-600 py-2 px-3 bg-gray-50 rounded border border-gray-200">
+                          {t('integration:ringIntegrationModal.sheets.columnMapping.currentColumn', { letter: String.fromCharCode(65 + columnMapping.endDate) })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Description Column (Optional) */}
+                  <div className="bg-white p-3 rounded-md border border-gray-200">
+                    <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                      {t('integration:ringIntegrationModal.sheets.columnMapping.descriptionLabel')} <span className="text-xs text-gray-500 font-normal">{t('integration:ringIntegrationModal.sheets.columnMapping.descriptionHint')}</span>
+                    </label>
+                    {sheetHeaders.length > 0 ? (
+                      <select
+                        value={columnMapping.description ?? ''}
+                        onChange={(e) => setColumnMapping(prev => ({ 
+                          ...prev, 
+                          description: e.target.value === '' ? null : parseInt(e.target.value) 
+                        }))}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="">{t('integration:ringIntegrationModal.sheets.columnMapping.noneSelected')}</option>
+                        {sheetHeaders.map((header, index) => (
+                          <option key={index} value={index}>
+                            {String.fromCharCode(65 + index)}: {header}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-sm text-gray-600 py-2 px-3 bg-gray-50 rounded border border-gray-200">
+                        {columnMapping.description !== null && columnMapping.description !== undefined
+                          ? t('integration:ringIntegrationModal.sheets.columnMapping.currentColumn', { letter: String.fromCharCode(65 + columnMapping.description) })
+                          : t('integration:ringIntegrationModal.sheets.columnMapping.noneSelected')
+                        }
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Date Format Hint */}
+                <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-md border border-blue-200">
+                  <div className="font-medium text-blue-900 mb-1">💡 {t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatTitle')}</div>
+                  <ul className="space-y-0.5 text-blue-800 ml-4 list-disc">
+                    <li>{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatBest')}</li>
+                    <li>{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatGood')}</li>
+                    <li>{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatWorks')}</li>
+                    <li>{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatAutoFill', { year: wheelYear })}</li>
+                  </ul>
+                </div>
               </div>
 
               {sheetIntegration && (

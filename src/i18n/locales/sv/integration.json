@@ -52,7 +52,27 @@
       "notSynced": "Ej synkad",
       "notConnectedError": "Google Sheets inte anslutet",
       "enterSpreadsheetIdError": "Ange Spreadsheet ID",
-      "enterDetailsError": "Ange Spreadsheet ID och Sheet-namn"
+      "enterDetailsError": "Ange Spreadsheet ID och Sheet-namn",
+      "columnMapping": {
+        "title": "Kolumnmappning",
+        "subtitle": "Mappa dina ark-kolumner till obligatoriska fält",
+        "loadHeaders": "Ladda rubriker",
+        "foundColumns": "Hittade {{count}} kolumner",
+        "activityName": "Aktivitetsnamn",
+        "activityNameHint": "(visas på hjulet)",
+        "startDate": "Startdatum",
+        "endDate": "Slutdatum",
+        "descriptionLabel": "Beskrivning",
+        "descriptionHint": "(valfritt - visas i tooltip)",
+        "noneSelected": "-- Ingen --",
+        "currentColumn": "Kolumn {{letter}}",
+        "loadHeadersPrompt": "Klicka \"Ladda rubriker\" för att anpassa",
+        "dateFormatTitle": "Datumformat tips:",
+        "dateFormatBest": "Bäst: ISO-format (2025-11-10)",
+        "dateFormatGood": "Bra: Månad DD, ÅÅÅÅ (10 november 2025)",
+        "dateFormatWorks": "Fungerar: DD/MM/ÅÅÅÅ eller MM/DD/ÅÅÅÅ",
+        "dateFormatAutoFill": "Auto-fyll: \"10 november\" använder hjulets år ({{year}})"
+      }
     },
     "sync": {
       "syncing": "Synkroniserar...",

@@ -487,12 +487,21 @@ async function syncCalendarData(accessToken, ringIntegration, supabaseClient, us
  */
 async function syncSheetData(accessToken, ringIntegration, supabaseClient, userId) {
   console.log('[syncSheetData] Ring integration config:', JSON.stringify(ringIntegration.config, null, 2))
+  console.log('[syncSheetData] Column mapping:', JSON.stringify(ringIntegration.mapping_config, null, 2))
   
   const spreadsheetId = ringIntegration.config.spreadsheet_id
   const sheetName = ringIntegration.config.sheet_name || 'Sheet1'
-  const range = ringIntegration.config.range || 'A:D' // Default: columns A-D
+  const range = ringIntegration.config.range || 'A:Z' // Wide range to get all columns
+  
+  // Get column mapping (default to legacy format if not set)
+  const columnMapping = ringIntegration.mapping_config || {
+    name: 0,
+    startDate: 1,
+    endDate: 2,
+    description: 3
+  }
 
-  console.log('[syncSheetData] Using:', { spreadsheetId, sheetName, range })
+  console.log('[syncSheetData] Using:', { spreadsheetId, sheetName, range, columnMapping })
 
   if (!spreadsheetId) {
     throw new Error('Missing spreadsheet_id in configuration')
@@ -511,6 +520,9 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
   }
 
   console.log('[syncSheetData] Found pages:', pages.map(p => ({ id: p.id, year: p.year })))
+
+  // Determine default year for date parsing (use first page's year)
+  const defaultYear = pages[0].year
 
   // Fetch sheet data
   const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}!${range}`
@@ -564,19 +576,33 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
     .eq('ring_id', ringIntegration.ring_id)
     .eq('source', 'google_sheets')
 
-  // Expected format: [Name, Start Date, End Date, Color/Notes]
+  // Use column mapping to extract data from rows
   const itemsToCreate = dataRows
-    .filter(row => row.length >= 3 && row[0] && row[1] && row[2]) // Must have name and dates
+    .filter(row => {
+      // Must have name and dates in the mapped columns
+      const hasName = row[columnMapping.name]
+      const hasStartDate = row[columnMapping.startDate]
+      const hasEndDate = row[columnMapping.endDate]
+      return hasName && hasStartDate && hasEndDate
+    })
     .flatMap((row, index) => {
-      const startDate = parseDate(row[1])
-      const endDate = parseDate(row[2])
+      // Extract values using column mapping
+      const name = row[columnMapping.name]
+      const startDateRaw = row[columnMapping.startDate]
+      const endDateRaw = row[columnMapping.endDate]
+      const description = columnMapping.description !== null && columnMapping.description !== undefined
+        ? row[columnMapping.description]
+        : null
+      
+      const startDate = parseDate(startDateRaw, defaultYear)
+      const endDate = parseDate(endDateRaw, defaultYear)
       
       const startYear = new Date(startDate).getFullYear()
       const endYear = new Date(endDate).getFullYear()
       
       // Handle cross-year items by splitting them
       if (startYear !== endYear) {
-        console.log(`[syncSheetData] Cross-year item: ${row[0]} (${startDate} to ${endDate})`)
+        console.log(`[syncSheetData] Cross-year item: ${name} (${startDate} to ${endDate})`)
         
         const segments = []
         for (let year = startYear; year <= endYear; year++) {
@@ -594,9 +620,10 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
             page_id: page.id, // CRITICAL: Use page_id matching the year
             ring_id: ringIntegration.ring_id,
             activity_id: activityGroup.id,
-            name: row[0],
+            name: name,
             start_date: segmentStart,
             end_date: segmentEnd,
+            description: description,
             source: 'google_sheets',
             external_id: `${spreadsheetId}_${sheetName}_${index + 2}`, // +2 for header + 0-index
             sync_metadata: {
@@ -604,6 +631,7 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
               sheet_name: sheetName,
               row_index: index + 2,
               raw_data: row,
+              column_mapping: columnMapping,
               is_segment: true,
               original_start: startDate,
               original_end: endDate,
@@ -616,7 +644,7 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
         // Single-year item
         const page = pages.find(p => p.year === startYear)
         if (!page) {
-          console.warn(`[syncSheetData] No page found for year ${startYear}, skipping item ${row[0]}`)
+          console.warn(`[syncSheetData] No page found for year ${startYear}, skipping item ${name}`)
           return []
         }
         
@@ -625,9 +653,10 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
           page_id: page.id, // CRITICAL: Use page_id matching the year
           ring_id: ringIntegration.ring_id,
           activity_id: activityGroup.id,
-          name: row[0],
+          name: name,
           start_date: startDate,
           end_date: endDate,
+          description: description,
           source: 'google_sheets',
           external_id: `${spreadsheetId}_${sheetName}_${index + 2}`, // +2 for header + 0-index
           sync_metadata: {
@@ -635,6 +664,7 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
             sheet_name: sheetName,
             row_index: index + 2,
             raw_data: row,
+            column_mapping: columnMapping,
           },
         }]
       }
@@ -665,37 +695,68 @@ async function syncSheetData(accessToken, ringIntegration, supabaseClient, userI
 
 /**
  * Parse various date formats from Google Sheets
+ * Only applies defaultYear if the date string doesn't contain a year
  */
-function parseDate(dateStr) {
-  // Try ISO format first (YYYY-MM-DD)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr
+function parseDate(dateStr, defaultYear = null) {
+  // Handle empty or undefined dates
+  if (!dateStr || dateStr.trim() === '') {
+    console.warn('Empty date string, using today')
+    return new Date().toISOString().split('T')[0]
   }
 
-  // Try Swedish format (DD/MM/YYYY or YYYY/MM/DD)
-  const parts = dateStr.split(/[\/\-.]/)
+  const cleanDateStr = dateStr.trim()
+
+  // Try ISO format first (YYYY-MM-DD) - has year
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDateStr)) {
+    return cleanDateStr
+  }
+
+  // Try formats with explicit year (DD/MM/YYYY, YYYY/MM/DD, etc.)
+  const parts = cleanDateStr.split(/[\/\-.]/)
   if (parts.length === 3) {
     const [a, b, c] = parts
     
-    // YYYY-MM-DD or YYYY/MM/DD
+    // YYYY-MM-DD or YYYY/MM/DD (has year)
     if (a.length === 4) {
       return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`
     }
     
-    // DD-MM-YYYY or DD/MM/YYYY
+    // DD-MM-YYYY or DD/MM/YYYY (has year)
     if (c.length === 4) {
       return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`
     }
+    
+    // MM-DD-YY or DD-MM-YY (2-digit year)
+    if (c.length === 2) {
+      // Treat 00-50 as 2000-2050, 51-99 as 1951-1999
+      const fullYear = parseInt(c) <= 50 ? `20${c}` : `19${c}`
+      // Assume DD-MM-YY format (European)
+      return `${fullYear}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`
+    }
   }
 
-  // Try parsing as JavaScript date
-  const date = new Date(dateStr)
+  // Check if string contains a 4-digit year anywhere
+  const yearMatch = cleanDateStr.match(/\b(19|20)\d{2}\b/)
+  const hasExplicitYear = yearMatch !== null
+
+  // Try parsing as JavaScript date (handles "November 10", "Nov 10 2025", etc.)
+  const date = new Date(cleanDateStr)
   if (!isNaN(date.getTime())) {
+    // If no explicit year found in string AND we have a defaultYear, apply it
+    if (!hasExplicitYear && defaultYear) {
+      const month = date.getMonth()
+      const day = date.getDate()
+      const withYear = new Date(defaultYear, month, day)
+      console.log(`[parseDate] No year in "${cleanDateStr}", applying wheel year ${defaultYear}: ${withYear.toISOString().split('T')[0]}`)
+      return withYear.toISOString().split('T')[0]
+    }
+    // Date string had a year, use it as-is
+    console.log(`[parseDate] Parsed "${cleanDateStr}" with explicit year: ${date.toISOString().split('T')[0]}`)
     return date.toISOString().split('T')[0]
   }
 
   // Fallback to today's date if unparseable
-  console.warn(`Could not parse date: ${dateStr}, using today`)
+  console.warn(`Could not parse date: ${cleanDateStr}, using today`)
   return new Date().toISOString().split('T')[0]
 }
 

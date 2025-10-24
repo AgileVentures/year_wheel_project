@@ -52,7 +52,27 @@
       "notSynced": "Not synced",
       "notConnectedError": "Google Sheets not connected",
       "enterSpreadsheetIdError": "Enter Spreadsheet ID",
-      "enterDetailsError": "Enter Spreadsheet ID and sheet name"
+      "enterDetailsError": "Enter Spreadsheet ID and sheet name",
+      "columnMapping": {
+        "title": "Column Mapping",
+        "subtitle": "Map your sheet columns to the required fields",
+        "loadHeaders": "Load Headers",
+        "foundColumns": "Found {{count}} columns",
+        "activityName": "Activity Name",
+        "activityNameHint": "(displayed on wheel)",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "descriptionLabel": "Description",
+        "descriptionHint": "(optional - shown in tooltip)",
+        "noneSelected": "-- None --",
+        "currentColumn": "Column {{letter}}",
+        "loadHeadersPrompt": "Click \"Load Headers\" to customize",
+        "dateFormatTitle": "Date Format Tips:",
+        "dateFormatBest": "Best: ISO format (2025-11-10)",
+        "dateFormatGood": "Good: Month DD, YYYY (November 10, 2025)",
+        "dateFormatWorks": "Works: DD/MM/YYYY or MM/DD/YYYY",
+        "dateFormatAutoFill": "Auto-fill: \"November 10\" uses wheel's year ({{year}})"
+      }
     },
     "sync": {
       "syncing": "Syncing...",

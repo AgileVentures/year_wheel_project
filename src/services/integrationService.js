@@ -242,6 +242,23 @@ export async function validateGoogleSheet(spreadsheetId) {
 }
 
 /**
+ * Fetch the first row (headers) from a Google Sheet
+ * @param {string} spreadsheetId - Google Spreadsheet ID
+ * @param {string} sheetName - Sheet name
+ * @returns {Promise<Array<string>>} Array of header values
+ */
+export async function fetchGoogleSheetHeaders(spreadsheetId, sheetName = 'Sheet1') {
+  const { data: { session } } = await supabase.auth.getSession();
+  const { data, error } = await supabase.functions.invoke('google-sheets-fetch-headers', {
+    body: { spreadsheetId, sheetName },
+    headers: session ? { Authorization: `Bearer ${session.access_token}` } : {}
+  });
+
+  if (error) throw error;
+  return data.headers || [];
+}
+
+/**
  * Get available sheets within a spreadsheet
  * @param {string} spreadsheetId - Google Spreadsheet ID
  * @returns {Promise<Array>} List of sheet names
