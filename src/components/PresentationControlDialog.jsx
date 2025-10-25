@@ -236,38 +236,47 @@ function PresentationControlDialog({
       <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 45px)' }}>
         <div className="p-2 space-y-2">
           {/* Inner Rings Section */}
-          {innerRings.length > 0 && (
-            <div className="border border-gray-200 rounded">
-              <button
-                onClick={() => toggleSection('innerRings')}
-                className="no-drag w-full flex items-center justify-between p-1.5 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-1.5">
-                  {expandedSections.innerRings ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                  <span className="font-medium text-xs">{t('editor:organizationPanel.innerRings')}</span>
-                  <span className="text-xs text-gray-500">({innerRings.length})</span>
-                </div>
-                <div className="flex gap-0.5">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
-                    className="no-drag p-0.5 hover:bg-gray-200 rounded"
-                    title={t('common:actions.showAll')}
-                  >
-                    <Eye size={12} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
-                    className="no-drag p-0.5 hover:bg-gray-200 rounded"
-                    title={t('common:actions.hideAll')}
-                  >
-                    <EyeOff size={12} />
-                  </button>
-                </div>
-              </button>
-              
-              {expandedSections.innerRings && (
-                <div className="border-t border-gray-200 p-1 space-y-0.5">
-                  {innerRings.map(ring => {
+          <div className="border border-gray-200 rounded">
+            <button
+              onClick={() => toggleSection('innerRings')}
+              className="no-drag w-full flex items-center justify-between p-1.5 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-1.5">
+                {expandedSections.innerRings ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                <span className="font-medium text-xs">{t('editor:organizationPanel.innerRings')}</span>
+                <span className="text-xs text-gray-500">({innerRings.length})</span>
+              </div>
+              <div className="flex gap-0.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                  className="no-drag p-0.5 hover:bg-gray-200 rounded"
+                  title={t('common:actions.showAll')}
+                >
+                  <Eye size={12} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                  className="no-drag p-0.5 hover:bg-gray-200 rounded"
+                  title={t('common:actions.hideAll')}
+                >
+                  <EyeOff size={12} />
+                </button>
+              </div>
+            </button>
+            
+            {expandedSections.innerRings && (
+              <div className="border-t border-gray-200 p-1 space-y-0.5">
+                {innerRings.length === 0 ? (
+                  <div className="px-2 py-3 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50">
+                    <p className="text-xs text-gray-500 mb-0.5">
+                      {t('editor:rings.noInnerRings')}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {t('editor:rings.dragHereOrAdd')}
+                    </p>
+                  </div>
+                ) : (
+                  innerRings.map(ring => {
                     const isDraggedOver = dragOverItem?.item.id === ring.id && 
                                          (dragOverItem?.type === 'innerRing' || dragOverItem?.type === 'outerRing');
                     return (
@@ -296,45 +305,54 @@ function PresentationControlDialog({
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+                  })
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Outer Rings Section */}
-          {outerRings.length > 0 && (
-            <div className="border border-gray-200 rounded">
-              <button
-                onClick={() => toggleSection('outerRings')}
-                className="no-drag w-full flex items-center justify-between p-1.5 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-1.5">
-                  {expandedSections.outerRings ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                  <span className="font-medium text-xs">{t('editor:organizationPanel.outerRings')}</span>
-                  <span className="text-xs text-gray-500">({outerRings.length})</span>
-                </div>
-                <div className="flex gap-0.5">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
-                    className="no-drag p-0.5 hover:bg-gray-200 rounded"
-                    title={t('common:actions.showAll')}
-                  >
-                    <Eye size={12} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
-                    className="no-drag p-0.5 hover:bg-gray-200 rounded"
-                    title={t('common:actions.hideAll')}
-                  >
-                    <EyeOff size={12} />
-                  </button>
-                </div>
-              </button>
-              
-              {expandedSections.outerRings && (
-                <div className="border-t border-gray-200 p-1 space-y-0.5">
-                  {outerRings.map(ring => {
+          <div className="border border-gray-200 rounded">
+            <button
+              onClick={() => toggleSection('outerRings')}
+              className="no-drag w-full flex items-center justify-between p-1.5 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-1.5">
+                {expandedSections.outerRings ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                <span className="font-medium text-xs">{t('editor:organizationPanel.outerRings')}</span>
+                <span className="text-xs text-gray-500">({outerRings.length})</span>
+              </div>
+              <div className="flex gap-0.5">
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                  className="no-drag p-0.5 hover:bg-gray-200 rounded"
+                  title={t('common:actions.showAll')}
+                >
+                  <Eye size={12} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                  className="no-drag p-0.5 hover:bg-gray-200 rounded"
+                  title={t('common:actions.hideAll')}
+                >
+                  <EyeOff size={12} />
+                </button>
+              </div>
+            </button>
+            
+            {expandedSections.outerRings && (
+              <div className="border-t border-gray-200 p-1 space-y-0.5">
+                {outerRings.length === 0 ? (
+                  <div className="px-2 py-3 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50">
+                    <p className="text-xs text-gray-500 mb-0.5">
+                      {t('editor:rings.noOuterRings')}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {t('editor:rings.dragHereOrAdd')}
+                    </p>
+                  </div>
+                ) : (
+                  outerRings.map(ring => {
                     const isDraggedOver = dragOverItem?.item.id === ring.id && 
                                          (dragOverItem?.type === 'innerRing' || dragOverItem?.type === 'outerRing');
                     return (
@@ -363,11 +381,11 @@ function PresentationControlDialog({
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
+                  })
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Activity Groups Section */}
           {organizationData.activityGroups && organizationData.activityGroups.length > 0 && (

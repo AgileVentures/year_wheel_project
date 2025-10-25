@@ -522,6 +522,14 @@ function PreviewWheelPage() {
       {/* Wheel Display */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
+          {/* Title overlay for presentation mode */}
+          {isPresentationMode && (
+            <div className="text-center mb-6">
+              <h1 className="text-4xl font-bold text-gray-900">{wheelData.title}</h1>
+              <p className="text-xl text-gray-600 mt-2">{displayYear}</p>
+            </div>
+          )}
+          
           <YearWheel
             year={String(displayYear)}
             title={wheelData.title}
