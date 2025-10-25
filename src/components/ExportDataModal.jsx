@@ -219,7 +219,8 @@ function ExportDataModal({
       description: t('export:formats.excel.description'),
       icon: FileSpreadsheet,
       available: true,
-      premium: false
+      premium: false,
+      beta: true
     },
     {
       id: 'csv',
@@ -326,7 +327,12 @@ function ExportDataModal({
                     } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Icon size={24} className={selectedFormat === format.id ? 'text-blue-600' : 'text-gray-400'} />
-                    <div className="mt-2 font-medium text-gray-900 text-sm">{format.name}</div>
+                    <div className="mt-2 font-medium text-gray-900 text-sm flex items-center gap-2">
+                      {format.name}
+                      {format.beta && (
+                        <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                      )}
+                    </div>
                     <div className="mt-1 text-xs text-gray-600">{format.description}</div>
                     {format.premium && !isPremium && (
                       <div className="mt-2 text-xs text-amber-600 font-medium">

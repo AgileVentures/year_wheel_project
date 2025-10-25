@@ -223,7 +223,12 @@ function Header({
               />
               <DropdownItem
                 icon={Link2}
-                label={copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
+                label={
+                  <span className="flex items-center gap-2">
+                    {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
+                    <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                  </span>
+                }
                 onClick={handleCopyEmbedLink}
               />
             </>

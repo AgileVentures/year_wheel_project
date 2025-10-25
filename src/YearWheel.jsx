@@ -525,7 +525,7 @@ function YearWheel({
       
       {/* Navigation cross - only show when zoomed in, positioned upper right */}
       {zoomLevel > 100 && (
-        <div className="absolute top-4 right-4 pointer-events-none z-20">
+        <div className={`${readonly ? 'fixed' : 'absolute'} top-4 right-4 pointer-events-none z-20`}>
           <div className="relative w-28 h-28 pointer-events-auto">
             {/* Up arrow */}
             <button
