@@ -34,7 +34,16 @@
     "includeStartMonth": "Inkludera startmånad",
     "includeEndMonth": "Inkludera slutmånad",
     "includeStartWeek": "Inkludera startvecka",
-    "includeEndWeek": "Inkludera slutvecka"
+    "includeEndWeek": "Inkludera slutvecka",
+    "placeholders": {
+      "ring": "Ring (t.ex. \"Kategori\")",
+      "activityGroup": "Aktivitetsgrupp",
+      "label": "Etikett (t.ex. \"Ansvarig\")",
+      "description": "Beskrivning (t.ex. \"Notering\")",
+      "time": "Tid (t.ex. \"Klockslag\")",
+      "startWeek": "Startvecka (t.ex. \"V.nr start\")",
+      "endWeek": "Slutvecka (t.ex. \"V.nr slut\")"
+    }
   },
   
   "googleSheets": {

@@ -411,7 +411,7 @@ function ExportDataModal({
                     type="text"
                     value={columnNames.ring}
                     onChange={(e) => updateColumnName('ring', e.target.value)}
-                    placeholder={i18n.language === 'sv' ? 'Ring (t.ex. "Kategori")' : 'Ring (e.g. "Category")'}
+                    placeholder={t('export:options.placeholders.ring')}
                     disabled={!includeRingNames}
                     className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                   />
@@ -433,7 +433,7 @@ function ExportDataModal({
                     type="text"
                     value={columnNames.activityGroup}
                     onChange={(e) => updateColumnName('activityGroup', e.target.value)}
-                    placeholder={i18n.language === 'sv' ? 'Aktivitetsgrupp' : 'Activity Group'}
+                    placeholder={t('export:options.placeholders.activityGroup')}
                     disabled={!includeActivityGroups}
                     className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                   />
@@ -455,7 +455,7 @@ function ExportDataModal({
                     type="text"
                     value={columnNames.label}
                     onChange={(e) => updateColumnName('label', e.target.value)}
-                    placeholder={i18n.language === 'sv' ? 'Etikett (t.ex. "Ansvarig")' : 'Label (e.g. "Responsible")'}
+                    placeholder={t('export:options.placeholders.label')}
                     disabled={!includeLabels}
                     className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                   />
@@ -477,7 +477,7 @@ function ExportDataModal({
                     type="text"
                     value={columnNames.description}
                     onChange={(e) => updateColumnName('description', e.target.value)}
-                    placeholder={i18n.language === 'sv' ? 'Beskrivning (t.ex. "Notering")' : 'Description (e.g. "Notes")'}
+                    placeholder={t('export:options.placeholders.description')}
                     disabled={!includeDescription}
                     className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                   />
@@ -499,7 +499,7 @@ function ExportDataModal({
                     type="text"
                     value={columnNames.time}
                     onChange={(e) => updateColumnName('time', e.target.value)}
-                    placeholder={i18n.language === 'sv' ? 'Tid (t.ex. "Klockslag")' : 'Time'}
+                    placeholder={t('export:options.placeholders.time')}
                     disabled={!includeTime}
                     className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                   />
@@ -571,7 +571,7 @@ function ExportDataModal({
                     type="text"
                     value={columnNames.startWeek}
                     onChange={(e) => updateColumnName('startWeek', e.target.value)}
-                    placeholder={i18n.language === 'sv' ? 'Startvecka (t.ex. "V.nr start")' : 'Start Week (e.g. "Week #")'}
+                    placeholder={t('export:options.placeholders.startWeek')}
                     disabled={!includeStartWeek}
                     className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                   />
@@ -593,7 +593,7 @@ function ExportDataModal({
                     type="text"
                     value={columnNames.endWeek}
                     onChange={(e) => updateColumnName('endWeek', e.target.value)}
-                    placeholder={i18n.language === 'sv' ? 'Slutvecka (t.ex. "V.nr slut")' : 'End Week'}
+                    placeholder={t('export:options.placeholders.endWeek')}
                     disabled={!includeEndWeek}
                     className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
                   />

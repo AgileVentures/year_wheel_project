@@ -114,7 +114,7 @@ class YearWheel {
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
     this.clickableItems = []; // Store clickable item regions
-    
+
     // Selection mode support
     this.selectionMode = options.selectionMode || false;
     this.selectedItems = options.selectedItems || [];
@@ -229,12 +229,13 @@ class YearWheel {
       }
     }
   }
-  
+
   // Update selection mode and selected items
   updateSelection(selectionMode, selectedItems) {
-    const changed = this.selectionMode !== selectionMode || 
-                    JSON.stringify(this.selectedItems) !== JSON.stringify(selectedItems);
-    
+    const changed =
+      this.selectionMode !== selectionMode ||
+      JSON.stringify(this.selectedItems) !== JSON.stringify(selectedItems);
+
     if (changed) {
       this.selectionMode = selectionMode;
       this.selectedItems = selectedItems;
@@ -407,7 +408,9 @@ class YearWheel {
     const dayOffset = (jan4.getDay() || 7) - 1; // 0=Mon, 6=Sun
     const week1Monday = new Date(jan4.getTime() - dayOffset * 86400000);
     // Add (week - 1) weeks
-    const weekStart = new Date(week1Monday.getTime() + (week - 1) * 7 * 86400000);
+    const weekStart = new Date(
+      week1Monday.getTime() + (week - 1) * 7 * 86400000
+    );
     return weekStart;
   }
 
@@ -647,26 +650,29 @@ class YearWheel {
       // Single month zoom: 360° = 1 month
       const month = this.zoomedMonth;
       const daysInMonth = new Date(this.year, month + 1, 0).getDate();
-      
+
       // rawAngle (0-360) maps to days 1 to daysInMonth
       const dayFloat = (rawAngle / 360) * daysInMonth;
       const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat + 1)));
-      
+
       return new Date(this.year, month, day);
     } else if (this.zoomedQuarter !== null) {
       // Quarter zoom: 360° = 3 months
       const quarterStartMonth = this.zoomedQuarter * 3; // 0→0, 1→3, 2→6, 3→9
-      
+
       // rawAngle (0-360) maps to 3 months (120° each)
       const monthFloat = (rawAngle / 360) * 3;
       const monthOffset = Math.floor(monthFloat);
       const month = quarterStartMonth + Math.min(monthOffset, 2); // Clamp to 0-2
-      
+
       // Fractional part maps to day within that month
-      const dayFloat = (monthFloat - monthOffset);
+      const dayFloat = monthFloat - monthOffset;
       const daysInMonth = new Date(this.year, month + 1, 0).getDate();
-      const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat * daysInMonth + 1)));
-      
+      const day = Math.max(
+        1,
+        Math.min(daysInMonth, Math.round(dayFloat * daysInMonth + 1))
+      );
+
       return new Date(this.year, month, day);
     } else {
       // Full year view: 360° = 12 months (original logic)
@@ -734,7 +740,7 @@ class YearWheel {
     // Adaptive resize zone based on zoom level
     // In zoom mode, activities span more pixels, so we can be more generous
     let resizeZonePixels = 15; // Base size
-    
+
     if (this.zoomedMonth !== null) {
       // Month zoom: 360° = 1 month, activities are much larger visually
       resizeZonePixels = 25; // Larger zone for easier interaction
@@ -742,7 +748,7 @@ class YearWheel {
       // Quarter zoom: 360° = 3 months, moderately larger
       resizeZonePixels = 20;
     }
-    
+
     // For very small activities, use proportional threshold instead
     // If activity is less than 60px wide, use 25% of width as resize zone
     if (totalArcLength < 60) {
@@ -3579,7 +3585,7 @@ class YearWheel {
     if (this.selectionMode) {
       return;
     }
-    
+
     // Check if clicking on an activity
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
@@ -4244,10 +4250,10 @@ class YearWheel {
       this.context.fillStyle = "#1E293B";
       this.context.textAlign = "center";
       this.context.textBaseline = "middle";
-      
+
       let centerText = this.year;
       let fontSize = this.size / 30;
-      
+
       // Show filtered period when zoomed
       if (this.zoomedMonth !== null) {
         // Single month view: "April 2026"
@@ -4260,9 +4266,14 @@ class YearWheel {
         centerText = `Q${quarterNum} ${this.year}`;
         fontSize = this.size / 35; // Slightly smaller
       }
-      
+
       this.context.font = `700 ${fontSize}px Arial, sans-serif`;
-      this.context.fillText(centerText, this.center.x, this.center.y, this.size);
+      this.context.fillText(
+        centerText,
+        this.center.x,
+        this.center.y,
+        this.size
+      );
     }
 
     this.context.restore();
@@ -4343,22 +4354,22 @@ class YearWheel {
 
     this.context.restore();
   }
-  
+
   /**
    * Draw selection border around a selected item
    */
   drawSelectionBorder(startRadius, width, startAngle, endAngle) {
     this.context.save();
-    
+
     // Convert angles to radians
     const startAngleRad = this.toRadians(startAngle);
     const endAngleRad = this.toRadians(endAngle);
-    
+
     // Draw thick border with green color
-    this.context.strokeStyle = '#10B981'; // Green-500
+    this.context.strokeStyle = "#10B981"; // Green-500
     this.context.lineWidth = this.size / 400; // Proportional to canvas size
     this.context.setLineDash([this.size / 300, this.size / 400]); // Dashed line
-    
+
     // Draw outer arc
     this.context.beginPath();
     this.context.arc(
@@ -4370,7 +4381,7 @@ class YearWheel {
       false
     );
     this.context.stroke();
-    
+
     // Draw inner arc
     this.context.beginPath();
     this.context.arc(
@@ -4382,77 +4393,86 @@ class YearWheel {
       false
     );
     this.context.stroke();
-    
+
     // Draw radial lines
     const startCoord = this.moveToAngle(startRadius, startAngleRad);
-    const startCoordOuter = this.moveToAngle(startRadius + width, startAngleRad);
+    const startCoordOuter = this.moveToAngle(
+      startRadius + width,
+      startAngleRad
+    );
     this.context.beginPath();
     this.context.moveTo(startCoord.x, startCoord.y);
     this.context.lineTo(startCoordOuter.x, startCoordOuter.y);
     this.context.stroke();
-    
+
     const endCoord = this.moveToAngle(startRadius, endAngleRad);
     const endCoordOuter = this.moveToAngle(startRadius + width, endAngleRad);
     this.context.beginPath();
     this.context.moveTo(endCoord.x, endCoord.y);
     this.context.lineTo(endCoordOuter.x, endCoordOuter.y);
     this.context.stroke();
-    
+
     this.context.restore();
   }
 
   drawResizeHandles(startRadius, width, startAngle, endAngle, itemColor) {
     this.context.save();
-    
+
     // Convert angles to radians
     const startAngleRad = this.toRadians(startAngle);
     const endAngleRad = this.toRadians(endAngle);
-    
+
     // Calculate handle size based on zoom level and canvas size
     let handleRadius = this.size / 100; // Base size: ~20-30px
-    
+
     // Make handles larger in zoom mode for easier interaction
     if (this.zoomedMonth !== null) {
       handleRadius = this.size / 80; // Larger in month zoom
     } else if (this.zoomedQuarter !== null) {
       handleRadius = this.size / 90; // Slightly larger in quarter zoom
     }
-    
+
     // Calculate middle radius for handle placement
     const middleRadius = startRadius + width / 2;
-    
+
     // Draw start handle (left edge)
     const startCoord = this.moveToAngle(middleRadius, startAngleRad);
     this.context.beginPath();
     this.context.arc(startCoord.x, startCoord.y, handleRadius, 0, Math.PI * 2);
-    this.context.fillStyle = '#FFFFFF'; // White fill
+    this.context.fillStyle = "#FFFFFF"; // White fill
     this.context.fill();
     this.context.strokeStyle = itemColor; // Border matches item color
     this.context.lineWidth = this.size / 500;
     this.context.stroke();
-    
+
     // Add inner dot for better visibility
     this.context.beginPath();
-    this.context.arc(startCoord.x, startCoord.y, handleRadius / 3, 0, Math.PI * 2);
+    this.context.arc(
+      startCoord.x,
+      startCoord.y,
+      handleRadius / 3,
+      0,
+      Math.PI * 2
+    );
     this.context.fillStyle = itemColor;
     this.context.fill();
-    
+
     // Draw end handle (right edge)
     const endCoord = this.moveToAngle(middleRadius, endAngleRad);
     this.context.beginPath();
     this.context.arc(endCoord.x, endCoord.y, handleRadius, 0, Math.PI * 2);
-    this.context.fillStyle = '#FFFFFF'; // White fill
+    this.context.fillStyle = "#FFFFFF"; // White fill
     this.context.fill();
     this.context.strokeStyle = itemColor; // Border matches item color
     this.context.lineWidth = this.size / 500;
     this.context.stroke();
-    
+
     // Add inner dot for better visibility
     this.context.beginPath();
     this.context.arc(endCoord.x, endCoord.y, handleRadius / 3, 0, Math.PI * 2);
     this.context.fillStyle = itemColor;
     this.context.fill();
-    
+
     this.context.restore();
   }
 
@@ -4497,7 +4517,7 @@ class YearWheel {
       const startDate = new Date(item.startDate);
       const { year, week } = this.getISOWeek(startDate);
       // Include ringId in key to cluster per ring
-      const key = `${year}-${String(week).padStart(2, '0')}-${item.ringId}`;
+      const key = `${year}-${String(week).padStart(2, "0")}-${item.ringId}`;
 
       if (!weekGroups.has(key)) {
         const weekStart = this.getWeekStart(year, week);
@@ -4510,8 +4530,8 @@ class YearWheel {
           activityId: item.activityId, // Use first item's activity for coloring
           labelId: item.labelId || null,
           name: item.name, // Use first item's name
-          startDate: weekStart.toISOString().split('T')[0],
-          endDate: weekEnd.toISOString().split('T')[0],
+          startDate: weekStart.toISOString().split("T")[0],
+          endDate: weekEnd.toISOString().split("T")[0],
           items: [],
           isCluster: true,
         });
@@ -4522,9 +4542,9 @@ class YearWheel {
 
     // Convert to array of cluster objects with count in name
     // Use language from document or default to Swedish
-    const lang = document.documentElement.lang || 'sv';
-    const moreText = lang === 'en' ? 'more' : 'mer';
-    
+    const lang = document.documentElement.lang || "sv";
+    const moreText = lang === "en" ? "more" : "mer";
+
     return Array.from(weekGroups.values()).map((cluster) => {
       // If only one item in cluster, return the original item instead
       if (cluster.items.length === 1) {
@@ -4532,10 +4552,11 @@ class YearWheel {
       }
 
       const additionalCount = cluster.items.length - 1;
-      const displayName = additionalCount > 0 
-        ? `${cluster.name} (${additionalCount} ${moreText})`
-        : cluster.name;
-      
+      const displayName =
+        additionalCount > 0
+          ? `${cluster.name} (${additionalCount} ${moreText})`
+          : cluster.name;
+
       return {
         ...cluster,
         name: displayName,
@@ -4908,7 +4929,7 @@ class YearWheel {
               startAngle: this.toRadians(adjustedStartAngle),
               endAngle: this.toRadians(adjustedEndAngle),
             });
-            
+
             // Draw selection border if item is selected
             if (this.selectedItems.includes(item.id)) {
               this.drawSelectionBorder(
@@ -4918,7 +4939,7 @@ class YearWheel {
                 adjustedEndAngle
               );
             }
-            
+
             // Draw resize handles on hover
             if (isHovered) {
               this.drawResizeHandles(
@@ -5220,7 +5241,7 @@ class YearWheel {
             startAngle: this.toRadians(adjustedStartAngle),
             endAngle: this.toRadians(adjustedEndAngle),
           });
-          
+
           // Draw selection border if item is selected
           if (this.selectedItems.includes(item.id)) {
             this.drawSelectionBorder(
@@ -5230,7 +5251,7 @@ class YearWheel {
               adjustedEndAngle
             );
           }
-          
+
           // Draw resize handles on hover
           if (isHovered) {
             this.drawResizeHandles(
@@ -5298,23 +5319,27 @@ class YearWheel {
     // NOW draw week ring AFTER inner rings (so it's on top)
     if (this.showWeekRing) {
       // Determine if we're in a filtered view (month or quarter)
-      const isFiltered = this.zoomedMonth !== null || this.zoomedQuarter !== null;
-      
+      const isFiltered =
+        this.zoomedMonth !== null || this.zoomedQuarter !== null;
+
       // Use the display mode as-is (respect user's toggle choice)
       const effectiveDisplayMode = this.weekRingDisplayMode;
-      
+
       // Special mode for month filter with dates: show individual days instead of weeks
-      const showDays = this.zoomedMonth !== null && effectiveDisplayMode === "dates";
-      
+      const showDays =
+        this.zoomedMonth !== null && effectiveDisplayMode === "dates";
+
       // Get data based on display mode and filter state
       let weekData;
       let numberOfIntervals;
-      
+
       if (showDays) {
         // Month filter with dates mode: show individual days (1-31)
         const year = parseInt(this.year);
         const daysInMonth = new Date(year, this.zoomedMonth + 1, 0).getDate();
-        weekData = Array.from({length: daysInMonth}, (_, i) => (i + 1).toString());
+        weekData = Array.from({ length: daysInMonth }, (_, i) =>
+          (i + 1).toString()
+        );
         numberOfIntervals = daysInMonth;
       } else if (effectiveDisplayMode === "dates") {
         // Generate date ranges (DD-DD format)

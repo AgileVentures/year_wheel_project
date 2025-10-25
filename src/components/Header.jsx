@@ -204,7 +204,12 @@ function Header({
           {onExportData && (
             <DropdownItem
               icon={FileSpreadsheet}
-              label={t('common:header.exportData')}
+              label={
+                <span className="flex items-center gap-2">
+                  {t('common:header.exportData')}
+                  <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                </span>
+              }
               onClick={onExportData}
             />
           )}
@@ -448,7 +453,7 @@ function Header({
               <Sparkles size={14} className={isPremium ? "text-amber-500" : "text-gray-400"} />
             </button>
             {!isPremium && (
-              <span className="absolute -top-1 -right-1 px-1 py-0.5 text-[8px] font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-sm shadow-sm">
+              <span className="absolute -top-1 -right-1 text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
                 PRO
               </span>
             )}

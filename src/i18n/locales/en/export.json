@@ -34,7 +34,16 @@
     "includeStartMonth": "Include start month",
     "includeEndMonth": "Include end month",
     "includeStartWeek": "Include start week",
-    "includeEndWeek": "Include end week"
+    "includeEndWeek": "Include end week",
+    "placeholders": {
+      "ring": "Ring (e.g. \"Category\")",
+      "activityGroup": "Activity Group",
+      "label": "Label (e.g. \"Responsible\")",
+      "description": "Description (e.g. \"Notes\")",
+      "time": "Time (e.g. \"Clock time\")",
+      "startWeek": "Start Week (e.g. \"Week #\")",
+      "endWeek": "End Week"
+    }
   },
   
   "googleSheets": {
