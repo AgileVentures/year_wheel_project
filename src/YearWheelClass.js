@@ -113,6 +113,10 @@ class YearWheel {
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
     this.clickableItems = []; // Store clickable item regions
+    
+    // Selection mode support
+    this.selectionMode = options.selectionMode || false;
+    this.selectedItems = options.selectedItems || [];
 
     // Performance optimization: Offscreen canvas for caching static elements
     this.backgroundCache = document.createElement("canvas");
@@ -217,6 +221,21 @@ class YearWheel {
       // Invalidate cache since text rendering will change
       this.invalidateCache();
       // Redraw with new zoom-adjusted text
+      if (!this.dragState || !this.dragState.isDragging) {
+        this.create();
+      }
+    }
+  }
+  
+  // Update selection mode and selected items
+  updateSelection(selectionMode, selectedItems) {
+    const changed = this.selectionMode !== selectionMode || 
+                    JSON.stringify(this.selectedItems) !== JSON.stringify(selectedItems);
+    
+    if (changed) {
+      this.selectionMode = selectionMode;
+      this.selectedItems = selectedItems;
+      // Redraw to show/hide selection borders
       if (!this.dragState || !this.dragState.isDragging) {
         this.create();
       }
@@ -3509,6 +3528,11 @@ class YearWheel {
   }
 
   startDrag(event) {
+    // In selection mode, disable drag entirely (only allow clicks)
+    if (this.selectionMode) {
+      return;
+    }
+    
     // Check if clicking on an activity
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
@@ -4272,6 +4296,63 @@ class YearWheel {
 
     this.context.restore();
   }
+  
+  /**
+   * Draw selection border around a selected item
+   */
+  drawSelectionBorder(startRadius, width, startAngle, endAngle) {
+    this.context.save();
+    
+    // Convert angles to radians
+    const startAngleRad = this.toRadians(startAngle);
+    const endAngleRad = this.toRadians(endAngle);
+    
+    // Draw thick border with green color
+    this.context.strokeStyle = '#10B981'; // Green-500
+    this.context.lineWidth = this.size / 400; // Proportional to canvas size
+    this.context.setLineDash([this.size / 300, this.size / 400]); // Dashed line
+    
+    // Draw outer arc
+    this.context.beginPath();
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      startRadius + width,
+      startAngleRad,
+      endAngleRad,
+      false
+    );
+    this.context.stroke();
+    
+    // Draw inner arc
+    this.context.beginPath();
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      startRadius,
+      startAngleRad,
+      endAngleRad,
+      false
+    );
+    this.context.stroke();
+    
+    // Draw radial lines
+    const startCoord = this.moveToAngle(startRadius, startAngleRad);
+    const startCoordOuter = this.moveToAngle(startRadius + width, startAngleRad);
+    this.context.beginPath();
+    this.context.moveTo(startCoord.x, startCoord.y);
+    this.context.lineTo(startCoordOuter.x, startCoordOuter.y);
+    this.context.stroke();
+    
+    const endCoord = this.moveToAngle(startRadius, endAngleRad);
+    const endCoordOuter = this.moveToAngle(startRadius + width, endAngleRad);
+    this.context.beginPath();
+    this.context.moveTo(endCoord.x, endCoord.y);
+    this.context.lineTo(endCoordOuter.x, endCoordOuter.y);
+    this.context.stroke();
+    
+    this.context.restore();
+  }
 
   // Helper to draw rounded rectangle (if not available)
   roundRect(x, y, width, height, radius) {
@@ -4725,6 +4806,16 @@ class YearWheel {
               startAngle: this.toRadians(adjustedStartAngle),
               endAngle: this.toRadians(adjustedEndAngle),
             });
+            
+            // Draw selection border if item is selected
+            if (this.selectedItems.includes(item.id)) {
+              this.drawSelectionBorder(
+                itemStartRadius,
+                itemWidth,
+                adjustedStartAngle,
+                adjustedEndAngle
+              );
+            }
           });
 
           // Name band is drawn at the outer edge of content area (no gap)
@@ -5016,6 +5107,16 @@ class YearWheel {
             startAngle: this.toRadians(adjustedStartAngle),
             endAngle: this.toRadians(adjustedEndAngle),
           });
+          
+          // Draw selection border if item is selected
+          if (this.selectedItems.includes(item.id)) {
+            this.drawSelectionBorder(
+              itemStartRadius,
+              itemWidth,
+              adjustedStartAngle,
+              adjustedEndAngle
+            );
+          }
         });
       }
 

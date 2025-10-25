@@ -135,7 +135,6 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
       // Automatically select the first sheet if available
       if (result.spreadsheet.sheets && result.spreadsheet.sheets.length > 0) {
         const firstSheetName = result.spreadsheet.sheets[0].title;
-        console.log('[RingIntegration] Auto-selecting first sheet:', firstSheetName);
         setSheetName(firstSheetName);
       }
       
@@ -635,7 +634,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
               </div>
 
               {/* Column Mapping Configuration */}
-              <div className="space-y-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-lg shadow-sm">
+              <div className="space-y-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-300 rounded-sm shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">

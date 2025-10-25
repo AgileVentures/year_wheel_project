@@ -4,6 +4,25 @@ import { useTranslation } from 'react-i18next';
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
 import EditAktivitetModal from "./components/EditAktivitetModal";
+import BulkActionsToolbar from "./components/BulkActionsToolbar";
+
+// Helper function to show confirm dialog
+const showConfirmDialog = (title, message, confirmText, cancelText, confirmButtonClass = 'bg-blue-600 hover:bg-blue-700 text-white') => {
+  return new Promise((resolve) => {
+    const event = new CustomEvent('showConfirmDialog', {
+      detail: {
+        title,
+        message,
+        confirmText,
+        cancelText,
+        confirmButtonClass,
+        onConfirm: () => resolve(true),
+        onCancel: () => resolve(false)
+      }
+    });
+    window.dispatchEvent(event);
+  });
+};
 
 function YearWheel({
   ringsData,
@@ -44,6 +63,10 @@ function YearWheel({
   const [tooltipPosition, setTooltipPosition] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
+  
+  // Multi-select mode
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState(new Set());
   
   const { t, i18n } = useTranslation(['common']);
   
@@ -178,7 +201,91 @@ function YearWheel({
     onDeleteAktivitetRef.current = onDeleteAktivitet;
   }, [onDragStart, onUpdateAktivitet, onDeleteAktivitet]);
 
+  // Toggle selection mode
+  const toggleSelectionMode = useCallback(() => {
+    setSelectionMode(prev => {
+      const newMode = !prev;
+      // Clear selections when exiting selection mode
+      if (!newMode) {
+        setSelectedItems(new Set());
+      }
+      return newMode;
+    });
+  }, []);
+
+  // Clear all selections
+  const clearSelections = useCallback(() => {
+    setSelectedItems(new Set());
+  }, []);
+
+  // Bulk operations
+  const handleBulkMoveToRing = useCallback((ringId) => {
+    if (onUpdateAktivitetRef.current && selectedItems.size > 0) {
+      selectedItems.forEach(itemId => {
+        const item = organizationData.items.find(i => i.id === itemId);
+        if (item) {
+          onUpdateAktivitetRef.current({ ...item, ringId });
+        }
+      });
+      clearSelections();
+    }
+  }, [selectedItems, organizationData, clearSelections]);
+
+  const handleBulkChangeActivityGroup = useCallback((activityId) => {
+    if (onUpdateAktivitetRef.current && selectedItems.size > 0) {
+      selectedItems.forEach(itemId => {
+        const item = organizationData.items.find(i => i.id === itemId);
+        if (item) {
+          onUpdateAktivitetRef.current({ ...item, activityId });
+        }
+      });
+      clearSelections();
+    }
+  }, [selectedItems, organizationData, clearSelections]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (onDeleteAktivitetRef.current && selectedItems.size > 0) {
+      // Confirm before deleting
+      const confirmMessage = selectedItems.size === 1
+        ? t('common:selection.confirmDeleteOne', { count: selectedItems.size })
+        : t('common:selection.confirmDelete', { count: selectedItems.size });
+      
+      const confirmed = await showConfirmDialog(
+        t('common:actions.delete'),
+        confirmMessage,
+        t('common:actions.delete'),
+        t('common:actions.cancel'),
+        'bg-red-600 hover:bg-red-700 text-white'
+      );
+      
+      if (confirmed) {
+        selectedItems.forEach(itemId => {
+          onDeleteAktivitetRef.current(itemId);
+        });
+        clearSelections();
+      }
+    }
+  }, [selectedItems, clearSelections, t]);
+
   const handleItemClick = useCallback((item, position) => {
+    // In selection mode, toggle item selection
+    if (selectionMode) {
+      setSelectedItems(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(item.id)) {
+          newSet.delete(item.id);
+        } else {
+          newSet.add(item.id);
+        }
+        return newSet;
+      });
+      // Close tooltip when in selection mode
+      setSelectedItem(null);
+      setTooltipPosition(null);
+      return;
+    }
+    
+    // Normal mode: show tooltip
     setSelectedItem(item);
     
     // Position tooltip at upper left of container with some padding
@@ -192,7 +299,7 @@ function YearWheel({
       // Fallback to click position if container ref not available
       setTooltipPosition(position);
     }
-  }, []);
+  }, [selectionMode]);
 
   const handleDragStart = useCallback((item) => {
     if (onDragStartRef.current) {
@@ -303,6 +410,8 @@ function YearWheel({
         onItemClick: handleItemClick,
         onDragStart: handleDragStart,
         onUpdateAktivitet: handleUpdateAktivitet,
+        selectionMode,
+        selectedItems: Array.from(selectedItems),
       }
     );
     
@@ -351,6 +460,13 @@ function YearWheel({
       yearWheel.updateZoomLevel(zoomLevel);
     }
   }, [zoomLevel, yearWheel]);
+  
+  // Update selection mode and selected items (without recreating wheel)
+  useEffect(() => {
+    if (yearWheel && yearWheel.updateSelection) {
+      yearWheel.updateSelection(selectionMode, Array.from(selectedItems));
+    }
+  }, [selectionMode, selectedItems, yearWheel]);
 
   // Notify parent when wheel instance changes (only once per instance)
   useEffect(() => {
@@ -517,6 +633,23 @@ function YearWheel({
             >
               {isSpinning ? 'Stoppa' : 'Rotera'}
             </button>
+            
+            {!readonly && (
+              <button
+                onClick={toggleSelectionMode}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                  selectionMode
+                    ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={selectionMode ? t('common:selection.exitModeTooltip') : t('common:selection.enterModeTooltip')}
+              >
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                {selectionMode ? t('common:selection.exitMode') : t('common:selection.enterMode')}
+              </button>
+            )}
           </div>
 
           {/* Date Zoom Controls */}
@@ -576,6 +709,19 @@ function YearWheel({
           </div>
         </div>
       </div>
+
+      {/* Bulk Actions Toolbar */}
+      {selectionMode && selectedItems.size > 0 && (
+        <BulkActionsToolbar
+          selectedCount={selectedItems.size}
+          rings={organizationData.rings || []}
+          activityGroups={organizationData.activityGroups || []}
+          onMoveToRing={handleBulkMoveToRing}
+          onChangeActivityGroup={handleBulkChangeActivityGroup}
+          onDelete={handleBulkDelete}
+          onClear={clearSelections}
+        />
+      )}
 
       {/* Item Tooltip */}
       {selectedItem && tooltipPosition && (

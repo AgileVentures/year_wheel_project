@@ -242,5 +242,19 @@
     "changeDates": "Ändra datum för {{name}}",
     "editItem": "Redigera {{name}}",
     "removeItem": "Ta bort {{name}}"
+  },
+  "selection": {
+    "enterMode": "Markera flera",
+    "exitMode": "Avsluta markering",
+    "enterModeTooltip": "Markera flera aktiviteter",
+    "exitModeTooltip": "Avsluta markeringsläge",
+    "selected": "{{count}} markerade",
+    "selectedOne": "{{count}} markerad",
+    "moveToRing": "Flytta till ring",
+    "changeActivityGroup": "Ändra aktivitetsgrupp",
+    "deleteAll": "Ta bort alla",
+    "clearSelection": "Rensa markering",
+    "confirmDelete": "Är du säker på att du vill ta bort {{count}} aktiviteter?",
+    "confirmDeleteOne": "Är du säker på att du vill ta bort {{count}} aktivitet?"
   }
 }

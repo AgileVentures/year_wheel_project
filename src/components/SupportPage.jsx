@@ -36,7 +36,7 @@ function SupportPage() {
           </div>
 
           {/* Support Card */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-8 mb-8">
             <div className="space-y-6">
               {/* Care Message */}
               <div className="flex items-start gap-4">
@@ -90,14 +90,14 @@ function SupportPage() {
           </div>
 
           {/* Additional Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <div className="bg-blue-50 border border-blue-200 rounded-sm p-6 text-center">
             <p className="text-gray-700">
               {t('support:additionalInfo')}
             </p>
           </div>
 
           {/* Testing Opt-Out Notice */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+          <div className="bg-orange-50 border border-orange-200 rounded-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-2 text-center">
               {t('support:testingOptOut')}
             </h3>
