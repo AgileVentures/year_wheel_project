@@ -639,21 +639,49 @@ class YearWheel {
     while (rawAngle < 0) rawAngle += 360;
     while (rawAngle >= 360) rawAngle -= 360;
 
-    // Each month is 30 degrees (360 / 12)
-    const monthFloat = rawAngle / 30;
-    const month = Math.floor(monthFloat);
-    const dayFloat = (monthFloat - month) * 30; // 0-30 range
+    // When zoomed, 360° represents only the visible time period
+    if (this.zoomedMonth !== null) {
+      // Single month zoom: 360° = 1 month
+      const month = this.zoomedMonth;
+      const daysInMonth = new Date(this.year, month + 1, 0).getDate();
+      
+      // rawAngle (0-360) maps to days 1 to daysInMonth
+      const dayFloat = (rawAngle / 360) * daysInMonth;
+      const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat + 1)));
+      
+      return new Date(this.year, month, day);
+    } else if (this.zoomedQuarter !== null) {
+      // Quarter zoom: 360° = 3 months
+      const quarterStartMonth = this.zoomedQuarter * 3; // 0→0, 1→3, 2→6, 3→9
+      
+      // rawAngle (0-360) maps to 3 months (120° each)
+      const monthFloat = (rawAngle / 360) * 3;
+      const monthOffset = Math.floor(monthFloat);
+      const month = quarterStartMonth + Math.min(monthOffset, 2); // Clamp to 0-2
+      
+      // Fractional part maps to day within that month
+      const dayFloat = (monthFloat - monthOffset);
+      const daysInMonth = new Date(this.year, month + 1, 0).getDate();
+      const day = Math.max(1, Math.min(daysInMonth, Math.round(dayFloat * daysInMonth + 1)));
+      
+      return new Date(this.year, month, day);
+    } else {
+      // Full year view: 360° = 12 months (original logic)
+      // Each month is 30 degrees (360 / 12)
+      const monthFloat = rawAngle / 30;
+      const month = Math.floor(monthFloat);
+      const dayFloat = (monthFloat - month) * 30; // 0-30 range
 
-    // Calculate actual day considering days in month
-    const daysInMonth = new Date(this.year, month + 1, 0).getDate();
-    const day = Math.max(
-      1,
-      Math.min(daysInMonth, Math.round((dayFloat / 30) * daysInMonth + 1))
-    );
+      // Calculate actual day considering days in month
+      const daysInMonth = new Date(this.year, month + 1, 0).getDate();
+      const day = Math.max(
+        1,
+        Math.min(daysInMonth, Math.round((dayFloat / 30) * daysInMonth + 1))
+      );
 
-    // Create date (months are 0-indexed in JavaScript Date)
-    const date = new Date(this.year, month, day);
-    return date;
+      // Create date (months are 0-indexed in JavaScript Date)
+      return new Date(this.year, month, day);
+    }
   }
 
   // Detect which part of activity is clicked: 'resize-start', 'move', or 'resize-end'
