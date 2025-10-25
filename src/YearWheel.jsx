@@ -412,6 +412,7 @@ function YearWheel({
         onUpdateAktivitet: handleUpdateAktivitet,
         selectionMode,
         selectedItems: Array.from(selectedItems),
+        readonly, // Pass readonly to disable interactions
       }
     );
     

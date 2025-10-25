@@ -65,6 +65,7 @@ class YearWheel {
         ? options.zoomedQuarter
         : null;
     this.zoomLevel = options.zoomLevel !== undefined ? options.zoomLevel : 100; // Zoom percentage (50-200), default 100%
+    this.readonly = options.readonly !== undefined ? options.readonly : false; // Disable interactions in readonly mode
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
     this.initAngle = -15 - 90;
@@ -140,18 +141,20 @@ class YearWheel {
       handleClick: this.handleClick.bind(this),
     };
 
-    // Add event listeners
-    this.canvas.addEventListener("mousedown", this.boundHandlers.startDrag);
-    this.canvas.addEventListener(
-      "mousemove",
-      this.boundHandlers.handleMouseMove
-    );
-    this.canvas.addEventListener("mouseup", this.boundHandlers.stopDrag);
-    this.canvas.addEventListener(
-      "mouseleave",
-      this.boundHandlers.handleMouseLeave
-    );
-    this.canvas.addEventListener("click", this.boundHandlers.handleClick);
+    // Add event listeners (skip if readonly mode)
+    if (!this.readonly) {
+      this.canvas.addEventListener("mousedown", this.boundHandlers.startDrag);
+      this.canvas.addEventListener(
+        "mousemove",
+        this.boundHandlers.handleMouseMove
+      );
+      this.canvas.addEventListener("mouseup", this.boundHandlers.stopDrag);
+      this.canvas.addEventListener(
+        "mouseleave",
+        this.boundHandlers.handleMouseLeave
+      );
+      this.canvas.addEventListener("click", this.boundHandlers.handleClick);
+    }
   }
 
   /**

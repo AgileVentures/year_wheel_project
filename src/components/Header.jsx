@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
@@ -62,7 +62,9 @@ function Header({
 }) {
   const { t } = useTranslation(['common', 'subscription']);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   
@@ -74,6 +76,34 @@ function Header({
     // Show checkmark feedback
     setCopiedFormat(format);
     setTimeout(() => setCopiedFormat(null), 2000);
+  };
+
+  const handleCopyPreviewLink = async () => {
+    const previewUrl = `${window.location.origin}/preview-wheel/${wheelId}`;
+    try {
+      await navigator.clipboard.writeText(previewUrl);
+      setCopiedLink('preview');
+      setTimeout(() => setCopiedLink(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy preview link:', err);
+    }
+  };
+
+  const handleCopyEmbedLink = async () => {
+    const embedUrl = `${window.location.origin}/embed/${wheelId}`;
+    try {
+      await navigator.clipboard.writeText(embedUrl);
+      setCopiedLink('embed');
+      setTimeout(() => setCopiedLink(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy embed link:', err);
+    }
+  };
+
+  const handleExport = async (format) => {
+    onDownloadFormatChange && onDownloadFormatChange(format);
+    onDownloadImage && onDownloadImage(false);
+    setShowExportMenu(false);
   };
   
   return (
@@ -195,137 +225,187 @@ function Header({
         </Dropdown>
         </div>
         
-        {/* Image Export with Format Selector - Hidden on mobile */}
-        <div className="hidden lg:flex relative items-center gap-1" data-onboarding="export-share">
-          {/* Format Selector Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowFormatDropdown(!showFormatDropdown)}
-              className="px-2.5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors border border-gray-300 flex items-center gap-1.5"
-              title={t('common:header.selectImageFormat')}
-            >
-              <Image size={14} />
-              <span className="uppercase">
-                {downloadFormat === 'png-white' ? 'PNG' : (downloadFormat || 'PNG')}
-              </span>
-              <ChevronDown size={14} />
-            </button>
-            
-            {showFormatDropdown && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setShowFormatDropdown(false)}
-                ></div>
-                <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 min-w-[180px]">
-                  <button
-                    onClick={() => {
-                      onDownloadFormatChange && onDownloadFormatChange('png');
-                      setShowFormatDropdown(false);
-                    }}
-                    disabled={!isPremium}
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                      !isPremium 
-                        ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <FileDown size={14} className="text-gray-500" />
-                    <span className="flex-1">{t('common:header.pngTransparent')}</span>
-                    {!isPremium && (
-                      <span className="text-xs text-amber-600 font-medium">
-                        {t('subscription:premium')}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDownloadFormatChange && onDownloadFormatChange('png-white');
-                      setShowFormatDropdown(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
-                  >
-                    <FileDown size={14} className="text-gray-500" />
-                    {t('common:header.pngWhite')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDownloadFormatChange && onDownloadFormatChange('jpeg');
-                      setShowFormatDropdown(false);
-                    }}
-                    disabled={!isPremium}
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                      !isPremium 
-                        ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <FileDown size={14} className="text-gray-500" />
-                    <span className="flex-1">JPEG</span>
-                    {!isPremium && (
-                      <span className="text-xs text-amber-600 font-medium">
-                        {t('subscription:premium')}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDownloadFormatChange && onDownloadFormatChange('svg');
-                      setShowFormatDropdown(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
-                  >
-                    <FileDown size={14} className="text-gray-500" />
-                    SVG
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDownloadFormatChange && onDownloadFormatChange('pdf');
-                      setShowFormatDropdown(false);
-                    }}
-                    disabled={!isPremium}
-                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 ${
-                      !isPremium 
-                        ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <FileDown size={14} className="text-gray-500" />
-                    <span className="flex-1">PDF</span>
-                    {!isPremium && (
-                      <span className="text-xs text-amber-600 font-medium">
-                        {t('subscription:premium')}
-                      </span>
-                    )}
-                  </button>
+        {/* Unified Export & Share Menu - Hidden on mobile */}
+        <div className="hidden lg:flex relative" data-onboarding="export-share">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors border border-gray-300 flex items-center gap-2"
+            title={t('common:header.exportAndShare')}
+          >
+            <Download size={16} />
+            <span>{t('common:header.export')}</span>
+            <ChevronDown size={14} />
+          </button>
+
+          {showExportMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowExportMenu(false)}
+              ></div>
+              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-80">
+                {/* Links Section */}
+                {wheelId && isPublic && (
+                  <>
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
+                      {t('common:header.sharingLinks')}
+                    </div>
+                    
+                    {/* Preview Link */}
+                    <button
+                      onClick={handleCopyPreviewLink}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
+                    >
+                      {copiedLink === 'preview' ? (
+                        <Check className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Eye className="w-5 h-5 text-gray-600" />
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">
+                          {copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {t('common:header.previewLinkDesc')}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Embed Link */}
+                    <button
+                      onClick={handleCopyEmbedLink}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
+                    >
+                      {copiedLink === 'embed' ? (
+                        <Check className="w-5 h-5 text-green-600" />
+                      ) : (
+                        <Link2 className="w-5 h-5 text-gray-600" />
+                      )}
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">
+                          {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {t('common:header.embedLinkDesc')}
+                        </div>
+                      </div>
+                    </button>
+                    
+                    <div className="border-t border-gray-100 my-2"></div>
+                  </>
+                )}
+
+                {/* Image Export Section */}
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  {t('common:header.imageExport')}
                 </div>
-              </>
-            )}
-          </div>
-          
-          {/* Copy to Clipboard Button */}
-          <button
-            onClick={() => handleCopyToClipboard(downloadFormat)}
-            className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors relative"
-            title={t('common:header.copyToClipboard')}
-          >
-            {copiedFormat ? (
-              <Check size={14} className="text-green-600" />
-            ) : (
-              <Copy size={14} />
-            )}
-          </button>
-          
-          {/* Download Button */}
-          <button
-            onClick={() => {
-              onDownloadImage && onDownloadImage(false);
-            }}
-            className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-            title={t('common:header.downloadImage')}
-          >
-            <Download size={14} />
-          </button>
+
+                {/* PNG Transparent */}
+                <button
+                  onClick={() => handleExport('png')}
+                  disabled={!isPremium}
+                  className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
+                    !isPremium 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <FileDown className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">
+                      {t('common:header.pngTransparent')}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {t('common:header.pngTransparentDesc')}
+                    </div>
+                  </div>
+                  {!isPremium && (
+                    <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
+                      {t('subscription:premium')}
+                    </span>
+                  )}
+                </button>
+
+                {/* PNG White Background */}
+                <button
+                  onClick={() => handleExport('png-white')}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
+                >
+                  <FileDown className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">
+                      {t('common:header.pngWhite')}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {t('common:header.pngWhiteDesc')}
+                    </div>
+                  </div>
+                </button>
+
+                {/* JPEG */}
+                <button
+                  onClick={() => handleExport('jpeg')}
+                  disabled={!isPremium}
+                  className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
+                    !isPremium 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <FileDown className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">JPEG</div>
+                    <div className="text-xs text-gray-500">
+                      {t('common:header.jpegDesc')}
+                    </div>
+                  </div>
+                  {!isPremium && (
+                    <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
+                      {t('subscription:premium')}
+                    </span>
+                  )}
+                </button>
+
+                {/* SVG */}
+                <button
+                  onClick={() => handleExport('svg')}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
+                >
+                  <FileDown className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">SVG</div>
+                    <div className="text-xs text-gray-500">
+                      {t('common:header.svgDesc')}
+                    </div>
+                  </div>
+                </button>
+
+                {/* PDF */}
+                <button
+                  onClick={() => handleExport('pdf')}
+                  disabled={!isPremium}
+                  className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
+                    !isPremium 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <FileDown className="w-5 h-5 text-gray-600" />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">PDF</div>
+                    <div className="text-xs text-gray-500">
+                      {t('common:header.pdfDesc')}
+                    </div>
+                  </div>
+                  {!isPremium && (
+                    <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
+                      {t('subscription:premium')}
+                    </span>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
         </div>
         
         {/* Presence Indicator - Hidden on small screens */}
@@ -345,7 +425,6 @@ function Header({
             <div className="hidden lg:block">
               <PublicShareButton 
                 isPublic={isPublic}
-                wheelId={wheelId}
                 onTogglePublic={onTogglePublic}
               />
             </div>

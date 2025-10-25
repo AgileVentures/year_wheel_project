@@ -25,6 +25,7 @@ const LegalPage = lazy(() => import("./components/LegalPage"));
 const SupportPage = lazy(() => import("./components/SupportPage"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
+const EmbedWheel = lazy(() => import("./components/EmbedWheel"));
 
 // Lazy load heavy editor components (only needed in editor route)
 const VersionHistoryModal = lazy(() => import("./components/VersionHistoryModal"));
@@ -2465,6 +2466,7 @@ function AppContent() {
         <Route path="/legal/:document" element={<LegalPage />} />
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
+        <Route path="/embed/:wheelId" element={<EmbedWheel />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={
