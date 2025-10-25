@@ -723,26 +723,42 @@ class YearWheel {
       relativeAngle = angleSpan / 2; // Default to middle
     }
 
-    // Use PIXEL-based detection for resize zones
+    // Use PIXEL-based detection for resize zones with zoom-aware scaling
     // Calculate the arc length at the middle of the activity's radius
     const avgRadius = (itemRegion.startRadius + itemRegion.endRadius) / 2;
     const totalArcLength = angleSpan * avgRadius; // Arc length in pixels
-    const currentArcPosition = relativeAngle * avgRadius; // Position along arc in pixels
 
-    // Resize zones: 15 pixels from each edge (more forgiving than 10px)
-    const resizeZonePixels = 15;
+    // Adaptive resize zone based on zoom level
+    // In zoom mode, activities span more pixels, so we can be more generous
+    let resizeZonePixels = 15; // Base size
+    
+    if (this.zoomedMonth !== null) {
+      // Month zoom: 360° = 1 month, activities are much larger visually
+      resizeZonePixels = 25; // Larger zone for easier interaction
+    } else if (this.zoomedQuarter !== null) {
+      // Quarter zoom: 360° = 3 months, moderately larger
+      resizeZonePixels = 20;
+    }
+    
+    // For very small activities, use proportional threshold instead
+    // If activity is less than 60px wide, use 25% of width as resize zone
+    if (totalArcLength < 60) {
+      resizeZonePixels = Math.min(resizeZonePixels, totalArcLength * 0.25);
+    }
+
+    const currentArcPosition = relativeAngle * avgRadius; // Position along arc in pixels
     const minActivityAngle = this.toRadians(7); // Minimum 7° (1 week)
 
     let zone;
 
-    if (angleSpan < minActivityAngle) {
-      // Activity too small - only allow move
+    // If activity is very small (less than 2*resizeZone), only allow move
+    if (totalArcLength < resizeZonePixels * 2.5) {
       zone = "move";
     } else if (currentArcPosition < resizeZonePixels) {
-      // Within 15 pixels from start edge
+      // Within resize zone pixels from start edge
       zone = "resize-start";
     } else if (totalArcLength - currentArcPosition < resizeZonePixels) {
-      // Within 15 pixels from end edge
+      // Within resize zone pixels from end edge
       zone = "resize-end";
     } else {
       zone = "move";
@@ -4382,6 +4398,61 @@ class YearWheel {
     this.context.restore();
   }
 
+  drawResizeHandles(startRadius, width, startAngle, endAngle, itemColor) {
+    this.context.save();
+    
+    // Convert angles to radians
+    const startAngleRad = this.toRadians(startAngle);
+    const endAngleRad = this.toRadians(endAngle);
+    
+    // Calculate handle size based on zoom level and canvas size
+    let handleRadius = this.size / 100; // Base size: ~20-30px
+    
+    // Make handles larger in zoom mode for easier interaction
+    if (this.zoomedMonth !== null) {
+      handleRadius = this.size / 80; // Larger in month zoom
+    } else if (this.zoomedQuarter !== null) {
+      handleRadius = this.size / 90; // Slightly larger in quarter zoom
+    }
+    
+    // Calculate middle radius for handle placement
+    const middleRadius = startRadius + width / 2;
+    
+    // Draw start handle (left edge)
+    const startCoord = this.moveToAngle(middleRadius, startAngleRad);
+    this.context.beginPath();
+    this.context.arc(startCoord.x, startCoord.y, handleRadius, 0, Math.PI * 2);
+    this.context.fillStyle = '#FFFFFF'; // White fill
+    this.context.fill();
+    this.context.strokeStyle = itemColor; // Border matches item color
+    this.context.lineWidth = this.size / 500;
+    this.context.stroke();
+    
+    // Add inner dot for better visibility
+    this.context.beginPath();
+    this.context.arc(startCoord.x, startCoord.y, handleRadius / 3, 0, Math.PI * 2);
+    this.context.fillStyle = itemColor;
+    this.context.fill();
+    
+    // Draw end handle (right edge)
+    const endCoord = this.moveToAngle(middleRadius, endAngleRad);
+    this.context.beginPath();
+    this.context.arc(endCoord.x, endCoord.y, handleRadius, 0, Math.PI * 2);
+    this.context.fillStyle = '#FFFFFF'; // White fill
+    this.context.fill();
+    this.context.strokeStyle = itemColor; // Border matches item color
+    this.context.lineWidth = this.size / 500;
+    this.context.stroke();
+    
+    // Add inner dot for better visibility
+    this.context.beginPath();
+    this.context.arc(endCoord.x, endCoord.y, handleRadius / 3, 0, Math.PI * 2);
+    this.context.fillStyle = itemColor;
+    this.context.fill();
+    
+    this.context.restore();
+  }
+
   // Helper to draw rounded rectangle (if not available)
   roundRect(x, y, width, height, radius) {
     if (typeof this.context.roundRect === "function") {
@@ -4844,6 +4915,17 @@ class YearWheel {
                 adjustedEndAngle
               );
             }
+            
+            // Draw resize handles on hover
+            if (isHovered) {
+              this.drawResizeHandles(
+                itemStartRadius,
+                itemWidth,
+                adjustedStartAngle,
+                adjustedEndAngle,
+                itemColor
+              );
+            }
           });
 
           // Name band is drawn at the outer edge of content area (no gap)
@@ -5143,6 +5225,17 @@ class YearWheel {
               itemWidth,
               adjustedStartAngle,
               adjustedEndAngle
+            );
+          }
+          
+          // Draw resize handles on hover
+          if (isHovered) {
+            this.drawResizeHandles(
+              itemStartRadius,
+              itemWidth,
+              adjustedStartAngle,
+              adjustedEndAngle,
+              itemColor
             );
           }
         });
