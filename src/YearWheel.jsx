@@ -492,7 +492,7 @@ function YearWheel({
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
       <div 
         ref={scrollContainerRef}
-        className="flex-1 w-full overflow-y-auto overflow-x-hidden bg-white transition-opacity duration-150"
+        className="flex-1 w-full overflow-auto bg-white transition-opacity duration-150"
         style={{ opacity: isWheelReady ? 1 : 0 }}
       >
         <div style={{ 
@@ -503,9 +503,12 @@ function YearWheel({
           // Smooth progressive padding based on zoom level (no hard cutoff!)
           // At 100%: 0% padding, At 150%: 25% padding, At 200%: 50% padding
           minHeight: zoomLevel > 100 ? `${100 + (zoomLevel - 100)}%` : '100%',
-          width: '100%',
+          minWidth: zoomLevel > 100 ? `${100 + (zoomLevel - 100)}%` : '100%',
+          width: zoomLevel > 100 ? `${100 + (zoomLevel - 100)}%` : '100%',
           paddingTop: zoomLevel > 100 ? `${(zoomLevel - 100) / 2}%` : '0',
-          paddingBottom: zoomLevel > 100 ? `${(zoomLevel - 100) / 2}%` : '0'
+          paddingBottom: zoomLevel > 100 ? `${(zoomLevel - 100) / 2}%` : '0',
+          paddingLeft: zoomLevel > 100 ? `${(zoomLevel - 100) / 2}%` : '0',
+          paddingRight: zoomLevel > 100 ? `${(zoomLevel - 100) / 2}%` : '0'
         }}>
             <canvas
               ref={canvasRef}
