@@ -199,6 +199,51 @@ function PresentationControlDialog({
     setDragOverItem(null);
   };
 
+  // Handle dropping on empty section zones
+  const handleDropOnEmptyZone = (e, targetType) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedItem || (!draggedItem.type.includes('Ring'))) {
+      return;
+    }
+
+    const rings = [...organizationData.rings];
+    const draggedRing = rings.find(r => r.id === draggedItem.item.id);
+    
+    if (draggedRing) {
+      // Change the ring type
+      draggedRing.type = targetType;
+      
+      // When converting to outer ring, ensure it has a color
+      if (targetType === 'outer' && !draggedRing.color) {
+        draggedRing.color = '#' + Math.floor(Math.random()*16777215).toString(16);
+      }
+      
+      // When converting to inner ring, ensure it has data and orientation
+      if (targetType === 'inner') {
+        if (!draggedRing.data) {
+          draggedRing.data = Array.from({ length: 12 }, () => [""]);
+        }
+        if (!draggedRing.orientation) {
+          draggedRing.orientation = 'vertical';
+        }
+      }
+      
+      onOrganizationChange({ ...organizationData, rings });
+    }
+    
+    setDraggedItem(null);
+    setDragOverItem(null);
+  };
+
+  // Handle drag over empty zone
+  const handleDragOverEmptyZone = (e, targetType) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
   return (
     <div
       ref={dialogRef}
@@ -267,7 +312,15 @@ function PresentationControlDialog({
             {expandedSections.innerRings && (
               <div className="border-t border-gray-200 p-1 space-y-0.5">
                 {innerRings.length === 0 ? (
-                  <div className="px-2 py-3 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50">
+                  <div 
+                    className="px-2 py-3 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50 transition-colors"
+                    onDragOver={(e) => handleDragOverEmptyZone(e, 'inner')}
+                    onDrop={(e) => handleDropOnEmptyZone(e, 'inner')}
+                    style={{
+                      backgroundColor: draggedItem?.type.includes('Ring') ? '#EFF6FF' : undefined,
+                      borderColor: draggedItem?.type.includes('Ring') ? '#93C5FD' : undefined
+                    }}
+                  >
                     <p className="text-xs text-gray-500 mb-0.5">
                       {t('editor:rings.noInnerRings')}
                     </p>
@@ -343,7 +396,15 @@ function PresentationControlDialog({
             {expandedSections.outerRings && (
               <div className="border-t border-gray-200 p-1 space-y-0.5">
                 {outerRings.length === 0 ? (
-                  <div className="px-2 py-3 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50">
+                  <div 
+                    className="px-2 py-3 text-center border-2 border-dashed border-gray-200 rounded-sm bg-gray-50 transition-colors"
+                    onDragOver={(e) => handleDragOverEmptyZone(e, 'outer')}
+                    onDrop={(e) => handleDropOnEmptyZone(e, 'outer')}
+                    style={{
+                      backgroundColor: draggedItem?.type.includes('Ring') ? '#EFF6FF' : undefined,
+                      borderColor: draggedItem?.type.includes('Ring') ? '#93C5FD' : undefined
+                    }}
+                  >
                     <p className="text-xs text-gray-500 mb-0.5">
                       {t('editor:rings.noOuterRings')}
                     </p>
