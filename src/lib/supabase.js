@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { isSSLError, getNetworkErrorMessage } from '../utils/networkErrors';
 
 // Get environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -27,6 +28,26 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+  },
+  global: {
+    fetch: async (url, options = {}) => {
+      try {
+        const response = await fetch(url, options);
+        return response;
+      } catch (error) {
+        // Enhance error with network detection
+        if (isSSLError(error)) {
+          const enhancedError = new Error(
+            'Network security software (like Fortinet or Zscaler) is blocking this connection. ' +
+            'Please contact your IT administrator or try a different network.'
+          );
+          enhancedError.originalError = error;
+          enhancedError.isSSLError = true;
+          throw enhancedError;
+        }
+        throw error;
+      }
+    },
   },
 });
 

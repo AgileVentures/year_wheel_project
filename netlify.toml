@@ -16,6 +16,12 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    # Explicitly set TLS configuration headers for better corporate firewall compatibility
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    # Help with corporate proxy SSL inspection
+    X-Robots-Tag = "all"
+    # Permissions Policy for security
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
 
 # Cache static assets for 1 year
 [[headers]]
