@@ -922,6 +922,29 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Mark the save timestamp to ignore our own broadcasts
         lastSaveTimestamp.current = Date.now();
         
+        // Create version snapshot after successful save
+        try {
+          await createVersion(
+            wheelId,
+            {
+              title: currentTitle,
+              year: currentYear,
+              colors: currentColors,
+              showWeekRing: currentShowWeekRing,
+              showMonthRing: currentShowMonthRing,
+              showRingNames: currentShowRingNames,
+              showLabels: currentShowLabels,
+              weekRingDisplayMode: currentWeekRingDisplayMode,
+              organizationData: updatedOrgData
+            },
+            null, // No description for auto-save
+            false // Manual save, not auto-save
+          );
+        } catch (versionError) {
+          console.error('[ManualSave] Failed to create version snapshot:', versionError);
+          // Don't fail the entire save if version creation fails
+        }
+        
         // Mark current undo position as a save point
         markSaved();
         
