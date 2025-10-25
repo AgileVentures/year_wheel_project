@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, History, User, Clock, RotateCcw, Eye, Trash2, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listVersions, restoreVersion, deleteVersion, getVersion } from '../services/wheelService';
+import { showConfirmDialog } from '../utils/dialogs';
 
 /**
  * VersionHistoryModal - Beautiful UI for viewing and restoring wheel versions
@@ -40,7 +41,15 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
   };
 
   const handleRestore = async (version) => {
-    if (!confirm(t('editor:versionHistory.restoreConfirm', { number: version.version_number }))) {
+    const confirmed = await showConfirmDialog({
+      title: t('editor:versionHistory.restoreTitle', { number: version.version_number }),
+      message: t('editor:versionHistory.restoreMessage'),
+      confirmText: 'OK',
+      cancelText: 'Cancel',
+      confirmButtonClass: 'bg-purple-600 hover:bg-purple-700 text-white'
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -92,7 +101,15 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
   };
 
   const handleDelete = async (version) => {
-    if (!confirm(t('editor:versionHistory.deleteConfirm', { number: version.version_number }))) {
+    const confirmed = await showConfirmDialog({
+      title: t('editor:versionHistory.deleteTitle'),
+      message: t('editor:versionHistory.deleteConfirm', { number: version.version_number }),
+      confirmText: t('common:actions.delete'),
+      cancelText: t('common:actions.cancel'),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+
+    if (!confirmed) {
       return;
     }
 
