@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2 } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
@@ -62,7 +62,8 @@ function Header({
 }) {
   const { t } = useTranslation(['common', 'subscription']);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showImageExportMenu, setShowImageExportMenu] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   const [copiedLink, setCopiedLink] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -103,7 +104,6 @@ function Header({
   const handleExport = async (format) => {
     onDownloadFormatChange && onDownloadFormatChange(format);
     onDownloadImage && onDownloadImage(false);
-    setShowExportMenu(false);
   };
   
   return (
@@ -208,6 +208,27 @@ function Header({
               onClick={onExportData}
             />
           )}
+          
+          {/* Share Links Section */}
+          {wheelId && isPublic && (
+            <>
+              <DropdownDivider />
+              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+                {t('common:header.sharingLinks')}
+              </div>
+              <DropdownItem
+                icon={Eye}
+                label={copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
+                onClick={handleCopyPreviewLink}
+              />
+              <DropdownItem
+                icon={Link2}
+                label={copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
+                onClick={handleCopyEmbedLink}
+              />
+            </>
+          )}
+          
           <DropdownDivider />
           {onTemplateSelect && (
             <DropdownItem
@@ -225,84 +246,28 @@ function Header({
         </Dropdown>
         </div>
         
-        {/* Unified Export & Share Menu - Hidden on mobile */}
+        {/* Image Export Menu - Hidden on mobile */}
         <div className="hidden lg:flex relative" data-onboarding="export-share">
           <button
-            onClick={() => setShowExportMenu(!showExportMenu)}
+            onClick={() => setShowImageExportMenu(!showImageExportMenu)}
             className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors border border-gray-300 flex items-center gap-2"
-            title={t('common:header.exportAndShare')}
+            title={t('common:header.imageExport')}
           >
-            <Download size={16} />
-            <span>{t('common:header.export')}</span>
+            <Image size={16} />
+            <span>{t('common:header.imageExport')}</span>
             <ChevronDown size={14} />
           </button>
 
-          {showExportMenu && (
+          {showImageExportMenu && (
             <>
               <div 
                 className="fixed inset-0 z-40" 
-                onClick={() => setShowExportMenu(false)}
+                onClick={() => setShowImageExportMenu(false)}
               ></div>
-              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-80">
-                {/* Links Section */}
-                {wheelId && isPublic && (
-                  <>
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase border-b border-gray-100">
-                      {t('common:header.sharingLinks')}
-                    </div>
-                    
-                    {/* Preview Link */}
-                    <button
-                      onClick={handleCopyPreviewLink}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
-                    >
-                      {copiedLink === 'preview' ? (
-                        <Check className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <Eye className="w-5 h-5 text-gray-600" />
-                      )}
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900">
-                          {copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {t('common:header.previewLinkDesc')}
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Embed Link */}
-                    <button
-                      onClick={handleCopyEmbedLink}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
-                    >
-                      {copiedLink === 'embed' ? (
-                        <Check className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <Link2 className="w-5 h-5 text-gray-600" />
-                      )}
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900">
-                          {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {t('common:header.embedLinkDesc')}
-                        </div>
-                      </div>
-                    </button>
-                    
-                    <div className="border-t border-gray-100 my-2"></div>
-                  </>
-                )}
-
-                {/* Image Export Section */}
-                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
-                  {t('common:header.imageExport')}
-                </div>
-
+              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-72">
                 {/* PNG Transparent */}
                 <button
-                  onClick={() => handleExport('png')}
+                  onClick={() => { handleExport('png'); setShowImageExportMenu(false); }}
                   disabled={!isPremium}
                   className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
                     !isPremium 
@@ -328,7 +293,7 @@ function Header({
 
                 {/* PNG White Background */}
                 <button
-                  onClick={() => handleExport('png-white')}
+                  onClick={() => { handleExport('png-white'); setShowImageExportMenu(false); }}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
                 >
                   <FileDown className="w-5 h-5 text-gray-600" />
@@ -344,7 +309,7 @@ function Header({
 
                 {/* JPEG */}
                 <button
-                  onClick={() => handleExport('jpeg')}
+                  onClick={() => { handleExport('jpeg'); setShowImageExportMenu(false); }}
                   disabled={!isPremium}
                   className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
                     !isPremium 
@@ -368,7 +333,7 @@ function Header({
 
                 {/* SVG */}
                 <button
-                  onClick={() => handleExport('svg')}
+                  onClick={() => { handleExport('svg'); setShowImageExportMenu(false); }}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
                 >
                   <FileDown className="w-5 h-5 text-gray-600" />
@@ -382,7 +347,7 @@ function Header({
 
                 {/* PDF */}
                 <button
-                  onClick={() => handleExport('pdf')}
+                  onClick={() => { handleExport('pdf'); setShowImageExportMenu(false); }}
                   disabled={!isPremium}
                   className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
                     !isPremium 
