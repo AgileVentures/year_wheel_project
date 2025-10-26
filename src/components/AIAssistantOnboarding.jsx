@@ -104,14 +104,16 @@ function AIAssistantOnboarding({ shouldStart = false, onComplete, onSkip }) {
       nextBtnText: t('common:actions.next'),
       prevBtnText: t('common:actions.previous'),
       doneBtnText: t('common:actions.done'),
+      onDestroyStarted: () => {
+        // Called when tour starts to be destroyed (before animation)
+        // Always call onSkip to re-enable autosave, regardless of completion state
+        onSkip && onSkip();
+      },
       onDestroyed: (element, step, options) => {
-        // Called when tour is closed/completed
-        if (step.index === 7) {
-          // Completed all steps
+        // Called when tour is fully closed/completed
+        // If completed all steps, also call onComplete
+        if (step && step.index === 7) {
           onComplete && onComplete();
-        } else {
-          // Skipped
-          onSkip && onSkip();
         }
       }
     });
