@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
-import EditAktivitetModal from "./components/EditAktivitetModal";
+import EditItemModal from "./components/EditItemModal";
 import BulkActionsToolbar from "./components/BulkActionsToolbar";
 
 // Helper function to show confirm dialog
@@ -746,12 +746,12 @@ function YearWheel({
 
       {/* Edit Aktivitet Modal - only in edit mode */}
       {editingItem && !readonly && (
-        <EditAktivitetModal
-          aktivitet={editingItem}
+        <EditItemModal
+          item={editingItem}
           organizationData={organizationData}
           currentWheelId={wheelId}
-          onUpdateAktivitet={handleUpdateAktivitet}
-          onDeleteAktivitet={handleDeleteAktivitet}
+          onUpdateItem={handleUpdateAktivitet}
+          onDeleteItem={handleDeleteAktivitet}
           onClose={() => setEditingItem(null)}
         />
       )}

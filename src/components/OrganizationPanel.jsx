@@ -2,8 +2,8 @@ import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Pl
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
-import AddAktivitetModal from './AddAktivitetModal';
-import EditAktivitetModal from './EditAktivitetModal';
+import AddItemModal from './AddItemModal';
+import EditItemModal from './EditItemModal';
 import RingIntegrationModal from './RingIntegrationModal';
 import { getRingIntegrations } from '../services/integrationService';
 import { showConfirmDialog } from '../utils/dialogs';
@@ -1621,9 +1621,9 @@ function OrganizationPanel({
 
       {/* Add Item Modal */}
       {isAddModalOpen && (
-        <AddAktivitetModal
+        <AddItemModal
           organizationData={organizationData}
-          onAddAktivitet={handleAddAktivitet}
+          onAddItem={handleAddAktivitet}
           onClose={() => setIsAddModalOpen(false)}
           currentWheelId={currentWheelId}
         />
@@ -1631,12 +1631,12 @@ function OrganizationPanel({
 
       {/* Edit Item Modal */}
       {editingAktivitet && (
-        <EditAktivitetModal
-          aktivitet={editingAktivitet}
+        <EditItemModal
+          item={editingAktivitet}
           organizationData={organizationData}
           currentWheelId={currentWheelId}
-          onUpdateAktivitet={handleUpdateAktivitet}
-          onDeleteAktivitet={handleDeleteAktivitet}
+          onUpdateItem={handleUpdateAktivitet}
+          onDeleteItem={handleDeleteAktivitet}
           onClose={() => setEditingAktivitet(null)}
         />
       )}

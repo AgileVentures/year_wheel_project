@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import EditAktivitetModal from './EditAktivitetModal';
+import EditItemModal from './EditItemModal';
 
 function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizationChange, onClose, onZoomToMonth }) {
   const { t } = useTranslation(['editor']);
@@ -318,12 +318,12 @@ function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizatio
 
       {/* Edit Aktivitet Modal */}
       {editingAktivitet && (
-        <EditAktivitetModal
-          aktivitet={editingAktivitet}
+        <EditItemModal
+          item={editingAktivitet}
           organizationData={organizationData}
           currentWheelId={currentWheelId}
-          onUpdateAktivitet={handleUpdateAktivitet}
-          onDeleteAktivitet={handleDeleteAktivitet}
+          onUpdateItem={handleUpdateAktivitet}
+          onDeleteItem={handleDeleteAktivitet}
           onClose={() => setEditingAktivitet(null)}
         />
       )}
