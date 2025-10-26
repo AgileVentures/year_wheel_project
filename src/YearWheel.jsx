@@ -26,6 +26,7 @@ const showConfirmDialog = (title, message, confirmText, cancelText, confirmButto
 
 function YearWheel({
   wheelId,
+  wheelData,
   ringsData,
   title,
   year,
@@ -471,14 +472,29 @@ function YearWheel({
   }, [selectionMode, selectedItems, yearWheel]);
 
   // Notify parent when wheel instance changes (only once per instance)
+  // Expose yearWheel methods to parent via onWheelReady
   useEffect(() => {
     if (yearWheel && yearWheel !== notifiedWheelRef.current) {
       notifiedWheelRef.current = yearWheel;
       if (onWheelReady) {
+        // Attach custom methods to yearWheel instance
+        yearWheel.openItemTooltip = (itemId) => {
+          const item = organizationData?.items?.find(i => i.id === itemId);
+          if (item) {
+            // Calculate center position for tooltip
+            const tooltipPos = {
+              x: window.innerWidth / 2,
+              y: window.innerHeight / 2,
+            };
+            setSelectedItem(item);
+            setTooltipPosition(tooltipPos);
+          }
+        };
+        
         onWheelReady(yearWheel);
       }
     }
-  }, [yearWheel, onWheelReady]);
+  }, [yearWheel, onWheelReady, organizationData]);
 
   const toggleSpinning = () => {
     if (isSpinning) {
@@ -741,6 +757,7 @@ function YearWheel({
             setTooltipPosition(null);
           }}
           readonly={readonly}
+          wheel={wheelData}
         />
       )}
 

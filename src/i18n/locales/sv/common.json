@@ -1,6 +1,7 @@
 {
   "actions": {
     "save": "Spara",
+    "saving": "Sparar...",
     "cancel": "Avbryt",
     "delete": "Radera",
     "edit": "Redigera",
@@ -30,6 +31,15 @@
     "showAll": "Visa alla",
     "hideAll": "Dölj alla",
     "linkCopied": "Länk kopierad!"
+  },
+  "time": {
+    "justNow": "Nyss",
+    "minutesAgo": "{{count}}min sedan",
+    "minutesAgo_plural": "{{count}}min sedan",
+    "hoursAgo": "{{count}}h sedan",
+    "hoursAgo_plural": "{{count}}h sedan",
+    "daysAgo": "{{count}}d sedan",
+    "daysAgo_plural": "{{count}}d sedan"
   },
   "labels": {
     "name": "Namn",

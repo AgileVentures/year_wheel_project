@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2 } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
@@ -8,6 +8,8 @@ import LanguageSwitcher from './LanguageSwitcher';
 import OnboardingMenu from './OnboardingMenu';
 import UndoHistoryMenu from './UndoHistoryMenu';
 import TemplateSelectionModal from './TemplateSelectionModal';
+import WheelCommentsPanel from './WheelCommentsPanel';
+import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications';
 import { useState } from 'react';
 
 function Header({ 
@@ -58,7 +60,11 @@ function Header({
   // Template functionality
   onTemplateSelect,
   // Premium status
-  isPremium = false
+  isPremium = false,
+  // Wheel comments props
+  wheelData = null,
+  organizationData = null,
+  onNavigateToItem = null
 }) {
   const { t } = useTranslation(['common', 'subscription']);
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
@@ -68,6 +74,10 @@ function Header({
   const [copiedLink, setCopiedLink] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showCommentsPanel, setShowCommentsPanel] = useState(false);
+  
+  // Get unread notification count for badge
+  const { unreadCount } = useRealtimeNotifications({ autoFetch: wheelId ? true : false });
   
   const handleCopyToClipboard = async (format) => {
     onDownloadFormatChange && onDownloadFormatChange(format);
@@ -260,11 +270,10 @@ function Header({
         <div className="hidden lg:flex relative" data-onboarding="export-share">
           <button
             onClick={() => setShowImageExportMenu(!showImageExportMenu)}
-            className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors border border-gray-300 flex items-center gap-2"
+            className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1"
             title={t('common:header.imageExport')}
           >
             <Image size={16} />
-            <span>{t('common:header.imageExport')}</span>
             <ChevronDown size={14} />
           </button>
 
@@ -473,6 +482,34 @@ function Header({
             </div>
           </>
         )}
+
+        {/* Comments Button with notification badge (only show for database wheels) */}
+        {wheelId && (
+          <>
+            <div className="hidden lg:block w-px h-8 bg-gray-300"></div>
+            
+            {/* Wheel Comments Button with Badge */}
+            <button
+              onClick={() => {
+                console.log('Comments button clicked', { wheelData, organizationData });
+                if (!wheelData) {
+                  console.warn('wheelData is missing');
+                  return;
+                }
+                setShowCommentsPanel(true);
+              }}
+              className="relative flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title={t('notifications:wheelComments.allComments')}
+            >
+              <MessageSquare size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </>
+        )}
         
         <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
         
@@ -504,6 +541,16 @@ function Header({
         onClose={() => setShowTemplateModal(false)}
         onTemplateSelect={onTemplateSelect}
       />
+
+      {/* Wheel Comments Panel */}
+      {showCommentsPanel && wheelData && (
+        <WheelCommentsPanel
+          wheel={wheelData}
+          organizationData={organizationData}
+          onClose={() => setShowCommentsPanel(false)}
+          onNavigateToItem={onNavigateToItem}
+        />
+      )}
     </header>
   );
 }

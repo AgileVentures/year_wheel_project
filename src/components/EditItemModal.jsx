@@ -180,7 +180,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               onChange={(e) => handleChange('activityId', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
-              {organizationData.activities.map((activity) => (
+              {organizationData.activityGroups.map((activity) => (
                 <option key={activity.id} value={activity.id}>
                   {activity.name}
                 </option>

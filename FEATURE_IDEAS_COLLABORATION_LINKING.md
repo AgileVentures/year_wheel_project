@@ -503,6 +503,582 @@ CEO's Annual Wheel
 
 ---
 
+---
+
+## 4. Unified Activity Feed & Direct Messaging System
+
+### ✅ STATUS: COMMENTS & MENTIONS IMPLEMENTED (Oct 26, 2025)
+
+**Completed Foundation:**
+- ✅ Item-level comments with @mentions
+- ✅ Wheel-level comments (general discussion)
+- ✅ Notification system (in-app with unread badges)
+- ✅ Real-time updates via Supabase Realtime
+- ✅ Threading/reply support on all comments
+- ✅ WheelCommentsPanel with filtering and navigation
+
+**Next Phase: Aggregated Activity Feed & Messaging**
+
+### Concept
+Create a unified communication hub combining:
+1. **Activity Feed Dashboard**: Aggregated view of all comments/mentions across accessible wheels
+2. **Direct Messaging**: User-to-user and broadcast messaging system
+3. **Unified Inbox**: Single place for all notifications, comments, and messages
+
+### Use Cases
+
+#### Activity Feed
+- **Dashboard View**: See all recent comments on wheels you own or belong to
+- **Mentions Filter**: View only comments that @mention you
+- **Team Activity**: Track what team members are discussing across projects
+- **Quick Navigation**: Click any comment to jump to source (wheel/item)
+- **Unread Tracking**: Mark comments as read/unread for follow-up
+
+#### Direct Messaging
+- **Admin Broadcasts**: System-wide announcements to all users
+  - "System maintenance scheduled for Sunday 2am"
+  - "New feature announcement: Document attachments now available"
+  - "Premium plan changes effective next month"
+  
+- **Admin → User**: Individual support/moderation messages
+  - "Your support ticket has been resolved"
+  - "Account upgrade successful"
+  - "Action required: Verify your email"
+
+- **User → Team Members**: Team collaboration
+  - "Quick question about the Q2 timeline"
+  - "Can you review my latest changes?"
+  - Direct message anyone in your teams
+
+- **User → Wheel Collaborators**: Project-specific communication
+  - Message anyone with access to shared wheels
+  - Doesn't require formal team membership
+
+### Technical Implementation
+
+#### Database Schema
+```sql
+-- Extend notifications table (already exists from migration 023)
+-- Add message_type to distinguish notification types
+ALTER TABLE notifications
+ADD COLUMN message_type TEXT DEFAULT 'system' 
+  CHECK (message_type IN ('system', 'mention', 'comment', 'assignment', 'direct_message', 'broadcast'));
+
+-- Direct messages table (separate from notifications for threading)
+CREATE TABLE direct_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  
+  -- Participants
+  sender_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  recipient_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for broadcast
+  
+  -- Message content
+  subject TEXT,
+  content TEXT NOT NULL,
+  message_type TEXT NOT NULL CHECK (message_type IN ('direct', 'broadcast', 'team')),
+  
+  -- Context (optional - if related to specific wheel/item)
+  wheel_id UUID REFERENCES year_wheels(id) ON DELETE SET NULL,
+  item_id UUID REFERENCES items(id) ON DELETE SET NULL,
+  
+  -- Threading
+  thread_id UUID REFERENCES direct_messages(id), -- first message in thread
+  parent_message_id UUID REFERENCES direct_messages(id), -- reply to specific message
+  
+  -- Status tracking
+  read BOOLEAN DEFAULT FALSE,
+  read_at TIMESTAMPTZ,
+  delivered BOOLEAN DEFAULT FALSE,
+  delivered_at TIMESTAMPTZ,
+  
+  -- Soft delete
+  deleted_by_sender BOOLEAN DEFAULT FALSE,
+  deleted_by_recipient BOOLEAN DEFAULT FALSE,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Message recipients for broadcasts (one row per recipient)
+CREATE TABLE message_recipients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  message_id UUID NOT NULL REFERENCES direct_messages(id) ON DELETE CASCADE,
+  recipient_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  read BOOLEAN DEFAULT FALSE,
+  read_at TIMESTAMPTZ,
+  deleted BOOLEAN DEFAULT FALSE,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(message_id, recipient_id)
+);
+
+-- User message preferences
+CREATE TABLE user_message_preferences (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  -- Who can message this user
+  allow_messages_from TEXT DEFAULT 'team_members' 
+    CHECK (allow_messages_from IN ('everyone', 'team_members', 'admins_only', 'nobody')),
+  
+  -- Notification preferences
+  email_on_direct_message BOOLEAN DEFAULT TRUE,
+  email_on_mention BOOLEAN DEFAULT TRUE,
+  email_on_broadcast BOOLEAN DEFAULT TRUE,
+  email_digest_frequency TEXT DEFAULT 'immediate'
+    CHECK (email_digest_frequency IN ('immediate', 'hourly', 'daily', 'weekly', 'never')),
+  
+  -- Do not disturb mode
+  do_not_disturb BOOLEAN DEFAULT FALSE,
+  dnd_start_time TIME, -- e.g., 22:00
+  dnd_end_time TIME,   -- e.g., 08:00
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_direct_messages_sender_id ON direct_messages(sender_id);
+CREATE INDEX idx_direct_messages_recipient_id ON direct_messages(recipient_id);
+CREATE INDEX idx_direct_messages_thread_id ON direct_messages(thread_id);
+CREATE INDEX idx_direct_messages_created_at ON direct_messages(created_at DESC);
+CREATE INDEX idx_message_recipients_recipient_id_read ON message_recipients(recipient_id, read);
+```
+
+#### RLS Policies
+```sql
+-- Direct messages: users can view messages they sent or received
+CREATE POLICY "Users can view their messages"
+  ON direct_messages FOR SELECT
+  USING (
+    sender_id = auth.uid() 
+    OR recipient_id = auth.uid()
+    OR (message_type = 'broadcast' AND id IN (
+      SELECT message_id FROM message_recipients WHERE recipient_id = auth.uid()
+    ))
+  );
+
+-- Only sender can create messages
+CREATE POLICY "Users can send messages"
+  ON direct_messages FOR INSERT
+  WITH CHECK (sender_id = auth.uid());
+
+-- Users can mark their received messages as read
+CREATE POLICY "Users can mark messages as read"
+  ON direct_messages FOR UPDATE
+  USING (recipient_id = auth.uid())
+  WITH CHECK (recipient_id = auth.uid());
+
+-- Admin broadcast policy
+CREATE POLICY "Admins can send broadcasts"
+  ON direct_messages FOR INSERT
+  WITH CHECK (
+    sender_id = auth.uid() 
+    AND message_type = 'broadcast'
+    AND EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+  );
+```
+
+#### Helper Functions
+```sql
+-- Check if user A can message user B
+CREATE OR REPLACE FUNCTION can_message_user(p_sender_id UUID, p_recipient_id UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_preference TEXT;
+  v_is_admin BOOLEAN;
+  v_share_team BOOLEAN;
+BEGIN
+  -- Check if sender is admin
+  SELECT is_admin INTO v_is_admin FROM profiles WHERE id = p_sender_id;
+  IF v_is_admin THEN RETURN TRUE; END IF;
+  
+  -- Get recipient preferences
+  SELECT allow_messages_from INTO v_preference 
+  FROM user_message_preferences 
+  WHERE user_id = p_recipient_id;
+  
+  -- Default to team_members if no preference set
+  v_preference := COALESCE(v_preference, 'team_members');
+  
+  IF v_preference = 'nobody' THEN RETURN FALSE; END IF;
+  IF v_preference = 'admins_only' THEN RETURN FALSE; END IF;
+  IF v_preference = 'everyone' THEN RETURN TRUE; END IF;
+  
+  -- Check if they share a team
+  IF v_preference = 'team_members' THEN
+    SELECT EXISTS (
+      SELECT 1 FROM team_members tm1
+      INNER JOIN team_members tm2 ON tm1.team_id = tm2.team_id
+      WHERE tm1.user_id = p_sender_id AND tm2.user_id = p_recipient_id
+    ) INTO v_share_team;
+    RETURN v_share_team;
+  END IF;
+  
+  RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Send broadcast message to all users or specific teams
+CREATE OR REPLACE FUNCTION send_broadcast_message(
+  p_sender_id UUID,
+  p_subject TEXT,
+  p_content TEXT,
+  p_team_ids UUID[] DEFAULT NULL -- NULL = all users
+)
+RETURNS UUID AS $$
+DECLARE
+  v_message_id UUID;
+  v_recipient_id UUID;
+BEGIN
+  -- Check if sender is admin
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = p_sender_id AND is_admin = true) THEN
+    RAISE EXCEPTION 'Only admins can send broadcast messages';
+  END IF;
+  
+  -- Create the message
+  INSERT INTO direct_messages (sender_id, subject, content, message_type)
+  VALUES (p_sender_id, p_subject, p_content, 'broadcast')
+  RETURNING id INTO v_message_id;
+  
+  -- Add recipients
+  IF p_team_ids IS NULL THEN
+    -- All users
+    INSERT INTO message_recipients (message_id, recipient_id)
+    SELECT v_message_id, id FROM auth.users WHERE id != p_sender_id;
+  ELSE
+    -- Specific teams
+    INSERT INTO message_recipients (message_id, recipient_id)
+    SELECT DISTINCT v_message_id, tm.user_id 
+    FROM team_members tm
+    WHERE tm.team_id = ANY(p_team_ids) AND tm.user_id != p_sender_id;
+  END IF;
+  
+  RETURN v_message_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+### UI Components
+
+#### 1. Activity Feed on Dashboard
+```jsx
+<Dashboard>
+  <ActivityFeed>
+    <FilterBar>
+      <Select>All Activity | Mentions Only | My Wheels | My Teams</Select>
+      <DateRange>Last 7 Days ▼</DateRange>
+    </FilterBar>
+    
+    <ActivityList>
+      <ActivityItem>
+        <Avatar user="Sarah Johnson" />
+        <Content>
+          <Text>
+            <Strong>Sarah Johnson</Strong> mentioned you in 
+            <Link>"Project Phoenix"</Link>
+          </Text>
+          <Comment>"@you Can you review the Q2 timeline?"</Comment>
+          <Metadata>2 hours ago · Activity: Design Sprint</Metadata>
+        </Content>
+        <Actions>
+          <Button>View →</Button>
+          <MarkReadButton />
+        </Actions>
+      </ActivityItem>
+      
+      <ActivityItem unread>
+        <Icon>💬</Icon>
+        <Content>
+          <Text>
+            <Strong>3 new comments</Strong> on 
+            <Link>"Marketing Strategy 2025"</Link>
+          </Text>
+          <Metadata>5 minutes ago</Metadata>
+        </Content>
+      </ActivityItem>
+    </ActivityList>
+  </ActivityFeed>
+</Dashboard>
+```
+
+#### 2. Messages Inbox
+```jsx
+<MessagesPage>
+  <Sidebar>
+    <NewMessageButton />
+    <MessageFolders>
+      <Folder active>Inbox (3)</Folder>
+      <Folder>Sent</Folder>
+      <Folder>Archived</Folder>
+      <Folder>Broadcasts</Folder>
+    </MessageFolders>
+  </Sidebar>
+  
+  <MessageList>
+    <MessagePreview unread>
+      <Avatar user="Admin" badge="admin" />
+      <Preview>
+        <From>YearWheel System</From>
+        <Subject>New Feature: Direct Messaging</Subject>
+        <Snippet>You can now send direct messages to team members...</Snippet>
+        <Time>10 minutes ago</Time>
+      </Preview>
+    </MessagePreview>
+  </MessageList>
+  
+  <MessageDetail>
+    <Header>
+      <Subject>New Feature: Direct Messaging</Subject>
+      <Actions>
+        <ReplyButton />
+        <ArchiveButton />
+        <DeleteButton />
+      </Actions>
+    </Header>
+    <MessageContent>
+      {/* Full message with threading */}
+    </MessageContent>
+  </MessageDetail>
+</MessagesPage>
+```
+
+#### 3. New Message Composer
+```jsx
+<ComposeModal>
+  <RecipientPicker>
+    <Label>To:</Label>
+    <Select multiple searchable>
+      <OptGroup label="Team Members">
+        <Option>Sarah Johnson</Option>
+        <Option>John Smith</Option>
+      </OptGroup>
+      <OptGroup label="Wheel Collaborators">
+        <Option>Emily Chen (Project Phoenix)</Option>
+      </OptGroup>
+    </Select>
+  </RecipientPicker>
+  
+  <SubjectInput placeholder="Subject (optional)" />
+  
+  <MentionInput 
+    placeholder="Write your message..."
+    multiLine
+    rows={10}
+  />
+  
+  <AttachmentSection>
+    <LinkWheelButton />
+    <LinkItemButton />
+  </AttachmentSection>
+  
+  <Actions>
+    <SendButton />
+    <DraftButton />
+    <CancelButton />
+  </Actions>
+</ComposeModal>
+```
+
+#### 4. Admin Broadcast Interface
+```jsx
+<AdminPanel>
+  <BroadcastSection>
+    <Title>Send System Announcement</Title>
+    
+    <RecipientSelector>
+      <Radio checked>All Users</Radio>
+      <Radio>Specific Teams</Radio>
+      <Radio>Premium Users Only</Radio>
+      <Radio>Free Users Only</Radio>
+    </RecipientSelector>
+    
+    <SubjectInput required />
+    <MessageEditor />
+    
+    <PreviewButton>Preview (shows to 123 users)</PreviewButton>
+    <SendButton danger>Send Broadcast</SendButton>
+  </BroadcastSection>
+</AdminPanel>
+```
+
+#### 5. Unified Inbox (Combined View)
+```jsx
+<InboxPage>
+  <Tabs>
+    <Tab active>All (12)</Tab>
+    <Tab>Mentions (3)</Tab>
+    <Tab>Comments (7)</Tab>
+    <Tab>Messages (2)</Tab>
+    <Tab>Notifications (5)</Tab>
+  </Tabs>
+  
+  <UnifiedList>
+    {/* Mix of comments, messages, notifications */}
+    {/* Sorted by date, with type badges */}
+  </UnifiedList>
+</InboxPage>
+```
+
+### Implementation Phases
+
+#### Phase 1: Activity Feed (2-3 weeks)
+- [ ] Create `ActivityFeed.jsx` component on Dashboard
+- [ ] Service: `getAggregatedComments(userId, filters)` 
+  - Fetch all comments from accessible wheels
+  - Filter by mentions, wheels, teams
+  - Sort by date, unread status
+- [ ] Mark as read functionality
+- [ ] Navigation to source (wheel/item)
+- [ ] Real-time updates
+
+#### Phase 2: Direct Messaging (3-4 weeks)
+- [ ] Database migration for messages tables
+- [ ] Service layer: `messageService.js`
+  - `sendMessage(recipientId, content, subject)`
+  - `getConversation(recipientId)` - thread view
+  - `getInbox(filters)` - user's messages
+  - `markAsRead(messageId)`
+- [ ] UI: Messages page with inbox/sent/archived
+- [ ] Composer with recipient picker
+- [ ] Threading support
+- [ ] Real-time delivery
+
+#### Phase 3: Admin Broadcasts (1-2 weeks)
+- [ ] Admin panel section for broadcasts
+- [ ] `sendBroadcast()` function with recipient targeting
+- [ ] Preview mode showing recipient count
+- [ ] Broadcast history/analytics
+- [ ] Email integration for broadcasts
+
+#### Phase 4: Unified Inbox (2-3 weeks)
+- [ ] Combined view of all communication types
+- [ ] Unified search across comments/messages/notifications
+- [ ] Smart filters and tags
+- [ ] Bulk actions (mark all as read, archive, etc.)
+- [ ] Email digest integration
+
+### Permission Matrix
+
+| Action | Free User | Premium User | Team Owner | Admin |
+|--------|-----------|--------------|------------|-------|
+| View own activity feed | ✅ | ✅ | ✅ | ✅ |
+| Send direct message to team member | ✅ (limit: 10/day) | ✅ | ✅ | ✅ |
+| Send message to non-team member | ❌ | ✅ | ✅ | ✅ |
+| View all team activity | ❌ | ✅ | ✅ | ✅ |
+| Send broadcast to team | ❌ | ❌ | ✅ | ✅ |
+| Send system-wide broadcast | ❌ | ❌ | ❌ | ✅ |
+| Access unified inbox | ❌ | ✅ | ✅ | ✅ |
+
+### Privacy & User Control
+
+#### Message Preferences
+Users can control:
+- Who can send them messages (everyone, team members only, admins only, nobody)
+- Email notification preferences per type
+- Digest frequency (immediate, daily, weekly)
+- Do Not Disturb schedule
+
+#### Blocking & Reporting
+- Block specific users from messaging
+- Report spam/abuse to admins
+- Admins can see reports and take action
+
+### Email Integration
+
+#### Notification Emails
+```html
+<EmailTemplate type="mention">
+  Subject: Sarah Johnson mentioned you in Project Phoenix
+  
+  Hi [User Name],
+  
+  Sarah Johnson mentioned you in a comment on "Project Phoenix":
+  
+  "@[User Name] Can you review the Q2 timeline?"
+  
+  [View Comment] [Reply]
+  
+  Manage your notification settings: [Settings Link]
+</EmailTemplate>
+
+<EmailTemplate type="direct_message">
+  Subject: New message from Sarah Johnson
+  
+  Hi [User Name],
+  
+  You have a new message from Sarah Johnson:
+  
+  Subject: Q2 Budget Review
+  "Can we schedule a quick call to discuss the budget allocation..."
+  
+  [Read Message] [Reply]
+</EmailTemplate>
+
+<EmailTemplate type="broadcast">
+  Subject: [System Announcement] New Feature Available
+  
+  Hi [User Name],
+  
+  YearWheel has a new feature: Direct Messaging
+  
+  [Full announcement text]
+  
+  [Learn More] [Try It Now]
+</EmailTemplate>
+```
+
+#### Digest Mode
+Daily/weekly digest combining all activity:
+```
+Your YearWheel Activity Digest - [Date]
+
+📬 3 Mentions
+- Sarah mentioned you in "Project Phoenix"
+- John mentioned you in "Q2 Planning"
+- Team discussion in "Marketing Strategy"
+
+💬 7 New Comments
+- 4 comments on "Website Redesign"
+- 2 comments on "Brand Refresh"
+- 1 comment on "Hiring Plan"
+
+📨 2 Direct Messages
+- Message from Sarah Johnson
+- Message from Admin Team
+
+[View All Activity →]
+```
+
+### Analytics & Insights
+
+#### For Users
+- Activity heatmap: When you're most active
+- Response time: How quickly you respond to mentions
+- Engagement: Most discussed wheels/items
+
+#### For Admins
+- System-wide activity metrics
+- Broadcast open rates
+- Most active teams/users
+- Response time analytics
+
+### Mobile Considerations
+
+#### Push Notifications
+- Real-time push for mentions and direct messages
+- Configurable per notification type
+- Deep linking to specific comments/messages
+
+#### Mobile UI Adaptations
+- Swipe actions for mark as read/archive
+- Simplified composer for mobile
+- Voice-to-text support
+- Offline message drafts
+
+---
+
 ## Conclusion
 
 These three features work synergistically to transform YearWheel from a visualization tool into a collaborative project management platform. They leverage the existing multi-year architecture and team collaboration foundation while adding powerful new capabilities for document management, communication, and hierarchical planning.

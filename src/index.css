@@ -149,3 +149,79 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 50%;
   border: none;
 }
+
+/* React Mentions - Fix double rendering issue */
+/* Based on react-mentions v4 requirements */
+.mention-input-wrapper .mentions-input-multiline__control,
+.mention-input-wrapper .mentions-input-singleline__control {
+  font-family: inherit;
+  font-size: 14px;
+  position: relative;
+}
+
+.mention-input-wrapper .mentions-input-multiline__highlighter,
+.mention-input-wrapper .mentions-input-singleline__highlighter {
+  padding: 9px;
+  border: 1px solid transparent;
+  color: #1f2937 !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.mention-input-wrapper .mentions-input-multiline__input,
+.mention-input-wrapper .mentions-input-singleline__input {
+  padding: 9px;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.5;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: #1f2937 !important;
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
+
+.mention-input-wrapper .mentions-input-multiline__input::placeholder,
+.mention-input-wrapper .mentions-input-singleline__input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.mention-input-wrapper .mentions-input-multiline__input:focus,
+.mention-input-wrapper .mentions-input-singleline__input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.mention-input-wrapper .mentions__mention {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  padding: 0 2px;
+}
+
+/* CRITICAL: Make substring content visible */
+.mention-input-wrapper .mentions-input-multiline__highlighter__substring,
+.mention-input-wrapper .mentions-input-singleline__highlighter__substring {
+  visibility: visible !important;
+}
+
+
+
+
+
+
+
+

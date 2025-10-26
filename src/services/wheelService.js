@@ -142,6 +142,8 @@ export const fetchWheel = async (wheelId) => {
   
   return {
     id: wheel.id,
+    user_id: wheel.user_id,
+    team_id: wheel.team_id,
     title: wheel.title,
     year: wheel.year.toString(),
     colors: wheelColors,

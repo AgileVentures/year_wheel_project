@@ -197,6 +197,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [pages, setPages] = useState([]);
   const [currentPageId, setCurrentPageId] = useState(null);
   const [showAddPageModal, setShowAddPageModal] = useState(false);
+  const [wheelData, setWheelData] = useState(null); // Store full wheel object including team_id
   
   // AI Assistant state
   const [isAIOpen, setIsAIOpen] = useState(false);
@@ -256,6 +257,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       const wheelData = await fetchWheel(wheelId);
       
       if (wheelData) {
+        setWheelData(wheelData); // Store full wheel object
         setIsPublic(wheelData.is_public || false);
         setIsTemplate(wheelData.is_template || false);
         
@@ -2211,6 +2213,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           // Small delay to let AI window render
           setTimeout(() => setShowAIOnboarding(true), 300);
         }}
+        // Wheel comments props
+        wheelData={wheelData}
+        organizationData={organizationData}
+        onNavigateToItem={(itemId) => {
+          // Open item tooltip using yearWheelRef
+          if (yearWheelRef && yearWheelRef.openItemTooltip) {
+            yearWheelRef.openItemTooltip(itemId);
+          } else {
+            console.warn('yearWheelRef.openItemTooltip not available');
+          }
+        }}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -2247,6 +2260,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           <div className="w-full h-full flex items-center justify-center">
             <YearWheel
               wheelId={wheelId}
+              wheelData={wheelData}
               title={title}
               year={year}
               colors={colors}

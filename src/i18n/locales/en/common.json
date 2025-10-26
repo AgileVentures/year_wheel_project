@@ -1,6 +1,7 @@
 {
   "actions": {
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -30,6 +31,15 @@
     "showAll": "Show all",
     "hideAll": "Hide all",
     "linkCopied": "Link copied!"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{{count}}m ago",
+    "minutesAgo_plural": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "hoursAgo_plural": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "daysAgo_plural": "{{count}}d ago"
   },
   "labels": {
     "name": "Name",

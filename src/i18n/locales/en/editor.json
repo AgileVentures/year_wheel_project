@@ -130,7 +130,9 @@
     "deleteTitle": "Delete activity",
     "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "deleteButton": "Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "details": "Details",
+    "comments": "Comments"
   },
   "addItemModal": {
     "title": "Add New Item",

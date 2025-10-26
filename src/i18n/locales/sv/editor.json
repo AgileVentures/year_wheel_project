@@ -130,7 +130,9 @@
     "deleteTitle": "Radera aktivitet",
     "deleteConfirm": "Är du säker på att du vill radera \"{{name}}\"? Denna åtgärd kan inte ångras.",
     "deleteButton": "Radera",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "details": "Detaljer",
+    "comments": "Kommentarer"
   },
   "addItemModal": {
     "title": "Lägg till ny händelse",
