@@ -10,7 +10,7 @@ import FeaturesSection from './FeaturesSection';
 import PricingSection from './PricingSection';
 import AuthSection from './AuthSection';
 import TemplateShowcase from './TemplateShowcase';
-import ComparisonTable from './ComparisonTable';
+// import ComparisonTable from './ComparisonTable';
 import Footer from './Footer';
 import PhilosophySection from './PhilosophySection';
 
@@ -105,9 +105,9 @@ const LandingPage = () => {
           <PhilosophySection />
         </div>
 
-        <div ref={comparisonRef}>
+        {/* <div ref={comparisonRef}>
           <ComparisonTable />
-        </div>
+        </div> */}
 
         <div ref={authRef}>
           <AuthSection 
