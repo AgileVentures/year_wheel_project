@@ -740,20 +740,20 @@ class YearWheel {
 
     // Adaptive resize zone based on zoom level
     // In zoom mode, activities span more pixels, so we can be more generous
-    let resizeZonePixels = 15; // Base size
+    let resizeZonePixels = 20; // Increased base size for easier grabbing
 
     if (this.zoomedMonth !== null) {
       // Month zoom: 360° = 1 month, activities are much larger visually
-      resizeZonePixels = 25; // Larger zone for easier interaction
+      resizeZonePixels = 30; // Larger zone for easier interaction
     } else if (this.zoomedQuarter !== null) {
       // Quarter zoom: 360° = 3 months, moderately larger
-      resizeZonePixels = 20;
+      resizeZonePixels = 25;
     }
 
     // For very small activities, use proportional threshold instead
-    // If activity is less than 60px wide, use 25% of width as resize zone
-    if (totalArcLength < 60) {
-      resizeZonePixels = Math.min(resizeZonePixels, totalArcLength * 0.25);
+    // If activity is less than 80px wide, use 30% of width as resize zone
+    if (totalArcLength < 80) {
+      resizeZonePixels = Math.min(resizeZonePixels, totalArcLength * 0.3);
     }
 
     const currentArcPosition = relativeAngle * avgRadius; // Position along arc in pixels
@@ -762,7 +762,7 @@ class YearWheel {
     let zone;
 
     // If activity is very small (less than 2*resizeZone), only allow move
-    if (totalArcLength < resizeZonePixels * 2.5) {
+    if (totalArcLength < resizeZonePixels * 2.2) {
       zone = "move";
     } else if (currentArcPosition < resizeZonePixels) {
       // Within resize zone pixels from start edge
@@ -3651,6 +3651,9 @@ class YearWheel {
 
         // Immediate visual feedback - redraw with drag state active
         this.create();
+
+        // CRITICAL: Stop wheel rotation when dragging an activity
+        this.isDragging = false;
 
         return; // Don't start wheel rotation
       }
