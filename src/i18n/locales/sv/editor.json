@@ -93,7 +93,7 @@
     "title": "ETIKETTER",
     "add": "Lägg till etikett",
     "none": "Inga etiketter",
-    "description": "Etiketter används för att organisera och filtrera aktiviteter. Växla synlighet för att filtrera vyn."
+    "description": "Etiketter är valfria taggar som används för att organisera och filtrera aktiviteter. Lägg till aktiviteter för att visualisera händelser med etiketter."
   },
   "undoLabels": {
     "moveToRing": "Flytta {{name}} till {{ring}}",

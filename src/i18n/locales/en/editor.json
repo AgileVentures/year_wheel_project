@@ -93,7 +93,7 @@
     "title": "LABELS",
     "add": "Add label",
     "none": "No labels",
-    "description": "Labels are used to organize and filter activities. Toggle visibility to filter the view."
+    "description": "Labels are optional tags used to organize and filter activities. Add activities to visualize events with labels."
   },
   "undoLabels": {
     "moveToRing": "Move {{name}} to {{ring}}",

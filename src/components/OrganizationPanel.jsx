@@ -839,10 +839,10 @@ function OrganizationPanel({
           <button
             onClick={() => setIsAddModalOpen(true)}
             data-onboarding="add-activity"
-            className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
           >
             <Plus size={14} />
-            <span>{t('common:actions.add')}</span>
+            <span>{t('editor:activities.addActivity')}</span>
           </button>
         </div>
       </div>
@@ -1475,23 +1475,29 @@ function OrganizationPanel({
 
         {/* LABELS Section */}
         <div className="px-4 py-3 border-b border-gray-200">
-          <button
-            onClick={() => toggleSection('labels')}
-            className="w-full flex items-center justify-between mb-2"
-          >
-            <div>
+          <div className="w-full flex items-center justify-between mb-2">
+            <button
+              onClick={() => setInfoDialog({
+                title: t('editor:labels.title'),
+                content: t('editor:labels.description')
+              })}
+              className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+            >
               <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
                 {t('editor:labels.title')}
               </h2>
-              <p className="text-xs text-gray-500 mt-1">
-                {t('editor:labels.description')}
-              </p>
-            </div>
-            <ChevronDown 
-              size={14} 
-              className={`text-gray-400 transition-transform ${expandedSections.labels ? 'rotate-180' : ''}`}
-            />
-          </button>
+              <Info size={12} className="text-blue-600" />
+            </button>
+            <button
+              onClick={() => toggleSection('labels')}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+            >
+              <ChevronDown 
+                size={14} 
+                className={`text-gray-400 transition-transform ${expandedSections.labels ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
 
           {expandedSections.labels && (
             <>
