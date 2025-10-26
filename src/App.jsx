@@ -2238,6 +2238,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onWeekRingDisplayModeChange={setWeekRingDisplayMode}
             onSaveToDatabase={handleSave}
             onReloadData={loadWheelData}
+            currentWheelId={wheelId}
           />
         </div>
 
@@ -2245,6 +2246,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
           <div className="w-full h-full flex items-center justify-center">
             <YearWheel
+              wheelId={wheelId}
               title={title}
               year={year}
               colors={colors}

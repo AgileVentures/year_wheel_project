@@ -209,6 +209,32 @@ Instead of lightweight mentions, implement full assignment:
 
 ## 3. Inter-Wheel Linking (Project Hierarchies)
 
+### ✅ STATUS: REFERENCE LINK MVP IMPLEMENTED (Oct 26, 2025)
+
+**Implemented Features:**
+- ✅ Database schema with `linked_wheel_id` and `link_type` columns
+- ✅ Backend service functions with permission validation
+- ✅ AddItemModal: Link selection with live preview
+- ✅ EditItemModal: Link management UI
+- ✅ Visual indicator: Blue chain link icon (🔗) on linked items
+- ✅ ItemTooltip: Displays linked wheel with "Open →" button
+- ✅ Navigation: Opens linked wheel in new tab with `?from=` parameter
+- ✅ Full i18n support (English + Swedish)
+- ✅ Circular reference detection
+- ✅ Comprehensive JSDoc type definitions
+
+**Implementation Notes:**
+- Migration file: `supabase/migrations/022_ADD_WHEEL_LINKING.sql`
+- Currently supports `'reference'` link type only
+- `'dependency'` link type reserved for future implementation
+- Chain link icon positioned at item start (left edge) to avoid conflicts
+- Permission validation via `can_link_to_wheel()` database function
+
+**Next Steps for Dependency Links (Phase 2):**
+- Add live status updates from linked wheels
+- Implement progress indicators
+- Add risk analysis for overdue dependencies
+
 ### Concept
 Allow activities to link to other wheels, enabling drill-down from high-level planning to detailed project wheels. Creates a hierarchical project management system.
 

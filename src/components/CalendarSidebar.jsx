@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import EditAktivitetModal from './EditAktivitetModal';
 
-function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose, onZoomToMonth }) {
+function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizationChange, onClose, onZoomToMonth }) {
   const { t } = useTranslation(['editor']);
   const [currentMonth, setCurrentMonth] = useState(9); // October (0-indexed)
   const [selectedYear, setSelectedYear] = useState(parseInt(year));
@@ -321,6 +321,7 @@ function CalendarSidebar({ year, organizationData, onOrganizationChange, onClose
         <EditAktivitetModal
           aktivitet={editingAktivitet}
           organizationData={organizationData}
+          currentWheelId={currentWheelId}
           onUpdateAktivitet={handleUpdateAktivitet}
           onDeleteAktivitet={handleDeleteAktivitet}
           onClose={() => setEditingAktivitet(null)}

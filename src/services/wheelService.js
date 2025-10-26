@@ -203,6 +203,22 @@ export const fetchWheel = async (wheelId) => {
 /**
  * Fetch items for a specific page
  * This separates page-specific data (items) from wheel-level data (rings, groups, labels)
+ * 
+ * @param {string} pageId - The UUID of the page to fetch items for
+ * @returns {Promise<Array<Object>>} Array of item objects with the following structure:
+ * @typedef {Object} Item
+ * @property {string} id - Unique item UUID
+ * @property {string} ringId - Reference to ring (inner or outer)
+ * @property {string} activityId - Reference to activity group (required)
+ * @property {string|null} labelId - Reference to label (optional)
+ * @property {string} name - Item display name
+ * @property {string} startDate - ISO date string (YYYY-MM-DD)
+ * @property {string} endDate - ISO date string (YYYY-MM-DD)
+ * @property {string|null} time - Optional time string (e.g., "09:00-17:00")
+ * @property {string|null} description - Optional description text
+ * @property {string} pageId - Reference to parent page (for multi-year support)
+ * @property {string|null} linkedWheelId - Reference to another wheel (for inter-wheel linking)
+ * @property {string|null} linkType - Type of link: 'reference' or 'dependency'
  */
 export const fetchPageData = async (pageId) => {
   const { data: items, error: itemsError } = await supabase
@@ -223,6 +239,9 @@ export const fetchPageData = async (pageId) => {
     time: i.time,
     description: i.description, // ⚠️ CRITICAL: Include description from synced items
     pageId: i.page_id, // ⚠️ CRITICAL: Must preserve page_id for save cycle
+    // Wheel linking fields
+    linkedWheelId: i.linked_wheel_id,
+    linkType: i.link_type,
   }));
 };
 
@@ -797,6 +816,9 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     end_date: item.endDate,
     time: item.time || null,
     page_id: item.pageId || pageId || null,
+    // Wheel linking fields (optional)
+    linked_wheel_id: item.linkedWheelId || null,
+    link_type: item.linkType || null,
   };
   
   
@@ -1385,5 +1407,225 @@ export const checkIsAdmin = async () => {
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
+  }
+};
+
+// ============================================================================
+// WHEEL LINKING FUNCTIONS
+// ============================================================================
+
+/**
+ * Fetch all wheels accessible to current user (for linking dropdown)
+ * Includes: owned wheels, team wheels, and public wheels
+ * Excludes templates and the current wheel
+ * @param {string} currentWheelId - ID of the current wheel to exclude from results
+ */
+export const fetchAccessibleWheels = async (currentWheelId) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Get user's own wheels
+    const { data: ownWheels, error: ownError } = await supabase
+      .from('year_wheels')
+      .select('id, title, year, user_id, team_id')
+      .eq('user_id', user.id)
+      .eq('is_template', false)
+      .order('title', { ascending: true });
+
+    if (ownError) throw ownError;
+
+    // Get team wheels
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id);
+
+    let teamWheels = [];
+    if (memberships && memberships.length > 0) {
+      const teamIds = memberships.map(m => m.team_id);
+      const { data, error } = await supabase
+        .from('year_wheels')
+        .select('id, title, year, user_id, team_id')
+        .in('team_id', teamIds)
+        .not('user_id', 'eq', user.id) // Exclude own wheels (already in ownWheels)
+        .order('title', { ascending: true });
+
+      if (!error) teamWheels = data || [];
+    }
+
+    // Combine and deduplicate
+    const allWheels = [...(ownWheels || []), ...teamWheels];
+    const uniqueWheels = Array.from(
+      new Map(allWheels.map(w => [w.id, w])).values()
+    );
+
+    // Exclude the current wheel
+    return uniqueWheels.filter(w => w.id !== currentWheelId);
+  } catch (error) {
+    console.error('Error fetching accessible wheels:', error);
+    throw error;
+  }
+};
+
+/**
+ * Set or update a wheel link on an item
+ * 
+ * Link Types:
+ * - 'reference': Informational link to related wheel (default)
+ *   Example: "Project Alpha" links to detailed project wheel
+ * - 'dependency': Future feature - indicates dependency relationship
+ *   Example: Item depends on completion of activities in linked wheel
+ * 
+ * @param {string} itemId - Item UUID (must be valid database UUID)
+ * @param {string} linkedWheelId - Target wheel UUID to link to
+ * @param {string} linkType - Type of link ('reference' | 'dependency')
+ * @returns {Promise<void>}
+ * @throws {Error} If user not authenticated, invalid link type, or no access to target wheel
+ */
+export const setItemWheelLink = async (itemId, linkedWheelId, linkType = 'reference') => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Validate link type
+    if (!['reference', 'dependency'].includes(linkType)) {
+      throw new Error(`Invalid link type: ${linkType}`);
+    }
+
+    // Verify user has access to target wheel (using helper function from migration)
+    const { data: hasAccess, error: accessError } = await supabase
+      .rpc('can_link_to_wheel', { 
+        target_wheel_id: linkedWheelId, 
+        user_id: user.id 
+      });
+
+    if (accessError) {
+      console.error('Error checking wheel access:', accessError);
+      throw new Error('Unable to verify access to target wheel');
+    }
+
+    if (!hasAccess) {
+      throw new Error('You do not have access to the selected wheel');
+    }
+
+    // Update the item with the link
+    const { error: updateError } = await supabase
+      .from('items')
+      .update({ 
+        linked_wheel_id: linkedWheelId,
+        link_type: linkType,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', itemId);
+
+    if (updateError) throw updateError;
+
+  } catch (error) {
+    console.error('Error setting item wheel link:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove a wheel link from an item
+ * @param {string} itemId - Item UUID
+ * @returns {Promise<void>}
+ */
+export const removeItemWheelLink = async (itemId) => {
+  try {
+    const { error } = await supabase
+      .from('items')
+      .update({ 
+        linked_wheel_id: null,
+        link_type: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', itemId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error removing item wheel link:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch basic info about a linked wheel (for preview/tooltip)
+ * @param {string} wheelId - Wheel UUID
+ * @returns {Promise<Object>} Wheel info (id, title, year)
+ */
+export const fetchLinkedWheelInfo = async (wheelId) => {
+  try {
+    const { data, error } = await supabase
+      .from('year_wheels')
+      .select('id, title, year, team_id')
+      .eq('id', wheelId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching linked wheel info:', error);
+    return null;
+  }
+};
+
+/**
+ * Check for circular references when linking wheels
+ * Prevents: Wheel A -> Wheel B -> Wheel A (infinite loop)
+ * @param {string} sourceWheelId - The wheel containing the item
+ * @param {string} targetWheelId - The wheel to link to
+ * @param {number} maxDepth - Maximum allowed depth (default: 3)
+ * @returns {Promise<boolean>} True if safe to link, false if circular
+ */
+export const checkCircularReference = async (sourceWheelId, targetWheelId, maxDepth = 3) => {
+  try {
+    // BFS to detect circular references
+    const visited = new Set([sourceWheelId]);
+    let queue = [{ wheelId: targetWheelId, depth: 0 }];
+
+    while (queue.length > 0) {
+      const { wheelId, depth } = queue.shift();
+
+      // Check depth limit
+      if (depth >= maxDepth) {
+        console.warn(`Link depth exceeds limit (${maxDepth})`);
+        return false; // Too deep
+      }
+
+      // Check if we've encountered the source wheel (circular!)
+      if (wheelId === sourceWheelId) {
+        console.warn('Circular reference detected');
+        return false;
+      }
+
+      // Already visited
+      if (visited.has(wheelId)) continue;
+      visited.add(wheelId);
+
+      // Fetch all items in this wheel that link to other wheels
+      const { data: linkedItems, error } = await supabase
+        .from('items')
+        .select('linked_wheel_id')
+        .eq('wheel_id', wheelId)
+        .not('linked_wheel_id', 'is', null);
+
+      if (error) throw error;
+
+      // Add linked wheels to queue
+      if (linkedItems) {
+        linkedItems.forEach(item => {
+          if (item.linked_wheel_id && !visited.has(item.linked_wheel_id)) {
+            queue.push({ wheelId: item.linked_wheel_id, depth: depth + 1 });
+          }
+        });
+      }
+    }
+
+    return true; // No circular reference found
+  } catch (error) {
+    console.error('Error checking circular reference:', error);
+    return false; // Err on the side of caution
   }
 };

@@ -1,13 +1,16 @@
-import { X, Edit2, Trash2, GripVertical } from 'lucide-react';
+import { X, Edit2, Trash2, GripVertical, ExternalLink } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showConfirmDialog } from '../utils/dialogs';
+import { fetchLinkedWheelInfo } from '../services/wheelService';
 
 function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClose, readonly = false }) {
   const { t, i18n } = useTranslation(['editor']);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [currentPosition, setCurrentPosition] = useState(position);
+  const [linkedWheelInfo, setLinkedWheelInfo] = useState(null);
+  const [loadingLinkedWheel, setLoadingLinkedWheel] = useState(false);
   const tooltipRef = useRef(null);
 
   if (!item) return null;
@@ -17,6 +20,27 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
   const label = organizationData.labels.find(l => l.id === item.labelId);
   const startDate = new Date(item.startDate);
   const endDate = new Date(item.endDate);
+
+  // Fetch linked wheel info if item has linkedWheelId
+  useEffect(() => {
+    const loadLinkedWheelInfo = async () => {
+      if (item.linkedWheelId) {
+        setLoadingLinkedWheel(true);
+        try {
+          const wheelInfo = await fetchLinkedWheelInfo(item.linkedWheelId);
+          setLinkedWheelInfo(wheelInfo);
+        } catch (error) {
+          console.error('Error loading linked wheel info:', error);
+          setLinkedWheelInfo(null);
+        } finally {
+          setLoadingLinkedWheel(false);
+        }
+      } else {
+        setLinkedWheelInfo(null);
+      }
+    };
+    loadLinkedWheelInfo();
+  }, [item.linkedWheelId]);
 
   // Update position when prop changes
   useEffect(() => {
@@ -158,6 +182,36 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
             <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
               {item.description}
             </p>
+          </div>
+        )}
+        
+        {/* Linked Wheel Section */}
+        {item.linkedWheelId && (
+          <div className="pt-2 border-t border-gray-100">
+            <span className="text-gray-500 block mb-1.5">{t('editor:itemTooltip.linkedWheel')}:</span>
+            {loadingLinkedWheel ? (
+              <div className="text-xs text-gray-500 italic">{t('editor:itemTooltip.loadingLinkedWheel')}</div>
+            ) : linkedWheelInfo ? (
+              <button
+                onClick={() => {
+                  const url = `/wheel/${item.linkedWheelId}?from=${window.location.pathname.split('/')[2]}`;
+                  window.open(url, '_blank');
+                }}
+                className="w-full flex items-center justify-between gap-2 p-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-colors group"
+              >
+                <div className="flex-1 text-left">
+                  <div className="text-xs font-medium text-blue-900">
+                    {linkedWheelInfo.title}
+                  </div>
+                  <div className="text-xs text-blue-700">
+                    {linkedWheelInfo.year}
+                  </div>
+                </div>
+                <ExternalLink size={14} className="text-blue-600 group-hover:text-blue-800 flex-shrink-0" />
+              </button>
+            ) : (
+              <div className="text-xs text-gray-500 italic">{t('editor:itemTooltip.linkedWheelNotFound')}</div>
+            )}
           </div>
         )}
       </div>

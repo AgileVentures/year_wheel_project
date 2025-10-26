@@ -1,8 +1,9 @@
-import { X, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { X, Plus, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
 
-function AddAktivitetModal({ organizationData, onAddAktivitet, onClose }) {
+function AddAktivitetModal({ organizationData, onAddAktivitet, onClose, currentWheelId }) {
   const { t } = useTranslation(['editor', 'common']);
   const [formData, setFormData] = useState({
     name: '',
@@ -12,10 +13,63 @@ function AddAktivitetModal({ organizationData, onAddAktivitet, onClose }) {
     labelId: organizationData.labels[0]?.id || '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
-    time: ''
+    time: '',
+    linkedWheelId: '',
+    linkType: 'reference'
   });
 
+  // Wheel linking state
+  const [accessibleWheels, setAccessibleWheels] = useState([]);
+  const [loadingWheels, setLoadingWheels] = useState(true);
+  const [linkedWheelInfo, setLinkedWheelInfo] = useState(null);
+  const [loadingLinkedInfo, setLoadingLinkedInfo] = useState(false);
+
   const [errors, setErrors] = useState({});
+
+  // Load accessible wheels on mount
+  useEffect(() => {
+    const loadWheels = async () => {
+      if (!currentWheelId) {
+        setLoadingWheels(false);
+        return;
+      }
+      
+      try {
+        const wheels = await fetchAccessibleWheels(currentWheelId);
+        setAccessibleWheels(wheels || []);
+      } catch (error) {
+        console.error('Error loading accessible wheels:', error);
+        setAccessibleWheels([]);
+      } finally {
+        setLoadingWheels(false);
+      }
+    };
+
+    loadWheels();
+  }, [currentWheelId]);
+
+  // Load linked wheel info if linkedWheelId exists
+  useEffect(() => {
+    const loadLinkedWheelInfo = async () => {
+      if (!formData.linkedWheelId) {
+        setLinkedWheelInfo(null);
+        return;
+      }
+
+      setLoadingLinkedInfo(true);
+      try {
+        const info = await fetchLinkedWheelInfo(formData.linkedWheelId);
+        setLinkedWheelInfo(info);
+      } catch (error) {
+        console.error('Error loading linked wheel info:', error);
+        setLinkedWheelInfo(null);
+      } finally {
+        setLoadingLinkedInfo(false);
+      }
+    };
+
+    loadLinkedWheelInfo();
+  }, [formData.linkedWheelId]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -49,6 +103,8 @@ function AddAktivitetModal({ organizationData, onAddAktivitet, onClose }) {
       labelId: formData.labelId,
       startDate: formData.startDate,
       endDate: formData.endDate,
+      linkedWheelId: formData.linkedWheelId || null,
+      linkType: formData.linkedWheelId ? formData.linkType : null,
       ...(formData.time && { time: formData.time }),
       ...(formData.description && { description: formData.description })
     };
@@ -221,6 +277,73 @@ function AddAktivitetModal({ organizationData, onAddAktivitet, onClose }) {
               placeholder={t('editor:modal.descriptionPlaceholder')}
               rows={3}
             />
+          </div>
+
+          {/* Wheel Linking Section */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('editor:linkToWheelTitle')}
+            </label>
+            
+            {loadingWheels ? (
+              <p className="text-sm text-gray-500">{t('editor:loadingWheels')}</p>
+            ) : (
+              <>
+                <select
+                  value={formData.linkedWheelId}
+                  onChange={(e) => handleChange('linkedWheelId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-2"
+                >
+                  <option value="">{t('editor:selectWheelLabel')}</option>
+                  {accessibleWheels.map((wheel) => (
+                    <option key={wheel.id} value={wheel.id}>
+                      {wheel.title} ({wheel.year})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Link preview */}
+                {formData.linkedWheelId && (
+                  <div className="mt-2 p-3 bg-gray-50 rounded-sm border border-gray-200">
+                    {loadingLinkedInfo ? (
+                      <p className="text-sm text-gray-500">{t('editor:loadingLinkedWheel')}</p>
+                    ) : linkedWheelInfo ? (
+                      <div className="space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {linkedWheelInfo.title}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {t('editor:linkedWheelYear')}: {linkedWheelInfo.year}
+                            </p>
+                          </div>
+                          <a
+                            href={`/wheel/${formData.linkedWheelId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 whitespace-nowrap"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{t('editor:openWheelButton')}</span>
+                            <ExternalLink size={12} />
+                          </a>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleChange('linkedWheelId', '')}
+                          className="text-xs text-red-600 hover:text-red-700 hover:underline"
+                        >
+                          {t('editor:removeLinkButton')}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-red-600">{t('editor:linkedWheelNotFound')}</p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Buttons */}

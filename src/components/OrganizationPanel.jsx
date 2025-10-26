@@ -25,7 +25,8 @@ function OrganizationPanel({
   weekRingDisplayMode,
   onWeekRingDisplayModeChange,
   onSaveToDatabase, // Trigger immediate save
-  onReloadData // Reload wheel data from database
+  onReloadData, // Reload wheel data from database
+  currentWheelId // For wheel linking
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1582,6 +1583,7 @@ function OrganizationPanel({
           organizationData={organizationData}
           onAddAktivitet={handleAddAktivitet}
           onClose={() => setIsAddModalOpen(false)}
+          currentWheelId={currentWheelId}
         />
       )}
 
@@ -1590,6 +1592,7 @@ function OrganizationPanel({
         <EditAktivitetModal
           aktivitet={editingAktivitet}
           organizationData={organizationData}
+          currentWheelId={currentWheelId}
           onUpdateAktivitet={handleUpdateAktivitet}
           onDeleteAktivitet={handleDeleteAktivitet}
           onClose={() => setEditingAktivitet(null)}

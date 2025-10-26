@@ -4356,6 +4356,77 @@ class YearWheel {
   }
 
   /**
+   * Draw linked wheel indicator (chain link icon) on items with linkedWheelId
+   */
+  drawLinkedWheelIndicator(item, startRadius, width, startAngle, endAngle) {
+    if (!item.linkedWheelId) return; // No linked wheel
+
+    this.context.save();
+
+    // Calculate icon size based on available space
+    const iconSize = Math.max(this.size / 140, 10); // Minimum 10px, scales with wheel size
+    const padding = iconSize * 0.3;
+
+    // Position icon at START of activity (left edge)
+    // Place near inner edge to avoid conflicts with ring names
+    const iconRadius = startRadius + width * 0.25; // 25% from inner edge
+    
+    // Calculate angle for icon placement (slight offset from start for visibility)
+    const arcLength = iconSize + padding * 2;
+    const angleOffset = arcLength / iconRadius; // Arc length to radians
+    const iconAngleRadians = this.toRadians(startAngle) + angleOffset * 0.5;
+    
+    // Get position coordinates
+    const centerCoord = this.moveToAngle(iconRadius, iconAngleRadians);
+    
+    // Draw circular background
+    this.context.translate(centerCoord.x, centerCoord.y);
+    this.context.rotate(iconAngleRadians + Math.PI / 2);
+    
+    // White circle background for contrast
+    this.context.fillStyle = '#FFFFFF';
+    this.context.beginPath();
+    this.context.arc(0, 0, iconSize * 0.7, 0, Math.PI * 2);
+    this.context.fill();
+    
+    // Blue border
+    this.context.strokeStyle = '#3B82F6'; // Blue-500
+    this.context.lineWidth = 1.5;
+    this.context.stroke();
+    
+    // Draw chain link icon (simple 🔗 representation)
+    // Two small circles connected by lines
+    this.context.strokeStyle = '#3B82F6'; // Blue-500
+    this.context.lineWidth = 1.5;
+    this.context.lineCap = 'round';
+    
+    const linkSize = iconSize * 0.4;
+    
+    // Left circle
+    this.context.beginPath();
+    this.context.arc(-linkSize * 0.4, -linkSize * 0.2, linkSize * 0.25, 0, Math.PI * 2);
+    this.context.stroke();
+    
+    // Right circle
+    this.context.beginPath();
+    this.context.arc(linkSize * 0.4, linkSize * 0.2, linkSize * 0.25, 0, Math.PI * 2);
+    this.context.stroke();
+    
+    // Connecting lines
+    this.context.beginPath();
+    this.context.moveTo(-linkSize * 0.25, -linkSize * 0.35);
+    this.context.lineTo(linkSize * 0.25, linkSize * 0.05);
+    this.context.stroke();
+    
+    this.context.beginPath();
+    this.context.moveTo(-linkSize * 0.25, -linkSize * 0.05);
+    this.context.lineTo(linkSize * 0.25, linkSize * 0.35);
+    this.context.stroke();
+
+    this.context.restore();
+  }
+
+  /**
    * Draw selection border around a selected item
    */
   drawSelectionBorder(startRadius, width, startAngle, endAngle) {
@@ -4566,9 +4637,10 @@ class YearWheel {
 
   // Function to draw rotating elements
   drawRotatingElements() {
-    // Clear clickable items and labels to draw before redrawing
+    // Clear clickable items, labels, and linked wheels to draw before redrawing
     this.clickableItems = [];
     this.labelsToDraw = [];
+    this.linkedWheelsToDraw = [];
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
 
@@ -4921,6 +4993,17 @@ class YearWheel {
               });
             }
 
+            // Collect linked wheel indicator to draw last (on top)
+            if (item.linkedWheelId) {
+              this.linkedWheelsToDraw.push({
+                item,
+                startRadius: itemStartRadius,
+                width: itemWidth,
+                startAngle: adjustedStartAngle,
+                endAngle: adjustedEndAngle,
+              });
+            }
+
             // Store clickable region for this item
             this.clickableItems.push({
               item: item,
@@ -5233,6 +5316,17 @@ class YearWheel {
             });
           }
 
+          // Collect linked wheel indicator to draw last (on top)
+          if (item.linkedWheelId) {
+            this.linkedWheelsToDraw.push({
+              item,
+              startRadius: itemStartRadius,
+              width: itemWidth,
+              startAngle: adjustedStartAngle,
+              endAngle: adjustedEndAngle,
+            });
+          }
+
           // Store clickable region for this item
           this.clickableItems.push({
             item: item,
@@ -5445,6 +5539,19 @@ class YearWheel {
           labelData.width,
           labelData.startAngle,
           labelData.endAngle
+        );
+      }
+    }
+
+    // SECOND draw all linked wheel indicators (chain link icons)
+    if (this.linkedWheelsToDraw && this.linkedWheelsToDraw.length > 0) {
+      for (const linkData of this.linkedWheelsToDraw) {
+        this.drawLinkedWheelIndicator(
+          linkData.item,
+          linkData.startRadius,
+          linkData.width,
+          linkData.startAngle,
+          linkData.endAngle
         );
       }
     }

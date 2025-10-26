@@ -25,6 +25,7 @@ const showConfirmDialog = (title, message, confirmText, cancelText, confirmButto
 };
 
 function YearWheel({
+  wheelId,
   ringsData,
   title,
   year,
@@ -748,6 +749,7 @@ function YearWheel({
         <EditAktivitetModal
           aktivitet={editingItem}
           organizationData={organizationData}
+          currentWheelId={wheelId}
           onUpdateAktivitet={handleUpdateAktivitet}
           onDeleteAktivitet={handleDeleteAktivitet}
           onClose={() => setEditingItem(null)}

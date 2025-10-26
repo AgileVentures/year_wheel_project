@@ -377,3 +377,160 @@ Edge function `google-sheets-fetch-headers` provides header extraction:
 ```
 
 Sync function `sync-ring-data` uses `mapping_config` to parse rows with custom column positions.
+
+---
+
+# How to Use Inter-Wheel Linking (Reference Links)
+
+**Status:** ✅ Implemented (Oct 26, 2025)  
+**Feature:** Link activities/items to other wheels for drill-down navigation
+
+## Overview
+
+Inter-wheel linking allows you to create hierarchical project structures by linking items in one wheel to detailed breakdowns in another wheel. This is perfect for:
+- **Portfolio Management**: Executive wheel → Detailed project wheels
+- **Multi-Year Planning**: Annual wheel → Specific initiative wheels
+- **Department Coordination**: Company wheel → Department-specific wheels
+- **Client Management**: Client overview → Project deliverables
+
+## Usage Guide
+
+### Creating a Linked Item
+
+1. **Open Add/Edit Item Modal**
+   - Create a new item or edit an existing one
+   - Fill in the basic details (name, dates, ring, activity)
+
+2. **Link to Another Wheel**
+   - Scroll to the "Link to Another Wheel (Optional)" section
+   - Select a wheel from the dropdown (shows all accessible wheels)
+   - A preview card will appear showing the linked wheel's title and year
+
+3. **Save the Item**
+   - The item will now display a blue chain link icon (🔗) on the wheel
+
+### Navigating to Linked Wheels
+
+**From the Wheel Canvas:**
+- Hover over an item with a chain link icon
+- The tooltip will show the linked wheel information
+- Click "Open Wheel →" button to open in a new tab
+
+**URL Parameters:**
+- Linked wheels open with `?from=sourceWheelId` parameter
+- This enables future breadcrumb navigation (coming soon)
+
+### Visual Indicators
+
+- **Chain Link Icon**: Blue 🔗 icon at the start (left edge) of linked items
+- **Tooltip Display**: Shows linked wheel title, year, and "Open →" button
+- **Modal Preview**: Live preview card when selecting a wheel to link
+
+## Technical Details
+
+### Database Schema
+```sql
+-- Items table additions
+linked_wheel_id UUID REFERENCES year_wheels(id) ON DELETE SET NULL
+link_type TEXT CHECK (link_type IN ('reference', 'dependency'))
+```
+
+### Link Types
+- **`reference`** (Active): Informational link to related wheel
+- **`dependency`** (Future): Indicates dependency relationship with status tracking
+
+### Permission Model
+- Can only link to wheels you have access to (owned, team member, or public)
+- Permission validation via `can_link_to_wheel()` database function
+- Circular reference detection prevents infinite loops (max depth: 3)
+
+### API Functions
+
+**Fetch Accessible Wheels:**
+```javascript
+import { fetchAccessibleWheels } from '../services/wheelService';
+const wheels = await fetchAccessibleWheels();
+// Returns: [{id, title, year, user_id, team_id}, ...]
+```
+
+**Set Wheel Link:**
+```javascript
+import { setItemWheelLink } from '../services/wheelService';
+await setItemWheelLink(itemId, linkedWheelId, 'reference');
+```
+
+**Remove Wheel Link:**
+```javascript
+import { removeItemWheelLink } from '../services/wheelService';
+await removeItemWheelLink(itemId);
+```
+
+**Check Circular References:**
+```javascript
+import { checkCircularReference } from '../services/wheelService';
+const isSafe = await checkCircularReference(sourceWheelId, targetWheelId);
+// Returns: true if safe to link, false if circular
+```
+
+## Migration
+
+Run the migration in Supabase SQL Editor:
+```sql
+-- Located at: supabase/migrations/022_ADD_WHEEL_LINKING.sql
+```
+
+The migration adds:
+- New columns to `items` table
+- Index for performance: `idx_items_linked_wheel_id`
+- Helper function: `can_link_to_wheel(target_wheel_id, user_id)`
+- Comments for documentation
+
+## Internationalization
+
+Fully translated in English and Swedish:
+- Modal labels and help text
+- Tooltip displays
+- Loading states
+- Error messages
+
+**Translation keys:**
+- `editor:addItemModal.linkToWheelTitle`
+- `editor:itemTooltip.linkedWheel`
+- See `src/i18n/locales/*/editor.json` for complete list
+
+## Future Enhancements (Phase 2)
+
+### Dependency Links
+- Live status updates from linked wheels
+- Progress indicators (% complete)
+- Alert badges for overdue items in linked wheels
+- Risk analysis visualization
+
+### Visual Improvements
+- Breadcrumb navigation between linked wheels
+- Visual graph view of wheel relationships
+- Backlink display (which wheels link TO current wheel)
+
+### Advanced Features
+- Link depth limits (prevent deep nesting)
+- Bulk linking operations
+- Link templates for common patterns
+- API webhooks for cross-wheel updates
+
+## Troubleshooting
+
+**Link icon not appearing?**
+- Check that item has `linkedWheelId` property set
+- Verify migration has been run
+- Clear browser cache and reload
+
+**Can't select a wheel?**
+- Ensure you have access to the target wheel (owner, team member, or public)
+- Check that target wheel is not the current wheel (can't link to self)
+
+**Tooltip not showing linked wheel?**
+- Verify linked wheel still exists (not deleted)
+- Check browser console for permission errors
+- Ensure `fetchLinkedWheelInfo()` has network access
+
+---
