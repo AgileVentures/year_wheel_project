@@ -101,6 +101,15 @@
     "november": "November",
     "december": "December"
   },
+  "daysShort": {
+    "monday": "Mån",
+    "tuesday": "Tis",
+    "wednesday": "Ons",
+    "thursday": "Tor",
+    "friday": "Fre",
+    "saturday": "Lör",
+    "sunday": "Sön"
+  },
   "header": {
     "closePanel": "Stäng panel",
     "openPanel": "Öppna panel",

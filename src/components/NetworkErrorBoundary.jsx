@@ -73,7 +73,7 @@ class NetworkErrorBoundary extends Component {
       if (isSSLError) {
         return (
           <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
-            <div className="max-w-2xl w-full bg-white rounded-lg shadow-2xl p-8">
+            <div className="max-w-2xl w-full bg-white rounded-sm shadow-2xl p-8">
               <div className="flex items-start gap-4 mb-6">
                 <div className="flex-shrink-0">
                   <AlertTriangle className="w-12 h-12 text-orange-500" />
@@ -88,7 +88,7 @@ class NetworkErrorBoundary extends Component {
                 </div>
               </div>
 
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+              <div className="bg-orange-50 border border-orange-200 rounded-sm p-4 mb-6">
                 <h2 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
                   <HelpCircle className="w-5 h-5" />
                   What's happening?
@@ -102,7 +102,7 @@ class NetworkErrorBoundary extends Component {
                 </p>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-sm p-4 mb-6">
                 <h2 className="font-semibold text-blue-900 mb-3">Solutions:</h2>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-blue-900">
                   <li>
@@ -120,7 +120,7 @@ class NetworkErrorBoundary extends Component {
                 </ol>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+              <div className="bg-gray-50 border border-gray-200 rounded-sm p-4 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-2">For IT Administrators:</h3>
                 <p className="text-sm text-gray-700 mb-2">
                   This application is hosted on <strong>Netlify</strong> using Let's Encrypt SSL certificates.
@@ -149,14 +149,14 @@ class NetworkErrorBoundary extends Component {
               <div className="flex gap-3">
                 <button
                   onClick={this.handleReload}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm font-medium transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Retry Connection
                 </button>
                 <button
                   onClick={this.handleReset}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-sm font-medium transition-colors"
                 >
                   Dismiss
                 </button>
@@ -170,7 +170,7 @@ class NetworkErrorBoundary extends Component {
       if (isNetworkError) {
         return (
           <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
-            <div className="max-w-lg w-full bg-white rounded-lg shadow-2xl p-8">
+            <div className="max-w-lg w-full bg-white rounded-sm shadow-2xl p-8">
               <div className="flex items-start gap-4 mb-6">
                 <div className="flex-shrink-0">
                   <AlertTriangle className="w-10 h-10 text-blue-500" />
@@ -185,7 +185,7 @@ class NetworkErrorBoundary extends Component {
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-sm p-4 mb-6">
                 <p className="text-sm text-blue-900">
                   {error?.message || 'Network request failed'}
                 </p>
@@ -204,14 +204,14 @@ class NetworkErrorBoundary extends Component {
               <div className="flex gap-3">
                 <button
                   onClick={this.handleReload}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm font-medium transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Reload Page
                 </button>
                 <button
                   onClick={this.handleReset}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-sm font-medium transition-colors"
                 >
                   Try Again
                 </button>
@@ -224,7 +224,7 @@ class NetworkErrorBoundary extends Component {
       // Generic Error Fallback
       return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-white rounded-lg shadow-2xl p-8">
+          <div className="max-w-lg w-full bg-white rounded-sm shadow-2xl p-8">
             <div className="flex items-start gap-4 mb-6">
               <div className="flex-shrink-0">
                 <AlertTriangle className="w-10 h-10 text-red-500" />
@@ -240,7 +240,7 @@ class NetworkErrorBoundary extends Component {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="bg-red-50 border border-red-200 rounded-sm p-4 mb-6">
                 <p className="text-sm text-red-900 font-mono">
                   {error.toString()}
                 </p>
@@ -250,14 +250,14 @@ class NetworkErrorBoundary extends Component {
             <div className="flex gap-3">
               <button
                 onClick={this.handleReload}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm font-medium transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 Reload Page
               </button>
               <button
                 onClick={this.handleReset}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-sm font-medium transition-colors"
               >
                 Try Again
               </button>

@@ -101,6 +101,15 @@
     "november": "November",
     "december": "December"
   },
+  "daysShort": {
+    "monday": "Mon",
+    "tuesday": "Tue",
+    "wednesday": "Wed",
+    "thursday": "Thu",
+    "friday": "Fri",
+    "saturday": "Sat",
+    "sunday": "Sun"
+  },
   "header": {
     "closePanel": "Close panel",
     "openPanel": "Open panel",

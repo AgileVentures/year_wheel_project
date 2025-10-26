@@ -274,7 +274,7 @@ function Header({
                 className="fixed inset-0 z-40" 
                 onClick={() => setShowImageExportMenu(false)}
               ></div>
-              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-72">
+              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 w-72">
                 {/* PNG Transparent */}
                 <button
                   onClick={() => { handleExport('png'); setShowImageExportMenu(false); }}

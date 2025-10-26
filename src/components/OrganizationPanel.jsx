@@ -179,6 +179,18 @@ function OrganizationPanel({
     return day === 0 ? 6 : day - 1; // Convert Sunday=0 to Monday=0
   };
 
+  const getWeekNumber = (date) => {
+    const target = new Date(date.valueOf());
+    const dayNr = (date.getDay() + 6) % 7;
+    target.setDate(target.getDate() - dayNr + 3);
+    const firstThursday = target.valueOf();
+    target.setMonth(0, 1);
+    if (target.getDay() !== 4) {
+      target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+    }
+    return 1 + Math.ceil((firstThursday - target) / 604800000);
+  };
+
   // Search filter - must be defined before calendar days
   const searchLower = searchQuery.toLowerCase();
   const innerRings = organizationData.rings.filter(ring => ring.type === 'inner');
@@ -961,18 +973,18 @@ function OrganizationPanel({
         {activeView === 'kalender' && (
           <div className="p-4">
             {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <button
                 onClick={() => {
                   const newDate = new Date(selectedYear, selectedMonth - 1, 1);
                   setSelectedMonth(newDate.getMonth());
                   setSelectedYear(newDate.getFullYear());
                 }}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-2 hover:bg-gray-100 rounded transition-colors"
               >
-                <ChevronLeft size={18} className="text-gray-600" />
+                <ChevronLeft size={20} className="text-gray-600" />
               </button>
-              <h3 className="text-sm font-semibold text-gray-900">
+              <h3 className="text-base font-semibold text-gray-900">
                 {monthNames[selectedMonth]} {selectedYear}
               </h3>
               <button
@@ -981,87 +993,111 @@ function OrganizationPanel({
                   setSelectedMonth(newDate.getMonth());
                   setSelectedYear(newDate.getFullYear());
                 }}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-2 hover:bg-gray-100 rounded transition-colors"
               >
-                <ChevronRight size={18} className="text-gray-600" />
+                <ChevronRight size={20} className="text-gray-600" />
               </button>
             </div>
 
-            {/* Calendar Grid */}
-            <div className="mb-4">
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {daysOfWeek.map(day => (
-                  <div key={day} className="text-center text-xs text-gray-500 font-medium">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((day, index) => {
-                  const hasEvents = day && aktiviteterForMonth.some(event => {
-                    const startDate = new Date(event.startDate);
-                    const endDate = new Date(event.endDate);
-                    const currentDate = new Date(selectedYear, selectedMonth, day);
-                    return currentDate >= startDate && currentDate <= endDate;
-                  });
-
-                  return (
-                    <div
-                      key={index}
-                      className={`aspect-square flex items-center justify-center text-xs relative ${
-                        day
-                          ? 'text-gray-900 hover:bg-gray-100 rounded cursor-pointer'
-                          : ''
-                      }`}
-                    >
-                      {day || ''}
-                      {hasEvents && (
-                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Events List for Selected Month */}
-            <div className="pt-4">
-              <h4 className="text-xs font-semibold text-gray-700 mb-3">
-                {t('editor:calendar.activitiesThisMonth', { count: aktiviteterForMonth.length })}
-              </h4>
+            {/* Timeline View - Activities grouped by day */}
+            <div className="space-y-1">
               {aktiviteterForMonth.length > 0 ? (
-                <div className="space-y-2">
-                  {aktiviteterForMonth.map(event => {
-                    const activityGroup = (organizationData.activityGroups || []).find(a => a.id === event.activityId);
+                (() => {
+                  // Group activities by start date
+                  const activitiesByDate = aktiviteterForMonth.reduce((acc, event) => {
                     const startDate = new Date(event.startDate);
-                    const endDate = new Date(event.endDate);
+                    const dateKey = `${startDate.getFullYear()}-${startDate.getMonth()}-${startDate.getDate()}`;
+                    if (!acc[dateKey]) {
+                      acc[dateKey] = {
+                        date: startDate,
+                        activities: []
+                      };
+                    }
+                    acc[dateKey].activities.push(event);
+                    return acc;
+                  }, {});
+
+                  // Sort by date
+                  const sortedDates = Object.values(activitiesByDate).sort(
+                    (a, b) => a.date - b.date
+                  );
+
+                  return sortedDates.map(({ date, activities }) => {
+                    const weekNumber = getWeekNumber(date);
+                    const dayName = daysOfWeek[date.getDay() === 0 ? 6 : date.getDay() - 1];
                     
                     return (
-                      <div
-                        key={event.id}
-                        className="group flex items-start gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-                        onClick={() => setEditingAktivitet(event)}
-                      >
-                        <div
-                          className="w-3 h-3 rounded mt-0.5 flex-shrink-0"
-                          style={{ backgroundColor: activityGroup?.color || '#D1D5DB' }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-gray-900 truncate">
-                            {event.name}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {startDate.getDate()} - {endDate.getDate()} {monthNames[selectedMonth].slice(0, 3)}
-                          </div>
+                      <div key={date.toISOString()} className="mb-4">
+                        {/* Date Header */}
+                        <div className="flex items-baseline gap-2 mb-2 px-2">
+                          <span className="text-xs font-semibold text-gray-900">
+                            {dayName} {date.getDate()} {monthNames[date.getMonth()].slice(0, 3)}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            v.{weekNumber}
+                          </span>
+                        </div>
+                        
+                        {/* Activities for this date */}
+                        <div className="space-y-1 pl-4 border-l-2 border-gray-200">
+                          {activities.map(event => {
+                            const activityGroup = (organizationData.activityGroups || []).find(a => a.id === event.activityId);
+                            const ring = organizationData.rings.find(r => r.id === event.ringId);
+                            const endDate = new Date(event.endDate);
+                            const isSameDay = date.toDateString() === endDate.toDateString();
+                            
+                            return (
+                              <div
+                                key={event.id}
+                                className="group flex items-start gap-2 p-2 bg-white border border-gray-200 rounded hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+                                onClick={() => setEditingAktivitet(event)}
+                              >
+                                <div
+                                  className="w-1 h-full rounded flex-shrink-0 -ml-2"
+                                  style={{ backgroundColor: activityGroup?.color || '#D1D5DB' }}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 mb-0.5">
+                                    {event.name}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <span>{ring?.name}</span>
+                                    {!isSameDay && (
+                                      <>
+                                        <span>•</span>
+                                        <span>till {endDate.getDate()} {monthNames[endDate.getMonth()].slice(0, 3)}</span>
+                                      </>
+                                    )}
+                                    {event.time && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{event.time}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                <Edit2 size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
-                  })}
-                </div>
+                  });
+                })()
               ) : (
-                <p className="text-xs text-gray-500 text-center py-4">
-                  {t('editor:calendar.noActivities')}
-                </p>
+                <div className="text-center py-12">
+                  <p className="text-sm text-gray-500 mb-4">
+                    {t('editor:calendar.noActivities')}
+                  </p>
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    <Plus size={16} />
+                    <span>{t('editor:activities.addActivity')}</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>

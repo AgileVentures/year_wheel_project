@@ -110,6 +110,7 @@ class YearWheel {
     ];
     this.rotationAngle = 0;
     this.isAnimating = false;
+    this.animationFrameId = null; // Track animation frame for proper cleanup
     this.isDragging = false;
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
@@ -3559,14 +3560,15 @@ class YearWheel {
   animateWheel() {
     if (!this.isAnimating) return; // If animation is stopped, don't animate
 
-    this.rotationAngle -= 0.01; // Adjust rotation speed (counter-clockwise)
+    this.rotationAngle -= 0.005; // Slow, constant counter-clockwise rotation
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear the canvas
 
     // Redraw everything
     this.drawStaticElements();
     this.drawRotatingElements();
 
-    requestAnimationFrame(this.animateWheel.bind(this)); // Loop the animation
+    // Store the animation frame ID so we can cancel it properly
+    this.animationFrameId = requestAnimationFrame(this.animateWheel.bind(this)); // Loop the animation
   }
 
   startSpinning() {
@@ -3578,6 +3580,12 @@ class YearWheel {
 
   stopSpinning() {
     this.isAnimating = false; // Stop the animation
+    
+    // Cancel any pending animation frame to prevent ghost loops
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 
   startDrag(event) {

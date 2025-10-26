@@ -26,6 +26,7 @@ const LandingPage = () => {
   const authRef = useRef(null);
   const [authMode, setAuthMode] = useState('signup');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [billingCycle, setBillingCycle] = useState('yearly'); // Default to yearly to show savings
 
   useEffect(() => {
     if (user) {
@@ -88,7 +89,12 @@ const LandingPage = () => {
         </div>
         
         <div ref={pricingRef}>
-          <PricingSection />
+          <PricingSection 
+            billingCycle={billingCycle}
+            setBillingCycle={setBillingCycle}
+            setAuthMode={setAuthMode}
+            scrollToAuth={scrollToAuth}
+          />
         </div>
 
         <div ref={templatesRef}>
