@@ -50,9 +50,18 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Core React libraries
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+          // Core React libraries (must be loaded first)
+          if (id.includes('node_modules/react/') || 
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/scheduler/')) {
             return 'react-core';
+          }
+          
+          // React-based UI libraries (depends on react-core)
+          if (id.includes('node_modules/react-mentions') ||
+              id.includes('node_modules/react-markdown') ||
+              id.includes('node_modules/react-chartjs-2')) {
+            return 'react-libs';
           }
           
           // React Router
@@ -209,6 +218,7 @@ export default defineConfig({
       'react-router-dom',
       'react-i18next',
       'i18next',
+      'react-mentions',
     ],
     exclude: [
       'jspdf', // Lazy loaded, don't pre-bundle
