@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import { CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
-import LandingNavigation from '../../components/LandingNavigation';
 import Footer from '../../components/Footer';
 
 /**
@@ -44,7 +42,6 @@ export default function LandingPageTemplate({
   schemaData
 }) {
   const navigate = useNavigate();
-  const { t } = useTranslation(['landing', 'common']);
 
   // Set meta tags for SEO
   useEffect(() => {
@@ -89,7 +86,34 @@ export default function LandingPageTemplate({
 
   return (
     <div className="min-h-screen bg-white">
-      <LandingNavigation />
+      {/* Simple Navigation Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <a href="/">
+              <img 
+                src="/year_wheel_logo.svg" 
+                alt="YearWheel" 
+                className="h-8 w-auto"
+              />
+            </a>
+            <div className="flex items-center gap-4">
+              <a 
+                href="/auth" 
+                className="text-gray-600 hover:text-gray-900 font-medium"
+              >
+                Logga in
+              </a>
+              <button
+                onClick={handleCTA}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-sm transition-colors"
+              >
+                Kom igång gratis
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
       
       {/* Hero Section */}
       <section className="pt-20 pb-16 bg-gradient-to-br from-blue-50 via-white to-purple-50">

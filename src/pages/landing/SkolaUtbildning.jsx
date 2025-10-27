@@ -28,7 +28,7 @@ export default function SkolaUtbildning() {
       
       heroTitle="Läsårsplanering gjord visuell"
       heroSubtitle="Ett tydligt verktyg för skolledare och lärare att planera terminer, lov, utvecklingsdagar, föräldramöten och elevaktiviteter - hela läsåret i en cirkel."
-      heroImage="/hero-education.png"
+      heroImage="/hero-hr-planning.webp"
       heroCTA="Planera ditt läsår"
       
       painPoints={[

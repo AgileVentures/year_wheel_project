@@ -28,7 +28,7 @@ export default function HRPlanering() {
       
       heroTitle="Personalplanering som ger överblick"
       heroSubtitle="Ett visuellt verktyg för HR-avdelningar att planera semester, rekrytering, introduktion och medarbetarutveckling - hela året på en bild."
-      heroImage="/hero-hr-planning.png"
+      heroImage="/hero-hr-planning.webp"
       heroCTA="Testa gratis HR-planering"
       
       painPoints={[

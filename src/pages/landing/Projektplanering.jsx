@@ -28,7 +28,7 @@ export default function Projektplanering() {
       
       heroTitle="Projektplanering utan krångel"
       heroSubtitle="För dig som tycker Asana är för tungt men Excel för enkelt. Visualisera projekt, milstolpar och leveranser i en tydlig årsöversikt."
-      heroImage="/hero-project.png"
+      heroImage="/hero-hr-planning.webp"
       heroCTA="Börja planera projekt"
       
       painPoints={[

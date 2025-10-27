@@ -28,7 +28,7 @@ export default function Marknadsplanering() {
       
       heroTitle="Marknadsplanering som inspirerar"
       heroSubtitle="Skapa en visuell årsöversikt över kampanjer, innehåll och sociala medier. Samordna teamet och imponera på stakeholders med professionella presentationer."
-      heroImage="/hero-marketing.png"
+      heroImage="/hero-hr-planning.webp"
       heroCTA="Planera ditt marknadsår"
       
       painPoints={[
