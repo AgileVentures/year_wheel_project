@@ -270,7 +270,7 @@ function Header({
         <div className="hidden lg:flex relative" data-onboarding="export-share">
           <button
             onClick={() => setShowImageExportMenu(!showImageExportMenu)}
-            className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-1"
+            className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex items-center gap-1"
             title={t('common:header.imageExport')}
           >
             <Image size={16} />
@@ -498,7 +498,7 @@ function Header({
                 }
                 setShowCommentsPanel(true);
               }}
-              className="relative flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="relative flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               title={t('notifications:wheelComments.allComments')}
             >
               <MessageSquare size={18} />

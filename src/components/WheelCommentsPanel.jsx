@@ -497,7 +497,7 @@ function CommentItem({
 
   return (
     <div className={`${depth > 0 ? 'ml-8 mt-2' : ''}`}>
-      <div className={`bg-white border border-gray-200 rounded-lg p-3 ${small ? 'text-sm' : ''}`}>
+      <div className={`bg-white border border-gray-200 rounded-sm p-3 ${small ? 'text-sm' : ''}`}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
