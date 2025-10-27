@@ -27,6 +27,12 @@ const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
 const EmbedWheel = lazy(() => import("./components/EmbedWheel"));
 
+// Keyword-optimized landing pages
+const HRPlanering = lazy(() => import("./pages/landing/HRPlanering"));
+const Marknadsplanering = lazy(() => import("./pages/landing/Marknadsplanering"));
+const SkolaUtbildning = lazy(() => import("./pages/landing/SkolaUtbildning"));
+const Projektplanering = lazy(() => import("./pages/landing/Projektplanering"));
+
 // Lazy load heavy editor components with retry logic (only needed in editor route)
 const lazyWithRetry = (componentImport) => 
   lazy(() => 
@@ -2516,6 +2522,12 @@ function AppContent() {
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
         <Route path="/embed/:wheelId" element={<EmbedWheel />} />
+
+        {/* Keyword-optimized landing pages */}
+        <Route path="/hr-planering" element={<HRPlanering />} />
+        <Route path="/marknadsplanering" element={<Marknadsplanering />} />
+        <Route path="/skola-och-utbildning" element={<SkolaUtbildning />} />
+        <Route path="/projektplanering" element={<Projektplanering />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={
