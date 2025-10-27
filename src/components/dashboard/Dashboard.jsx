@@ -201,7 +201,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   
   // Subscription state
   const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading, refresh: refreshSubscription } = useUsageLimits();
-  const { isAdmin: isAdminUser } = useSubscription();
+  const { isAdmin: isAdminUser, subscription } = useSubscription();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
