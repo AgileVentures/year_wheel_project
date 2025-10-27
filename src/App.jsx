@@ -27,13 +27,23 @@ const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
 const EmbedWheel = lazy(() => import("./components/EmbedWheel"));
 
-// Lazy load heavy editor components (only needed in editor route)
-const VersionHistoryModal = lazy(() => import("./components/VersionHistoryModal"));
-const AddPageModal = lazy(() => import("./components/AddPageModal"));
-const ExportDataModal = lazy(() => import("./components/ExportDataModal"));
-const AIAssistant = lazy(() => import("./components/AIAssistant"));
-const EditorOnboarding = lazy(() => import("./components/EditorOnboarding"));
-const AIAssistantOnboarding = lazy(() => import("./components/AIAssistantOnboarding"));
+// Lazy load heavy editor components with retry logic (only needed in editor route)
+const lazyWithRetry = (componentImport) => 
+  lazy(() => 
+    componentImport().catch(() => {
+      // If import fails, force reload the page (clears Vite cache)
+      window.location.reload();
+      // Return a never-resolving promise to prevent error boundary
+      return new Promise(() => {});
+    })
+  );
+
+const VersionHistoryModal = lazyWithRetry(() => import("./components/VersionHistoryModal"));
+const AddPageModal = lazyWithRetry(() => import("./components/AddPageModal"));
+const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal"));
+const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
+const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
+const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
 import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
