@@ -75,8 +75,9 @@
     "noOtherTeams": "No other teams available"
   },
   "errors": {
-    "loadingError": "Loading Error",
-    "loadingErrorMessage": "A component failed to load. Please reload the page to try again."
+    "loadingError": "Problem loading component",
+    "loadingErrorMessage": "An error occurred while loading a part of the application. Please try reloading the page.",
+    "persistentIssue": "If this problem persists, contact hey@communitaslabs.io"
   },
   "navigation": {
     "menu": "Menu",

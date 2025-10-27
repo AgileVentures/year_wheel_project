@@ -203,6 +203,10 @@ class NetworkErrorBoundary extends Component {
                 </ul>
               </div>
 
+              <div className="text-sm text-gray-600 mb-6 text-center">
+                {t('errors.persistentIssue', 'If this problem persists, contact hey@communitaslabs.io')}
+              </div>
+
               <div className="flex gap-3">
                 <button
                   onClick={this.handleReload}
