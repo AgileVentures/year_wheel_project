@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw, HelpCircle } from 'lucide-react';
+import { withTranslation } from 'react-i18next';
 
 /**
  * NetworkErrorBoundary Component
@@ -68,6 +69,7 @@ class NetworkErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       const { isNetworkError, isSSLError, error } = this.state;
+      const { t } = this.props;
 
       // SSL/Corporate Firewall Error
       if (isSSLError) {
@@ -177,10 +179,10 @@ class NetworkErrorBoundary extends Component {
                 </div>
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    Connection Issue
+                    {t('errors.loadingError', 'Connection Issue')}
                   </h1>
                   <p className="text-gray-600">
-                    Unable to connect to the server. Please check your internet connection.
+                    {t('errors.loadingErrorMessage', 'Unable to connect to the server. Please check your internet connection.')}
                   </p>
                 </div>
               </div>
@@ -207,13 +209,13 @@ class NetworkErrorBoundary extends Component {
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm font-medium transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  Reload Page
+                  {t('actions.reload', 'Reload Page')}
                 </button>
                 <button
                   onClick={this.handleReset}
                   className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-sm font-medium transition-colors"
                 >
-                  Try Again
+                  {t('actions.goBack', 'Try Again')}
                 </button>
               </div>
             </div>
@@ -271,4 +273,4 @@ class NetworkErrorBoundary extends Component {
   }
 }
 
-export default NetworkErrorBoundary;
+export default withTranslation('common')(NetworkErrorBoundary);

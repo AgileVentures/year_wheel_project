@@ -30,7 +30,9 @@
     "done": "Klart",
     "showAll": "Visa alla",
     "hideAll": "Dölj alla",
-    "linkCopied": "Länk kopierad!"
+    "linkCopied": "Länk kopierad!",
+    "reload": "Ladda om",
+    "goBack": "Gå tillbaka"
   },
   "time": {
     "justNow": "Nyss",
@@ -71,6 +73,10 @@
     "processing": "Behandlar...",
     "noTeams": "Du har inga team än",
     "noOtherTeams": "Inga andra team tillgängliga"
+  },
+  "errors": {
+    "loadingError": "Problem med att ladda komponent",
+    "loadingErrorMessage": "Ett fel uppstod när en del av applikationen skulle laddas. Försök att ladda om sidan."
   },
   "navigation": {
     "menu": "Meny",

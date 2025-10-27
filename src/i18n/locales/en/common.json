@@ -30,7 +30,9 @@
     "done": "Done",
     "showAll": "Show all",
     "hideAll": "Hide all",
-    "linkCopied": "Link copied!"
+    "linkCopied": "Link copied!",
+    "reload": "Reload",
+    "goBack": "Go back"
   },
   "time": {
     "justNow": "Just now",
@@ -71,6 +73,10 @@
     "processing": "Processing...",
     "noTeams": "You have no teams yet",
     "noOtherTeams": "No other teams available"
+  },
+  "errors": {
+    "loadingError": "Loading Error",
+    "loadingErrorMessage": "A component failed to load. Please reload the page to try again."
   },
   "navigation": {
     "menu": "Menu",
