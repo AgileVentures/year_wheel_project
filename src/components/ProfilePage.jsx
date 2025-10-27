@@ -339,7 +339,7 @@ function ProfilePage({ onBack }) {
                 ) : (
                   <button
                     onClick={() => handleConnectGoogle('google_sheets', [
-                      'https://www.googleapis.com/auth/spreadsheets.readonly'
+                      'https://www.googleapis.com/auth/spreadsheets'
                     ])}
                     disabled={connectingProvider === 'google_sheets'}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-sm transition-colors disabled:opacity-50 flex items-center gap-2"

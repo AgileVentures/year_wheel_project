@@ -235,9 +235,10 @@ function ExportDataModal({
       name: 'Google Sheets',
       description: t('export:formats.googleSheets.description'),
       icon: Sheet,
-      available: hasGoogleSheets,
+      available: false, // Disabled - coming soon
       premium: true,
-      requiresAuth: true
+      requiresAuth: true,
+      comingSoon: true
     }
   ];
 
@@ -332,6 +333,11 @@ function ExportDataModal({
                       {format.beta && (
                         <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
                       )}
+                      {format.comingSoon && (
+                        <span className="text-xs font-semibold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
+                          {t('export:comingSoon')}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-1 text-xs text-gray-600">{format.description}</div>
                     {format.premium && !isPremium && (
@@ -339,7 +345,7 @@ function ExportDataModal({
                         {t('common:subscription.premium')}
                       </div>
                     )}
-                    {format.requiresAuth && !format.available && (
+                    {format.requiresAuth && !format.available && !format.comingSoon && (
                       <div className="mt-2 text-xs text-red-600">
                         {t('export:notConnected')}
                       </div>

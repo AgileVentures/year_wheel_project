@@ -3,6 +3,7 @@
   "description": "Export year wheel activities to various formats",
   "loading": "Loading...",
   "selectFormat": "Select export format",
+  "comingSoon": "Coming Soon",
   "exportButton": "Export",
   "exporting": "Exporting...",
   "noData": "No activities to export",

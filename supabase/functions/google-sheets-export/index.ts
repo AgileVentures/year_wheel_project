@@ -13,12 +13,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { 
+      headers: corsHeaders,
+      status: 200,
+    })
   }
 
   try {
@@ -58,6 +62,12 @@ serve(async (req) => {
       .eq('provider', 'google_sheets')
       .maybeSingle()
 
+    console.log('Integration lookup:', { 
+      userId: user.id, 
+      found: !!integration, 
+      error: integrationError 
+    })
+
     if (integrationError || !integration) {
       throw new Error('Google Sheets not connected. Please connect in profile settings.')
     }
@@ -65,13 +75,35 @@ serve(async (req) => {
     // Check if access token needs refresh
     const accessToken = integration.access_token
     const refreshToken = integration.refresh_token
-    const expiresAt = new Date(integration.expires_at)
+    const expiresAtValue = integration.expires_at
+    
+    // Parse expiration date safely
+    let expiresAt: Date
+    try {
+      expiresAt = new Date(expiresAtValue)
+      // Check if date is valid
+      if (isNaN(expiresAt.getTime())) {
+        throw new Error('Invalid date')
+      }
+    } catch (err) {
+      console.log('Invalid expires_at, treating as expired:', expiresAtValue)
+      // If date is invalid, treat as expired (very old date)
+      expiresAt = new Date(0)
+    }
+
+    console.log('Token status:', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      expiresAt: expiresAt.toISOString(),
+      isExpired: new Date() >= expiresAt,
+    })
 
     let currentAccessToken = accessToken
 
-    // Refresh token if expired
-    if (new Date() >= expiresAt) {
-      console.log('Access token expired, refreshing...')
+    // Refresh token if expired or about to expire (within 5 minutes)
+    const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000)
+    if (new Date() >= expiresAt || fiveMinutesFromNow >= expiresAt) {
+      console.log('Access token expired or expiring soon, refreshing...')
       
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
@@ -85,11 +117,15 @@ serve(async (req) => {
       })
 
       if (!tokenResponse.ok) {
-        throw new Error('Failed to refresh access token')
+        const errorData = await tokenResponse.json()
+        console.error('Token refresh failed:', errorData)
+        throw new Error(`Failed to refresh access token: ${errorData.error_description || errorData.error}`)
       }
 
       const tokenData = await tokenResponse.json()
       currentAccessToken = tokenData.access_token
+
+      console.log('Token refreshed successfully')
 
       // Update stored token
       const newExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000)

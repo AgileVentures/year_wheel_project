@@ -3,6 +3,7 @@
   "description": "Exportera årshjulets aktiviteter till olika format",
   "loading": "Laddar...",
   "selectFormat": "Välj exportformat",
+  "comingSoon": "Kommer snart",
   "exportButton": "Exportera",
   "exporting": "Exporterar...",
   "noData": "Inga aktiviteter att exportera",
