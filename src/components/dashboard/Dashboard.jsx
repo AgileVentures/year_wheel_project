@@ -20,6 +20,7 @@ import LanguageSwitcher from '../LanguageSwitcher';
 import Footer from '../Footer';
 import MobileNav from './MobileNav';
 import { showConfirmDialog, showToast } from '../../utils/dialogs';
+import { trackPurchase } from '../../utils/gtm';
 
 // User Menu Dropdown Component
 function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManageSubscription }) {
@@ -210,7 +211,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('session_id');
     
-    if (sessionId) {
+    if (sessionId && user) {
       // User returned from successful checkout
       console.log('[Dashboard] Stripe checkout successful, refreshing subscription...');
       
@@ -230,12 +231,40 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       let attempts = 0;
       const maxAttempts = 10;
       const pollInterval = 2000; // 2 seconds
+      let hasTrackedPurchase = false;
       
       const pollSubscription = setInterval(async () => {
         attempts++;
         console.log(`[Dashboard] Polling subscription status (attempt ${attempts}/${maxAttempts})...`);
         
         await refreshSubscription();
+        
+        // Track purchase event once subscription is confirmed
+        // We check isPremium from subscription hook to confirm backend processed the payment
+        if (!hasTrackedPurchase && subscription) {
+          try {
+            // Determine plan type from subscription data
+            const planType = subscription.plan_type; // 'monthly' or 'yearly'
+            
+            // Calculate value based on plan
+            const value = planType === 'monthly' ? 79 : 768;
+            
+            // Track purchase event to GTM
+            trackPurchase({
+              transactionId: subscription.stripe_subscription_id || sessionId,
+              userId: user.id,
+              plan: planType,
+              value: value,
+              currency: 'SEK'
+            });
+            
+            hasTrackedPurchase = true;
+            console.log('[Dashboard] GTM purchase event tracked:', { planType, value, userId: user.id });
+          } catch (trackError) {
+            console.error('[Dashboard] GTM purchase tracking error:', trackError);
+            // Don't throw - tracking failure shouldn't block user experience
+          }
+        }
         
         // Stop polling after max attempts
         if (attempts >= maxAttempts) {
@@ -261,7 +290,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       // Cleanup interval on unmount
       return () => clearInterval(pollSubscription);
     }
-  }, []); // Run only once on mount
+  }, [user, subscription, refreshSubscription, t]); // Add dependencies
 
   // Check for pending template copy after authentication
   useEffect(() => {

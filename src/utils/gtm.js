@@ -71,3 +71,84 @@ export const trackAuthEvent = (action, method = '') => {
 export const trackSubscriptionEvent = (action, plan = '') => {
   trackEvent('Subscription', action, plan);
 };
+
+/**
+ * Track sign_up event (GA4 recommended event)
+ * Called after successful backend registration
+ * @param {Object} params
+ * @param {string} params.method - Signup method: 'email' | 'google' | 'github'
+ * @param {string} params.userId - Anonymous user UUID from Supabase
+ * @param {string} params.plan - Subscription plan: 'free' | 'monthly' | 'yearly'
+ */
+export const trackSignup = ({ method, userId, plan = 'free' }) => {
+  if (!window.dataLayer) {
+    console.warn('GTM dataLayer not available');
+    return;
+  }
+
+  window.dataLayer.push({
+    event: 'sign_up',
+    method: method,
+    user_id: userId,
+    plan: plan,
+    page_location: window.location.href,
+    timestamp: new Date().toISOString()
+  });
+
+  console.log('[GTM] sign_up event pushed:', { method, userId, plan });
+};
+
+/**
+ * Track purchase event (GA4 recommended event for ecommerce)
+ * Called after successful subscription payment
+ * @param {Object} params
+ * @param {string} params.transactionId - Stripe subscription ID
+ * @param {string} params.userId - Anonymous user UUID from Supabase
+ * @param {string} params.plan - Subscription plan: 'monthly' | 'yearly'
+ * @param {number} params.value - Transaction value in SEK
+ * @param {string} params.currency - Currency code (default: 'SEK')
+ * @param {string} params.coupon - Optional coupon code used
+ */
+export const trackPurchase = ({ 
+  transactionId, 
+  userId, 
+  plan, 
+  value, 
+  currency = 'SEK',
+  coupon = null 
+}) => {
+  if (!window.dataLayer) {
+    console.warn('GTM dataLayer not available');
+    return;
+  }
+
+  const eventData = {
+    event: 'purchase',
+    ecommerce: {
+      transaction_id: transactionId,
+      value: value,
+      currency: currency,
+      items: [
+        {
+          item_id: `yearwheel_${plan}`,
+          item_name: `YearWheel ${plan === 'monthly' ? 'Månadsvis' : 'Årlig'}`,
+          item_category: 'subscription',
+          price: value,
+          quantity: 1
+        }
+      ]
+    },
+    user_id: userId,
+    plan: plan,
+    page_location: typeof window !== 'undefined' ? window.location.href : '',
+    timestamp: new Date().toISOString()
+  };
+
+  if (coupon) {
+    eventData.ecommerce.coupon = coupon;
+  }
+
+  window.dataLayer.push(eventData);
+
+  console.log('[GTM] purchase event pushed:', eventData);
+};
