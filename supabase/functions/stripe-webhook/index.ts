@@ -8,6 +8,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
 })
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
+const ga4MeasurementId = Deno.env.get('GA4_MEASUREMENT_ID') || ''
+const ga4ApiSecret = Deno.env.get('GA4_API_SECRET') || ''
 
 serve(async (req) => {
   const signature = req.headers.get('stripe-signature')
@@ -43,6 +45,10 @@ serve(async (req) => {
 
     // Handle the event
     switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(event.data.object, supabaseAdmin)
+        break
+
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
         await handleSubscriptionChange(event.data.object, supabaseAdmin)
@@ -76,6 +82,72 @@ serve(async (req) => {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 })
   }
 })
+
+async function handleCheckoutCompleted(session: any, supabaseAdmin: any) {
+  console.log('Checkout completed:', session.id)
+  
+  // Send GA4 Measurement Protocol event for purchase tracking
+  if (ga4MeasurementId && ga4ApiSecret) {
+    const gaClientId = session.metadata?.ga_client_id
+    const gaUserId = session.metadata?.ga_user_id
+    const planType = session.metadata?.plan_type
+    const planName = session.metadata?.plan_name || 'Subscription'
+    
+    if (gaClientId) {
+      try {
+        // Get payment amount and currency from the session
+        const amountTotal = session.amount_total / 100 // Convert from cents
+        const currency = session.currency?.toUpperCase() || 'SEK'
+        
+        // Determine value and items based on plan type
+        const items = [{
+          item_id: planType === 'monthly' ? 'monthly_plan' : 'yearly_plan',
+          item_name: planName,
+          price: amountTotal,
+          quantity: 1
+        }]
+        
+        // Prepare GA4 Measurement Protocol payload
+        const ga4Payload = {
+          client_id: gaClientId,
+          user_id: gaUserId || undefined,
+          events: [{
+            name: 'purchase',
+            params: {
+              transaction_id: session.id,
+              value: amountTotal,
+              currency: currency,
+              coupon: session.discount?.coupon?.id || undefined,
+              items: items
+            }
+          }]
+        }
+        
+        // Send to GA4 Measurement Protocol
+        const ga4Response = await fetch(
+          `https://www.google-analytics.com/mp/collect?measurement_id=${ga4MeasurementId}&api_secret=${ga4ApiSecret}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(ga4Payload)
+          }
+        )
+        
+        if (ga4Response.ok) {
+          console.log('GA4 purchase event sent successfully')
+        } else {
+          console.error('GA4 purchase event failed:', await ga4Response.text())
+        }
+      } catch (error) {
+        console.error('Error sending GA4 purchase event:', error)
+      }
+    } else {
+      console.log('No GA client_id found in session metadata, skipping GA4 tracking')
+    }
+  }
+}
 
 async function handleSubscriptionChange(subscription: any, supabaseAdmin: any) {
   console.log('Handling subscription change:', subscription.id)

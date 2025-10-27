@@ -149,7 +149,7 @@ export async function canAddTeamMember(wheelId) {
 /**
  * Create Stripe Checkout Session
  */
-export async function createCheckoutSession(priceId, successUrl, cancelUrl) {
+export async function createCheckoutSession(priceId, successUrl, cancelUrl, gaClientId = null, planType = null) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
@@ -166,6 +166,8 @@ export async function createCheckoutSession(priceId, successUrl, cancelUrl) {
         userId: user.id,
         successUrl,
         cancelUrl,
+        gaClientId, // Pass GA client_id for server-side tracking
+        planType, // Pass plan type for metadata
       }
     });
 

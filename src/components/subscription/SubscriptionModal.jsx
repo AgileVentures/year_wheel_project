@@ -18,11 +18,39 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
         ? import.meta.env.VITE_STRIPE_MONTHLY_PRICE_ID
         : import.meta.env.VITE_STRIPE_YEARLY_PRICE_ID;
 
-      // Create checkout session
+      // Get GA4 client_id for server-side tracking backup
+      let gaClientId = null;
+      try {
+        if (window.gtag) {
+          // Try to get from gtag
+          await new Promise(resolve => {
+            window.gtag('get', 'G-89PHB9R4XE', 'client_id', (cid) => {
+              gaClientId = cid;
+              resolve();
+            });
+            // Timeout after 500ms
+            setTimeout(resolve, 500);
+          });
+        }
+        
+        // Fallback: parse _ga cookie
+        if (!gaClientId) {
+          const gaCookie = document.cookie.match(/(?:^|;\s*)_ga=GA\d+\.\d+\.(\d+\.\d+)/);
+          if (gaCookie) {
+            gaClientId = gaCookie[1];
+          }
+        }
+      } catch (err) {
+        console.warn('Could not get GA client_id:', err);
+      }
+
+      // Create checkout session with GA metadata
       const { sessionId, url } = await createCheckoutSession(
         priceId,
         `${window.location.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-        `${window.location.origin}/dashboard`
+        `${window.location.origin}/dashboard`,
+        gaClientId, // Pass GA client_id
+        planType // Pass plan type
       );
 
       // Redirect to Stripe Checkout using the URL

@@ -1,29 +1,50 @@
 # Google Tag Manager Tracking Implementation
-**Date:** 27 October 2025  
+**Date:** 27 October 2025 (Updated: Hybrid Tracking Added)  
 **Project:** YearWheel SaaS  
-**GTM Container ID:** GTM-MX5D5LSB
+**GTM Container ID:** GTM-MX5D5LSB  
+**GA4 Property ID:** 508956250  
+**GA4 Measurement ID:** G-89PHB9R4XE
 
 ## Overview
-This document describes the complete implementation of Google Analytics 4 (GA4) recommended events for YearWheel's signup and purchase flows.
+This document describes the complete implementation of Google Analytics 4 (GA4) recommended events for YearWheel's signup and purchase flows, including both client-side and server-side tracking mechanisms.
 
 ## Implementation Architecture
 
-### 1. Client-Side Tracking (Browser)
+### 1. Client-Side Tracking (Browser) - Primary
 - **Location:** Frontend React application
 - **Trigger Points:**
   - `sign_up`: After successful Supabase authentication (email OR OAuth)
   - `purchase`: After successful Stripe checkout session (when user returns to dashboard)
+- **Pros:** Full user context, cross-domain tracking, session data
+- **Cons:** Fails if user closes window, blocked by ad blockers
 
-### 2. Data Flow
+### 2. Server-Side Tracking (GA4 Measurement Protocol) - Backup (NEW)
+- **Location:** Supabase Edge Function (stripe-webhook)
+- **Trigger Points:**
+  - `purchase`: Stripe webhook `checkout.session.completed` event
+- **Pros:** Always fires, bypasses ad blockers, no dependency on user returning
+- **Cons:** Limited context (only metadata stored during checkout)
+- **Configuration:** See `GA4_API_SECRET_SETUP.md` for setup instructions
 
+### 3. Data Flow
+
+**Client-Side:**
 ```
 User Action → Frontend Logic → dataLayer.push() → GTM → GA4
+```
+
+**Server-Side:**
+```
+Stripe Payment → Webhook → Metadata Extraction → GA4 Measurement Protocol → GA4
 ```
 
 **Key Implementation Files:**
 - `src/utils/gtm.js` - GTM utility functions
 - `src/contexts/AuthContext.jsx` - Sign-up tracking
-- `src/components/dashboard/Dashboard.jsx` - Purchase tracking
+- `src/components/dashboard/Dashboard.jsx` - Purchase tracking (client-side)
+- `src/components/subscription/SubscriptionModal.jsx` - GA client_id extraction
+- `supabase/functions/create-checkout-session/index.ts` - Metadata storage
+- `supabase/functions/stripe-webhook/index.ts` - Server-side purchase tracking
 - `index.html` - GTM initialization
 
 ---
@@ -191,6 +212,85 @@ window.dataLayer.push({
 - Pricing: 79 SEK/month OR 768 SEK/year (no other tiers currently)
 - Coupon tracking: Currently NOT implemented (Stripe allows promo codes, but we don't pass them yet)
 - **Deduplication:** Uses local flag to prevent multiple triggers during polling
+- **Reliability:** May fail if user closes browser before returning to dashboard
+
+---
+
+### Event 2b: purchase (Server-Side Backup) - NEW
+
+**Trigger:** Stripe webhook receives `checkout.session.completed` event
+
+**Implementation Location:** `supabase/functions/stripe-webhook/index.ts:87-150`
+
+**Flow:**
+1. User completes payment on Stripe
+2. Stripe fires `checkout.session.completed` webhook
+3. Edge function extracts GA metadata from session (stored during checkout)
+4. Sends event to GA4 Measurement Protocol API
+5. GA4 records purchase even if user never returns to site
+
+**Payload Structure (GA4 Measurement Protocol):**
+```javascript
+{
+  client_id: '123456789.1234567890', // From _ga cookie or gtag API
+  user_id: 'abc123...', // Supabase user UUID (optional)
+  events: [{
+    name: 'purchase',
+    params: {
+      transaction_id: 'cs_test_abc123...', // Stripe checkout session ID
+      value: 79 | 768,
+      currency: 'SEK',
+      coupon: 'LAUNCH2025', // If discount applied
+      items: [{
+        item_id: 'monthly_plan' | 'yearly_plan',
+        item_name: 'YearWheel Månadsvis' | 'YearWheel Årlig',
+        price: 79 | 768,
+        quantity: 1
+      }]
+    }
+  }]
+}
+```
+
+**Metadata Storage:**
+During checkout creation (`create-checkout-session/index.ts`), we store:
+```javascript
+session.metadata = {
+  ga_client_id: '123456789.1234567890', // Extracted from _ga cookie or gtag
+  ga_user_id: 'abc123...', // Supabase user UUID
+  plan_type: 'monthly' | 'yearly',
+  plan_name: 'YearWheel Månadsvis' | 'YearWheel Årlig'
+}
+```
+
+**API Endpoint:**
+```
+POST https://www.google-analytics.com/mp/collect?measurement_id=G-89PHB9R4XE&api_secret={SECRET}
+```
+
+**Configuration Required:**
+See `GA4_API_SECRET_SETUP.md` for detailed setup instructions:
+1. Create Measurement Protocol API secret in GA4 admin panel
+2. Add `GA4_MEASUREMENT_ID` and `GA4_API_SECRET` to Supabase edge function secrets
+3. Deploy edge functions: `create-checkout-session` and `stripe-webhook`
+
+**Advantages:**
+- **Always fires** - no dependency on user returning to site
+- **Bypasses ad blockers** - server-to-server communication
+- **Accurate timing** - tracks exact moment payment succeeds
+- **Transaction ID from Stripe** - uses checkout session ID for perfect deduplication
+
+**Limitations:**
+- **No session context** - can't track pageviews, referrers, etc.
+- **Limited user data** - only what we store in metadata during checkout
+- **Requires manual client_id extraction** - uses gtag API or _ga cookie parsing
+
+**Deduplication Strategy:**
+Client-side and server-side events use DIFFERENT transaction IDs:
+- Client-side: `transaction_id = subscription.stripe_subscription_id` (e.g., `sub_abc123...`)
+- Server-side: `transaction_id = checkout_session.id` (e.g., `cs_test_abc123...`)
+
+This ensures GA4 treats them as separate events (won't deduplicate), providing backup coverage.
 
 ---
 

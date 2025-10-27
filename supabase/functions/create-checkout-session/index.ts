@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    const { priceId, customerId, userId, successUrl, cancelUrl } = await req.json()
+    const { priceId, customerId, userId, successUrl, cancelUrl, gaClientId, planType } = await req.json()
 
     // Initialize Supabase Admin Client
     // Note: Supabase automatically provides these environment variables
@@ -51,7 +51,10 @@ serve(async (req) => {
         .eq('user_id', userId)
     }
 
-    // Create checkout session
+    // Determine plan name for metadata
+    const planName = planType === 'monthly' ? 'YearWheel Månadsvis' : 'YearWheel Årlig'
+
+    // Create checkout session with GA metadata
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'subscription',
@@ -68,6 +71,12 @@ serve(async (req) => {
       billing_address_collection: 'auto',
       customer_update: {
         address: 'auto',
+      },
+      metadata: {
+        ga_client_id: gaClientId || '',
+        ga_user_id: userId || '',
+        plan_type: planType || '',
+        plan_name: planName || 'Subscription',
       },
     })
 
