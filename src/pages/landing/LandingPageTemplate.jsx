@@ -297,12 +297,23 @@ export default function LandingPageTemplate({
                 <div key={idx} className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
                   <h3 className="font-semibold text-gray-900 mb-2">{template.name}</h3>
                   <p className="text-gray-600 text-sm mb-4">{template.description}</p>
-                  <button
-                    onClick={handleCTA}
-                    className="text-blue-600 hover:text-blue-700 font-medium text-sm"
-                  >
-                    Använd mall →
-                  </button>
+                  {template.wheelId ? (
+                    <a
+                      href={`/preview-wheel/${template.wheelId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm inline-flex items-center gap-1"
+                    >
+                      Använd mall →
+                    </a>
+                  ) : (
+                    <button
+                      onClick={handleCTA}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                    >
+                      Använd mall →
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
