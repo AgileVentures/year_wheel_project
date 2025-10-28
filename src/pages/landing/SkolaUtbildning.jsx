@@ -124,15 +124,18 @@ export default function SkolaUtbildning() {
       templates={[
         {
           name: "Läsårsplanering 2025/2026",
-          description: "Komplett mall med terminer, lov, utvecklingsdagar och föräldramöten enligt Skolverkets kalender."
+          description: "Komplett mall med terminer, lov, utvecklingsdagar och föräldramöten enligt Skolverkets kalender.",
+          wheelId: "9a4beb99-1fc2-4082-94f2-bb82d70af3ec"
         },
         {
           name: "Grundskolans årshjul",
-          description: "Anpassad för F-9 med nationella prov, temaveckor och elevaktiviteter."
+          description: "Anpassad för F-9 med nationella prov, temaveckor och elevaktiviteter.",
+          wheelId: "TODO" // Replace with actual wheel ID when template is created
         },
         {
           name: "Gymnasieskolans planering",
-          description: "Mall för gymnasiet med betygssättning, APL-perioder och studentexamen."
+          description: "Mall för gymnasiet med betygssättning, APL-perioder och studentexamen.",
+          wheelId: "TODO" // Replace with actual wheel ID when template is created
         }
       ]}
       
