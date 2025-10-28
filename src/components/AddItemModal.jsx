@@ -8,7 +8,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
   const [formData, setFormData] = useState({
     name: '',
     ringId: organizationData.rings[0]?.id || '',
-    activityId: organizationData.activities[0]?.id || '',
+    activityId: organizationData.activityGroups[0]?.id || '',
     labelId: organizationData.labels[0]?.id || '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
@@ -176,7 +176,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
               onChange={(e) => handleChange('activityId', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
-              {organizationData.activities.map((activity) => (
+              {organizationData.activityGroups.map((activity) => (
                 <option key={activity.id} value={activity.id}>
                   {activity.name}
                 </option>
