@@ -1960,50 +1960,117 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 showRingNames: data.showRingNames ?? showRingNames,
               });
               
-              // CRITICAL: Also update the current page with imported data
-              if (currentPageId) {
-                await updatePage(currentPageId, {
-                  organization_data: processedOrgData,
-                  year: parseInt(data.year)
-                });
+              // MULTI-YEAR IMPORT: Group items by year from startDate
+              const itemsByYear = {};
+              processedOrgData.items.forEach(item => {
+                if (item.startDate) {
+                  const itemYear = new Date(item.startDate).getFullYear();
+                  if (!itemsByYear[itemYear]) {
+                    itemsByYear[itemYear] = [];
+                  }
+                  itemsByYear[itemYear].push(item);
+                }
+              });
+              
+              const years = Object.keys(itemsByYear).sort();
+              console.log('[FileImport] Found items in years:', years);
+              
+              // Get or create pages for each year
+              const { data: existingPages } = await supabase
+                .from('wheel_pages')
+                .select('id, year')
+                .eq('wheel_id', wheelId)
+                .order('year');
+              
+              const pagesByYear = {};
+              existingPages?.forEach(page => {
+                pagesByYear[page.year] = page.id;
+              });
+              
+              // Create missing pages
+              for (const yearStr of years) {
+                const year = parseInt(yearStr);
+                if (!pagesByYear[year]) {
+                  const { data: newPage } = await supabase
+                    .from('wheel_pages')
+                    .insert({
+                      wheel_id: wheelId,
+                      year: year,
+                      title: `${data.title} ${year}`,
+                      page_order: year - parseInt(data.year),
+                      organization_data: { rings: [], activityGroups: [], labels: [], items: [] }
+                    })
+                    .select()
+                    .single();
+                  
+                  pagesByYear[year] = newPage.id;
+                  console.log(`[FileImport] Created new page for year ${year}`);
+                }
               }
               
-              // Save organization data using the PROCESSED data (for backward compatibility)
-              // CRITICAL: Get ID mappings to update items with database UUIDs
+              // Save rings/activityGroups/labels to each page
+              // Then save items to their respective pages
+              let allRingIdMaps = new Map();
+              let allActivityIdMaps = new Map();
+              let allLabelIdMaps = new Map();
               
-              const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, processedOrgData, currentPageId);
+              for (const yearStr of years) {
+                const year = parseInt(yearStr);
+                const pageId = pagesByYear[year];
+                const yearItems = itemsByYear[yearStr];
+                
+                // Create org data for this year's page
+                const yearOrgData = {
+                  rings: processedOrgData.rings,
+                  activityGroups: processedOrgData.activityGroups,
+                  labels: processedOrgData.labels,
+                  items: yearItems
+                };
+                
+                // Update page
+                await updatePage(pageId, {
+                  organization_data: yearOrgData,
+                  year: year
+                });
+                
+                // Save wheel data and get ID mappings
+                const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, yearOrgData, pageId);
+                
+                // Merge ID maps (should be same across pages for rings/activities/labels)
+                ringIdMap.forEach((v, k) => allRingIdMaps.set(k, v));
+                activityIdMap.forEach((v, k) => allActivityIdMaps.set(k, v));
+                labelIdMap.forEach((v, k) => allLabelIdMaps.set(k, v));
+              }
               
-              
-              // Update items with the database UUIDs from sync functions
+              // Update processedOrgData with database UUIDs
               processedOrgData.rings = processedOrgData.rings.map(ring => ({
                 ...ring,
-                id: ringIdMap.get(ring.id) || ring.id
+                id: allRingIdMaps.get(ring.id) || ring.id
               }));
               
               processedOrgData.activityGroups = processedOrgData.activityGroups.map(group => ({
                 ...group,
-                id: activityIdMap.get(group.id) || group.id
+                id: allActivityIdMaps.get(group.id) || group.id
               }));
               
               processedOrgData.labels = processedOrgData.labels.map(label => ({
                 ...label,
-                id: labelIdMap.get(label.id) || label.id
+                id: allLabelIdMaps.get(label.id) || label.id
               }));
               
               processedOrgData.items = processedOrgData.items.map(item => ({
                 ...item,
-                ringId: ringIdMap.get(item.ringId) || item.ringId,
-                activityId: activityIdMap.get(item.activityId) || item.activityId,
-                labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
+                ringId: allRingIdMaps.get(item.ringId) || item.ringId,
+                activityId: allActivityIdMaps.get(item.activityId) || item.activityId,
+                labelId: item.labelId ? (allLabelIdMaps.get(item.labelId) || item.labelId) : null
               }));
               
-              console.log('[FileImport] After ID remapping - items:', processedOrgData.items.length);
-              console.log('[FileImport] Sample item after remapping:', processedOrgData.items[0]);
-              console.log('[FileImport] Successfully saved to database and updated IDs');
+              console.log('[FileImport] Successfully imported multi-year data');
+              console.log('[FileImport] Total items:', processedOrgData.items.length, 'across', years.length, 'years');
               
               // Show success feedback
               const toastEvent = new CustomEvent('showToast', { 
-                detail: { message: 'Fil laddad och sparad!', type: 'success' } 
+                detail: { message: `Fil laddad! ${years.length} år importerade`, type: 'success' } 
               });
               window.dispatchEvent(toastEvent);
             } catch (saveError) {

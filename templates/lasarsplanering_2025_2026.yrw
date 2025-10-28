@@ -1,0 +1,308 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-10-28T10:00:00.000Z",
+  "title": "Läsårsplanering 2025/2026",
+  "year": "2026",
+  "colors": [
+    "#4A90E2",
+    "#7ED321",
+    "#F5A623",
+    "#BD10E0"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-terminer",
+        "activityId": "group-ht",
+        "labelId": null,
+        "name": "Hösttermin 2025",
+        "startDate": "2025-08-18",
+        "endDate": "2025-12-20",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-terminer",
+        "activityId": "group-vt",
+        "labelId": null,
+        "name": "Vårtermin 2026",
+        "startDate": "2026-01-08",
+        "endDate": "2026-06-12",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-lov",
+        "activityId": "group-lov",
+        "labelId": null,
+        "name": "Höstlov",
+        "startDate": "2025-11-02",
+        "endDate": "2025-11-08",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-lov",
+        "activityId": "group-lov",
+        "labelId": null,
+        "name": "Jullov",
+        "startDate": "2025-12-21",
+        "endDate": "2026-01-07",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-lov",
+        "activityId": "group-lov",
+        "labelId": null,
+        "name": "Sportlov",
+        "startDate": "2026-02-23",
+        "endDate": "2026-03-01",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-lov",
+        "activityId": "group-lov",
+        "labelId": null,
+        "name": "Påsklov",
+        "startDate": "2026-04-02",
+        "endDate": "2026-04-07",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-lov",
+        "activityId": "group-lov",
+        "labelId": null,
+        "name": "Sommarlov",
+        "startDate": "2026-06-13",
+        "endDate": "2026-08-17",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-utveckling",
+        "activityId": "group-personal",
+        "labelId": null,
+        "name": "Höstens utvecklingsdag",
+        "startDate": "2025-10-18",
+        "endDate": "2025-10-18",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-utveckling",
+        "activityId": "group-personal",
+        "labelId": null,
+        "name": "Vårens utvecklingsdag",
+        "startDate": "2026-03-13",
+        "endDate": "2026-03-13",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-foraldramoter",
+        "activityId": "group-foraldrar",
+        "labelId": null,
+        "name": "Höstens föräldramöten",
+        "startDate": "2025-09-15",
+        "endDate": "2025-09-25",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-foraldramoter",
+        "activityId": "group-foraldrar",
+        "labelId": null,
+        "name": "Utvecklingssamtal HT",
+        "startDate": "2025-11-10",
+        "endDate": "2025-11-28",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-foraldramoter",
+        "activityId": "group-foraldrar",
+        "labelId": null,
+        "name": "Vårens föräldramöten",
+        "startDate": "2026-02-01",
+        "endDate": "2026-02-14",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-013",
+        "ringId": "ring-foraldramoter",
+        "activityId": "group-foraldrar",
+        "labelId": null,
+        "name": "Utvecklingssamtal VT",
+        "startDate": "2026-04-20",
+        "endDate": "2026-05-08",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-014",
+        "ringId": "ring-aktiviteter",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Höstmarknad",
+        "startDate": "2025-10-10",
+        "endDate": "2025-10-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-015",
+        "ringId": "ring-aktiviteter",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Lucia",
+        "startDate": "2025-12-13",
+        "endDate": "2025-12-13",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-016",
+        "ringId": "ring-aktiviteter",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Vårkonsert",
+        "startDate": "2026-05-15",
+        "endDate": "2026-05-15",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-017",
+        "ringId": "ring-aktiviteter",
+        "activityId": "group-event",
+        "labelId": null,
+        "name": "Skolavslutning",
+        "startDate": "2026-06-11",
+        "endDate": "2026-06-11",
+        "time": null,
+        "pageId": null
+      }
+    ],
+    "rings": [
+      {
+        "id": "ring-terminer",
+        "name": "Terminer",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#4A90E2"
+      },
+      {
+        "id": "ring-lov",
+        "name": "Lov & Ledigheter",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#7ED321"
+      },
+      {
+        "id": "ring-utveckling",
+        "name": "Kompetensutveckling",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#F5A623"
+      },
+      {
+        "id": "ring-foraldramoter",
+        "name": "Föräldrakontakt",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#BD10E0"
+      },
+      {
+        "id": "ring-aktiviteter",
+        "name": "Elevaktiviteter",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#E2445C"
+      }
+    ],
+    "labels": [],
+    "activityGroups": [
+      {
+        "id": "group-ht",
+        "name": "Hösttermin",
+        "color": "#4A90E2",
+        "visible": true
+      },
+      {
+        "id": "group-vt",
+        "name": "Vårtermin",
+        "color": "#50E3C2",
+        "visible": true
+      },
+      {
+        "id": "group-lov",
+        "name": "Lov",
+        "color": "#7ED321",
+        "visible": true
+      },
+      {
+        "id": "group-personal",
+        "name": "Personal",
+        "color": "#F5A623",
+        "visible": true
+      },
+      {
+        "id": "group-foraldrar",
+        "name": "Föräldrar",
+        "color": "#BD10E0",
+        "visible": true
+      },
+      {
+        "id": "group-event",
+        "name": "Event",
+        "color": "#E2445C",
+        "visible": true
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": false,
+  "weekRingDisplayMode": "week-numbers"
+}

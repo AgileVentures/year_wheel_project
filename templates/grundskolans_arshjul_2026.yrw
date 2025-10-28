@@ -1,0 +1,332 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-10-28T10:00:00.000Z",
+  "title": "Grundskolans årshjul",
+  "year": "2026",
+  "colors": [
+    "#FF6B6B",
+    "#4ECDC4",
+    "#FFE66D",
+    "#95E1D3"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-amnen",
+        "activityId": "group-svenska",
+        "labelId": null,
+        "name": "Svenska - Berättande texter",
+        "startDate": "2026-01-12",
+        "endDate": "2026-02-27",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-amnen",
+        "activityId": "group-matematik",
+        "labelId": null,
+        "name": "Matematik - Geometri",
+        "startDate": "2026-02-02",
+        "endDate": "2026-03-20",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-amnen",
+        "activityId": "group-so",
+        "labelId": null,
+        "name": "SO - Sveriges historia",
+        "startDate": "2026-03-23",
+        "endDate": "2026-05-15",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-amnen",
+        "activityId": "group-no",
+        "labelId": null,
+        "name": "NO - Ekologi & miljö",
+        "startDate": "2026-04-13",
+        "endDate": "2026-05-29",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-prov",
+        "activityId": "group-nationella",
+        "labelId": null,
+        "name": "Nationella prov Svenska",
+        "startDate": "2026-03-09",
+        "endDate": "2026-03-20",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-prov",
+        "activityId": "group-nationella",
+        "labelId": null,
+        "name": "Nationella prov Matematik",
+        "startDate": "2026-03-23",
+        "endDate": "2026-04-03",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-prov",
+        "activityId": "group-nationella",
+        "labelId": null,
+        "name": "Nationella prov Engelska",
+        "startDate": "2026-04-13",
+        "endDate": "2026-04-24",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-projekt",
+        "activityId": "group-tema",
+        "labelId": null,
+        "name": "Temavecka: Hållbarhet",
+        "startDate": "2026-02-16",
+        "endDate": "2026-02-20",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-projekt",
+        "activityId": "group-tema",
+        "labelId": null,
+        "name": "Temavecka: Medier",
+        "startDate": "2026-05-04",
+        "endDate": "2026-05-08",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-projekt",
+        "activityId": "group-exkursion",
+        "labelId": null,
+        "name": "Museibesök - Historia",
+        "startDate": "2026-04-06",
+        "endDate": "2026-04-06",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-projekt",
+        "activityId": "group-exkursion",
+        "labelId": null,
+        "name": "Naturdagarna",
+        "startDate": "2026-05-18",
+        "endDate": "2026-05-20",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-halsa",
+        "activityId": "group-halsa",
+        "labelId": null,
+        "name": "Hälsoveckan",
+        "startDate": "2026-02-09",
+        "endDate": "2026-02-13",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-013",
+        "ringId": "ring-halsa",
+        "activityId": "group-halsa",
+        "labelId": null,
+        "name": "Elevhälsoträffar",
+        "startDate": "2026-03-02",
+        "endDate": "2026-03-06",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-014",
+        "ringId": "ring-event",
+        "activityId": "group-hogtid",
+        "labelId": null,
+        "name": "Påskfirande",
+        "startDate": "2026-04-01",
+        "endDate": "2026-04-01",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-015",
+        "ringId": "ring-event",
+        "activityId": "group-hogtid",
+        "labelId": null,
+        "name": "Valborgsmässofirande",
+        "startDate": "2026-04-30",
+        "endDate": "2026-04-30",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-016",
+        "ringId": "ring-event",
+        "activityId": "group-sport",
+        "labelId": null,
+        "name": "Skoldagen",
+        "startDate": "2026-03-16",
+        "endDate": "2026-03-16",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-017",
+        "ringId": "ring-event",
+        "activityId": "group-sport",
+        "labelId": null,
+        "name": "Idrottsdagen",
+        "startDate": "2026-05-25",
+        "endDate": "2026-05-25",
+        "time": null,
+        "pageId": null
+      }
+    ],
+    "rings": [
+      {
+        "id": "ring-amnen",
+        "name": "Ämnen & Kurser",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#FF6B6B"
+      },
+      {
+        "id": "ring-prov",
+        "name": "Prov & Bedömning",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#4ECDC4"
+      },
+      {
+        "id": "ring-projekt",
+        "name": "Projekt & Teman",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#FFE66D"
+      },
+      {
+        "id": "ring-halsa",
+        "name": "Elevhälsa",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#95E1D3"
+      },
+      {
+        "id": "ring-event",
+        "name": "Event & Högtider",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#F38BA0"
+      }
+    ],
+    "labels": [],
+    "activityGroups": [
+      {
+        "id": "group-svenska",
+        "name": "Svenska",
+        "color": "#FF6B6B",
+        "visible": true
+      },
+      {
+        "id": "group-matematik",
+        "name": "Matematik",
+        "color": "#4ECDC4",
+        "visible": true
+      },
+      {
+        "id": "group-so",
+        "name": "SO",
+        "color": "#FFE66D",
+        "visible": true
+      },
+      {
+        "id": "group-no",
+        "name": "NO",
+        "color": "#95E1D3",
+        "visible": true
+      },
+      {
+        "id": "group-nationella",
+        "name": "Nationella prov",
+        "color": "#4ECDC4",
+        "visible": true
+      },
+      {
+        "id": "group-tema",
+        "name": "Temaveckor",
+        "color": "#FFE66D",
+        "visible": true
+      },
+      {
+        "id": "group-exkursion",
+        "name": "Exkursioner",
+        "color": "#A8E6CF",
+        "visible": true
+      },
+      {
+        "id": "group-halsa",
+        "name": "Elevhälsa",
+        "color": "#95E1D3",
+        "visible": true
+      },
+      {
+        "id": "group-hogtid",
+        "name": "Högtider",
+        "color": "#F38BA0",
+        "visible": true
+      },
+      {
+        "id": "group-sport",
+        "name": "Idrott & Aktivitet",
+        "color": "#FFB6D9",
+        "visible": true
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": false,
+  "weekRingDisplayMode": "week-numbers"
+}

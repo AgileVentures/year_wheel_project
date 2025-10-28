@@ -1,0 +1,354 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-10-28T10:00:00.000Z",
+  "title": "Gymnasieskolans planering",
+  "year": "2026",
+  "colors": [
+    "#667EEA",
+    "#F093FB",
+    "#4FACFE",
+    "#43E97B"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-kurser",
+        "activityId": "group-ka1",
+        "labelId": null,
+        "name": "Svenska 1",
+        "startDate": "2026-01-08",
+        "endDate": "2026-03-27",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-kurser",
+        "activityId": "group-ka2",
+        "labelId": null,
+        "name": "Matematik 2",
+        "startDate": "2026-02-02",
+        "endDate": "2026-05-22",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-kurser",
+        "activityId": "group-ka3",
+        "labelId": null,
+        "name": "Samhällskunskap 1",
+        "startDate": "2026-04-06",
+        "endDate": "2026-06-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-betyg",
+        "activityId": "group-betygssattning",
+        "labelId": null,
+        "name": "Terminsbetyg VT",
+        "startDate": "2026-06-01",
+        "endDate": "2026-06-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-betyg",
+        "activityId": "group-betygssattning",
+        "labelId": null,
+        "name": "Betygsdialog våren",
+        "startDate": "2026-05-11",
+        "endDate": "2026-05-22",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-apl",
+        "activityId": "group-apl",
+        "labelId": null,
+        "name": "APL Period 1",
+        "startDate": "2026-02-16",
+        "endDate": "2026-03-06",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-apl",
+        "activityId": "group-apl",
+        "labelId": null,
+        "name": "APL Period 2",
+        "startDate": "2026-05-04",
+        "endDate": "2026-05-22",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-apl",
+        "activityId": "group-handledning",
+        "labelId": null,
+        "name": "APL-handledning",
+        "startDate": "2026-01-26",
+        "endDate": "2026-02-13",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-studievagledning",
+        "activityId": "group-vagledning",
+        "labelId": null,
+        "name": "Studievägledning åk 2",
+        "startDate": "2026-02-02",
+        "endDate": "2026-02-27",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-studievagledning",
+        "activityId": "group-vagledning",
+        "labelId": null,
+        "name": "Högskole/Yrkesmässa",
+        "startDate": "2026-03-16",
+        "endDate": "2026-03-20",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-studievagledning",
+        "activityId": "group-ansokan",
+        "labelId": null,
+        "name": "Antagning.se information",
+        "startDate": "2026-03-30",
+        "endDate": "2026-04-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-student",
+        "activityId": "group-studentexamen",
+        "labelId": null,
+        "name": "Studentskrivningar",
+        "startDate": "2026-05-04",
+        "endDate": "2026-05-22",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-013",
+        "ringId": "ring-student",
+        "activityId": "group-studentexamen",
+        "labelId": null,
+        "name": "Studentfirande",
+        "startDate": "2026-06-08",
+        "endDate": "2026-06-10",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-014",
+        "ringId": "ring-projekt",
+        "activityId": "group-gymnasiearbete",
+        "labelId": null,
+        "name": "Gymnasiearbete åk 3",
+        "startDate": "2026-01-12",
+        "endDate": "2026-04-24",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-015",
+        "ringId": "ring-projekt",
+        "activityId": "group-gymnasiearbete",
+        "labelId": null,
+        "name": "Gymnasiearbete presentation",
+        "startDate": "2026-04-27",
+        "endDate": "2026-05-08",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-016",
+        "ringId": "ring-event",
+        "activityId": "group-skolaktivitet",
+        "labelId": null,
+        "name": "Öppet hus",
+        "startDate": "2026-02-09",
+        "endDate": "2026-02-13",
+        "time": null,
+        "pageId": null
+      },
+      {
+        "id": "item-017",
+        "ringId": "ring-event",
+        "activityId": "group-skolaktivitet",
+        "labelId": null,
+        "name": "Vårbal",
+        "startDate": "2026-05-15",
+        "endDate": "2026-05-15",
+        "time": null,
+        "pageId": null
+      }
+    ],
+    "rings": [
+      {
+        "id": "ring-kurser",
+        "name": "Kurser",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#667EEA"
+      },
+      {
+        "id": "ring-betyg",
+        "name": "Betyg & Bedömning",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#F093FB"
+      },
+      {
+        "id": "ring-apl",
+        "name": "APL (Arbetsplatsförlagt lärande)",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#4FACFE"
+      },
+      {
+        "id": "ring-studievagledning",
+        "name": "Studievägledning",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#43E97B"
+      },
+      {
+        "id": "ring-student",
+        "name": "Studentexamen",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#FA709A"
+      },
+      {
+        "id": "ring-projekt",
+        "name": "Gymnasiearbete",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#FEE140"
+      },
+      {
+        "id": "ring-event",
+        "name": "Skolaktiviteter",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#30CFD0"
+      }
+    ],
+    "labels": [],
+    "activityGroups": [
+      {
+        "id": "group-ka1",
+        "name": "Kärnämnen 1",
+        "color": "#667EEA",
+        "visible": true
+      },
+      {
+        "id": "group-ka2",
+        "name": "Kärnämnen 2",
+        "color": "#764BA2",
+        "visible": true
+      },
+      {
+        "id": "group-ka3",
+        "name": "Samhällskunskap",
+        "color": "#F093FB",
+        "visible": true
+      },
+      {
+        "id": "group-betygssattning",
+        "name": "Betygssättning",
+        "color": "#F093FB",
+        "visible": true
+      },
+      {
+        "id": "group-apl",
+        "name": "APL",
+        "color": "#4FACFE",
+        "visible": true
+      },
+      {
+        "id": "group-handledning",
+        "name": "APL Handledning",
+        "color": "#00F2FE",
+        "visible": true
+      },
+      {
+        "id": "group-vagledning",
+        "name": "Vägledning",
+        "color": "#43E97B",
+        "visible": true
+      },
+      {
+        "id": "group-ansokan",
+        "name": "Ansökan Högskola",
+        "color": "#38F9D7",
+        "visible": true
+      },
+      {
+        "id": "group-studentexamen",
+        "name": "Student",
+        "color": "#FA709A",
+        "visible": true
+      },
+      {
+        "id": "group-gymnasiearbete",
+        "name": "Gymnasiearbete",
+        "color": "#FEE140",
+        "visible": true
+      },
+      {
+        "id": "group-skolaktivitet",
+        "name": "Event",
+        "color": "#30CFD0",
+        "visible": true
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": false,
+  "weekRingDisplayMode": "week-numbers"
+}
