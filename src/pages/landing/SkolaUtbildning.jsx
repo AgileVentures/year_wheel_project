@@ -25,6 +25,8 @@ export default function SkolaUtbildning() {
       metaTitle="Läsårsplanering & Skolkalender - YearWheel"
       metaDescription="Digital terminsplanering för skolor. Visualisera läsåret med lov, utvecklingsdagar, prov och aktiviteter. Perfekt för skolledare och lärare."
       keywords="läsårsplanering, skolkalender digital, terminsplanering verktyg, planering för skolledare, årsplanering utbildning, lärarplanering, terminsöversikt"
+      canonicalUrl="https://yearwheel.se/skola-och-utbildning"
+      ogImage="https://yearwheel.se/hero-hr-planning.webp"
       
       heroTitle="Läsårsplanering gjord visuell"
       heroSubtitle="Ett tydligt verktyg för skolledare och lärare att planera terminer, lov, utvecklingsdagar, föräldramöten och elevaktiviteter - hela läsåret i en cirkel."

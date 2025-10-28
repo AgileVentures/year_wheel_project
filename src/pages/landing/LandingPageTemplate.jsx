@@ -11,7 +11,9 @@ export default function LandingPageTemplate({
   // SEO
   metaTitle,
   metaDescription,
-  keywords,
+  keywords, // Kept for internal use but not used in meta tags (Google ignores since 2009)
+  canonicalUrl, // NEW: For duplicate content prevention
+  ogImage, // NEW: For social sharing
   
   // Hero Section
   heroTitle,
@@ -45,40 +47,80 @@ export default function LandingPageTemplate({
 
   // Set meta tags for SEO
   useEffect(() => {
+    // Title
     document.title = metaTitle || 'YearWheel - Årsplanering gjord enkel';
     
     // Meta description
-    let metaDesc = document.querySelector('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.name = 'description';
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.content = metaDescription || '';
-    
-    // Keywords
-    if (keywords) {
-      let metaKeywords = document.querySelector('meta[name="keywords"]');
-      if (!metaKeywords) {
-        metaKeywords = document.createElement('meta');
-        metaKeywords.name = 'keywords';
-        document.head.appendChild(metaKeywords);
+    const updateOrCreateMeta = (name, content, isProperty = false) => {
+      const attribute = isProperty ? 'property' : 'name';
+      let metaTag = document.querySelector(`meta[${attribute}="${name}"]`);
+      if (!metaTag) {
+        metaTag = document.createElement('meta');
+        metaTag.setAttribute(attribute, name);
+        document.head.appendChild(metaTag);
       }
-      metaKeywords.content = keywords;
+      metaTag.content = content;
+    };
+    
+    // Basic meta tags
+    if (metaDescription) {
+      updateOrCreateMeta('description', metaDescription);
+    }
+    
+    // Canonical URL (important for SEO)
+    if (canonicalUrl) {
+      let linkTag = document.querySelector('link[rel="canonical"]');
+      if (!linkTag) {
+        linkTag = document.createElement('link');
+        linkTag.rel = 'canonical';
+        document.head.appendChild(linkTag);
+      }
+      linkTag.href = canonicalUrl;
+    }
+    
+    // Open Graph tags (for Facebook, LinkedIn sharing)
+    updateOrCreateMeta('og:type', 'website', true);
+    updateOrCreateMeta('og:title', metaTitle || 'YearWheel - Årsplanering gjord enkel', true);
+    if (metaDescription) {
+      updateOrCreateMeta('og:description', metaDescription, true);
+    }
+    if (canonicalUrl) {
+      updateOrCreateMeta('og:url', canonicalUrl, true);
+    }
+    if (ogImage) {
+      updateOrCreateMeta('og:image', ogImage, true);
+    }
+    updateOrCreateMeta('og:locale', 'sv_SE', true);
+    updateOrCreateMeta('og:site_name', 'YearWheel', true);
+    
+    // Twitter Card tags
+    updateOrCreateMeta('twitter:card', 'summary_large_image');
+    updateOrCreateMeta('twitter:title', metaTitle || 'YearWheel - Årsplanering gjord enkel');
+    if (metaDescription) {
+      updateOrCreateMeta('twitter:description', metaDescription);
+    }
+    if (ogImage) {
+      updateOrCreateMeta('twitter:image', ogImage);
     }
     
     // Schema.org structured data
     if (schemaData) {
-      let scriptTag = document.getElementById('schema-org');
+      let scriptTag = document.getElementById('schema-org-landing');
       if (!scriptTag) {
         scriptTag = document.createElement('script');
-        scriptTag.id = 'schema-org';
+        scriptTag.id = 'schema-org-landing';
         scriptTag.type = 'application/ld+json';
         document.head.appendChild(scriptTag);
       }
       scriptTag.textContent = JSON.stringify(schemaData);
     }
-  }, [metaTitle, metaDescription, keywords, schemaData]);
+    
+    // Cleanup function to restore default meta tags when component unmounts
+    return () => {
+      document.title = 'YearWheel - Visualisera och planera ditt år med AI';
+      updateOrCreateMeta('description', 'Skapa interaktiva årshjul för att planera projekt, kampanjer och aktiviteter. AI-assisterad planering, visuell översikt och smart organisering.');
+    };
+  }, [metaTitle, metaDescription, canonicalUrl, ogImage, schemaData]);
 
   const handleCTA = () => {
     navigate('/auth?mode=signup');

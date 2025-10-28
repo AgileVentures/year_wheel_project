@@ -25,6 +25,8 @@ export default function Marknadsplanering() {
       metaTitle="Marknadsplanering & Innehållskalender - YearWheel"
       metaDescription="Planera kampanjer, innehåll och sociala medier visuellt. Innehållskalender för hela året i ett årshjul. Perfekt för marknadsavdelningar och content creators."
       keywords="innehållskalender årsöversikt, planera sociala medier årligen, redaktionell årsplanering, marknadsplan årshjul mall, digital marknadsplanering, content kalender, kampanjplanering"
+      canonicalUrl="https://yearwheel.se/marknadsplanering"
+      ogImage="https://yearwheel.se/hero-hr-planning.webp"
       
       heroTitle="Marknadsplanering som inspirerar"
       heroSubtitle="Skapa en visuell årsöversikt över kampanjer, innehåll och sociala medier. Samordna teamet och imponera på stakeholders med professionella presentationer."

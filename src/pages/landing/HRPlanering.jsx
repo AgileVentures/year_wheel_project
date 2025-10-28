@@ -25,6 +25,8 @@ export default function HRPlanering() {
       metaTitle="Personalplanering & HR Kalender - YearWheel"
       metaDescription="Digitalt verktyg för personalplanering, semesterplanering och HR-kalender. Få årsöversikt över medarbetare, semester och rekrytering. Prova gratis!"
       keywords="personalplanering verktyg, HR kalender årsplanering, semesterplanering team, medarbetarplanering verktyg, digital HR-planering, HR verktyg, personalavdelning, semesterkalender"
+      canonicalUrl="https://yearwheel.se/hr-planering"
+      ogImage="https://yearwheel.se/hero-hr-planning.webp"
       
       heroTitle="Personalplanering som ger överblick"
       heroSubtitle="Ett visuellt verktyg för HR-avdelningar att planera semester, rekrytering, introduktion och medarbetarutveckling - hela året på en bild."

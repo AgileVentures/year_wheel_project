@@ -25,6 +25,8 @@ export default function Projektplanering() {
       metaTitle="Enkel Projektplanering & Projektkalender - YearWheel"
       metaDescription="Projektplanering som är enklare än Asana men kraftfullare än Excel. Visualisera projektplan och milstolpar i ett årshjul. Prova gratis!"
       keywords="enkel projektplanering, projektkalender årsöversikt, visualisera projektplan, årshjul för projektledning, planeringsverktyg små projekt, enkel projektledning"
+      canonicalUrl="https://yearwheel.se/projektplanering"
+      ogImage="https://yearwheel.se/hero-hr-planning.webp"
       
       heroTitle="Projektplanering utan krångel"
       heroSubtitle="För dig som tycker Asana är för tungt men Excel för enkelt. Visualisera projekt, milstolpar och leveranser i en tydlig årsöversikt."
