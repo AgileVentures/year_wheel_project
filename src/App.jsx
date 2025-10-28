@@ -256,6 +256,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const isInitialLoad = useRef(true);
   // Track if data came from realtime update to prevent save loop
   const isRealtimeUpdate = useRef(false);
+  const isRestoringVersion = useRef(false); // NEW: Block realtime during version restore
   // Track recent save timestamp to ignore own broadcasts (within 3 seconds)
   const lastSaveTimestamp = useRef(0);
   // Track if we're currently saving to prevent realtime reload during save (ref for logic, state for UI)
@@ -511,6 +512,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle realtime data changes from other users
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
+    // CRITICAL: Block ALL realtime updates during version restore
+    if (isRestoringVersion.current) {
+      console.log('[Realtime] Ignoring update during version restore');
+      return;
+    }
+    
     // COMPLETELY IGNORE all events if we're in the middle of saving
     if (isSavingRef.current) {
       return;
@@ -1451,9 +1458,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   const handleRestoreVersion = async (versionData) => {
     try {
-      // CRITICAL: Block realtime updates during version restore to prevent race condition
+      // CRITICAL: Block ALL updates during version restore
+      isRestoringVersion.current = true;
+      isLoadingData.current = true;
+      
+      // Block realtime updates during version restore to prevent race condition
       // Set timestamp to far future to prevent realtime from overwriting restored data
-      lastSaveTimestamp.current = Date.now() + 10000; // Block for 10 seconds
+      lastSaveTimestamp.current = Date.now() + 15000; // Block for 15 seconds
+      
+      console.log('[VersionRestore] Starting version restore - blocking all updates');
       
       // Create a version snapshot of current state before restoring
       if (wheelId) {
@@ -1493,14 +1506,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Save the restored state
       await handleSave();
       
-      // Reset the lastSaveTimestamp after save completes
+      console.log('[VersionRestore] Version restored and saved successfully');
+      
+      // Wait a bit longer before re-enabling updates to ensure database has settled
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Reset the flags after everything is done
       lastSaveTimestamp.current = Date.now();
+      isLoadingData.current = false;
+      isRestoringVersion.current = false;
+      
+      console.log('[VersionRestore] Re-enabled updates after version restore');
       
       setShowVersionHistory(false);
     } catch (error) {
       console.error('Error restoring version:', error);
-      // Reset timestamp on error
+      // Reset flags on error
       lastSaveTimestamp.current = Date.now();
+      isLoadingData.current = false;
+      isRestoringVersion.current = false;
+      
       const event = new CustomEvent('showToast', {
         detail: { message: 'Kunde inte återställa version', type: 'error' }
       });
