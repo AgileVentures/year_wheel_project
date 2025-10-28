@@ -661,7 +661,7 @@ const syncLabels = async (wheelId, pageId, labels) => {
  * Sync items
  * Uses ID mappings to convert temporary IDs to database UUIDs
  */
-const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
+export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
   console.log(`[syncItems] Starting sync for ${items.length} items on page ${pageId}`);
   console.log('[syncItems] Ring ID map:', Array.from(ringIdMap.entries()));
   console.log('[syncItems] Activity ID map:', Array.from(activityIdMap.entries()));

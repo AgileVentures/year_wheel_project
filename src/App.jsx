@@ -50,7 +50,7 @@ const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
-import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem } from "./services/wheelService";
+import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem, syncItems } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence } from "./hooks/useWheelPresence";
@@ -2051,6 +2051,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               
               // MULTI-YEAR IMPORT: Group items by year from startDate
               const itemsByYear = {};
+              const itemsWithoutDate = []; // Items without startDate go to main year
+              
               processedOrgData.items.forEach(item => {
                 if (item.startDate) {
                   const itemYear = new Date(item.startDate).getFullYear();
@@ -2058,8 +2060,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                     itemsByYear[itemYear] = [];
                   }
                   itemsByYear[itemYear].push(item);
+                } else {
+                  // Items without dates go to the file's main year
+                  itemsWithoutDate.push(item);
                 }
               });
+              
+              // Add items without dates to the file's main year
+              const mainYear = parseInt(data.year);
+              if (itemsWithoutDate.length > 0) {
+                if (!itemsByYear[mainYear]) {
+                  itemsByYear[mainYear] = [];
+                }
+                itemsByYear[mainYear].push(...itemsWithoutDate);
+                console.log('[FileImport]', itemsWithoutDate.length, 'items without dates assigned to main year', mainYear);
+              }
               
               const years = Object.keys(itemsByYear).sort();
               console.log('[FileImport] Found items in years:', years);
@@ -2099,75 +2114,105 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               
               // Save rings/activityGroups/labels to each page
               // Then save items to their respective pages
-              let allRingIdMaps = new Map();
-              let allActivityIdMaps = new Map();
-              let allLabelIdMaps = new Map();
               
+              // OPTIMIZATION: Rings/ActivityGroups/Labels are WHEEL-SCOPED (shared across all pages)
+              // So we only need to sync them ONCE, not once per page
+              console.log('[FileImport] Syncing shared data (rings, activity groups, labels)...');
+              
+              // Use the first page to sync shared data
+              const firstPageId = pagesByYear[years[0]];
+              const sharedOrgData = {
+                rings: processedOrgData.rings,
+                activityGroups: processedOrgData.activityGroups,
+                labels: processedOrgData.labels,
+                items: [] // No items yet
+              };
+              
+              const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, sharedOrgData, firstPageId);
+              
+              console.log('[FileImport] Shared data synced. Now saving items to pages...');
+              
+              // Now save items to their respective pages
               for (const yearStr of years) {
                 const year = parseInt(yearStr);
                 const pageId = pagesByYear[year];
                 const yearItems = itemsByYear[yearStr];
                 
-                // Create org data for this year's page
+                console.log(`[FileImport] Saving ${yearItems.length} items to page ${year}`);
+                
+                // Map item foreign keys to database UUIDs
+                const mappedItems = yearItems.map(item => ({
+                  ...item,
+                  ringId: ringIdMap.get(item.ringId) || item.ringId,
+                  activityId: activityIdMap.get(item.activityId) || item.activityId,
+                  labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
+                }));
+                
+                // Sync items only (rings/groups/labels already synced)
+                await syncItems(wheelId, mappedItems, ringIdMap, activityIdMap, labelIdMap, pageId);
+                
+                // Update page's organization_data with all data (including mapped IDs)
                 const yearOrgData = {
-                  rings: processedOrgData.rings,
-                  activityGroups: processedOrgData.activityGroups,
-                  labels: processedOrgData.labels,
-                  items: yearItems
+                  rings: processedOrgData.rings.map(r => ({ ...r, id: ringIdMap.get(r.id) || r.id })),
+                  activityGroups: processedOrgData.activityGroups.map(g => ({ ...g, id: activityIdMap.get(g.id) || g.id })),
+                  labels: processedOrgData.labels.map(l => ({ ...l, id: labelIdMap.get(l.id) || l.id })),
+                  items: mappedItems
                 };
                 
-                // Update page
                 await updatePage(pageId, {
                   organization_data: yearOrgData,
                   year: year
                 });
-                
-                // Save wheel data and get ID mappings
-                const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, yearOrgData, pageId);
-                
-                // Merge ID maps (should be same across pages for rings/activities/labels)
-                ringIdMap.forEach((v, k) => allRingIdMaps.set(k, v));
-                activityIdMap.forEach((v, k) => allActivityIdMaps.set(k, v));
-                labelIdMap.forEach((v, k) => allLabelIdMaps.set(k, v));
               }
               
-              // Update processedOrgData with database UUIDs
+              // Update processedOrgData with database UUIDs for local state
               processedOrgData.rings = processedOrgData.rings.map(ring => ({
                 ...ring,
-                id: allRingIdMaps.get(ring.id) || ring.id
+                id: ringIdMap.get(ring.id) || ring.id
               }));
               
               processedOrgData.activityGroups = processedOrgData.activityGroups.map(group => ({
                 ...group,
-                id: allActivityIdMaps.get(group.id) || group.id
+                id: activityIdMap.get(group.id) || group.id
               }));
               
               processedOrgData.labels = processedOrgData.labels.map(label => ({
                 ...label,
-                id: allLabelIdMaps.get(label.id) || label.id
+                id: labelIdMap.get(label.id) || label.id
               }));
               
               processedOrgData.items = processedOrgData.items.map(item => ({
                 ...item,
-                ringId: allRingIdMaps.get(item.ringId) || item.ringId,
-                activityId: allActivityIdMaps.get(item.activityId) || item.activityId,
-                labelId: item.labelId ? (allLabelIdMaps.get(item.labelId) || item.labelId) : null
+                ringId: ringIdMap.get(item.ringId) || item.ringId,
+                activityId: activityIdMap.get(item.activityId) || item.activityId,
+                labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
               }));
               
               console.log('[FileImport] Successfully imported multi-year data');
               console.log('[FileImport] Total items:', processedOrgData.items.length, 'across', years.length, 'years');
               
-              // Reload pages to reflect new pages created during import
-              if (years.length > 1) {
-                const { data: refreshedPages } = await supabase
-                  .from('wheel_pages')
-                  .select('*')
-                  .eq('wheel_id', wheelId)
-                  .order('page_order');
+              // ALWAYS reload pages to reflect new pages created during import
+              const { data: refreshedPages } = await supabase
+                .from('wheel_pages')
+                .select('*')
+                .eq('wheel_id', wheelId)
+                .order('page_order');
+              
+              if (refreshedPages && refreshedPages.length > 0) {
+                setWheelPages(refreshedPages);
+                console.log('[FileImport] Reloaded pages - now have', refreshedPages.length, 'pages');
                 
-                if (refreshedPages) {
-                  setWheelPages(refreshedPages);
-                  console.log('[FileImport] Reloaded pages - now have', refreshedPages.length, 'pages');
+                // Set currentPageId to the first page with items OR the file's year
+                const fileYear = parseInt(data.year);
+                const pageForFileYear = refreshedPages.find(p => p.year === fileYear);
+                
+                if (pageForFileYear) {
+                  setCurrentPageId(pageForFileYear.id);
+                  console.log('[FileImport] Switched to page for year', fileYear);
+                } else if (refreshedPages[0]) {
+                  // Fallback: use first page
+                  setCurrentPageId(refreshedPages[0].id);
+                  console.log('[FileImport] Switched to first page:', refreshedPages[0].year);
                 }
               }
               
