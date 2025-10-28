@@ -2104,8 +2104,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 if (!pagesByYear[year]) {
                   console.log(`[FileImport] Creating new page for year ${year}...`);
                   
-                  // Find next available page_order
-                  let newPageOrder = 0;
+                  // Find next available page_order (starting from 1, not 0)
+                  let newPageOrder = 1;
                   while (usedPageOrders.has(newPageOrder)) {
                     newPageOrder++;
                   }
