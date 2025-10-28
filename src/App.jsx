@@ -1461,10 +1461,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // CRITICAL: Block ALL updates during version restore
       isRestoringVersion.current = true;
       isLoadingData.current = true;
+      isSavingRef.current = true; // Also block saves
       
       // Block realtime updates during version restore to prevent race condition
-      // Set timestamp to far future to prevent realtime from overwriting restored data
-      lastSaveTimestamp.current = Date.now() + 15000; // Block for 15 seconds
+      lastSaveTimestamp.current = Date.now() + 20000; // Block for 20 seconds
       
       console.log('[VersionRestore] Starting version restore - blocking all updates');
       
@@ -1486,43 +1486,107 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         );
       }
 
-      // Apply the restored data
-      // BATCH title, colors, and organizationData together to prevent race condition
-      const versionUpdates = {};
-      if (versionData.title) versionUpdates.title = versionData.title;
-      if (versionData.colors) versionUpdates.colors = versionData.colors;
-      if (versionData.organizationData) versionUpdates.organizationData = versionData.organizationData;
-      setUndoableStates(versionUpdates);
+      // CRITICAL: Save restored data DIRECTLY to database BEFORE updating state
+      // This ensures database has the restored data before any realtime events can fire
+      console.log('[VersionRestore] Saving restored data to database...');
+      
+      // Save wheel metadata
+      await updateWheel(wheelId, {
+        title: versionData.title,
+        colors: versionData.colors,
+        showWeekRing: versionData.showWeekRing ?? showWeekRing,
+        showMonthRing: versionData.showMonthRing ?? showMonthRing,
+        showRingNames: versionData.showRingNames ?? showRingNames,
+      });
+      
+      // Save organization data to current page
+      if (currentPageId && versionData.organizationData) {
+        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(
+          wheelId, 
+          versionData.organizationData, 
+          currentPageId
+        );
+        
+        // Update organization_data with mapped IDs
+        const updatedOrgData = {
+          ...versionData.organizationData,
+          rings: versionData.organizationData.rings.map(ring => ({
+            ...ring,
+            id: ringIdMap.get(ring.id) || ring.id
+          })),
+          activityGroups: versionData.organizationData.activityGroups.map(group => ({
+            ...group,
+            id: activityIdMap.get(group.id) || group.id
+          })),
+          labels: versionData.organizationData.labels.map(label => ({
+            ...label,
+            id: labelIdMap.get(label.id) || label.id
+          })),
+          items: versionData.organizationData.items.map(item => ({
+            ...item,
+            ringId: ringIdMap.get(item.ringId) || item.ringId,
+            activityId: activityIdMap.get(item.activityId) || item.activityId,
+            labelId: labelIdMap.get(item.labelId) || item.labelId
+          }))
+        };
+        
+        // Update page with restored data
+        await updatePage(currentPageId, {
+          organization_data: updatedOrgData,
+          year: parseInt(versionData.year || year)
+        });
+        
+        console.log('[VersionRestore] Database updated with restored data');
+        
+        // NOW update local state to match database
+        const versionUpdates = {};
+        if (versionData.title) versionUpdates.title = versionData.title;
+        if (versionData.colors) versionUpdates.colors = versionData.colors;
+        versionUpdates.organizationData = updatedOrgData;
+        setUndoableStates(versionUpdates);
+      } else {
+        // No currentPageId - just update state
+        const versionUpdates = {};
+        if (versionData.title) versionUpdates.title = versionData.title;
+        if (versionData.colors) versionUpdates.colors = versionData.colors;
+        if (versionData.organizationData) versionUpdates.organizationData = versionData.organizationData;
+        setUndoableStates(versionUpdates);
+      }
       
       // Clear undo history after version restore (new data context)
       clearHistory();
       
-      // Set non-undoable states separately
+      // Set non-undoable states
       if (versionData.year) setYear(versionData.year.toString());
       if (typeof versionData.showWeekRing === 'boolean') setShowWeekRing(versionData.showWeekRing);
       if (typeof versionData.showMonthRing === 'boolean') setShowMonthRing(versionData.showMonthRing);
       if (typeof versionData.showRingNames === 'boolean') setShowRingNames(versionData.showRingNames);
-
-      // Save the restored state
-      await handleSave();
       
-      console.log('[VersionRestore] Version restored and saved successfully');
+      console.log('[VersionRestore] Version restored successfully');
       
-      // Wait a bit longer before re-enabling updates to ensure database has settled
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for state and database to settle
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Reset the flags after everything is done
+      // Reset flags
       lastSaveTimestamp.current = Date.now();
+      isSavingRef.current = false;
       isLoadingData.current = false;
       isRestoringVersion.current = false;
       
       console.log('[VersionRestore] Re-enabled updates after version restore');
+      
+      // Show success message
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Version återställd!', type: 'success' }
+      });
+      window.dispatchEvent(event);
       
       setShowVersionHistory(false);
     } catch (error) {
       console.error('Error restoring version:', error);
       // Reset flags on error
       lastSaveTimestamp.current = Date.now();
+      isSavingRef.current = false;
       isLoadingData.current = false;
       isRestoringVersion.current = false;
       
