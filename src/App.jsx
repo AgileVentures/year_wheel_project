@@ -2068,6 +2068,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               console.log('[FileImport] Successfully imported multi-year data');
               console.log('[FileImport] Total items:', processedOrgData.items.length, 'across', years.length, 'years');
               
+              // Reload pages to reflect new pages created during import
+              if (years.length > 1) {
+                const { data: refreshedPages } = await supabase
+                  .from('wheel_pages')
+                  .select('*')
+                  .eq('wheel_id', wheelId)
+                  .order('page_order');
+                
+                if (refreshedPages) {
+                  setWheelPages(refreshedPages);
+                  console.log('[FileImport] Reloaded pages - now have', refreshedPages.length, 'pages');
+                }
+              }
+              
               // Show success feedback
               const toastEvent = new CustomEvent('showToast', { 
                 detail: { message: `Fil laddad! ${years.length} år importerade`, type: 'success' } 
