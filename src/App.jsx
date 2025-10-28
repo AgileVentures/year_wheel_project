@@ -2073,11 +2073,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                   itemsByYear[mainYear] = [];
                 }
                 itemsByYear[mainYear].push(...itemsWithoutDate);
-                console.log('[FileImport]', itemsWithoutDate.length, 'items without dates assigned to main year', mainYear);
               }
               
               const years = Object.keys(itemsByYear).sort();
-              console.log('[FileImport] Found items in years:', years);
               
               // Get or create pages for each year
               const { data: existingPages } = await supabase
@@ -2096,22 +2094,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 }
               });
               
-              console.log('[FileImport] Existing pages:', existingPages?.map(p => `${p.year} (order: ${p.page_order})`));
-              
               // Create missing pages
               for (const yearStr of years) {
                 const year = parseInt(yearStr);
                 if (!pagesByYear[year]) {
-                  console.log(`[FileImport] Creating new page for year ${year}...`);
-                  
                   // Find next available page_order (starting from 1, not 0)
                   let newPageOrder = 1;
                   while (usedPageOrders.has(newPageOrder)) {
                     newPageOrder++;
                   }
                   usedPageOrders.add(newPageOrder);
-                  
-                  console.log(`[FileImport] Using page_order: ${newPageOrder}`);
                   
                   const { data: newPage, error: insertError } = await supabase
                     .from('wheel_pages')
@@ -2126,8 +2118,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                     .single();
                   
                   if (insertError) {
-                    console.error(`[FileImport] Error creating page for year ${year}:`, insertError);
-                    
                     // Maybe page already exists? Try to find it
                     const { data: existingPage } = await supabase
                       .from('wheel_pages')
@@ -2137,26 +2127,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                       .single();
                     
                     if (existingPage) {
-                      console.log(`[FileImport] Found existing page for year ${year}, using it`);
                       pagesByYear[year] = existingPage.id;
                     } else {
                       throw new Error(`Could not create or find page for year ${year}: ${insertError.message}`);
                     }
                   } else if (newPage) {
                     pagesByYear[year] = newPage.id;
-                    console.log(`[FileImport] Created new page for year ${year}: ${newPage.id}`);
                   } else {
                     throw new Error(`Failed to create page for year ${year}: no data returned`);
                   }
                 }
               }
               
-              // Save rings/activityGroups/labels to each page
-              // Then save items to their respective pages
-              
               // OPTIMIZATION: Rings/ActivityGroups/Labels are WHEEL-SCOPED (shared across all pages)
               // So we only need to sync them ONCE, not once per page
-              console.log('[FileImport] Syncing shared data (rings, activity groups, labels)...');
               
               // Use the first page to sync shared data
               const firstPageId = pagesByYear[years[0]];
@@ -2169,15 +2153,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               
               const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, sharedOrgData, firstPageId);
               
-              console.log('[FileImport] Shared data synced. Now saving items to pages...');
-              
               // Now save items to their respective pages
               for (const yearStr of years) {
                 const year = parseInt(yearStr);
                 const pageId = pagesByYear[year];
                 const yearItems = itemsByYear[yearStr];
-                
-                console.log(`[FileImport] Saving ${yearItems.length} items to page ${year}`);
                 
                 // Map item foreign keys to database UUIDs
                 const mappedItems = yearItems.map(item => ({
@@ -2227,9 +2207,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
               }));
               
-              console.log('[FileImport] Successfully imported multi-year data');
-              console.log('[FileImport] Total items:', processedOrgData.items.length, 'across', years.length, 'years');
-              
               // ALWAYS reload pages to reflect new pages created during import
               const { data: refreshedPages } = await supabase
                 .from('wheel_pages')
@@ -2239,7 +2216,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               
               if (refreshedPages && refreshedPages.length > 0) {
                 setWheelPages(refreshedPages);
-                console.log('[FileImport] Reloaded pages - now have', refreshedPages.length, 'pages');
                 
                 // Set currentPageId to the first page with items OR the file's year
                 const fileYear = parseInt(data.year);
@@ -2247,11 +2223,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 
                 if (pageForFileYear) {
                   setCurrentPageId(pageForFileYear.id);
-                  console.log('[FileImport] Switched to page for year', fileYear);
                 } else if (refreshedPages[0]) {
                   // Fallback: use first page
                   setCurrentPageId(refreshedPages[0].id);
-                  console.log('[FileImport] Switched to first page:', refreshedPages[0].year);
                 }
               }
               
@@ -2261,7 +2235,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               });
               window.dispatchEvent(toastEvent);
             } catch (saveError) {
-              console.error('[FileImport] Error saving to database:', saveError);
               saveFailed = true;
               const errorEvent = new CustomEvent('showToast', { 
                 detail: { message: 'Fil laddad men kunde inte sparas', type: 'error' } 

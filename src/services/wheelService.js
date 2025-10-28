@@ -662,11 +662,6 @@ const syncLabels = async (wheelId, pageId, labels) => {
  * Uses ID mappings to convert temporary IDs to database UUIDs
  */
 export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
-  console.log(`[syncItems] Starting sync for ${items.length} items on page ${pageId}`);
-  console.log('[syncItems] Ring ID map:', Array.from(ringIdMap.entries()));
-  console.log('[syncItems] Activity ID map:', Array.from(activityIdMap.entries()));
-  console.log('[syncItems] Label ID map:', Array.from(labelIdMap.entries()));
-  
   // Fetch existing items - SCOPED TO PAGE if pageId provided
   let query = supabase
     .from('items')
@@ -686,18 +681,11 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   // Delete removed items (only within the scoped page if pageId provided)
   const toDelete = [...existingIds].filter(id => !currentIds.has(id));
   if (toDelete.length > 0) {
-    console.log(`[syncItems] Deleting ${toDelete.length} items from ${pageId ? `page ${pageId}` : 'wheel'}`);
     await supabase.from('items').delete().in('id', toDelete);
   }
 
   // Upsert items
   for (const item of items) {
-    console.log(`[syncItems] Processing item "${item.name}":`, {
-      id: item.id,
-      ringId: item.ringId,
-      activityId: item.activityId,
-      labelId: item.labelId
-    });
     // Check if item exists in database (not just if it has an ID)
     const isNew = !item.id || item.id.startsWith('item-') || !existingIds.has(item.id);
     
@@ -737,40 +725,26 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       time: item.time || null,
       page_id: item.pageId || pageId || null, // ⚠️ Use item's pageId or fall back to function parameter
     };
-
-    console.log(`[syncItems] Mapped IDs for "${item.name}":`, {
-      ringId: `${item.ringId} -> ${ringId}`,
-      activityId: `${item.activityId} -> ${activityId}`,
-      labelId: item.labelId ? `${item.labelId} -> ${labelId}` : 'null'
-    });
-    
-    console.log(`[syncItems] Item data to save:`, itemData);
     
     try {
       if (isNew) {
-        console.log(`[syncItems] Inserting new item "${item.name}"`);
         const { error } = await supabase.from('items').insert(itemData);
         if (error) {
           console.error(`Error inserting item "${item.name}":`, error);
           throw error;
         }
-        console.log(`[syncItems] ✓ Successfully inserted item "${item.name}"`);
       } else {
-        console.log(`[syncItems] Updating existing item "${item.name}"`);
         const { error } = await supabase.from('items').update(itemData).eq('id', item.id);
         if (error) {
           console.error(`Error updating item "${item.name}":`, error);
           throw error;
         }
-        console.log(`[syncItems] ✓ Successfully updated item "${item.name}"`);
       }
     } catch (err) {
       console.error('Failed to save item:', item, err);
       // Continue with next item instead of failing completely
     }
   }
-  
-  console.log(`[syncItems] Finished syncing ${items.length} items`);
 };
 
 /**
