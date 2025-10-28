@@ -2,6 +2,7 @@ import { X, Plus, Link2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
+import ErrorDisplay from './ErrorDisplay';
 
 function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) {
   const { t } = useTranslation(['editor']);
@@ -18,6 +19,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
   });
 
   const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
   const [accessibleWheels, setAccessibleWheels] = useState([]);
   const [loadingWheels, setLoadingWheels] = useState(false);
   const [selectedWheelPreview, setSelectedWheelPreview] = useState(null);
@@ -27,12 +29,14 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
     const loadWheels = async () => {
       try {
         setLoadingWheels(true);
+        setGeneralError(null);
         const wheels = await fetchAccessibleWheels();
         // Filter out current wheel (can't link to itself)
         const filteredWheels = wheels.filter(w => w.id !== currentWheelId);
         setAccessibleWheels(filteredWheels);
       } catch (error) {
         console.error('Error loading accessible wheels:', error);
+        setGeneralError(error);
       } finally {
         setLoadingWheels(false);
       }
@@ -129,6 +133,17 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+          {/* General Error Display */}
+          {generalError && (
+            <ErrorDisplay
+              message={t('editor:addItemModal.loadError', 'Det gick inte att ladda data')}
+              error={generalError}
+              type="error"
+              onRetry={() => window.location.reload()}
+              onDismiss={() => setGeneralError(null)}
+            />
+          )}
+
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
