@@ -135,7 +135,7 @@ export default function SkolaUtbildning() {
         {
           name: "Gymnasieskolans planering",
           description: "Mall för gymnasiet med betygssättning, APL-perioder och studentexamen.",
-          wheelId: "TODO" // Replace with actual wheel ID when template is created
+          wheelId: "2a8f7d84-40c5-474d-9aa8-612c1060a7fa"
         }
       ]}
       
