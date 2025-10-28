@@ -2082,33 +2082,72 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               // Get or create pages for each year
               const { data: existingPages } = await supabase
                 .from('wheel_pages')
-                .select('id, year')
+                .select('id, year, page_order')
                 .eq('wheel_id', wheelId)
                 .order('year');
               
               const pagesByYear = {};
+              const usedPageOrders = new Set();
+              
               existingPages?.forEach(page => {
                 pagesByYear[page.year] = page.id;
+                if (page.page_order !== null && page.page_order !== undefined) {
+                  usedPageOrders.add(page.page_order);
+                }
               });
+              
+              console.log('[FileImport] Existing pages:', existingPages?.map(p => `${p.year} (order: ${p.page_order})`));
               
               // Create missing pages
               for (const yearStr of years) {
                 const year = parseInt(yearStr);
                 if (!pagesByYear[year]) {
-                  const { data: newPage } = await supabase
+                  console.log(`[FileImport] Creating new page for year ${year}...`);
+                  
+                  // Find next available page_order
+                  let newPageOrder = 0;
+                  while (usedPageOrders.has(newPageOrder)) {
+                    newPageOrder++;
+                  }
+                  usedPageOrders.add(newPageOrder);
+                  
+                  console.log(`[FileImport] Using page_order: ${newPageOrder}`);
+                  
+                  const { data: newPage, error: insertError } = await supabase
                     .from('wheel_pages')
                     .insert({
                       wheel_id: wheelId,
                       year: year,
                       title: `${data.title} ${year}`,
-                      page_order: year - parseInt(data.year),
+                      page_order: newPageOrder,
                       organization_data: { rings: [], activityGroups: [], labels: [], items: [] }
                     })
                     .select()
                     .single();
                   
-                  pagesByYear[year] = newPage.id;
-                  console.log(`[FileImport] Created new page for year ${year}`);
+                  if (insertError) {
+                    console.error(`[FileImport] Error creating page for year ${year}:`, insertError);
+                    
+                    // Maybe page already exists? Try to find it
+                    const { data: existingPage } = await supabase
+                      .from('wheel_pages')
+                      .select('id, year')
+                      .eq('wheel_id', wheelId)
+                      .eq('year', year)
+                      .single();
+                    
+                    if (existingPage) {
+                      console.log(`[FileImport] Found existing page for year ${year}, using it`);
+                      pagesByYear[year] = existingPage.id;
+                    } else {
+                      throw new Error(`Could not create or find page for year ${year}: ${insertError.message}`);
+                    }
+                  } else if (newPage) {
+                    pagesByYear[year] = newPage.id;
+                    console.log(`[FileImport] Created new page for year ${year}: ${newPage.id}`);
+                  } else {
+                    throw new Error(`Failed to create page for year ${year}: no data returned`);
+                  }
                 }
               }
               
