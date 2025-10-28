@@ -130,7 +130,7 @@ export default function SkolaUtbildning() {
         {
           name: "Grundskolans årshjul",
           description: "Anpassad för F-9 med nationella prov, temaveckor och elevaktiviteter.",
-          wheelId: "TODO" // Replace with actual wheel ID when template is created
+          wheelId: "b27feedd-4597-4aa9-b41a-dc7a3d497c6b"
         },
         {
           name: "Gymnasieskolans planering",
