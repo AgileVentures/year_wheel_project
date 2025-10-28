@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Crown, Sparkles, Calendar, Copy, TrendingUp, Users, Zap, Download } from 'lucide-react';
+import { Crown, Sparkles, Calendar, Copy, TrendingUp, Users, Zap, Download, History, MessageSquare, Share2 } from 'lucide-react';
 
 function FeaturesSection() {
   const { t } = useTranslation(['landing']);
@@ -118,6 +118,49 @@ function FeaturesSection() {
             </h3>
             <p className="text-gray-600">
               {t('landing:features.highQualityExport.description')}
+            </p>
+          </div>
+
+          {/* Feature 8 - Version History (PREMIUM) */}
+          <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#2D4EC8] hover:shadow-xl transition-all relative overflow-hidden">
+            <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#1a3d1f] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
+              <Crown size={12} />
+              {t('landing:features.premium')}
+            </div>
+            <div className="w-12 h-12 bg-[#2D4EC8] rounded-sm flex items-center justify-center mb-6">
+              <History className="text-white" size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              {t('landing:features.versionHistory.title')}
+            </h3>
+            <p className="text-gray-600">
+              {t('landing:features.versionHistory.description')}
+            </p>
+          </div>
+
+          {/* Feature 9 - Comments */}
+          <div className="bg-gradient-to-br from-[#9FCB3E]/20 to-white p-8 rounded-sm border border-[#336B3E]/30 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-[#336B3E] rounded-sm flex items-center justify-center mb-6">
+              <MessageSquare className="text-white" size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              {t('landing:features.comments.title')}
+            </h3>
+            <p className="text-gray-600">
+              {t('landing:features.comments.description')}
+            </p>
+          </div>
+
+          {/* Feature 10 - Multiple Share Modes */}
+          <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#00A4A6]/30 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
+              <Share2 className="text-white" size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              {t('landing:features.multipleShareModes.title')}
+            </h3>
+            <p className="text-gray-600">
+              {t('landing:features.multipleShareModes.description')}
             </p>
           </div>
         </div>
