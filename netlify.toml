@@ -5,6 +5,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Enable prerendering for landing pages
+  PRERENDER = "true"
 
 # Headers for performance and security
 [[headers]]
