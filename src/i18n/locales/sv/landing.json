@@ -74,7 +74,19 @@
     },
     "highQualityExport": {
       "title": "Export i hög kvalitet",
-      "description": "Exportera som PNG, SVG, PDF eller JPG. Använd direkt i presentationer, styrgrupper eller skriv ut och sätt på väggen."
+      "description": "Exportera som PNG, SVG, PDF, JPG eller Excel. Använd direkt i presentationer, styrgrupper eller för vidare databearbetning."
+    },
+    "versionHistory": {
+      "title": "Versionshistorik",
+      "description": "Spara och återställ tidigare versioner av dina hjul. Se ändringshistorik och återgå till valfri tidpunkt med ett klick."
+    },
+    "comments": {
+      "title": "Kommentarer och diskussioner",
+      "description": "Kommentera aktiviteter och hjul direkt i editorn. Diskutera med teamet, tagga kollegor och håll alla konversationer samlade på rätt ställe."
+    },
+    "multipleShareModes": {
+      "title": "Flexibel delning",
+      "description": "Dela hjul som statisk visning, interaktivt presentationsläge eller inbäddat på din webbplats. Välj rätt format för varje situation."
     }
   },
   "pricing": {

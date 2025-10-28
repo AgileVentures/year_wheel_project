@@ -1,5 +1,6 @@
 import LandingPageTemplate from './LandingPageTemplate';
-import { Users, Calendar, Clock, BarChart3, UserCheck, Coffee } from 'lucide-react';
+import { Users, Calendar, Clock, BarChart3, UserCheck, Coffee, Sparkles, FileSpreadsheet, History, MessageSquare, Share2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * HR & Personalplanering Landing Page
@@ -7,6 +8,8 @@ import { Users, Calendar, Clock, BarChart3, UserCheck, Coffee } from 'lucide-rea
  * Keywords: personalplanering verktyg, HR kalender årsplanering, semesterplanering team
  */
 export default function HRPlanering() {
+  const { t } = useTranslation('landing');
+  
   const schema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -70,23 +73,33 @@ export default function HRPlanering() {
       features={[
         {
           icon: <Calendar className="w-6 h-6 text-blue-600" />,
-          title: "Semesterkalender",
-          description: "Visualisera alla medarbetares semester i ett årshjul. Färgkoda per avdelning eller roll för enkel översikt."
+          title: t('features.circularOverview.title'),
+          description: t('features.circularOverview.description')
         },
         {
           icon: <Users className="w-6 h-6 text-blue-600" />,
-          title: "Teamsamarbete",
-          description: "Bjud in chefer och kollegor. Alla kan uppdatera sin egen planering medan HR har överblick."
+          title: t('features.realTimeCollaboration.title'),
+          description: t('features.realTimeCollaboration.description')
         },
         {
-          icon: <UserCheck className="w-6 h-6 text-blue-600" />,
-          title: "Rekryteringsprocess",
-          description: "Planera hela rekryteringsflödet från annonsering till onboarding. Följ upp varje steg visuellt."
+          icon: <FileSpreadsheet className="w-6 h-6 text-blue-600" />,
+          title: t('features.highQualityExport.title'),
+          description: t('features.highQualityExport.description')
         },
         {
-          icon: <BarChart3 className="w-6 h-6 text-blue-600" />,
-          title: "Bemanningsanalys",
-          description: "Se snabbt var bemanningen är kritisk. Identifiera perioder med hög frånvaro eller personalbrister."
+          icon: <Sparkles className="w-6 h-6 text-blue-600" />,
+          title: t('features.googleIntegration.title'),
+          description: t('features.googleIntegration.description')
+        },
+        {
+          icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+          title: t('features.comments.title'),
+          description: t('features.comments.description')
+        },
+        {
+          icon: <Share2 className="w-6 h-6 text-blue-600" />,
+          title: t('features.multipleShareModes.title'),
+          description: t('features.multipleShareModes.description')
         }
       ]}
       

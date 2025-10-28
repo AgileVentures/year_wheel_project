@@ -74,7 +74,19 @@
     },
     "highQualityExport": {
       "title": "High-Quality Export",
-      "description": "Export as PNG, SVG, PDF, or JPG. Use directly in presentations, board meetings, or print and hang on the wall."
+      "description": "Export as PNG, SVG, PDF, JPG, or Excel. Use directly in presentations, board meetings, or for further data processing."
+    },
+    "versionHistory": {
+      "title": "Version History",
+      "description": "Save and restore previous versions of your wheels. View change history and revert to any point in time with one click."
+    },
+    "comments": {
+      "title": "Comments and Discussions",
+      "description": "Comment on activities and wheels directly in the editor. Discuss with the team, tag colleagues, and keep all conversations in the right place."
+    },
+    "multipleShareModes": {
+      "title": "Flexible Sharing",
+      "description": "Share wheels as static view, interactive presentation mode, or embedded on your website. Choose the right format for each situation."
     }
   },
   "pricing": {

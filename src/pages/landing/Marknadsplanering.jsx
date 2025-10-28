@@ -1,5 +1,6 @@
 import LandingPageTemplate from './LandingPageTemplate';
-import { Megaphone, Calendar, Image, TrendingUp, Users, Sparkles } from 'lucide-react';
+import { Megaphone, Calendar, Image, TrendingUp, Users, Sparkles, FileSpreadsheet, Copy, MessageSquare, History } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Innehållsplanering & Marknadsföring Landing Page
@@ -7,6 +8,8 @@ import { Megaphone, Calendar, Image, TrendingUp, Users, Sparkles } from 'lucide-
  * Keywords: innehållskalender årsöversikt, planera sociala medier, marknadsplan årshjul
  */
 export default function Marknadsplanering() {
+  const { t } = useTranslation('landing');
+  
   const schema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -69,24 +72,34 @@ export default function Marknadsplanering() {
       
       features={[
         {
+          icon: <Sparkles className="w-6 h-6 text-blue-600" />,
+          title: t('features.aiAssistant.title'),
+          description: t('features.aiAssistant.description')
+        },
+        {
           icon: <Calendar className="w-6 h-6 text-blue-600" />,
-          title: "Visuell innehållskalender",
-          description: "Se hela årets innehållsplanering cirkulärt. Identifiera luckor och optimera publiceringsfrekvens."
+          title: t('features.circularOverview.title'),
+          description: t('features.circularOverview.description')
         },
         {
-          icon: <Megaphone className="w-6 h-6 text-blue-600" />,
-          title: "Kampanjplanering",
-          description: "Kartlägg stora kampanjer, produktlanseringar och events. Förbered content i god tid."
+          icon: <Copy className="w-6 h-6 text-blue-600" />,
+          title: t('features.smartCopy.title'),
+          description: t('features.smartCopy.description')
         },
         {
-          icon: <Image className="w-6 h-6 text-blue-600" />,
-          title: "Multi-kanal översikt",
-          description: "Olika färgkodade ringar för varje kanal - webb, sociala medier, PR, event, nyhetsbrev."
+          icon: <FileSpreadsheet className="w-6 h-6 text-blue-600" />,
+          title: t('features.highQualityExport.title'),
+          description: t('features.highQualityExport.description')
         },
         {
-          icon: <TrendingUp className="w-6 h-6 text-blue-600" />,
-          title: "Säsongsanpassning",
-          description: "Planera innehåll kring högtider, black friday, sommarsemester och bransch-events."
+          icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+          title: t('features.comments.title'),
+          description: t('features.comments.description')
+        },
+        {
+          icon: <History className="w-6 h-6 text-blue-600" />,
+          title: t('features.versionHistory.title'),
+          description: t('features.versionHistory.description')
         }
       ]}
       

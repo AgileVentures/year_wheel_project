@@ -1,5 +1,6 @@
 import LandingPageTemplate from './LandingPageTemplate';
-import { GraduationCap, BookOpen, Calendar, Users, Award, School } from 'lucide-react';
+import { GraduationCap, BookOpen, Calendar, Users, Award, School, FileSpreadsheet, Share2, Sparkles, Copy } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Skola & Utbildning Landing Page
@@ -7,6 +8,8 @@ import { GraduationCap, BookOpen, Calendar, Users, Award, School } from 'lucide-
  * Keywords: läsårsplanering, skolkalender digital, terminsplanering verktyg
  */
 export default function SkolaUtbildning() {
+  const { t } = useTranslation('landing');
+  
   const schema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -70,23 +73,33 @@ export default function SkolaUtbildning() {
       features={[
         {
           icon: <Calendar className="w-6 h-6 text-blue-600" />,
-          title: "Läsårskalender",
-          description: "Visuell översikt med terminer, lov, utvecklingsdagar och skolaktiviteter i ett och samma hjul."
-        },
-        {
-          icon: <BookOpen className="w-6 h-6 text-blue-600" />,
-          title: "Kursplanering",
-          description: "Kartlägg olika ämnens moment, projekt och prov. Se var eleverna har mycket eller lite belastning."
+          title: t('features.circularOverview.title'),
+          description: t('features.circularOverview.description')
         },
         {
           icon: <Users className="w-6 h-6 text-blue-600" />,
-          title: "Föräldramöten & Uppföljning",
-          description: "Planera utvecklingssamtal, föräldramöten och elevvårdskonferenser jämnt över läsåret."
+          title: t('features.realTimeCollaboration.title'),
+          description: t('features.realTimeCollaboration.description')
         },
         {
-          icon: <Award className="w-6 h-6 text-blue-600" />,
-          title: "Events & Temaveckor",
-          description: "Markera luciafirande, jul, studiedagar, exkursioner och elevrådsaktiviteter visuellt."
+          icon: <Copy className="w-6 h-6 text-blue-600" />,
+          title: t('features.smartCopy.title'),
+          description: t('features.smartCopy.description')
+        },
+        {
+          icon: <Share2 className="w-6 h-6 text-blue-600" />,
+          title: t('features.multipleShareModes.title'),
+          description: t('features.multipleShareModes.description')
+        },
+        {
+          icon: <FileSpreadsheet className="w-6 h-6 text-blue-600" />,
+          title: t('features.highQualityExport.title'),
+          description: t('features.highQualityExport.description')
+        },
+        {
+          icon: <Sparkles className="w-6 h-6 text-blue-600" />,
+          title: t('features.googleIntegration.title'),
+          description: t('features.googleIntegration.description')
         }
       ]}
       

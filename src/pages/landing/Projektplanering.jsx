@@ -1,5 +1,6 @@
 import LandingPageTemplate from './LandingPageTemplate';
-import { Layers, Target, CheckCircle2, Users, Zap, TrendingUp } from 'lucide-react';
+import { Layers, Target, CheckCircle2, Users, Zap, TrendingUp, Calendar, Sparkles, Copy, MessageSquare, FileSpreadsheet, History } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Projektplanering Landing Page
@@ -7,6 +8,8 @@ import { Layers, Target, CheckCircle2, Users, Zap, TrendingUp } from 'lucide-rea
  * Keywords: enkel projektplanering, projektkalender årsöversikt, visualisera projektplan
  */
 export default function Projektplanering() {
+  const { t } = useTranslation('landing');
+  
   const schema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -69,24 +72,39 @@ export default function Projektplanering() {
       
       features={[
         {
-          icon: <Layers className="w-6 h-6 text-blue-600" />,
-          title: "Projektfaser",
-          description: "Dela upp projekt i faser: planering, design, utveckling, test, lansering. Se helheten och detaljerna."
+          icon: <Calendar className="w-6 h-6 text-blue-600" />,
+          title: t('features.circularOverview.title'),
+          description: t('features.circularOverview.description')
         },
         {
-          icon: <Target className="w-6 h-6 text-blue-600" />,
-          title: "Milstolpar & Leveranser",
-          description: "Markera viktiga deadlines och leveranser. Få varningar när milstolpar närmar sig."
+          icon: <Sparkles className="w-6 h-6 text-blue-600" />,
+          title: t('features.aiAssistant.title'),
+          description: t('features.aiAssistant.description')
         },
         {
-          icon: <CheckCircle2 className="w-6 h-6 text-blue-600" />,
-          title: "Status-tracking",
-          description: "Färgkoda projekt baserat på status: planerat, pågående, försenat, klart."
+          icon: <Copy className="w-6 h-6 text-blue-600" />,
+          title: t('features.smartCopy.title'),
+          description: t('features.smartCopy.description')
         },
         {
           icon: <Users className="w-6 h-6 text-blue-600" />,
-          title: "Resursplanering",
-          description: "Se vilka projekt som överlappar och identifiera resurskonflikter innan de händer."
+          title: t('features.realTimeCollaboration.title'),
+          description: t('features.realTimeCollaboration.description')
+        },
+        {
+          icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
+          title: t('features.comments.title'),
+          description: t('features.comments.description')
+        },
+        {
+          icon: <FileSpreadsheet className="w-6 h-6 text-blue-600" />,
+          title: t('features.highQualityExport.title'),
+          description: t('features.highQualityExport.description')
+        },
+        {
+          icon: <History className="w-6 h-6 text-blue-600" />,
+          title: t('features.versionHistory.title'),
+          description: t('features.versionHistory.description')
         }
       ]}
       

@@ -446,14 +446,47 @@ function PreviewWheelPage() {
           <div className="flex items-center gap-4">
             {/* Show controls button in presentation mode */}
             {isPresentationMode ? (
-              <button
-                onClick={() => setShowControlDialog(!showControlDialog)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
-                title={t('common:previewWheelPage.showControls')}
-              >
-                <Settings size={16} />
-                <span className="text-sm font-medium">{t('common:previewWheelPage.controls')}</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowControlDialog(!showControlDialog)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
+                  title={t('common:previewWheelPage.showControls')}
+                >
+                  <Settings size={16} />
+                  <span className="text-sm font-medium">{t('common:previewWheelPage.controls')}</span>
+                </button>
+                
+                {/* Page Navigator in presentation mode */}
+                {pages.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPageIndex(currentPageIndex - 1)}
+                      disabled={!canGoPrev}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={t('common:previewWheelPage.previousYear')}
+                    >
+                      <ChevronLeft size={18} className="text-gray-600" />
+                    </button>
+                    
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-sm min-w-[120px]">
+                      <Calendar size={16} className="text-gray-500" />
+                      <span className="font-semibold text-gray-900">{displayYear}</span>
+                      <span className="text-xs text-gray-500 ml-auto">
+                        {currentPageIndex + 1}/{pages.length}
+                      </span>
+                    </div>
+                    
+                    <button
+                      onClick={() => setCurrentPageIndex(currentPageIndex + 1)}
+                      disabled={!canGoNext}
+                      className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={t('common:previewWheelPage.nextYear')}
+                    >
+                      <ChevronRight size={18} className="text-gray-600" />
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <>
                 {/* Copy Template Button (only show for templates) */}
