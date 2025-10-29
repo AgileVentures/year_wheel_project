@@ -111,6 +111,7 @@ class YearWheel {
     this.rotationAngle = 0;
     this.isAnimating = false;
     this.animationFrameId = null; // Track animation frame for proper cleanup
+    this.destroyed = false; // Track if instance has been cleaned up
     this.isDragging = false;
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
@@ -271,6 +272,9 @@ class YearWheel {
 
     // Stop any animations and cancel animation frame
     this.stopSpinning();
+    
+    // Mark instance as destroyed to prevent any pending animations from continuing
+    this.destroyed = true;
     
     // Stop any drag operations
     this.isDragging = false;
@@ -3563,7 +3567,8 @@ class YearWheel {
   }
 
   animateWheel() {
-    if (!this.isAnimating) return; // If animation is stopped, don't animate
+    // Stop immediately if instance is destroyed or animation is stopped
+    if (this.destroyed || !this.isAnimating) return;
 
     this.rotationAngle -= 0.001; // Very slow rotation for viewing activities
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear the canvas
