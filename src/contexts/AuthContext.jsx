@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext } from 'react';
 import { supabase } from '../lib/supabase';
 import { trackSignup } from '../utils/gtm';
+import { trackAffiliateSignup } from '../utils/affiliateTracking';
 
 export const AuthContext = createContext({});
 
@@ -39,6 +40,11 @@ export function AuthProvider({ children }) {
               userId: session.user.id,
               plan: 'free'
             });
+            
+            // Track affiliate signup if applicable (non-blocking)
+            trackAffiliateSignup(session.user.id, supabase).catch(err => 
+              console.error('Affiliate tracking error on OAuth signup:', err)
+            );
             
             setHasTrackedSignup(true);
           } catch (trackError) {
@@ -82,6 +88,9 @@ export function AuthProvider({ children }) {
           userId: data.user.id,
           plan: 'free'
         });
+        
+        // Track affiliate signup if applicable
+        await trackAffiliateSignup(data.user.id, supabase);
       } catch (trackError) {
         console.error('GTM tracking error:', trackError);
         // Don't throw - tracking failure shouldn't block signup

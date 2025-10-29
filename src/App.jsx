@@ -13,6 +13,7 @@ import { useAuth } from "./hooks/useAuth.jsx";
 import { useSubscription } from "./hooks/useSubscription.jsx";
 import { showConfirmDialog, showToast } from "./utils/dialogs";
 import { CHANGE_TYPES, getHistoryLabel, detectOrganizationChange } from "./constants/historyChangeTypes";
+import AffiliateTracker from "./components/AffiliateTracker";
 
 // Lazy load route components for better code splitting
 const LandingPage = lazy(() => import("./components/LandingPage"));
@@ -2739,6 +2740,7 @@ function AppContent() {
         </div>
       </div>
     }>
+      <AffiliateTracker />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
