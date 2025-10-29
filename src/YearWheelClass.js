@@ -3662,14 +3662,16 @@ class YearWheel {
         // Immediate visual feedback - redraw with drag state active
         this.create();
 
-        // CRITICAL: Stop wheel rotation when dragging an activity
-        this.isDragging = false;
-
         return; // Don't start wheel rotation
       }
     }
 
     // If not clicking on activity, start wheel rotation drag
+    // Stop auto-rotation if it's running
+    if (this.isAnimating) {
+      this.stopSpinning();
+    }
+    
     this.isDragging = true;
     this.lastMouseAngle = this.getMouseAngle(event);
     this.dragStartAngle = this.rotationAngle;
