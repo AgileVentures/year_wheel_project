@@ -910,7 +910,7 @@ export default function AdminAffiliates() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('affiliate:admin.amount')}</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('affiliate:admin.status.label')}</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('affiliate:admin.date')}</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('common:actions')}</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('common:labels.actions')}</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
