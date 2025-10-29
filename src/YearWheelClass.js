@@ -4,6 +4,10 @@ import C2S from "canvas2svg";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
+    // Unique instance ID for debugging
+    this.instanceId = Math.random().toString(36).substr(2, 9);
+    console.log(`[YearWheel ${this.instanceId}] Creating new instance`);
+    
     this.canvas = canvas;
     this.context = canvas.getContext("2d");
     this.year = year;
@@ -253,6 +257,7 @@ class YearWheel {
 
   // Cleanup method to remove event listeners
   cleanup() {
+    console.log(`[YearWheel ${this.instanceId}] Cleanup called`);
     if (this.canvas && this.boundHandlers) {
       this.canvas.removeEventListener(
         "mousedown",
@@ -3568,8 +3573,12 @@ class YearWheel {
 
   animateWheel() {
     // Stop immediately if instance is destroyed or animation is stopped
-    if (this.destroyed || !this.isAnimating) return;
+    if (this.destroyed || !this.isAnimating) {
+      console.log(`[YearWheel ${this.instanceId}] Animation stopped - destroyed: ${this.destroyed}, isAnimating: ${this.isAnimating}`);
+      return;
+    }
 
+    console.log(`[YearWheel ${this.instanceId}] Frame - rotationAngle: ${this.rotationAngle.toFixed(4)}`);
     this.rotationAngle -= 0.001; // Very slow rotation for viewing activities
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear the canvas
 
@@ -3582,6 +3591,7 @@ class YearWheel {
   }
 
   startSpinning() {
+    console.log(`[YearWheel ${this.instanceId}] startSpinning - isAnimating: ${this.isAnimating}`);
     if (this.isAnimating) return; // Prevent multiple animations
 
     this.isAnimating = true;
@@ -3589,6 +3599,7 @@ class YearWheel {
   }
 
   stopSpinning() {
+    console.log(`[YearWheel ${this.instanceId}] stopSpinning - frameId: ${this.animationFrameId}`);
     this.isAnimating = false; // Stop the animation
     
     // Cancel any pending animation frame to prevent ghost loops
@@ -3883,9 +3894,16 @@ class YearWheel {
 
   getMouseAngle(event) {
     const rect = this.canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left - this.center.x;
-    const y = event.clientY - rect.top - this.center.y;
-    return Math.atan2(y, x);
+    // Convert screen coordinates to canvas coordinates accounting for scaling
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    const canvasX = (event.clientX - rect.left) * scaleX;
+    const canvasY = (event.clientY - rect.top) * scaleY;
+    
+    // Calculate angle from center
+    const dx = canvasX - this.center.x;
+    const dy = canvasY - this.center.y;
+    return Math.atan2(dy, dx);
   }
 
   handleMouseMove(event) {
