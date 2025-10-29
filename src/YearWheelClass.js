@@ -142,6 +142,9 @@ class YearWheel {
       handleClick: this.handleClick.bind(this),
     };
 
+    // Bind animateWheel once to avoid creating new functions each frame
+    this.boundAnimateWheel = this.animateWheel.bind(this);
+
     // Add event listeners (skip if readonly mode)
     if (!this.readonly) {
       this.canvas.addEventListener("mousedown", this.boundHandlers.startDrag);
@@ -266,8 +269,10 @@ class YearWheel {
       this.canvas.removeEventListener("click", this.boundHandlers.handleClick);
     }
 
-    // Stop any animations
-    this.isAnimating = false;
+    // Stop any animations and cancel animation frame
+    this.stopSpinning();
+    
+    // Stop any drag operations
     this.isDragging = false;
     if (this.dragState) {
       this.dragState.isDragging = false;
@@ -3567,8 +3572,8 @@ class YearWheel {
     this.drawStaticElements();
     this.drawRotatingElements();
 
-    // Store the animation frame ID so we can cancel it properly
-    this.animationFrameId = requestAnimationFrame(this.animateWheel.bind(this)); // Loop the animation
+    // Use the bound function to avoid creating new functions each frame
+    this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
   }
 
   startSpinning() {
