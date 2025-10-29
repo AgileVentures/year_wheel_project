@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { supabase } from '../../lib/supabase';
 import { fetchUserWheels, fetchTeamWheels, createWheel, deleteWheel, duplicateWheel, fetchTemplateWheels, checkIsAdmin } from '../../services/wheelService';
 import { getMyInvitations } from '../../services/teamService';
 import WheelCard from './WheelCard';
@@ -23,7 +24,7 @@ import { showConfirmDialog, showToast } from '../../utils/dialogs';
 import { trackPurchase } from '../../utils/gtm';
 
 // User Menu Dropdown Component
-function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManageSubscription }) {
+function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffiliateMember, onManageSubscription }) {
   const { t } = useTranslation(['dashboard', 'common', 'subscription']);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -120,6 +121,25 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, onManage
               </>
             )}
             
+            {/* Affiliate Dashboard Link */}
+            {isAffiliateMember && (
+              <>
+                <div className="border-t border-gray-200" />
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    window.location.href = '/affiliate';
+                  }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-3 text-blue-600 transition-colors"
+                >
+                  <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  Affiliate Dashboard
+                </button>
+              </>
+            )}
+            
             <div className="border-t border-gray-200" />
             
             <button
@@ -190,7 +210,7 @@ function Dashboard({ onSelectWheel }) {
 function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurrentView, invitationCount, onInvitationAccepted, refreshInvitations }) {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { t } = useTranslation(['dashboard', 'common', 'subscription', 'auth']);
+  const { t } = useTranslation(['dashboard', 'common', 'subscription', 'auth', 'affiliate']);
   const [wheels, setWheels] = useState([]);
   const [teamWheels, setTeamWheels] = useState([]);
   const [templateWheels, setTemplateWheels] = useState([]);
@@ -198,6 +218,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isAffiliateMember, setIsAffiliateMember] = useState(false);
   
   // Subscription state
   const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading, refresh: refreshSubscription } = useUsageLimits();
@@ -326,6 +347,28 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     };
     checkAdmin();
   }, []);
+
+  // Check if user is affiliate member
+  useEffect(() => {
+    const checkAffiliateMembership = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('organization_members')
+        .select(`
+          organization_id,
+          organizations!inner(is_affiliate)
+        `)
+        .eq('user_id', user.id)
+        .eq('organizations.is_affiliate', true)
+        .limit(1);
+      
+      if (!error && data && data.length > 0) {
+        setIsAffiliateMember(true);
+      }
+    };
+    checkAffiliateMembership();
+  }, [user]);
 
   useEffect(() => {
     if (currentView === 'wheels') {
@@ -567,6 +610,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 onSignOut={handleSignOut}
                 isPremium={isPremium}
                 isAdmin={isAdminUser}
+                isAffiliateMember={isAffiliateMember}
                 onManageSubscription={() => setShowSubscriptionSettings(true)}
               />
             </div>
@@ -652,6 +696,55 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                           onUpdate={loadWheels}
                         />
                       ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Affiliate Program CTA (Non-members only) */}
+                {!isAffiliateMember && (
+                  <section>
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-sm border-2 border-blue-200 p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 bg-blue-600 rounded-sm flex items-center justify-center">
+                            <TrendingUp className="w-6 h-6 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {t('affiliate:ctaHeadline')}
+                          </h3>
+                          <p className="text-gray-700 mb-4">
+                            {t('affiliate:ctaDescription')}
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="flex items-start gap-2">
+                              <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-sm text-gray-700">{t('affiliate:perSignup')}</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-sm text-gray-700">{t('affiliate:premiumCommission')}</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-sm text-gray-700">{t('affiliate:cookieWindow')}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => navigate('/affiliate/apply')}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-sm font-semibold transition-colors"
+                          >
+                            {t('affiliate:applyNow')}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </section>
                 )}

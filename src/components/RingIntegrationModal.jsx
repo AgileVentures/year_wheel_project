@@ -657,7 +657,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 </div>
 
                 {sheetHeaders.length > 0 && (
-                  <div className="text-xs bg-green-50 p-3 rounded-md border border-green-200">
+                  <div className="text-xs bg-green-50 p-3 rounded-sm border border-green-200">
                     <div className="flex items-start gap-2">
                       <CheckCircle size={14} className="text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
@@ -678,7 +678,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
                 <div className="grid grid-cols-1 gap-4">
                   {/* Name Column */}
-                  <div className="bg-white p-3 rounded-md border border-gray-200">
+                  <div className="bg-white p-3 rounded-sm border border-gray-200">
                     <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
                       {t('integration:ringIntegrationModal.sheets.columnMapping.activityName')} <span className="text-red-500">*</span>
                       <span className="text-xs text-gray-500 font-normal">{t('integration:ringIntegrationModal.sheets.columnMapping.activityNameHint')}</span>
@@ -687,7 +687,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                       <select
                         value={columnMapping.name}
                         onChange={(e) => setColumnMapping(prev => ({ ...prev, name: parseInt(e.target.value) }))}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       >
                         {sheetHeaders.map((header, index) => (
                           <option key={index} value={index}>
@@ -705,7 +705,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                   {/* Date Columns - Side by Side */}
                   <div className="grid grid-cols-2 gap-3">
                     {/* Start Date Column */}
-                    <div className="bg-white p-3 rounded-md border border-gray-200">
+                    <div className="bg-white p-3 rounded-sm border border-gray-200">
                       <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
                         {t('integration:ringIntegrationModal.sheets.columnMapping.startDate')} <span className="text-red-500">*</span>
                       </label>
@@ -713,7 +713,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                         <select
                           value={columnMapping.startDate}
                           onChange={(e) => setColumnMapping(prev => ({ ...prev, startDate: parseInt(e.target.value) }))}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         >
                           {sheetHeaders.map((header, index) => (
                             <option key={index} value={index}>
@@ -729,7 +729,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                     </div>
 
                     {/* End Date Column */}
-                    <div className="bg-white p-3 rounded-md border border-gray-200">
+                    <div className="bg-white p-3 rounded-sm border border-gray-200">
                       <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
                         {t('integration:ringIntegrationModal.sheets.columnMapping.endDate')} <span className="text-red-500">*</span>
                       </label>
@@ -737,7 +737,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                         <select
                           value={columnMapping.endDate}
                           onChange={(e) => setColumnMapping(prev => ({ ...prev, endDate: parseInt(e.target.value) }))}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         >
                           {sheetHeaders.map((header, index) => (
                             <option key={index} value={index}>
@@ -754,7 +754,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                   </div>
 
                   {/* Description Column (Optional) */}
-                  <div className="bg-white p-3 rounded-md border border-gray-200">
+                  <div className="bg-white p-3 rounded-sm border border-gray-200">
                     <label className="block text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
                       {t('integration:ringIntegrationModal.sheets.columnMapping.descriptionLabel')} <span className="text-xs text-gray-500 font-normal">{t('integration:ringIntegrationModal.sheets.columnMapping.descriptionHint')}</span>
                     </label>
@@ -765,7 +765,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                           ...prev, 
                           description: e.target.value === '' ? null : parseInt(e.target.value) 
                         }))}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       >
                         <option value="">{t('integration:ringIntegrationModal.sheets.columnMapping.noneSelected')}</option>
                         {sheetHeaders.map((header, index) => (
@@ -786,7 +786,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
                 </div>
 
                 {/* Date Format Hint */}
-                <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-md border border-blue-200">
+                <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-sm border border-blue-200">
                   <div className="font-medium text-blue-900 mb-1">💡 {t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatTitle')}</div>
                   <ul className="space-y-0.5 text-blue-800 ml-4 list-disc">
                     <li>{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatBest')}</li>

@@ -113,7 +113,7 @@ export default function UndoHistoryMenu({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-sm shadow-lg z-50 max-h-96 overflow-y-auto">
           <div className="p-2 border-b border-gray-200 bg-gray-50">
             <p className="text-xs font-medium text-gray-600">
               {t('common:actions.recentActions', { defaultValue: 'Senaste åtgärder' })}

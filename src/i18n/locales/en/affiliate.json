@@ -1,0 +1,217 @@
+{
+  "title": "Affiliate Dashboard",
+  "becomeAffiliate": "Become an Affiliate",
+  "applyNow": "Apply Now - Free",
+  "ctaHeadline": "Earn Money with YearWheel",
+  "ctaDescription": "Join our affiliate program and earn commissions by recommending YearWheel to your audience. Perfect for educators, coaches, consultants, and content creators.",
+  "perSignup": "€2 per free signup",
+  "premiumCommission": "50% of premium upgrades",
+  "cookieWindow": "90-day cookie window",
+  
+  "admin": {
+    "title": "Affiliate Management",
+    "organizations": "Organizations",
+    "commissions": "Commissions",
+    "conversions": "Conversions",
+    "loading": "Loading affiliate data...",
+    "organization": "Organization",
+    "contact": "Contact",
+    "members": "Members",
+    "links": "Links",
+    "type": "Type",
+    "amount": "Amount",
+    "date": "Date",
+    "user": "User",
+    "source": "Source",
+    "status": {
+      "label": "Application",
+      "active": "Active",
+      "approved": "Approved",
+      "pending": "Pending",
+      "rejected": "Rejected",
+      "paid": "Paid",
+      "all": "All"
+    },
+    "stats": {
+      "totalCommissions": "Total Commissions",
+      "pendingAmount": "Pending",
+      "paidCount": "Paid",
+      "totalAmount": "Total Amount",
+      "totalConversions": "Total Conversions",
+      "clicks": "Clicks",
+      "signups": "Signups",
+      "upgrades": "Upgrades",
+      "conversionRate": "Conversion Rate",
+      "freeSignups": "Free Signups",
+      "premiumUpgrades": "Premium Upgrades"
+    },
+    "tables": {
+      "commissionPayouts": "Commission Payouts",
+      "noCommissions": "No commissions found",
+      "conversionTracking": "Recent Conversions",
+      "noConversions": "No conversions found",
+      "link": "Link",
+      "landingPage": "Landing Page",
+      "utmSource": "UTM Source",
+      "free": "Free",
+      "premium": "Premium"
+    },
+    "tooltips": {
+      "paymentVerified": "Payment details verified"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "reset": "Reset",
+      "verify": "Mark as Verified",
+      "unverify": "Mark as Unverified"
+    },
+    "details": {
+      "application": "Application Details",
+      "payment": "Payment Details",
+      "billing": "Billing Address",
+      "organizationInfo": "Organization Information",
+      "paymentDetails": "Payment Details",
+      "website": "Website",
+      "contactName": "Contact Person",
+      "contactEmail": "Email",
+      "created": "Created",
+      "notes": "Notes",
+      "promotionPlan": "Promotion Plan",
+      "submitted": "Submitted",
+      "reviewed": "Reviewed",
+      "rejectionReason": "Rejection Reason",
+      "termsAccepted": "Terms Accepted",
+      "paymentMethod": "Payment Method",
+      "accountHolder": "Account Holder",
+      "accountName": "Account Name",
+      "bank": "Bank",
+      "bankName": "Bank Name",
+      "iban": "IBAN",
+      "taxId": "VAT/Tax ID",
+      "address": "Address",
+      "paymentEmail": "Payment Email",
+      "notSet": "Not set"
+    },
+    "dialogs": {
+      "approve": {
+        "title": "Approve Affiliate Application",
+        "message": "This will activate {{orgName}}'s affiliate account and allow them to create tracking links.\n\nDo you want to approve this application?",
+        "confirmText": "Approve",
+        "success": "Successfully approved {{orgName}}'s affiliate application",
+        "error": "Failed to approve application"
+      },
+      "reject": {
+        "title": "Reject Affiliate Application",
+        "message": "Please provide a reason for rejecting {{orgName}}'s application. This will be visible to the applicant.",
+        "placeholder": "Enter rejection reason...",
+        "confirmText": "Reject",
+        "cancelText": "Cancel",
+        "success": "Application rejected",
+        "error": "Failed to reject application",
+        "reasonRequired": "Rejection reason is required"
+      },
+      "reset": {
+        "title": "Reset Affiliate Data",
+        "message": "⚠️ WARNING: Reset affiliate data for {{orgName}}\n\nThis will permanently delete:\n• All affiliate links\n• All conversion tracking data\n• All commission records\n\nThe organization itself will remain, but all affiliate data will be wiped.\n\nType \"RESET\" to confirm this action.",
+        "confirmPlaceholder": "Type RESET to confirm",
+        "confirmText": "Reset Data",
+        "success": "Affiliate data reset successfully",
+        "error": "Failed to reset affiliate data",
+        "cancelled": "Reset cancelled - confirmation text did not match"
+      },
+      "verifyPayment": {
+        "success": "Payment details marked as {{status}}",
+        "verified": "verified",
+        "unverified": "unverified"
+      },
+      "toggleStatus": {
+        "error": "Failed to update affiliate status"
+      }
+    },
+    "noOrganizations": "No affiliate organizations yet"
+  },
+  
+  "dashboard": {
+    "overview": "Overview",
+    "links": "Links",
+    "commissions": "Commissions",
+    "settings": "Settings",
+    "statusBanner": {
+      "pending": {
+        "title": "Application Under Review",
+        "message": "Your affiliate application is being reviewed by our team. We typically respond within 24 hours. You'll receive an email once your application has been processed."
+      },
+      "rejected": {
+        "title": "Application Not Approved",
+        "message": "Unfortunately, your affiliate application was not approved at this time."
+      }
+    }
+  },
+  
+  "application": {
+    "title": "Apply to Become a YearWheel Affiliate",
+    "subtitle": "Earn commissions by promoting YearWheel. We'll review your application within 24 hours.",
+    "benefits": {
+      "title": "Program Benefits:",
+      "perSignup": "per free account signup",
+      "commissionFirst": "commission on first premium payment",
+      "cookieTracking": "90-day cookie tracking window",
+      "monthlyPayouts": "Monthly payouts via bank transfer or PayPal",
+      "realtimeDashboard": "Real-time tracking dashboard"
+    },
+    "form": {
+      "orgName": {
+        "label": "Organization Name",
+        "placeholder": "Your company, blog, or personal brand name"
+      },
+      "description": {
+        "label": "Organization Description",
+        "placeholder": "Brief description of your organization or platform"
+      },
+      "website": {
+        "label": "Primary Website URL",
+        "placeholder": "https://yourwebsite.com",
+        "help": "Your main website, blog, or social media profile"
+      },
+      "promotionPlan": {
+        "label": "How will you promote YearWheel?",
+        "placeholder": "Describe your promotion channels and strategy (e.g., blog posts, YouTube videos, social media, email newsletter, etc.)"
+      },
+      "email": {
+        "label": "Contact Email"
+      },
+      "prohibitedWarning": {
+        "title": "Please Note:",
+        "message": "We do not accept affiliates promoting through content related to adult/sexual content, weapons, illegal activities, political extremism, or misleading practices."
+      },
+      "terms": {
+        "label": "I have read and agree to the",
+        "link": "Affiliate Terms & Conditions",
+        "required": "*"
+      }
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "submit": "Submit Application",
+      "submitting": "Submitting...",
+      "acceptTerms": "I Accept These Terms"
+    },
+    "timeline": {
+      "review": "✓ Application review within 24 hours",
+      "notification": "✓ Email notification upon approval",
+      "access": "✓ Instant access to affiliate dashboard"
+    },
+    "termsModal": {
+      "title": "Affiliate Terms & Conditions",
+      "close": "Close"
+    },
+    "messages": {
+      "termsRequired": "Please accept the Terms & Conditions",
+      "success": "Application submitted successfully! You will receive a response within 24 hours.",
+      "error": "Failed to submit application"
+    }
+  }
+}

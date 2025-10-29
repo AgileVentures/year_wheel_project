@@ -203,7 +203,7 @@ Alla landningssidor använder just nu: `/hero-hr-planning.webp`
 <img 
   src={heroImage} 
   alt={heroTitle}  // ✅ Använder H1 som alt text
-  className="w-full h-auto rounded-lg shadow-2xl"
+  className="w-full h-auto rounded-sm shadow-2xl"
 />
 ```
 
@@ -215,7 +215,7 @@ Alla landningssidor använder just nu: `/hero-hr-planning.webp`
   loading="lazy"  // Lazy load images
   width="1200"    // Explicit dimensions (CLS förbättring)
   height="800"
-  className="w-full h-auto rounded-lg shadow-2xl"
+  className="w-full h-auto rounded-sm shadow-2xl"
 />
 ```
 

@@ -201,7 +201,7 @@ export default function LandingPageTemplate({
                 <img 
                   src={heroImage} 
                   alt={heroTitle}
-                  className="w-full h-auto rounded-lg shadow-2xl"
+                  className="w-full h-auto rounded-sm shadow-2xl"
                 />
               </div>
             )}
@@ -240,8 +240,8 @@ export default function LandingPageTemplate({
             </h2>
             <div className="grid md:grid-cols-2 gap-8">
               {features.map((feature, idx) => (
-                <div key={idx} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <div key={idx} className="bg-white p-6 rounded-sm shadow-sm border border-gray-200">
+                  <div className="w-12 h-12 bg-blue-100 rounded-sm flex items-center justify-center mb-4">
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
@@ -294,7 +294,7 @@ export default function LandingPageTemplate({
             
             <div className="grid md:grid-cols-3 gap-8">
               {templates.map((template, idx) => (
-                <div key={idx} className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+                <div key={idx} className="bg-white p-6 rounded-sm shadow-md hover:shadow-xl transition-shadow">
                   <h3 className="font-semibold text-gray-900 mb-2">{template.name}</h3>
                   <p className="text-gray-600 text-sm mb-4">{template.description}</p>
                   {template.wheelId ? (
@@ -325,7 +325,7 @@ export default function LandingPageTemplate({
       {testimonial && (
         <section className="py-16 bg-white">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-8 rounded-lg">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-8 rounded-sm">
               <p className="text-xl text-gray-800 italic mb-6">
                 "{testimonial.quote}"
               </p>

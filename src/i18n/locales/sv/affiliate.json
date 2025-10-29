@@ -1,0 +1,217 @@
+{
+  "title": "Affiliatepanel",
+  "becomeAffiliate": "Bli Affiliate",
+  "applyNow": "Ansök Nu - Gratis",
+  "ctaHeadline": "Tjäna Pengar med YearWheel",
+  "ctaDescription": "Gå med i vårt affiliateprogram och tjäna provision genom att rekommendera YearWheel till din publik. Perfekt för lärare, coacher, konsulter och innehållsskapare.",
+  "perSignup": "€2 per gratis registrering",
+  "premiumCommission": "50% av premiumuppgraderingar",
+  "cookieWindow": "90 dagars cookie-fönster",
+  
+  "admin": {
+    "title": "Affiliatehantering",
+    "organizations": "Organisationer",
+    "commissions": "Provisioner",
+    "conversions": "Konverteringar",
+    "loading": "Laddar affiliatedata...",
+    "organization": "Organisation",
+    "contact": "Kontakt",
+    "members": "Medlemmar",
+    "links": "Länkar",
+    "type": "Typ",
+    "amount": "Belopp",
+    "date": "Datum",
+    "user": "Användare",
+    "source": "Källa",
+    "status": {
+      "label": "Ansökan",
+      "active": "Aktiv",
+      "approved": "Godkänd",
+      "pending": "Väntande",
+      "rejected": "Avvisad",
+      "paid": "Betald",
+      "all": "Alla"
+    },
+    "stats": {
+      "totalCommissions": "Totala Provisioner",
+      "pendingAmount": "Väntande",
+      "paidCount": "Betalda",
+      "totalAmount": "Totalt Belopp",
+      "totalConversions": "Totala Konverteringar",
+      "clicks": "Klick",
+      "signups": "Registreringar",
+      "upgrades": "Uppgraderingar",
+      "conversionRate": "Konverteringsgrad",
+      "freeSignups": "Gratis Registreringar",
+      "premiumUpgrades": "Premiumuppgraderingar"
+    },
+    "tables": {
+      "commissionPayouts": "Provisionsutbetalningar",
+      "noCommissions": "Inga provisioner hittades",
+      "conversionTracking": "Senaste Konverteringar",
+      "noConversions": "Inga konverteringar hittades",
+      "link": "Länk",
+      "landingPage": "Landningssida",
+      "utmSource": "UTM-källa",
+      "free": "Gratis",
+      "premium": "Premium"
+    },
+    "tooltips": {
+      "paymentVerified": "Betalningsuppgifter verifierade"
+    },
+    "actions": {
+      "approve": "Godkänn",
+      "reject": "Avvisa",
+      "activate": "Aktivera",
+      "deactivate": "Inaktivera",
+      "reset": "Återställ",
+      "verify": "Markera som Verifierad",
+      "unverify": "Markera som Overifierad"
+    },
+    "details": {
+      "application": "Ansökningsdetaljer",
+      "payment": "Betalningsuppgifter",
+      "billing": "Faktureringsadress",
+      "organizationInfo": "Organisationsinformation",
+      "paymentDetails": "Betalningsuppgifter",
+      "website": "Webbplats",
+      "contactName": "Kontaktperson",
+      "contactEmail": "E-post",
+      "created": "Skapad",
+      "notes": "Anteckningar",
+      "promotionPlan": "Marknadsföringsplan",
+      "submitted": "Inskickad",
+      "reviewed": "Granskad",
+      "rejectionReason": "Avslagsorsak",
+      "termsAccepted": "Villkor Accepterade",
+      "paymentMethod": "Betalningsmetod",
+      "accountHolder": "Kontoinnehavare",
+      "accountName": "Kontonamn",
+      "bank": "Bank",
+      "bankName": "Banknamn",
+      "iban": "IBAN",
+      "taxId": "Organisations-/Skattenummer",
+      "address": "Adress",
+      "paymentEmail": "Betalningsepost",
+      "notSet": "Ej angiven"
+    },
+    "dialogs": {
+      "approve": {
+        "title": "Godkänn Affiliateansökan",
+        "message": "Detta kommer att aktivera {{orgName}}s affiliatekonto och tillåta dem att skapa spårningslänkar.\n\nVill du godkänna denna ansökan?",
+        "confirmText": "Godkänn",
+        "success": "{{orgName}}s affiliateansökan har godkänts",
+        "error": "Kunde inte godkänna ansökan"
+      },
+      "reject": {
+        "title": "Avvisa Affiliateansökan",
+        "message": "Ange en anledning för att avvisa {{orgName}}s ansökan. Detta kommer att vara synligt för sökanden.",
+        "placeholder": "Ange avslagsorsak...",
+        "confirmText": "Avvisa",
+        "cancelText": "Avbryt",
+        "success": "Ansökan avvisad",
+        "error": "Kunde inte avvisa ansökan",
+        "reasonRequired": "Avslagsorsak krävs"
+      },
+      "reset": {
+        "title": "Återställ Affiliatedata",
+        "message": "⚠️ VARNING: Återställ affiliatedata för {{orgName}}\n\nDetta kommer permanent radera:\n• Alla affiliatelänkar\n• All konverteringsspårningsdata\n• Alla provisionsuppgifter\n\nOrganisationen kommer att finnas kvar, men all affiliatedata kommer att raderas.\n\nSkriv \"RESET\" för att bekräfta denna åtgärd.",
+        "confirmPlaceholder": "Skriv RESET för att bekräfta",
+        "confirmText": "Återställ Data",
+        "success": "Affiliatedata har återställts",
+        "error": "Kunde inte återställa affiliatedata",
+        "cancelled": "Återställning avbruten - bekräftelsetexten stämde inte"
+      },
+      "verifyPayment": {
+        "success": "Betalningsuppgifter markerade som {{status}}",
+        "verified": "verifierade",
+        "unverified": "overifierade"
+      },
+      "toggleStatus": {
+        "error": "Kunde inte uppdatera affiliatestatus"
+      }
+    },
+    "noOrganizations": "Inga affiliateorganisationer ännu"
+  },
+  
+  "dashboard": {
+    "overview": "Översikt",
+    "links": "Länkar",
+    "commissions": "Provisioner",
+    "settings": "Inställningar",
+    "statusBanner": {
+      "pending": {
+        "title": "Ansökan Granskas",
+        "message": "Din affiliateansökan granskas av vårt team. Vi svarar normalt inom 24 timmar. Du får ett e-postmeddelande när din ansökan har behandlats."
+      },
+      "rejected": {
+        "title": "Ansökan Ej Godkänd",
+        "message": "Tyvärr godkändes inte din affiliateansökan för tillfället."
+      }
+    }
+  },
+  
+  "application": {
+    "title": "Ansök om att Bli YearWheel Affiliate",
+    "subtitle": "Tjäna provisioner genom att marknadsföra YearWheel. Vi granskar din ansökan inom 24 timmar.",
+    "benefits": {
+      "title": "Programfördelar:",
+      "perSignup": "per gratis registrering",
+      "commissionFirst": "provision på första premiuminbetalningen",
+      "cookieTracking": "90 dagars cookie-spårning",
+      "monthlyPayouts": "Månatliga utbetalningar via banköverföring eller PayPal",
+      "realtimeDashboard": "Realtidsspårningspanel"
+    },
+    "form": {
+      "orgName": {
+        "label": "Organisationsnamn",
+        "placeholder": "Ditt företag, blogg eller personliga varumärke"
+      },
+      "description": {
+        "label": "Organisationsbeskrivning",
+        "placeholder": "Kort beskrivning av din organisation eller plattform"
+      },
+      "website": {
+        "label": "Primär webbplats-URL",
+        "placeholder": "https://dinwebbplats.se",
+        "help": "Din huvudsakliga webbplats, blogg eller sociala medieprofil"
+      },
+      "promotionPlan": {
+        "label": "Hur kommer du att marknadsföra YearWheel?",
+        "placeholder": "Beskriv dina marknadsföringskanaler och strategi (t.ex. blogginlägg, YouTube-videos, sociala medier, e-postnyhetsbrev, etc.)"
+      },
+      "email": {
+        "label": "Kontakt-e-post"
+      },
+      "prohibitedWarning": {
+        "title": "Observera:",
+        "message": "Vi accepterar inte affiliates som marknadsför genom innehåll relaterat till vuxen/sexuellt innehåll, vapen, olagliga aktiviteter, politisk extremism eller vilseledande metoder."
+      },
+      "terms": {
+        "label": "Jag har läst och godkänner",
+        "link": "Affiliatevillkoren",
+        "required": "*"
+      }
+    },
+    "buttons": {
+      "cancel": "Avbryt",
+      "submit": "Skicka ansökan",
+      "submitting": "Skickar...",
+      "acceptTerms": "Jag accepterar"
+    },
+    "timeline": {
+      "review": "✓ Ansökningsgranskning inom 24 timmar",
+      "notification": "✓ E-postmeddelande vid godkännande",
+      "access": "✓ Omedelbar åtkomst till affiliatepanel"
+    },
+    "termsModal": {
+      "title": "Affiliatevillkor",
+      "close": "Stäng"
+    },
+    "messages": {
+      "termsRequired": "Vänligen acceptera villkoren",
+      "success": "Ansökan inskickad! Du får svar inom 24 timmar.",
+      "error": "Kunde inte skicka ansökan"
+    }
+  }
+}

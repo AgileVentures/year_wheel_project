@@ -5,11 +5,13 @@ import LanguageSwitcher from '../LanguageSwitcher';
 import AdminStats from './AdminStats';
 import AdminUsersTable from './AdminUsersTable';
 import AdminActivity from './AdminActivity';
+import AdminAffiliates from './AdminAffiliates';
 import {
   Activity,
   TrendingUp,
   Shield,
   Users,
+  DollarSign,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -193,6 +195,17 @@ export default function AdminPanel() {
               <TrendingUp size={16} className="inline mr-2" />
               {t('activity')}
             </button>
+            <button
+              onClick={() => setActiveTab('affiliates')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'affiliates'
+                  ? 'border-gray-900 text-gray-900'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <DollarSign size={16} className="inline mr-2" />
+              Affiliates
+            </button>
           </div>
         </div>
       </div>
@@ -218,6 +231,10 @@ export default function AdminPanel() {
 
         {activeTab === 'activity' && (
           <AdminActivity recentActivity={recentActivity} />
+        )}
+
+        {activeTab === 'affiliates' && (
+          <AdminAffiliates />
         )}
       </div>
     </div>

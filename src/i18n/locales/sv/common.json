@@ -59,7 +59,8 @@
     "selectTeam": "Välj team",
     "personal": "Personligt hjul",
     "teamWheelInfo": "Team-hjul kan ses av alla teammedlemmar",
-    "none": "Ingen"
+    "none": "Ingen",
+    "actions": "Åtgärder"
   },
   "messages": {
     "saved": "Sparad!",

@@ -27,6 +27,8 @@ const SupportPage = lazy(() => import("./components/SupportPage"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
 const EmbedWheel = lazy(() => import("./components/EmbedWheel"));
+const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
+const AffiliateApplicationForm = lazy(() => import("./pages/AffiliateApplicationForm"));
 
 // Keyword-optimized landing pages
 const HRPlanering = lazy(() => import("./pages/landing/HRPlanering"));
@@ -2772,6 +2774,16 @@ function AppContent() {
         <Route path="/forecasts" element={
           <ProtectedRoute>
             <RevenueForecast />
+          </ProtectedRoute>
+        } />
+        <Route path="/affiliate" element={
+          <ProtectedRoute>
+            <AffiliateDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/affiliate/apply" element={
+          <ProtectedRoute>
+            <AffiliateApplicationForm />
           </ProtectedRoute>
         } />
         <Route path="/wheel/:wheelId" element={
