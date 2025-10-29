@@ -4,10 +4,6 @@ import C2S from "canvas2svg";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
-    // Unique instance ID for debugging
-    this.instanceId = Math.random().toString(36).substr(2, 9);
-    console.log(`[YearWheel ${this.instanceId}] Creating new instance`);
-    
     this.canvas = canvas;
     this.context = canvas.getContext("2d");
     this.year = year;
@@ -114,8 +110,8 @@ class YearWheel {
     ];
     this.rotationAngle = 0;
     this.isAnimating = false;
-    this.animationFrameId = null; // Track animation frame for proper cleanup
-    this.destroyed = false; // Track if instance has been cleaned up
+    this.animationFrameId = null;
+    this.lastAnimationTime = 0;
     this.isDragging = false;
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
@@ -257,7 +253,6 @@ class YearWheel {
 
   // Cleanup method to remove event listeners
   cleanup() {
-    console.log(`[YearWheel ${this.instanceId}] Cleanup called`);
     if (this.canvas && this.boundHandlers) {
       this.canvas.removeEventListener(
         "mousedown",
@@ -275,13 +270,8 @@ class YearWheel {
       this.canvas.removeEventListener("click", this.boundHandlers.handleClick);
     }
 
-    // Stop any animations and cancel animation frame
+    // Stop any animations
     this.stopSpinning();
-    
-    // Mark instance as destroyed to prevent any pending animations from continuing
-    this.destroyed = true;
-    
-    // Stop any drag operations
     this.isDragging = false;
     if (this.dragState) {
       this.dragState.isDragging = false;
@@ -3572,41 +3562,53 @@ class YearWheel {
   }
 
   animateWheel() {
-    // Stop immediately if instance is destroyed or animation is stopped
-    if (this.destroyed || !this.isAnimating) {
-      console.log(`[YearWheel ${this.instanceId}] Animation stopped - destroyed: ${this.destroyed}, isAnimating: ${this.isAnimating}`);
+    if (!this.isAnimating) return;
+
+    // Time-based rotation to keep visual speed consistent regardless of frame rate
+    const now = performance.now();
+    
+    // First frame - just set the time and request next frame
+    if (!this.lastAnimationTime) {
+      this.lastAnimationTime = now;
+      this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
       return;
     }
+    
+    const delta = now - this.lastAnimationTime;
+    
+    // Cap delta to prevent huge jumps when tab is inactive or computer sleeps
+    // Max 100ms per frame (roughly 10fps minimum)
+    const cappedDelta = Math.min(delta, 100);
+    
+    this.lastAnimationTime = now;
 
-    console.log(`[YearWheel ${this.instanceId}] Frame - rotationAngle: ${this.rotationAngle.toFixed(4)}`);
-    this.rotationAngle -= 0.001; // Very slow rotation for viewing activities
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear the canvas
+    // Smooth rotation: 0.15 radians per second (~8.6°/s, full rotation in ~42 seconds)
+    const rotationPerSecond = 0.15;
+    const rotationThisFrame = (rotationPerSecond * cappedDelta) / 1000;
+    this.rotationAngle -= rotationThisFrame;
 
-    // Redraw everything
-    this.drawStaticElements();
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawRotatingElements();
+    this.drawStaticElements();
 
-    // Use the bound function to avoid creating new functions each frame
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
   }
 
   startSpinning() {
-    console.log(`[YearWheel ${this.instanceId}] startSpinning - isAnimating: ${this.isAnimating}`);
-    if (this.isAnimating) return; // Prevent multiple animations
+    if (this.isAnimating) return;
 
     this.isAnimating = true;
-    this.animateWheel(); // Start the animation loop
+    this.lastAnimationTime = 0;
+    this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
   }
 
   stopSpinning() {
-    console.log(`[YearWheel ${this.instanceId}] stopSpinning - frameId: ${this.animationFrameId}`);
-    this.isAnimating = false; // Stop the animation
-    
-    // Cancel any pending animation frame to prevent ghost loops
+    this.isAnimating = false;
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+    this.lastAnimationTime = 0;
   }
 
   startDrag(event) {
@@ -3622,81 +3624,102 @@ class YearWheel {
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
 
-    // Check if click is on any activity
-    for (const itemRegion of this.clickableItems) {
-      if (this.isPointInItemRegion(x, y, itemRegion)) {
-        // Start activity drag
-        const dragMode = this.detectDragZone(x, y, itemRegion);
-        const freshItem = this.organizationData.items.find(
-          (i) => i.id === itemRegion.item.id
-        );
+    // Calculate distance from center to check if we're in the activity ring area
+    const dx = x - this.center.x;
+    const dy = y - this.center.y;
+    const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
 
-        // Calculate mouse angle at drag start in SCREEN coordinates
-        // We'll draw the preview in rotated context, so use raw screen angle
-        const dx = x - this.center.x;
-        const dy = y - this.center.y;
-        let startMouseAngle = Math.atan2(dy, dx);
+    // Don't allow ANY interaction if clicking in the center circle
+    if (distanceFromCenter <= this.minRadius) {
+      return; // Early exit - no rotation, no activity drag
+    }
 
-        // Normalize to 0-2π
-        while (startMouseAngle < 0) startMouseAngle += Math.PI * 2;
-        while (startMouseAngle >= Math.PI * 2) startMouseAngle -= Math.PI * 2;
+    // Only check activities if we're outside the center circle (minRadius)
+    if (distanceFromCenter > this.minRadius) {
+      // Check if click is on any activity
+      for (const itemRegion of this.clickableItems) {
+        if (this.isPointInItemRegion(x, y, itemRegion)) {
+          // Start activity drag
+          const dragMode = this.detectDragZone(x, y, itemRegion);
+          const freshItem = this.organizationData.items.find(
+            (i) => i.id === itemRegion.item.id
+          );
 
-        // Convert stored angles (non-rotated) to screen angles (rotated) for preview
-        const screenStartAngle = itemRegion.startAngle + this.rotationAngle;
-        const screenEndAngle = itemRegion.endAngle + this.rotationAngle;
+          // Calculate mouse angle at drag start in SCREEN coordinates
+          // We'll draw the preview in rotated context, so use raw screen angle
+          let startMouseAngle = Math.atan2(dy, dx);
 
-        this.dragState = {
-          isDragging: true,
-          dragMode: dragMode,
-          draggedItem: freshItem,
-          draggedItemRegion: itemRegion,
-          startMouseAngle: startMouseAngle,
-          currentMouseAngle: startMouseAngle,
-          initialStartAngle: screenStartAngle, // Screen coordinates
-          initialEndAngle: screenEndAngle, // Screen coordinates
-          previewStartAngle: screenStartAngle, // Screen coordinates
-          previewEndAngle: screenEndAngle, // Screen coordinates
-        };
+          // Normalize to 0-2π
+          while (startMouseAngle < 0) startMouseAngle += Math.PI * 2;
+          while (startMouseAngle >= Math.PI * 2) startMouseAngle -= Math.PI * 2;
 
-        // Notify parent that drag has started (for undo/redo batch mode)
-        if (this.onDragStart) {
-          this.onDragStart();
+          // Convert stored angles (non-rotated) to screen angles (rotated) for preview
+          const screenStartAngle = itemRegion.startAngle + this.rotationAngle;
+          const screenEndAngle = itemRegion.endAngle + this.rotationAngle;
+
+          this.dragState = {
+            isDragging: true,
+            dragMode: dragMode,
+            draggedItem: freshItem,
+            draggedItemRegion: itemRegion,
+            startMouseAngle: startMouseAngle,
+            currentMouseAngle: startMouseAngle,
+            initialStartAngle: screenStartAngle, // Screen coordinates
+            initialEndAngle: screenEndAngle, // Screen coordinates
+            previewStartAngle: screenStartAngle, // Screen coordinates
+            previewEndAngle: screenEndAngle, // Screen coordinates
+          };
+
+          // Notify parent that drag has started (for undo/redo batch mode)
+          if (this.onDragStart) {
+            this.onDragStart();
+          }
+
+          // Set cursor based on drag mode
+          if (dragMode === "resize-start" || dragMode === "resize-end") {
+            this.canvas.style.cursor = "ew-resize";
+          } else {
+            this.canvas.style.cursor = "grabbing"; // Use grabbing cursor for better UX
+          }
+
+          // Immediate visual feedback - redraw with drag state active
+          this.create();
+
+          return; // Don't start wheel rotation
         }
-
-        // Set cursor based on drag mode
-        if (dragMode === "resize-start" || dragMode === "resize-end") {
-          this.canvas.style.cursor = "ew-resize";
-        } else {
-          this.canvas.style.cursor = "grabbing"; // Use grabbing cursor for better UX
-        }
-
-        // Immediate visual feedback - redraw with drag state active
-        this.create();
-
-        return; // Don't start wheel rotation
       }
+      
+      // If not clicking on an activity but outside center, start wheel rotation drag
+      // This allows rotating the wheel by dragging the month/week rings or empty spaces
+      // Stop auto-rotation if it's running
+      if (this.isAnimating) {
+        this.stopSpinning();
+      }
+      
+      this.isDragging = true;
+      this.lastMouseAngle = this.getMouseAngle(event);
+      this.canvas.style.cursor = "grabbing"; // Show grabbing cursor during wheel rotation
     }
-
-    // If not clicking on activity, start wheel rotation drag
-    // Stop auto-rotation if it's running
-    if (this.isAnimating) {
-      this.stopSpinning();
-    }
-    
-    this.isDragging = true;
-    this.lastMouseAngle = this.getMouseAngle(event);
-    this.dragStartAngle = this.rotationAngle;
-    this.canvas.style.cursor = "grabbing"; // Show grabbing cursor during wheel rotation
+    // If clicking inside center circle (minRadius), do nothing - don't rotate
   }
 
   drag(event) {
     if (!this.isDragging) return;
 
     const currentMouseAngle = this.getMouseAngle(event);
-    const angleDifference = currentMouseAngle - this.lastMouseAngle;
+    // Calculate the difference from last mouse position (not from drag start)
+    // This makes rotation follow the cursor smoothly without acceleration
+    let angleDifference = currentMouseAngle - this.lastMouseAngle;
+    
+    // Normalize difference to shortest path to avoid jumps across the 0/2π boundary
+    while (angleDifference <= -Math.PI) angleDifference += Math.PI * 2;
+    while (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
 
-    // Update the rotation angle based on the difference in angles
-    this.rotationAngle = this.dragStartAngle + angleDifference;
+    // Update rotation by the incremental difference
+    this.rotationAngle += angleDifference;
+    
+    // Update lastMouseAngle for next frame
+    this.lastMouseAngle = currentMouseAngle;
 
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawRotatingElements();
@@ -3812,6 +3835,7 @@ class YearWheel {
     // Handle wheel rotation drag end
     if (!this.isDragging) return;
     this.isDragging = false;
+    this.canvas.style.cursor = "default"; // Reset cursor to default
   }
 
   stopActivityDrag() {
@@ -4194,6 +4218,9 @@ class YearWheel {
 
   // Function to draw static elements with proper proportions
   drawStaticElements() {
+    // CRITICAL: Reset transform to identity matrix to ensure no rotation is applied
+    this.context.setTransform(1, 0, 0, 1, 0, 0);
+    
     this.context.save();
 
     // Draw center circle
