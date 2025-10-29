@@ -3565,7 +3565,7 @@ class YearWheel {
   animateWheel() {
     if (!this.isAnimating) return; // If animation is stopped, don't animate
 
-    this.rotationAngle -= 0.005; // Slow, constant counter-clockwise rotation
+    this.rotationAngle -= 0.001; // Very slow rotation for viewing activities
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear the canvas
 
     // Redraw everything
