@@ -47,7 +47,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
       // Create checkout session with GA metadata
       const { sessionId, url } = await createCheckoutSession(
         priceId,
-        `${window.location.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        `${window.location.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}&plan=${planType}`,
         `${window.location.origin}/dashboard`,
         gaClientId, // Pass GA client_id
         planType // Pass plan type

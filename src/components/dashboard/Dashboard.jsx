@@ -231,10 +231,37 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('session_id');
+    const planType = urlParams.get('plan'); // We'll need to add this to success_url
     
     if (sessionId && user) {
       // User returned from successful checkout
-      console.log('[Dashboard] Stripe checkout successful, refreshing subscription...');
+      console.log('[Dashboard] Stripe checkout successful, session_id:', sessionId);
+      
+      // Track purchase event IMMEDIATELY (don't wait for subscription polling)
+      // This ensures GTM/GA4 receives the event reliably
+      try {
+        // Determine plan from URL or use default
+        const plan = planType || 'monthly'; // fallback to monthly if not specified
+        const value = plan === 'monthly' ? 79 : 768;
+        
+        // Send purchase event to GTM dataLayer
+        trackPurchase({
+          transactionId: sessionId,
+          userId: user.id,
+          plan: plan,
+          value: value,
+          currency: 'SEK'
+        });
+        
+        console.log('[Dashboard] GTM purchase event tracked immediately:', { 
+          sessionId, 
+          plan, 
+          value, 
+          userId: user.id 
+        });
+      } catch (trackError) {
+        console.error('[Dashboard] GTM purchase tracking error:', trackError);
+      }
       
       // Show success message
       const event = new CustomEvent('showToast', { 
@@ -245,14 +272,13 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       // Refresh subscription data
       refreshSubscription();
       
-      // Clean URL
+      // Clean URL (remove session_id and plan params)
       window.history.replaceState({}, '', '/dashboard');
       
-      // Poll subscription status (webhook might take a few seconds)
+      // Poll subscription status (webhook might take a few seconds to update DB)
       let attempts = 0;
       const maxAttempts = 10;
       const pollInterval = 2000; // 2 seconds
-      let hasTrackedPurchase = false;
       
       const pollSubscription = setInterval(async () => {
         attempts++;
@@ -260,34 +286,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
         
         await refreshSubscription();
         
-        // Track purchase event once subscription is confirmed
-        // We check isPremium from subscription hook to confirm backend processed the payment
-        if (!hasTrackedPurchase && subscription) {
-          try {
-            // Determine plan type from subscription data
-            const planType = subscription.plan_type; // 'monthly' or 'yearly'
-            
-            // Calculate value based on plan
-            const value = planType === 'monthly' ? 79 : 768;
-            
-            // Track purchase event to GTM
-            trackPurchase({
-              transactionId: subscription.stripe_subscription_id || sessionId,
-              userId: user.id,
-              plan: planType,
-              value: value,
-              currency: 'SEK'
-            });
-            
-            hasTrackedPurchase = true;
-            console.log('[Dashboard] GTM purchase event tracked:', { planType, value, userId: user.id });
-          } catch (trackError) {
-            console.error('[Dashboard] GTM purchase tracking error:', trackError);
-            // Don't throw - tracking failure shouldn't block user experience
-          }
-        }
-        
-        // Stop polling after max attempts
+        // Stop polling when subscription is confirmed or max attempts reached
         if (attempts >= maxAttempts) {
           clearInterval(pollSubscription);
           console.log('[Dashboard] Stopped polling subscription status');
