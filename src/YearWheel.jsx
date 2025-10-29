@@ -420,6 +420,9 @@ function YearWheel({
     
     setYearWheel(newYearWheel);
     newYearWheel.create();
+    
+    // Stop spinning when wheel is recreated to prevent animation accumulation
+    setIsSpinning(false);
 
     // Cleanup function to remove event listeners from old instance
     return () => {
