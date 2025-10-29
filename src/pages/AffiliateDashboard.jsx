@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { showToast } from '../utils/dialogs';
 import OrganizationSettings from '../components/affiliate/OrganizationSettings';
+import UTMLinkBuilder from '../components/affiliate/UTMLinkBuilder';
 
 export default function AffiliateDashboard() {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function AffiliateDashboard() {
   const [newLink, setNewLink] = useState({ code: '', name: '', target_url: '/' });
   const [generatingCode, setGeneratingCode] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'links', 'commissions', 'settings'
+  const [showUTMBuilder, setShowUTMBuilder] = useState(false);
+  const [selectedLinkForUTM, setSelectedLinkForUTM] = useState(null);
 
   useEffect(() => {
     loadAffiliateData();
@@ -554,6 +557,15 @@ export default function AffiliateDashboard() {
                               {link.is_active ? 'Active' : 'Inactive'}
                             </span>
                             <button
+                              onClick={() => {
+                                setSelectedLinkForUTM(link);
+                                setShowUTMBuilder(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1"
+                            >
+                              UTM Builder
+                            </button>
+                            <button
                               onClick={() => toggleLinkStatus(link.id, link.is_active)}
                               className="text-gray-600 hover:text-gray-900 text-sm px-2 py-1"
                             >
@@ -742,6 +754,18 @@ export default function AffiliateDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* UTM Link Builder Modal */}
+      {showUTMBuilder && selectedLinkForUTM && (
+        <UTMLinkBuilder
+          baseUrl={`${window.location.origin}${selectedLinkForUTM.target_url}`}
+          refCode={selectedLinkForUTM.code}
+          onClose={() => {
+            setShowUTMBuilder(false);
+            setSelectedLinkForUTM(null);
+          }}
+        />
       )}
     </div>
   );

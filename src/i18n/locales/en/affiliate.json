@@ -213,5 +213,49 @@
       "success": "Application submitted successfully! You will receive a response within 24 hours.",
       "error": "Failed to submit application"
     }
+  },
+  
+  "utm": {
+    "title": "UTM Link Builder",
+    "subtitle": "Create trackable variants of your affiliate link",
+    "baseLink": "Base Link",
+    "quickPresets": "Quick Presets",
+    "customParameters": "Custom UTM Parameters",
+    "createCustom": "Create Custom",
+    "savedVariants": "Your Link Variants",
+    "noVariants": "No variants created yet. Use quick presets or create custom UTM parameters above.",
+    "fields": {
+      "source": "UTM Source",
+      "sourcePlaceholder": "facebook",
+      "sourceHelp": "(e.g., facebook, newsletter)",
+      "medium": "UTM Medium",
+      "mediumPlaceholder": "social",
+      "mediumHelp": "(e.g., social, email)",
+      "campaign": "UTM Campaign",
+      "campaignPlaceholder": "summer-2025",
+      "campaignHelp": "(optional)",
+      "content": "UTM Content",
+      "contentPlaceholder": "banner-ad",
+      "contentHelp": "(optional)",
+      "required": "*"
+    },
+    "presets": {
+      "facebook": "Facebook Post",
+      "linkedin": "LinkedIn Post",
+      "twitter": "Twitter/X Post",
+      "instagram": "Instagram Bio",
+      "newsletter": "Email Newsletter",
+      "blog": "Blog Post",
+      "youtube": "YouTube Video",
+      "podcast": "Podcast"
+    },
+    "buttons": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "cancel": "Cancel",
+      "addVariant": "Add Variant",
+      "done": "Done",
+      "utmBuilder": "UTM Builder"
+    }
   }
 }

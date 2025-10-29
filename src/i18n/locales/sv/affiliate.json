@@ -213,5 +213,49 @@
       "success": "Ansökan inskickad! Du får svar inom 24 timmar.",
       "error": "Kunde inte skicka ansökan"
     }
+  },
+  
+  "utm": {
+    "title": "UTM-länkbyggare",
+    "subtitle": "Skapa spårbara varianter av din affiliatelänk",
+    "baseLink": "Baslänk",
+    "quickPresets": "Snabbmallar",
+    "customParameters": "Anpassade UTM-parametrar",
+    "createCustom": "Skapa anpassad",
+    "savedVariants": "Dina länkvarianter",
+    "noVariants": "Inga varianter skapade ännu. Använd snabbmallar eller skapa anpassade UTM-parametrar ovan.",
+    "fields": {
+      "source": "UTM-källa",
+      "sourcePlaceholder": "facebook",
+      "sourceHelp": "(t.ex. facebook, newsletter)",
+      "medium": "UTM-medium",
+      "mediumPlaceholder": "social",
+      "mediumHelp": "(t.ex. social, email)",
+      "campaign": "UTM-kampanj",
+      "campaignPlaceholder": "summer-2025",
+      "campaignHelp": "(valfritt)",
+      "content": "UTM-innehåll",
+      "contentPlaceholder": "banner-ad",
+      "contentHelp": "(valfritt)",
+      "required": "*"
+    },
+    "presets": {
+      "facebook": "Facebook-inlägg",
+      "linkedin": "LinkedIn-inlägg",
+      "twitter": "Twitter/X-inlägg",
+      "instagram": "Instagram Bio",
+      "newsletter": "E-postnyhetsbrev",
+      "blog": "Blogginlägg",
+      "youtube": "YouTube-video",
+      "podcast": "Podcast"
+    },
+    "buttons": {
+      "copy": "Kopiera",
+      "copied": "Kopierad",
+      "cancel": "Avbryt",
+      "addVariant": "Lägg till variant",
+      "done": "Klar",
+      "utmBuilder": "UTM-byggare"
+    }
   }
 }
