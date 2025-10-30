@@ -1,6 +1,9 @@
 /* eslint-disable no-unused-vars */
 // Based on the original/legacy from kirkby's year-wheel project
 import C2S from "canvas2svg";
+import LayoutCalculator from "./utils/LayoutCalculator.js";
+import RenderEngine from "./utils/RenderEngine.js";
+import InteractionHandler from "./utils/InteractionHandler.js";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -146,7 +149,20 @@ class YearWheel {
     // Bind animateWheel once to avoid creating new functions each frame
     this.boundAnimateWheel = this.animateWheel.bind(this);
 
+    // Initialize utility modules (NEW ARCHITECTURE)
+    this.renderEngine = new RenderEngine(this.context, this.size, this.center, {
+      readonly: this.readonly
+    });
+    
+    this.interactionHandler = new InteractionHandler(this.canvas, this, {
+      readonly: this.readonly,
+      selectionMode: this.selectionMode,
+      onItemClick: options.onItemClick
+    });
+
     // Add event listeners (skip if readonly mode)
+    // Note: InteractionHandler now manages event listeners internally
+    // We keep the old boundHandlers for backward compatibility but they will be deprecated
     if (!this.readonly) {
       this.canvas.addEventListener("mousedown", this.boundHandlers.startDrag);
       this.canvas.addEventListener(
@@ -165,29 +181,13 @@ class YearWheel {
   /**
    * Calculate maximum radius dynamically based on outer rings
    * Makes wheel larger when no outer rings exist, shrinks when outer rings are added
+   * Now uses LayoutCalculator for consistency
    */
   calculateMaxRadius() {
-    const visibleOuterRings = this.organizationData.rings.filter(
-      (r) => r.visible && r.type === "outer"
+    this.maxRadius = LayoutCalculator.calculateMaxRadius(
+      this.size, 
+      this.organizationData.rings
     );
-
-    if (visibleOuterRings.length === 0) {
-      // No outer rings: maximize space (use more of the canvas)
-      // Reduce padding from size/30 to size/50 for more space
-      this.maxRadius = this.size / 2 - this.size / 50;
-    } else {
-      // Has outer rings: only shrink slightly to maintain good proportions
-      // Outer rings will be drawn OUTSIDE this radius, extending toward the edge
-      // We only need a small reduction to ensure proper spacing
-      const outerRingSpace = visibleOuterRings.length * (this.size / 23);
-
-      // Instead of subtracting full outer ring space, only shrink by 60% of it
-      // This keeps the inner wheel larger while still making room for outer rings
-      const shrinkAmount = outerRingSpace * 0.6;
-      const padding = this.size / 60; // Minimal padding
-
-      this.maxRadius = this.size / 2 - padding - shrinkAmount;
-    }
   }
 
   // Generate cache key to detect when background needs redrawing
@@ -325,98 +325,25 @@ class YearWheel {
   }
 
   generateWeeks() {
-    const weeks = [];
-    const year = parseInt(this.year);
-
-    // Helper function to get ISO week number
-    const getISOWeek = (date) => {
-      const tempDate = new Date(date.getTime());
-      tempDate.setHours(0, 0, 0, 0);
-      // Set to nearest Thursday: current date + 4 - current day number
-      // Make Sunday's day number 7
-      tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
-      // Get first day of year
-      const yearStart = new Date(tempDate.getFullYear(), 0, 1);
-      // Calculate full weeks to nearest Thursday
-      const weekNo = Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
-      return weekNo;
-    };
-
-    // Helper function to get the year that the ISO week belongs to
-    const getISOWeekYear = (date) => {
-      const tempDate = new Date(date.getTime());
-      tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
-      return tempDate.getFullYear();
-    };
-
-    // Start from January 1st
-    let currentDate = new Date(year, 0, 1);
-
-    // Find the first Monday of the calendar (might be in previous year)
-    while (currentDate.getDay() !== 1) {
-      currentDate.setDate(currentDate.getDate() - 1);
-    }
-
-    const seenWeeks = new Set();
-
-    // Iterate through all Mondays in the year
-    while (currentDate.getFullYear() <= year) {
-      const isoWeek = getISOWeek(currentDate);
-      const isoYear = getISOWeekYear(currentDate);
-
-      // Only include weeks that belong to the current year or overlap significantly
-      if (isoYear === year || currentDate.getFullYear() === year) {
-        // Use just the week number for uniqueness check
-        if (!seenWeeks.has(isoWeek) && weeks.length < 53) {
-          seenWeeks.add(isoWeek);
-          // Return just the number without "W" prefix (Swedish interface)
-          weeks.push(isoWeek.toString());
-        }
-      }
-
-      // Move to next Monday
-      currentDate.setDate(currentDate.getDate() + 7);
-
-      // Stop if we've moved too far into the next year
-      if (currentDate.getFullYear() > year && currentDate.getMonth() > 0) {
-        break;
-      }
-    }
-
-    return weeks;
+    // Now uses LayoutCalculator for consistent ISO week generation
+    return LayoutCalculator.generateWeeks(parseInt(this.year));
   }
 
   /**
    * Get ISO week number for a date
    * Returns { year, week }
+   * Now uses LayoutCalculator
    */
   getISOWeek(date) {
-    const tempDate = new Date(date.getTime());
-    tempDate.setHours(0, 0, 0, 0);
-    // Set to nearest Thursday: current date + 4 - current day number
-    // Make Sunday's day number 7
-    tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
-    // Get first day of year
-    const yearStart = new Date(tempDate.getFullYear(), 0, 1);
-    // Calculate full weeks to nearest Thursday
-    const weekNo = Math.ceil(((tempDate - yearStart) / 86400000 + 1) / 7);
-    return { year: tempDate.getFullYear(), week: weekNo };
+    return LayoutCalculator.getISOWeek(date);
   }
 
   /**
    * Get the Monday (start) of a given ISO week
+   * Now uses LayoutCalculator
    */
   getWeekStart(year, week) {
-    // January 4th is always in week 1
-    const jan4 = new Date(year, 0, 4);
-    // Get the Monday of week 1
-    const dayOffset = (jan4.getDay() || 7) - 1; // 0=Mon, 6=Sun
-    const week1Monday = new Date(jan4.getTime() - dayOffset * 86400000);
-    // Add (week - 1) weeks
-    const weekStart = new Date(
-      week1Monday.getTime() + (week - 1) * 7 * 86400000
-    );
-    return weekStart;
+    return LayoutCalculator.getWeekStart(year, week);
   }
 
   // Get month names for the current zoom level
@@ -699,100 +626,15 @@ class YearWheel {
   }
 
   // Detect which part of activity is clicked: 'resize-start', 'move', or 'resize-end'
+  // Now uses InteractionHandler for consistency
   detectDragZone(x, y, itemRegion) {
-    // Get angle of click relative to center
-    const dx = x - this.center.x;
-    const dy = y - this.center.y;
-    const clickRadius = Math.sqrt(dx * dx + dy * dy);
-    let clickAngle = Math.atan2(dy, dx);
-
-    // Account for rotation
-    clickAngle -= this.rotationAngle;
-
-    // Normalize to match item angles
-    while (clickAngle < 0) clickAngle += Math.PI * 2;
-    while (clickAngle >= Math.PI * 2) clickAngle -= Math.PI * 2;
-
-    let startAngle = itemRegion.startAngle;
-    let endAngle = itemRegion.endAngle;
-
-    // Normalize item angles
-    while (startAngle < 0) startAngle += Math.PI * 2;
-    while (startAngle >= Math.PI * 2) startAngle -= Math.PI * 2;
-    while (endAngle < 0) endAngle += Math.PI * 2;
-    while (endAngle >= Math.PI * 2) endAngle -= Math.PI * 2;
-
-    // Calculate angle span, handling wraparound
-    let angleSpan = endAngle - startAngle;
-    if (angleSpan < 0) angleSpan += Math.PI * 2;
-
-    // Calculate relative position within activity
-    let relativeAngle = clickAngle - startAngle;
-    if (relativeAngle < 0) relativeAngle += Math.PI * 2;
-
-    // Handle wraparound case: if relativeAngle is larger than angleSpan,
-    // the click is actually outside this activity (wraparound confusion)
-    if (relativeAngle > angleSpan) {
-      // Click is outside the activity, shouldn't happen but handle gracefully
-      relativeAngle = angleSpan / 2; // Default to middle
-    }
-
-    // Use PIXEL-based detection for resize zones with zoom-aware scaling
-    // Calculate the arc length at the middle of the activity's radius
-    const avgRadius = (itemRegion.startRadius + itemRegion.endRadius) / 2;
-    const totalArcLength = angleSpan * avgRadius; // Arc length in pixels
-
-    // Adaptive resize zone based on zoom level
-    // In zoom mode, activities span more pixels, so we can be more generous
-    let resizeZonePixels = 20; // Increased base size for easier grabbing
-
-    if (this.zoomedMonth !== null) {
-      // Month zoom: 360° = 1 month, activities are much larger visually
-      resizeZonePixels = 30; // Larger zone for easier interaction
-    } else if (this.zoomedQuarter !== null) {
-      // Quarter zoom: 360° = 3 months, moderately larger
-      resizeZonePixels = 25;
-    }
-
-    // For very small activities, use proportional threshold instead
-    // If activity is less than 80px wide, use 30% of width as resize zone
-    if (totalArcLength < 80) {
-      resizeZonePixels = Math.min(resizeZonePixels, totalArcLength * 0.3);
-    }
-
-    const currentArcPosition = relativeAngle * avgRadius; // Position along arc in pixels
-    const minActivityAngle = this.toRadians(7); // Minimum 7° (1 week)
-
-    let zone;
-
-    // If activity is very small (less than 2*resizeZone), only allow move
-    if (totalArcLength < resizeZonePixels * 2.2) {
-      zone = "move";
-    } else if (currentArcPosition < resizeZonePixels) {
-      // Within resize zone pixels from start edge
-      zone = "resize-start";
-    } else if (totalArcLength - currentArcPosition < resizeZonePixels) {
-      // Within resize zone pixels from end edge
-      zone = "resize-end";
-    } else {
-      zone = "move";
-    }
-
-    return zone;
+    return this.interactionHandler.detectDragZone(x, y, itemRegion);
   }
 
   // Calculate text color based on background luminance for better contrast
+  // Now uses RenderEngine for consistency
   getContrastColor(hexColor) {
-    // Convert hex to RGB
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
-
-    // Calculate relative luminance (ITU-R BT.709)
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-    // Return white for dark backgrounds, dark gray for light backgrounds
-    return luminance > 0.5 ? "#1F2937" : "#FFFFFF";
+    return this.renderEngine.getContrastColor(hexColor);
   }
 
   // Create very light background color from template color for ring backgrounds
@@ -838,115 +680,15 @@ class YearWheel {
 
   // Detect which ring a point (x, y) is within based on radius
   // Returns { ring, startRadius, endRadius, type } or null
+  // Now uses InteractionHandler for consistency
   detectTargetRing(x, y) {
-    // Calculate distance from center
-    const dx = x - this.center.x;
-    const dy = y - this.center.y;
-    const radius = Math.sqrt(dx * dx + dy * dy);
-
-    // Get visible rings
-    const visibleOuterRings = this.organizationData.rings.filter(
-      (r) => r.visible && r.type === "outer"
-    );
-    const visibleInnerRings = this.organizationData.rings.filter(
-      (r) => r.visible && r.type === "inner"
-    );
-
-    const ringNameBandWidth = this.size / 70;
-    const standardGap = 0;
-
-    // Check outer rings first (they're drawn from maxRadius downward)
-    if (visibleOuterRings.length > 0) {
-      const outerRingTotalHeight = this.size / 23;
-      let currentRadius = this.maxRadius;
-
-      for (const ring of visibleOuterRings) {
-        currentRadius -= outerRingTotalHeight;
-        const ringStartRadius = currentRadius;
-        const ringEndRadius = currentRadius + outerRingTotalHeight;
-
-        if (radius >= ringStartRadius && radius <= ringEndRadius) {
-          return {
-            ring: ring,
-            startRadius: ringStartRadius,
-            endRadius: ringEndRadius,
-            type: "outer",
-          };
-        }
-      }
-
-      currentRadius -= standardGap;
-    }
-
-    // Check inner rings (they expand to fill available space)
-    if (visibleInnerRings.length > 0) {
-      // Show ALL visible inner rings, even if empty (no items)
-      const innerRings = this.organizationData.rings.filter((r) => {
-        return r.type === "inner" && r.visible;
-      });
-
-      const numberOfInnerRings = innerRings.length;
-      let currentMaxRadius = this.maxRadius;
-
-      if (visibleOuterRings.length > 0) {
-        currentMaxRadius -=
-          visibleOuterRings.length * (this.size / 23) + standardGap;
-      }
-
-      const totalAvailableSpace =
-        currentMaxRadius - this.minRadius - this.size / 1000;
-      const totalGapSpacing =
-        numberOfInnerRings > 1 ? (numberOfInnerRings - 1) * standardGap : 0;
-      const totalRingSpace = totalAvailableSpace - totalGapSpacing;
-      const equalRingHeight = totalRingSpace / numberOfInnerRings;
-
-      let eventRadius = this.minRadius;
-
-      for (const ring of innerRings) {
-        const ringStartRadius = eventRadius;
-        const ringEndRadius = eventRadius + equalRingHeight;
-
-        if (radius >= ringStartRadius && radius <= ringEndRadius) {
-          return {
-            ring: ring,
-            startRadius: ringStartRadius,
-            endRadius: ringEndRadius,
-            type: "inner",
-          };
-        }
-
-        eventRadius += equalRingHeight + standardGap;
-      }
-    }
-
-    return null; // Not in any ring
+    return this.interactionHandler.detectTargetRing(x, y);
   }
 
   // Adjust color on hover: darken light colors, lighten dark colors
+  // Now uses RenderEngine for consistency
   getHoverColor(hexColor) {
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
-
-    // Calculate luminance
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-    let newR, newG, newB;
-    if (luminance > 0.5) {
-      // Light color - darken by 20%
-      newR = Math.max(0, Math.floor(r * 0.8));
-      newG = Math.max(0, Math.floor(g * 0.8));
-      newB = Math.max(0, Math.floor(b * 0.8));
-    } else {
-      // Dark color - lighten by 30%
-      newR = Math.min(255, Math.floor(r * 1.3));
-      newG = Math.min(255, Math.floor(g * 1.3));
-      newB = Math.min(255, Math.floor(b * 1.3));
-    }
-
-    return `#${newR.toString(16).padStart(2, "0")}${newG
-      .toString(16)
-      .padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+    return this.renderEngine.getHoverColor(hexColor);
   }
 
   drawTextOnCircle(
