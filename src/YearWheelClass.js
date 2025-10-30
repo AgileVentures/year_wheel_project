@@ -4,6 +4,7 @@ import C2S from "canvas2svg";
 import LayoutCalculator from "./utils/LayoutCalculator.js";
 import RenderEngine from "./utils/RenderEngine.js";
 import InteractionHandler from "./utils/InteractionHandler.js";
+import ExportManager from "./utils/ExportManager.js";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -159,6 +160,8 @@ class YearWheel {
       selectionMode: this.selectionMode,
       onItemClick: options.onItemClick
     });
+    
+    this.exportManager = new ExportManager(this);
 
     // Add event listeners (skip if readonly mode)
     // Note: InteractionHandler now manages event listeners internally
@@ -5386,224 +5389,66 @@ class YearWheel {
     this.context.restore();
   }
 
-  // DOWNLOAD FUNCTIONALITY
+  // DOWNLOAD FUNCTIONALITY (now delegated to ExportManager)
 
   downloadImage(format, toClipboard = false) {
     if (toClipboard) {
-      this.copyToClipboard(format);
+      return this.exportManager.copyToClipboard(format);
     } else {
-      switch (format) {
-        case "png":
-          this.downloadAsPNG(false);
-          break;
-        case "png-white":
-          this.downloadAsPNG(true);
-          break;
-        case "jpeg":
-          this.downloadAsJPEG();
-          break;
-        case "svg":
-          this.downloadAsSVG();
-          break;
-        case "pdf":
-          this.downloadAsPDF();
-          break;
-        default:
-          console.error("Unsupported format");
-      }
+      return this.exportManager.exportImage(format);
     }
   }
 
   async copyToClipboard(format) {
-    try {
-      switch (format) {
-        case "png":
-        case "png-white":
-          await this.copyPNGToClipboard(format === "png-white");
-          break;
-        case "jpeg":
-          await this.copyJPEGToClipboard();
-          break;
-        case "svg":
-          await this.copySVGToClipboard();
-          break;
-        default:
-          console.error("Unsupported format for clipboard");
-      }
-
-      // Show success feedback via toast
-      const event = new CustomEvent("showToast", {
-        detail: { message: "Bild kopierad till urklipp!", type: "success" },
-      });
-      window.dispatchEvent(event);
-    } catch (err) {
-      console.error("Error copying to clipboard:", err);
-      const event = new CustomEvent("showToast", {
-        detail: { message: "Kunde inte kopiera till urklipp", type: "error" },
-      });
-      window.dispatchEvent(event);
-    }
+    return this.exportManager.copyToClipboard(format);
   }
 
-  async copyPNGToClipboard(whiteBackground = false) {
-    const pngCanvas = this.copyCanvas(whiteBackground);
-    const blob = await new Promise((resolve) =>
-      pngCanvas.toBlob(resolve, "image/png")
-    );
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-  }
-
-  async copyJPEGToClipboard() {
-    const jpegCanvas = this.copyCanvas(true);
-    const blob = await new Promise((resolve) =>
-      jpegCanvas.toBlob(resolve, "image/jpeg", 1.0)
-    );
-    // Convert JPEG to PNG for clipboard (clipboard doesn't support JPEG directly)
-    const pngBlob = await new Promise((resolve) =>
-      jpegCanvas.toBlob(resolve, "image/png")
-    );
-    await navigator.clipboard.write([
-      new ClipboardItem({ "image/png": pngBlob }),
-    ]);
-  }
-
-  async copySVGToClipboard() {
-    const svgContext = this.createSVGContext();
-    const originalContext = this.context;
-    this.context = svgContext;
-    this.create();
-    const svgData = svgContext.getSerializedSvg();
-
-    // Restore original context and re-render to canvas
-    this.context = originalContext;
-    this.create();
-
-    // Copy as text
-    await navigator.clipboard.writeText(svgData);
-  }
-
-  generateFileName(extension) {
-    const today = new Date();
-    const dateStr = today.toISOString().split("T")[0];
-    const titlePart = this.title ? `${this.title.replace(/\s+/g, "_")}_` : "";
-    return `YearWheel_${titlePart}${dateStr}.${extension}`;
-  }
-
-  downloadFile(data, fileName, mimeType) {
-    const blob = new Blob([data], { type: mimeType });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-  }
-
+  // Legacy methods - delegated to ExportManager for backward compatibility
   downloadAsPNG(whiteBackground = false) {
-    const pngCanvas = this.copyCanvas(whiteBackground);
-    pngCanvas.toBlob((blob) => {
-      const fileName = this.generateFileName("png");
-      this.downloadFile(blob, fileName, "image/png");
-    });
+    return this.exportManager.downloadAsPNG(whiteBackground);
   }
 
   downloadAsJPEG() {
-    const jpegCanvas = this.copyCanvas(true); // Always use white background for JPEG
-    jpegCanvas.toBlob(
-      (blob) => {
-        const fileName = this.generateFileName("jpg");
-        this.downloadFile(blob, fileName, "image/jpeg");
-      },
-      "image/jpeg",
-      1.0
-    );
+    return this.exportManager.downloadAsJPEG();
   }
 
   downloadAsSVG() {
-    const svgContext = this.createSVGContext();
-    const originalContext = this.context;
-    this.context = svgContext;
-    this.create();
-    const svgData = svgContext.getSerializedSvg();
-
-    // Restore original context and re-render to canvas
-    this.context = originalContext;
-    this.create();
-
-    const fileName = this.generateFileName("svg");
-    this.downloadFile(svgData, fileName, "image/svg+xml");
+    return this.exportManager.downloadAsSVG();
   }
 
   async downloadAsPDF() {
-    // Dynamically import jsPDF only when PDF export is needed
-    const { jsPDF } = await import("jspdf");
-
-    // Create a high-quality canvas for PDF export
-    const pdfCanvas = this.copyCanvas(true); // White background for PDF
-
-    // Calculate dimensions for PDF (A4 landscape or custom size based on wheel)
-    const imgWidth = this.canvas.width;
-    const imgHeight = this.canvas.height;
-
-    // Create PDF with dimensions matching the canvas aspect ratio
-    // Use A4 landscape as base, or adjust based on canvas size
-    const pdfWidth = 297; // A4 landscape width in mm
-    const pdfHeight = 210; // A4 landscape height in mm
-
-    // If the wheel is square or taller, use portrait or square format
-    const aspectRatio = imgWidth / imgHeight;
-    let finalWidth, finalHeight;
-
-    if (aspectRatio > 1.2) {
-      // Landscape
-      finalWidth = pdfWidth;
-      finalHeight = pdfWidth / aspectRatio;
-    } else if (aspectRatio < 0.8) {
-      // Portrait
-      finalHeight = pdfWidth; // Use full width as height for portrait
-      finalWidth = finalHeight * aspectRatio;
-    } else {
-      // Square-ish, use square format
-      finalWidth = finalHeight = Math.min(pdfWidth, pdfHeight);
-    }
-
-    // Create PDF document
-    const pdf = new jsPDF({
-      orientation: aspectRatio > 1 ? "landscape" : "portrait",
-      unit: "mm",
-      format: [finalWidth, finalHeight],
-    });
-
-    // Convert canvas to image data
-    const imgData = pdfCanvas.toDataURL("image/jpeg", 1.0);
-
-    // Add image to PDF (fill the entire page)
-    pdf.addImage(imgData, "JPEG", 0, 0, finalWidth, finalHeight);
-
-    // Download the PDF
-    const fileName = this.generateFileName("pdf");
-    pdf.save(fileName);
+    return this.exportManager.downloadAsPDF();
   }
 
+  async copyPNGToClipboard(whiteBackground = false) {
+    return this.exportManager.copyPNGToClipboard(whiteBackground);
+  }
+
+  async copyJPEGToClipboard() {
+    return this.exportManager.copyJPEGToClipboard();
+  }
+
+  async copySVGToClipboard() {
+    return this.exportManager.copySVGToClipboard();
+  }
+
+  // Helper methods needed by ExportManager (keep in YearWheelClass)
   copyCanvas(whiteBackground = false) {
-    const copiedCanvas = document.createElement("canvas");
-    copiedCanvas.width = this.canvas.width;
-    copiedCanvas.height = this.canvas.height;
-    const copiedContext = copiedCanvas.getContext("2d");
-
-    if (whiteBackground) {
-      copiedContext.fillStyle = "#FFFFFF";
-      copiedContext.fillRect(0, 0, copiedCanvas.width, copiedCanvas.height);
-    }
-
-    copiedContext.drawImage(this.canvas, 0, 0);
-    return copiedCanvas;
+    return this.exportManager.copyCanvas(whiteBackground);
   }
 
   createSVGContext() {
-    return new C2S(this.size, this.size / 4 + this.size);
+    return this.exportManager.createSVGContext();
   }
+
+  generateFileName(extension) {
+    return this.exportManager.generateFileName(extension);
+  }
+
+  downloadFile(data, fileName, mimeType) {
+    return this.exportManager.downloadFile(data, fileName, mimeType);
+  }
+
 }
 
 export default YearWheel;
