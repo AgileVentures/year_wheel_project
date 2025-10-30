@@ -106,7 +106,23 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-update end date when start date changes
+      if (field === 'startDate' && value) {
+        const startDate = new Date(value);
+        const currentEndDate = new Date(prev.endDate);
+        
+        // If end date is before new start date, update it to match start date
+        if (currentEndDate < startDate) {
+          updated.endDate = value;
+        }
+      }
+      
+      return updated;
+    });
+    
     // Clear error for this field
     if (errors[field]) {
       setErrors(prev => {
@@ -132,7 +148,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
           {/* General Error Display */}
           {generalError && (
             <ErrorDisplay
@@ -144,97 +160,166 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
             />
           )}
 
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editor:addItemModal.itemNameLabel')} *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder={t('editor:addItemModal.itemNamePlaceholder')}
-            />
-            {errors.name && (
-              <p className="mt-1 text-xs text-red-600">{errors.name}</p>
-            )}
+          {/* Basic Info Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              Grundläggande information
+            </h3>
+            
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                {t('editor:addItemModal.itemNameLabel')} *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  errors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder={t('editor:addItemModal.itemNamePlaceholder')}
+                autoFocus
+              />
+              {errors.name && (
+                <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Dates - Prominent placement */}
+            <div className="bg-gray-50 p-4 rounded-sm border border-gray-200">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:addItemModal.startDateLabel')} *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => handleChange('startDate', e.target.value)}
+                    className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
+                      errors.startDate ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.startDate && (
+                    <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:addItemModal.endDateLabel')} *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => handleChange('endDate', e.target.value)}
+                    min={formData.startDate}
+                    className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
+                      errors.endDate ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.endDate && (
+                    <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
+                  )}
+                </div>
+              </div>
+              {/* Time (optional) - inside date box */}
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:addItemModal.timeLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.time}
+                  onChange={(e) => handleChange('time', e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                  placeholder={t('editor:addItemModal.timePlaceholder')}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Ring */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editor:addItemModal.ringLabel')}
-            </label>
-            <select
-              value={formData.ringId}
-              onChange={(e) => handleChange('ringId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              {organizationData.rings.map((ring) => (
-                <option key={ring.id} value={ring.id}>
-                  {ring.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Categorization Section */}
+          <div className="space-y-4 border-t border-gray-200 pt-6">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              Kategorisering
+            </h3>
 
-          {/* Activity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editor:addItemModal.activityLabel')}
-            </label>
-            <select
-              value={formData.activityId}
-              onChange={(e) => handleChange('activityId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              {organizationData.activityGroups.map((activity) => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="grid grid-cols-1 gap-4">
+              {/* Ring */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:addItemModal.ringLabel')} *
+                </label>
+                <select
+                  value={formData.ringId}
+                  onChange={(e) => handleChange('ringId', e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  {organizationData.rings.map((ring) => (
+                    <option key={ring.id} value={ring.id}>
+                      {ring.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Label */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editor:addItemModal.labelLabel')}
-            </label>
-            <select
-              value={formData.labelId}
-              onChange={(e) => handleChange('labelId', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              {organizationData.labels.map((label) => (
-                <option key={label.id} value={label.id}>
-                  {label.name}
-                </option>
-              ))}
-            </select>
+              {/* Activity */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:addItemModal.activityLabel')} *
+                </label>
+                <select
+                  value={formData.activityId}
+                  onChange={(e) => handleChange('activityId', e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  {organizationData.activityGroups.map((activity) => (
+                    <option key={activity.id} value={activity.id}>
+                      {activity.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Label */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:addItemModal.labelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
+                </label>
+                <select
+                  value={formData.labelId}
+                  onChange={(e) => handleChange('labelId', e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  {organizationData.labels.map((label) => (
+                    <option key={label.id} value={label.id}>
+                      {label.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
           {/* Wheel Linking Section */}
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="border-t border-gray-200 pt-6">
+            <div className="flex items-center gap-2 mb-4">
               <Link2 size={16} className="text-gray-600" />
-              <h3 className="text-sm font-medium text-gray-700">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
                 {t('editor:addItemModal.linkToWheelTitle')}
               </h3>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('editor:addItemModal.selectWheelLabel')}
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                {t('editor:addItemModal.selectWheelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
               </label>
               <select
                 value={formData.linkedWheelId}
                 onChange={(e) => handleChange('linkedWheelId', e.target.value)}
                 disabled={loadingWheels}
-                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
               >
                 <option value="">
                   {loadingWheels 
@@ -247,7 +332,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1.5 text-xs text-gray-500">
                 {t('editor:addItemModal.linkHelpText')}
               </p>
             </div>
@@ -266,69 +351,20 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
             )}
           </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('editor:addItemModal.startDateLabel')} *
-              </label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => handleChange('startDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                  errors.startDate ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.startDate && (
-                <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('editor:addItemModal.endDateLabel')} *
-              </label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => handleChange('endDate', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                  errors.endDate ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              {errors.endDate && (
-                <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Time (optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editor:addItemModal.timeLabel')}
-            </label>
-            <input
-              type="text"
-              value={formData.time}
-              onChange={(e) => handleChange('time', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              placeholder={t('editor:addItemModal.timePlaceholder')}
-            />
-          </div>
-
           {/* Buttons */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-3 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
+              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
             >
               {t('editor:addItemModal.cancel')}
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
+              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
             >
+              <Plus size={16} />
               {t('editor:addItemModal.addItem')}
             </button>
           </div>
