@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2, MessageSquare } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2, MessageSquare, Clipboard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
@@ -283,110 +283,188 @@ function Header({
                 className="fixed inset-0 z-40" 
                 onClick={() => setShowImageExportMenu(false)}
               ></div>
-              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 w-72">
+              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 w-80">
                 {/* PNG Transparent */}
-                <button
-                  onClick={() => { handleExport('png'); setShowImageExportMenu(false); }}
-                  disabled={!isPremium}
-                  className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
-                    !isPremium 
-                      ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <FileDown className="w-5 h-5 text-gray-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">
-                      {t('common:header.pngTransparent')}
+                <div className={`border-b border-gray-200 ${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
+                  <div className="px-4 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <FileDown className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {t('common:header.pngTransparent')}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {t('common:header.pngTransparentDesc')}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {t('common:header.pngTransparentDesc')}
-                    </div>
+                    {!isPremium && (
+                      <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
+                        {t('subscription:premium')}
+                      </span>
+                    )}
                   </div>
-                  {!isPremium && (
-                    <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
-                      {t('subscription:premium')}
-                    </span>
-                  )}
-                </button>
+                  <div className="flex border-t border-gray-200">
+                    <button
+                      onClick={() => { handleExport('png'); setShowImageExportMenu(false); }}
+                      disabled={!isPremium}
+                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
+                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <Download size={14} />
+                      {t('common:actions.download')}
+                    </button>
+                    <div className="w-px bg-gray-200"></div>
+                    <button
+                      onClick={() => { handleCopyToClipboard('png'); setShowImageExportMenu(false); }}
+                      disabled={!isPremium}
+                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
+                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {copiedFormat === 'png' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
+                      {copiedFormat === 'png' ? t('common:actions.copied') : t('common:actions.copy')}
+                    </button>
+                  </div>
+                </div>
 
                 {/* PNG White Background */}
-                <button
-                  onClick={() => { handleExport('png-white'); setShowImageExportMenu(false); }}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
-                >
-                  <FileDown className="w-5 h-5 text-gray-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">
-                      {t('common:header.pngWhite')}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {t('common:header.pngWhiteDesc')}
+                <div className="border-b border-gray-200">
+                  <div className="px-4 py-2 flex items-center gap-3">
+                    <FileDown className="w-5 h-5 text-gray-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {t('common:header.pngWhite')}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {t('common:header.pngWhiteDesc')}
+                      </div>
                     </div>
                   </div>
-                </button>
+                  <div className="flex border-t border-gray-200">
+                    <button
+                      onClick={() => { handleExport('png-white'); setShowImageExportMenu(false); }}
+                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Download size={14} />
+                      {t('common:actions.download')}
+                    </button>
+                    <div className="w-px bg-gray-200"></div>
+                    <button
+                      onClick={() => { handleCopyToClipboard('png-white'); setShowImageExportMenu(false); }}
+                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      {copiedFormat === 'png-white' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
+                      {copiedFormat === 'png-white' ? t('common:actions.copied') : t('common:actions.copy')}
+                    </button>
+                  </div>
+                </div>
 
                 {/* JPEG */}
-                <button
-                  onClick={() => { handleExport('jpeg'); setShowImageExportMenu(false); }}
-                  disabled={!isPremium}
-                  className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
-                    !isPremium 
-                      ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <FileDown className="w-5 h-5 text-gray-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">JPEG</div>
-                    <div className="text-xs text-gray-500">
-                      {t('common:header.jpegDesc')}
+                <div className={`border-b border-gray-200 ${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
+                  <div className="px-4 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <FileDown className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <div className="font-medium text-gray-900">JPEG</div>
+                        <div className="text-xs text-gray-500">
+                          {t('common:header.jpegDesc')}
+                        </div>
+                      </div>
                     </div>
+                    {!isPremium && (
+                      <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
+                        {t('subscription:premium')}
+                      </span>
+                    )}
                   </div>
-                  {!isPremium && (
-                    <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
-                      {t('subscription:premium')}
-                    </span>
-                  )}
-                </button>
+                  <div className="flex border-t border-gray-200">
+                    <button
+                      onClick={() => { handleExport('jpeg'); setShowImageExportMenu(false); }}
+                      disabled={!isPremium}
+                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
+                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <Download size={14} />
+                      {t('common:actions.download')}
+                    </button>
+                    <div className="w-px bg-gray-200"></div>
+                    <button
+                      onClick={() => { handleCopyToClipboard('jpeg'); setShowImageExportMenu(false); }}
+                      disabled={!isPremium}
+                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
+                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {copiedFormat === 'jpeg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
+                      {copiedFormat === 'jpeg' ? t('common:actions.copied') : t('common:actions.copy')}
+                    </button>
+                  </div>
+                </div>
 
                 {/* SVG */}
-                <button
-                  onClick={() => { handleExport('svg'); setShowImageExportMenu(false); }}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3"
-                >
-                  <FileDown className="w-5 h-5 text-gray-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">SVG</div>
-                    <div className="text-xs text-gray-500">
-                      {t('common:header.svgDesc')}
+                <div className="border-b border-gray-200">
+                  <div className="px-4 py-2 flex items-center gap-3">
+                    <FileDown className="w-5 h-5 text-gray-600" />
+                    <div>
+                      <div className="font-medium text-gray-900">SVG</div>
+                      <div className="text-xs text-gray-500">
+                        {t('common:header.svgDesc')}
+                      </div>
                     </div>
                   </div>
-                </button>
+                  <div className="flex border-t border-gray-200">
+                    <button
+                      onClick={() => { handleExport('svg'); setShowImageExportMenu(false); }}
+                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <Download size={14} />
+                      {t('common:actions.download')}
+                    </button>
+                    <div className="w-px bg-gray-200"></div>
+                    <button
+                      onClick={() => { handleCopyToClipboard('svg'); setShowImageExportMenu(false); }}
+                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
+                    >
+                      {copiedFormat === 'svg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
+                      {copiedFormat === 'svg' ? t('common:actions.copied') : t('common:actions.copy')}
+                    </button>
+                  </div>
+                </div>
 
                 {/* PDF */}
-                <button
-                  onClick={() => { handleExport('pdf'); setShowImageExportMenu(false); }}
-                  disabled={!isPremium}
-                  className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-3 ${
-                    !isPremium 
-                      ? 'opacity-50 cursor-not-allowed bg-gray-50' 
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <FileDown className="w-5 h-5 text-gray-600" />
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">PDF</div>
-                    <div className="text-xs text-gray-500">
-                      {t('common:header.pdfDesc')}
+                <div className={`${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
+                  <div className="px-4 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <FileDown className="w-5 h-5 text-gray-600" />
+                      <div>
+                        <div className="font-medium text-gray-900">PDF</div>
+                        <div className="text-xs text-gray-500">
+                          {t('common:header.pdfDesc')}
+                        </div>
+                      </div>
                     </div>
+                    {!isPremium && (
+                      <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
+                        {t('subscription:premium')}
+                      </span>
+                    )}
                   </div>
-                  {!isPremium && (
-                    <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded">
-                      {t('subscription:premium')}
-                    </span>
-                  )}
-                </button>
+                  <div className="flex border-t border-gray-200">
+                    <button
+                      onClick={() => { handleExport('pdf'); setShowImageExportMenu(false); }}
+                      disabled={!isPremium}
+                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
+                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <Download size={14} />
+                      {t('common:actions.download')}
+                    </button>
+                  </div>
+                </div>
               </div>
             </>
           )}
