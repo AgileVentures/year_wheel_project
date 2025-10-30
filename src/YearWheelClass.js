@@ -5,6 +5,7 @@ import LayoutCalculator from "./utils/LayoutCalculator.js";
 import RenderEngine from "./utils/RenderEngine.js";
 import InteractionHandler from "./utils/InteractionHandler.js";
 import ExportManager from "./utils/ExportManager.js";
+import ConfigValidator from "./utils/ConfigValidator.js";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -17,19 +18,23 @@ class YearWheel {
     this.size = size;
     this.events = events;
     this.options = options;
-    this.organizationData = options.organizationData || {
+    
+    // Validate and normalize organizationData using ConfigValidator
+    const rawData = options.organizationData || {
       items: [],
       rings: [],
       activityGroups: [],
       labels: [],
     };
-    // Backward compatibility: convert old 'activities' to 'activityGroups'
-    if (
-      this.organizationData.activities &&
-      !this.organizationData.activityGroups
-    ) {
-      this.organizationData.activityGroups = this.organizationData.activities;
-      delete this.organizationData.activities;
+    
+    // Migrate and validate data
+    const migratedData = ConfigValidator.migrate(rawData);
+    this.organizationData = ConfigValidator.validate(migratedData);
+    
+    // Log validation errors if any (for debugging)
+    const errors = ConfigValidator.getErrors(this.organizationData);
+    if (errors.length > 0) {
+      console.warn('YearWheel organizationData validation warnings:', errors);
     }
     // For backward compatibility: merge old ringsData into organizationData.rings if needed
     if (
