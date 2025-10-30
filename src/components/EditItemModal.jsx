@@ -7,9 +7,9 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
   const { t } = useTranslation(['editor']);
   const [formData, setFormData] = useState({
     name: item.name,
-    ringId: item.ringId,
-    activityId: item.activityId,
-    labelId: item.labelId,
+    ringId: item.ringId || '',
+    activityId: item.activityId || '',
+    labelId: item.labelId || '',
     startDate: item.startDate,
     endDate: item.endDate,
     time: item.time || '',
