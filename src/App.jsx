@@ -2487,6 +2487,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             colors={colors}
             onColorsChange={handleColorsChange}
             onPaletteChange={handlePaletteChange}
+            year={year}
+            zoomedMonth={zoomedMonth}
+            zoomedQuarter={zoomedQuarter}
             onZoomToMonth={setZoomedMonth}
             onZoomToQuarter={setZoomedQuarter}
             showRingNames={showRingNames}

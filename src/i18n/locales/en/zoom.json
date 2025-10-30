@@ -1,0 +1,14 @@
+{
+  "months": "Months",
+  "quarters": "Quarters",
+  "activities": "activities",
+  "resetToFullYear": "Reset to full year view",
+  "clickMonthToZoom": "Click on a month to zoom in",
+  "clickQuarterToZoom": "Click on a quarter to zoom in",
+  "q1Months": "Jan-Mar",
+  "q2Months": "Apr-Jun",
+  "q3Months": "Jul-Sep",
+  "q4Months": "Oct-Dec",
+  "zoomedIn": "Zoomed view active",
+  "clickToReset": "Click to reset"
+}

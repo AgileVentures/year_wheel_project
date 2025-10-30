@@ -1,0 +1,14 @@
+{
+  "months": "Månader",
+  "quarters": "Kvartal",
+  "activities": "aktiviteter",
+  "resetToFullYear": "Återställ till helårsvy",
+  "clickMonthToZoom": "Klicka på en månad för att zooma in",
+  "clickQuarterToZoom": "Klicka på ett kvartal för att zooma in",
+  "q1Months": "Jan-Mar",
+  "q2Months": "Apr-Jun",
+  "q3Months": "Jul-Sep",
+  "q4Months": "Okt-Dec",
+  "zoomedIn": "Zoomad vy aktiv",
+  "clickToReset": "Klicka för att återställa"
+}

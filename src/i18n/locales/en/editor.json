@@ -15,7 +15,12 @@
   "tabs": {
     "disc": "Disc",
     "list": "List",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "zoom": "Zoom"
+  },
+  "zoom": {
+    "quarters": "Quarters",
+    "months": "Months"
   },
   "search": {
     "placeholder": "Search activities...",
@@ -23,7 +28,7 @@
     "clear": "Clear"
   },
   "filter": {
-    "title": "Filter View",
+    "title": "Organize",
     "showAll": "Show all"
   },
   "settings": {

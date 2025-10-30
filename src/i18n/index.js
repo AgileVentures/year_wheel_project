@@ -17,6 +17,7 @@ import svExport from './locales/sv/export.json';
 import svSupport from './locales/sv/support.json';
 import svNotifications from './locales/sv/notifications.json';
 import svAffiliate from './locales/sv/affiliate.json';
+import svZoom from './locales/sv/zoom.json';
 
 // Import English translations
 import enCommon from './locales/en/common.json';
@@ -33,6 +34,7 @@ import enExport from './locales/en/export.json';
 import enSupport from './locales/en/support.json';
 import enNotifications from './locales/en/notifications.json';
 import enAffiliate from './locales/en/affiliate.json';
+import enZoom from './locales/en/zoom.json';
 
 i18n
   .use(LanguageDetector)
@@ -54,6 +56,7 @@ i18n
         support: svSupport,
         notifications: svNotifications,
         affiliate: svAffiliate,
+        zoom: svZoom,
       },
       en: {
         common: enCommon,
@@ -70,6 +73,7 @@ i18n
         support: enSupport,
         notifications: enNotifications,
         affiliate: enAffiliate,
+        zoom: enZoom,
       },
     },
     lng: 'sv', // Default language

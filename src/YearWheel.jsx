@@ -676,61 +676,63 @@ function YearWheel({
             )}
           </div>
 
-          {/* Date Zoom Controls */}
-          <div className="flex gap-2 items-center border-l border-gray-200 pl-3">
-            <span className="text-xs font-medium text-gray-600">Zooma:</span>
-            <select
-              value={selectedMonthIndex !== null ? selectedMonthIndex : ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '') {
-                  setSelectedMonthIndex(null);
-                  if (onSetZoomedMonth) onSetZoomedMonth(null);
-                  if (onSetZoomedQuarter) onSetZoomedQuarter(null);
-                } else {
-                  const monthIndex = parseInt(value);
-                  setSelectedMonthIndex(monthIndex);
-                  if (onSetZoomedMonth) onSetZoomedMonth(monthIndex);
-                  if (onSetZoomedQuarter) onSetZoomedQuarter(null);
-                }
-              }}
-              className="px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white min-w-[110px]"
-            >
-              <option value="">Hela året</option>
-              {monthNames.map((month, index) => (
-                <option key={index} value={index}>{month}</option>
-              ))}
-            </select>
-            
-            <div className="flex gap-1">
-              {[1, 2, 3, 4].map((quarter) => (
-                <button
-                  key={quarter}
-                  onClick={() => {
-                    const quarterIndex = quarter - 1;
-                    if (zoomedQuarter === quarterIndex) {
-                      // Toggle off
-                      if (onSetZoomedQuarter) onSetZoomedQuarter(null);
-                      setSelectedMonthIndex(null);
-                    } else {
-                      // Set quarter
-                      if (onSetZoomedQuarter) onSetZoomedQuarter(quarterIndex);
-                      if (onSetZoomedMonth) onSetZoomedMonth(null);
-                      setSelectedMonthIndex(null);
-                    }
-                  }}
-                  className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                    zoomedQuarter === (quarter - 1)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  title={`Kvartal ${quarter}`}
-                >
-                  Q{quarter}
-                </button>
-              ))}
+          {/* Date Zoom Controls - Only show in readonly/preview mode */}
+          {readonly && (
+            <div className="flex gap-2 items-center border-l border-gray-200 pl-3">
+              <span className="text-xs font-medium text-gray-600">Zooma:</span>
+              <select
+                value={selectedMonthIndex !== null ? selectedMonthIndex : ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '') {
+                    setSelectedMonthIndex(null);
+                    if (onSetZoomedMonth) onSetZoomedMonth(null);
+                    if (onSetZoomedQuarter) onSetZoomedQuarter(null);
+                  } else {
+                    const monthIndex = parseInt(value);
+                    setSelectedMonthIndex(monthIndex);
+                    if (onSetZoomedMonth) onSetZoomedMonth(monthIndex);
+                    if (onSetZoomedQuarter) onSetZoomedQuarter(null);
+                  }
+                }}
+                className="px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white min-w-[110px]"
+              >
+                <option value="">Hela året</option>
+                {monthNames.map((month, index) => (
+                  <option key={index} value={index}>{month}</option>
+                ))}
+              </select>
+              
+              <div className="flex gap-1">
+                {[1, 2, 3, 4].map((quarter) => (
+                  <button
+                    key={quarter}
+                    onClick={() => {
+                      const quarterIndex = quarter - 1;
+                      if (zoomedQuarter === quarterIndex) {
+                        // Toggle off
+                        if (onSetZoomedQuarter) onSetZoomedQuarter(null);
+                        setSelectedMonthIndex(null);
+                      } else {
+                        // Set quarter
+                        if (onSetZoomedQuarter) onSetZoomedQuarter(quarterIndex);
+                        if (onSetZoomedMonth) onSetZoomedMonth(null);
+                        setSelectedMonthIndex(null);
+                      }
+                    }}
+                    className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+                      zoomedQuarter === (quarter - 1)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    title={`Kvartal ${quarter}`}
+                  >
+                    Q{quarter}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

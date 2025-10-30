@@ -15,7 +15,12 @@
   "tabs": {
     "disc": "Skiva",
     "list": "Lista",
-    "calendar": "Kalender"
+    "calendar": "Kalender",
+    "zoom": "Zoom"
+  },
+  "zoom": {
+    "quarters": "Kvartal",
+    "months": "Månader"
   },
   "search": {
     "placeholder": "Sök aktiviteter...",
@@ -23,7 +28,7 @@
     "clear": "Rensa"
   },
   "filter": {
-    "title": "Filtrera Visning",
+    "title": "Organisera",
     "showAll": "Visa alla"
   },
   "settings": {

@@ -5,6 +5,8 @@ import Fuse from 'fuse.js';
 import AddItemModal from './AddItemModal';
 import EditItemModal from './EditItemModal';
 import RingIntegrationModal from './RingIntegrationModal';
+import MonthNavigator from './MonthNavigator';
+import QuarterNavigator from './QuarterNavigator';
 import { getRingIntegrations } from '../services/integrationService';
 import { showConfirmDialog } from '../utils/dialogs';
 
@@ -16,6 +18,9 @@ function OrganizationPanel({
   colors,
   onColorsChange,
   onPaletteChange,
+  year,
+  zoomedMonth,
+  zoomedQuarter,
   onZoomToMonth,
   onZoomToQuarter,
   showRingNames,
@@ -153,6 +158,14 @@ function OrganizationPanel({
     labels: true
   });
   const [expandedInnerRings, setExpandedInnerRings] = useState({});
+
+  // Sync calendar view with zoom state
+  useEffect(() => {
+    if (zoomedMonth !== null) {
+      setSelectedMonth(zoomedMonth);
+      setSelectedYear(parseInt(year));
+    }
+  }, [zoomedMonth, year]);
 
   // Calendar helpers
   const monthNames = [
@@ -821,7 +834,43 @@ function OrganizationPanel({
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
             )}
           </button>
+          <button
+            onClick={() => setActiveView('zoom')}
+            className={`pb-2 px-1 text-sm font-medium transition-colors relative ${
+              activeView === 'zoom'
+                ? 'text-gray-900'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t('editor:tabs.zoom', 'Zoom')}
+            {activeView === 'zoom' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+            )}
+          </button>
         </div>
+
+        {/* Zoom Status Indicator - Show when zoomed in */}
+        {(zoomedMonth !== null || zoomedQuarter !== null) && activeView !== 'zoom' && (
+          <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-sm flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-xs font-medium text-blue-900">
+                {t('zoom:zoomedIn')}
+                {zoomedMonth !== null && `: ${t(`common:months.${zoomedMonth}`)}`}
+                {zoomedQuarter !== null && `: Q${zoomedQuarter + 1}`}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                if (zoomedMonth !== null) onZoomToMonth(null);
+                if (zoomedQuarter !== null) onZoomToQuarter(null);
+              }}
+              className="text-xs text-blue-700 hover:text-blue-900 font-medium underline"
+            >
+              {t('zoom:clickToReset')}
+            </button>
+          </div>
+        )}
 
         {/* Search - Only show in Liste view */}
         {activeView === 'liste' && (
@@ -1101,6 +1150,50 @@ function OrganizationPanel({
               )}
             </div>
           </div>
+        )}
+
+        {activeView === 'zoom' && (
+          <>
+            {/* MÅNADER Section */}
+            <div className="px-4 py-3 border-b border-gray-200">
+              <div className="w-full flex items-center justify-between mb-3">
+                <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                  {t('zoom:months.title')}
+                </h2>
+                <span className="text-xs text-gray-500">
+                  {organizationData.items?.length || 0} {t('zoom:activities')}
+                </span>
+              </div>
+              
+              <MonthNavigator
+                year={year}
+                currentMonth={zoomedMonth}
+                organizationData={organizationData}
+                onMonthSelect={onZoomToMonth}
+                onResetZoom={() => onZoomToMonth(null)}
+              />
+            </div>
+            
+            {/* KVARTAL Section */}
+            <div className="px-4 py-3 border-b border-gray-200">
+              <div className="w-full flex items-center justify-between mb-3">
+                <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                  {t('zoom:quarters.title')}
+                </h2>
+                <span className="text-xs text-gray-500">
+                  {organizationData.items?.length || 0} {t('zoom:activities')}
+                </span>
+              </div>
+              
+              <QuarterNavigator
+                year={year}
+                currentQuarter={zoomedQuarter}
+                organizationData={organizationData}
+                onQuarterSelect={onZoomToQuarter}
+                onResetZoom={() => onZoomToQuarter(null)}
+              />
+            </div>
+          </>
         )}
 
         {activeView === 'disc' && (
