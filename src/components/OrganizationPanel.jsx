@@ -1739,6 +1739,7 @@ function OrganizationPanel({
           item={editingAktivitet}
           organizationData={organizationData}
           currentWheelId={currentWheelId}
+          zoomedMonth={zoomedMonth}
           onUpdateItem={handleUpdateAktivitet}
           onDeleteItem={handleDeleteAktivitet}
           onClose={() => setEditingAktivitet(null)}
