@@ -454,17 +454,13 @@ class InteractionHandler {
       this.dragState.previewEndAngle - this.wheel.rotationAngle
     );
 
-    // Convert to dates
+    // Convert radians to degrees for angleToDate
     const startDegrees = LayoutCalculator.radiansToDegrees(logicalStartAngle);
     const endDegrees = LayoutCalculator.radiansToDegrees(logicalEndAngle);
     
-    let newStartDate = this.wheel.angleToDate ? 
-      this.wheel.angleToDate(startDegrees) : 
-      LayoutCalculator.angleToDate(startDegrees, this.wheel.year);
-      
-    let newEndDate = this.wheel.angleToDate ? 
-      this.wheel.angleToDate(endDegrees) : 
-      LayoutCalculator.angleToDate(endDegrees, this.wheel.year);
+    // Use wheel's angleToDate method which handles zoom levels and initAngle
+    let newStartDate = this.wheel.angleToDate(startDegrees);
+    let newEndDate = this.wheel.angleToDate(endDegrees);
 
     // Clamp to year boundaries
     const yearStart = new Date(this.wheel.year, 0, 1);
@@ -502,9 +498,15 @@ class InteractionHandler {
       updates.ringId = this.dragState.targetRing.id;
     }
 
+    // Create updated item with new dates and potentially new ring
+    const updatedItem = {
+      ...this.dragState.draggedItem,
+      ...updates
+    };
+
     // Notify parent of changes
-    if (this.wheel.onItemUpdate) {
-      this.wheel.onItemUpdate(this.dragState.draggedItem.id, updates);
+    if (this.wheel.options?.onUpdateAktivitet) {
+      this.wheel.options.onUpdateAktivitet(updatedItem);
     }
 
     // Reset drag state
