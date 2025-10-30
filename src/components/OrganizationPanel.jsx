@@ -1168,9 +1168,14 @@ function OrganizationPanel({
               <MonthNavigator
                 year={year}
                 currentMonth={zoomedMonth}
+                currentQuarter={zoomedQuarter}
                 organizationData={organizationData}
                 onMonthSelect={onZoomToMonth}
-                onResetZoom={() => onZoomToMonth(null)}
+                onQuarterSelect={onZoomToQuarter}
+                onResetZoom={() => {
+                  onZoomToMonth(null);
+                  onZoomToQuarter(null);
+                }}
               />
             </div>
             
@@ -1188,9 +1193,14 @@ function OrganizationPanel({
               <QuarterNavigator
                 year={year}
                 currentQuarter={zoomedQuarter}
+                currentMonth={zoomedMonth}
                 organizationData={organizationData}
                 onQuarterSelect={onZoomToQuarter}
-                onResetZoom={() => onZoomToQuarter(null)}
+                onMonthSelect={onZoomToMonth}
+                onResetZoom={() => {
+                  onZoomToMonth(null);
+                  onZoomToQuarter(null);
+                }}
               />
             </div>
           </>

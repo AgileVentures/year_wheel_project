@@ -18,8 +18,10 @@ import { useTranslation } from 'react-i18next';
 function MonthNavigator({ 
   year, 
   currentMonth = null, // 0-11 or null for full year view
+  currentQuarter = null, // 0-3 or null - needed to detect quarter zoom
   organizationData,
   onMonthSelect,
+  onQuarterSelect, // Needed to clear quarter when selecting month
   onResetZoom,
   className = ''
 }) {
@@ -62,13 +64,21 @@ function MonthNavigator({
   // Get total activities across all months
   const totalActivities = organizationData?.items?.length || 0;
 
-  // Handle month click
+  // Handle month click with smart zoom logic
   const handleMonthClick = (monthIndex) => {
     if (currentMonth === monthIndex) {
       // Clicking current month again = reset to full year
       onResetZoom?.();
+    } else if (currentQuarter !== null) {
+      // If a quarter is zoomed, first reset to full year, then zoom to month
+      onResetZoom?.();
+      setTimeout(() => {
+        onQuarterSelect?.(null); // Clear quarter zoom
+        onMonthSelect?.(monthIndex);
+      }, 300); // Short delay for smooth transition
     } else {
-      // Zoom to selected month
+      // Direct zoom to selected month (clear quarter just in case)
+      onQuarterSelect?.(null);
       onMonthSelect?.(monthIndex);
     }
   };

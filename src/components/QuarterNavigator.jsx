@@ -17,8 +17,10 @@ import { useTranslation } from 'react-i18next';
 function QuarterNavigator({ 
   year, 
   currentQuarter = null, // 0-3 or null for full year view
+  currentMonth = null, // 0-11 or null - needed to detect month zoom
   organizationData,
   onQuarterSelect,
+  onMonthSelect, // Needed to clear month when selecting quarter
   onResetZoom,
   className = ''
 }) {
@@ -39,11 +41,21 @@ function QuarterNavigator({
     }).length;
   };
 
+  // Handle quarter click with smart zoom logic
   const handleQuarterClick = (quarterIndex) => {
-    // Toggle: if clicking the current quarter, reset to year view
     if (currentQuarter === quarterIndex) {
+      // Clicking current quarter again = reset to full year
       onResetZoom();
+    } else if (currentMonth !== null) {
+      // If a month is zoomed, first reset to full year, then zoom to quarter
+      onResetZoom();
+      setTimeout(() => {
+        onMonthSelect?.(null); // Clear month zoom
+        onQuarterSelect(quarterIndex);
+      }, 300); // Short delay for smooth transition
     } else {
+      // Direct zoom to selected quarter (clear month just in case)
+      onMonthSelect?.(null);
       onQuarterSelect(quarterIndex);
     }
   };
