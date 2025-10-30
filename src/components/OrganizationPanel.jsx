@@ -1729,7 +1729,6 @@ function OrganizationPanel({
           onAddItem={handleAddAktivitet}
           onClose={() => setIsAddModalOpen(false)}
           currentWheelId={currentWheelId}
-          zoomedMonth={zoomedMonth}
         />
       )}
 
@@ -1739,7 +1738,6 @@ function OrganizationPanel({
           item={editingAktivitet}
           organizationData={organizationData}
           currentWheelId={currentWheelId}
-          zoomedMonth={zoomedMonth}
           onUpdateItem={handleUpdateAktivitet}
           onDeleteItem={handleDeleteAktivitet}
           onClose={() => setEditingAktivitet(null)}

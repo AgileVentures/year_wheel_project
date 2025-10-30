@@ -3,14 +3,13 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
 
-function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onClose, currentWheelId, zoomedMonth = null }) {
+function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onClose, currentWheelId }) {
   const { t } = useTranslation(['editor']);
   const [formData, setFormData] = useState({
     name: item.name,
     ringId: item.ringId,
     activityId: item.activityId,
     labelId: item.labelId,
-    granularity: item.granularity || 'week', // Preserve existing or default to week
     startDate: item.startDate,
     endDate: item.endDate,
     time: item.time || '',
@@ -90,7 +89,6 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
       ringId: formData.ringId,
       activityId: formData.activityId,
       labelId: formData.labelId,
-      granularity: formData.granularity,
       startDate: formData.startDate,
       endDate: formData.endDate,
       ...(formData.time ? { time: formData.time } : {}),
@@ -254,35 +252,6 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                   {t('editor:editItemModal.linkWillOpenInNewTab')}
                 </p>
               </div>
-            )}
-          </div>
-
-          {/* Time Granularity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editor:editItemModal.granularityLabel', 'Tidsprecision')}
-            </label>
-            <select
-              value={formData.granularity}
-              onChange={(e) => handleChange('granularity', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              {zoomedMonth !== null && (
-                <option value="day">{t('editor:editItemModal.granularityDay', 'Dag')}</option>
-              )}
-              <option value="week">{t('editor:editItemModal.granularityWeek', 'Vecka')}</option>
-              <option value="month">{t('editor:editItemModal.granularityMonth', 'Månad')}</option>
-              <option value="quarter">{t('editor:editItemModal.granularityQuarter', 'Kvartal')}</option>
-            </select>
-            {zoomedMonth === null && formData.granularity === 'day' && (
-              <p className="mt-1 text-xs text-amber-600">
-                ⚠️ {t('editor:editItemModal.granularityDayWarning', 'Dagsprecision visas endast i månadsvyn')}
-              </p>
-            )}
-            {zoomedMonth === null && (
-              <p className="mt-1 text-xs text-gray-500">
-                💡 {t('editor:editItemModal.granularityHint', 'Zooma in på en månad för dagsprecision')}
-              </p>
             )}
           </div>
 

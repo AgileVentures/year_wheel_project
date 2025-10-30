@@ -753,7 +753,6 @@ class YearWheel {
     opacity,
     highlight,
     renderDecision,
-    granularity,
   }) {
     const endRadius = startRadius + width; // Properly define endRadius
     const calculatedStartAngle = this.toRadians(startAngle);
@@ -836,47 +835,6 @@ class YearWheel {
       this.context.strokeStyle = "rgba(59, 130, 246, 0.4)"; // Very subtle blue
       this.context.stroke();
       this.context.closePath();
-    }
-
-    // Draw granularity border to visually differentiate time precision
-    // Week: solid (default), Month: dotted, Quarter: dashed
-    if (granularity && granularity !== 'week') {
-      this.context.save();
-      this.context.beginPath();
-      this.context.arc(
-        this.center.x,
-        this.center.y,
-        startRadius,
-        calculatedStartAngle,
-        calculatedEndAngle,
-        false
-      );
-      this.context.arc(
-        this.center.x,
-        this.center.y,
-        startRadius + width,
-        calculatedEndAngle,
-        calculatedStartAngle,
-        true
-      );
-      
-      // Set line dash pattern based on granularity
-      if (granularity === 'month') {
-        this.context.setLineDash([5, 3]); // Dotted for monthly items
-      } else if (granularity === 'quarter') {
-        this.context.setLineDash([10, 5]); // Dashed for quarterly items
-      } else if (granularity === 'day') {
-        this.context.setLineDash([]); // Solid for daily items (same as week)
-      }
-      
-      this.context.lineWidth = 2; // Visible but not overwhelming
-      this.context.strokeStyle = "rgba(0, 0, 0, 0.3)"; // Subtle dark border
-      this.context.stroke();
-      this.context.closePath();
-      
-      // Reset line dash for subsequent drawing operations
-      this.context.setLineDash([]);
-      this.context.restore();
     }
 
     if (text !== undefined) {
@@ -4019,49 +3977,13 @@ class YearWheel {
     this.context.fillStyle = itemColor;
     this.context.fill();
 
-    // Dashed border (always dashed during drag to indicate preview state)
+    // Dashed border
     this.context.globalAlpha = 0.9;
     this.context.strokeStyle = "#3B82F6";
     this.context.lineWidth = 2;
     this.context.setLineDash([5, 5]);
     this.context.stroke();
     this.context.setLineDash([]);
-
-    // Draw granularity border on top if not default week
-    const granularity = item.granularity || 'week';
-    if (granularity !== 'week') {
-      this.context.globalAlpha = 0.7;
-      this.context.beginPath();
-      this.context.arc(
-        this.center.x,
-        this.center.y,
-        startRadius,
-        startAngle,
-        endAngle,
-        false
-      );
-      this.context.arc(
-        this.center.x,
-        this.center.y,
-        endRadius,
-        endAngle,
-        startAngle,
-        true
-      );
-      this.context.closePath();
-      
-      // Apply granularity-specific line dash
-      if (granularity === 'month') {
-        this.context.setLineDash([5, 3]); // Dotted
-      } else if (granularity === 'quarter') {
-        this.context.setLineDash([10, 5]); // Dashed
-      }
-      
-      this.context.strokeStyle = "rgba(0, 0, 0, 0.4)";
-      this.context.lineWidth = 2;
-      this.context.stroke();
-      this.context.setLineDash([]);
-    }
 
     this.context.restore();
   }
@@ -4898,7 +4820,6 @@ class YearWheel {
               isVertical: textOrientation === "vertical",
               highlight: isHovered,
               renderDecision: renderDecision, // Pass the decision to renderer
-              granularity: item.granularity || 'week', // Default to week for backward compatibility
             });
 
             // Collect label indicator to draw last (on top)
@@ -5222,7 +5143,6 @@ class YearWheel {
             isVertical: textOrientation === "vertical",
             highlight: isHovered,
             renderDecision: renderDecision, // Pass the decision to renderer
-            granularity: item.granularity || 'week', // Default to week for backward compatibility
           });
 
           // Collect label indicator to draw last (on top)
