@@ -4,13 +4,21 @@ import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
 import ErrorDisplay from './ErrorDisplay';
 
-function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) {
+function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId, zoomedMonth = null }) {
   const { t } = useTranslation(['editor']);
+  
+  // Determine default granularity based on zoom level
+  const getDefaultGranularity = () => {
+    if (zoomedMonth !== null) return 'day'; // Month view: allow day precision
+    return 'week'; // Full year/quarter view: default to week
+  };
+  
   const [formData, setFormData] = useState({
     name: '',
     ringId: organizationData.rings[0]?.id || '',
     activityId: organizationData.activityGroups[0]?.id || '',
     labelId: organizationData.labels[0]?.id || '',
+    granularity: getDefaultGranularity(),
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     time: '',
@@ -92,6 +100,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
       ringId: formData.ringId,
       activityId: formData.activityId,
       labelId: formData.labelId,
+      granularity: formData.granularity,
       startDate: formData.startDate,
       endDate: formData.endDate,
       ...(formData.time && { time: formData.time }),
@@ -263,6 +272,30 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                   {t('editor:addItemModal.linkWillOpenInNewTab')}
                 </p>
               </div>
+            )}
+          </div>
+
+          {/* Time Granularity */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('editor:addItemModal.granularityLabel', 'Tidsprecision')}
+            </label>
+            <select
+              value={formData.granularity}
+              onChange={(e) => handleChange('granularity', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              {zoomedMonth !== null && (
+                <option value="day">{t('editor:addItemModal.granularityDay', 'Dag')}</option>
+              )}
+              <option value="week">{t('editor:addItemModal.granularityWeek', 'Vecka')}</option>
+              <option value="month">{t('editor:addItemModal.granularityMonth', 'Månad')}</option>
+              <option value="quarter">{t('editor:addItemModal.granularityQuarter', 'Kvartal')}</option>
+            </select>
+            {zoomedMonth === null && (
+              <p className="mt-1 text-xs text-gray-500">
+                💡 {t('editor:addItemModal.granularityHint', 'Zooma in på en månad för dagsprecision')}
+              </p>
             )}
           </div>
 

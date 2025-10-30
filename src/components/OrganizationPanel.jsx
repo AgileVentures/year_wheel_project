@@ -1729,6 +1729,7 @@ function OrganizationPanel({
           onAddItem={handleAddAktivitet}
           onClose={() => setIsAddModalOpen(false)}
           currentWheelId={currentWheelId}
+          zoomedMonth={zoomedMonth}
         />
       )}
 

@@ -158,6 +158,9 @@ class ConfigValidator {
         return null;
       }
 
+      // Validate granularity (default to 'week' for backward compatibility)
+      const granularity = this.validateGranularity(item.granularity);
+
       return {
         id: item.id,
         name: item.name || 'Untitled',
@@ -166,6 +169,7 @@ class ConfigValidator {
         ringId: item.ringId,
         activityId: item.activityId,
         labelId: item.labelId || null, // Optional
+        granularity: granularity, // NEW: time granularity
         time: item.time || null,
         description: item.description || '',
         source: item.source || 'manual',
@@ -173,6 +177,22 @@ class ConfigValidator {
         sync_metadata: item.sync_metadata || null
       };
     }).filter(Boolean);
+  }
+
+  /**
+   * Validate granularity value
+   * @param {string} granularity - Granularity string
+   * @returns {string} Valid granularity ('day'|'week'|'month'|'quarter')
+   */
+  static validateGranularity(granularity) {
+    const validGranularities = ['day', 'week', 'month', 'quarter'];
+    
+    if (typeof granularity === 'string' && validGranularities.includes(granularity.toLowerCase())) {
+      return granularity.toLowerCase();
+    }
+    
+    // Default to 'week' for backward compatibility (current minimum width behavior)
+    return 'week';
   }
 
   /**
