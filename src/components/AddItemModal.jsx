@@ -169,7 +169,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t('editor:addItemModal.itemNameLabel')} *
+                {t('editor:addItemModal.itemNameLabel')}
               </label>
               <input
                 type="text"
@@ -191,7 +191,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:addItemModal.startDateLabel')} *
+                    {t('editor:addItemModal.startDateLabel')}
                   </label>
                   <input
                     type="date"
@@ -207,7 +207,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:addItemModal.endDateLabel')} *
+                    {t('editor:addItemModal.endDateLabel')}
                   </label>
                   <input
                     type="date"
@@ -249,7 +249,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
               {/* Ring */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:addItemModal.ringLabel')} *
+                  {t('editor:addItemModal.ringLabel')}
                 </label>
                 <select
                   value={formData.ringId}
@@ -267,7 +267,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
               {/* Activity */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:addItemModal.activityLabel')} *
+                  {t('editor:addItemModal.activityLabel')}
                 </label>
                 <select
                   value={formData.activityId}

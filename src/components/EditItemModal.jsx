@@ -158,7 +158,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t('editor:editItemModal.itemNameLabel')} *
+                {t('editor:editItemModal.itemNameLabel')}
               </label>
               <input
                 type="text"
@@ -180,7 +180,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:editItemModal.startDateLabel')} *
+                    {t('editor:editItemModal.startDateLabel')}
                   </label>
                   <input
                     type="date"
@@ -196,7 +196,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:editItemModal.endDateLabel')} *
+                    {t('editor:editItemModal.endDateLabel')}
                   </label>
                   <input
                     type="date"
@@ -238,7 +238,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               {/* Ring */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:editItemModal.ringLabel')} *
+                  {t('editor:editItemModal.ringLabel')}
                 </label>
                 <select
                   value={formData.ringId}
@@ -256,7 +256,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
               {/* Activity */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:editItemModal.activityLabel')} *
+                  {t('editor:editItemModal.activityLabel')}
                 </label>
                 <select
                   value={formData.activityId}
