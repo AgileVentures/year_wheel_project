@@ -333,7 +333,12 @@ function YearWheel({
     } else if (zoomedMonth === null && zoomedQuarter === null) {
       setSelectedMonthIndex(null);
     }
-  }, [zoomedMonth, zoomedQuarter]);
+    
+    // Update YearWheelClass instance with new zoom state
+    if (yearWheel && yearWheel.updateZoomState) {
+      yearWheel.updateZoomState(zoomedMonth, zoomedQuarter);
+    }
+  }, [zoomedMonth, zoomedQuarter, yearWheel]);
 
   // Center vertical scroll position after wheel is created and layout is complete, then fade in
   useEffect(() => {
@@ -443,8 +448,7 @@ function YearWheel({
     showRingNames,
     showLabels,
     weekRingDisplayMode,
-    zoomedMonth,
-    zoomedQuarter,
+    // zoomedMonth and zoomedQuarter excluded - updated via updateZoomState to prevent wheel recreation
     monthNames,
     handleItemClick,
     handleDragStart,

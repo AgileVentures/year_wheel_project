@@ -243,6 +243,25 @@ class YearWheel {
     }
   }
 
+  // Update zoomed month/quarter and redraw
+  updateZoomState(zoomedMonth, zoomedQuarter) {
+    const monthChanged = this.zoomedMonth !== zoomedMonth;
+    const quarterChanged = this.zoomedQuarter !== zoomedQuarter;
+    
+    if (monthChanged || quarterChanged) {
+      this.zoomedMonth = zoomedMonth !== undefined && zoomedMonth !== null ? zoomedMonth : null;
+      this.zoomedQuarter = zoomedQuarter !== undefined && zoomedQuarter !== null ? zoomedQuarter : null;
+      
+      // Invalidate cache since zoom state affects rendering
+      this.invalidateCache();
+      
+      // Redraw with new zoom state
+      if (!this.dragState || !this.dragState.isDragging) {
+        this.create();
+      }
+    }
+  }
+
   // Update selection mode and selected items
   updateSelection(selectionMode, selectedItems) {
     const changed =
@@ -3858,6 +3877,9 @@ class YearWheel {
     this.canvas.width = this.size;
     this.canvas.height = this.size;
     // Note: DO NOT set canvas.style here - let React component control display size for zoom
+
+    // Explicitly clear canvas to prevent ghosting artifacts
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Apply rotation and draw rotating elements (months, events)
     this.drawRotatingElements();
