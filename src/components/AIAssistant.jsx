@@ -50,14 +50,19 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   // OpenAI Agents SDK server-side conversation management
   // Store the last response ID to chain context across turns
   const [lastResponseId, setLastResponseId] = useState(null);
-
+  
+  // Reset conversation when switching wheels or pages
+  useEffect(() => {
+    console.log('[AIAssistant] Wheel/Page changed - resetting conversation');
+    setLastResponseId(null);
+    setMessages([]);
+  }, [wheelId, currentPageId]);
+  
   useEffect(() => {
     if (wheelId && isOpen) {
       loadWheelContext();
     }
-  }, [wheelId, isOpen]);
-
-  const loadWheelContext = async () => {
+  }, [wheelId, isOpen]);  const loadWheelContext = async () => {
     try {
       // Fetch wheel info
       const { data: wheel, error: wheelError } = await supabase

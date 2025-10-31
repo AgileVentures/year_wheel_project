@@ -1300,6 +1300,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Load new page data
       const newPage = pages.find(p => p.id === pageId);
       if (newPage) {
+        // CRITICAL: First clear items immediately to prevent flickering of old data
+        setOrganizationData(prevData => ({
+          ...prevData,
+          items: []  // Clear items immediately
+        }));
+        
         setCurrentPageId(pageId);
         
         // Fetch page-specific items from database
@@ -1309,7 +1315,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Only update page-specific data (items, year)
         setOrganizationData(prevData => ({
           ...prevData,
-          items: pageItems  // Update only items - rings/groups/labels are shared!
+          items: pageItems  // Update with new items - rings/groups/labels are shared!
         }));
         
         if (newPage.year) {
@@ -2657,6 +2663,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
           <div className="w-full h-full flex items-center justify-center">
             <YearWheel
+              key={currentPageId} // Force remount when page changes to clear cached data
               wheelId={wheelId}
               wheelData={wheelData}
               title={title}
