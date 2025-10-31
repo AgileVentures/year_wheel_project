@@ -268,7 +268,7 @@ async function createActivity(
   return {
     success: true,
     itemsCreated: itemsCreated.length,
-    message: `✅ Aktivitet "${args.name}" skapad (${args.startDate} till ${args.endDate})${itemsCreated.length > 1 ? ` - delad över ${itemsCreated.length} år` : ''}`,
+    message: `Aktivitet "${args.name}" skapad (${args.startDate} till ${args.endDate})${itemsCreated.length > 1 ? ` - delad över ${itemsCreated.length} år` : ''}`,
     ringName: ring.name,
     groupName: group.name,
   }
@@ -330,7 +330,7 @@ async function createRing(
 
   return {
     success: true,
-    message: `✅ Ring "${args.name}" skapad (typ: ${args.type === 'outer' ? 'yttre (aktiviteter)' : 'inre (text)'}, färg: ${finalColor})`,
+    message: `Ring "${args.name}" skapad (typ: ${args.type === 'outer' ? 'yttre (aktiviteter)' : 'inre (text)'}, färg: ${finalColor})`,
     ringId: ring.id,
     ringName: ring.name,
   }
@@ -374,7 +374,7 @@ async function createGroup(
 
   return {
     success: true,
-    message: `✅ Aktivitetsgrupp "${args.name}" skapad med färg ${args.color}`,
+    message: `Aktivitetsgrupp "${args.name}" skapad med färg ${args.color}`,
     groupId: group.id,
     groupName: group.name,
   }
@@ -1098,15 +1098,18 @@ function createAgentSystem() {
     description: 'Get current rings, groups, and date. Call this when you need fresh IDs or date information.',
     parameters: z.object({}),
     async execute(_input: {}, ctx: RunContext<WheelContext>) {
+      console.log('🔧 [TOOL] get_current_context called')
       const { supabase, wheelId } = ctx.context
       const { rings, groups } = await getCurrentRingsAndGroups(supabase, wheelId)
       const dateInfo = getCurrentDate()
       
-      return JSON.stringify({
+      const result = {
         date: dateInfo,
         rings: rings.map((r: any) => ({ id: r.id, name: r.name, type: r.type, color: r.color })),
         groups: groups.map((g: any) => ({ id: g.id, name: g.name, color: g.color })),
-      })
+      }
+      console.log('✅ [TOOL] get_current_context result:', JSON.stringify(result, null, 2))
+      return JSON.stringify(result)
     }
   })
 
@@ -1119,8 +1122,10 @@ function createAgentSystem() {
     description: 'Create a new ring. Use "outer" type for activity rings (most common), "inner" for text rings.',
     parameters: CreateRingInput,
     async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext>) {
+      console.log('🔧 [TOOL] create_ring called with:', JSON.stringify(input, null, 2))
       const { supabase, wheelId } = ctx.context
       const result = await createRing(supabase, wheelId, input)
+      console.log('✅ [TOOL] create_ring result:', JSON.stringify(result, null, 2))
       return JSON.stringify(result)
     }
   })
@@ -1130,8 +1135,10 @@ function createAgentSystem() {
     description: 'Create a new activity group for organizing activities.',
     parameters: CreateGroupInput,
     async execute(input: z.infer<typeof CreateGroupInput>, ctx: RunContext<WheelContext>) {
+      console.log('🔧 [TOOL] create_activity_group called with:', JSON.stringify(input, null, 2))
       const { supabase, wheelId } = ctx.context
       const result = await createGroup(supabase, wheelId, input)
+      console.log('✅ [TOOL] create_activity_group result:', JSON.stringify(result, null, 2))
       return JSON.stringify(result)
     }
   })
@@ -1314,7 +1321,9 @@ EXAMPLES:
     description: 'Create an activity/event. Can span multiple years. Requires ring ID and activity group ID.',
     parameters: CreateActivityInput,
     async execute(input: z.infer<typeof CreateActivityInput>, ctx: RunContext<WheelContext>) {
+      console.log('🔧 [TOOL] create_activity called with:', JSON.stringify(input, null, 2))
       const result = await createActivity(ctx, input)
+      console.log('✅ [TOOL] create_activity result:', JSON.stringify(result, null, 2))
       return JSON.stringify(result)
     }
   })
@@ -1389,7 +1398,7 @@ You internally:
   Step 3: Date logic: user said "november" + current date is 2025-10-14 → november 2025 → "2025-11-01" to "2025-11-30"
   Step 4: [Call create_activity with {name: "kampanj", startDate: "2025-11-01", endDate: "2025-11-30", ringId: "abc-123", activityGroupId: "def-456"}]
   Step 5: Tool returns {success: true, message: "Aktivitet skapad"}
-You respond: "✅ **Klart!** Jag har skapat aktiviteten:\n\n📌 **Kampanj**\n📅 November 2025 (2025-11-01 till 2025-11-30)\n🎯 Ring: Kampanjer\n🏷️ Grupp: Kampanj"
+You respond: "**Klart!** Jag har skapat aktiviteten:\n\n**Kampanj**\nNovember 2025 (2025-11-01 till 2025-11-30)\nRing: Kampanjer\nGrupp: Kampanj"
 
 SMART MATCHING KEYWORDS:
 - Contains "kampanj" → ring: "Kampanjer", group: "Kampanj"
@@ -1933,7 +1942,7 @@ Returnera ENDAST giltig JSON i detta format:
             activities: activitiesCreated
           },
           errors: errors.length > 0 ? errors : undefined,
-          message: `✅ Skapade: ${createdRings.size} ringar, ${createdGroups.size} grupper, ${activitiesCreated} aktiviteter${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+          message: `Skapade: ${createdRings.size} ringar, ${createdGroups.size} grupper, ${activitiesCreated} aktiviteter${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
         }
 
         console.log('[apply_suggested_plan] Summary:', summary)
@@ -2226,16 +2235,45 @@ serve(async (req: Request) => {
     ]
 
     // Run agent with conversation thread
+    console.log('🚀 [AI] Starting agent execution...')
     const result = await run(orchestrator, thread, {
       context: wheelContext,
       maxTurns: 20,
     })
 
+    console.log('✅ [AI] Agent execution complete')
     console.log('[AI Assistant V2] Result:', { 
       finalOutput: result.finalOutput,
       agentUsed: result.agent?.name,
-      newHistoryLength: result.history.length
+      newHistoryLength: result.history.length,
+      historyRoles: result.history.map((h: any) => h.role)
     })
+    
+    // Log tool calls for debugging (check if agents actually executed tools)
+    const toolCalls = result.history.filter((h: any) => 
+      h.role === 'assistant' && 
+      h.content && 
+      typeof h.content !== 'string' &&
+      Array.isArray(h.content)
+    )
+    if (toolCalls.length > 0) {
+      console.log('🔧 [AI] Tool calls detected:', toolCalls.length)
+      toolCalls.forEach((call: any, idx: number) => {
+        console.log(`  Tool call ${idx + 1}:`, JSON.stringify(call, null, 2))
+      })
+    } else {
+      console.log('⚠️ [AI] No tool calls detected in history')
+    }
+
+    // Collect tool execution summary for verification
+    const toolExecutionSummary: string[] = []
+    result.history.forEach((item: any) => {
+      if (item.role === 'tool' && item.name) {
+        toolExecutionSummary.push(`${item.name}`)
+      }
+    })
+    
+    console.log('📊 [AI] Tools executed:', toolExecutionSummary.length > 0 ? toolExecutionSummary.join(', ') : 'None')
 
     // Return response with updated history
     // Frontend will store result.history and send it back on next request
@@ -2245,6 +2283,7 @@ serve(async (req: Request) => {
         message: result.finalOutput,
         agentUsed: result.agent?.name || 'Year Wheel Assistant',
         conversationHistory: result.history, // Send back complete history for next turn
+        toolsExecuted: toolExecutionSummary, // For debugging/verification
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

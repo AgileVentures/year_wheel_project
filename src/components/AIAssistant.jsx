@@ -246,7 +246,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     text = text.replace(/\b(page_id|pageId):\s*[^\s,)]+/gi, '');
     
     // Clean up error messages - make them more user-friendly
-    text = text.replace(/Error:/gi, '⚠️');
+    text = text.replace(/Error:/gi, 'Fel:');
     text = text.replace(/Kunde inte (skapa|hitta|uppdatera)/gi, 'Det gick inte att $1');
     
     // Clean up double spaces, trailing commas, empty parentheses
@@ -335,6 +335,13 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
 
       const result = await response.json();
       console.log('✨ [AI Assistant] Complete!', result);
+      
+      // Log tool execution for verification
+      if (result.toolsExecuted && result.toolsExecuted.length > 0) {
+        console.log('🔧 [AI Assistant] Tools executed:', result.toolsExecuted);
+      } else {
+        console.warn('⚠️ [AI Assistant] No tools executed - AI may have only responded without taking action');
+      }
 
       let assistantMessage = '';
       if (result.message) {
@@ -357,25 +364,42 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
 
       // If backend returned conversationHistory, rebuild messages from it
       if (result.conversationHistory && Array.isArray(result.conversationHistory)) {
-        // Convert SDK history format to our UI format
-        const uiMessages = result.conversationHistory.map((item, index) => ({
-          id: Date.now() + index,
-          role: item.role,
-          content: typeof item.content === 'string' ? item.content : 
-                   Array.isArray(item.content) ? item.content.map(c => c.text || c).join('') : 
-                   JSON.stringify(item.content),
-          sdkFormat: true, // Mark as coming from SDK
-          sdkItem: item // Store original SDK format for next request
-        }));
+        // Convert SDK history format to our UI format, filtering out empty messages
+        const uiMessages = result.conversationHistory
+          .map((item, index) => {
+            let content = '';
+            if (typeof item.content === 'string') {
+              content = item.content;
+            } else if (Array.isArray(item.content)) {
+              content = item.content.map(c => c.text || c).join('');
+            } else if (item.content) {
+              content = JSON.stringify(item.content);
+            }
+            
+            // Clean up the content
+            content = cleanAIResponse(content);
+            
+            return {
+              id: Date.now() + index,
+              role: item.role,
+              content: content,
+              sdkFormat: true, // Mark as coming from SDK
+              sdkItem: item // Store original SDK format for next request
+            };
+          })
+          .filter(msg => msg.content && msg.content.trim().length > 0); // Filter out empty messages
+        
         setMessages(uiMessages);
       } else {
-        // Fallback: just append assistant message
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: assistantMessage,
-          id: Date.now(),
-          sdkFormat: false
-        }]);
+        // Fallback: just append assistant message if it's not empty
+        if (assistantMessage && assistantMessage.trim().length > 0) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: assistantMessage,
+            id: Date.now(),
+            sdkFormat: false
+          }]);
+        }
       }
 
       console.log('[AI] Reloading...');
@@ -389,7 +413,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `${friendlyError}\n\n💡 **Tips:** Du kan:\n- Försöka formulera din fråga på ett annat sätt\n- Kolla att alla nödvändiga sidor och strukturer finns\n- Försöka med en enklare uppgift först`,
+        content: `${friendlyError}\n\n**Tips:** Du kan:\n- Försöka formulera din fråga på ett annat sätt\n- Kolla att alla nödvändiga sidor och strukturer finns\n- Försöka med en enklare uppgift först`,
         isError: true,
         id: Date.now(),
         canRetry: true
@@ -498,7 +522,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                   }}
                   className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
                 >
-                  🔄 Försök igen
+                  Försök igen
                 </button>
               )}
             </div>
@@ -515,7 +539,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 </span>
               </div>
               <div className="text-xs text-gray-600 mt-1">
-                ✨ AI-assistenten tänker...
+                AI-assistenten arbetar...
               </div>
             </div>
           </div>
