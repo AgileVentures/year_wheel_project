@@ -332,23 +332,37 @@ class YearWheel {
     const avatarX = this.center.x + Math.cos(angleRad) * avatarRadius;
     const avatarY = this.center.y + Math.sin(angleRad) * avatarRadius;
     
-    // Avatar size based on item size (responsive)
-    const avatarSize = Math.min(Math.max(itemWidth * 0.8, 16), 32); // Between 16-32px
+    // MUCH LARGER avatar size for better visibility - fixed 48px
+    const avatarSize = 48;
     
-    // Draw avatar circle
     this.context.save();
+    
+    // Draw shadow for depth
+    this.context.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    this.context.shadowBlur = 8;
+    this.context.shadowOffsetX = 2;
+    this.context.shadowOffsetY = 2;
+    
+    // Draw outer white border (makes it pop against any background)
+    this.context.beginPath();
+    this.context.arc(avatarX, avatarY, avatarSize / 2 + 3, 0, Math.PI * 2);
+    this.context.fillStyle = '#FFFFFF';
+    this.context.fill();
+    
+    // Remove shadow for inner elements
+    this.context.shadowColor = 'transparent';
+    this.context.shadowBlur = 0;
+    
+    // Draw avatar circle with vibrant color
     this.context.beginPath();
     this.context.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
-    this.context.fillStyle = '#3B82F6'; // Blue background
+    this.context.fillStyle = '#2563EB'; // Darker, more vibrant blue
     this.context.fill();
-    this.context.strokeStyle = '#FFFFFF'; // White border
-    this.context.lineWidth = 2;
-    this.context.stroke();
     
     // Draw user initial
     const initial = (editor.email?.charAt(0) || '?').toUpperCase();
     this.context.fillStyle = '#FFFFFF';
-    this.context.font = `bold ${Math.floor(avatarSize * 0.55)}px sans-serif`;
+    this.context.font = `bold ${Math.floor(avatarSize * 0.5)}px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif`;
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
     this.context.fillText(initial, avatarX, avatarY);
