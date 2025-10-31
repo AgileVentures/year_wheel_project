@@ -891,27 +891,6 @@ class YearWheel {
     this.context.fill();
     this.context.closePath();
 
-    // Drawing the separating lines (from minRadius outward, not from center)
-    const innerStartCoords = this.moveToAngle(
-      this.minRadius,
-      calculatedStartAngle
-    );
-    const innerEndCoords = this.moveToAngle(this.minRadius, calculatedEndAngle);
-
-    this.context.beginPath();
-    this.context.moveTo(innerStartCoords.x, innerStartCoords.y);
-    this.context.lineTo(outerStartCoords.x, outerStartCoords.y);
-    this.context.lineWidth = 0.5; // Ultra-thin lines for minimal visual noise
-    this.context.strokeStyle = "rgba(255, 255, 255, 0.15)"; // Very subtle dividers
-    this.context.stroke();
-
-    this.context.beginPath();
-    this.context.moveTo(innerEndCoords.x, innerEndCoords.y);
-    this.context.lineTo(outerEndCoords.x, outerEndCoords.y);
-    this.context.lineWidth = 0.5; // Ultra-thin lines for minimal visual noise
-    this.context.strokeStyle = "rgba(255, 255, 255, 0.15)"; // Very subtle dividers
-    this.context.stroke();
-
     // Draw highlight border if this section is highlighted (zoomed month)
     if (highlight) {
       this.context.beginPath();
@@ -4597,7 +4576,7 @@ class YearWheel {
     // Draw divider lines FIRST (under everything else)
     // Draw BEFORE rotation so lines are fixed in position
     this.context.save();
-    this.context.strokeStyle = '#FFFFFF'; // White, no transparency
+    this.context.strokeStyle = '#FFFFFF'; // Full white, no transparency
     this.context.lineWidth = 3; // Thicker lines
     
     if (this.zoomedMonth !== null) {
