@@ -1379,9 +1379,9 @@ function createAgentSystem() {
     description: 'AI-powered tool that suggests a complete Year Wheel structure (rings, activity groups, sample activities) based on a domain or use case. Use this when user wants ideas or a starting point.',
     parameters: SuggestStructureInput,
     async execute(input: z.infer<typeof SuggestStructureInput>, _ctx: RunContext<WheelContext>) {
-      console.log('🔧 [TOOL] suggest_wheel_structure called with:', JSON.stringify(input, null, 2))
+      console.log('[TOOL] suggest_wheel_structure called with:', JSON.stringify(input, null, 2))
       const suggestion = await suggestWheelStructure(input.domain, input.additionalContext)
-      console.log('✅ [TOOL] suggest_wheel_structure result:', JSON.stringify(suggestion, null, 2))
+      console.log('[TOOL] suggest_wheel_structure result:', JSON.stringify(suggestion, null, 2))
       return JSON.stringify(suggestion)
     }
   })

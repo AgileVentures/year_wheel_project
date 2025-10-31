@@ -53,7 +53,6 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   
   // Reset conversation when switching wheels or pages
   useEffect(() => {
-    console.log('[AIAssistant] Wheel/Page changed - resetting conversation');
     setLastResponseId(null);
     setMessages([]);
   }, [wheelId, currentPageId]);
@@ -107,13 +106,6 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         .eq('page_id', currentPageId);
       
       if (wheel && page) {
-        console.log('[AIAssistant] Loaded context:', { 
-          title: wheel.title, 
-          year: page.year,
-          rings: ringsCount,
-          groups: groupsCount,
-          items: itemsCount
-        });
         setWheelContext({
           title: wheel.title,
           year: page.year,
@@ -342,9 +334,6 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     setIsLoading(true);
 
     try {
-      console.log('[AI] Calling edge function...');
-      console.log('[AI] User:', userMessage.content);
-      
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -361,8 +350,6 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       // ✅ Cost-effective - only necessary context is included
       // ✅ No payload bloat - don't send 50+ messages back and forth
       // ✅ Simpler code - just pass the last response ID
-      
-      console.log('[AI] Using previousResponseId:', lastResponseId || '(fresh start - no context)');
 
       // Call AI Assistant V2 edge function (using OpenAI Agents SDK)
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant-v2`, {
@@ -386,14 +373,6 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       }
 
       const result = await response.json();
-      console.log('✨ [AI Assistant] Complete!', result);
-      
-      // Log tool execution for verification
-      if (result.toolsExecuted && result.toolsExecuted.length > 0) {
-        console.log('🔧 [AI Assistant] Tools executed:', result.toolsExecuted);
-      } else {
-        console.warn('⚠️ [AI Assistant] No tools executed - AI may have only responded without taking action');
-      }
 
       let assistantMessage = '';
       if (result.message) {
@@ -416,24 +395,13 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       if (typeof assistantMessage === 'string') {
         assistantMessage = assistantMessage.replace(/\\n/g, '\n');
       }
-      
-      console.log('[AI] RAW message (first 300 chars):', assistantMessage.substring(0, 300));
-      console.log('[AI] Has actual newlines?', assistantMessage.includes('\n'));
-      console.log('[AI] Has escaped newlines?', assistantMessage.includes('\\n'));
 
       // Clean up the response before displaying
       assistantMessage = cleanAIResponse(assistantMessage);
-      
-      console.log('[AI] CLEANED message (first 300 chars):', assistantMessage.substring(0, 300));
-      
-      // DEBUG: Log the cleaned message to verify formatting
-      console.log('[AI] Cleaned message:', assistantMessage);
-      console.log('[AI] Has actual newlines?', assistantMessage.includes('\n'));
 
       // Store the response ID for the next turn (OpenAI Agents SDK server-side state)
       if (result.lastResponseId) {
         setLastResponseId(result.lastResponseId);
-        console.log('[AI] Stored lastResponseId for next turn:', result.lastResponseId);
       }
 
       // Just append the assistant's message - don't replace all messages
@@ -445,12 +413,11 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         }]);
       }
 
-      console.log('[AI] Reloading...');
       if (onWheelUpdate) await onWheelUpdate();
       await loadWheelContext();
 
     } catch (error) {
-      console.error('[AI] Error:', error);
+      console.error('AI Assistant Error:', error);
       
       const friendlyError = makeErrorFriendly(error.message);
       

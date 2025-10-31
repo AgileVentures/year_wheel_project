@@ -1300,8 +1300,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Load new page data
       const newPage = pages.find(p => p.id === pageId);
       if (newPage) {
-        console.log('[handlePageChange] Switching from', currentPageId, 'to', pageId);
-        
         // CRITICAL: Clear ALL data immediately to prevent any data leakage
         setOrganizationData({
           rings: [],
@@ -1364,8 +1362,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         // Clear undo history when switching pages
         clearHistory();
-        
-        console.log('[handlePageChange] Page switch complete - fresh data loaded');
       }
     } catch (error) {
       console.error('Error changing page:', error);
@@ -1663,8 +1659,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Block realtime updates during version restore to prevent race condition
       lastSaveTimestamp.current = Date.now() + 20000; // Block for 20 seconds
       
-      console.log('[VersionRestore] Starting version restore - blocking all updates');
-      
       // Create a version snapshot of current state before restoring
       if (wheelId) {
         await createVersion(
@@ -1685,7 +1679,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       // CRITICAL: Save restored data DIRECTLY to database BEFORE updating state
       // This ensures database has the restored data before any realtime events can fire
-      console.log('[VersionRestore] Saving restored data to database...');
       
       // Save wheel metadata
       await updateWheel(wheelId, {
@@ -1733,8 +1726,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           year: parseInt(versionData.year || year)
         });
         
-        console.log('[VersionRestore] Database updated with restored data');
-        
         // NOW update local state to match database
         const versionUpdates = {};
         if (versionData.title) versionUpdates.title = versionData.title;
@@ -1759,8 +1750,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if (typeof versionData.showMonthRing === 'boolean') setShowMonthRing(versionData.showMonthRing);
       if (typeof versionData.showRingNames === 'boolean') setShowRingNames(versionData.showRingNames);
       
-      console.log('[VersionRestore] Version restored successfully');
-      
       // Wait for state and database to settle
       await new Promise(resolve => setTimeout(resolve, 3000));
       
@@ -1769,8 +1758,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isSavingRef.current = false;
       isLoadingData.current = false;
       isRestoringVersion.current = false;
-      
-      console.log('[VersionRestore] Re-enabled updates after version restore');
       
       // Show success message
       const event = new CustomEvent('showToast', {

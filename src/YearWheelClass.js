@@ -399,8 +399,6 @@ class YearWheel {
     this.hoveredItem = null;
     this.draggedItem = null;
     this.cacheValid = false;
-    
-    console.log('[YearWheelClass] Cleanup complete - all state cleared');
   }
 
   // Generate date ranges for each week (DD-DD format)

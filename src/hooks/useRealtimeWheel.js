@@ -122,14 +122,10 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
     // Subscribe to the channel
     channel
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`[Realtime] ✅ Subscribed to page: ${pageId}`);
-        } else if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR') {
           console.error('[Realtime] Subscription error:', status);
         } else if (status === 'TIMED_OUT') {
           console.error('[Realtime] Subscription timed out');
-        } else if (status === 'CLOSED') {
-          console.log('[Realtime] Channel closed');
         }
       });
 
@@ -138,7 +134,6 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
 
     // Cleanup function
     return () => {
-      console.log(`[Realtime] 🧹 Cleaning up subscriptions for page: ${pageId}`);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
