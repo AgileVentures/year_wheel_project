@@ -4573,8 +4573,12 @@ class YearWheel {
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
 
-    // Draw divider lines FIRST (under everything else)
-    // Draw BEFORE rotation so lines are fixed in position
+    this.context.save();
+    this.context.translate(this.center.x, this.center.y);
+    this.context.rotate(this.rotationAngle);
+    this.context.translate(-this.center.x, -this.center.y);
+
+    // Draw divider lines AFTER rotation so they rotate with the wheel
     this.context.save();
     this.context.strokeStyle = '#FFFFFF'; // Full white, no transparency
     this.context.lineWidth = 3; // Thicker lines
@@ -4636,11 +4640,6 @@ class YearWheel {
     }
     
     this.context.restore();
-
-    this.context.save();
-    this.context.translate(this.center.x, this.center.y);
-    this.context.rotate(this.rotationAngle);
-    this.context.translate(-this.center.x, -this.center.y);
 
     // Calculate available space based on what rings are visible
     let currentMaxRadius = this.maxRadius;
