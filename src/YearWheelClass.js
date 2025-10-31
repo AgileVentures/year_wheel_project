@@ -5483,20 +5483,7 @@ class YearWheel {
       }
     }
 
-    // SECOND draw all editor avatars (real-time collaboration indicators)
-    if (this.avatarsToDraw && this.avatarsToDraw.length > 0) {
-      for (const avatarData of this.avatarsToDraw) {
-        this.drawEditorAvatarInRotatedContext(
-          avatarData.item,
-          avatarData.editor,
-          avatarData.startRadius,
-          avatarData.itemWidth,
-          avatarData.adjustedEndAngle
-        );
-      }
-    }
-
-    // THIRD draw all linked wheel indicators (chain link icons)
+    // SECOND draw all linked wheel indicators (chain link icons)
     if (this.linkedWheelsToDraw && this.linkedWheelsToDraw.length > 0) {
       for (const linkData of this.linkedWheelsToDraw) {
         this.drawLinkedWheelIndicator(
@@ -5509,7 +5496,7 @@ class YearWheel {
       }
     }
 
-    // FINALLY draw inner ring names on top (collected earlier)
+    // THIRD draw inner ring names (collected earlier)
     // Ring names should always be visible, even over labels
     if (
       this.showRingNames &&
@@ -5523,7 +5510,21 @@ class YearWheel {
       this.innerRingNamesToDraw = [];
     }
 
-    // Draw drag preview INSIDE the rotated context
+    // FOURTH draw all editor avatars (real-time collaboration indicators)
+    // Avatars are drawn AFTER ring names to ensure they appear on top
+    if (this.avatarsToDraw && this.avatarsToDraw.length > 0) {
+      for (const avatarData of this.avatarsToDraw) {
+        this.drawEditorAvatarInRotatedContext(
+          avatarData.item,
+          avatarData.editor,
+          avatarData.startRadius,
+          avatarData.itemWidth,
+          avatarData.adjustedEndAngle
+        );
+      }
+    }
+
+    // FINALLY draw drag preview INSIDE the rotated context
     this.drawDragPreviewInRotatedContext();
 
     this.context.restore();
