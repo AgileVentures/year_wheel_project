@@ -214,6 +214,10 @@ class YearWheel {
   invalidateCache() {
     this.cacheValid = false;
     this.textMeasurementCache.clear();
+    // CRITICAL: Clear all cached render data to prevent showing stale state
+    this.clickableItems = [];
+    this.hoveredItem = null;
+    this.renderedRingPositions.clear();
   }
 
   // Update organization data without recreating the wheel
@@ -4589,6 +4593,33 @@ class YearWheel {
     this.avatarsToDraw = []; // Editor avatars for real-time collaboration
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
+
+    // Draw month divider lines FIRST (under everything else)
+    // Only draw in full year view (not when zoomed)
+    // Draw BEFORE rotation so lines are fixed in position
+    if (this.zoomedMonth === null && this.zoomedQuarter === null) {
+      this.context.save();
+      this.context.strokeStyle = '#FFFFFF'; // White, no transparency
+      this.context.lineWidth = 2;
+      
+      // Draw 12 lines, one at the start of each month
+      // Account for rotation offset (initAngle = -105°)
+      for (let month = 0; month < 12; month++) {
+        const monthAngle = month * 30; // 0°, 30°, 60°, etc.
+        const totalAngle = (monthAngle + this.initAngle) * (Math.PI / 180); // Add rotation offset and convert to radians
+        const startX = this.center.x;
+        const startY = this.center.y;
+        const endX = this.center.x + Math.cos(totalAngle) * this.maxRadius;
+        const endY = this.center.y + Math.sin(totalAngle) * this.maxRadius;
+        
+        this.context.beginPath();
+        this.context.moveTo(startX, startY);
+        this.context.lineTo(endX, endY);
+        this.context.stroke();
+      }
+      
+      this.context.restore();
+    }
 
     this.context.save();
     this.context.translate(this.center.x, this.center.y);
