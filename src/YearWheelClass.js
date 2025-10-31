@@ -4678,6 +4678,13 @@ class YearWheel {
           ? outerRingTotalHeight - ringNameBandWidth
           : outerRingTotalHeight;
 
+        // SAFETY CHECK: Warn if too many outer rings for available space
+        const totalSpaceNeeded = visibleRings.length * outerRingTotalHeight;
+        const availableSpace = currentMaxRadius;
+        if (totalSpaceNeeded > availableSpace) {
+          console.warn(`⚠️ Too many outer rings! Need ${totalSpaceNeeded.toFixed(0)}px but only ${availableSpace.toFixed(0)}px available. Some rings will be skipped.`);
+        }
+
         let currentRadius = currentMaxRadius;
 
         visibleRings.forEach((ring, ringIndex) => {
@@ -4685,6 +4692,12 @@ class YearWheel {
           // Start by moving down for the entire ring (content + name band)
           currentRadius -= outerRingTotalHeight; // Reserve space for whole ring
           const ringStartRadius = currentRadius;
+          
+          // SAFETY CHECK: Prevent negative radius
+          if (ringStartRadius < 0) {
+            console.warn(`Ring ${ring.name} would have negative radius (${ringStartRadius.toFixed(2)}). Skipping rendering.`);
+            return; // Skip this ring
+          }
 
           // Store the ACTUAL rendered position for this ring
           this.renderedRingPositions.set(ring.id, {
@@ -5067,6 +5080,12 @@ class YearWheel {
         ringItems = this.clusterItemsByWeek(ringItems, draggedItemId);
       }
 
+      // SAFETY CHECK: Prevent negative radius
+      if (eventRadius < 0 || ringContentHeight < 0) {
+        console.warn(`Inner ring ${ring.name} has invalid dimensions (radius: ${eventRadius.toFixed(2)}, height: ${ringContentHeight.toFixed(2)}). Skipping.`);
+        continue; // Skip to next ring
+      }
+      
       // Draw subtle background for ALL inner rings using palette color
       this.context.beginPath();
       this.context.arc(
