@@ -153,9 +153,9 @@ export function useWheelActivity(wheelId) {
         const state = channel.presenceState();
         const editors = Object.values(state)
           .flat()
-          .filter((u) => u.user_id !== user.id && u.activity !== 'idle');
+          .filter((u) => u.user_id !== user.id && u.activity === 'editing');
 
-        console.log(`[Activity] Active editors:`, editors);
+        console.log(`[Activity] Active editors (filtering for "editing"):`, editors);
         setActiveEditors(editors);
       })
       .subscribe(async (status) => {
