@@ -297,11 +297,17 @@ class YearWheel {
   // Collect editor avatar data for an item being edited by another user
   // Avatars are drawn later (in rotated context) to ensure proper positioning
   collectEditorAvatar(item, startRadius, itemWidth, adjustedEndAngle) {
+    // Debug: Always log this function being called
+    console.log('[Avatar] collectEditorAvatar called for item:', item.id, 'activeEditors:', this.activeEditors);
+    
     // Check if this item is being edited by someone
     const editor = this.activeEditors.find(e => e.itemId === item.id && e.activity === 'editing');
-    if (!editor) return;
+    if (!editor) {
+      console.log('[Avatar] No editor found for item:', item.id);
+      return;
+    }
     
-    console.log('[Avatar] Collecting avatar for item:', item.id, 'editor:', editor.email);
+    console.log('[Avatar] ✅ Collecting avatar for item:', item.id, 'editor:', editor.email);
     
     // Store avatar data to draw later (in rotated context with other indicators)
     this.avatarsToDraw.push({
@@ -4563,6 +4569,11 @@ class YearWheel {
     this.labelsToDraw = [];
     this.linkedWheelsToDraw = [];
     this.avatarsToDraw = []; // Editor avatars for real-time collaboration
+    
+    // Debug: Log active editors at render time
+    if (this.activeEditors && this.activeEditors.length > 0) {
+      console.log('[Avatar] Starting render with activeEditors:', this.activeEditors);
+    }
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
 
@@ -5472,7 +5483,9 @@ class YearWheel {
     }
 
     // SECOND draw all editor avatars (real-time collaboration indicators)
+    console.log('[Avatar] About to draw avatars, count:', this.avatarsToDraw?.length || 0);
     if (this.avatarsToDraw && this.avatarsToDraw.length > 0) {
+      console.log('[Avatar] Drawing', this.avatarsToDraw.length, 'avatars');
       for (const avatarData of this.avatarsToDraw) {
         this.drawEditorAvatarInRotatedContext(
           avatarData.item,
@@ -5482,6 +5495,8 @@ class YearWheel {
           avatarData.adjustedEndAngle
         );
       }
+    } else {
+      console.log('[Avatar] No avatars to draw');
     }
 
     // THIRD draw all linked wheel indicators (chain link icons)
