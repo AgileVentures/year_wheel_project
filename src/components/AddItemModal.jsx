@@ -301,7 +301,8 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
             </div>
           </div>
 
-          {/* Wheel Linking Section - full width below */}
+          {/* Wheel Linking Section - only show if there are wheels to link to */}
+          {!loadingWheels && accessibleWheels.length > 0 && (
           <div className="border-t border-gray-200 pt-6 mt-6">
             <div className="flex items-center gap-2 mb-4">
               <Link2 size={16} className="text-gray-600" />
@@ -349,6 +350,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
               </div>
             )}
           </div>
+          )}
 
           {/* Buttons */}
           <div className="flex gap-3 pt-6 border-t border-gray-200">
