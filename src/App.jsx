@@ -811,7 +811,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Skip if this data has remote update flag (don't save remote changes back)
     const hasRemoteUpdate = currentOrgData.items?.some(item => item._remoteUpdate);
     if (hasRemoteUpdate) {
-      console.log('[Auto-save] Skipping save - contains remote updates');
       // Clean up remote flags
       setOrganizationData(prev => ({
         ...prev,
@@ -827,8 +826,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark as saving to prevent realtime interference
       isSavingRef.current = true;
       
-      console.log('[Auto-save] Saving organizationData changes...');
-      
       // Save the page data to database
       await updatePage(currentPageId, {
         organization_data: currentOrgData,
@@ -836,8 +833,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
-      
-      console.log('[Auto-save] ✅ Saved successfully');
       
     } catch (error) {
       console.error('[Auto-save] Error:', error);
