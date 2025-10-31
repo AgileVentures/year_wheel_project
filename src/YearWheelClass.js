@@ -5006,6 +5006,41 @@ class YearWheel {
     const monthNameWidth = this.size / 30;
     const weekRingWidth = this.size / 35;
 
+    // CRITICAL: Validate that we have enough space for all rings
+    const outerRingHeight = this.size / 23;
+    const monthRingWidthIfVisible = this.showMonthRing ? monthNameWidth : 0;
+    const weekRingWidthIfVisible = this.showWeekRing ? weekRingWidth : 0;
+    const minInnerSpace = this.minRadius;
+    
+    const totalSpaceNeeded = 
+      (visibleRings.length * outerRingHeight) + 
+      monthRingWidthIfVisible + 
+      weekRingWidthIfVisible + 
+      minInnerSpace;
+    
+    if (totalSpaceNeeded > this.maxRadius) {
+      console.error(`❌ CRITICAL: Not enough space for all rings!`);
+      console.error(`   Need: ${totalSpaceNeeded.toFixed(0)}px`);
+      console.error(`   Available: ${this.maxRadius.toFixed(0)}px`);
+      console.error(`   Outer rings: ${visibleRings.length} × ${outerRingHeight.toFixed(0)}px = ${(visibleRings.length * outerRingHeight).toFixed(0)}px`);
+      console.error(`   Month ring: ${monthRingWidthIfVisible.toFixed(0)}px`);
+      console.error(`   Week ring: ${weekRingWidthIfVisible.toFixed(0)}px`);
+      console.error(`   Inner space needed: ${minInnerSpace.toFixed(0)}px`);
+      
+      // Draw error message on canvas
+      this.context.restore(); // Reset rotation
+      this.context.fillStyle = '#ef4444';
+      this.context.font = `${this.size / 40}px Arial`;
+      this.context.textAlign = 'center';
+      this.context.textBaseline = 'middle';
+      this.context.fillText('För många ringar!', this.center.x, this.center.y - 30);
+      this.context.fillStyle = '#6b7280';
+      this.context.font = `${this.size / 60}px Arial`;
+      this.context.fillText(`Ta bort några ringar eller dölj dem`, this.center.x, this.center.y + 10);
+      this.context.fillText(`för att få hjulet att visas korrekt`, this.center.x, this.center.y + 30);
+      return; // Stop rendering
+    }
+
     // Calculate positions with NO gaps between month and week rings (space preservation)
     let monthNameStartRadius = currentMaxRadius - monthNameWidth;
     let weekStartRadius = monthNameStartRadius - weekRingWidth; // NO gap between month and week
