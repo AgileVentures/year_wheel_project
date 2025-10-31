@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import YearWheel from "./YearWheel";
@@ -123,12 +123,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const title = undoableStates?.title || "Nytt hjul";
   const year = undoableStates?.year || "2025";
   const colors = undoableStates?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
-  const organizationData = undoableStates?.organizationData || {
-    rings: [],
-    activityGroups: [],
-    labels: [],
-    items: []
-  };
+  // Memoize organizationData to prevent unnecessary re-renders of YearWheel
+  // Only create new object reference when actual data changes (using JSON comparison)
+  const organizationData = useMemo(() => {
+    const data = undoableStates?.organizationData || {
+      rings: [],
+      activityGroups: [],
+      labels: [],
+      items: []
+    };
+    return data;
+  }, [
+    // Use JSON.stringify to create stable dependency for deep comparison
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    JSON.stringify(undoableStates?.organizationData)
+  ]);
   
   // Wrapper functions for setting undo-tracked state
   const setTitle = useCallback((value) => {

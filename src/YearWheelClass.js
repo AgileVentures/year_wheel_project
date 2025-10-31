@@ -4594,19 +4594,26 @@ class YearWheel {
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
 
-    // Draw month divider lines FIRST (under everything else)
-    // Only draw in full year view (not when zoomed)
+    // Draw divider lines FIRST (under everything else)
     // Draw BEFORE rotation so lines are fixed in position
-    if (this.zoomedMonth === null && this.zoomedQuarter === null) {
-      this.context.save();
-      this.context.strokeStyle = '#FFFFFF'; // White, no transparency
-      this.context.lineWidth = 2;
+    this.context.save();
+    this.context.strokeStyle = '#FFFFFF'; // White, no transparency
+    this.context.lineWidth = 3; // Thicker lines
+    
+    if (this.zoomedMonth !== null) {
+      // MONTH ZOOM: Draw week dividers matching the week ring layout
+      // Get the filtered weeks for this month (same as week ring uses)
+      const weekData = this.getWeeksForZoom();
+      const numberOfIntervals = weekData.length;
       
-      // Draw 12 lines, one at the start of each month
-      // Account for rotation offset (initAngle = -105°)
-      for (let month = 0; month < 12; month++) {
-        const monthAngle = month * 30; // 0°, 30°, 60°, etc.
-        const totalAngle = (monthAngle + this.initAngle) * (Math.PI / 180); // Add rotation offset and convert to radians
+      // The week ring divides 360° equally among visible weeks
+      // Draw divider lines at the boundaries between these equal divisions
+      const intervalAngle = 360 / numberOfIntervals;
+      
+      for (let i = 0; i < numberOfIntervals; i++) {
+        const weekAngle = i * intervalAngle; // 0°, 72°, 144°, etc. (for 5 weeks)
+        const totalAngle = (weekAngle + this.initAngle) * (Math.PI / 180);
+        
         const startX = this.center.x;
         const startY = this.center.y;
         const endX = this.center.x + Math.cos(totalAngle) * this.maxRadius;
@@ -4617,9 +4624,39 @@ class YearWheel {
         this.context.lineTo(endX, endY);
         this.context.stroke();
       }
-      
-      this.context.restore();
+    } else if (this.zoomedQuarter !== null) {
+      // QUARTER ZOOM: Draw monthly dividers (3 lines for 3 months)
+      for (let month = 0; month < 3; month++) {
+        const monthAngle = month * 120; // Each month gets 120° (360°/3)
+        const totalAngle = (monthAngle + this.initAngle) * (Math.PI / 180);
+        const startX = this.center.x;
+        const startY = this.center.y;
+        const endX = this.center.x + Math.cos(totalAngle) * this.maxRadius;
+        const endY = this.center.y + Math.sin(totalAngle) * this.maxRadius;
+        
+        this.context.beginPath();
+        this.context.moveTo(startX, startY);
+        this.context.lineTo(endX, endY);
+        this.context.stroke();
+      }
+    } else {
+      // FULL YEAR VIEW: Draw monthly dividers (12 lines)
+      for (let month = 0; month < 12; month++) {
+        const monthAngle = month * 30; // 0°, 30°, 60°, etc.
+        const totalAngle = (monthAngle + this.initAngle) * (Math.PI / 180);
+        const startX = this.center.x;
+        const startY = this.center.y;
+        const endX = this.center.x + Math.cos(totalAngle) * this.maxRadius;
+        const endY = this.center.y + Math.sin(totalAngle) * this.maxRadius;
+        
+        this.context.beginPath();
+        this.context.moveTo(startX, startY);
+        this.context.lineTo(endX, endY);
+        this.context.stroke();
+      }
     }
+    
+    this.context.restore();
 
     this.context.save();
     this.context.translate(this.center.x, this.center.y);
