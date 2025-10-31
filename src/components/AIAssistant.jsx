@@ -1,9 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
 import { Sparkles, X, Send, Loader2, Crown } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+// Configure marked for clean, predictable output
+marked.use({ 
+  breaks: false, 
+  gfm: true, 
+  mangle: false, 
+  headerIds: false 
+});
+
+// Parse markdown to HTML safely
+const formatMessageHTML = (text) => {
+  if (!text) return '';
+  
+  // Convert literal \n to actual newlines
+  text = text.replace(/\\n/g, '\n');
+  
+  // Parse markdown to HTML
+  const html = marked.parse(text);
+  
+  // Sanitize to prevent XSS
+  const safeHtml = DOMPurify.sanitize(html, {
+    USE_PROFILES: { html: true }
+  });
+  
+  return safeHtml;
+};
 
 function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOpen, onToggle, isPremium = false }) {
   const { t } = useTranslation(['editor', 'subscription']);
@@ -236,54 +262,39 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     }
   }, [isOpen, wheelContext, t]);
 
-  // Clean up AI responses - remove technical details that shouldn't be shown to users
+  // Clean AI response - MINIMAL processing, preserve newlines for marked
   const cleanAIResponse = (text) => {
     if (!text) return text;
     
-    // Remove code block wrappers if AI accidentally wrapped the response
-    text = text.replace(/^```markdown\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/,'');
+    console.log('[cleanAIResponse] INPUT has newlines?', text.includes('\n'));
+    console.log('[cleanAIResponse] INPUT length:', text.length);
     
-    // FIX MARKDOWN LIST FORMATTING
-    // ReactMarkdown requires blank lines before lists to render them properly
-    // Add blank line before list items if missing
-    text = text.replace(/([^\n])\n([-*•]\s)/g, '$1\n\n$2');
-    
-    // Also ensure nested list items have proper spacing
-    text = text.replace(/(\n\s+[-*•]\s[^\n]+)\n([-*•]\s)/g, '$1\n\n$2');
-    
-    // Remove UUID patterns (e.g., "ID: 7a7fe4e2-0fb0-4b7b-9242-1fd544b28f8d")
+    // Remove UUID patterns (preserve newlines!)
     text = text.replace(/\(?\s*ID:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\s*\)?/gi, '');
-    
-    // Remove standalone UUIDs that might leak through
     text = text.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
-    
-    // Remove page_id references
     text = text.replace(/\b(page_id|pageId):\s*[^\s,)]+/gi, '');
     
-    // AGGRESSIVE EMOJI REMOVAL - Remove ALL emojis
-    // This regex matches all Unicode emoji ranges
-    text = text.replace(/[\u{1F600}-\u{1F64F}]/gu, ''); // Emoticons
-    text = text.replace(/[\u{1F300}-\u{1F5FF}]/gu, ''); // Misc Symbols and Pictographs
-    text = text.replace(/[\u{1F680}-\u{1F6FF}]/gu, ''); // Transport and Map
-    text = text.replace(/[\u{1F1E0}-\u{1F1FF}]/gu, ''); // Flags
-    text = text.replace(/[\u{2600}-\u{26FF}]/gu, '');   // Misc symbols
-    text = text.replace(/[\u{2700}-\u{27BF}]/gu, '');   // Dingbats
-    text = text.replace(/[\u{1F900}-\u{1F9FF}]/gu, ''); // Supplemental Symbols and Pictographs
-    text = text.replace(/[\u{1FA00}-\u{1FA6F}]/gu, ''); // Chess Symbols
-    text = text.replace(/[\u{1FA70}-\u{1FAFF}]/gu, ''); // Symbols and Pictographs Extended-A
-    text = text.replace(/[\u{FE00}-\u{FE0F}]/gu, '');   // Variation Selectors
-    text = text.replace(/[\u{1F000}-\u{1F02F}]/gu, ''); // Mahjong Tiles
-    text = text.replace(/[\u{1F0A0}-\u{1F0FF}]/gu, ''); // Playing Cards
+    console.log('[cleanAIResponse] After UUID removal has newlines?', text.includes('\n'));
     
-    // Clean up error messages - make them more user-friendly
-    text = text.replace(/Error:/gi, 'Fel:');
-    text = text.replace(/Kunde inte (skapa|hitta|uppdatera)/gi, 'Det gick inte att $1');
+    // Remove ALL emojis (but NOT newlines!)
+    text = text.replace(/[\u{1F600}-\u{1F64F}]/gu, '');
+    text = text.replace(/[\u{1F300}-\u{1F5FF}]/gu, '');
+    text = text.replace(/[\u{1F680}-\u{1F6FF}]/gu, '');
+    text = text.replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '');
+    text = text.replace(/[\u{2600}-\u{26FF}]/gu, '');
+    text = text.replace(/[\u{2700}-\u{27BF}]/gu, '');
+    text = text.replace(/[\u{1F900}-\u{1F9FF}]/gu, '');
+    text = text.replace(/[\u{1FA00}-\u{1FAFF}]/gu, '');
+    text = text.replace(/[\u{FE00}-\u{FE0F}]/gu, '');
     
-    // Clean up double spaces, trailing commas, empty parentheses
-    text = text.replace(/\s+/g, ' ').replace(/,\s*\)/g, ')').replace(/\(\s*\)/g, '');
-    text = text.replace(/\s+([.,!?])/g, '$1'); // Remove spaces before punctuation
+    console.log('[cleanAIResponse] After emoji removal has newlines?', text.includes('\n'));
+    console.log('[cleanAIResponse] OUTPUT length:', text.length);
     
-    return text.trim();
+    // ONLY trim whitespace from start/end, NOT internal newlines!
+    const result = text.trim();
+    console.log('[cleanAIResponse] After trim has newlines?', result.includes('\n'));
+    
+    return result;
   };
 
   // Make error messages more user-friendly
@@ -395,8 +406,24 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         assistantMessage = 'Klart!';
       }
 
+      // CRITICAL: Convert escaped newlines to actual newlines FIRST
+      // OpenAI Agents SDK returns \n as literal string characters
+      if (typeof assistantMessage === 'string') {
+        assistantMessage = assistantMessage.replace(/\\n/g, '\n');
+      }
+      
+      console.log('[AI] RAW message (first 300 chars):', assistantMessage.substring(0, 300));
+      console.log('[AI] Has actual newlines?', assistantMessage.includes('\n'));
+      console.log('[AI] Has escaped newlines?', assistantMessage.includes('\\n'));
+
       // Clean up the response before displaying
       assistantMessage = cleanAIResponse(assistantMessage);
+      
+      console.log('[AI] CLEANED message (first 300 chars):', assistantMessage.substring(0, 300));
+      
+      // DEBUG: Log the cleaned message to verify formatting
+      console.log('[AI] Cleaned message:', assistantMessage);
+      console.log('[AI] Has actual newlines?', assistantMessage.includes('\n'));
 
       // Store the response ID for the next turn (OpenAI Agents SDK server-side state)
       if (result.lastResponseId) {
@@ -517,11 +544,10 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 {m.role === 'user' ? (
                   <div className="whitespace-pre-wrap text-white">{m.content}</div>
                 ) : (
-                  <div className="prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-800 prose-p:my-1 prose-strong:font-bold prose-strong:text-gray-900 prose-ul:list-disc prose-ul:pl-5 prose-ul:my-2 prose-ol:list-decimal prose-ol:pl-5 prose-ol:my-2 prose-li:text-gray-800 prose-li:my-0.5">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {m.content}
-                    </ReactMarkdown>
-                  </div>
+                  <div 
+                    className="markdown-content text-gray-800"
+                    dangerouslySetInnerHTML={{ __html: formatMessageHTML(m.content) }} 
+                  />
                 )}
               </div>
               {m.isError && m.canRetry && (

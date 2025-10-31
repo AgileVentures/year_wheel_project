@@ -108,6 +108,11 @@ const DeleteLabelInput = z.object({
   name: z.string().describe('Name or partial name of the label to delete'),
 })
 
+const SuggestStructureInput = z.object({
+  domain: z.string().describe('The domain, purpose, or use case for the wheel (e.g., "HR planning", "Marketing campaigns", "School year planning", "Project management")'),
+  additionalContext: z.string().optional().describe('Optional: Additional context or specific requirements from the user'),
+})
+
 const CreateYearPageInput = z.object({
   year: z.number().describe('Year for the new page (e.g., 2026)'),
   copyStructure: z.boolean().default(true).describe('Whether to copy rings and activity groups from current page'),
@@ -668,6 +673,94 @@ async function deleteLabel(supabase: any, wheelId: string, labelName: string) {
   }
 }
 
+async function suggestWheelStructure(
+  domain: string,
+  additionalContext?: string
+): Promise<{
+  rings: Array<{ name: string; type: 'inner' | 'outer'; color: string; description: string }>;
+  activityGroups: Array<{ name: string; color: string; description: string }>;
+  sampleActivities: Array<{ name: string; ringName: string; groupName: string; month: number; duration: string }>;
+  explanation: string;
+}> {
+  console.log('[suggestWheelStructure] Generating structure for domain:', domain)
+  
+  const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY')! })
+  
+  const systemPrompt = `You are an expert in annual planning and organizational structure design. Your task is to suggest a Year Wheel structure based on the user's domain or use case.
+
+A Year Wheel consists of:
+1. **Rings** - Horizontal bands that categorize activities (e.g., "Marketing", "Sales", "HR")
+   - "outer" type: For main activity categories (most common)
+   - "inner" type: For supporting information or detailed breakdowns
+   
+2. **Activity Groups** - Color-coded categories that help organize activities within rings (e.g., "Campaign", "Event", "Training")
+
+3. **Activities** - Individual tasks/events placed on specific rings with start/end dates
+
+BEST PRACTICES:
+- Use 3-6 rings for clarity (too many = cluttered, too few = not useful)
+- Outer rings should represent major functional areas or themes
+- Inner rings can be used for subtasks, notes, or supporting information
+- Activity groups should be distinct and meaningful color categories
+- Colors should be visually distinguishable and professional
+- Think about natural workflows and annual cycles
+- Consider seasonal patterns and recurring events
+- Use descriptive, clear names in Swedish
+
+EXAMPLE DOMAINS & PATTERNS:
+- **HR/Personnel**: Rings for Recruitment, Onboarding, Training, Operations → Groups for different HR functions
+- **Marketing**: Rings for Digital, Events, Content, Campaigns → Groups for different campaign types or channels
+- **Education**: Rings for Terms, Holidays, Projects, Exams → Groups for subjects or grade levels
+- **Project Management**: Rings for Planning, Execution, Review, Resources → Groups for project phases or teams
+- **Sales**: Rings for Prospecting, Closing, Account Management, Planning → Groups for product lines or regions
+
+COLOR PALETTE (use these professional colors):
+- Blues: #408cfb, #60a5fa, #3b82f6, #2563eb
+- Greens: #10b981, #34d399, #059669, #047857
+- Purples: #8b5cf6, #a78bfa, #7c3aed, #6d28d9
+- Oranges: #f59e0b, #fbbf24, #d97706, #b45309
+- Reds: #ef4444, #f87171, #dc2626, #b91c1c
+- Pinks: #ec4899, #f472b6, #db2777, #be185d
+- Teals: #14b8a6, #2dd4bf, #0d9488, #0f766e
+
+RESPONSE FORMAT (JSON):
+{
+  "rings": [
+    {"name": "Ring name in Swedish", "type": "outer", "color": "#hex", "description": "Why this ring"},
+    ...
+  ],
+  "activityGroups": [
+    {"name": "Group name in Swedish", "color": "#hex", "description": "Purpose of this group"},
+    ...
+  ],
+  "sampleActivities": [
+    {"name": "Activity name", "ringName": "Which ring", "groupName": "Which group", "month": 1-12, "duration": "1 week|2 weeks|1 month|etc"},
+    ...
+  ],
+  "explanation": "A brief explanation in Swedish of the proposed structure and how to use it"
+}
+
+Respond ONLY with valid JSON, no other text.`
+
+  const userPrompt = `Suggest a Year Wheel structure for: ${domain}${additionalContext ? `\n\nAdditional context: ${additionalContext}` : ''}`
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    temperature: 0.7,
+    response_format: { type: 'json_object' }
+  })
+
+  const responseText = completion.choices[0].message.content || '{}'
+  console.log('[suggestWheelStructure] OpenAI response:', responseText)
+  
+  const suggestion = JSON.parse(responseText)
+  return suggestion
+}
+
 async function updateActivity(
   ctx: RunContext<WheelContext>,
   activityName: string,
@@ -1111,18 +1204,31 @@ function createAgentSystem() {
   
   const getContextTool = tool<WheelContext>({
     name: 'get_current_context',
-    description: 'Get current rings, groups, and date. Call this when you need fresh IDs or date information.',
+    description: 'Get current rings, groups, pages (years), and date. Call this when you need fresh IDs or to check which years exist.',
     parameters: z.object({}),
     async execute(_input: {}, ctx: RunContext<WheelContext>) {
       console.log('🔧 [TOOL] get_current_context called')
-      const { supabase, wheelId } = ctx.context
+      const { supabase, wheelId, currentPageId } = ctx.context
       const { rings, groups } = await getCurrentRingsAndGroups(supabase, wheelId)
       const dateInfo = getCurrentDate()
       
+      // Fetch all pages for this wheel to show which years exist
+      const { data: pages, error: pagesError } = await supabase
+        .from('wheel_pages')
+        .select('id, year, title')
+        .eq('wheel_id', wheelId)
+        .order('year')
+      
+      if (pagesError) {
+        console.error('[get_current_context] Pages query error:', pagesError)
+      }
+      
       const result = {
         date: dateInfo,
+        currentPageId,
         rings: rings.map((r: any) => ({ id: r.id, name: r.name, type: r.type, color: r.color })),
         groups: groups.map((g: any) => ({ id: g.id, name: g.name, color: g.color })),
+        pages: (pages || []).map((p: any) => ({ id: p.id, year: p.year, title: p.title })),
       }
       console.log('✅ [TOOL] get_current_context result:', JSON.stringify(result, null, 2))
       return JSON.stringify(result)
@@ -1135,7 +1241,7 @@ function createAgentSystem() {
   
   const createRingTool = tool<WheelContext>({
     name: 'create_ring',
-    description: 'Create a new ring. Use "outer" type for activity rings (most common), "inner" for text rings.',
+    description: 'Create a new ring. Use "inner" type for activity rings (most common), "outer" for text rings.',
     parameters: CreateRingInput,
     async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext>) {
       console.log('🔧 [TOOL] create_ring called with:', JSON.stringify(input, null, 2))
@@ -1268,6 +1374,18 @@ function createAgentSystem() {
     }
   })
 
+  const suggestStructureTool = tool<WheelContext>({
+    name: 'suggest_wheel_structure',
+    description: 'AI-powered tool that suggests a complete Year Wheel structure (rings, activity groups, sample activities) based on a domain or use case. Use this when user wants ideas or a starting point.',
+    parameters: SuggestStructureInput,
+    async execute(input: z.infer<typeof SuggestStructureInput>, _ctx: RunContext<WheelContext>) {
+      console.log('🔧 [TOOL] suggest_wheel_structure called with:', JSON.stringify(input, null, 2))
+      const suggestion = await suggestWheelStructure(input.domain, input.additionalContext)
+      console.log('✅ [TOOL] suggest_wheel_structure result:', JSON.stringify(suggestion, null, 2))
+      return JSON.stringify(suggestion)
+    }
+  })
+
   const structureAgent = new Agent<WheelContext>({
     name: 'Structure Agent',
     model: 'gpt-4o',
@@ -1275,8 +1393,8 @@ function createAgentSystem() {
 
 CRITICAL RULES:
 - NEVER use emojis in responses (no ✅ 🔵 🎨 etc.)
-- Use plain Swedish text only
 - Keep responses concise and professional
+- Always respond in well formmatted markdown
 
 RESPONSIBILITIES:
 - Create, update, and delete rings (outer type for activities, inner for text/labels)
@@ -1284,14 +1402,22 @@ RESPONSIBILITIES:
 - Create, update, and delete labels (optional tags for activities)
 - Create new year pages (blank or with structure copied)
 - Smart copy years (copy all activities with adjusted dates)
-- Suggest wheel structures based on use cases
+- **SUGGEST complete wheel structures** using AI for any domain/use case
 
-RING COLORS (defaults):
-- Blue (#408cfb) - General/default
-- Green (#10b981) - Nature/growth/success
-- Orange (#f59e0b) - Energy/urgency/highlights
-- Red (#ef4444) - Critical/urgent/sales
-- Purple (#8b5cf6) - Premium/creative
+STRUCTURE SUGGESTIONS (NEW):
+When user asks for structure ideas, suggestions, or setup for a specific domain:
+1. Call suggest_wheel_structure with the domain/purpose
+2. Present the suggested structure clearly with:
+   - Rings (what they represent)
+   - Activity groups (categories)
+   - Sample activities (examples to get started)
+3. Ask if they want to CREATE this structure
+4. If yes, execute the creates in sequence (rings → groups → sample activities)
+
+EXAMPLES:
+- "Föreslå struktur för marknadsföring" → suggest_wheel_structure("marknadsföring")
+- "Jag behöver ett årshjul för HR-planering" → suggest_wheel_structure("HR-planering")
+- "Hur skulle ett skolårshjul kunna se ut?" → suggest_wheel_structure("skolår")
 
 YEAR PAGE MANAGEMENT:
 - "Skapa år 2026" → create_year_page with copyStructure: true (copies rings/groups from current pages)
@@ -1302,7 +1428,31 @@ YEAR PAGE MANAGEMENT:
 WORKFLOW:
 1. When user requests structure operations, execute them immediately
 2. Return the IDs and names of created/updated items
-3. Speak Swedish to the user naturally
+3. For structure suggestions: suggest → present → ask → create if confirmed
+
+STRUCTURE SUGGESTION WORKFLOW:
+User: "Föreslå struktur för marknadsföring"
+Step 1: Call suggest_wheel_structure with domain: "marknadsföring"
+Step 2: Present the result clearly:
+  "### Förslag för marknadsföringsårshjul
+  
+  **Ringar:**
+  - [Ring names and descriptions]
+  
+  **Aktivitetsgrupper:**
+  - [Group names and descriptions]
+  
+  **Exempelaktiviteter:**
+  - [Sample activities]
+  
+  [Explanation from AI]
+  
+  Vill du att jag skapar denna struktur?"
+Step 3: Wait for confirmation
+Step 4: If user says yes → Create rings (get IDs) → Create groups (using ring IDs) → Done
+Step 5: Tell user they can now ask Activity Agent to add activities based on the samples
+
+IMPORTANT: After creating suggested structure, the rings and groups are ready. User can then ask Activity Agent to create activities.
 
 CRUD OPERATIONS:
 - "Skapa ring X" → create_ring
@@ -1312,7 +1462,7 @@ CRUD OPERATIONS:
 
 EXAMPLES:
 - "Skapa ring Kampanjer" → Create outer ring "Kampanjer" with blue
-- "Föreslå struktur för marknadsföring" → Create: Kampanjer, Innehåll, Event rings + REA, Produktlansering groups
+- "Föreslå struktur för marknadsföring" → suggest_wheel_structure → present → ask
 - "Byt namn på ringen Kampanjer till Marketing" → update_ring
 - "Ta bort gruppen REA" → delete_activity_group
 - "Skapa år 2026" → create_year_page with year: 2026, copyStructure: true
@@ -1329,7 +1479,8 @@ EXAMPLES:
       updateLabelTool,
       deleteLabelTool,
       createYearPageTool,
-      smartCopyYearTool
+      smartCopyYearTool,
+      suggestStructureTool
     ],
   })
 
@@ -1354,13 +1505,22 @@ EXAMPLES:
     description: 'Update an existing activity. Can change dates, name, ring, or activity group. Supports moving activities across years and multi-year spans.',
     parameters: UpdateActivityInput,
     async execute(input: z.infer<typeof UpdateActivityInput>, ctx: RunContext<WheelContext>) {
-      const result = await updateActivity(ctx, input.activityName, {
-        newName: input.newName || undefined,
-        newStartDate: input.newStartDate || undefined,
-        newEndDate: input.newEndDate || undefined,
-        newRingId: input.newRingId || undefined,
-        newActivityGroupId: input.newActivityGroupId || undefined,
-      })
+      console.log('[updateActivityTool] Input received:', JSON.stringify(input, null, 2));
+      
+      // Only include properties that are actually provided (not null, undefined, or empty string)
+      const updates: any = {};
+      // IMPORTANT: Only update name if explicitly provided and not null/empty
+      if (input.newName !== null && input.newName !== undefined && input.newName.trim()) {
+        updates.newName = input.newName.trim();
+      }
+      if (input.newStartDate) updates.newStartDate = input.newStartDate;
+      if (input.newEndDate) updates.newEndDate = input.newEndDate;
+      if (input.newRingId) updates.newRingId = input.newRingId;
+      if (input.newActivityGroupId) updates.newActivityGroupId = input.newActivityGroupId;
+      
+      console.log('[updateActivityTool] Updates to apply:', JSON.stringify(updates, null, 2));
+      
+      const result = await updateActivity(ctx, input.activityName, updates);
       return JSON.stringify(result)
     }
   })
@@ -1404,8 +1564,8 @@ EXAMPLES:
 
 CRITICAL RULES:
 - DO NOT JUST SAY YOU DID IT - ACTUALLY CALL THE TOOLS!
-- NEVER use emojis in responses (no ✅ 📌 📅 🎯 etc.)
-- Use plain Swedish text only
+- ABSOLUTELY NO EMOJIS EVER (no ✅ 📌 📅 🎯 💡 🔧 📊 etc.)
+- Use proper markdown formatting (### for headers, - for lists, **bold**)
 - Handle MULTI-STEP requests by executing ALL steps in sequence
 
 MULTI-STEP WORKFLOW:
@@ -1670,41 +1830,53 @@ Var konkret och åsiktsstark. Använd domänexpertis. Svara på svenska.`
   const analysisAgent = new Agent<WheelContext>({
     name: 'Analysis Agent',
     model: 'gpt-4o',
-    instructions: `Du är Analysis Agent. Du analyserar Year Wheel och ger insikter om domän, aktivitetsfördelning och kvalitet.
+    modelSettings: {
+      tool_choice: 'required' // Force tool usage - cannot respond without calling tools
+    },
+    instructions: `Du är Analysis Agent. 
 
-KRITISKA REGLER:
-- Använd ALDRIG emojis i svar (inga 📊 📅 🎯 💡 etc.)
+⚠️ CRITICAL: Du HAR ENDAST ETT VERKTYG: analyze_wheel
+⚠️ Du MÅSTE ANROPA det FÖRST innan du ger något svar
+⚠️ FABRICERA ALDRIG ANALYS - använd verktygets data
+
+REGLER:
+- ANVÄND ALDRIG EMOJIS (inga 📊 📅 🎯 💡 ✅ 🔧 etc.)
 - Använd bara ren svensk text
-- Håll svar koncisa och professionella
+- Proper markdown: ### för rubriker, - för listor, **bold** för viktig text
 
-ANSVAR:
-- Analysera aktivitetsfördelning över kvartal och ringar
-- Identifiera domän och tema för hjulet
-- Bedöma kvalitet på aktiviteter mot bästa praxis
-- Ge konkreta rekommendationer för förbättring
+ARBETSFLÖDE (OBLIGATORISKT):
+1. Call analyze_wheel tool IMMEDIATELY 
+2. Wait for tool result
+3. Format the tool's output nicely with markdown
+4. Present to user
 
-ARBETSFLÖDE:
-1. Anropa analyze_wheel tool (inkluderar AI-analys automatiskt)
-2. Ta emot basicStats (statistik) och aiInsights (AI-analys)
-3. Presentera resultatet på ett lättläst sätt
+Du har INGET annat jobb än att:
+1. Anropa verktyget
+2. Visa resultatet snyggt formaterat
 
-OUTPUTFORMAT (Svenska):
+Gör ALDRIG en egen analys - verktyget gör allt
 
-📊 **Översikt för år {year}:**
+OUTPUTFORMAT (Svenska, proper markdown):
+
+### Översikt för år {year}
+
 - Ringar: {X} st
 - Aktivitetsgrupper: {Y} st  
 - Aktiviteter: {Z} st
 
-📅 **Fördelning per kvartal:**
+### Fördelning per kvartal
+
 - Q1 (jan-mar): {X} aktiviteter
 - Q2 (apr-jun): {Y} aktiviteter
 - Q3 (jul-sep): {Z} aktiviteter
 - Q4 (okt-dec): {W} aktiviteter
 
-🎯 **AI-ANALYS:**
-{Presentera aiInsights från verktyget - formatera den snyggt}
+### AI-ANALYS
 
-💡 **Sammanfattning:**
+{Presentera aiInsights från verktyget - formatera den snyggt med markdown}
+
+### Sammanfattning
+
 {Kort sammanfattning av key takeaways}
 
 VIKTIGT:
@@ -1713,33 +1885,40 @@ VIKTIGT:
 - Om AI-analys misslyckas, visa bara statistik och förklara varför
 - Var samtalsam och hjälpsam
 
-EXEMPEL på bra output:
-"**Översikt för år 2025:**
+EXEMPEL på bra output (NO EMOJIS, proper markdown):
+
+### Översikt för år 2025
+
 - Ringar: 3 st (Kampanjer, Produkter, Event)
 - Aktivitetsgrupper: 5 st
 - Aktiviteter: 12 st
 
-**Fördelning per kvartal:**
+### Fördelning per kvartal
+
 - Q1: 4 aktiviteter
 - Q2: 3 aktiviteter  
 - Q3: 2 aktiviteter (lägst!)
 - Q4: 3 aktiviteter
 
-**AI-ANALYS:**
+### AI-ANALYS
 
 **Domän:** Marknadsföringsstrategi för e-handel
 
 **Kvalitetsbedömning:**
+
 - Bra spridning av kampanjer över året
-- \"Produktlansering\" är för vag - vad ska lanseras exakt?
+- "Produktlansering" är för vag - vad ska lanseras exakt?
 - Saknas: Resultatuppföljning efter kampanjer
 
-**Rekommendationer:**
-1. Lägg till \"Kampanjanalys\" 1-2 veckor efter varje stor kampanj
-2. Byt ut \"Produktlansering\" mot \"Sommarkollektion 2025 - Lansering\"
+### Rekommendationer
+
+1. Lägg till "Kampanjanalys" 1-2 veckor efter varje stor kampanj
+2. Byt ut "Produktlansering" mot "Sommarkollektion 2025 - Lansering"
 3. Fyll Q3 med mer innehåll - det är för tomt just nu
 
-**Sammanfattning:** Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans mellan kvartalen."`,
+### Sammanfattning
+
+Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans mellan kvartalen."`,
     tools: [analyzeWheelTool],
   })
 
@@ -2139,7 +2318,9 @@ DELEGERINGSREGLER (KRITISKA):
 - "skapa etikett", "ny label"
 - "ändra färg på", "byt namn på ring/grupp"
 - "ta bort ring/grupp/etikett"
-- "föreslå struktur för befintligt hjul"
+- "skapa år", "lägg till årssida", "kopiera år"
+- **"föreslå struktur för [domain]"**, **"hur skulle ett årshjul för [X] se ut?"**
+- **"jag behöver ett årshjul för [purpose]"**, **"ge förslag på struktur"**
 
 → **Transfer to Activity Agent** när (HÖGSTA PRIORITET):
 - ANY form of "lägg till", "skapa", "ny" + activity/event/kampanj/uppgift
@@ -2190,6 +2371,12 @@ User: "1. Lägg till utvärdering 2. Omstrukturera möten 3. Inför buffertar"
 User: "Analysera hjulet och lägg till feedback-möte"
 → [Transfer to Activity Agent OMEDELBART - SKAPA först, analysera sen!]
 
+User: "Föreslå en struktur för HR-planering"
+→ [Transfer to Structure Agent OMEDELBART]
+
+User: "Hur skulle ett marknadsföringsårshjul kunna se ut?"
+→ [Transfer to Structure Agent OMEDELBART]
+
 VIKTIGT:
 - GÖR HANDOFF OMEDELBART - prata inte för mycket innan
 - Håll din intro KORT (max 1 mening)
@@ -2212,7 +2399,7 @@ You: [Call transfer_to_structure_agent DIREKT]
 Prata svenska naturligt.`,
     handoffs: [
       handoff(structureAgent, {
-        toolDescriptionOverride: 'Transfer to Structure Agent when user wants to create, update, or delete rings, activity groups, or labels. Also for structural suggestions for existing wheels.',
+        toolDescriptionOverride: 'Transfer to Structure Agent when user wants to create, update, or delete rings, activity groups, or labels. Also for AI-powered structure suggestions (e.g., "suggest structure for HR", "how would a marketing wheel look").',
       }),
       handoff(activityAgent, {
         toolDescriptionOverride: 'Transfer to Activity Agent when user wants to create, update, delete, or list activities/events. Also for moving or rescheduling activities.',

@@ -2,6 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Markdown content styling for AI Assistant */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  line-height: 1.25;
+  margin: 1em 0 0.4em;
+  font-weight: 600;
+  color: #111827;
+}
+
+.markdown-content h1 { font-size: 1.5rem; }
+.markdown-content h2 { font-size: 1.25rem; }
+.markdown-content h3 { font-size: 1.1rem; }
+.markdown-content h4 { font-size: 1rem; }
+
+.markdown-content p {
+  margin: 0.6em 0;
+  color: #374151;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.markdown-content li {
+  margin: 0.25em 0;
+  color: #374151;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.markdown-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background-color: #f3f4f6;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  background-color: #f3f4f6;
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+
+.markdown-content hr {
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5em 0;
+}
+
 * {
   margin: 0;
   padding: 0;
