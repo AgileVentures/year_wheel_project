@@ -284,6 +284,7 @@ class YearWheel {
     const changed = JSON.stringify(this.activeEditors) !== JSON.stringify(newActiveEditors);
     
     if (changed) {
+      console.log('[YearWheelClass] Updating active editors:', newActiveEditors);
       this.activeEditors = newActiveEditors || [];
       // Redraw to show/hide editor avatars
       if (!this.dragState || !this.dragState.isDragging) {
@@ -298,6 +299,8 @@ class YearWheel {
     // Check if this item is being edited by someone
     const editor = this.activeEditors.find(e => e.itemId === item.id && e.activity === 'editing');
     if (!editor) return;
+    
+    console.log('[Avatar] Drawing avatar for item:', item.id, 'editor:', editor.email);
     
     // Position avatar at the end of the item (top right corner)
     const avatarRadius = startRadius + itemWidth; // Outer edge of item

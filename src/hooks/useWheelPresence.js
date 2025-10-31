@@ -128,7 +128,7 @@ export function useWheelActivity(wheelId) {
       ...metadata,
     };
 
-    // console.log('[Activity] Broadcasting:', activityData);
+    console.log('[Activity] Broadcasting:', activityData);
     await channelRef.current.track(activityData);
   }, [user]);
 
@@ -138,7 +138,7 @@ export function useWheelActivity(wheelId) {
       return;
     }
 
-    // console.log(`[Activity] Setting up activity tracking for wheel: ${wheelId}`);
+    console.log(`[Activity] Setting up activity tracking for wheel: ${wheelId}`);
 
     const channel = supabase.channel(`activity:wheel:${wheelId}`, {
       config: {
@@ -155,7 +155,7 @@ export function useWheelActivity(wheelId) {
           .flat()
           .filter((u) => u.user_id !== user.id && u.activity !== 'idle');
 
-        // console.log(`[Activity] Active editors:`, editors);
+        console.log(`[Activity] Active editors:`, editors);
         setActiveEditors(editors);
       })
       .subscribe(async (status) => {

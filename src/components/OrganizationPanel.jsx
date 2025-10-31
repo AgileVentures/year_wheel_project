@@ -109,16 +109,21 @@ function OrganizationPanel({
   
   // Broadcast editing activity when item modal opens/closes
   useEffect(() => {
-    if (!broadcastActivity) return;
+    if (!broadcastActivity) {
+      console.log('[OrganizationPanel] broadcastActivity not available');
+      return;
+    }
     
     if (editingAktivitet) {
       // User started editing an item
+      console.log('[OrganizationPanel] Broadcasting editing for item:', editingAktivitet.id);
       broadcastActivity('editing', {
         itemId: editingAktivitet.id,
         itemName: editingAktivitet.name || 'Unnamed item',
       });
     } else {
       // User stopped editing
+      console.log('[OrganizationPanel] Broadcasting viewing (idle)');
       broadcastActivity('viewing');
     }
     
