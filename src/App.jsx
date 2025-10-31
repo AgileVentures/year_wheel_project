@@ -56,7 +56,7 @@ const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssista
 import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem, syncItems } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
-import { useWheelPresence } from "./hooks/useWheelPresence";
+import { useWheelPresence, useWheelActivity } from "./hooks/useWheelPresence";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
 import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
 
@@ -633,6 +633,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Track active users viewing this wheel
   const activeUsers = useWheelPresence(wheelId);
+
+  // Track active editing activity (who's editing which items)
+  const { broadcastActivity, activeEditors } = useWheelActivity(wheelId);
 
   // Store latest values in refs so autoSave always reads current state
   const latestValuesRef = useRef({});
@@ -2501,6 +2504,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onSaveToDatabase={handleSave}
             onReloadData={loadWheelData}
             currentWheelId={wheelId}
+            broadcastActivity={broadcastActivity}
+            activeEditors={activeEditors}
           />
         </div>
 
@@ -2531,6 +2536,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               onDragStart={handleDragStart}
               onUpdateAktivitet={handleUpdateAktivitet}
               onDeleteAktivitet={handleDeleteAktivitet}
+              broadcastActivity={broadcastActivity}
+              activeEditors={activeEditors}
             />
           </div>
         </div>

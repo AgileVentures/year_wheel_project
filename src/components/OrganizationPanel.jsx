@@ -31,7 +31,9 @@ function OrganizationPanel({
   onWeekRingDisplayModeChange,
   onSaveToDatabase, // Trigger immediate save
   onReloadData, // Reload wheel data from database
-  currentWheelId // For wheel linking
+  currentWheelId, // For wheel linking
+  broadcastActivity, // Broadcast editing activity
+  activeEditors // Other users' editing activity
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,6 +106,29 @@ function OrganizationPanel({
     });
     setLocalLabelNames(labelNamesMap);
   }, [organizationData.labels]);
+  
+  // Broadcast editing activity when item modal opens/closes
+  useEffect(() => {
+    if (!broadcastActivity) return;
+    
+    if (editingAktivitet) {
+      // User started editing an item
+      broadcastActivity('editing', {
+        itemId: editingAktivitet.id,
+        itemName: editingAktivitet.name || 'Unnamed item',
+      });
+    } else {
+      // User stopped editing
+      broadcastActivity('viewing');
+    }
+    
+    // Cleanup: broadcast idle when component unmounts
+    return () => {
+      if (broadcastActivity) {
+        broadcastActivity('viewing');
+      }
+    };
+  }, [editingAktivitet, broadcastActivity]);
   
   // Load integration status for all rings
   useEffect(() => {

@@ -75,6 +75,7 @@ class YearWheel {
         : null;
     this.zoomLevel = options.zoomLevel !== undefined ? options.zoomLevel : 100; // Zoom percentage (50-200), default 100%
     this.readonly = options.readonly !== undefined ? options.readonly : false; // Disable interactions in readonly mode
+    this.activeEditors = options.activeEditors || []; // Real-time collaboration: users editing items
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
     this.initAngle = -15 - 90;
@@ -276,6 +277,59 @@ class YearWheel {
         this.create();
       }
     }
+  }
+
+  // Update active editors (real-time collaboration)
+  updateActiveEditors(newActiveEditors) {
+    const changed = JSON.stringify(this.activeEditors) !== JSON.stringify(newActiveEditors);
+    
+    if (changed) {
+      this.activeEditors = newActiveEditors || [];
+      // Redraw to show/hide editor avatars
+      if (!this.dragState || !this.dragState.isDragging) {
+        this.create();
+      }
+    }
+  }
+
+  // Draw editor avatar indicator for an item being edited by another user
+  // Similar to Google Docs' real-time collaboration indicators
+  drawEditorAvatar(item, startRadius, itemWidth, adjustedEndAngle) {
+    // Check if this item is being edited by someone
+    const editor = this.activeEditors.find(e => e.itemId === item.id && e.activity === 'editing');
+    if (!editor) return;
+    
+    // Position avatar at the end of the item (top right corner)
+    const avatarRadius = startRadius + itemWidth; // Outer edge of item
+    const avatarAngle = adjustedEndAngle; // End angle of item
+    
+    // Convert to cartesian coordinates
+    const angleRad = this.toRadians(avatarAngle);
+    const avatarX = this.center.x + Math.cos(angleRad) * avatarRadius;
+    const avatarY = this.center.y + Math.sin(angleRad) * avatarRadius;
+    
+    // Avatar size based on zoom and item size
+    const avatarSize = Math.min(Math.max(itemWidth * 0.6, 12), 24); // Between 12-24px
+    
+    // Draw avatar circle
+    this.context.save();
+    this.context.beginPath();
+    this.context.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    this.context.fillStyle = '#3B82F6'; // Blue background
+    this.context.fill();
+    this.context.strokeStyle = '#FFFFFF'; // White border
+    this.context.lineWidth = 2;
+    this.context.stroke();
+    
+    // Draw user initial
+    const initial = (editor.email?.charAt(0) || '?').toUpperCase();
+    this.context.fillStyle = '#FFFFFF';
+    this.context.font = `bold ${avatarSize * 0.6}px sans-serif`;
+    this.context.textAlign = 'center';
+    this.context.textBaseline = 'middle';
+    this.context.fillText(initial, avatarX, avatarY);
+    
+    this.context.restore();
   }
 
   // Cleanup method to remove event listeners
@@ -4821,6 +4875,9 @@ class YearWheel {
               highlight: isHovered,
               renderDecision: renderDecision, // Pass the decision to renderer
             });
+            
+            // Draw editor avatar if someone is editing this item (real-time collaboration)
+            this.drawEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
 
             // Collect label indicator to draw last (on top)
             if (item.labelId) {
@@ -5144,6 +5201,9 @@ class YearWheel {
             highlight: isHovered,
             renderDecision: renderDecision, // Pass the decision to renderer
           });
+          
+          // Draw editor avatar if someone is editing this item (real-time collaboration)
+          this.drawEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
 
           // Collect label indicator to draw last (on top)
           if (item.labelId) {

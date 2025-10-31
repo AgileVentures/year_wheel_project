@@ -49,6 +49,8 @@ function YearWheel({
   onUpdateAktivitet,
   onDeleteAktivitet,
   readonly = false,
+  broadcastActivity,
+  activeEditors = [],
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -71,6 +73,22 @@ function YearWheel({
   const [selectedItems, setSelectedItems] = useState(new Set());
   
   const { t, i18n } = useTranslation(['common']);
+  
+  // Broadcast editing activity when item modal opens/closes from canvas
+  useEffect(() => {
+    if (!broadcastActivity) return;
+    
+    if (editingItem) {
+      // User started editing an item
+      broadcastActivity('editing', {
+        itemId: editingItem.id,
+        itemName: editingItem.name || 'Unnamed item',
+      });
+    } else {
+      // User stopped editing
+      broadcastActivity('viewing');
+    }
+  }, [editingItem, broadcastActivity]);
   
   const monthNames = useMemo(() => [
     t('common:monthsFull.january'),
@@ -420,6 +438,7 @@ function YearWheel({
         selectionMode,
         selectedItems: Array.from(selectedItems),
         readonly, // Pass readonly to disable interactions
+        activeEditors, // Pass active editors for real-time collaboration
       }
     );
     
@@ -477,6 +496,13 @@ function YearWheel({
       yearWheel.updateSelection(selectionMode, Array.from(selectedItems));
     }
   }, [selectionMode, selectedItems, yearWheel]);
+  
+  // Update active editors for real-time collaboration (without recreating wheel)
+  useEffect(() => {
+    if (yearWheel && yearWheel.updateActiveEditors) {
+      yearWheel.updateActiveEditors(activeEditors);
+    }
+  }, [activeEditors, yearWheel]);
 
   // Notify parent when wheel instance changes (only once per instance)
   // Expose yearWheel methods to parent via onWheelReady
