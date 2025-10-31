@@ -240,6 +240,9 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   const cleanAIResponse = (text) => {
     if (!text) return text;
     
+    // Remove code block wrappers if AI accidentally wrapped the response
+    text = text.replace(/^```markdown\n?/i, '').replace(/^```\n?/, '').replace(/\n?```$/,'');
+    
     // Remove UUID patterns (e.g., "ID: 7a7fe4e2-0fb0-4b7b-9242-1fd544b28f8d")
     text = text.replace(/\(?\s*ID:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\s*\)?/gi, '');
     
