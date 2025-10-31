@@ -387,6 +387,20 @@ class YearWheel {
     if (this.dragState) {
       this.dragState.isDragging = false;
     }
+    
+    // CRITICAL: Clear all cached data to prevent memory leaks
+    if (this.textMeasurementCache) {
+      this.textMeasurementCache.clear();
+    }
+    if (this.renderedRingPositions) {
+      this.renderedRingPositions.clear();
+    }
+    this.clickableItems = [];
+    this.hoveredItem = null;
+    this.draggedItem = null;
+    this.cacheValid = false;
+    
+    console.log('[YearWheelClass] Cleanup complete - all state cleared');
   }
 
   // Generate date ranges for each week (DD-DD format)

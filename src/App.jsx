@@ -1300,23 +1300,63 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Load new page data
       const newPage = pages.find(p => p.id === pageId);
       if (newPage) {
-        // CRITICAL: First clear items immediately to prevent flickering of old data
-        setOrganizationData(prevData => ({
-          ...prevData,
-          items: []  // Clear items immediately
-        }));
+        console.log('[handlePageChange] Switching from', currentPageId, 'to', pageId);
+        
+        // CRITICAL: Clear ALL data immediately to prevent any data leakage
+        setOrganizationData({
+          rings: [],
+          activityGroups: [],
+          labels: [],
+          items: []
+        });
         
         setCurrentPageId(pageId);
         
-        // Fetch page-specific items from database
+        // Fetch fresh data for the new page
         const pageItems = await fetchPageData(pageId);
         
-        // CRITICAL: Keep wheel-level data (rings, groups, labels) unchanged
-        // Only update page-specific data (items, year)
-        setOrganizationData(prevData => ({
-          ...prevData,
-          items: pageItems  // Update with new items - rings/groups/labels are shared!
-        }));
+        // Fetch rings, activity groups, and labels from database (wheel-level, shared)
+        const { data: dbRings } = await supabase
+          .from('wheel_rings')
+          .select('*')
+          .eq('wheel_id', wheelId)
+          .order('ring_order');
+        
+        const { data: dbActivityGroups } = await supabase
+          .from('activity_groups')
+          .select('*')
+          .eq('wheel_id', wheelId);
+        
+        const { data: dbLabels } = await supabase
+          .from('labels')
+          .select('*')
+          .eq('wheel_id', wheelId);
+        
+        // Build fresh organization data from database
+        setOrganizationData({
+          rings: (dbRings || []).map(r => ({
+            id: r.id,
+            name: r.name,
+            type: r.type,
+            visible: r.visible,
+            orientation: r.orientation || 'vertical',
+            color: r.color || '#408cfb',
+            data: r.data || [[""]]
+          })),
+          activityGroups: (dbActivityGroups || []).map(g => ({
+            id: g.id,
+            name: g.name,
+            color: g.color || '#8B5CF6',
+            visible: g.visible
+          })),
+          labels: (dbLabels || []).map(l => ({
+            id: l.id,
+            name: l.name,
+            color: l.color,
+            visible: l.visible
+          })),
+          items: pageItems
+        });
         
         if (newPage.year) {
           setYear(String(newPage.year));
@@ -1324,6 +1364,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         // Clear undo history when switching pages
         clearHistory();
+        
+        console.log('[handlePageChange] Page switch complete - fresh data loaded');
       }
     } catch (error) {
       console.error('Error changing page:', error);
