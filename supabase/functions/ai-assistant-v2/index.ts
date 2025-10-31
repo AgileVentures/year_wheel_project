@@ -190,13 +190,29 @@ async function createActivity(
     const pageExists = pages.find((p: { year: number }) => p.year === year)
     if (!pageExists) {
       console.log(`[createActivity] Creating missing page for year ${year}`)
+      
+      // CRITICAL: Copy structure from an existing page (rings, groups, labels)
+      // Find the closest existing page to copy structure from
+      const referencePage = pages[0] // Use first existing page as reference
+      const referenceOrgData = referencePage.organization_data || {}
+      
+      // Copy structure but start with empty items array
+      const organizationData = {
+        rings: referenceOrgData.rings || [],
+        activityGroups: referenceOrgData.activityGroups || referenceOrgData.activities || [],
+        labels: referenceOrgData.labels || [],
+        items: [] // Start empty, items will be added
+      }
+      
+      console.log(`[createActivity] Copying structure from page ${referencePage.year} to new page ${year}`)
+      
       const { data: newPage, error: pageError } = await supabase
         .from('wheel_pages')
         .insert({
           wheel_id: wheelId,
           year: year,
           title: `${year}`,
-          organization_data: { rings: [], activityGroups: [], labels: [], items: [] }
+          organization_data: organizationData
         })
         .select()
         .single()
@@ -206,7 +222,7 @@ async function createActivity(
         throw new Error(`Kunde inte skapa sida för år ${year}. Skapa sidan manuellt först, eller välj ett annat datumintervall.`)
       }
       pages.push(newPage)
-      console.log(`[createActivity] Successfully created page for year ${year}`)
+      console.log(`[createActivity] Successfully created page for year ${year} with copied structure`)
     }
   }
 

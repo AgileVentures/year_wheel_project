@@ -502,30 +502,15 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 m.isError ? 'bg-red-50 text-red-800 border border-red-200' :
                 'bg-white text-gray-900 border border-gray-200'
               }`}>
-              <div className={`text-sm leading-relaxed ${
-                m.role === 'user' 
-                  ? 'text-white' 
-                  : 'prose prose-sm max-w-none prose-headings:text-gray-900 prose-headings:font-semibold prose-p:text-gray-800 prose-p:my-2 prose-strong:text-gray-900 prose-strong:font-semibold prose-code:text-gray-900 prose-li:text-gray-800 prose-ul:my-2 prose-ul:list-disc prose-ul:pl-4 prose-ol:my-2 prose-ol:list-decimal prose-ol:pl-4'
-              }`}>
+              <div className="text-sm leading-relaxed">
                 {m.role === 'user' ? (
                   <div className="whitespace-pre-wrap text-white">{m.content}</div>
                 ) : (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({node, ...props}) => <h1 className="text-base font-semibold text-gray-900 mt-3 mb-2" {...props} />,
-                      h2: ({node, ...props}) => <h2 className="text-base font-semibold text-gray-900 mt-3 mb-2" {...props} />,
-                      h3: ({node, ...props}) => <h3 className="text-sm font-semibold text-gray-900 mt-2 mb-1" {...props} />,
-                      h4: ({node, ...props}) => <h4 className="text-sm font-semibold text-gray-900 mt-2 mb-1" {...props} />,
-                      p: ({node, ...props}) => <p className="text-sm text-gray-800 my-2" {...props} />,
-                      strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
-                      ul: ({node, ...props}) => <ul className="list-disc pl-4 my-2 space-y-1" {...props} />,
-                      ol: ({node, ...props}) => <ol className="list-decimal pl-4 my-2 space-y-1" {...props} />,
-                      li: ({node, ...props}) => <li className="text-sm text-gray-800" {...props} />,
-                    }}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
+                  <div className="prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-800 prose-p:my-1 prose-strong:font-bold prose-strong:text-gray-900 prose-ul:list-disc prose-ul:pl-5 prose-ul:my-2 prose-ol:list-decimal prose-ol:pl-5 prose-ol:my-2 prose-li:text-gray-800 prose-li:my-0.5">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
                 )}
               </div>
               {m.isError && m.canRetry && (
