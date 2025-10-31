@@ -285,7 +285,6 @@ class YearWheel {
     const changed = JSON.stringify(this.activeEditors) !== JSON.stringify(newActiveEditors);
     
     if (changed) {
-      console.log('[YearWheelClass] Updating active editors:', newActiveEditors);
       this.activeEditors = newActiveEditors || [];
       // Redraw to show/hide editor avatars
       if (!this.dragState || !this.dragState.isDragging) {
@@ -297,17 +296,11 @@ class YearWheel {
   // Collect editor avatar data for an item being edited by another user
   // Avatars are drawn later (in rotated context) to ensure proper positioning
   collectEditorAvatar(item, startRadius, itemWidth, adjustedEndAngle) {
-    // Debug: Always log this function being called
-    console.log('[Avatar] collectEditorAvatar called for item:', item.id, 'activeEditors:', this.activeEditors);
-    
     // Check if this item is being edited by someone
     const editor = this.activeEditors.find(e => e.itemId === item.id && e.activity === 'editing');
     if (!editor) {
-      console.log('[Avatar] No editor found for item:', item.id);
       return;
     }
-    
-    console.log('[Avatar] ✅ Collecting avatar for item:', item.id, 'editor:', editor.email);
     
     // Store avatar data to draw later (in rotated context with other indicators)
     this.avatarsToDraw.push({
@@ -321,10 +314,12 @@ class YearWheel {
 
   // Actually draw the editor avatar in the rotated context
   drawEditorAvatarInRotatedContext(item, editor, startRadius, itemWidth, adjustedEndAngle) {
-    console.log('[Avatar] Drawing avatar in rotated context for item:', item.id, 'editor:', editor.email);
+    // Avatar size - large and visible
+    const avatarSize = 48;
     
-    // Position avatar at the end of the item (top right corner)
-    const avatarRadius = startRadius + itemWidth; // Outer edge of item
+    // Position avatar OUTSIDE the item at the end angle (with offset)
+    const avatarOffset = 30; // Push avatar outward from item edge
+    const avatarRadius = startRadius + itemWidth + avatarOffset;
     const avatarAngle = adjustedEndAngle; // End angle of item (already includes initAngle)
     
     // Convert to cartesian coordinates (in rotated space)
@@ -332,14 +327,11 @@ class YearWheel {
     const avatarX = this.center.x + Math.cos(angleRad) * avatarRadius;
     const avatarY = this.center.y + Math.sin(angleRad) * avatarRadius;
     
-    // MUCH LARGER avatar size for better visibility - fixed 48px
-    const avatarSize = 48;
-    
     this.context.save();
     
     // Draw shadow for depth
-    this.context.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    this.context.shadowBlur = 8;
+    this.context.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    this.context.shadowBlur = 10;
     this.context.shadowOffsetX = 2;
     this.context.shadowOffsetY = 2;
     
@@ -4583,11 +4575,6 @@ class YearWheel {
     this.labelsToDraw = [];
     this.linkedWheelsToDraw = [];
     this.avatarsToDraw = []; // Editor avatars for real-time collaboration
-    
-    // Debug: Log active editors at render time
-    if (this.activeEditors && this.activeEditors.length > 0) {
-      console.log('[Avatar] Starting render with activeEditors:', this.activeEditors);
-    }
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
 
@@ -5497,9 +5484,7 @@ class YearWheel {
     }
 
     // SECOND draw all editor avatars (real-time collaboration indicators)
-    console.log('[Avatar] About to draw avatars, count:', this.avatarsToDraw?.length || 0);
     if (this.avatarsToDraw && this.avatarsToDraw.length > 0) {
-      console.log('[Avatar] Drawing', this.avatarsToDraw.length, 'avatars');
       for (const avatarData of this.avatarsToDraw) {
         this.drawEditorAvatarInRotatedContext(
           avatarData.item,
@@ -5509,8 +5494,6 @@ class YearWheel {
           avatarData.adjustedEndAngle
         );
       }
-    } else {
-      console.log('[Avatar] No avatars to draw');
     }
 
     // THIRD draw all linked wheel indicators (chain link icons)

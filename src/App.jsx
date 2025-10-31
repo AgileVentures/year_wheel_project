@@ -643,8 +643,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle incoming operations from other users
   const handleIncomingOperation = useCallback((operation) => {
-    console.log('[App] Received operation from another user:', operation);
-    
     // Track this operation for avatar display (show for 3 seconds)
     if (operation.type === 'drag' || operation.type === 'resize' || operation.type === 'edit') {
       const editorInfo = {
@@ -664,8 +662,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Trigger a redraw to remove the avatar
         setOrganizationData(prev => ({ ...prev }));
       }, 3000);
-      
-      console.log('[App] Showing avatar for operation on item:', operation.itemId, 'by:', operation.userEmail);
     }
     
     // Apply the operation optimistically to local state
@@ -725,8 +721,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     ...activeEditors,
     ...Array.from(recentOperationsRef.current.values())
   ];
-  
-  console.log('[App] Combined active editors:', combinedActiveEditors);
 
   // Store latest values in refs so autoSave always reads current state
   const latestValuesRef = useRef({});

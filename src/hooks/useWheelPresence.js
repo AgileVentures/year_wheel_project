@@ -128,7 +128,6 @@ export function useWheelActivity(wheelId) {
       ...metadata,
     };
 
-    console.log('[Activity] Broadcasting:', activityData);
     await channelRef.current.track(activityData);
   }, [user]);
 
@@ -137,8 +136,6 @@ export function useWheelActivity(wheelId) {
       setActiveEditors([]);
       return;
     }
-
-    console.log(`[Activity] Setting up activity tracking for wheel: ${wheelId}`);
 
     const channel = supabase.channel(`activity:wheel:${wheelId}`, {
       config: {
@@ -155,7 +152,6 @@ export function useWheelActivity(wheelId) {
           .flat()
           .filter((u) => u.user_id !== user.id && u.activity === 'editing');
 
-        console.log(`[Activity] Active editors (filtering for "editing"):`, editors);
         setActiveEditors(editors);
       })
       .subscribe(async (status) => {
@@ -173,7 +169,6 @@ export function useWheelActivity(wheelId) {
     channelRef.current = channel;
 
     return () => {
-      // console.log(`[Activity] Cleaning up activity tracking`);
       if (channelRef.current) {
         channelRef.current.untrack();
         supabase.removeChannel(channelRef.current);

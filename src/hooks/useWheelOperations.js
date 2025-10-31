@@ -40,7 +40,6 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
   // Broadcast an operation to other users
   const broadcastOperation = useCallback(async (type, itemId, data = {}) => {
     if (!channelRef.current || !user) {
-      console.warn('[Operations] Cannot broadcast - channel not ready');
       return;
     }
 
@@ -52,8 +51,6 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
       userEmail: user.email,
       timestamp: new Date().toISOString(),
     };
-
-    console.log('[Operations] Broadcasting:', operation);
 
     try {
       // Send as broadcast message (not presence - more suitable for operations)
@@ -72,8 +69,6 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
       return;
     }
 
-    console.log(`[Operations] Setting up operations channel for page: ${pageId}`);
-
     // Create a broadcast channel for this page
     const channel = supabase.channel(`operations:page:${pageId}`, {
       config: {
@@ -84,17 +79,13 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
     // Listen for operations from other users
     channel
       .on('broadcast', { event: 'operation' }, (payload) => {
-        console.log('[Operations] Received operation:', payload);
-        
         // Call the callback with the operation
         if (onOperationRef.current && payload.payload) {
           onOperationRef.current(payload.payload);
         }
       })
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`[Operations] ✅ Subscribed to operations for page: ${pageId}`);
-        } else if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR') {
           console.error('[Operations] Subscription error');
         }
       });
@@ -102,7 +93,6 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
     channelRef.current = channel;
 
     return () => {
-      console.log(`[Operations] 🧹 Cleaning up operations channel for page: ${pageId}`);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;

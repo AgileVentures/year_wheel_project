@@ -110,20 +110,17 @@ function OrganizationPanel({
   // Broadcast editing activity when item modal opens/closes
   useEffect(() => {
     if (!broadcastActivity) {
-      console.log('[OrganizationPanel] broadcastActivity not available');
       return;
     }
     
     if (editingAktivitet) {
       // User started editing an item
-      console.log('[OrganizationPanel] Broadcasting editing for item:', editingAktivitet.id);
       broadcastActivity('editing', {
         itemId: editingAktivitet.id,
         itemName: editingAktivitet.name || 'Unnamed item',
       });
     } else {
       // User stopped editing
-      console.log('[OrganizationPanel] Broadcasting viewing (idle)');
       broadcastActivity('viewing');
     }
     
@@ -2042,10 +2039,8 @@ function OrganizationPanel({
           onClose={() => setIntegrationRing(null)}
           onSyncComplete={async () => {
             // Reload wheel data to get synced items
-            console.log('[OrganizationPanel] Sync complete, reloading wheel data...');
             if (onReloadData) {
               await onReloadData();
-              console.log('[OrganizationPanel] Wheel data reloaded successfully');
             }
             // Don't close modal automatically - let user see the success message
             // setIntegrationRing(null);
