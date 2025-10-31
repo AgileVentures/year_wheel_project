@@ -135,7 +135,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-sm shadow-xl w-full max-w-md my-8">
+      <div className="bg-white rounded-sm shadow-xl w-full max-w-2xl my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
           <h2 className="text-lg font-semibold text-gray-900">{t('editor:editItemModal.title')}</h2>
@@ -148,72 +148,71 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-          {/* Basic Info Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-              Grundläggande information
-            </h3>
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left column - Basic Info & Dates */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                Grundläggande information
+              </h3>
             
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t('editor:editItemModal.itemNameLabel')}
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder={t('editor:editItemModal.itemNamePlaceholder')}
-                autoFocus
-              />
-              {errors.name && (
-                <p className="mt-1 text-xs text-red-600">{errors.name}</p>
-              )}
-            </div>
-
-            {/* Dates - Prominent placement */}
-            <div className="bg-gray-50 p-4 rounded-sm border border-gray-200">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:editItemModal.startDateLabel')}
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => handleChange('startDate', e.target.value)}
-                    className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
-                      errors.startDate ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.startDate && (
-                    <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:editItemModal.endDateLabel')}
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => handleChange('endDate', e.target.value)}
-                    min={formData.startDate}
-                    className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
-                      errors.endDate ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.endDate && (
-                    <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
-                  )}
-                </div>
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:editItemModal.itemNameLabel')}
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                    errors.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder={t('editor:editItemModal.itemNamePlaceholder')}
+                  autoFocus
+                />
+                {errors.name && (
+                  <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+                )}
               </div>
-              {/* Time (optional) - inside date box */}
-              <div className="mt-3">
+
+              {/* Dates */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:editItemModal.startDateLabel')}
+                </label>
+                <input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                    errors.startDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.startDate && (
+                  <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:editItemModal.endDateLabel')}
+                </label>
+                <input
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => handleChange('endDate', e.target.value)}
+                  min={formData.startDate}
+                  className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                    errors.endDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.endDate && (
+                  <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
+                )}
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   {t('editor:editItemModal.timeLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
                 </label>
@@ -221,78 +220,78 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                   type="text"
                   value={formData.time}
                   onChange={(e) => handleChange('time', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder={t('editor:editItemModal.timePlaceholder')}
                 />
               </div>
             </div>
-          </div>
 
-          {/* Categorization Section */}
-          <div className="space-y-4 border-t border-gray-200 pt-6">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-              Kategorisering
-            </h3>
+            {/* Right column - Categorization */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                Kategorisering
+              </h3>
 
-            <div className="grid grid-cols-1 gap-4">
-              {/* Ring */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:editItemModal.ringLabel')}
-                </label>
-                <select
-                  value={formData.ringId}
-                  onChange={(e) => handleChange('ringId', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  {organizationData.rings.map((ring) => (
-                    <option key={ring.id} value={ring.id}>
-                      {ring.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <div className="space-y-4">
+                {/* Ring */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:editItemModal.ringLabel')}
+                  </label>
+                  <select
+                    value={formData.ringId}
+                    onChange={(e) => handleChange('ringId', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {organizationData.rings.map((ring) => (
+                      <option key={ring.id} value={ring.id}>
+                        {ring.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Activity */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:editItemModal.activityLabel')}
-                </label>
-                <select
-                  value={formData.activityId}
-                  onChange={(e) => handleChange('activityId', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  {organizationData.activityGroups.map((activity) => (
-                    <option key={activity.id} value={activity.id}>
-                      {activity.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Activity */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:editItemModal.activityLabel')}
+                  </label>
+                  <select
+                    value={formData.activityId}
+                    onChange={(e) => handleChange('activityId', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {organizationData.activityGroups.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Label */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:editItemModal.labelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
-                </label>
-                <select
-                  value={formData.labelId}
-                  onChange={(e) => handleChange('labelId', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  {organizationData.labels.map((label) => (
-                    <option key={label.id} value={label.id}>
-                      {label.name}
-                    </option>
-                  ))}
-                </select>
+                {/* Label */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:editItemModal.labelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
+                  </label>
+                  <select
+                    value={formData.labelId}
+                    onChange={(e) => handleChange('labelId', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {organizationData.labels.map((label) => (
+                      <option key={label.id} value={label.id}>
+                        {label.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Wheel Linking Section */}
-          <div className="border-t border-gray-200 pt-6">
+          {/* Wheel Linking Section - full width below */}
+          <div className="border-t border-gray-200 pt-6 mt-6">
             <div className="flex items-center gap-2 mb-4">
               <Link2 size={16} className="text-gray-600" />
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
