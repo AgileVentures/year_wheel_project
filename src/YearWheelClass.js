@@ -76,6 +76,7 @@ class YearWheel {
     this.zoomLevel = options.zoomLevel !== undefined ? options.zoomLevel : 100; // Zoom percentage (50-200), default 100%
     this.readonly = options.readonly !== undefined ? options.readonly : false; // Disable interactions in readonly mode
     this.activeEditors = options.activeEditors || []; // Real-time collaboration: users editing items
+    this.broadcastOperation = options.broadcastOperation || null; // Function to broadcast operations to other users
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
     this.initAngle = -15 - 90;
@@ -3735,6 +3736,15 @@ class YearWheel {
     };
 
     this.canvas.style.cursor = "default";
+
+    // Broadcast the drag operation to other users (real-time collaboration)
+    if (this.broadcastOperation) {
+      this.broadcastOperation('drag', updatedItem.id, {
+        startDate: updatedItem.startDate,
+        endDate: updatedItem.endDate,
+        ringId: updatedItem.ringId,
+      });
+    }
 
     // Call update callback AFTER resetting drag state
     if (this.options.onUpdateAktivitet) {

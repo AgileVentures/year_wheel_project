@@ -57,6 +57,7 @@ import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, f
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence, useWheelActivity } from "./hooks/useWheelPresence";
+import { useWheelOperations } from "./hooks/useWheelOperations";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
 import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
 
@@ -637,6 +638,62 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Track active editing activity (who's editing which items)
   const { broadcastActivity, activeEditors } = useWheelActivity(wheelId);
 
+  // Handle incoming operations from other users
+  const handleIncomingOperation = useCallback((operation) => {
+    console.log('[App] Received operation from another user:', operation);
+    
+    // Apply the operation optimistically to local state
+    if (operation.type === 'drag' || operation.type === 'resize') {
+      // Update the item in organizationData
+      setOrganizationData(prev => {
+        const items = prev.items.map(item => {
+          if (item.id === operation.itemId) {
+            return {
+              ...item,
+              ...operation.data, // Apply the changes (startDate, endDate, ringId, etc.)
+              _remoteUpdate: true, // Flag to indicate this came from another user
+              _remoteUser: operation.userEmail,
+              _remoteTimestamp: operation.timestamp,
+            };
+          }
+          return item;
+        });
+        
+        return { ...prev, items };
+      });
+    } else if (operation.type === 'edit') {
+      // Item properties changed (name, description, etc.)
+      setOrganizationData(prev => {
+        const items = prev.items.map(item => {
+          if (item.id === operation.itemId) {
+            return {
+              ...item,
+              ...operation.data,
+              _remoteUpdate: true,
+              _remoteUser: operation.userEmail,
+              _remoteTimestamp: operation.timestamp,
+            };
+          }
+          return item;
+        });
+        return { ...prev, items };
+      });
+    } else if (operation.type === 'delete') {
+      setOrganizationData(prev => ({
+        ...prev,
+        items: prev.items.filter(item => item.id !== operation.itemId)
+      }));
+    } else if (operation.type === 'create') {
+      setOrganizationData(prev => ({
+        ...prev,
+        items: [...prev.items, { ...operation.data, _remoteUpdate: true }]
+      }));
+    }
+  }, [setOrganizationData]);
+
+  // Real-time operations broadcasting
+  const { broadcastOperation } = useWheelOperations(wheelId, currentPageId, handleIncomingOperation);
+
   // Store latest values in refs so autoSave always reads current state
   const latestValuesRef = useRef({});
   latestValuesRef.current = {
@@ -707,9 +764,63 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   }, 10000); // Wait 10 seconds after last metadata change (much less aggressive)
 
-  // REMOVED: Auto-save on organizationData changes
-  // Realtime handles syncing organization data across users
-  // Manual save button does the full sync when needed
+  // Auto-save organizationData changes for real-time collaboration
+  const autoSaveOrganizationData = useDebouncedCallback(async () => {
+    // Don't auto-save if:
+    // 1. No wheelId (localStorage mode)
+    // 2. No currentPageId
+    // 3. Currently loading data
+    // 4. This is the initial load
+    // 5. Data came from remote realtime update (don't echo back)
+    // 6. Auto-save is disabled
+    if (!wheelId || !currentPageId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
+      return;
+    }
+
+    // Get latest organizationData from ref
+    const { organizationData: currentOrgData } = latestValuesRef.current;
+
+    // Skip if this data has remote update flag (don't save remote changes back)
+    const hasRemoteUpdate = currentOrgData.items?.some(item => item._remoteUpdate);
+    if (hasRemoteUpdate) {
+      console.log('[Auto-save] Skipping save - contains remote updates');
+      // Clean up remote flags
+      setOrganizationData(prev => ({
+        ...prev,
+        items: prev.items.map(item => {
+          const { _remoteUpdate, _remoteUser, _remoteTimestamp, ...cleanItem } = item;
+          return cleanItem;
+        })
+      }));
+      return;
+    }
+
+    try {
+      // Mark as saving to prevent realtime interference
+      isSavingRef.current = true;
+      
+      console.log('[Auto-save] Saving organizationData changes...');
+      
+      // Save the page data to database
+      await updatePage(currentPageId, {
+        organization_data: currentOrgData,
+      });
+      
+      // Mark the save timestamp to ignore our own broadcasts
+      lastSaveTimestamp.current = Date.now();
+      
+      console.log('[Auto-save] ✅ Saved successfully');
+      
+    } catch (error) {
+      console.error('[Auto-save] Error:', error);
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Auto-sparning misslyckades', type: 'error' } 
+      });
+      window.dispatchEvent(event);
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, 3000); // Wait 3 seconds after last change
 
   // Auto-save ONLY on metadata changes (title, colors, settings)
   useEffect(() => {
@@ -719,6 +830,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
     autoSave();
   }, [title, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, autoSave]);
+
+  // Auto-save on organizationData changes (for real-time collaboration)
+  useEffect(() => {
+    // Skip if initial load, loading data, or data came from realtime
+    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+      return;
+    }
+    autoSaveOrganizationData();
+  }, [organizationData, autoSaveOrganizationData]);
 
   // Check admin status on mount
   useEffect(() => {
@@ -2506,6 +2626,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             currentWheelId={wheelId}
             broadcastActivity={broadcastActivity}
             activeEditors={activeEditors}
+            broadcastOperation={broadcastOperation}
           />
         </div>
 
@@ -2538,6 +2659,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               onDeleteAktivitet={handleDeleteAktivitet}
               broadcastActivity={broadcastActivity}
               activeEditors={activeEditors}
+              broadcastOperation={broadcastOperation}
             />
           </div>
         </div>

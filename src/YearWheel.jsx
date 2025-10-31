@@ -51,6 +51,7 @@ function YearWheel({
   readonly = false,
   broadcastActivity,
   activeEditors = [],
+  broadcastOperation,
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -439,6 +440,7 @@ function YearWheel({
         selectedItems: Array.from(selectedItems),
         readonly, // Pass readonly to disable interactions
         activeEditors, // Pass active editors for real-time collaboration
+        broadcastOperation, // Pass broadcast function for real-time operations
       }
     );
     
