@@ -20,6 +20,10 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const chatWindowRef = useRef(null);
+  
+  // OpenAI Agents SDK server-side conversation management
+  // Store the last response ID to chain context across turns
+  const [lastResponseId, setLastResponseId] = useState(null);
 
   useEffect(() => {
     if (wheelId && isOpen) {
@@ -245,6 +249,21 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     // Remove page_id references
     text = text.replace(/\b(page_id|pageId):\s*[^\s,)]+/gi, '');
     
+    // AGGRESSIVE EMOJI REMOVAL - Remove ALL emojis
+    // This regex matches all Unicode emoji ranges
+    text = text.replace(/[\u{1F600}-\u{1F64F}]/gu, ''); // Emoticons
+    text = text.replace(/[\u{1F300}-\u{1F5FF}]/gu, ''); // Misc Symbols and Pictographs
+    text = text.replace(/[\u{1F680}-\u{1F6FF}]/gu, ''); // Transport and Map
+    text = text.replace(/[\u{1F1E0}-\u{1F1FF}]/gu, ''); // Flags
+    text = text.replace(/[\u{2600}-\u{26FF}]/gu, '');   // Misc symbols
+    text = text.replace(/[\u{2700}-\u{27BF}]/gu, '');   // Dingbats
+    text = text.replace(/[\u{1F900}-\u{1F9FF}]/gu, ''); // Supplemental Symbols and Pictographs
+    text = text.replace(/[\u{1FA00}-\u{1FA6F}]/gu, ''); // Chess Symbols
+    text = text.replace(/[\u{1FA70}-\u{1FAFF}]/gu, ''); // Symbols and Pictographs Extended-A
+    text = text.replace(/[\u{FE00}-\u{FE0F}]/gu, '');   // Variation Selectors
+    text = text.replace(/[\u{1F000}-\u{1F02F}]/gu, ''); // Mahjong Tiles
+    text = text.replace(/[\u{1F0A0}-\u{1F0FF}]/gu, ''); // Playing Cards
+    
     // Clean up error messages - make them more user-friendly
     text = text.replace(/Error:/gi, 'Fel:');
     text = text.replace(/Kunde inte (skapa|hitta|uppdatera)/gi, 'Det gick inte att $1');
@@ -305,12 +324,18 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         throw new Error(t('editor:aiAssistant.noSession'));
       }
 
-      // Build SDK conversation history (exclude current user message, will be added by backend)
-      // Only send messages that came from SDK (have the correct AgentInputItem format)
-      const sdkHistory = messages
-        .slice(0, -1) // Exclude current user message
-        .filter(msg => msg.sdkFormat) // Only messages from SDK
-        .map(msg => msg.sdkItem); // Extract the original SDK item
+      // OPENAI AGENTS SDK RECOMMENDED APPROACH:
+      // Use previousResponseId to let OpenAI manage conversation state server-side
+      // This is the official pattern per: https://openai.github.io/openai-agents-js/guides/running-agents/
+      // 
+      // Benefits:
+      // ✅ OpenAI manages history server-side (no manual history management)
+      // ✅ Prevents "Multiple handoffs" error - each request is independent with automatic context
+      // ✅ Cost-effective - only necessary context is included
+      // ✅ No payload bloat - don't send 50+ messages back and forth
+      // ✅ Simpler code - just pass the last response ID
+      
+      console.log('[AI] Using previousResponseId:', lastResponseId || '(fresh start - no context)');
 
       // Call AI Assistant V2 edge function (using OpenAI Agents SDK)
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant-v2`, {
@@ -321,7 +346,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         },
         body: JSON.stringify({
           userMessage: userMessage.content,
-          conversationHistory: sdkHistory,
+          previousResponseId: lastResponseId, // OpenAI Agents SDK server-side state management
           wheelId,
           currentPageId
         })
@@ -362,44 +387,19 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       // Clean up the response before displaying
       assistantMessage = cleanAIResponse(assistantMessage);
 
-      // If backend returned conversationHistory, rebuild messages from it
-      if (result.conversationHistory && Array.isArray(result.conversationHistory)) {
-        // Convert SDK history format to our UI format, filtering out empty messages
-        const uiMessages = result.conversationHistory
-          .map((item, index) => {
-            let content = '';
-            if (typeof item.content === 'string') {
-              content = item.content;
-            } else if (Array.isArray(item.content)) {
-              content = item.content.map(c => c.text || c).join('');
-            } else if (item.content) {
-              content = JSON.stringify(item.content);
-            }
-            
-            // Clean up the content
-            content = cleanAIResponse(content);
-            
-            return {
-              id: Date.now() + index,
-              role: item.role,
-              content: content,
-              sdkFormat: true, // Mark as coming from SDK
-              sdkItem: item // Store original SDK format for next request
-            };
-          })
-          .filter(msg => msg.content && msg.content.trim().length > 0); // Filter out empty messages
-        
-        setMessages(uiMessages);
-      } else {
-        // Fallback: just append assistant message if it's not empty
-        if (assistantMessage && assistantMessage.trim().length > 0) {
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: assistantMessage,
-            id: Date.now(),
-            sdkFormat: false
-          }]);
-        }
+      // Store the response ID for the next turn (OpenAI Agents SDK server-side state)
+      if (result.lastResponseId) {
+        setLastResponseId(result.lastResponseId);
+        console.log('[AI] Stored lastResponseId for next turn:', result.lastResponseId);
+      }
+
+      // Just append the assistant's message - don't replace all messages
+      if (assistantMessage && assistantMessage.trim().length > 0) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: assistantMessage,
+          id: Date.now()
+        }]);
       }
 
       console.log('[AI] Reloading...');
@@ -503,12 +503,29 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 'bg-white text-gray-900 border border-gray-200'
               }`}>
               <div className={`text-sm leading-relaxed ${
-                m.role === 'user' ? 'text-white' : 'prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-800 prose-strong:text-gray-900 prose-code:text-gray-900 prose-li:text-gray-800 prose-ul:text-gray-800'
+                m.role === 'user' 
+                  ? 'text-white' 
+                  : 'prose prose-sm max-w-none prose-headings:text-gray-900 prose-headings:font-semibold prose-p:text-gray-800 prose-p:my-2 prose-strong:text-gray-900 prose-strong:font-semibold prose-code:text-gray-900 prose-li:text-gray-800 prose-ul:my-2 prose-ul:list-disc prose-ul:pl-4 prose-ol:my-2 prose-ol:list-decimal prose-ol:pl-4'
               }`}>
                 {m.role === 'user' ? (
                   <div className="whitespace-pre-wrap text-white">{m.content}</div>
                 ) : (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      h1: ({node, ...props}) => <h1 className="text-base font-semibold text-gray-900 mt-3 mb-2" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-base font-semibold text-gray-900 mt-3 mb-2" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-sm font-semibold text-gray-900 mt-2 mb-1" {...props} />,
+                      h4: ({node, ...props}) => <h4 className="text-sm font-semibold text-gray-900 mt-2 mb-1" {...props} />,
+                      p: ({node, ...props}) => <p className="text-sm text-gray-800 my-2" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc pl-4 my-2 space-y-1" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal pl-4 my-2 space-y-1" {...props} />,
+                      li: ({node, ...props}) => <li className="text-sm text-gray-800" {...props} />,
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
                 )}
               </div>
               {m.isError && m.canRetry && (

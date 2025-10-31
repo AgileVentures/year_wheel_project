@@ -1384,14 +1384,22 @@ EXAMPLES:
   const activityAgent = new Agent<WheelContext>({
     name: 'Activity Agent',
     model: 'gpt-4o',
-    instructions: `You are the Activity Agent. Your ONLY job is to CREATE activities immediately when asked.
+    instructions: `You are the Activity Agent. Your job is to CREATE, UPDATE, and DELETE activities when asked.
 
 CRITICAL RULES:
 - DO NOT JUST SAY YOU DID IT - ACTUALLY CALL THE TOOLS!
 - NEVER use emojis in responses (no ✅ 📌 📅 🎯 etc.)
 - Use plain Swedish text only
+- Handle MULTI-STEP requests by executing ALL steps in sequence
 
-WORKFLOW (MANDATORY):
+MULTI-STEP WORKFLOW:
+If user requests multiple actions (e.g., "1. Lägg till X, 2. Omstrukturera Y, 3. Inför Z"):
+1. Execute EACH step in order
+2. Call create_activity/update_activity/delete_activity for EACH action
+3. Report back with ALL results
+4. Example: "Klart! Jag har gjort: 1. Skapat X 2. Flyttat Y 3. Lagt till Z"
+
+SINGLE-STEP WORKFLOW:
 1. User asks to create activity
 2. You MUST call get_current_context tool (returns date + all ring/group IDs)
 3. You MUST match activity name to best ring/group from the IDs you got
@@ -2101,9 +2109,11 @@ DINA SPECIALISTER (4 st):
 4. **Planning Agent** - Genererar kompletta projektplaner med AI
 
 ARBETSFLÖDE:
-1. Lyssna på användarens behov
-2. Delegera till rätt specialist (handoff) - GÖR DETTA OMEDELBART
-3. Låt specialisten göra jobbet
+1. Läs användarens meddelande
+2. Identifiera det PRIMÄRA syftet (skapa något? analysera? planera?)
+3. Välj EXAKT EN specialist
+4. Delegera OMEDELBART till den specialisten
+5. Gör ALDRIG flera handoffs samtidigt - välj den VIKTIGASTE åtgärden
 
 DELEGERINGSREGLER (KRITISKA):
 
@@ -2115,18 +2125,24 @@ DELEGERINGSREGLER (KRITISKA):
 - "ta bort ring/grupp/etikett"
 - "föreslå struktur för befintligt hjul"
 
-→ **Transfer to Activity Agent** när:
-- "lägg till aktivitet", "skapa aktivitet", "ny aktivitet"
+→ **Transfer to Activity Agent** när (HÖGSTA PRIORITET):
+- ANY form of "lägg till", "skapa", "ny" + activity/event/kampanj/uppgift
+- "lägg till utvärderingsaktivitet", "skapa feedback-möte", etc.
 - "skapa kampanj", "lägg till event", "schemalägg"
 - "flytta aktivitet", "ändra datum", "byt ring"
 - "ta bort aktivitet", "radera"
 - "lista aktiviteter", "visa aktiviteter"
+- If user mentions creating/adding something WITH a date or time period → Activity Agent
+- ⚠️ ÄVEN OM användaren säger "1. Lägg till X, 2. Analysera Y" → Välj Activity Agent!
+- ⚠️ Skapa först, analysera senare!
 
-→ **Transfer to Analysis Agent** när:
-- "analysera", "hur ser det ut", "ge insikter"
+→ **Transfer to Analysis Agent** när (LÄGSTA PRIORITET):
+- ONLY when NOTHING else is requested: "analysera", "hur ser det ut", "ge insikter"
 - "vilken domän", "kvalitetsbedömning"
 - "hur är fördelningen", "statistik"
 - "ge rekommendationer", "tips"
+- ⚠️ ALDRIG om användaren nämner "lägg till", "skapa", "omstrukturera" i samma meddelande!
+- ⚠️ Analysis kommer EFTER skapande, INTE samtidigt!
 
 → **Transfer to Planning Agent** när:
 - "föreslå aktiviteter för", "skapa plan för"
@@ -2151,6 +2167,12 @@ User: "Föreslå aktiviteter för att lansera en SaaS från oktober till decembe
 
 User: "Jag ska starta en marknadsföringskampanj, vad behöver jag?"
 → [Transfer to Planning Agent OMEDELBART]
+
+User: "1. Lägg till utvärdering 2. Omstrukturera möten 3. Inför buffertar"
+→ [Transfer to Activity Agent OMEDELBART - GÖR SKAPANDE FÖRST!]
+
+User: "Analysera hjulet och lägg till feedback-möte"
+→ [Transfer to Activity Agent OMEDELBART - SKAPA först, analysera sen!]
 
 VIKTIGT:
 - GÖR HANDOFF OMEDELBART - prata inte för mycket innan
@@ -2213,19 +2235,16 @@ serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) throw new Error('Unauthorized')
 
-    const { userMessage, conversationHistory, wheelId, currentPageId } = await req.json()
+    const { userMessage, previousResponseId, wheelId, currentPageId } = await req.json()
     if (!userMessage || !wheelId) {
       throw new Error('Missing required fields: userMessage, wheelId')
     }
-
-    // Validate and use conversation history (should be AgentInputItem[] from result.history)
-    const history: any[] = Array.isArray(conversationHistory) ? conversationHistory : []
 
     console.log('[AI Assistant V2] Processing:', { 
       userMessage, 
       wheelId, 
       currentPageId,
-      historyLength: history.length
+      previousResponseId: previousResponseId || '(fresh start)'
     })
 
     // Create agent system (no parameters - uses RunContext)
@@ -2250,20 +2269,25 @@ serve(async (req: Request) => {
       lastSuggestions: undefined, // Will be populated by tools if needed
     }
 
-    // Build thread: history + new user message
-    // IMPORTANT: We send result.history back to frontend, which is already in correct AgentInputItem format
-    // Just append new user message and pass to run()
-    const thread = [
-      ...history,
-      { role: 'user', content: userMessage }
-    ]
-
-    // Run agent with conversation thread
-    console.log('🚀 [AI] Starting agent execution...')
-    const result = await run(orchestrator, thread, {
+    // OPENAI AGENTS SDK RECOMMENDED APPROACH:
+    // Use previousResponseId to let OpenAI manage conversation state server-side
+    // See: https://openai.github.io/openai-agents-js/guides/running-agents/#2-previousresponseid-to-continue-from-the-last-turn
+    const runOptions: any = {
       context: wheelContext,
       maxTurns: 20,
-    })
+    }
+
+    // If we have a previousResponseId, pass it to chain the conversation
+    if (previousResponseId) {
+      runOptions.previousResponseId = previousResponseId
+      console.log('🔗 [AI] Chaining from previous response:', previousResponseId)
+    } else {
+      console.log('🆕 [AI] Fresh conversation - no previous context')
+    }
+
+    // Run agent with just the new user message (OpenAI SDK handles history)
+    console.log('🚀 [AI] Starting agent execution...')
+    const result = await run(orchestrator, userMessage, runOptions)
 
     console.log('✅ [AI] Agent execution complete')
     console.log('[AI Assistant V2] Result:', { 
@@ -2299,14 +2323,18 @@ serve(async (req: Request) => {
     
     console.log('📊 [AI] Tools executed:', toolExecutionSummary.length > 0 ? toolExecutionSummary.join(', ') : 'None')
 
-    // Return response with updated history
-    // Frontend will store result.history and send it back on next request
+    // Extract lastResponseId from the result for OpenAI Agents SDK state management
+    // This allows the frontend to chain requests using previousResponseId
+    const lastResponseId = result.lastResponseId || null
+    console.log('🔑 [AI] lastResponseId for next turn:', lastResponseId || '(none)')
+
+    // Return response with lastResponseId for server-side state management
     return new Response(
       JSON.stringify({
         success: true,
         message: result.finalOutput,
         agentUsed: result.agent?.name || 'Year Wheel Assistant',
-        conversationHistory: result.history, // Send back complete history for next turn
+        lastResponseId, // For OpenAI Agents SDK server-side conversation management
         toolsExecuted: toolExecutionSummary, // For debugging/verification
       }),
       {
