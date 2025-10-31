@@ -240,12 +240,45 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     text = text.replace(/\(?\s*ID:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\s*\)?/gi, '');
     
     // Remove standalone UUIDs that might leak through
-    text = text.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '[removed]');
+    text = text.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
     
-    // Clean up double spaces and trailing commas that might result
+    // Remove page_id references
+    text = text.replace(/\b(page_id|pageId):\s*[^\s,)]+/gi, '');
+    
+    // Clean up error messages - make them more user-friendly
+    text = text.replace(/Error:/gi, '⚠️');
+    text = text.replace(/Kunde inte (skapa|hitta|uppdatera)/gi, 'Det gick inte att $1');
+    
+    // Clean up double spaces, trailing commas, empty parentheses
     text = text.replace(/\s+/g, ' ').replace(/,\s*\)/g, ')').replace(/\(\s*\)/g, '');
+    text = text.replace(/\s+([.,!?])/g, '$1'); // Remove spaces before punctuation
     
     return text.trim();
+  };
+
+  // Make error messages more user-friendly
+  const makeErrorFriendly = (errorText) => {
+    if (!errorText) return 'Ett oväntat fel inträffade. Försök igen.';
+    
+    // Common database errors
+    if (errorText.includes('foreign key') || errorText.includes('FK')) {
+      return 'Det finns ett strukturellt problem med att skapa aktiviteterna. Se till att alla nödvändiga sidor och strukturer finns för 2025 innan du försöker igen. Om problemet kvarstår, vänligen kontakta support.';
+    }
+    
+    if (errorText.includes('duplicate') || errorText.includes('unique constraint')) {
+      return 'Detta objekt finns redan. Försök med ett annat namn eller ta bort det befintliga först.';
+    }
+    
+    if (errorText.includes('authentication') || errorText.includes('unauthorized')) {
+      return 'Din session har gått ut. Vänligen ladda om sidan och logga in igen.';
+    }
+    
+    if (errorText.includes('timeout')) {
+      return 'Begäran tog för lång tid. Försök igen med en enklare fråga.';
+    }
+    
+    // Clean up the error but keep it informative
+    return cleanAIResponse(errorText);
   };
 
   const handleSubmit = async (e) => {
@@ -351,11 +384,15 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
 
     } catch (error) {
       console.error('[AI] Error:', error);
+      
+      const friendlyError = makeErrorFriendly(error.message);
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: t('editor:aiAssistant.error', { message: error.message }),
+        content: `${friendlyError}\n\n💡 **Tips:** Du kan:\n- Försöka formulera din fråga på ett annat sätt\n- Kolla att alla nödvändiga sidor och strukturer finns\n- Försöka med en enklare uppgift först`,
         isError: true,
-        id: Date.now()
+        id: Date.now(),
+        canRetry: true
       }]);
     } finally {
       setIsLoading(false);
@@ -435,14 +472,14 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         data-onboarding="ai-chat-messages"
       >
         {messages.map(m => (
-          <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%]  rounded-sm p-3 shadow-sm ${
+          <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className={`max-w-[85%] rounded-sm p-3 shadow-sm ${
                 m.role === 'user' ? 'bg-blue-600 text-white' :
                 m.isError ? 'bg-red-50 text-red-800 border border-red-200' :
                 'bg-white text-gray-900 border border-gray-200'
               }`}>
               <div className={`text-sm leading-relaxed ${
-                m.role === 'user' ? 'text-white' : 'prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-800 prose-strong:text-gray-900 prose-code:text-gray-900'
+                m.role === 'user' ? 'text-white' : 'prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-800 prose-strong:text-gray-900 prose-code:text-gray-900 prose-li:text-gray-800 prose-ul:text-gray-800'
               }`}>
                 {m.role === 'user' ? (
                   <div className="whitespace-pre-wrap text-white">{m.content}</div>
@@ -450,16 +487,35 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                 )}
               </div>
+              {m.isError && m.canRetry && (
+                <button
+                  onClick={() => {
+                    // Find the last user message before this error
+                    const lastUserMsgIndex = messages.findIndex(msg => msg.id === m.id) - 1;
+                    if (lastUserMsgIndex >= 0 && messages[lastUserMsgIndex].role === 'user') {
+                      setInput(messages[lastUserMsgIndex].content);
+                    }
+                  }}
+                  className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
+                >
+                  🔄 Försök igen
+                </button>
+              )}
             </div>
           </div>
         ))}
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white rounded-sm p-3 border border-gray-200">
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-sm p-3 border border-purple-200">
               <div className="flex gap-2 items-center">
-                <Loader2 size={16} className="animate-spin text-purple-500" />
-                <span className="text-sm text-gray-600">{t('editor:aiAssistant.loading')}</span>
+                <Loader2 size={16} className="animate-spin text-purple-600" />
+                <span className="text-sm text-gray-700 font-medium">
+                  {t('editor:aiAssistant.loading')}
+                </span>
+              </div>
+              <div className="text-xs text-gray-600 mt-1">
+                ✨ AI-assistenten tänker...
               </div>
             </div>
           </div>

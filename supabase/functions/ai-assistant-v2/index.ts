@@ -142,31 +142,44 @@ async function createActivity(
     .eq('wheel_id', wheelId)
     .order('year')
 
-  if (pagesError) throw pagesError
+  if (pagesError) {
+    console.error('[createActivity] Pages query error:', pagesError)
+    throw new Error('Kunde inte hämta sidor för hjulet. Försök igen.')
+  }
   if (!pages || pages.length === 0) {
-    throw new Error('Inga sidor hittades för detta hjul')
+    throw new Error('Inga sidor hittades för detta hjul. Skapa minst en sida först.')
   }
 
   // Verify ring exists
   const { data: ring, error: ringError } = await supabase
     .from('wheel_rings')
-    .select('id, name')
+    .select('id, name, wheel_id')
     .eq('id', args.ringId)
     .single()
   
   if (ringError || !ring) {
-    throw new Error(`Ring med ID ${args.ringId} hittades inte`)
+    console.error('[createActivity] Ring query error:', ringError)
+    throw new Error(`Den valda ringen hittades inte. Kontrollera att ringen fortfarande finns.`)
+  }
+  
+  if (ring.wheel_id !== wheelId) {
+    throw new Error('Den valda ringen tillhör inte detta hjul.')
   }
   
   // Verify activity group exists
   const { data: group, error: groupError } = await supabase
     .from('activity_groups')
-    .select('id, name')
+    .select('id, name, wheel_id')
     .eq('id', args.activityGroupId)
     .single()
   
   if (groupError || !group) {
-    throw new Error(`Aktivitetsgrupp med ID ${args.activityGroupId} hittades inte`)
+    console.error('[createActivity] Group query error:', groupError)
+    throw new Error(`Den valda aktivitetsgruppen hittades inte. Kontrollera att gruppen fortfarande finns.`)
+  }
+  
+  if (group.wheel_id !== wheelId) {
+    throw new Error('Den valda aktivitetsgruppen tillhör inte detta hjul.')
   }
 
   const startYear = new Date(args.startDate).getFullYear()
@@ -176,20 +189,24 @@ async function createActivity(
   for (let year = startYear; year <= endYear; year++) {
     const pageExists = pages.find((p: { year: number }) => p.year === year)
     if (!pageExists) {
+      console.log(`[createActivity] Creating missing page for year ${year}`)
       const { data: newPage, error: pageError } = await supabase
         .from('wheel_pages')
         .insert({
           wheel_id: wheelId,
           year: year,
+          title: `${year}`,
           organization_data: { rings: [], activityGroups: [], labels: [], items: [] }
         })
         .select()
         .single()
       
       if (pageError) {
-        throw new Error(`Kunde inte skapa sida för år ${year}: ${pageError.message}`)
+        console.error(`[createActivity] Error creating page for year ${year}:`, pageError)
+        throw new Error(`Kunde inte skapa sida för år ${year}. Skapa sidan manuellt först, eller välj ett annat datumintervall.`)
       }
       pages.push(newPage)
+      console.log(`[createActivity] Successfully created page for year ${year}`)
     }
   }
 
@@ -246,10 +263,12 @@ async function createActivity(
     }
   }
 
+  console.log(`[createActivity] Successfully created ${itemsCreated.length} item(s)`)
+
   return {
     success: true,
     itemsCreated: itemsCreated.length,
-    message: `Aktivitet "${args.name}" skapad (${args.startDate} till ${args.endDate})${itemsCreated.length > 1 ? ` - delad över ${itemsCreated.length} år` : ''}`,
+    message: `✅ Aktivitet "${args.name}" skapad (${args.startDate} till ${args.endDate})${itemsCreated.length > 1 ? ` - delad över ${itemsCreated.length} år` : ''}`,
     ringName: ring.name,
     groupName: group.name,
   }
@@ -311,7 +330,7 @@ async function createRing(
 
   return {
     success: true,
-    message: `Ring "${args.name}" skapad (typ: ${args.type}, färg: ${finalColor})`,
+    message: `✅ Ring "${args.name}" skapad (typ: ${args.type === 'outer' ? 'yttre (aktiviteter)' : 'inre (text)'}, färg: ${finalColor})`,
     ringId: ring.id,
     ringName: ring.name,
   }
@@ -355,7 +374,7 @@ async function createGroup(
 
   return {
     success: true,
-    message: `Aktivitetsgrupp "${args.name}" skapad med färg ${args.color}`,
+    message: `✅ Aktivitetsgrupp "${args.name}" skapad med färg ${args.color}`,
     groupId: group.id,
     groupName: group.name,
   }
@@ -1370,7 +1389,7 @@ You internally:
   Step 3: Date logic: user said "november" + current date is 2025-10-14 → november 2025 → "2025-11-01" to "2025-11-30"
   Step 4: [Call create_activity with {name: "kampanj", startDate: "2025-11-01", endDate: "2025-11-30", ringId: "abc-123", activityGroupId: "def-456"}]
   Step 5: Tool returns {success: true, message: "Aktivitet skapad"}
-You respond: "Klart! Jag har skapat kampanj i november (2025-11-01 till 2025-11-30) i ringen Kampanjer ✅"
+You respond: "✅ **Klart!** Jag har skapat aktiviteten:\n\n📌 **Kampanj**\n📅 November 2025 (2025-11-01 till 2025-11-30)\n🎯 Ring: Kampanjer\n🏷️ Grupp: Kampanj"
 
 SMART MATCHING KEYWORDS:
 - Contains "kampanj" → ring: "Kampanjer", group: "Kampanj"
@@ -1390,6 +1409,8 @@ CRITICAL RULES:
 - NEVER respond without calling the appropriate tool
 - ALWAYS use UUIDs from get_current_context, NEVER use ring/group names as IDs
 - If no rings/groups exist, tell user to create structure first
+- If tool call fails, explain the error in friendly Swedish and suggest solutions
+- If page doesn't exist for a year, explain that pages are auto-created but there might be structural issues
 
 UPDATE/MOVE/CHANGE ACTIVITIES:
 When user says "flytta", "ändra", "uppdatera", "byt", "move", "change":
@@ -2103,6 +2124,11 @@ VIKTIGT:
 - Håll din intro KORT (max 1 mening)
 - Låt specialisten göra ALLT arbete
 - Försök INTE lösa uppgiften själv
+
+FEL OCH LÖSNINGAR (för när användare frågar):
+- "Det finns ett strukturellt problem" → Sidor för året finns inte, användaren behöver skapa dem först eller välja rätt år
+- "Ring/Grupp hittades inte" → Strukturen saknas, användaren behöver skapa ringar och grupper först
+- "foreign key" fel → Databasproblem, föreslå att kontakta support eller skapa saknade strukturer
 
 FELAKTIGT ❌:
 User: "Skapa ring Kampanjer"
