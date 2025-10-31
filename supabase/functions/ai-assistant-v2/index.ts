@@ -110,7 +110,7 @@ const DeleteLabelInput = z.object({
 
 const SuggestStructureInput = z.object({
   domain: z.string().describe('The domain, purpose, or use case for the wheel (e.g., "HR planning", "Marketing campaigns", "School year planning", "Project management")'),
-  additionalContext: z.string().optional().describe('Optional: Additional context or specific requirements from the user'),
+  additionalContext: z.string().nullable().describe('Optional: Additional context or specific requirements from the user'),
 })
 
 const CreateYearPageInput = z.object({
