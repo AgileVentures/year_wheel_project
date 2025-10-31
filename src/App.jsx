@@ -638,9 +638,35 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Track active editing activity (who's editing which items)
   const { broadcastActivity, activeEditors } = useWheelActivity(wheelId);
 
+  // Track recent operations for showing avatars (who just edited what)
+  const recentOperationsRef = useRef(new Map()); // itemId -> { editor, timestamp }
+
   // Handle incoming operations from other users
   const handleIncomingOperation = useCallback((operation) => {
     console.log('[App] Received operation from another user:', operation);
+    
+    // Track this operation for avatar display (show for 3 seconds)
+    if (operation.type === 'drag' || operation.type === 'resize' || operation.type === 'edit') {
+      const editorInfo = {
+        user_id: operation.userId,
+        email: operation.userEmail,
+        activity: 'editing',
+        itemId: operation.itemId,
+        timestamp: operation.timestamp,
+      };
+      
+      // Store in ref
+      recentOperationsRef.current.set(operation.itemId, editorInfo);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        recentOperationsRef.current.delete(operation.itemId);
+        // Trigger a redraw to remove the avatar
+        setOrganizationData(prev => ({ ...prev }));
+      }, 3000);
+      
+      console.log('[App] Showing avatar for operation on item:', operation.itemId, 'by:', operation.userEmail);
+    }
     
     // Apply the operation optimistically to local state
     if (operation.type === 'drag' || operation.type === 'resize') {
@@ -693,6 +719,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Real-time operations broadcasting
   const { broadcastOperation } = useWheelOperations(wheelId, currentPageId, handleIncomingOperation);
+
+  // Combine activeEditors from presence channel + recent operations for avatar display
+  const combinedActiveEditors = [
+    ...activeEditors,
+    ...Array.from(recentOperationsRef.current.values())
+  ];
+  
+  console.log('[App] Combined active editors:', combinedActiveEditors);
 
   // Store latest values in refs so autoSave always reads current state
   const latestValuesRef = useRef({});
@@ -2625,7 +2659,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onReloadData={loadWheelData}
             currentWheelId={wheelId}
             broadcastActivity={broadcastActivity}
-            activeEditors={activeEditors}
+            activeEditors={combinedActiveEditors}
             broadcastOperation={broadcastOperation}
           />
         </div>
@@ -2658,7 +2692,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               onUpdateAktivitet={handleUpdateAktivitet}
               onDeleteAktivitet={handleDeleteAktivitet}
               broadcastActivity={broadcastActivity}
-              activeEditors={activeEditors}
+              activeEditors={combinedActiveEditors}
               broadcastOperation={broadcastOperation}
             />
           </div>
