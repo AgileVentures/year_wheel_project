@@ -294,26 +294,40 @@ class YearWheel {
     }
   }
 
-  // Draw editor avatar indicator for an item being edited by another user
-  // Similar to Google Docs' real-time collaboration indicators
-  drawEditorAvatar(item, startRadius, itemWidth, adjustedEndAngle) {
+  // Collect editor avatar data for an item being edited by another user
+  // Avatars are drawn later (in rotated context) to ensure proper positioning
+  collectEditorAvatar(item, startRadius, itemWidth, adjustedEndAngle) {
     // Check if this item is being edited by someone
     const editor = this.activeEditors.find(e => e.itemId === item.id && e.activity === 'editing');
     if (!editor) return;
     
-    console.log('[Avatar] Drawing avatar for item:', item.id, 'editor:', editor.email);
+    console.log('[Avatar] Collecting avatar for item:', item.id, 'editor:', editor.email);
+    
+    // Store avatar data to draw later (in rotated context with other indicators)
+    this.avatarsToDraw.push({
+      item,
+      editor,
+      startRadius,
+      itemWidth,
+      adjustedEndAngle,
+    });
+  }
+
+  // Actually draw the editor avatar in the rotated context
+  drawEditorAvatarInRotatedContext(item, editor, startRadius, itemWidth, adjustedEndAngle) {
+    console.log('[Avatar] Drawing avatar in rotated context for item:', item.id, 'editor:', editor.email);
     
     // Position avatar at the end of the item (top right corner)
     const avatarRadius = startRadius + itemWidth; // Outer edge of item
-    const avatarAngle = adjustedEndAngle; // End angle of item
+    const avatarAngle = adjustedEndAngle; // End angle of item (already includes initAngle)
     
-    // Convert to cartesian coordinates
+    // Convert to cartesian coordinates (in rotated space)
     const angleRad = this.toRadians(avatarAngle);
     const avatarX = this.center.x + Math.cos(angleRad) * avatarRadius;
     const avatarY = this.center.y + Math.sin(angleRad) * avatarRadius;
     
-    // Avatar size based on zoom and item size
-    const avatarSize = Math.min(Math.max(itemWidth * 0.6, 12), 24); // Between 12-24px
+    // Avatar size based on item size (responsive)
+    const avatarSize = Math.min(Math.max(itemWidth * 0.8, 16), 32); // Between 16-32px
     
     // Draw avatar circle
     this.context.save();
@@ -328,7 +342,7 @@ class YearWheel {
     // Draw user initial
     const initial = (editor.email?.charAt(0) || '?').toUpperCase();
     this.context.fillStyle = '#FFFFFF';
-    this.context.font = `bold ${avatarSize * 0.6}px sans-serif`;
+    this.context.font = `bold ${Math.floor(avatarSize * 0.55)}px sans-serif`;
     this.context.textAlign = 'center';
     this.context.textBaseline = 'middle';
     this.context.fillText(initial, avatarX, avatarY);
@@ -4548,6 +4562,7 @@ class YearWheel {
     this.clickableItems = [];
     this.labelsToDraw = [];
     this.linkedWheelsToDraw = [];
+    this.avatarsToDraw = []; // Editor avatars for real-time collaboration
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
 
@@ -4889,8 +4904,8 @@ class YearWheel {
               renderDecision: renderDecision, // Pass the decision to renderer
             });
             
-            // Draw editor avatar if someone is editing this item (real-time collaboration)
-            this.drawEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
+            // Collect editor avatar if someone is editing this item (real-time collaboration)
+            this.collectEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
 
             // Collect label indicator to draw last (on top)
             if (item.labelId) {
@@ -5215,8 +5230,8 @@ class YearWheel {
             renderDecision: renderDecision, // Pass the decision to renderer
           });
           
-          // Draw editor avatar if someone is editing this item (real-time collaboration)
-          this.drawEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
+          // Collect editor avatar if someone is editing this item (real-time collaboration)
+          this.collectEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
 
           // Collect label indicator to draw last (on top)
           if (item.labelId) {
@@ -5456,7 +5471,20 @@ class YearWheel {
       }
     }
 
-    // SECOND draw all linked wheel indicators (chain link icons)
+    // SECOND draw all editor avatars (real-time collaboration indicators)
+    if (this.avatarsToDraw && this.avatarsToDraw.length > 0) {
+      for (const avatarData of this.avatarsToDraw) {
+        this.drawEditorAvatarInRotatedContext(
+          avatarData.item,
+          avatarData.editor,
+          avatarData.startRadius,
+          avatarData.itemWidth,
+          avatarData.adjustedEndAngle
+        );
+      }
+    }
+
+    // THIRD draw all linked wheel indicators (chain link icons)
     if (this.linkedWheelsToDraw && this.linkedWheelsToDraw.length > 0) {
       for (const linkData of this.linkedWheelsToDraw) {
         this.drawLinkedWheelIndicator(
