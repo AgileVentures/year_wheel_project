@@ -49,7 +49,7 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
   if (!isMobile && !isTablet) return null;
 
   const handleCastToggle = async () => {
-    // iOS fallback: show QR code modal and start Realtime session
+    // iOS fallback: show code modal and start Realtime session
     if (isIOS || !supportsCast) {
       if (showQRModal || isRealtimeConnected) {
         // Stop casting
@@ -60,14 +60,14 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
         }
       } else {
         // Start casting
-        // Generate unique session token
-        const token = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        setSessionToken(token);
+        // Generate 6-character pairing code (easy to type on TV)
+        const code = Math.random().toString(36).substr(2, 6).toUpperCase();
+        setSessionToken(code);
         setShowQRModal(true);
         
-        // Start Realtime session
+        // Start Realtime session with code as channel name
         if (startRealtimeSession) {
-          startRealtimeSession(token, wheelData);
+          startRealtimeSession(code, wheelData);
         }
       }
       return;

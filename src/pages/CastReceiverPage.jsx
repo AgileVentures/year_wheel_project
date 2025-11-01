@@ -15,8 +15,14 @@ import { useRealtimeCastReceiver } from '../hooks/useRealtimeCast';
  */
 export default function CastReceiverPage() {
   const { t } = useTranslation(['common']);
-  const [searchParams] = useSearchParams();
-  const sessionToken = searchParams.get('session'); // For Realtime fallback
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Handle pairing code flow
+  const codeFromUrl = searchParams.get('code');
+  const [enteredCode, setEnteredCode] = useState(codeFromUrl || '');
+  const [isCodeSubmitted, setIsCodeSubmitted] = useState(!!codeFromUrl);
+  const sessionToken = isCodeSubmitted ? enteredCode : null;
+  
   const [wheelData, setWheelData] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
@@ -279,7 +285,55 @@ export default function CastReceiverPage() {
     );
   }
 
-  // Waiting for wheel data
+  // Show code input screen if no code submitted yet
+  if (!isCodeSubmitted) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
+        <div className="text-center max-w-lg px-8">
+          <div className="text-6xl mb-6">📺</div>
+          <h1 className="text-4xl font-bold mb-4">{t('common:cast.enterPairingCode')}</h1>
+          <p className="text-xl text-gray-300 mb-8">
+            {t('common:cast.enterCodeFromPhone')}
+          </p>
+          
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (enteredCode.length === 6) {
+                setIsCodeSubmitted(true);
+                setSearchParams({ code: enteredCode.toUpperCase() });
+              }
+            }}
+            className="space-y-6"
+          >
+            <input
+              type="text"
+              value={enteredCode}
+              onChange={(e) => setEnteredCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+              maxLength={6}
+              placeholder="ABC123"
+              className="w-full text-center text-6xl font-mono font-bold bg-white bg-opacity-10 border-2 border-white border-opacity-20 rounded-xl py-6 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:bg-opacity-20 transition-all tracking-widest"
+              autoFocus
+            />
+            
+            <button
+              type="submit"
+              disabled={enteredCode.length !== 6}
+              className="w-full py-4 px-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xl font-semibold rounded-xl transition-all focus:outline-none focus:ring-4 focus:ring-blue-500"
+            >
+              {t('common:cast.connect')}
+            </button>
+          </form>
+          
+          <p className="text-sm text-gray-400 mt-8">
+            {t('common:cast.codeHelpText')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state before connection
   if (!wheelData) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
@@ -288,7 +342,7 @@ export default function CastReceiverPage() {
           <p className="text-2xl font-semibold mb-2">{t('common:cast.waitingForConnection')}</p>
           <p className="text-gray-400">
             {sessionToken 
-              ? t('common:cast.scanQRFromIOS')
+              ? t('common:cast.connectingWithCode')
               : t('common:cast.startCastingFromMobile')}
           </p>
         </div>
