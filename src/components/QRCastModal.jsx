@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { X } from 'lucide-react';
+import { X, Copy, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -12,15 +12,25 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
   const { t } = useTranslation(['common']);
   const canvasRef = useRef(null);
   const [qrError, setQrError] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const receiverUrl = sessionToken ? `${window.location.origin}/cast-receiver?session=${sessionToken}` : '';
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(receiverUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen || !canvasRef.current || !sessionToken) return;
 
     const generateQR = async () => {
       try {
-        // Build receiver URL with session token
-        const receiverUrl = `${window.location.origin}/cast-receiver?session=${sessionToken}`;
-        
         // Generate QR code on canvas
         await QRCode.toCanvas(canvasRef.current, receiverUrl, {
           width: 280,
@@ -97,9 +107,27 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
           </div>
         </div>
 
+        {/* Copy Link Button */}
+        <button
+          onClick={handleCopyLink}
+          className="mt-6 w-full px-4 py-3 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+        >
+          {copied ? (
+            <>
+              <Check size={18} />
+              {t('common:cast.linkCopied')}
+            </>
+          ) : (
+            <>
+              <Copy size={18} />
+              {t('common:cast.copyLink')}
+            </>
+          )}
+        </button>
+
         {/* Wheel info */}
         {wheelData && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="mt-4 pt-4 border-t border-gray-200">
             <p className="text-xs text-gray-500">
               {t('common:cast.casting')}: <span className="font-medium text-gray-700">{wheelData.title} ({wheelData.year})</span>
             </p>
@@ -109,7 +137,7 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
         {/* Close button */}
         <button
           onClick={onClose}
-          className="mt-6 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 transition-colors font-medium"
+          className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 transition-colors font-medium"
         >
           {t('common:actions.close')}
         </button>
