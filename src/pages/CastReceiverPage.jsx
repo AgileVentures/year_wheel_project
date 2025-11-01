@@ -37,15 +37,19 @@ export default function CastReceiverPage() {
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
 
-  // Initialize Cast Receiver (skip if using Realtime)
+  // Initialize Cast Receiver (skip if using Realtime or waiting for code)
   useEffect(() => {
-    if (sessionToken) {
-      console.log('[Receiver] Using Realtime mode, skipping Cast SDK');
+    // Skip Cast SDK if we have a session token (Realtime mode) or haven't submitted code yet
+    if (sessionToken || !isCodeSubmitted) {
+      if (sessionToken) {
+        console.log('[Receiver] Using Realtime mode, skipping Cast SDK');
+      }
       return;
     }
     
     if (!window.cast || !window.cast.framework) {
-      setConnectionError('Cast Receiver SDK not loaded');
+      // Don't show error if we're in code input mode
+      console.log('[Receiver] Cast SDK not available, using Realtime only');
       return;
     }
 
