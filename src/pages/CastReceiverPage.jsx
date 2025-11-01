@@ -267,29 +267,7 @@ export default function CastReceiverPage() {
     }, 2000);
   };
 
-  // Loading state
-  if (!isConnected || connectionError) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        <div className="text-center">
-          {connectionError ? (
-            <>
-              <div className="text-red-500 text-6xl mb-4">⚠️</div>
-              <p className="text-2xl font-semibold mb-2">{t('common:cast.connectionError')}</p>
-              <p className="text-gray-400">{connectionError}</p>
-            </>
-          ) : (
-            <>
-              <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500 mx-auto mb-6"></div>
-              <p className="text-2xl font-semibold">{t('common:cast.startingReceiver')}</p>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Show code input screen if no code submitted yet
+  // Show code input screen FIRST if no code submitted yet
   if (!isCodeSubmitted) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
@@ -332,6 +310,19 @@ export default function CastReceiverPage() {
           <p className="text-sm text-gray-400 mt-8">
             {t('common:cast.codeHelpText')}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading/error state after code submitted
+  if (connectionError) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <p className="text-2xl font-semibold mb-2">{t('common:cast.connectionError')}</p>
+          <p className="text-gray-400">{connectionError}</p>
         </div>
       </div>
     );
