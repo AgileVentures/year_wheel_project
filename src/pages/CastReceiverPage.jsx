@@ -2,27 +2,40 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import YearWheel from '../YearWheel';
 import { CAST_NAMESPACE, CAST_MESSAGE_TYPES } from '../constants/castMessages';
+import { useRealtimeCastReceiver } from '../hooks/useRealtimeCast';
 
 /**
  * Cast Receiver Page
  * Full-screen page that receives Cast messages and displays YearWheel
- * Accessed via /cast-receiver?wheelId=xxx or directly via Cast SDK
+ * Supports both Chrome Cast SDK (Android) and Supabase Realtime (iOS)
+ * Accessed via:
+ * - /cast-receiver (Cast SDK)
+ * - /cast-receiver?session=xxx (Realtime)
  */
 export default function CastReceiverPage() {
   const [searchParams] = useSearchParams();
+  const sessionToken = searchParams.get('session'); // For Realtime fallback
   const [wheelData, setWheelData] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
   const castContextRef = useRef(null);
   const playerManagerRef = useRef(null);
   
+  // Realtime receiver (for iOS)
+  const realtimeReceiver = useRealtimeCastReceiver(sessionToken);
+  
   // For updating wheel state
   const [rotation, setRotation] = useState(0);
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
 
-  // Initialize Cast Receiver
+  // Initialize Cast Receiver (skip if using Realtime)
   useEffect(() => {
+    if (sessionToken) {
+      console.log('[Receiver] Using Realtime mode, skipping Cast SDK');
+      return;
+    }
+    
     if (!window.cast || !window.cast.framework) {
       setConnectionError('Cast Receiver SDK not loaded');
       return;
@@ -64,6 +77,83 @@ export default function CastReceiverPage() {
         }
       }
     };
+  }, []);
+
+  // Handle Realtime messages (iOS fallback)
+  useEffect(() => {
+    if (!sessionToken) return;
+    
+    // Update connection status based on Realtime
+    setIsConnected(realtimeReceiver.isConnected);
+    
+    if (realtimeReceiver.error) {
+      setConnectionError(realtimeReceiver.error);
+    }
+
+    // Set up message handler
+    realtimeReceiver.onMessage((message) => {
+      handleRealtimeMessage(message);
+    });
+  }, [sessionToken, realtimeReceiver]);
+
+  // Handle incoming Realtime messages (same format as Cast messages)
+  const handleRealtimeMessage = useCallback((message) => {
+    if (!message || !message.type) return;
+    
+    console.log('[Receiver] Realtime message:', message.type);
+
+    switch (message.type) {
+      case CAST_MESSAGE_TYPES.INIT:
+        setWheelData(message.data);
+        setRotation(message.data.rotation || 0);
+        setZoomedMonth(message.data.zoomedMonth || null);
+        setZoomedQuarter(message.data.zoomedQuarter || null);
+        break;
+
+      case CAST_MESSAGE_TYPES.ROTATE:
+        setRotation(message.data.rotation);
+        break;
+
+      case CAST_MESSAGE_TYPES.ZOOM:
+        if (message.data.zoom === 'month') {
+          setZoomedMonth(message.data.month);
+          setZoomedQuarter(null);
+        } else if (message.data.zoom === 'quarter') {
+          setZoomedQuarter(message.data.quarter);
+          setZoomedMonth(null);
+        } else {
+          setZoomedMonth(null);
+          setZoomedQuarter(null);
+        }
+        break;
+
+      case CAST_MESSAGE_TYPES.UPDATE:
+        if (message.data.organizationData) {
+          setWheelData(prev => ({
+            ...prev,
+            organizationData: message.data.organizationData
+          }));
+        }
+        break;
+
+      case CAST_MESSAGE_TYPES.SETTINGS:
+        setWheelData(prev => ({
+          ...prev,
+          ...message.data
+        }));
+        break;
+
+      case CAST_MESSAGE_TYPES.DISCONNECT:
+        console.log('[Receiver] Disconnect requested');
+        break;
+
+      case CAST_MESSAGE_TYPES.PING:
+        // Heartbeat - no action needed
+        break;
+
+      default:
+        console.log('[Receiver] Unknown message type:', message.type);
+    }
   }, []);
 
   // Handle incoming Cast messages
@@ -194,7 +284,11 @@ export default function CastReceiverPage() {
         <div className="text-center">
           <div className="animate-pulse text-6xl mb-6">📱 ➜ 📺</div>
           <p className="text-2xl font-semibold mb-2">Väntar på anslutning...</p>
-          <p className="text-gray-400">Starta casting från din mobila enhet</p>
+          <p className="text-gray-400">
+            {sessionToken 
+              ? 'Skanna QR-koden från din iPhone/iPad' 
+              : 'Starta casting från din mobila enhet'}
+          </p>
         </div>
       </div>
     );

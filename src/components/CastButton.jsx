@@ -9,12 +9,20 @@ import QRCastModal from './QRCastModal';
  * and QR code modal fallback for iOS
  * Only visible on mobile/tablet devices
  */
-export default function CastButton({ wheelData, onCastStart, onCastStop }) {
+export default function CastButton({ wheelData, realtimeCast, onCastStart, onCastStop }) {
   const { isMobile, isTablet, isIOS, supportsCast } = useDeviceDetection();
   const { isCasting, isInitializing, error, startCast, stopCast } = useCastManager();
   const [showError, setShowError] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [sessionToken, setSessionToken] = useState(null);
+  
+  // Unpack realtime cast hook
+  const { 
+    isConnected: isRealtimeConnected,
+    startSession: startRealtimeSession,
+    stopSession: stopRealtimeSession,
+    error: realtimeError
+  } = realtimeCast || {};
 
   // Show error briefly then hide
   useEffect(() => {
@@ -25,29 +33,40 @@ export default function CastButton({ wheelData, onCastStart, onCastStop }) {
     }
   }, [error]);
 
-  // Notify parent of cast state changes
+  // Notify parent of cast state changes (both Android and iOS)
   useEffect(() => {
-    if (isCasting && onCastStart) {
+    const isActive = isCasting || isRealtimeConnected;
+    if (isActive && onCastStart) {
       onCastStart();
-    } else if (!isCasting && onCastStop) {
+    } else if (!isActive && onCastStop) {
       onCastStop();
     }
-  }, [isCasting, onCastStart, onCastStop]);
+  }, [isCasting, isRealtimeConnected, onCastStart, onCastStop]);
 
   // Hide button if not on mobile/tablet
   if (!isMobile && !isTablet) return null;
 
   const handleCastToggle = async () => {
-    // iOS fallback: show QR code modal
+    // iOS fallback: show QR code modal and start Realtime session
     if (isIOS || !supportsCast) {
-      if (showQRModal) {
+      if (showQRModal || isRealtimeConnected) {
+        // Stop casting
         setShowQRModal(false);
         setSessionToken(null);
+        if (stopRealtimeSession) {
+          stopRealtimeSession();
+        }
       } else {
+        // Start casting
         // Generate unique session token
         const token = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         setSessionToken(token);
         setShowQRModal(true);
+        
+        // Start Realtime session
+        if (startRealtimeSession) {
+          startRealtimeSession(token, wheelData);
+        }
       }
       return;
     }

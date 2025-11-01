@@ -9,6 +9,8 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../hooks/useAuth';
 import PresentationControlDialog from './PresentationControlDialog';
 import { useCastManager } from '../hooks/useCastManager';
+import { useRealtimeCast } from '../hooks/useRealtimeCast';
+import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import { CAST_MESSAGE_TYPES, HEARTBEAT_INTERVAL_MS } from '../constants/castMessages';
 
 /**
@@ -41,8 +43,20 @@ function PreviewWheelPage() {
   // Local state for organizationData to allow toggling visibility
   const [localOrgData, setLocalOrgData] = useState(null);
   
-  // Cast manager hook
+  // Device detection
+  const { isIOS, supportsCast } = useDeviceDetection();
+  
+  // Cast manager hooks (Chrome Cast for Android, Realtime for iOS)
   const { isCasting, sendCastMessage } = useCastManager();
+  const realtimeCast = useRealtimeCast();
+  const { 
+    isConnected: isRealtimeConnected, 
+    sendMessage: sendRealtimeMessage 
+  } = realtimeCast;
+  
+  // Determine which casting method is active
+  const isActivelyCasting = isCasting || isRealtimeConnected;
+  const activeSendMessage = (isIOS || !supportsCast) ? sendRealtimeMessage : sendCastMessage;
 
   useEffect(() => {
     const loadWheel = async () => {
@@ -357,23 +371,24 @@ function PreviewWheelPage() {
 
   // ===== CAST STATE SYNC HOOKS =====
   // Only run when actively casting to avoid affecting normal preview mode
+  // Supports both Chrome Cast (Android) and Supabase Realtime (iOS)
   
   // Sync zoom state changes to cast receiver
   useEffect(() => {
-    if (!isCasting || !sendCastMessage) return;
+    if (!isActivelyCasting || !activeSendMessage) return;
     
     const zoomType = zoomedMonth ? 'month' : zoomedQuarter ? 'quarter' : 'year';
     
-    sendCastMessage(CAST_MESSAGE_TYPES.ZOOM, {
+    activeSendMessage(CAST_MESSAGE_TYPES.ZOOM, {
       zoom: zoomType,
       month: zoomedMonth,
       quarter: zoomedQuarter
     });
-  }, [zoomedMonth, zoomedQuarter, isCasting, sendCastMessage]);
+  }, [zoomedMonth, zoomedQuarter, isActivelyCasting, activeSendMessage]);
   
   // Sync organization data changes to cast receiver
   useEffect(() => {
-    if (!isCasting || !sendCastMessage || !localOrgData) return;
+    if (!isActivelyCasting || !activeSendMessage || !localOrgData) return;
     
     // Send the complete displayOrgData structure
     const dataToSync = {
@@ -383,21 +398,21 @@ function PreviewWheelPage() {
       items: currentPageItems
     };
     
-    sendCastMessage(CAST_MESSAGE_TYPES.UPDATE, {
+    activeSendMessage(CAST_MESSAGE_TYPES.UPDATE, {
       organizationData: dataToSync
     });
-  }, [localOrgData, currentPageItems, isCasting, sendCastMessage]);
+  }, [localOrgData, currentPageItems, isActivelyCasting, activeSendMessage]);
   
   // Heartbeat to keep connection alive
   useEffect(() => {
-    if (!isCasting || !sendCastMessage) return;
+    if (!isActivelyCasting || !activeSendMessage) return;
     
     const heartbeatInterval = setInterval(() => {
-      sendCastMessage(CAST_MESSAGE_TYPES.PING, { timestamp: Date.now() });
+      activeSendMessage(CAST_MESSAGE_TYPES.PING, { timestamp: Date.now() });
     }, HEARTBEAT_INTERVAL_MS);
     
     return () => clearInterval(heartbeatInterval);
-  }, [isCasting, sendCastMessage]);
+  }, [isActivelyCasting, activeSendMessage]);
   
   // ===== END CAST STATE SYNC =====
 
@@ -672,6 +687,7 @@ function PreviewWheelPage() {
               zoomedQuarter,
               rotation: 0, // TODO: Get rotation from YearWheel if needed
             }}
+            realtimeCast={realtimeCast}
             onCastStart={() => console.log('Cast started')}
             onCastStop={() => console.log('Cast stopped')}
           />
