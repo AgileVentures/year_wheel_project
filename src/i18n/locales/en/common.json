@@ -300,5 +300,26 @@
     "clearSelection": "Clear selection",
     "confirmDelete": "Are you sure you want to delete {{count}} activities?",
     "confirmDeleteOne": "Are you sure you want to delete {{count}} activity?"
+  },
+  "cast": {
+    "castToScreen": "Cast to screen",
+    "closeQR": "Close QR code",
+    "castingClickToStop": "Casting • Click to stop",
+    "qrTitle": "Cast to screen",
+    "qrSubtitle": "Scan the QR code with another device that has a larger screen",
+    "qrError": "Could not generate QR code",
+    "qrStep1": "Open the camera on your iPad, laptop, Apple TV or other display device",
+    "qrStep2": "Scan the QR code above",
+    "qrStep3": "The wheel displays in fullscreen while you control from your phone",
+    "casting": "Casting",
+    "connectionError": "Connection error",
+    "startingReceiver": "Starting receiver...",
+    "waitingForConnection": "Waiting for connection...",
+    "scanQRFromIOS": "Scan the QR code from your iPhone/iPad",
+    "startCastingFromMobile": "Start casting from your mobile device",
+    "disconnected": "Disconnected",
+    "castingEnded": "Casting has ended",
+    "connected": "Connected",
+    "disconnect": "Disconnect"
   }
 }

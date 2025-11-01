@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Smartphone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useCastManager } from '../hooks/useCastManager';
 import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import QRCastModal from './QRCastModal';
@@ -10,6 +11,7 @@ import QRCastModal from './QRCastModal';
  * Only visible on mobile/tablet devices
  */
 export default function CastButton({ wheelData, realtimeCast, onCastStart, onCastStop }) {
+  const { t } = useTranslation(['common']);
   const { isMobile, isTablet, isIOS, supportsCast } = useDeviceDetection();
   const { isCasting, isInitializing, error, startCast, stopCast } = useCastManager();
   const [showError, setShowError] = useState(false);
@@ -91,7 +93,7 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
               ${showQRModal ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}
               ${isInitializing ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-105'}
             `}
-            aria-label={showQRModal ? 'Stäng QR-kod' : 'Casta till skärm'}
+            aria-label={showQRModal ? t('common:cast.closeQR') : t('common:cast.castToScreen')}
           >
             <Smartphone size={24} />
             
@@ -151,19 +153,19 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
       {/* Tooltip - iOS */}
       {(isIOS || !supportsCast) && !showQRModal && (
         <div className="absolute bottom-full mb-2 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          Casta till skärm
+          {t('common:cast.castToScreen')}
         </div>
       )}
 
       {/* Tooltip - Android */}
       {!isIOS && supportsCast && !isCasting && !isInitializing && (
         <div className="absolute bottom-full mb-2 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          Casta till skärm
+          {t('common:cast.castToScreen')}
         </div>
       )}
       {!isIOS && supportsCast && isCasting && (
         <div className="absolute bottom-full mb-2 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          Castar • Klicka för att stoppa
+          {t('common:cast.castingClickToStop')}
         </div>
       )}
 

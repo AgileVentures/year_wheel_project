@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * QRCastModal - iOS casting fallback
@@ -8,6 +9,7 @@ import { X } from 'lucide-react';
  * Used when Chrome Cast SDK is not available (iOS devices)
  */
 function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
+  const { t } = useTranslation(['common']);
   const canvasRef = useRef(null);
   const [qrError, setQrError] = useState(null);
 
@@ -32,12 +34,12 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
         setQrError(null);
       } catch (err) {
         console.error('Failed to generate QR code:', err);
-        setQrError('Kunde inte generera QR-kod');
+        setQrError(t('common:cast.qrError'));
       }
     };
 
     generateQR();
-  }, [isOpen, sessionToken]);
+  }, [isOpen, sessionToken, t]);
 
   if (!isOpen) return null;
 
@@ -48,18 +50,18 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label="Stäng"
+          aria-label={t('common:actions.close')}
         >
           <X size={24} />
         </button>
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Casta till skärm
+          {t('common:cast.qrTitle')}
         </h2>
         
         <p className="text-gray-600 text-sm mb-6">
-          Skanna QR-koden med en annan enhet som har en större skärm
+          {t('common:cast.qrSubtitle')}
         </p>
 
         {/* QR Code */}
@@ -77,21 +79,21 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
             <div className="bg-blue-100 text-blue-700 font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs">
               1
             </div>
-            <p>Öppna kameran på din iPad, laptop eller annan skärmenhet</p>
+            <p>{t('common:cast.qrStep1')}</p>
           </div>
           
           <div className="flex items-start gap-3">
             <div className="bg-blue-100 text-blue-700 font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs">
               2
             </div>
-            <p>Skanna QR-koden ovan</p>
+            <p>{t('common:cast.qrStep2')}</p>
           </div>
           
           <div className="flex items-start gap-3">
             <div className="bg-blue-100 text-blue-700 font-bold rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs">
               3
             </div>
-            <p>Hjulet visas i helskärm medan du styr från din telefon</p>
+            <p>{t('common:cast.qrStep3')}</p>
           </div>
         </div>
 
@@ -99,7 +101,7 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
         {wheelData && (
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500">
-              Castar: <span className="font-medium text-gray-700">{wheelData.title} ({wheelData.year})</span>
+              {t('common:cast.casting')}: <span className="font-medium text-gray-700">{wheelData.title} ({wheelData.year})</span>
             </p>
           </div>
         )}
@@ -109,7 +111,7 @@ function QRCastModal({ isOpen, onClose, sessionToken, wheelData }) {
           onClick={onClose}
           className="mt-6 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 transition-colors font-medium"
         >
-          Stäng
+          {t('common:actions.close')}
         </button>
       </div>
     </div>

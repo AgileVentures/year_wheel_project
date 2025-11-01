@@ -300,5 +300,26 @@
     "clearSelection": "Rensa markering",
     "confirmDelete": "Är du säker på att du vill ta bort {{count}} aktiviteter?",
     "confirmDeleteOne": "Är du säker på att du vill ta bort {{count}} aktivitet?"
+  },
+  "cast": {
+    "castToScreen": "Casta till skärm",
+    "closeQR": "Stäng QR-kod",
+    "castingClickToStop": "Castar • Klicka för att stoppa",
+    "qrTitle": "Casta till skärm",
+    "qrSubtitle": "Skanna QR-koden med en annan enhet som har en större skärm",
+    "qrError": "Kunde inte generera QR-kod",
+    "qrStep1": "Öppna kameran på din iPad, laptop, Apple TV eller annan skärmenhet",
+    "qrStep2": "Skanna QR-koden ovan",
+    "qrStep3": "Hjulet visas i helskärm medan du styr från din telefon",
+    "casting": "Castar",
+    "connectionError": "Fel vid anslutning",
+    "startingReceiver": "Startar mottagare...",
+    "waitingForConnection": "Väntar på anslutning...",
+    "scanQRFromIOS": "Skanna QR-koden från din iPhone/iPad",
+    "startCastingFromMobile": "Starta casting från din mobila enhet",
+    "disconnected": "Frånkopplad",
+    "castingEnded": "Castingen har avslutats",
+    "connected": "Ansluten",
+    "disconnect": "Koppla från"
   }
 }

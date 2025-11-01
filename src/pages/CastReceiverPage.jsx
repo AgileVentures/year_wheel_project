@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import YearWheel from '../YearWheel';
 import { CAST_NAMESPACE, CAST_MESSAGE_TYPES } from '../constants/castMessages';
 import { useRealtimeCastReceiver } from '../hooks/useRealtimeCast';
@@ -13,6 +14,7 @@ import { useRealtimeCastReceiver } from '../hooks/useRealtimeCast';
  * - /cast-receiver?session=xxx (Realtime)
  */
 export default function CastReceiverPage() {
+  const { t } = useTranslation(['common']);
   const [searchParams] = useSearchParams();
   const sessionToken = searchParams.get('session'); // For Realtime fallback
   const [wheelData, setWheelData] = useState(null);
@@ -263,13 +265,13 @@ export default function CastReceiverPage() {
           {connectionError ? (
             <>
               <div className="text-red-500 text-6xl mb-4">⚠️</div>
-              <p className="text-2xl font-semibold mb-2">Fel vid anslutning</p>
+              <p className="text-2xl font-semibold mb-2">{t('common:cast.connectionError')}</p>
               <p className="text-gray-400">{connectionError}</p>
             </>
           ) : (
             <>
               <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500 mx-auto mb-6"></div>
-              <p className="text-2xl font-semibold">Startar mottagare...</p>
+              <p className="text-2xl font-semibold">{t('common:cast.startingReceiver')}</p>
             </>
           )}
         </div>
@@ -283,11 +285,11 @@ export default function CastReceiverPage() {
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
         <div className="text-center">
           <div className="animate-pulse text-6xl mb-6">📱 ➜ 📺</div>
-          <p className="text-2xl font-semibold mb-2">Väntar på anslutning...</p>
+          <p className="text-2xl font-semibold mb-2">{t('common:cast.waitingForConnection')}</p>
           <p className="text-gray-400">
             {sessionToken 
-              ? 'Skanna QR-koden från din iPhone/iPad' 
-              : 'Starta casting från din mobila enhet'}
+              ? t('common:cast.scanQRFromIOS')
+              : t('common:cast.startCastingFromMobile')}
           </p>
         </div>
       </div>
@@ -300,8 +302,8 @@ export default function CastReceiverPage() {
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
         <div className="text-center">
           <div className="text-6xl mb-6">👋</div>
-          <p className="text-2xl font-semibold">Frånkopplad</p>
-          <p className="text-gray-400 mt-2">Castingen har avslutats</p>
+          <p className="text-2xl font-semibold">{t('common:cast.disconnected')}</p>
+          <p className="text-gray-400 mt-2">{t('common:cast.castingEnded')}</p>
         </div>
       </div>
     );
@@ -316,7 +318,7 @@ export default function CastReceiverPage() {
           <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
         </span>
-        <span className="text-white text-sm font-medium">Ansluten</span>
+        <span className="text-white text-sm font-medium">{t('common:cast.connected')}</span>
       </div>
 
       {/* Disconnect button (TV remote friendly - large and accessible) */}
@@ -325,7 +327,7 @@ export default function CastReceiverPage() {
         className="absolute top-4 left-4 z-50 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-red-500"
         style={{ fontSize: '18px' }}
       >
-        ✕ Koppla från
+        ✕ {t('common:cast.disconnect')}
       </button>
 
       {/* YearWheel Canvas */}
