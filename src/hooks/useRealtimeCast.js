@@ -32,12 +32,17 @@ export function useRealtimeCast() {
         supabase.removeChannel(channelRef.current);
       }
 
-      // Create new broadcast channel
+      // Create new broadcast channel with optimized config
       const channel = supabase.channel(channelName, {
         config: {
-          broadcast: { self: true } // Receive own messages for debugging
+          broadcast: { 
+            self: false, // Don't receive own messages
+            ack: false   // Don't wait for acknowledgment (faster)
+          }
         }
       });
+
+      console.log('[useRealtimeCast] Connecting to channel:', channelName);
 
       // Subscribe to channel
       channel
@@ -48,9 +53,24 @@ export function useRealtimeCast() {
           console.log('[useRealtimeCast] Channel status:', status);
           
           if (status === 'SUBSCRIBED') {
+            console.log('[useRealtimeCast] ✅ Connected!');
             setIsConnected(true);
             setSessionToken(token);
             setError(null);
+            
+            // Send initial state immediately
+            if (initialState) {
+              console.log('[useRealtimeCast] Sending INIT with data:', initialState.title);
+              channel.send({
+                type: 'broadcast',
+                event: 'cast-message',
+                payload: {
+                  type: CAST_MESSAGE_TYPES.INIT,
+                  data: initialState,
+                  timestamp: Date.now()
+                }
+              });
+            }
             
             // Send queued messages
             if (messageQueueRef.current.length > 0) {
@@ -64,26 +84,16 @@ export function useRealtimeCast() {
               });
               messageQueueRef.current = [];
             }
-
-            // Send initial state
-            if (initialState) {
-              channel.send({
-                type: 'broadcast',
-                event: 'cast-message',
-                payload: {
-                  type: CAST_MESSAGE_TYPES.INIT,
-                  data: initialState,
-                  timestamp: Date.now()
-                }
-              });
-            }
           } else if (status === 'CHANNEL_ERROR') {
+            console.error('[useRealtimeCast] ❌ Channel error');
             setError('Failed to connect to casting channel');
             setIsConnected(false);
           } else if (status === 'TIMED_OUT') {
+            console.error('[useRealtimeCast] ❌ Timeout');
             setError('Connection timed out');
             setIsConnected(false);
           } else if (status === 'CLOSED') {
+            console.log('[useRealtimeCast] Channel closed');
             setIsConnected(false);
             setSessionToken(null);
           }
@@ -204,16 +214,21 @@ export function useRealtimeCastReceiver(sessionToken) {
       supabase.removeChannel(channelRef.current);
     }
 
-    // Create and subscribe to channel
+    // Create and subscribe to channel with optimized config
     const channel = supabase.channel(channelName, {
       config: {
-        broadcast: { self: false } // Don't receive own messages
+        broadcast: { 
+          self: false, // Don't receive own messages
+          ack: false   // Don't wait for acknowledgment (faster)
+        }
       }
     });
 
+    console.log('[useRealtimeCastReceiver] Subscribing...');
+
     channel
       .on('broadcast', { event: 'cast-message' }, ({ payload }) => {
-        console.log('[useRealtimeCastReceiver] Received:', payload);
+        console.log('[useRealtimeCastReceiver] 📥 Received:', payload?.type);
         setLastMessage(payload);
         
         // Call handler if set
@@ -225,12 +240,15 @@ export function useRealtimeCastReceiver(sessionToken) {
         console.log('[useRealtimeCastReceiver] Status:', status);
         
         if (status === 'SUBSCRIBED') {
+          console.log('[useRealtimeCastReceiver] ✅ Listening for messages');
           setIsConnected(true);
           setError(null);
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('[useRealtimeCastReceiver] ❌ Connection failed');
           setError('Connection failed');
           setIsConnected(false);
         } else if (status === 'CLOSED') {
+          console.log('[useRealtimeCastReceiver] Channel closed');
           setIsConnected(false);
         }
       });
