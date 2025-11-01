@@ -388,6 +388,15 @@ export default function CastReceiverPage() {
         ✕ {t('common:cast.disconnect')}
       </button>
 
+      {/* Title Overlay - Subtle, doesn't steal space */}
+      {wheelData.title && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-40 bg-black bg-opacity-40 px-6 py-2 rounded-full backdrop-blur-sm">
+          <h1 className="text-white text-xl font-semibold text-center">
+            {wheelData.title}
+          </h1>
+        </div>
+      )}
+
       {/* YearWheel Canvas */}
       <div className="flex items-center justify-center h-full p-8">
         <YearWheel
@@ -404,9 +413,8 @@ export default function CastReceiverPage() {
           weekRingDisplayMode={wheelData.weekRingDisplayMode}
           zoomedMonth={zoomedMonth}
           zoomedQuarter={zoomedQuarter}
+          initialRotation={rotation}
           readonly={true}
-          // Note: rotation would need to be passed down to YearWheelClass
-          // via a new prop or ref method
         />
       </div>
     </div>

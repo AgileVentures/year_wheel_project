@@ -44,6 +44,8 @@ function YearWheel({
   zoomedQuarter,
   onSetZoomedMonth,
   onSetZoomedQuarter,
+  initialRotation = 0,
+  onRotationChange,
   onWheelReady,
   onDragStart,
   onUpdateAktivitet,
@@ -436,6 +438,7 @@ function YearWheel({
         onItemClick: handleItemClick,
         onDragStart: handleDragStart,
         onUpdateAktivitet: handleUpdateAktivitet,
+        onRotationChange, // Pass rotation callback for casting sync
         selectionMode,
         selectedItems: Array.from(selectedItems),
         readonly, // Pass readonly to disable interactions
@@ -485,6 +488,14 @@ function YearWheel({
     }
   }, [organizationData, yearWheel]);
 
+  // Update rotation angle from external source (casting)
+  useEffect(() => {
+    if (yearWheel && initialRotation !== undefined) {
+      yearWheel.rotationAngle = initialRotation;
+      yearWheel.create(); // Redraw with new rotation
+    }
+  }, [initialRotation, yearWheel]);
+  
   // Update zoom level for smart text scaling (without recreating wheel)
   useEffect(() => {
     if (yearWheel && yearWheel.updateZoomLevel) {

@@ -77,6 +77,7 @@ class YearWheel {
     this.readonly = options.readonly !== undefined ? options.readonly : false; // Disable interactions in readonly mode
     this.activeEditors = options.activeEditors || []; // Real-time collaboration: users editing items
     this.broadcastOperation = options.broadcastOperation || null; // Function to broadcast operations to other users
+    this.onRotationChange = options.onRotationChange || null; // Function to broadcast rotation changes (for casting)
     this.textColor = "#374151"; // Darker gray for better readability
     this.center = { x: size / 2, y: size / 2 }; // Center vertically (title removed)
     this.initAngle = -15 - 90;
@@ -3565,6 +3566,11 @@ class YearWheel {
 
     // Update rotation by the incremental difference
     this.rotationAngle += angleDifference;
+    
+    // Notify callback if provided (for casting sync)
+    if (this.onRotationChange) {
+      this.onRotationChange(this.rotationAngle);
+    }
     
     // Update lastMouseAngle for next frame
     this.lastMouseAngle = currentMouseAngle;

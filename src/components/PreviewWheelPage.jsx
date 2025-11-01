@@ -36,12 +36,23 @@ function PreviewWheelPage() {
   const [currentPageItems, setCurrentPageItems] = useState([]);
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
+  const [rotation, setRotation] = useState(0);
   const [isCopying, setIsCopying] = useState(false);
   const pendingCopyProcessedRef = useRef(false);
   const [showControlDialog, setShowControlDialog] = useState(false);
   
   // Local state for organizationData to allow toggling visibility
   const [localOrgData, setLocalOrgData] = useState(null);
+  
+  // Throttle rotation updates for casting (avoid flooding)
+  const lastRotationSentRef = useRef(0);
+  const handleRotationChange = useCallback((newRotation) => {
+    const now = Date.now();
+    if (now - lastRotationSentRef.current < 100) return; // Throttle to 10 updates/sec
+    
+    lastRotationSentRef.current = now;
+    setRotation(newRotation);
+  }, []);
   
   // Device detection
   const { isIOS, supportsCast } = useDeviceDetection();
@@ -373,6 +384,15 @@ function PreviewWheelPage() {
   // Only run when actively casting to avoid affecting normal preview mode
   // Supports both Chrome Cast (Android) and Supabase Realtime (iOS)
   
+  // Sync rotation changes to cast receiver (throttled)
+  useEffect(() => {
+    if (!isActivelyCasting || !activeSendMessage) return;
+    
+    activeSendMessage(CAST_MESSAGE_TYPES.ROTATE, {
+      rotation
+    });
+  }, [rotation, isActivelyCasting, activeSendMessage]);
+  
   // Sync zoom state changes to cast receiver
   useEffect(() => {
     if (!isActivelyCasting || !activeSendMessage) return;
@@ -642,6 +662,7 @@ function PreviewWheelPage() {
             zoomedQuarter={zoomedQuarter}
             onSetZoomedMonth={setZoomedMonth}
             onSetZoomedQuarter={setZoomedQuarter}
+            onRotationChange={handleRotationChange}
             readonly={true}
           />
         </div>
