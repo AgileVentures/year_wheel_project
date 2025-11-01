@@ -258,13 +258,18 @@ export default function CastReceiverPage() {
   const handleDisconnect = () => {
     setWheelData(null);
     setIsConnected(false);
+    setIsCodeSubmitted(false);
+    setEnteredCode('');
+    setSearchParams({});
     
-    // Show disconnected screen
-    setTimeout(() => {
-      if (castContextRef.current) {
+    // Clean up Cast SDK if active
+    if (castContextRef.current) {
+      try {
         castContextRef.current.stop();
+      } catch (err) {
+        console.error('[Receiver] Error stopping Cast SDK:', err);
       }
-    }, 2000);
+    }
   };
 
   // Show code input screen FIRST if no code submitted yet
