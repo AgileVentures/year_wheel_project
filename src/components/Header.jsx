@@ -1,5 +1,6 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2, MessageSquare, Clipboard } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2, MessageSquare, Clipboard, Presentation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
 import PublicShareButton from './PublicShareButton';
@@ -67,6 +68,7 @@ function Header({
   onNavigateToItem = null
 }) {
   const { t } = useTranslation(['common', 'subscription']);
+  const navigate = useNavigate();
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [showImageExportMenu, setShowImageExportMenu] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
@@ -108,6 +110,12 @@ function Header({
       setTimeout(() => setCopiedLink(null), 2000);
     } catch (err) {
       console.error('Failed to copy embed link:', err);
+    }
+  };
+
+  const handleOpenPresentationMode = () => {
+    if (wheelId) {
+      navigate(`/preview-wheel/${wheelId}?presentation=true`);
     }
   };
 
@@ -235,6 +243,11 @@ function Header({
                 icon={Eye}
                 label={copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
                 onClick={handleCopyPreviewLink}
+              />
+              <DropdownItem
+                icon={Presentation}
+                label={t('common:header.presentationMode')}
+                onClick={handleOpenPresentationMode}
               />
               <DropdownItem
                 icon={Link2}
