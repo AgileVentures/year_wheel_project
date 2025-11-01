@@ -539,8 +539,7 @@ function PreviewWheelPage() {
                   title={t('common:previewWheelPage.showControls')}
                 >
                   <Settings size={isMobileDevice ? 20 : 16} />
-                  <span className="text-sm font-medium hidden sm:inline">{t('common:previewWheelPage.controls')}</span>
-                  <span className="text-sm font-medium sm:hidden">Kontroller</span>
+                  <span className="text-sm font-medium">{t('common:previewWheelPage.controls')}</span>
                 </button>
                 
                 {/* Page Navigator in presentation mode */}
@@ -692,6 +691,12 @@ function PreviewWheelPage() {
           organizationData={displayOrgData}
           onOrganizationChange={handleOrgDataChange}
           onClose={() => setShowControlDialog(false)}
+          rotation={rotation}
+          onRotationChange={handleRotationChange}
+          zoomedMonth={zoomedMonth}
+          onZoomedMonthChange={setZoomedMonth}
+          zoomedQuarter={zoomedQuarter}
+          onZoomedQuarterChange={setZoomedQuarter}
         />
       )}
 

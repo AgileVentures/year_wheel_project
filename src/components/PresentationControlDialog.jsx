@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp, RotateCw, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -9,7 +9,14 @@ import { useTranslation } from 'react-i18next';
 function PresentationControlDialog({ 
   organizationData,
   onOrganizationChange,
-  onClose 
+  onClose,
+  // View control props
+  rotation,
+  onRotationChange,
+  zoomedMonth,
+  onZoomedMonthChange,
+  zoomedQuarter,
+  onZoomedQuarterChange
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -22,7 +29,8 @@ function PresentationControlDialog({
     innerRings: true,
     outerRings: true,
     activityGroups: true,
-    labels: true
+    labels: true,
+    viewControls: true
   });
 
   // Drag-and-drop state for reordering
@@ -252,7 +260,7 @@ function PresentationControlDialog({
         {/* Mobile Header */}
         <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#00A4A6] to-[#2E9E97] text-white shadow-md">
           <h3 className="font-semibold text-lg">
-            Presentationskontroller
+            {t('editor:organizationPanel.presentationControls')}
           </h3>
           <button
             onClick={onClose}
@@ -264,8 +272,344 @@ function PresentationControlDialog({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {/* Content will be here */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 space-y-4">
+            {/* Inner Rings Section */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleSection('innerRings')}
+                className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedSections.innerRings ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                  <span className="font-semibold text-base">{t('editor:organizationPanel.innerRings')}</span>
+                  <span className="text-sm text-gray-500">({innerRings.length})</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    title={t('common:actions.showAll')}
+                  >
+                    <Eye size={18} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    title={t('common:actions.hideAll')}
+                  >
+                    <EyeOff size={18} />
+                  </button>
+                </div>
+              </button>
+              
+              {expandedSections.innerRings && (
+                <div className="border-t border-gray-200 bg-white p-3 space-y-2">
+                  {innerRings.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500 text-sm">
+                      {t('editor:rings.noInnerRings')}
+                    </div>
+                  ) : (
+                    innerRings.map(ring => (
+                      <label
+                        key={ring.id}
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={ring.visible}
+                          onChange={() => toggleRing(ring.id)}
+                          className="no-drag w-5 h-5 rounded border-gray-300"
+                        />
+                        <span className="text-base flex-1">{ring.name}</span>
+                        <span className="text-sm text-gray-400">({countRingItems(ring.id)})</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Outer Rings Section */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleSection('outerRings')}
+                className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedSections.outerRings ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                  <span className="font-semibold text-base">{t('editor:organizationPanel.outerRings')}</span>
+                  <span className="text-sm text-gray-500">({outerRings.length})</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    title={t('common:actions.showAll')}
+                  >
+                    <Eye size={18} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    title={t('common:actions.hideAll')}
+                  >
+                    <EyeOff size={18} />
+                  </button>
+                </div>
+              </button>
+              
+              {expandedSections.outerRings && (
+                <div className="border-t border-gray-200 bg-white p-3 space-y-2">
+                  {outerRings.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500 text-sm">
+                      {t('editor:rings.noOuterRings')}
+                    </div>
+                  ) : (
+                    outerRings.map(ring => (
+                      <label
+                        key={ring.id}
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={ring.visible}
+                          onChange={() => toggleRing(ring.id)}
+                          className="no-drag w-5 h-5 rounded border-gray-300"
+                        />
+                        <span className="text-base flex-1">{ring.name}</span>
+                        <span className="text-sm text-gray-400">({countRingItems(ring.id)})</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Activity Groups Section */}
+            {organizationData.activityGroups && organizationData.activityGroups.length > 0 && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('activityGroups')}
+                  className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedSections.activityGroups ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                    <span className="font-semibold text-base">{t('editor:organizationPanel.activityGroups')}</span>
+                    <span className="text-sm text-gray-500">({organizationData.activityGroups.length})</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('activityGroups', true); }}
+                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      title={t('common:actions.showAll')}
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('activityGroups', false); }}
+                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      title={t('common:actions.hideAll')}
+                    >
+                      <EyeOff size={18} />
+                    </button>
+                  </div>
+                </button>
+                
+                {expandedSections.activityGroups && (
+                  <div className="border-t border-gray-200 bg-white p-3 space-y-2">
+                    {organizationData.activityGroups.map(group => (
+                      <label
+                        key={group.id}
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={group.visible}
+                          onChange={() => toggleActivityGroup(group.id)}
+                          className="no-drag w-5 h-5 rounded border-gray-300"
+                        />
+                        <div
+                          className="w-4 h-4 rounded flex-shrink-0"
+                          style={{ backgroundColor: group.color }}
+                        />
+                        <span className="text-base flex-1">{group.name}</span>
+                        <span className="text-sm text-gray-400">({countActivityGroupItems(group.id)})</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Labels Section */}
+            {organizationData.labels && organizationData.labels.length > 0 && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('labels')}
+                  className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedSections.labels ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                    <span className="font-semibold text-base">{t('editor:organizationPanel.labels')}</span>
+                    <span className="text-sm text-gray-500">({organizationData.labels.length})</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('labels', true); }}
+                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      title={t('common:actions.showAll')}
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('labels', false); }}
+                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      title={t('common:actions.hideAll')}
+                    >
+                      <EyeOff size={18} />
+                    </button>
+                  </div>
+                </button>
+                
+                {expandedSections.labels && (
+                  <div className="border-t border-gray-200 bg-white p-3 space-y-2">
+                    {organizationData.labels.map(label => (
+                      <label
+                        key={label.id}
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={label.visible}
+                          onChange={() => toggleLabel(label.id)}
+                          className="no-drag w-5 h-5 rounded border-gray-300"
+                        />
+                        <div
+                          className="w-4 h-4 rounded flex-shrink-0"
+                          style={{ backgroundColor: label.color }}
+                        />
+                        <span className="text-base flex-1">{label.name}</span>
+                        <span className="text-sm text-gray-400">({countLabelItems(label.id)})</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* View Controls Section */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-teal-50">
+              <button
+                onClick={() => toggleSection('viewControls')}
+                className="no-drag w-full flex items-center justify-between p-4 bg-gradient-to-r from-[#00A4A6]/10 to-[#2E9E97]/10 hover:from-[#00A4A6]/20 hover:to-[#2E9E97]/20 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedSections.viewControls ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                  <span className="font-semibold text-base">{t('editor:organizationPanel.viewControls')}</span>
+                </div>
+              </button>
+              
+              {expandedSections.viewControls && (
+                <div className="border-t border-gray-200 bg-white p-4 space-y-4">
+                  {/* Rotation Control */}
+                  {onRotationChange && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-base font-medium flex items-center gap-2">
+                          <RotateCw size={18} className="text-[#00A4A6]" />
+                          {t('editor:organizationPanel.rotation')}
+                        </label>
+                        <span className="text-sm font-mono text-gray-600">{Math.round(rotation)}°</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        value={rotation}
+                        onChange={(e) => onRotationChange(Number(e.target.value))}
+                        className="no-drag w-full h-3 rounded-lg appearance-none cursor-pointer bg-gray-200"
+                        style={{
+                          background: `linear-gradient(to right, #00A4A6 0%, #00A4A6 ${(rotation/360)*100}%, #e5e7eb ${(rotation/360)*100}%, #e5e7eb 100%)`
+                        }}
+                      />
+                      <div className="flex justify-between gap-2">
+                        <button
+                          onClick={() => onRotationChange((rotation - 15 + 360) % 360)}
+                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          ← 15°
+                        </button>
+                        <button
+                          onClick={() => onRotationChange(0)}
+                          className="no-drag flex-1 py-3 px-4 bg-[#00A4A6] hover:bg-[#2E9E97] text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          {t('common:actions.reset')}
+                        </button>
+                        <button
+                          onClick={() => onRotationChange((rotation + 15) % 360)}
+                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          15° →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Zoom Controls */}
+                  {(onZoomedMonthChange || onZoomedQuarterChange) && (
+                    <div className="space-y-3 pt-3 border-t border-gray-200">
+                      <label className="text-base font-medium flex items-center gap-2">
+                        <Maximize2 size={18} className="text-[#00A4A6]" />
+                        {t('editor:organizationPanel.zoomLevel')}
+                      </label>
+                      <div className="grid grid-cols-1 gap-2">
+                        <button
+                          onClick={() => {
+                            if (onZoomedMonthChange) onZoomedMonthChange(null);
+                            if (onZoomedQuarterChange) onZoomedQuarterChange(null);
+                          }}
+                          className={`no-drag py-3 px-4 rounded-lg text-base font-medium transition-colors ${
+                            !zoomedMonth && !zoomedQuarter
+                              ? 'bg-[#00A4A6] text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {t('editor:organizationPanel.fullYear')}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (onZoomedMonthChange) onZoomedMonthChange(null);
+                            if (onZoomedQuarterChange) onZoomedQuarterChange(1);
+                          }}
+                          className={`no-drag py-3 px-4 rounded-lg text-base font-medium transition-colors ${
+                            zoomedQuarter && !zoomedMonth
+                              ? 'bg-[#00A4A6] text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {t('editor:organizationPanel.quarterView')}
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (onZoomedQuarterChange) onZoomedQuarterChange(null);
+                            if (onZoomedMonthChange) onZoomedMonthChange(0);
+                          }}
+                          className={`no-drag py-3 px-4 rounded-lg text-base font-medium transition-colors ${
+                            zoomedMonth && !zoomedQuarter
+                              ? 'bg-[#00A4A6] text-white'
+                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {t('editor:organizationPanel.monthView')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
