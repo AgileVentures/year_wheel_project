@@ -286,7 +286,7 @@ export default function CastReceiverPage() {
   // Show code input screen FIRST if no code submitted yet
   if (!isCodeSubmitted) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#1B2A63] via-[#2D4EC8] to-[#1B2A63] text-white">
         <div className="text-center max-w-lg px-8">
           <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-24 h-24 mx-auto mb-6 opacity-80" />
           <h1 className="text-4xl font-bold mb-4">{t('common:cast.enterPairingCode')}</h1>
@@ -313,14 +313,14 @@ export default function CastReceiverPage() {
               onChange={(e) => setEnteredCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
               maxLength={6}
               placeholder="ABC123"
-              className="w-full text-center text-6xl font-mono font-bold bg-white bg-opacity-10 border-2 border-white border-opacity-20 rounded-xl py-6 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-blue-400 focus:bg-opacity-20 transition-all tracking-widest"
+              className="w-full text-center text-6xl font-mono font-bold bg-white bg-opacity-10 border-2 border-[#36C2C6] border-opacity-50 rounded-xl py-6 px-4 text-white placeholder-gray-400 focus:outline-none focus:border-[#00A4A6] focus:bg-opacity-20 transition-all tracking-widest"
               autoFocus
             />
             
             <button
               type="submit"
               disabled={enteredCode.length !== 6}
-              className="w-full py-4 px-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xl font-semibold rounded-xl transition-all focus:outline-none focus:ring-4 focus:ring-blue-500"
+              className="w-full py-4 px-8 bg-[#00A4A6] hover:bg-[#2E9E97] disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xl font-semibold rounded-xl transition-all focus:outline-none focus:ring-4 focus:ring-[#36C2C6]"
             >
               {t('common:cast.connect')}
             </button>
@@ -337,7 +337,7 @@ export default function CastReceiverPage() {
   // Show loading/error state after code submitted
   if (connectionError) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center h-screen bg-[#1B2A63] text-white">
         <div className="text-center">
           <svg className="w-24 h-24 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -352,7 +352,7 @@ export default function CastReceiverPage() {
   // Show loading state before connection
   if (!wheelData) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center h-screen bg-[#1B2A63] text-white">
         <div className="text-center">
           <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-32 h-32 mx-auto mb-6 animate-pulse opacity-60" />
           <p className="text-2xl font-semibold mb-2">{t('common:cast.waitingForConnection')}</p>
@@ -369,7 +369,7 @@ export default function CastReceiverPage() {
   // Disconnected state
   if (!isConnected) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center h-screen bg-[#1B2A63] text-white">
         <div className="text-center">
           <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-24 h-24 mx-auto mb-6 opacity-40" />
           <p className="text-2xl font-semibold">{t('common:cast.disconnected')}</p>
@@ -381,12 +381,12 @@ export default function CastReceiverPage() {
 
   // Render YearWheel
   return (
-    <div className="h-screen w-screen bg-gray-900 overflow-hidden relative">
+    <div className="h-screen w-screen bg-[#1B2A63] overflow-hidden relative">
       {/* Connection indicator */}
       <div className="absolute top-4 right-4 z-50 flex items-center space-x-2 bg-black bg-opacity-50 px-4 py-2 rounded-full">
         <span className="flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-[#9FCB3E] opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#9FCB3E]"></span>
         </span>
         <span className="text-white text-sm font-medium">{t('common:cast.connected')}</span>
       </div>

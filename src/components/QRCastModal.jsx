@@ -41,29 +41,29 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
         {/* Connection Status Badge */}
         <div className={`mb-4 rounded-lg p-4 border-2 ${
           isConnected 
-            ? 'bg-green-50 border-green-300' 
-            : 'bg-blue-50 border-blue-300'
+            ? 'bg-green-50 border-[#9FCB3E]' 
+            : 'bg-[#A4E6E0] bg-opacity-20 border-[#36C2C6]'
         }`}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               {isConnected ? (
                 <>
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-[#9FCB3E]" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-green-800 font-semibold">{t('cast.connected')}</span>
+                  <span className="text-[#336B3E] font-semibold">{t('cast.connected')}</span>
                 </>
               ) : (
                 <>
-                  <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5 text-[#00A4A6]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span className="text-blue-800 font-semibold">{t('cast.connecting')}</span>
+                  <span className="text-[#1E1EBE] font-semibold">{t('cast.connecting')}</span>
                 </>
               )}
             </div>
-            <code className="text-xs font-mono bg-white px-2 py-1 rounded border">
+            <code className="text-xs font-mono bg-white px-2 py-1 rounded border border-[#36C2C6]">
               {sessionToken}
             </code>
           </div>
@@ -81,11 +81,11 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
         </p>
 
         {/* Pairing Code Display - Big and Easy to Read */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-8 mb-6 text-center border-2 border-blue-200">
-          <div className="text-6xl font-mono font-bold text-blue-600 tracking-widest mb-2">
+        <div className="bg-gradient-to-br from-[#A4E6E0] from-opacity-30 to-[#36C2C6] to-opacity-20 rounded-lg p-8 mb-6 text-center border-2 border-[#36C2C6]">
+          <div className="text-6xl font-mono font-bold text-[#00A4A6] tracking-widest mb-2">
             {sessionToken}
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-[#1E1EBE]">
             {t('cast.pairingCode')}
           </div>
         </div>
@@ -93,7 +93,7 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
         {/* Instructions */}
         <div className="space-y-3 mb-6">
           <div className="flex items-start">
-            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold mr-3">
+            <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
               1
             </div>
             <div className="flex-1">
@@ -101,7 +101,7 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
             </div>
           </div>
           <div className="flex items-start">
-            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold mr-3">
+            <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
               2
             </div>
             <div className="flex-1">
@@ -109,7 +109,7 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
             </div>
           </div>
           <div className="flex items-start">
-            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold mr-3">
+            <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
               3
             </div>
             <div className="flex-1">
@@ -123,7 +123,7 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
           {!isConnected && (
             <button
               onClick={handleCopyCode}
-              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+              className="w-full px-4 py-3 bg-[#00A4A6] text-white rounded-lg hover:bg-[#2E9E97] transition-colors flex items-center justify-center gap-2 font-medium"
             >
               {copied ? (
                 <>
