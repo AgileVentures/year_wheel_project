@@ -264,7 +264,7 @@ function PresentationControlDialog({
           </h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            className="p-2 hover:bg-white/20 rounded-sm transition-colors"
             title={t('common:actions.close')}
           >
             <X size={24} className="text-white" />
@@ -275,7 +275,7 @@ function PresentationControlDialog({
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-4">
             {/* Inner Rings Section */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 rounded-sm overflow-hidden">
               <button
                 onClick={() => toggleSection('innerRings')}
                 className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -288,14 +288,14 @@ function PresentationControlDialog({
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
-                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.showAll')}
                   >
                     <Eye size={18} />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
-                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.hideAll')}
                   >
                     <EyeOff size={18} />
@@ -313,7 +313,7 @@ function PresentationControlDialog({
                     innerRings.map(ring => (
                       <label
                         key={ring.id}
-                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -331,7 +331,7 @@ function PresentationControlDialog({
             </div>
 
             {/* Outer Rings Section */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="border border-gray-200 rounded-sm overflow-hidden">
               <button
                 onClick={() => toggleSection('outerRings')}
                 className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -344,14 +344,14 @@ function PresentationControlDialog({
                 <div className="flex gap-2">
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
-                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.showAll')}
                   >
                     <Eye size={18} />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
-                    className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                    className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.hideAll')}
                   >
                     <EyeOff size={18} />
@@ -369,7 +369,7 @@ function PresentationControlDialog({
                     outerRings.map(ring => (
                       <label
                         key={ring.id}
-                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -388,7 +388,7 @@ function PresentationControlDialog({
 
             {/* Activity Groups Section */}
             {organizationData.activityGroups && organizationData.activityGroups.length > 0 && (
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <button
                   onClick={() => toggleSection('activityGroups')}
                   className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -401,14 +401,14 @@ function PresentationControlDialog({
                   <div className="flex gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAllInSection('activityGroups', true); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                       title={t('common:actions.showAll')}
                     >
                       <Eye size={18} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAllInSection('activityGroups', false); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                       title={t('common:actions.hideAll')}
                     >
                       <EyeOff size={18} />
@@ -421,7 +421,7 @@ function PresentationControlDialog({
                     {organizationData.activityGroups.map(group => (
                       <label
                         key={group.id}
-                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -444,7 +444,7 @@ function PresentationControlDialog({
 
             {/* Labels Section */}
             {organizationData.labels && organizationData.labels.length > 0 && (
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <button
                   onClick={() => toggleSection('labels')}
                   className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -457,14 +457,14 @@ function PresentationControlDialog({
                   <div className="flex gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAllInSection('labels', true); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                       title={t('common:actions.showAll')}
                     >
                       <Eye size={18} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAllInSection('labels', false); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                       title={t('common:actions.hideAll')}
                     >
                       <EyeOff size={18} />
@@ -477,7 +477,7 @@ function PresentationControlDialog({
                     {organizationData.labels.map(label => (
                       <label
                         key={label.id}
-                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -499,7 +499,7 @@ function PresentationControlDialog({
             )}
 
             {/* View Controls Section */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-teal-50">
+            <div className="border border-gray-200 rounded-sm overflow-hidden bg-gradient-to-br from-blue-50 to-teal-50">
               <button
                 onClick={() => toggleSection('viewControls')}
                 className="no-drag w-full flex items-center justify-between p-4 bg-gradient-to-r from-[#00A4A6]/10 to-[#2E9E97]/10 hover:from-[#00A4A6]/20 hover:to-[#2E9E97]/20 transition-colors"
@@ -528,7 +528,7 @@ function PresentationControlDialog({
                         max="360"
                         value={rotation}
                         onChange={(e) => onRotationChange(Number(e.target.value))}
-                        className="no-drag w-full h-3 rounded-lg appearance-none cursor-pointer bg-gray-200"
+                        className="no-drag w-full h-3 rounded-sm appearance-none cursor-pointer bg-gray-200"
                         style={{
                           background: `linear-gradient(to right, #00A4A6 0%, #00A4A6 ${(rotation/360)*100}%, #e5e7eb ${(rotation/360)*100}%, #e5e7eb 100%)`
                         }}
@@ -536,19 +536,19 @@ function PresentationControlDialog({
                       <div className="flex justify-between gap-2">
                         <button
                           onClick={() => onRotationChange((rotation - 15 + 360) % 360)}
-                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-sm text-sm font-medium transition-colors"
                         >
                           ← 15°
                         </button>
                         <button
                           onClick={() => onRotationChange(0)}
-                          className="no-drag flex-1 py-3 px-4 bg-[#00A4A6] hover:bg-[#2E9E97] text-white rounded-lg text-sm font-medium transition-colors"
+                          className="no-drag flex-1 py-3 px-4 bg-[#00A4A6] hover:bg-[#2E9E97] text-white rounded-sm text-sm font-medium transition-colors"
                         >
                           {t('common:actions.reset')}
                         </button>
                         <button
                           onClick={() => onRotationChange((rotation + 15) % 360)}
-                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-sm text-sm font-medium transition-colors"
                         >
                           15° →
                         </button>
@@ -569,7 +569,7 @@ function PresentationControlDialog({
                             if (onZoomedMonthChange) onZoomedMonthChange(null);
                             if (onZoomedQuarterChange) onZoomedQuarterChange(null);
                           }}
-                          className={`no-drag py-3 px-4 rounded-lg text-base font-medium transition-colors ${
+                          className={`no-drag py-3 px-4 rounded-sm text-base font-medium transition-colors ${
                             !zoomedMonth && !zoomedQuarter
                               ? 'bg-[#00A4A6] text-white'
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
@@ -582,7 +582,7 @@ function PresentationControlDialog({
                             if (onZoomedMonthChange) onZoomedMonthChange(null);
                             if (onZoomedQuarterChange) onZoomedQuarterChange(1);
                           }}
-                          className={`no-drag py-3 px-4 rounded-lg text-base font-medium transition-colors ${
+                          className={`no-drag py-3 px-4 rounded-sm text-base font-medium transition-colors ${
                             zoomedQuarter && !zoomedMonth
                               ? 'bg-[#00A4A6] text-white'
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
@@ -595,7 +595,7 @@ function PresentationControlDialog({
                             if (onZoomedQuarterChange) onZoomedQuarterChange(null);
                             if (onZoomedMonthChange) onZoomedMonthChange(0);
                           }}
-                          className={`no-drag py-3 px-4 rounded-lg text-base font-medium transition-colors ${
+                          className={`no-drag py-3 px-4 rounded-sm text-base font-medium transition-colors ${
                             zoomedMonth && !zoomedQuarter
                               ? 'bg-[#00A4A6] text-white'
                               : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
@@ -619,7 +619,7 @@ function PresentationControlDialog({
   return (
     <div
       ref={dialogRef}
-      className="fixed bg-white rounded-lg shadow-2xl border-2 border-gray-300 z-50"
+      className="fixed bg-white rounded-sm shadow-2xl border-2 border-gray-300 z-50"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,

@@ -334,6 +334,7 @@
     "disconnected": "Disconnected",
     "castingEnded": "Casting has ended",
     "connected": "Connected",
-    "disconnect": "Disconnect"
+    "disconnect": "Disconnect",
+    "closeAndKeepCasting": "Close (keep casting)"
   }
 }

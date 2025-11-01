@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
  * Shows a pairing code that users can type on their TV
  * Used when Chrome Cast SDK is not available (iOS devices)
  */
-export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected, isMinimized = false }) => {
+export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
@@ -25,19 +25,6 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected, isMini
   };
 
   if (!isOpen) return null;
-  
-  // Minimized state - just show a small indicator
-  if (isMinimized && isConnected) {
-    return (
-      <div className="fixed bottom-24 right-6 z-50 bg-[#9FCB3E] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-pulse">
-        <span className="flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-white opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-        </span>
-        <span className="text-sm font-medium">Castar</span>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
@@ -156,13 +143,13 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected, isMini
           
           <button
             onClick={onClose}
-            className={`w-full px-4 py-3 rounded-sm transition-colors font-medium ${
+            className={`w-full px-4 py-3 rounded-sm transition-colors font-medium text-lg ${
               isConnected 
-                ? 'bg-red-600 text-white hover:bg-red-700' 
-                : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-[#00A4A6] text-white hover:bg-[#2E9E97]' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {isConnected ? t('cast.disconnect') : t('cast.closeQR')}
+            {isConnected ? t('cast.closeAndKeepCasting') : t('common:actions.close')}
           </button>
         </div>
 

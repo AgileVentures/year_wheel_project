@@ -535,7 +535,7 @@ function PreviewWheelPage() {
               <>
                 <button
                   onClick={() => setShowControlDialog(!showControlDialog)}
-                  className="flex items-center gap-2 px-3 py-2 md:px-4 bg-[#00A4A6] text-white rounded-lg hover:bg-[#2E9E97] transition-colors shadow-sm"
+                  className="flex items-center gap-2 px-3 py-2 md:px-4 bg-[#00A4A6] text-white rounded-sm hover:bg-[#2E9E97] transition-colors shadow-sm"
                   title={t('common:previewWheelPage.showControls')}
                 >
                   <Settings size={isMobileDevice ? 20 : 16} />

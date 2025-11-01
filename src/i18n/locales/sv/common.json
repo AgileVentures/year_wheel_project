@@ -334,6 +334,7 @@
     "disconnected": "Frånkopplad",
     "castingEnded": "Castingen har avslutats",
     "connected": "Ansluten",
-    "disconnect": "Koppla från"
+    "disconnect": "Koppla från",
+    "closeAndKeepCasting": "Stäng (fortsätt casta)"
   }
 }
