@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../hooks/useAuth';
 import PresentationControlDialog from './PresentationControlDialog';
+import { useCastManager } from '../hooks/useCastManager';
+import { CAST_MESSAGE_TYPES, HEARTBEAT_INTERVAL_MS } from '../constants/castMessages';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -38,6 +40,9 @@ function PreviewWheelPage() {
   
   // Local state for organizationData to allow toggling visibility
   const [localOrgData, setLocalOrgData] = useState(null);
+  
+  // Cast manager hook
+  const { isCasting, sendCastMessage } = useCastManager();
 
   useEffect(() => {
     const loadWheel = async () => {
@@ -350,7 +355,51 @@ function PreviewWheelPage() {
     checkPendingCopy();
   }, [user, wheelData, pages, wheelId, t]);
 
-
+  // ===== CAST STATE SYNC HOOKS =====
+  // Only run when actively casting to avoid affecting normal preview mode
+  
+  // Sync zoom state changes to cast receiver
+  useEffect(() => {
+    if (!isCasting || !sendCastMessage) return;
+    
+    const zoomType = zoomedMonth ? 'month' : zoomedQuarter ? 'quarter' : 'year';
+    
+    sendCastMessage(CAST_MESSAGE_TYPES.ZOOM, {
+      zoom: zoomType,
+      month: zoomedMonth,
+      quarter: zoomedQuarter
+    });
+  }, [zoomedMonth, zoomedQuarter, isCasting, sendCastMessage]);
+  
+  // Sync organization data changes to cast receiver
+  useEffect(() => {
+    if (!isCasting || !sendCastMessage || !localOrgData) return;
+    
+    // Send the complete displayOrgData structure
+    const dataToSync = {
+      rings: localOrgData.rings,
+      activityGroups: localOrgData.activityGroups,
+      labels: localOrgData.labels,
+      items: currentPageItems
+    };
+    
+    sendCastMessage(CAST_MESSAGE_TYPES.UPDATE, {
+      organizationData: dataToSync
+    });
+  }, [localOrgData, currentPageItems, isCasting, sendCastMessage]);
+  
+  // Heartbeat to keep connection alive
+  useEffect(() => {
+    if (!isCasting || !sendCastMessage) return;
+    
+    const heartbeatInterval = setInterval(() => {
+      sendCastMessage(CAST_MESSAGE_TYPES.PING, { timestamp: Date.now() });
+    }, HEARTBEAT_INTERVAL_MS);
+    
+    return () => clearInterval(heartbeatInterval);
+  }, [isCasting, sendCastMessage]);
+  
+  // ===== END CAST STATE SYNC =====
 
   if (isLoading) {
     return (
