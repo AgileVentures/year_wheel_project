@@ -323,6 +323,8 @@
     "connecting": "Ansluter...",
     "controlFromPhone": "Styr hjulet från din telefon",
     "castWithCode": "Casta med kod",
+    "tvConnected": "TV-skärmen är ansluten",
+    "waitingForTV": "Väntar på att TV-skärmen ska ange koden",
     "casting": "Castar",
     "connectionError": "Fel vid anslutning",
     "startingReceiver": "Startar mottagare...",

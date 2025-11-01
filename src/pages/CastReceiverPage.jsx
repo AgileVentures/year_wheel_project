@@ -23,6 +23,13 @@ export default function CastReceiverPage() {
   const [isCodeSubmitted, setIsCodeSubmitted] = useState(!!codeFromUrl);
   const sessionToken = isCodeSubmitted ? enteredCode : null;
   
+  console.log('[CastReceiverPage] State:', {
+    codeFromUrl,
+    enteredCode,
+    isCodeSubmitted,
+    sessionToken
+  });
+  
   const [wheelData, setWheelData] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
@@ -281,7 +288,7 @@ export default function CastReceiverPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
         <div className="text-center max-w-lg px-8">
-          <div className="text-6xl mb-6">📺</div>
+          <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-24 h-24 mx-auto mb-6 opacity-80" />
           <h1 className="text-4xl font-bold mb-4">{t('common:cast.enterPairingCode')}</h1>
           <p className="text-xl text-gray-300 mb-8">
             {t('common:cast.enterCodeFromPhone')}
@@ -291,8 +298,11 @@ export default function CastReceiverPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (enteredCode.length === 6) {
+                console.log('[CastReceiverPage] ✅ Code submitted:', enteredCode.toUpperCase());
                 setIsCodeSubmitted(true);
                 setSearchParams({ code: enteredCode.toUpperCase() });
+              } else {
+                console.log('[CastReceiverPage] ❌ Invalid code length:', enteredCode.length);
               }
             }}
             className="space-y-6"
@@ -329,7 +339,9 @@ export default function CastReceiverPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
         <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <svg className="w-24 h-24 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
           <p className="text-2xl font-semibold mb-2">{t('common:cast.connectionError')}</p>
           <p className="text-gray-400">{connectionError}</p>
         </div>
@@ -342,7 +354,7 @@ export default function CastReceiverPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
         <div className="text-center">
-          <div className="animate-pulse text-6xl mb-6">📱 ➜ 📺</div>
+          <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-32 h-32 mx-auto mb-6 animate-pulse opacity-60" />
           <p className="text-2xl font-semibold mb-2">{t('common:cast.waitingForConnection')}</p>
           <p className="text-gray-400">
             {sessionToken 
@@ -359,7 +371,7 @@ export default function CastReceiverPage() {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
         <div className="text-center">
-          <div className="text-6xl mb-6">👋</div>
+          <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-24 h-24 mx-auto mb-6 opacity-40" />
           <p className="text-2xl font-semibold">{t('common:cast.disconnected')}</p>
           <p className="text-gray-400 mt-2">{t('common:cast.castingEnded')}</p>
         </div>

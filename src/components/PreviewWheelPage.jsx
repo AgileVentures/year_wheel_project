@@ -706,7 +706,7 @@ function PreviewWheelPage() {
               weekRingDisplayMode: wheelData.weekRingDisplayMode || 'week-numbers',
               zoomedMonth,
               zoomedQuarter,
-              rotation: 0, // TODO: Get rotation from YearWheel if needed
+              rotation,
             }}
             realtimeCast={realtimeCast}
             onCastStart={() => console.log('Cast started')}

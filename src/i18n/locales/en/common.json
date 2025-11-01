@@ -323,6 +323,8 @@
     "connecting": "Connecting...",
     "controlFromPhone": "Control the wheel from your phone",
     "castWithCode": "Cast with code",
+    "tvConnected": "TV screen is connected",
+    "waitingForTV": "Waiting for TV to enter the code",
     "casting": "Casting",
     "connectionError": "Connection error",
     "startingReceiver": "Starting receiver...",
