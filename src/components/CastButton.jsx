@@ -51,17 +51,10 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
   if (!isMobile && !isTablet) return null;
 
   const handleCodeCast = () => {
-    if (isRealtimeConnected) {
-      // Stop casting
-      setShowQRModal(false);
-      setSessionToken(null);
-      if (stopRealtimeSession) {
-        stopRealtimeSession();
-      }
-    } else if (sessionToken && !showQRModal) {
-      // Reopen modal with existing code
+    if (sessionToken) {
+      // If we have a session token, just open/reopen the modal
       setShowQRModal(true);
-    } else if (!sessionToken) {
+    } else {
       // Start new casting session - generate code only once
       const code = Math.random().toString(36).substr(2, 6).toUpperCase();
       setSessionToken(code);

@@ -10,13 +10,7 @@
     "innerRings": "Inner Rings",
     "outerRings": "Outer Rings",
     "activityGroups": "Activity Groups",
-    "labels": "Labels",
-    "viewControls": "View Controls",
-    "rotation": "Rotation",
-    "zoomLevel": "Zoom Level",
-    "fullYear": "Full Year",
-    "quarterView": "Quarter View",
-    "monthView": "Month View"
+    "labels": "Labels"
   },
   "tabs": {
     "disc": "Disc",

@@ -10,13 +10,7 @@
     "innerRings": "Inre Ringar",
     "outerRings": "Yttre Ringar",
     "activityGroups": "Aktivitetsgrupper",
-    "labels": "Etiketter",
-    "viewControls": "Vyinställningar",
-    "rotation": "Rotation",
-    "zoomLevel": "Zoomnivå",
-    "fullYear": "Hela året",
-    "quarterView": "Kvartalvy",
-    "monthView": "Månadsvy"
+    "labels": "Etiketter"
   },
   "tabs": {
     "disc": "Skiva",

@@ -691,8 +691,7 @@ function PreviewWheelPage() {
           organizationData={displayOrgData}
           onOrganizationChange={handleOrgDataChange}
           onClose={() => setShowControlDialog(false)}
-          rotation={rotation}
-          onRotationChange={handleRotationChange}
+          year={displayYear}
           zoomedMonth={zoomedMonth}
           onZoomedMonthChange={setZoomedMonth}
           zoomedQuarter={zoomedQuarter}

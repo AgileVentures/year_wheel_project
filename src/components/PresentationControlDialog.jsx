@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp, RotateCw, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { X, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import MonthNavigator from './MonthNavigator';
+import QuarterNavigator from './QuarterNavigator';
 
 /**
  * PresentationControlDialog - Movable dialog for controlling visibility in presentation mode
@@ -11,8 +13,7 @@ function PresentationControlDialog({
   onOrganizationChange,
   onClose,
   // View control props
-  rotation,
-  onRotationChange,
+  year,
   zoomedMonth,
   onZoomedMonthChange,
   zoomedQuarter,
@@ -30,7 +31,8 @@ function PresentationControlDialog({
     outerRings: true,
     activityGroups: true,
     labels: true,
-    viewControls: true
+    months: true,
+    quarters: true
   });
 
   // Drag-and-drop state for reordering
@@ -498,114 +500,62 @@ function PresentationControlDialog({
               </div>
             )}
 
-            {/* View Controls Section */}
-            <div className="border border-gray-200 rounded-sm overflow-hidden bg-gradient-to-br from-blue-50 to-teal-50">
+            {/* Zoom Section - Months */}
+            <div className="border border-gray-200 rounded-sm overflow-hidden">
               <button
-                onClick={() => toggleSection('viewControls')}
-                className="no-drag w-full flex items-center justify-between p-4 bg-gradient-to-r from-[#00A4A6]/10 to-[#2E9E97]/10 hover:from-[#00A4A6]/20 hover:to-[#2E9E97]/20 transition-colors"
+                onClick={() => toggleSection('months')}
+                className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  {expandedSections.viewControls ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-                  <span className="font-semibold text-base">{t('editor:organizationPanel.viewControls')}</span>
+                  {expandedSections.months ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                  <span className="font-semibold text-base">{t('zoom:months.title', 'Månader')}</span>
                 </div>
               </button>
               
-              {expandedSections.viewControls && (
-                <div className="border-t border-gray-200 bg-white p-4 space-y-4">
-                  {/* Rotation Control */}
-                  {onRotationChange && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-base font-medium flex items-center gap-2">
-                          <RotateCw size={18} className="text-[#00A4A6]" />
-                          {t('editor:organizationPanel.rotation')}
-                        </label>
-                        <span className="text-sm font-mono text-gray-600">{Math.round(rotation)}°</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="360"
-                        value={rotation}
-                        onChange={(e) => onRotationChange(Number(e.target.value))}
-                        className="no-drag w-full h-3 rounded-sm appearance-none cursor-pointer bg-gray-200"
-                        style={{
-                          background: `linear-gradient(to right, #00A4A6 0%, #00A4A6 ${(rotation/360)*100}%, #e5e7eb ${(rotation/360)*100}%, #e5e7eb 100%)`
-                        }}
-                      />
-                      <div className="flex justify-between gap-2">
-                        <button
-                          onClick={() => onRotationChange((rotation - 15 + 360) % 360)}
-                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-sm text-sm font-medium transition-colors"
-                        >
-                          ← 15°
-                        </button>
-                        <button
-                          onClick={() => onRotationChange(0)}
-                          className="no-drag flex-1 py-3 px-4 bg-[#00A4A6] hover:bg-[#2E9E97] text-white rounded-sm text-sm font-medium transition-colors"
-                        >
-                          {t('common:actions.reset')}
-                        </button>
-                        <button
-                          onClick={() => onRotationChange((rotation + 15) % 360)}
-                          className="no-drag flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 rounded-sm text-sm font-medium transition-colors"
-                        >
-                          15° →
-                        </button>
-                      </div>
-                    </div>
-                  )}
+              {expandedSections.months && (
+                <div className="border-t border-gray-200 bg-white p-4">
+                  <MonthNavigator
+                    year={year}
+                    currentMonth={zoomedMonth}
+                    currentQuarter={zoomedQuarter}
+                    organizationData={organizationData}
+                    onMonthSelect={onZoomedMonthChange}
+                    onQuarterSelect={onZoomedQuarterChange}
+                    onResetZoom={() => {
+                      if (onZoomedMonthChange) onZoomedMonthChange(null);
+                      if (onZoomedQuarterChange) onZoomedQuarterChange(null);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
 
-                  {/* Zoom Controls */}
-                  {(onZoomedMonthChange || onZoomedQuarterChange) && (
-                    <div className="space-y-3 pt-3 border-t border-gray-200">
-                      <label className="text-base font-medium flex items-center gap-2">
-                        <Maximize2 size={18} className="text-[#00A4A6]" />
-                        {t('editor:organizationPanel.zoomLevel')}
-                      </label>
-                      <div className="grid grid-cols-1 gap-2">
-                        <button
-                          onClick={() => {
-                            if (onZoomedMonthChange) onZoomedMonthChange(null);
-                            if (onZoomedQuarterChange) onZoomedQuarterChange(null);
-                          }}
-                          className={`no-drag py-3 px-4 rounded-sm text-base font-medium transition-colors ${
-                            !zoomedMonth && !zoomedQuarter
-                              ? 'bg-[#00A4A6] text-white'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          {t('editor:organizationPanel.fullYear')}
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (onZoomedMonthChange) onZoomedMonthChange(null);
-                            if (onZoomedQuarterChange) onZoomedQuarterChange(1);
-                          }}
-                          className={`no-drag py-3 px-4 rounded-sm text-base font-medium transition-colors ${
-                            zoomedQuarter && !zoomedMonth
-                              ? 'bg-[#00A4A6] text-white'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          {t('editor:organizationPanel.quarterView')}
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (onZoomedQuarterChange) onZoomedQuarterChange(null);
-                            if (onZoomedMonthChange) onZoomedMonthChange(0);
-                          }}
-                          className={`no-drag py-3 px-4 rounded-sm text-base font-medium transition-colors ${
-                            zoomedMonth && !zoomedQuarter
-                              ? 'bg-[#00A4A6] text-white'
-                              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          {t('editor:organizationPanel.monthView')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+            {/* Zoom Section - Quarters */}
+            <div className="border border-gray-200 rounded-sm overflow-hidden">
+              <button
+                onClick={() => toggleSection('quarters')}
+                className="no-drag w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedSections.quarters ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                  <span className="font-semibold text-base">{t('zoom:quarters.title', 'Kvartal')}</span>
+                </div>
+              </button>
+              
+              {expandedSections.quarters && (
+                <div className="border-t border-gray-200 bg-white p-4">
+                  <QuarterNavigator
+                    year={year}
+                    currentQuarter={zoomedQuarter}
+                    currentMonth={zoomedMonth}
+                    organizationData={organizationData}
+                    onQuarterSelect={onZoomedQuarterChange}
+                    onMonthSelect={onZoomedMonthChange}
+                    onResetZoom={() => {
+                      if (onZoomedMonthChange) onZoomedMonthChange(null);
+                      if (onZoomedQuarterChange) onZoomedQuarterChange(null);
+                    }}
+                  />
                 </div>
               )}
             </div>
