@@ -2878,6 +2878,17 @@ function WheelEditorRoute() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Detect mobile devices - redirect to presentation mode
+  useEffect(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isSmallScreen = window.innerWidth < 768;
+    
+    if (isMobile || isSmallScreen) {
+      // Redirect to preview with presentation mode enabled
+      navigate(`/preview-wheel/${wheelId}?presentation=true`, { replace: true });
+    }
+  }, [wheelId, navigate]);
+
   // Use location.key as a reloadTrigger without forcing full remount
   return (
     <WheelEditor 
