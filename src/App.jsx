@@ -206,7 +206,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showYearEvents, setShowYearEvents] = useState(false);
   const [showSeasonRing, setShowSeasonRing] = useState(true);
   const [yearEventsCollection, setYearEventsCollection] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Start with sidebar closed on mobile, open on desktop
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [showWeekRing, setShowWeekRing] = useState(true);
   const [showMonthRing, setShowMonthRing] = useState(true);
   const [showRingNames, setShowRingNames] = useState(true);

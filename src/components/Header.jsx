@@ -608,6 +608,171 @@ function Header({
         <LanguageSwitcher />
         
         <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
+
+        {/* Mobile "More" Menu - Shows hidden features on small screens */}
+        <div className="lg:hidden">
+          <Dropdown
+            trigger={
+              <button 
+                className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors relative"
+                title={t('common:header.moreOptions')}
+              >
+                <Menu size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {unreadCount > 9 ? '9' : unreadCount}
+                  </span>
+                )}
+              </button>
+            }
+          >
+            {/* Undo/Redo */}
+            {onUndo && onRedo && (
+              <>
+                <DropdownItem
+                  icon={Undo}
+                  label={t('common:header.undo')}
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                />
+                <DropdownItem
+                  icon={Redo}
+                  label={t('common:header.redo')}
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                />
+                <DropdownDivider />
+              </>
+            )}
+
+            {/* File Operations */}
+            <DropdownItem
+              icon={Upload}
+              label={t('common:header.importFile')}
+              onClick={onLoadFromFile}
+            />
+            <DropdownItem
+              icon={Download}
+              label={t('common:header.exportFile')}
+              onClick={onSaveToFile}
+            />
+            {onExportData && (
+              <DropdownItem
+                icon={FileSpreadsheet}
+                label={
+                  <span className="flex items-center gap-2">
+                    {t('common:header.exportData')}
+                    <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                  </span>
+                }
+                onClick={onExportData}
+              />
+            )}
+
+            {/* Image Export */}
+            <DropdownDivider />
+            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+              {t('common:header.imageExport')}
+            </div>
+            <DropdownItem
+              icon={Image}
+              label={t('common:header.downloadImage')}
+              onClick={() => onDownloadImage && onDownloadImage(false)}
+            />
+            <DropdownItem
+              icon={Clipboard}
+              label={t('common:header.copyToClipboard')}
+              onClick={() => onDownloadImage && onDownloadImage(true)}
+            />
+
+            {/* Sharing Links */}
+            {wheelId && isPublic && (
+              <>
+                <DropdownDivider />
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  {t('common:header.sharingLinks')}
+                </div>
+                <DropdownItem
+                  icon={Eye}
+                  label={copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
+                  onClick={handleCopyPreviewLink}
+                />
+                <DropdownItem
+                  icon={Presentation}
+                  label={t('common:header.presentationMode')}
+                  onClick={handleOpenPresentationMode}
+                />
+                <DropdownItem
+                  icon={Link2}
+                  label={
+                    <span className="flex items-center gap-2">
+                      {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
+                      <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                    </span>
+                  }
+                  onClick={handleCopyEmbedLink}
+                />
+              </>
+            )}
+
+            {/* Comments */}
+            {wheelId && (
+              <>
+                <DropdownDivider />
+                <DropdownItem
+                  icon={MessageSquare}
+                  label={
+                    <span className="flex items-center gap-2">
+                      {t('notifications:wheelComments.allComments')}
+                      {unreadCount > 0 && (
+                        <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </span>
+                  }
+                  onClick={() => {
+                    if (!wheelData) return;
+                    setShowCommentsPanel(true);
+                  }}
+                />
+              </>
+            )}
+
+            {/* Onboarding */}
+            {onStartOnboarding && (
+              <>
+                <DropdownDivider />
+                <DropdownItem
+                  icon={Sparkles}
+                  label={t('common:header.startTour')}
+                  onClick={onStartOnboarding}
+                />
+                {!!wheelId && !!onToggleAI && onStartAIOnboarding && (
+                  <DropdownItem
+                    icon={Sparkles}
+                    label={t('common:header.aiTour')}
+                    onClick={onStartAIOnboarding}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Version History */}
+            {onVersionHistory && (
+              <>
+                <DropdownDivider />
+                <DropdownItem
+                  icon={History}
+                  label={t('common:header.versionHistory')}
+                  onClick={onVersionHistory}
+                />
+              </>
+            )}
+          </Dropdown>
+        </div>
+        
+        <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
         
         <button
           onClick={onSave}
