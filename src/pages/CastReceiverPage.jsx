@@ -397,8 +397,17 @@ export default function CastReceiverPage() {
         </div>
       )}
 
-      {/* YearWheel Canvas */}
-      <div className="flex items-center justify-center h-full p-8">
+      {/* Logo - Bottom Left */}
+      <div className="absolute bottom-4 left-4 z-40 opacity-60">
+        <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="0" y="30" fill="white" fontSize="24" fontWeight="600" fontFamily="system-ui, -apple-system, sans-serif">
+            YearWheel
+          </text>
+        </svg>
+      </div>
+
+      {/* YearWheel Canvas - Full width, no padding */}
+      <div className="flex items-center justify-center h-full w-full">
         <YearWheel
           wheelId={wheelData.wheelId}
           wheelData={wheelData}
@@ -415,6 +424,7 @@ export default function CastReceiverPage() {
           zoomedQuarter={zoomedQuarter}
           initialRotation={rotation}
           readonly={true}
+          hideControls={true}
         />
       </div>
     </div>

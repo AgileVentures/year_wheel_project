@@ -48,32 +48,41 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
   // Hide button if not on mobile/tablet
   if (!isMobile && !isTablet) return null;
 
-  const handleCastToggle = async () => {
-    // iOS fallback: show code modal and start Realtime session
-    if (isIOS || !supportsCast) {
-      if (showQRModal || isRealtimeConnected) {
-        // Stop casting
-        setShowQRModal(false);
-        setSessionToken(null);
-        if (stopRealtimeSession) {
-          stopRealtimeSession();
-        }
-      } else {
-        // Start casting
-        // Generate 6-character pairing code (easy to type on TV)
-        const code = Math.random().toString(36).substr(2, 6).toUpperCase();
-        setSessionToken(code);
-        setShowQRModal(true);
-        
-        // Start Realtime session with code as channel name
-        if (startRealtimeSession) {
-          startRealtimeSession(code, wheelData);
-        }
+  const handleCodeCast = () => {
+    if (showQRModal || isRealtimeConnected) {
+      // Stop casting
+      setShowQRModal(false);
+      setSessionToken(null);
+      if (stopRealtimeSession) {
+        stopRealtimeSession();
       }
+    } else {
+      // Start casting with code
+      const code = Math.random().toString(36).substr(2, 6).toUpperCase();
+      setSessionToken(code);
+      setShowQRModal(true);
+      
+      // Start Realtime session with code as channel name
+      if (startRealtimeSession) {
+        startRealtimeSession(code, wheelData);
+      }
+    }
+  };
+
+  const handleCastToggle = async () => {
+    // iOS: always use code-based casting
+    if (isIOS) {
+      handleCodeCast();
       return;
     }
 
-    // Android: use Cast SDK
+    // Android: use Cast SDK if available, otherwise code-based
+    if (!supportsCast) {
+      handleCodeCast();
+      return;
+    }
+
+    // Chromecast toggle
     if (isCasting) {
       stopCast();
     } else {
@@ -83,11 +92,11 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
 
   return (
     <>
-      <div className="relative">
-        {/* iOS: Custom cast button */}
-        {(isIOS || !supportsCast) && (
+      <div className="relative flex gap-2">
+        {/* iOS: Code cast button only */}
+        {isIOS && (
           <button
-            onClick={handleCastToggle}
+            onClick={handleCodeCast}
             className={`
               w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200
               ${showQRModal ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}
@@ -107,9 +116,30 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
           </button>
         )}
 
-        {/* Android: Google Cast launcher (native button) */}
+        {/* Android: Both Chromecast AND code-based options */}
         {!isIOS && supportsCast && (
-          <div className="relative">
+          <>
+          {/* Code cast button - Android alternative */}
+          <button
+            onClick={handleCodeCast}
+            className={`
+              w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200
+              ${showQRModal ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}
+              cursor-pointer hover:scale-105
+            `}
+            title={t('common:cast.castWithCode')}
+          >
+            <Smartphone size={24} />
+            {showQRModal && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
+              </span>
+            )}
+          </button>
+
+          {/* Google Cast launcher */}
+          <div className="relative w-14 h-14 rounded-full shadow-lg bg-white flex items-center justify-center">
             <google-cast-launcher
               onClick={handleCastToggle}
               className={`
@@ -123,15 +153,15 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
                 display: 'block',
               }}
             />
+            {/* Casting indicator for Chromecast */}
+            {isCasting && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
+              </span>
+            )}
           </div>
-        )}
-        
-        {/* Casting indicator (pulsing dot) - Android only */}
-        {!isIOS && supportsCast && isCasting && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
-          </span>
+          </>
         )}
         
         {/* Initializing spinner - Android only */}

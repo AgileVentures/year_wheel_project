@@ -51,6 +51,7 @@ function YearWheel({
   onUpdateAktivitet,
   onDeleteAktivitet,
   readonly = false,
+  hideControls = false,
   broadcastActivity,
   activeEditors = [],
   broadcastOperation,
@@ -641,6 +642,9 @@ function YearWheel({
         </div>
       )}
       
+      </div>
+      
+      {!hideControls && (
       <div className="sticky bottom-0 left-0 right-0 z-10 bg-white border-t border-gray-200 shadow-lg">
         <div className="flex gap-3 items-center p-3 flex-wrap justify-center">
           {/* Zoom Controls */}
@@ -778,6 +782,7 @@ function YearWheel({
           )}
         </div>
       </div>
+      )}
 
       {/* Bulk Actions Toolbar */}
       {selectionMode && selectedItems.size > 0 && (
