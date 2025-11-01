@@ -27,6 +27,7 @@ const SupportPage = lazy(() => import("./components/SupportPage"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
 const EmbedWheel = lazy(() => import("./components/EmbedWheel"));
+const CastReceiverPage = lazy(() => import("./pages/CastReceiverPage"));
 const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
 const AffiliateApplicationForm = lazy(() => import("./pages/AffiliateApplicationForm"));
 
@@ -2953,6 +2954,7 @@ function AppContent() {
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
         <Route path="/embed/:wheelId" element={<EmbedWheel />} />
+        <Route path="/cast-receiver" element={<CastReceiverPage />} />
 
         {/* Keyword-optimized landing pages */}
         <Route path="/hr-planering" element={<HRPlanering />} />
