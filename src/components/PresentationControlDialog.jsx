@@ -472,14 +472,14 @@ function PresentationControlDialog({
                   <div className="flex gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', true); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                       title={t('common:actions.showAll')}
                     >
                       <Eye size={18} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', false); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
+                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                       title={t('common:actions.hideAll')}
                     >
                       <EyeOff size={18} />
