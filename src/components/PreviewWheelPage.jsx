@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { fetchWheel, fetchPages, fetchPageData, createWheel, createPage, saveWheelData } from '../services/wheelService';
 import YearWheel from '../YearWheel';
+import CastButton from './CastButton';
 import { Eye, Lock, ChevronLeft, ChevronRight, Calendar, Copy, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -601,6 +602,31 @@ function PreviewWheelPage() {
           onOrganizationChange={handleOrgDataChange}
           onClose={() => setShowControlDialog(false)}
         />
+      )}
+
+      {/* Cast Button - show only in presentation mode on mobile/tablet */}
+      {isPresentationMode && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <CastButton
+            wheelData={{
+              wheelId: wheelData.id,
+              title: wheelData.title,
+              year: displayYear,
+              colors: wheelData.colors,
+              organizationData: displayOrgData,
+              showWeekRing: wheelData.showWeekRing,
+              showMonthRing: wheelData.showMonthRing,
+              showRingNames: wheelData.showRingNames,
+              showLabels: wheelData.showLabels !== undefined ? wheelData.showLabels : false,
+              weekRingDisplayMode: wheelData.weekRingDisplayMode || 'week-numbers',
+              zoomedMonth,
+              zoomedQuarter,
+              rotation: 0, // TODO: Get rotation from YearWheel if needed
+            }}
+            onCastStart={() => console.log('Cast started')}
+            onCastStop={() => console.log('Cast stopped')}
+          />
+        </div>
       )}
     </div>
   );
