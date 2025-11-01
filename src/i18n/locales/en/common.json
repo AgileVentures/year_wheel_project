@@ -36,6 +36,12 @@
     "reload": "Reload",
     "goBack": "Go back"
   },
+  "controls": {
+    "rotation": "Rotation",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "resetRotation": "Reset rotation"
+  },
   "time": {
     "justNow": "Just now",
     "minutesAgo": "{{count}}m ago",

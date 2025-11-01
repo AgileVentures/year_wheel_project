@@ -36,6 +36,12 @@
     "reload": "Ladda om",
     "goBack": "Gå tillbaka"
   },
+  "controls": {
+    "rotation": "Rotation",
+    "rotateLeft": "Rotera vänster",
+    "rotateRight": "Rotera höger",
+    "resetRotation": "Återställ rotation"
+  },
   "time": {
     "justNow": "Nyss",
     "minutesAgo": "{{count}}min sedan",

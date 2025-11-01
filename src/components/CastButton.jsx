@@ -13,10 +13,11 @@ import { QRCastModal } from './QRCastModal';
 export default function CastButton({ wheelData, realtimeCast, onCastStart, onCastStop }) {
   const { t } = useTranslation(['common']);
   const { isMobile, isTablet, isIOS, supportsCast } = useDeviceDetection();
-  const { isCasting, isInitializing, error, startCast, stopCast } = useCastManager();
+  const { isCasting, isInitializing, error, hasAvailableDevices, startCast, stopCast } = useCastManager();
   const [showError, setShowError] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [sessionToken, setSessionToken] = useState(null);
+  const [castDevicesAvailable, setCastDevicesAvailable] = useState(false);
   
   // Unpack realtime cast hook
   const { 
@@ -25,6 +26,24 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
     stopSession: stopRealtimeSession,
     error: realtimeError
   } = realtimeCast || {};
+
+  // Check for available cast devices periodically
+  useEffect(() => {
+    if (!supportsCast || !hasAvailableDevices) return;
+    
+    const checkDevices = () => {
+      const available = hasAvailableDevices();
+      setCastDevicesAvailable(available);
+    };
+    
+    // Initial check
+    checkDevices();
+    
+    // Check every 3 seconds for device availability
+    const interval = setInterval(checkDevices, 3000);
+    
+    return () => clearInterval(interval);
+  }, [supportsCast, hasAvailableDevices]);
 
   // Show error briefly then hide
   useEffect(() => {
@@ -115,9 +134,9 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
         )}
 
         {/* Android: Both Chromecast AND code-based options */}
-        {!isIOS && supportsCast && (
+        {!isIOS && (
           <>
-          {/* Code cast button - Android alternative */}
+          {/* Code cast button - Android alternative (always show) */}
           <button
             onClick={handleCodeCast}
             className={`
@@ -136,9 +155,10 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
             )}
           </button>
 
-          {/* Google Cast launcher */}
-          <div className="relative w-14 h-14 rounded-full shadow-lg bg-white flex items-center justify-center">
-            <google-cast-launcher
+          {/* Google Cast launcher - only show if devices available */}
+          {supportsCast && castDevicesAvailable && (
+            <div className="relative w-14 h-14 rounded-full shadow-lg bg-white flex items-center justify-center">
+              <google-cast-launcher
               onClick={handleCastToggle}
               className={`
                 transition-all duration-200
@@ -158,12 +178,13 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
                 <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
               </span>
             )}
-          </div>
+            </div>
+          )}
           </>
         )}
         
         {/* Initializing spinner - Android only */}
-        {!isIOS && supportsCast && isInitializing && (
+        {!isIOS && supportsCast && castDevicesAvailable && isInitializing && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 rounded-full">
             <svg className="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -188,12 +209,12 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
       )}
 
       {/* Tooltip - Android */}
-      {!isIOS && supportsCast && !isCasting && !isInitializing && (
+      {!isIOS && supportsCast && castDevicesAvailable && !isCasting && !isInitializing && (
         <div className="absolute bottom-full mb-2 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
           {t('common:cast.castToScreen')}
         </div>
       )}
-      {!isIOS && supportsCast && isCasting && (
+      {!isIOS && supportsCast && castDevicesAvailable && isCasting && (
         <div className="absolute bottom-full mb-2 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
           {t('common:cast.castingClickToStop')}
         </div>

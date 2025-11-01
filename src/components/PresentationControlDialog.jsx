@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp, RotateCcw, RotateCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import MonthNavigator from './MonthNavigator';
 import QuarterNavigator from './QuarterNavigator';
@@ -17,7 +17,10 @@ function PresentationControlDialog({
   zoomedMonth,
   onZoomedMonthChange,
   zoomedQuarter,
-  onZoomedQuarterChange
+  onZoomedQuarterChange,
+  // Rotation control props
+  rotation,
+  onRotationChange
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -612,6 +615,47 @@ function PresentationControlDialog({
       {/* Scrollable Content */}
       <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 45px)' }}>
         <div className="p-2 space-y-2">
+          {/* Rotation Controls */}
+          {onRotationChange && (
+            <div className="border border-gray-200 rounded bg-gray-50">
+              <div className="p-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-xs text-gray-700">
+                    {t('common:controls.rotation')}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {Math.round(rotation || 0)}°
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onRotationChange((rotation || 0) - 15)}
+                    className="no-drag flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded transition-colors"
+                    title={t('common:controls.rotateLeft')}
+                  >
+                    <RotateCcw size={16} />
+                    <span className="text-xs font-medium">15°</span>
+                  </button>
+                  <button
+                    onClick={() => onRotationChange(0)}
+                    className="no-drag px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded transition-colors text-xs font-medium"
+                    title={t('common:controls.resetRotation')}
+                  >
+                    0°
+                  </button>
+                  <button
+                    onClick={() => onRotationChange((rotation || 0) + 15)}
+                    className="no-drag flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded transition-colors"
+                    title={t('common:controls.rotateRight')}
+                  >
+                    <span className="text-xs font-medium">15°</span>
+                    <RotateCw size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Inner Rings Section */}
           <div className="border border-gray-200 rounded">
             <button

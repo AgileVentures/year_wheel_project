@@ -696,6 +696,8 @@ function PreviewWheelPage() {
           onZoomedMonthChange={setZoomedMonth}
           zoomedQuarter={zoomedQuarter}
           onZoomedQuarterChange={setZoomedQuarter}
+          rotation={rotation}
+          onRotationChange={handleRotationChange}
         />
       )}
 
