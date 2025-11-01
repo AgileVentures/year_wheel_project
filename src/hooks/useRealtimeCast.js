@@ -58,31 +58,33 @@ export function useRealtimeCast() {
             setSessionToken(token);
             setError(null);
             
-            // Send initial state immediately
+            // Send initial state after a short delay to ensure receiver is ready
             if (initialState) {
-              console.log('[useRealtimeCast] Sending INIT with data:', initialState.title);
-              channel.send({
-                type: 'broadcast',
-                event: 'cast-message',
-                payload: {
-                  type: CAST_MESSAGE_TYPES.INIT,
-                  data: initialState,
-                  timestamp: Date.now()
-                }
-              });
-            }
-            
-            // Send queued messages
-            if (messageQueueRef.current.length > 0) {
-              console.log('[useRealtimeCast] Sending queued messages:', messageQueueRef.current.length);
-              messageQueueRef.current.forEach(msg => {
+              setTimeout(() => {
+                console.log('[useRealtimeCast] Sending INIT with data:', initialState.title);
                 channel.send({
                   type: 'broadcast',
                   event: 'cast-message',
-                  payload: msg
+                  payload: {
+                    type: CAST_MESSAGE_TYPES.INIT,
+                    data: initialState,
+                    timestamp: Date.now()
+                  }
                 });
-              });
-              messageQueueRef.current = [];
+                
+                // Send queued messages after INIT
+                if (messageQueueRef.current.length > 0) {
+                  console.log('[useRealtimeCast] Sending queued messages:', messageQueueRef.current.length);
+                  messageQueueRef.current.forEach(msg => {
+                    channel.send({
+                      type: 'broadcast',
+                      event: 'cast-message',
+                      payload: msg
+                    });
+                  });
+                  messageQueueRef.current = [];
+                }
+              }, 1000); // 1 second delay to ensure receiver is listening
             }
           } else if (status === 'CHANNEL_ERROR') {
             console.error('[useRealtimeCast] ❌ Channel error');

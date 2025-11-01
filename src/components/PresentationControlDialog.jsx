@@ -115,7 +115,17 @@ function PresentationControlDialog({
   };
 
   const toggleAllInSection = (type, show) => {
-    if (type === 'rings') {
+    if (type === 'innerRings') {
+      const updatedRings = organizationData.rings.map(ring => 
+        ring.type === 'inner' ? { ...ring, visible: show } : ring
+      );
+      onOrganizationChange({ ...organizationData, rings: updatedRings });
+    } else if (type === 'outerRings') {
+      const updatedRings = organizationData.rings.map(ring => 
+        ring.type === 'outer' ? { ...ring, visible: show } : ring
+      );
+      onOrganizationChange({ ...organizationData, rings: updatedRings });
+    } else if (type === 'rings') {
       const updatedRings = organizationData.rings.map(ring => ({
         ...ring,
         visible: show
@@ -458,15 +468,15 @@ function PresentationControlDialog({
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('labels', true); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
+                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', true); }}
+                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
                       title={t('common:actions.showAll')}
                     >
                       <Eye size={18} />
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('labels', false); }}
-                      className="no-drag p-2 hover:bg-gray-200 rounded-sm"
+                      onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', false); }}
+                      className="no-drag p-2 hover:bg-gray-200 rounded-lg"
                       title={t('common:actions.hideAll')}
                     >
                       <EyeOff size={18} />
@@ -474,7 +484,7 @@ function PresentationControlDialog({
                   </div>
                 </button>
                 
-                {expandedSections.labels && (
+                {expandedSections.outerRings && (
                   <div className="border-t border-gray-200 bg-white p-3 space-y-2">
                     {organizationData.labels.map(label => (
                       <label
@@ -615,14 +625,14 @@ function PresentationControlDialog({
               </div>
               <div className="flex gap-0.5">
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('innerRings', true); }}
                   className="no-drag p-0.5 hover:bg-gray-200 rounded"
                   title={t('common:actions.showAll')}
                 >
                   <Eye size={12} />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('innerRings', false); }}
                   className="no-drag p-0.5 hover:bg-gray-200 rounded"
                   title={t('common:actions.hideAll')}
                 >
@@ -699,14 +709,14 @@ function PresentationControlDialog({
               </div>
               <div className="flex gap-0.5">
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', true); }}
                   className="no-drag p-0.5 hover:bg-gray-200 rounded"
                   title={t('common:actions.showAll')}
                 >
                   <Eye size={12} />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                  onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', false); }}
                   className="no-drag p-0.5 hover:bg-gray-200 rounded"
                   title={t('common:actions.hideAll')}
                 >
