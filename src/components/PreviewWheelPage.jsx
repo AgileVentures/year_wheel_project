@@ -55,7 +55,8 @@ function PreviewWheelPage() {
   }, []);
   
   // Device detection
-  const { isIOS, supportsCast } = useDeviceDetection();
+  const { isIOS, supportsCast, isMobile, isTablet } = useDeviceDetection();
+  const isMobileDevice = isMobile || isTablet || window.innerWidth < 768;
   
   // Cast manager hooks (Chrome Cast for Android, Realtime for iOS)
   const { isCasting, sendCastMessage } = useCastManager();
@@ -528,17 +529,18 @@ function PreviewWheelPage() {
             )}
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Show controls button in presentation mode */}
             {isPresentationMode ? (
               <>
                 <button
                   onClick={() => setShowControlDialog(!showControlDialog)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 md:px-4 bg-[#00A4A6] text-white rounded-lg hover:bg-[#2E9E97] transition-colors shadow-sm"
                   title={t('common:previewWheelPage.showControls')}
                 >
-                  <Settings size={16} />
-                  <span className="text-sm font-medium">{t('common:previewWheelPage.controls')}</span>
+                  <Settings size={isMobileDevice ? 20 : 16} />
+                  <span className="text-sm font-medium hidden sm:inline">{t('common:previewWheelPage.controls')}</span>
+                  <span className="text-sm font-medium sm:hidden">Kontroller</span>
                 </button>
                 
                 {/* Page Navigator in presentation mode */}
@@ -638,10 +640,13 @@ function PreviewWheelPage() {
       </div>
 
       {/* Wheel Display */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
+      <div className={isMobileDevice ? "" : "max-w-7xl mx-auto px-4 py-8"}>
+        <div className={isMobileDevice 
+          ? "bg-white min-h-screen" 
+          : "bg-white rounded-sm shadow-sm border border-gray-200 p-6"
+        }>
           {/* Title overlay for presentation mode */}
-          {isPresentationMode && (
+          {isPresentationMode && !isMobileDevice && (
             <div className="text-center mb-6">
               <h1 className="text-4xl font-bold text-gray-900">{wheelData.title}</h1>
               <p className="text-xl text-gray-600 mt-2">{displayYear}</p>
@@ -664,6 +669,7 @@ function PreviewWheelPage() {
             onSetZoomedQuarter={setZoomedQuarter}
             onRotationChange={handleRotationChange}
             readonly={true}
+            hideControls={isMobileDevice && isPresentationMode}
           />
         </div>
 

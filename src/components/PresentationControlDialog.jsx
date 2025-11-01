@@ -16,6 +16,7 @@ function PresentationControlDialog({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const dialogRef = useRef(null);
+  const isMobile = window.innerWidth < 768;
   
   const [expandedSections, setExpandedSections] = useState({
     innerRings: true,
@@ -244,10 +245,37 @@ function PresentationControlDialog({
     e.dataTransfer.dropEffect = 'move';
   };
 
+  // Mobile: Full-screen panel
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#00A4A6] to-[#2E9E97] text-white shadow-md">
+          <h3 className="font-semibold text-lg">
+            Presentationskontroller
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            title={t('common:actions.close')}
+          >
+            <X size={24} className="text-white" />
+          </button>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Content will be here */}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop: Draggable dialog
   return (
     <div
       ref={dialogRef}
-      className="fixed bg-white rounded-sm shadow-2xl border-2 border-gray-300 z-50"
+      className="fixed bg-white rounded-lg shadow-2xl border-2 border-gray-300 z-50"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
