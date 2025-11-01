@@ -109,19 +109,21 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
 
         {/* Android: Google Cast launcher (native button) */}
         {!isIOS && supportsCast && (
-          <google-cast-launcher
-          onClick={handleCastToggle}
-          className={`
-            transition-all duration-200
-            ${isCasting ? 'text-blue-500' : 'text-gray-600'}
-            ${isInitializing ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-110'}
-          `}
-            style={{
-              width: '56px',
-              height: '56px',
-              display: 'block',
-            }}
-          />
+          <div className="relative">
+            <google-cast-launcher
+              onClick={handleCastToggle}
+              className={`
+                transition-all duration-200
+                ${isCasting ? 'text-blue-500' : 'text-gray-600'}
+                ${isInitializing ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-110'}
+              `}
+              style={{
+                width: '56px',
+                height: '56px',
+                display: 'block',
+              }}
+            />
+          </div>
         )}
         
         {/* Casting indicator (pulsing dot) - Android only */}

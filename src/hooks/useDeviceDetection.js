@@ -34,17 +34,33 @@ export function useDeviceDetection() {
     const isTablet = /iPad|Android(?!.*Mobile)/i.test(userAgent);
     
     // Check if Chrome Cast SDK is available
-    // This will be true after the Cast SDK script loads
-    const supportsCast = typeof window.chrome !== 'undefined' && 
-                        typeof window.chrome.cast !== 'undefined';
-    
-    setDeviceInfo({
-      isMobile,
-      isTablet,
-      isIOS,
-      isAndroid,
-      supportsCast,
-    });
+    const checkCastSDK = () => {
+      const supportsCast = typeof window.chrome !== 'undefined' && 
+                          typeof window.chrome.cast !== 'undefined';
+      
+      setDeviceInfo({
+        isMobile,
+        isTablet,
+        isIOS,
+        isAndroid,
+        supportsCast,
+      });
+    };
+
+    // Initial check
+    checkCastSDK();
+
+    // Listen for Cast SDK load event
+    window['__onGCastApiAvailable'] = (isAvailable) => {
+      if (isAvailable) {
+        checkCastSDK();
+      }
+    };
+
+    // Fallback: check again after 2 seconds
+    const timer = setTimeout(checkCastSDK, 2000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return deviceInfo;
