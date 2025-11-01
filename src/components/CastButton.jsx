@@ -97,15 +97,15 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
             onClick={handleCodeCast}
             className={`
               w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200
-              ${showQRModal ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}
+              ${isRealtimeConnected ? 'bg-green-500 text-white' : showQRModal ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}
               ${isInitializing ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-105'}
             `}
-            aria-label={showQRModal ? t('common:cast.closeQR') : t('common:cast.castToScreen')}
+            aria-label={isRealtimeConnected ? t('common:cast.connected') : showQRModal ? t('common:cast.closeQR') : t('common:cast.castToScreen')}
           >
             <Smartphone size={24} />
             
-            {/* Active indicator */}
-            {showQRModal && (
+            {/* Connected/Active indicator */}
+            {(showQRModal || isRealtimeConnected) && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
@@ -122,13 +122,13 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
             onClick={handleCodeCast}
             className={`
               w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200
-              ${showQRModal ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}
+              ${isRealtimeConnected ? 'bg-green-500 text-white' : showQRModal ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}
               cursor-pointer hover:scale-105
             `}
-            title={t('common:cast.castWithCode')}
+            title={isRealtimeConnected ? t('common:cast.connected') : t('common:cast.castWithCode')}
           >
             <Smartphone size={24} />
-            {showQRModal && (
+            {(showQRModal || isRealtimeConnected) && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>

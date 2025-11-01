@@ -335,6 +335,7 @@
     "castingEnded": "Castingen har avslutats",
     "connected": "Ansluten",
     "disconnect": "Koppla från",
-    "closeAndKeepCasting": "Stäng (fortsätt casta)"
+    "closeAndKeepCasting": "Stäng (fortsätt casta)",
+    "multipleDevicesNote": "Flera enheter kan använda samma kod"
   }
 }

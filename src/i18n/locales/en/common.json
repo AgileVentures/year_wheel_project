@@ -335,6 +335,7 @@
     "castingEnded": "Casting has ended",
     "connected": "Connected",
     "disconnect": "Disconnect",
-    "closeAndKeepCasting": "Close (keep casting)"
+    "closeAndKeepCasting": "Close (keep casting)",
+    "multipleDevicesNote": "Multiple devices can use the same code"
   }
 }

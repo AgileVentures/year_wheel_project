@@ -70,6 +70,11 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
           <p className="text-sm text-gray-600">
             {isConnected ? t('cast.tvConnected') : t('cast.waitingForTV')}
           </p>
+          {isConnected && (
+            <p className="text-xs text-gray-500 mt-1">
+              {t('cast.multipleDevicesNote')}
+            </p>
+          )}
         </div>
 
         {/* Title */}

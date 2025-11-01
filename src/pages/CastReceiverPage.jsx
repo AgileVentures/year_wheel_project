@@ -127,10 +127,12 @@ export default function CastReceiverPage() {
 
     switch (message.type) {
       case CAST_MESSAGE_TYPES.INIT:
+        console.log('[Receiver] 🎉 INIT received! Setting wheel data...');
         setWheelData(message.data);
         setRotation(message.data.rotation || 0);
         setZoomedMonth(message.data.zoomedMonth || null);
         setZoomedQuarter(message.data.zoomedQuarter || null);
+        setIsConnected(true); // Mark as fully connected when we receive data
         break;
 
       case CAST_MESSAGE_TYPES.ROTATE:
