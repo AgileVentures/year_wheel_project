@@ -325,6 +325,7 @@
     "castWithCode": "Casta med kod",
     "tvConnected": "TV-skärmen är ansluten",
     "waitingForTV": "Väntar på att TV-skärmen ska ange koden",
+    "connectedYouCanClose": "Ansluten! Du kan stänga detta och fortsätta använda hjulet",
     "casting": "Castar",
     "connectionError": "Fel vid anslutning",
     "startingReceiver": "Startar mottagare...",

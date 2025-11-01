@@ -394,7 +394,7 @@ export default function CastReceiverPage() {
       {/* Disconnect button (TV remote friendly - large and accessible) */}
       <button
         onClick={handleDisconnect}
-        className="absolute top-4 left-4 z-50 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-red-500"
+        className="absolute top-4 left-4 z-50 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-sm shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-red-500"
         style={{ fontSize: '18px' }}
       >
         ✕ {t('common:cast.disconnect')}

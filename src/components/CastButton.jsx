@@ -17,6 +17,7 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
   const [showError, setShowError] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [sessionToken, setSessionToken] = useState(null);
+  const [isMinimized, setIsMinimized] = useState(false);
   
   // Unpack realtime cast hook
   const { 
@@ -35,6 +36,16 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
     }
   }, [error]);
 
+  // Auto-minimize modal when connected
+  useEffect(() => {
+    if (isRealtimeConnected && showQRModal) {
+      const timer = setTimeout(() => {
+        setIsMinimized(true);
+      }, 2000); // Show "Connected!" for 2 seconds then minimize
+      return () => clearTimeout(timer);
+    }
+  }, [isRealtimeConnected, showQRModal]);
+
   // Notify parent of cast state changes (both Android and iOS)
   useEffect(() => {
     const isActive = isCasting || isRealtimeConnected;
@@ -49,18 +60,23 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
   if (!isMobile && !isTablet) return null;
 
   const handleCodeCast = () => {
-    if (showQRModal || isRealtimeConnected) {
+    if (isRealtimeConnected) {
       // Stop casting
       setShowQRModal(false);
       setSessionToken(null);
+      setIsMinimized(false);
       if (stopRealtimeSession) {
         stopRealtimeSession();
       }
+    } else if (sessionToken && showQRModal) {
+      // Reopen modal if minimized
+      setIsMinimized(false);
     } else {
-      // Start casting with code
+      // Start new casting session - generate code only once
       const code = Math.random().toString(36).substr(2, 6).toUpperCase();
       setSessionToken(code);
       setShowQRModal(true);
+      setIsMinimized(false);
       
       // Start Realtime session with code as channel name
       if (startRealtimeSession) {
@@ -204,9 +220,11 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
       {/* QR Code Modal - iOS fallback */}
       <QRCastModal
         isOpen={showQRModal}
+        isMinimized={isMinimized}
         onClose={() => {
           setShowQRModal(false);
           setSessionToken(null);
+          setIsMinimized(false);
           if (stopRealtimeSession) {
             stopRealtimeSession();
           }

@@ -325,6 +325,7 @@
     "castWithCode": "Cast with code",
     "tvConnected": "TV screen is connected",
     "waitingForTV": "Waiting for TV to enter the code",
+    "connectedYouCanClose": "Connected! You can close this and continue using the wheel",
     "casting": "Casting",
     "connectionError": "Connection error",
     "startingReceiver": "Starting receiver...",

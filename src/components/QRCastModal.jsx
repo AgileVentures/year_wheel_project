@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
  * Shows a pairing code that users can type on their TV
  * Used when Chrome Cast SDK is not available (iOS devices)
  */
-export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
+export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected, isMinimized = false }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
@@ -25,10 +25,23 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
   };
 
   if (!isOpen) return null;
+  
+  // Minimized state - just show a small indicator
+  if (isMinimized && isConnected) {
+    return (
+      <div className="fixed bottom-24 right-6 z-50 bg-[#9FCB3E] text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-pulse">
+        <span className="flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-white opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+        </span>
+        <span className="text-sm font-medium">Castar</span>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
-      <div className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-t-2xl sm:rounded-sm shadow-xl w-full sm:max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -39,7 +52,7 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
         </button>
 
         {/* Connection Status Badge */}
-        <div className={`mb-4 rounded-lg p-4 border-2 ${
+        <div className={`mb-4 rounded-sm p-4 border-2 ${
           isConnected 
             ? 'bg-green-50 border-[#9FCB3E]' 
             : 'bg-[#A4E6E0] bg-opacity-20 border-[#36C2C6]'
@@ -74,14 +87,14 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {isConnected ? t('cast.casting') : t('cast.pairingCodeTitle')}
+          {isConnected ? '✓ ' + t('cast.casting') : t('cast.pairingCodeTitle')}
         </h2>
         <p className="text-gray-600 mb-6">
-          {isConnected ? t('cast.controlFromPhone') : t('cast.pairingCodeSubtitle')}
+          {isConnected ? t('cast.connectedYouCanClose') : t('cast.pairingCodeSubtitle')}
         </p>
 
         {/* Pairing Code Display - Big and Easy to Read */}
-        <div className="bg-gradient-to-br from-[#A4E6E0] from-opacity-30 to-[#36C2C6] to-opacity-20 rounded-lg p-8 mb-6 text-center border-2 border-[#36C2C6]">
+        <div className="bg-gradient-to-br from-[#A4E6E0] from-opacity-30 to-[#36C2C6] to-opacity-20 rounded-sm p-8 mb-6 text-center border-2 border-[#36C2C6]">
           <div className="text-6xl font-mono font-bold text-[#00A4A6] tracking-widest mb-2">
             {sessionToken}
           </div>
@@ -90,40 +103,42 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="space-y-3 mb-6">
-          <div className="flex items-start">
-            <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
-              1
+        {/* Instructions - only show when not connected */}
+        {!isConnected && (
+          <div className="space-y-3 mb-6">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
+                1
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-700">{t('cast.codeStep1')}</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="text-gray-700">{t('cast.codeStep1')}</p>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
+                2
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-700">{t('cast.codeStep2')}</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
+                3
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-700">{t('cast.codeStep3')}</p>
+              </div>
             </div>
           </div>
-          <div className="flex items-start">
-            <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
-              2
-            </div>
-            <div className="flex-1">
-              <p className="text-gray-700">{t('cast.codeStep2')}</p>
-            </div>
-          </div>
-          <div className="flex items-start">
-            <div className="flex-shrink-0 w-8 h-8 bg-[#A4E6E0] rounded-full flex items-center justify-center text-[#1E1EBE] font-semibold mr-3">
-              3
-            </div>
-            <div className="flex-1">
-              <p className="text-gray-700">{t('cast.codeStep3')}</p>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3">
           {!isConnected && (
             <button
               onClick={handleCopyCode}
-              className="w-full px-4 py-3 bg-[#00A4A6] text-white rounded-lg hover:bg-[#2E9E97] transition-colors flex items-center justify-center gap-2 font-medium"
+              className="w-full px-4 py-3 bg-[#00A4A6] text-white rounded-sm hover:bg-[#2E9E97] transition-colors flex items-center justify-center gap-2 font-medium"
             >
               {copied ? (
                 <>
@@ -141,7 +156,7 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
           
           <button
             onClick={onClose}
-            className={`w-full px-4 py-3 rounded-lg transition-colors font-medium ${
+            className={`w-full px-4 py-3 rounded-sm transition-colors font-medium ${
               isConnected 
                 ? 'bg-red-600 text-white hover:bg-red-700' 
                 : 'text-gray-600 hover:text-gray-800'
