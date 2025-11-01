@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
  * Shows a pairing code that users can type on their TV
  * Used when Chrome Cast SDK is not available (iOS devices)
  */
-export const QRCastModal = ({ isOpen, onClose, sessionToken }) => {
+export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
@@ -27,8 +27,8 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
+      <div className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl w-full sm:max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -38,12 +38,23 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken }) => {
           <X size={24} />
         </button>
 
+        {/* Connection Status Badge */}
+        {isConnected && (
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+            <span className="flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+            <span className="text-green-700 font-medium">{t('cast.connected')}</span>
+          </div>
+        )}
+
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {t('cast.pairingCodeTitle')}
+          {isConnected ? t('cast.casting') : t('cast.pairingCodeTitle')}
         </h2>
         <p className="text-gray-600 mb-6">
-          {t('cast.pairingCodeSubtitle')}
+          {isConnected ? t('cast.controlFromPhone') : t('cast.pairingCodeSubtitle')}
         </p>
 
         {/* Pairing Code Display - Big and Easy to Read */}
@@ -86,28 +97,34 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken }) => {
 
         {/* Action buttons */}
         <div className="flex flex-col gap-3">
-          <button
-            onClick={handleCopyCode}
-            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            {copied ? (
-              <>
-                <Check size={20} />
-                {t('cast.codeCopied')}
-              </>
-            ) : (
-              <>
-                <Copy size={20} />
-                {t('cast.copyCode')}
-              </>
-            )}
-          </button>
+          {!isConnected && (
+            <button
+              onClick={handleCopyCode}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              {copied ? (
+                <>
+                  <Check size={20} />
+                  {t('cast.codeCopied')}
+                </>
+              ) : (
+                <>
+                  <Copy size={20} />
+                  {t('cast.copyCode')}
+                </>
+              )}
+            </button>
+          )}
           
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            className={`w-full px-4 py-3 rounded-lg transition-colors font-medium ${
+              isConnected 
+                ? 'bg-red-600 text-white hover:bg-red-700' 
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
           >
-            {t('cast.closeQR')}
+            {isConnected ? t('cast.disconnect') : t('cast.closeQR')}
           </button>
         </div>
 

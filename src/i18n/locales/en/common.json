@@ -320,6 +320,7 @@
     "connect": "Connect",
     "codeHelpText": "You can find the code in the casting menu on your phone",
     "connectingWithCode": "Connecting with code...",
+    "controlFromPhone": "Control the wheel from your phone",
     "casting": "Casting",
     "connectionError": "Connection error",
     "startingReceiver": "Starting receiver...",

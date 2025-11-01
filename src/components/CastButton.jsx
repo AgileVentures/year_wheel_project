@@ -177,9 +177,13 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
         onClose={() => {
           setShowQRModal(false);
           setSessionToken(null);
+          if (stopRealtimeSession) {
+            stopRealtimeSession();
+          }
         }}
         sessionToken={sessionToken}
         wheelData={wheelData}
+        isConnected={isRealtimeConnected}
       />
     </>
   );

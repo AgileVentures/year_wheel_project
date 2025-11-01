@@ -95,10 +95,14 @@ export default function CastReceiverPage() {
   useEffect(() => {
     if (!sessionToken) return;
     
+    console.log('[Receiver] Realtime setup with token:', sessionToken);
+    console.log('[Receiver] Realtime connected:', realtimeReceiver.isConnected);
+    
     // Update connection status based on Realtime
     setIsConnected(realtimeReceiver.isConnected);
     
     if (realtimeReceiver.error) {
+      console.error('[Receiver] Realtime error:', realtimeReceiver.error);
       setConnectionError(realtimeReceiver.error);
     }
 
