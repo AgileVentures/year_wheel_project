@@ -313,14 +313,14 @@ export default function CastReceiverPage() {
               onChange={(e) => setEnteredCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
               maxLength={6}
               placeholder="ABC123"
-              className="w-full text-center text-6xl font-mono font-bold bg-white bg-opacity-10 border-2 border-[#36C2C6] border-opacity-50 rounded-xl py-6 px-4 text-white placeholder-gray-400 focus:outline-none focus:border-[#00A4A6] focus:bg-opacity-20 transition-all tracking-widest"
+              className="w-full text-center text-6xl font-mono font-bold bg-white bg-opacity-10 border-2 border-[#36C2C6] border-opacity-50 rounded-sm py-6 px-4 text-white placeholder-gray-400 focus:outline-none focus:border-[#00A4A6] focus:bg-opacity-20 transition-all tracking-widest"
               autoFocus
             />
             
             <button
               type="submit"
               disabled={enteredCode.length !== 6}
-              className="w-full py-4 px-8 bg-[#00A4A6] hover:bg-[#2E9E97] disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xl font-semibold rounded-xl transition-all focus:outline-none focus:ring-4 focus:ring-[#36C2C6]"
+              className="w-full py-4 px-8 bg-[#00A4A6] hover:bg-[#2E9E97] disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xl font-semibold rounded-sm transition-all focus:outline-none focus:ring-4 focus:ring-[#36C2C6]"
             >
               {t('common:cast.connect')}
             </button>
@@ -353,14 +353,26 @@ export default function CastReceiverPage() {
   if (!wheelData) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#1B2A63] text-white">
-        <div className="text-center">
+        <div className="text-center max-w-lg px-8">
           <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-32 h-32 mx-auto mb-6 animate-pulse opacity-60" />
           <p className="text-2xl font-semibold mb-2">{t('common:cast.waitingForConnection')}</p>
-          <p className="text-gray-400">
+          <p className="text-gray-400 mb-8">
             {sessionToken 
               ? t('common:cast.connectingWithCode')
               : t('common:cast.startCastingFromMobile')}
           </p>
+          
+          {/* Cancel button - go back to code input */}
+          <button
+            onClick={() => {
+              setIsCodeSubmitted(false);
+              setEnteredCode('');
+              setSearchParams({});
+            }}
+            className="mt-6 px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white text-lg font-semibold rounded-xl transition-all focus:outline-none focus:ring-4 focus:ring-gray-500"
+          >
+            {t('common:actions.cancel')}
+          </button>
         </div>
       </div>
     );
