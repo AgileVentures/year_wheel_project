@@ -3,7 +3,7 @@ import { Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCastManager } from '../hooks/useCastManager';
 import { useDeviceDetection } from '../hooks/useDeviceDetection';
-import QRCastModal from './QRCastModal';
+import { QRCastModal } from './QRCastModal';
 
 /**
  * Cast button component with google-cast-launcher for Android
