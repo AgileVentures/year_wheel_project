@@ -814,6 +814,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
       
+      // CRITICAL: Mark current undo position as saved
+      // This keeps hasUnsavedChanges flag in sync with actual save state
+      markSaved();
+      
     } catch (error) {
       // Show error toast only on failure
       const event = new CustomEvent('showToast', { 
@@ -881,6 +885,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
+      
+      // CRITICAL: Mark current undo position as saved
+      // This keeps hasUnsavedChanges flag in sync with actual save state
+      markSaved();
       
     } catch (error) {
       console.error('[Auto-save] Error:', error);
