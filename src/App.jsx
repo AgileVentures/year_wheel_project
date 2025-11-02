@@ -66,6 +66,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t } = useTranslation(['common']);
   const { isPremium, loading: subscriptionLoading } = useSubscription();
   
+  // Helper: Filter items to only those belonging to a specific year
+  // CRITICAL for maintaining page isolation in organization_data JSONB
+  const filterItemsByYear = useCallback((items, yearNum) => {
+    return (items || []).filter(item => {
+      const itemStartYear = new Date(item.startDate).getFullYear();
+      const itemEndYear = new Date(item.endDate).getFullYear();
+      // Include item if it overlaps with the year
+      return itemStartYear <= yearNum && itemEndYear >= yearNum;
+    });
+  }, []);
+  
   // Flag to prevent history during data load operations
   const isLoadingData = useRef(false);
   
@@ -837,9 +848,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark as saving to prevent realtime interference
       isSavingRef.current = true;
       
+      // CRITICAL: Filter items to only those belonging to this page's year
+      // This ensures organization_data JSONB only contains page-specific items
+      const currentYearNum = parseInt(year);
+      const pageSpecificItems = (currentOrgData.items || []).filter(item => {
+        const itemStartYear = new Date(item.startDate).getFullYear();
+        const itemEndYear = new Date(item.endDate).getFullYear();
+        // Include item if it overlaps with current year
+        return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
+      });
+      
+      const pageSpecificOrgData = {
+        ...currentOrgData,
+        items: pageSpecificItems
+      };
+      
       // Save the page data to database
       await updatePage(currentPageId, {
-        organization_data: currentOrgData,
+        organization_data: pageSpecificOrgData,
       });
       
       // Mark the save timestamp to ignore our own broadcasts
@@ -1302,9 +1328,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     try {
       // Save current page data before switching
       if (currentPageId) {
+        // CRITICAL: Filter items to only those belonging to this page's year
+        const currentYearNum = parseInt(year);
+        const pageSpecificItems = (organizationData.items || []).filter(item => {
+          const itemStartYear = new Date(item.startDate).getFullYear();
+          const itemEndYear = new Date(item.endDate).getFullYear();
+          // Include item if it overlaps with current year
+          return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
+        });
+        
         await updatePage(currentPageId, {
-          organization_data: organizationData,
-          year: parseInt(year)
+          organization_data: {
+            ...organizationData,
+            items: pageSpecificItems
+          },
+          year: currentYearNum
         });
       }
       
@@ -1440,9 +1478,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     try {
       // First, save the current page to ensure we have the latest data
       if (currentPageId) {
+        // CRITICAL: Filter items to only those belonging to this page's year
+        const currentYearNum = parseInt(year);
+        const pageSpecificItems = (organizationData.items || []).filter(item => {
+          const itemStartYear = new Date(item.startDate).getFullYear();
+          const itemEndYear = new Date(item.endDate).getFullYear();
+          // Include item if it overlaps with current year
+          return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
+        });
+        
         await updatePage(currentPageId, {
-          organization_data: organizationData,
-          year: parseInt(year)
+          organization_data: {
+            ...organizationData,
+            items: pageSpecificItems
+          },
+          year: currentYearNum
         });
       }
       
@@ -1490,9 +1540,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     try {
       // First, save the current page to ensure we have the latest data
       if (currentPageId) {
+        // CRITICAL: Filter items to only those belonging to this page's year
+        const currentYearNum = parseInt(year);
+        const pageSpecificItems = (organizationData.items || []).filter(item => {
+          const itemStartYear = new Date(item.startDate).getFullYear();
+          const itemEndYear = new Date(item.endDate).getFullYear();
+          // Include item if it overlaps with current year
+          return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
+        });
+        
         await updatePage(currentPageId, {
-          organization_data: organizationData,
-          year: parseInt(year)
+          organization_data: {
+            ...organizationData,
+            items: pageSpecificItems
+          },
+          year: currentYearNum
         });
       }
       
