@@ -348,6 +348,7 @@
     "showControls": "Show controls",
     "hideControls": "Hide controls",
     "displaySettings": "Display Settings",
-    "displayZoom": "Display Zoom"
+    "displayZoom": "Display Zoom",
+    "stopCasting": "Stop Casting"
   }
 }

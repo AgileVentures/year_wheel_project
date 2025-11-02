@@ -184,6 +184,12 @@ export default function CastReceiverPage() {
         }
         break;
 
+      case CAST_MESSAGE_TYPES.DISPLAY_ZOOM:
+        if (message.data && message.data.zoom) {
+          setDisplayZoom(message.data.zoom);
+        }
+        break;
+
       case CAST_MESSAGE_TYPES.UPDATE:
         if (message.data.organizationData) {
           setWheelData(prev => ({

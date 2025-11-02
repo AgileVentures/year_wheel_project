@@ -17,6 +17,9 @@ export const CAST_MESSAGE_TYPES = {
   // Zoom level changes (immediate)
   ZOOM: 'wheel:zoom',
   
+  // Display zoom for TV (50-200%)
+  DISPLAY_ZOOM: 'wheel:display_zoom',
+  
   // Organization data changes (immediate)
   UPDATE: 'wheel:update',
   

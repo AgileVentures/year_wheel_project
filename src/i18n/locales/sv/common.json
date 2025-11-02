@@ -347,6 +347,7 @@
     "showControls": "Visa kontroller",
     "hideControls": "Dölj kontroller",
     "displaySettings": "Visningsinställningar",
-    "displayZoom": "Bildskärmszoom"
+    "displayZoom": "Bildskärmszoom",
+    "stopCasting": "Stoppa casting"
   }
 }
