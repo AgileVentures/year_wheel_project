@@ -252,13 +252,20 @@ function OrganizationPanel({
   const filteredAktiviteter = useMemo(() => {
     if (!organizationData.items) return [];
     
-    // If no search query or not in Liste view, return all items
+    // CRITICAL: Filter items by current year first to prevent cross-page pollution
+    const itemsForYear = organizationData.items.filter(item => {
+      const startYear = new Date(item.startDate).getFullYear();
+      const endYear = new Date(item.endDate).getFullYear();
+      return year >= startYear && year <= endYear;
+    });
+    
+    // If no search query or not in Liste view, return year-filtered items
     if (!searchQuery || activeView !== 'liste') {
-      return organizationData.items;
+      return itemsForYear;
     }
     
-    // Configure Fuse.js for fuzzy search
-    const fuse = new Fuse(organizationData.items, {
+    // Configure Fuse.js for fuzzy search on year-filtered items
+    const fuse = new Fuse(itemsForYear, {
       keys: [
         { name: 'name', weight: 2 }, // Activity name has highest weight
         { name: 'time', weight: 0.5 }
@@ -271,7 +278,7 @@ function OrganizationPanel({
     // Perform fuzzy search
     const results = fuse.search(searchQuery);
     return results.map(result => result.item);
-  }, [organizationData.items, searchQuery, activeView]);
+  }, [organizationData.items, searchQuery, activeView, year]);
 
   // Generate calendar days
   const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
@@ -348,17 +355,17 @@ function OrganizationPanel({
     onOrganizationChange({ ...organizationData, labels: updatedLabels });
   };
 
-  // Count items
+  // Count items (year-filtered to show only current page's items)
   const countRingItems = (ringId) => {
-    return organizationData.items?.filter(item => item.ringId === ringId).length || 0;
+    return filteredAktiviteter?.filter(item => item.ringId === ringId).length || 0;
   };
 
   const countActivityGroupItems = (groupId) => {
-    return organizationData.items?.filter(item => item.activityId === groupId).length || 0;
+    return filteredAktiviteter?.filter(item => item.activityId === groupId).length || 0;
   };
 
   const countLabelItems = (labelId) => {
-    return organizationData.items?.filter(item => item.labelId === labelId).length || 0;
+    return filteredAktiviteter?.filter(item => item.labelId === labelId).length || 0;
   };
 
   // Add new aktivitet
@@ -1188,7 +1195,7 @@ function OrganizationPanel({
                   {t('zoom:months.title')}
                 </h2>
                 <span className="text-xs text-gray-500">
-                  {organizationData.items?.length || 0} {t('zoom:activities')}
+                  {filteredAktiviteter?.length || 0} {t('zoom:activities')}
                 </span>
               </div>
               
@@ -1213,7 +1220,7 @@ function OrganizationPanel({
                   {t('zoom:quarters.title')}
                 </h2>
                 <span className="text-xs text-gray-500">
-                  {organizationData.items?.length || 0} {t('zoom:activities')}
+                  {filteredAktiviteter?.length || 0} {t('zoom:activities')}
                 </span>
               </div>
               

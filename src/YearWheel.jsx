@@ -94,6 +94,24 @@ function YearWheel({
     }
   }, [editingItem, broadcastActivity]);
   
+  // CRITICAL: Filter organizationData to only include items for the current year
+  // This prevents cross-page pollution in the canvas rendering
+  const yearFilteredOrgData = useMemo(() => {
+    if (!organizationData || !organizationData.items) return organizationData;
+    
+    const currentYear = parseInt(year);
+    const filteredItems = organizationData.items.filter(item => {
+      const startYear = new Date(item.startDate).getFullYear();
+      const endYear = new Date(item.endDate).getFullYear();
+      return currentYear >= startYear && currentYear <= endYear;
+    });
+    
+    return {
+      ...organizationData,
+      items: filteredItems
+    };
+  }, [organizationData, year]);
+  
   const monthNames = useMemo(() => [
     t('common:monthsFull.january'),
     t('common:monthsFull.february'),
@@ -292,6 +310,10 @@ function YearWheel({
   }, [selectedItems, clearSelections, t]);
 
   const handleItemClick = useCallback((item, position) => {
+    console.log('[YearWheel] Item clicked:', item.id, item.name);
+    console.log('[YearWheel] Item dates:', item.startDate, item.endDate);
+    console.log('[YearWheel] Current year prop:', year);
+    
     // In selection mode, toggle item selection
     if (selectionMode) {
       setSelectedItems(prev => {
@@ -310,6 +332,7 @@ function YearWheel({
     }
     
     // Normal mode: show tooltip
+    console.log('[YearWheel] Setting selected item and showing tooltip');
     setSelectedItem(item);
     
     // Position tooltip at upper left of container with some padding
@@ -426,7 +449,7 @@ function YearWheel({
         showYearEvents,
         showSeasonRing,
         ringsData,
-        organizationData,
+        organizationData: yearFilteredOrgData, // CRITICAL: Pass year-filtered data to canvas
         showWeekRing,
         showMonthRing,
         showRingNames,
@@ -484,10 +507,10 @@ function YearWheel({
   // Update organization data without recreating the wheel instance
   // This preserves drag state and prevents wheel from going blank during drag
   useEffect(() => {
-    if (yearWheel && organizationData) {
-      yearWheel.updateOrganizationData(organizationData);
+    if (yearWheel && yearFilteredOrgData) {
+      yearWheel.updateOrganizationData(yearFilteredOrgData);
     }
-  }, [organizationData, yearWheel]);
+  }, [yearFilteredOrgData, yearWheel]);
 
   // Update rotation angle from external source (casting)
   useEffect(() => {

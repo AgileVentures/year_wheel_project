@@ -293,3 +293,22 @@ Open Source Software (OSS) is not just about accessing free code; it's about fos
 Let's harness the collective power of open source to make planning and visualizing yearly activities more intuitive and effective. Together, we can create something truly awesome.
 
 
+
+
+
+```
+mkdir page-scripts && cd page-scripts
+curl -sSL "https://create.plandisc.com/wheel/showPublic/IPlDpz3" \
+  | grep -oP '<script[^>]+src=["'\'']\K[^"'\''>]+' \
+  | while read -r src; do
+      # make absolute if necessary:
+      url=$(python3 - <<PY
+from urllib.parse import urljoin
+print(urljoin("https://create.plandisc.com/wheel/showPublic/IPlDpz3", "$src"))
+PY
+)
+      curl -sSL "$url" -o "$(basename "$src")"
+    done
+
+
+```
