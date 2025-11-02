@@ -423,6 +423,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               });
             }
             
+            // Filter items to only include current year
+            orgData.items = filterItemsByYear(orgData.items, parseInt(yearToLoad));
+            
             orgDataToSet = orgData;
           }
         } else {
@@ -463,6 +466,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 return ring;
               });
             }
+            
+            // Filter items to only include current year (legacy path)
+            orgData.items = filterItemsByYear(orgData.items, parseInt(yearToLoad));
             
             orgDataToSet = orgData;
           }
