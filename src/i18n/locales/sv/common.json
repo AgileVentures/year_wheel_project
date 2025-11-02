@@ -34,7 +34,8 @@
     "hideAll": "Dölj alla",
     "linkCopied": "Länk kopierad!",
     "reload": "Ladda om",
-    "goBack": "Gå tillbaka"
+    "goBack": "Gå tillbaka",
+    "reset": "Återställ"
   },
   "controls": {
     "rotation": "Rotation",
@@ -342,6 +343,10 @@
     "connected": "Ansluten",
     "disconnect": "Koppla från",
     "closeAndKeepCasting": "Stäng (fortsätt casta)",
-    "multipleDevicesNote": "Flera enheter kan använda samma kod"
+    "multipleDevicesNote": "Flera enheter kan använda samma kod",
+    "showControls": "Visa kontroller",
+    "hideControls": "Dölj kontroller",
+    "displaySettings": "Visningsinställningar",
+    "displayZoom": "Bildskärmszoom"
   }
 }

@@ -124,6 +124,9 @@ class YearWheel {
     this.isAnimating = false;
     this.animationFrameId = null;
     this.lastAnimationTime = 0;
+    this.animationSpeed = 0.15; // Default: 0.15 rad/s (slow/smooth)
+    this.animationEasing = true; // Use easing for smoother animation
+    this.easingProgress = 0; // Track easing progress (0-1)
     this.isDragging = false;
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
@@ -3410,6 +3413,11 @@ class YearWheel {
     });
   }
 
+  // Easing function: ease-in-out cubic for smooth start and stop
+  easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
   animateWheel() {
     if (!this.isAnimating) return;
 
@@ -3419,6 +3427,7 @@ class YearWheel {
     // First frame - just set the time and request next frame
     if (!this.lastAnimationTime) {
       this.lastAnimationTime = now;
+      this.easingProgress = 0;
       this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
       return;
     }
@@ -3431,10 +3440,23 @@ class YearWheel {
     
     this.lastAnimationTime = now;
 
-    // Smooth rotation: 0.15 radians per second (~8.6°/s, full rotation in ~42 seconds)
-    const rotationPerSecond = 0.15;
-    const rotationThisFrame = (rotationPerSecond * cappedDelta) / 1000;
+    // Apply easing if enabled (smoother acceleration/deceleration)
+    let speedMultiplier = 1.0;
+    if (this.animationEasing) {
+      // Ramp up over first 2 seconds, then maintain constant speed
+      const rampUpDuration = 2000; // 2 seconds
+      this.easingProgress = Math.min(this.easingProgress + cappedDelta / rampUpDuration, 1);
+      speedMultiplier = this.easeInOutCubic(this.easingProgress);
+    }
+
+    // Configurable rotation speed (default 0.15 rad/s = ~8.6°/s)
+    const rotationThisFrame = (this.animationSpeed * speedMultiplier * cappedDelta) / 1000;
     this.rotationAngle -= rotationThisFrame;
+
+    // Notify rotation change for casting sync
+    if (this.onRotationChange) {
+      this.onRotationChange(this.rotationAngle);
+    }
 
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawRotatingElements();
@@ -3443,11 +3465,17 @@ class YearWheel {
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
   }
 
-  startSpinning() {
+  startSpinning(speed = null) {
     if (this.isAnimating) return;
+
+    // Set custom speed if provided (slow: 0.08, medium: 0.15, fast: 0.30)
+    if (speed !== null) {
+      this.animationSpeed = speed;
+    }
 
     this.isAnimating = true;
     this.lastAnimationTime = 0;
+    this.easingProgress = 0; // Reset easing
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
   }
 
@@ -3458,6 +3486,20 @@ class YearWheel {
       this.animationFrameId = null;
     }
     this.lastAnimationTime = 0;
+    this.easingProgress = 0;
+  }
+
+  // Update animation speed on the fly
+  setAnimationSpeed(speed) {
+    this.animationSpeed = speed;
+  }
+
+  // Toggle easing
+  setAnimationEasing(enabled) {
+    this.animationEasing = enabled;
+    if (!enabled) {
+      this.easingProgress = 1; // Full speed immediately if easing disabled
+    }
   }
 
   startDrag(event) {

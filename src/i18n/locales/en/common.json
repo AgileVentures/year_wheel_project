@@ -34,13 +34,15 @@
     "hideAll": "Hide all",
     "linkCopied": "Link copied!",
     "reload": "Reload",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "reset": "Reset"
   },
   "controls": {
     "rotation": "Rotation",
     "rotateLeft": "Rotate left",
     "rotateRight": "Rotate right",
-    "resetRotation": "Reset rotation"
+    "resetRotation": "Reset rotation",
+    "reset": "Reset"
   },
   "time": {
     "justNow": "Just now",
@@ -342,6 +344,10 @@
     "connected": "Connected",
     "disconnect": "Disconnect",
     "closeAndKeepCasting": "Close (keep casting)",
-    "multipleDevicesNote": "Multiple devices can use the same code"
+    "multipleDevicesNote": "Multiple devices can use the same code",
+    "showControls": "Show controls",
+    "hideControls": "Hide controls",
+    "displaySettings": "Display Settings",
+    "displayZoom": "Display Zoom"
   }
 }

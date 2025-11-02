@@ -55,6 +55,7 @@ function YearWheel({
   broadcastActivity,
   activeEditors = [],
   broadcastOperation,
+  renderSize = 2000, // Canvas render resolution (higher = better quality)
 }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -66,6 +67,7 @@ function YearWheel({
   const [events, setEvents] = useState([]);
   const [yearWheel, setYearWheel] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [spinSpeed, setSpinSpeed] = useState('medium'); // 'slow', 'medium', 'fast'
   const [isWheelReady, setIsWheelReady] = useState(false); // Track if wheel is ready to show
   const [selectedItem, setSelectedItem] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState(null);
@@ -428,8 +430,7 @@ function YearWheel({
     setIsWheelReady(false);
     
     const canvas = canvasRef.current;
-    // Fixed render size at 2000px for high quality (square canvas)
-    const renderSize = 2000;
+    // Use provided render size (default 2000px, can be higher for TV displays)
     canvas.width = renderSize;
     canvas.height = renderSize;
 
@@ -492,6 +493,7 @@ function YearWheel({
     showRingNames,
     showLabels,
     weekRingDisplayMode,
+    renderSize, // Include renderSize to recreate wheel when resolution changes
     // zoomedMonth and zoomedQuarter excluded - updated via updateZoomState to prevent wheel recreation
     monthNames,
     handleItemClick,
@@ -563,12 +565,26 @@ function YearWheel({
   }, [yearWheel, onWheelReady, organizationData]);
 
   const toggleSpinning = () => {
+    if (!yearWheel) return; // Safety check
+    
     if (isSpinning) {
       yearWheel.stopSpinning();
+      setIsSpinning(false);
     } else {
-      yearWheel.startSpinning();
+      // Speed mapping: slow = 0.08 rad/s, medium = 0.15 rad/s, fast = 0.30 rad/s
+      const speedMap = { slow: 0.08, medium: 0.15, fast: 0.30 };
+      yearWheel.startSpinning(speedMap[spinSpeed]);
+      setIsSpinning(true);
     }
-    setIsSpinning(!isSpinning); // Toggle spinning state
+  };
+
+  const handleSpeedChange = (newSpeed) => {
+    setSpinSpeed(newSpeed);
+    if (isSpinning && yearWheel) {
+      // Update speed on the fly if already spinning
+      const speedMap = { slow: 0.08, medium: 0.15, fast: 0.30 };
+      yearWheel.setAnimationSpeed(speedMap[newSpeed]);
+    }
   };
 
   return (
@@ -721,6 +737,26 @@ function YearWheel({
             >
               {isSpinning ? 'Stoppa' : 'Rotera'}
             </button>
+            
+            {/* Speed Control - show when spinning */}
+            {isSpinning && (
+              <div className="flex gap-1 items-center">
+                <span className="text-xs text-gray-600">Hastighet:</span>
+                {['slow', 'medium', 'fast'].map((speed) => (
+                  <button
+                    key={speed}
+                    onClick={() => handleSpeedChange(speed)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      spinSpeed === speed
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {speed === 'slow' ? 'Långsam' : speed === 'medium' ? 'Normal' : 'Snabb'}
+                  </button>
+                ))}
+              </div>
+            )}
             
             {!readonly && (
               <button

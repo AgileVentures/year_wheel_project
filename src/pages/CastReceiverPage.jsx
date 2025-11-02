@@ -43,6 +43,8 @@ export default function CastReceiverPage() {
   const [rotation, setRotation] = useState(0);
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
+  const [displayZoom, setDisplayZoom] = useState(100); // Display zoom for TV (50-200%)
+  const [showControls, setShowControls] = useState(false); // Toggle control panel
   
   // Debug state - visible on screen
   const [debugInfo, setDebugInfo] = useState({
@@ -456,35 +458,122 @@ export default function CastReceiverPage() {
       )}
 
       {/* Logo - Bottom Left */}
-      <div className="absolute bottom-4 left-4 z-40 opacity-60">
-        <svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <text x="0" y="30" fill="white" fontSize="24" fontWeight="600" fontFamily="system-ui, -apple-system, sans-serif">
-            YearWheel
-          </text>
-        </svg>
+      <div className="absolute bottom-4 left-4 z-40 opacity-80">
+        <img 
+          src="/year_wheel_logo.svg" 
+          alt="YearWheel" 
+          className="h-10 w-auto drop-shadow-lg"
+        />
       </div>
 
       {/* YearWheel Canvas - Full width, no padding */}
-      <div className="flex items-center justify-center h-full w-full">
-        <YearWheel
-          wheelId={wheelData.wheelId}
-          wheelData={wheelData}
-          title={wheelData.title}
-          year={wheelData.year}
-          colors={wheelData.colors}
-          organizationData={wheelData.organizationData}
-          showWeekRing={wheelData.showWeekRing}
-          showMonthRing={wheelData.showMonthRing}
-          showRingNames={wheelData.showRingNames}
-          showLabels={wheelData.showLabels}
-          weekRingDisplayMode={wheelData.weekRingDisplayMode}
-          zoomedMonth={zoomedMonth}
-          zoomedQuarter={zoomedQuarter}
-          initialRotation={rotation}
-          readonly={true}
-          hideControls={true}
-        />
+      <div className="flex items-center justify-center h-full w-full overflow-hidden">
+        <div 
+          style={{ 
+            transform: `scale(${displayZoom / 100})`,
+            transformOrigin: 'center center',
+            transition: 'transform 0.3s ease-out'
+          }}
+        >
+          <YearWheel
+            wheelId={wheelData.wheelId}
+            wheelData={wheelData}
+            title={wheelData.title}
+            year={wheelData.year}
+            colors={wheelData.colors}
+            organizationData={wheelData.organizationData}
+            showWeekRing={wheelData.showWeekRing}
+            showMonthRing={wheelData.showMonthRing}
+            showRingNames={wheelData.showRingNames}
+            showLabels={wheelData.showLabels}
+            weekRingDisplayMode={wheelData.weekRingDisplayMode}
+            zoomedMonth={zoomedMonth}
+            zoomedQuarter={zoomedQuarter}
+            initialRotation={rotation}
+            readonly={true}
+            hideControls={true}
+            renderSize={3000}
+          />
+        </div>
       </div>
+
+      {/* Control Panel Toggle - Bottom Right */}
+      <button
+        onClick={() => setShowControls(!showControls)}
+        className="absolute bottom-4 right-4 z-50 bg-gray-800 hover:bg-gray-700 text-white font-semibold px-4 py-3 rounded-full shadow-lg transition-all focus:outline-none focus:ring-4 focus:ring-gray-600"
+        title={showControls ? t('common:cast.hideControls') : t('common:cast.showControls')}
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+        </svg>
+      </button>
+
+      {/* Control Panel Overlay */}
+      {showControls && (
+        <div className="absolute bottom-20 right-4 z-50 bg-black bg-opacity-90 backdrop-blur-md px-6 py-5 rounded-xl shadow-2xl border border-gray-700">
+          <h3 className="text-white text-lg font-semibold mb-4">{t('common:cast.displaySettings')}</h3>
+          
+          {/* Zoom Control */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-white text-sm font-medium">{t('common:cast.displayZoom')}</label>
+              <span className="text-white text-sm font-mono bg-gray-700 px-3 py-1 rounded">{displayZoom}%</span>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setDisplayZoom(Math.max(50, displayZoom - 10))}
+                className="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xl font-bold transition-colors"
+                disabled={displayZoom <= 50}
+              >
+                −
+              </button>
+              
+              <input
+                type="range"
+                min="50"
+                max="200"
+                value={displayZoom}
+                onChange={(e) => setDisplayZoom(parseInt(e.target.value))}
+                className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#00A4A6]"
+                style={{ minWidth: '200px' }}
+              />
+              
+              <button
+                onClick={() => setDisplayZoom(Math.min(200, displayZoom + 10))}
+                className="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xl font-bold transition-colors"
+                disabled={displayZoom >= 200}
+              >
+                +
+              </button>
+            </div>
+            
+            {/* Preset Zoom Buttons */}
+            <div className="flex gap-2 mt-4">
+              {[50, 75, 100, 125, 150, 175, 200].map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => setDisplayZoom(preset)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    displayZoom === preset
+                      ? 'bg-[#00A4A6] text-white'
+                      : 'bg-gray-700 text-white hover:bg-gray-600'
+                  }`}
+                >
+                  {preset}%
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => setDisplayZoom(100)}
+              className="w-full mt-3 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {t('common:actions.reset')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
