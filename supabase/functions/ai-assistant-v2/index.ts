@@ -1204,12 +1204,35 @@ function createAgentSystem() {
   
   const getContextTool = tool<WheelContext>({
     name: 'get_current_context',
-    description: 'Get current rings, groups, pages (years), and date. Call this when you need fresh IDs or to check which years exist.',
+    description: 'Get current rings, groups, labels, pages (years), and date. Call this when you need fresh IDs or to check which years exist. Returns ONLY visible items from the current page.',
     parameters: z.object({}),
     async execute(_input: {}, ctx: RunContext<WheelContext>) {
       console.log('🔧 [TOOL] get_current_context called')
       const { supabase, wheelId, currentPageId } = ctx.context
-      const { rings, groups } = await getCurrentRingsAndGroups(supabase, wheelId)
+      
+      // CRITICAL FIX: Fetch current page's organization_data (source of truth for visibility)
+      const { data: currentPage, error: pageError } = await supabase
+        .from('wheel_pages')
+        .select('organization_data, year')
+        .eq('id', currentPageId)
+        .single()
+      
+      if (pageError || !currentPage) {
+        console.error('[get_current_context] Failed to fetch current page:', pageError)
+        throw new Error('Kunde inte hitta aktuell sida')
+      }
+      
+      // Extract organization_data (handles legacy 'activities' → 'activityGroups' rename)
+      const orgData = currentPage.organization_data || { 
+        rings: [], 
+        activityGroups: [], 
+        labels: [], 
+        items: [] 
+      }
+      
+      // Ensure activityGroups exists (handle legacy 'activities' field)
+      const activityGroups = orgData.activityGroups || orgData.activities || []
+      
       const dateInfo = getCurrentDate()
       
       // Fetch all pages for this wheel to show which years exist
@@ -1223,12 +1246,38 @@ function createAgentSystem() {
         console.error('[get_current_context] Pages query error:', pagesError)
       }
       
+      // Return ONLY visible items from organization_data
       const result = {
         date: dateInfo,
         currentPageId,
-        rings: rings.map((r: any) => ({ id: r.id, name: r.name, type: r.type, color: r.color })),
-        groups: groups.map((g: any) => ({ id: g.id, name: g.name, color: g.color })),
-        pages: (pages || []).map((p: any) => ({ id: p.id, year: p.year, title: p.title })),
+        currentYear: currentPage.year,
+        rings: (orgData.rings || [])
+          .filter((r: any) => r.visible !== false)
+          .map((r: any) => ({ 
+            id: r.id, 
+            name: r.name, 
+            type: r.type, 
+            color: r.color 
+          })),
+        groups: activityGroups
+          .filter((g: any) => g.visible !== false)
+          .map((g: any) => ({ 
+            id: g.id, 
+            name: g.name, 
+            color: g.color 
+          })),
+        labels: (orgData.labels || [])
+          .filter((l: any) => l.visible !== false)
+          .map((l: any) => ({
+            id: l.id,
+            name: l.name,
+            color: l.color
+          })),
+        pages: (pages || []).map((p: any) => ({ 
+          id: p.id, 
+          year: p.year, 
+          title: p.title 
+        })),
       }
       console.log('✅ [TOOL] get_current_context result:', JSON.stringify(result, null, 2))
       return JSON.stringify(result)
@@ -1352,6 +1401,141 @@ function createAgentSystem() {
     }
   })
 
+  const toggleRingVisibilityTool = tool<WheelContext>({
+    name: 'toggle_ring_visibility',
+    description: 'Show or hide a ring without deleting it. Updates visibility in the current page\'s organization_data.',
+    parameters: z.object({
+      ringName: z.string().describe('Name or partial name of the ring to toggle'),
+      visible: z.boolean().describe('true to show the ring, false to hide it'),
+    }),
+    async execute(input: { ringName: string; visible: boolean }, ctx: RunContext<WheelContext>) {
+      const { supabase, currentPageId } = ctx.context
+      console.log('🔧 [TOOL] toggle_ring_visibility called:', input)
+      
+      // Get current page's organization_data
+      const { data: page, error: pageError } = await supabase
+        .from('wheel_pages')
+        .select('organization_data')
+        .eq('id', currentPageId)
+        .single()
+      
+      if (pageError || !page) {
+        throw new Error('Kunde inte hitta sida')
+      }
+      
+      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      
+      // Find matching ring (case-insensitive partial match)
+      const ringNameLower = input.ringName.toLowerCase()
+      let matchCount = 0
+      const updatedRings = (orgData.rings || []).map((r: any) => {
+        if (r.name.toLowerCase().includes(ringNameLower)) {
+          matchCount++
+          return { ...r, visible: input.visible }
+        }
+        return r
+      })
+      
+      if (matchCount === 0) {
+        return JSON.stringify({
+          success: false,
+          message: `Ingen ring hittades med namnet "${input.ringName}"`
+        })
+      }
+      
+      // Update page's organization_data
+      const { error: updateError } = await supabase
+        .from('wheel_pages')
+        .update({ 
+          organization_data: { ...orgData, rings: updatedRings },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentPageId)
+      
+      if (updateError) {
+        console.error('[toggle_ring_visibility] Update error:', updateError)
+        throw new Error(`Kunde inte uppdatera ring: ${updateError.message}`)
+      }
+      
+      const result = {
+        success: true,
+        ringsUpdated: matchCount,
+        message: `${matchCount} ring(ar) med namnet "${input.ringName}" är nu ${input.visible ? 'synlig(a)' : 'dold(a)'}`
+      }
+      
+      console.log('✅ [TOOL] toggle_ring_visibility result:', result)
+      return JSON.stringify(result)
+    }
+  })
+
+  const toggleGroupVisibilityTool = tool<WheelContext>({
+    name: 'toggle_group_visibility',
+    description: 'Show or hide an activity group without deleting it. Updates visibility in the current page\'s organization_data.',
+    parameters: z.object({
+      groupName: z.string().describe('Name or partial name of the activity group to toggle'),
+      visible: z.boolean().describe('true to show the group, false to hide it'),
+    }),
+    async execute(input: { groupName: string; visible: boolean }, ctx: RunContext<WheelContext>) {
+      const { supabase, currentPageId } = ctx.context
+      console.log('🔧 [TOOL] toggle_group_visibility called:', input)
+      
+      // Get current page's organization_data
+      const { data: page, error: pageError } = await supabase
+        .from('wheel_pages')
+        .select('organization_data')
+        .eq('id', currentPageId)
+        .single()
+      
+      if (pageError || !page) {
+        throw new Error('Kunde inte hitta sida')
+      }
+      
+      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      const activityGroups = orgData.activityGroups || orgData.activities || []
+      
+      // Find matching group (case-insensitive partial match)
+      const groupNameLower = input.groupName.toLowerCase()
+      let matchCount = 0
+      const updatedGroups = activityGroups.map((g: any) => {
+        if (g.name.toLowerCase().includes(groupNameLower)) {
+          matchCount++
+          return { ...g, visible: input.visible }
+        }
+        return g
+      })
+      
+      if (matchCount === 0) {
+        return JSON.stringify({
+          success: false,
+          message: `Ingen aktivitetsgrupp hittades med namnet "${input.groupName}"`
+        })
+      }
+      
+      // Update page's organization_data (use activityGroups, not activities)
+      const { error: updateError } = await supabase
+        .from('wheel_pages')
+        .update({ 
+          organization_data: { ...orgData, activityGroups: updatedGroups },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentPageId)
+      
+      if (updateError) {
+        console.error('[toggle_group_visibility] Update error:', updateError)
+        throw new Error(`Kunde inte uppdatera aktivitetsgrupp: ${updateError.message}`)
+      }
+      
+      const result = {
+        success: true,
+        groupsUpdated: matchCount,
+        message: `${matchCount} aktivitetsgrupp(er) med namnet "${input.groupName}" är nu ${input.visible ? 'synlig(a)' : 'dold(a)'}`
+      }
+      
+      console.log('✅ [TOOL] toggle_group_visibility result:', result)
+      return JSON.stringify(result)
+    }
+  })
+
   const createYearPageTool = tool<WheelContext>({
     name: 'create_year_page',
     description: 'Create a new year page. Can copy structure (rings, groups, labels) from current pages or start blank.',
@@ -1466,15 +1650,24 @@ EXAMPLES:
 - "Byt namn på ringen Kampanjer till Marketing" → update_ring
 - "Ta bort gruppen REA" → delete_activity_group
 - "Skapa år 2026" → create_year_page with year: 2026, copyStructure: true
-- "Kopiera alla aktiviteter från 2025 till 2026" → smart_copy_year with sourceYear: 2025, targetYear: 2026`,
+- "Kopiera alla aktiviteter från 2025 till 2026" → smart_copy_year with sourceYear: 2025, targetYear: 2026
+
+VISIBILITY MANAGEMENT (NEW):
+- "Dölj ringen Kampanjer" → toggle_ring_visibility with visible: false
+- "Visa ringen Marketing igen" → toggle_ring_visibility with visible: true
+- "Göm aktivitetsgruppen REA" → toggle_group_visibility with visible: false
+- Hidden rings/groups are not deleted - they're just not visible on the wheel
+- Use this when user wants to temporarily hide something without losing data`,
     tools: [
       getContextTool, 
       createRingTool, 
       updateRingTool, 
       deleteRingTool,
+      toggleRingVisibilityTool,
       createGroupTool,
       updateGroupTool,
       deleteGroupTool,
+      toggleGroupVisibilityTool,
       createLabelTool,
       updateLabelTool,
       deleteLabelTool,
@@ -1496,6 +1689,186 @@ EXAMPLES:
       console.log('🔧 [TOOL] create_activity called with:', JSON.stringify(input, null, 2))
       const result = await createActivity(ctx, input)
       console.log('✅ [TOOL] create_activity result:', JSON.stringify(result, null, 2))
+      return JSON.stringify(result)
+    }
+  })
+
+  const batchCreateActivitiesTool = tool<WheelContext>({
+    name: 'batch_create_activities',
+    description: 'Create multiple activities in one operation for faster bulk creation. Use this for use cases like "create 12 monthly campaigns" or "add quarterly reviews".',
+    parameters: z.object({
+      activities: z.array(z.object({
+        name: z.string().describe('Activity name'),
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Start date (YYYY-MM-DD)'),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('End date (YYYY-MM-DD)'),
+        ringId: z.string().uuid().describe('Ring UUID'),
+        activityGroupId: z.string().uuid().describe('Activity group UUID'),
+        labelId: z.string().uuid().nullable().describe('Optional label UUID (set to null if not needed)'),
+        description: z.string().nullable().describe('Optional description (set to null if not needed)'),
+      })).min(1).max(50).describe('Array of activities to create (max 50)')
+    }),
+    async execute(input: { activities: any[] }, ctx: RunContext<WheelContext>) {
+      console.log('🔧 [TOOL] batch_create_activities called with:', input.activities.length, 'activities')
+      
+      const results: Array<{ index: number; name: string; itemsCreated: number }> = []
+      const errors: Array<{ index: number; name: string; error: string }> = []
+      
+      // Create activities in parallel for speed
+      const promises = input.activities.map(async (activity: any, index: number) => {
+        try {
+          const result = await createActivity(ctx, {
+            name: activity.name,
+            startDate: activity.startDate,
+            endDate: activity.endDate,
+            ringId: activity.ringId,
+            activityGroupId: activity.activityGroupId,
+            labelId: activity.labelId || null,
+          })
+          
+          if (result.success) {
+            results.push({
+              index,
+              name: activity.name,
+              itemsCreated: result.itemsCreated || 1
+            })
+          }
+          return result
+        } catch (error) {
+          console.error('[batch_create_activities] Error creating activity:', activity.name, error)
+          errors.push({
+            index,
+            name: activity.name,
+            error: (error as Error).message
+          })
+          return null
+        }
+      })
+      
+      await Promise.all(promises)
+      
+      const totalCreated = results.reduce((sum, r) => sum + r.itemsCreated, 0)
+      
+      const summary = {
+        success: true,
+        created: totalCreated,
+        requested: input.activities.length,
+        successfulActivities: results.length,
+        errors: errors.length > 0 ? errors : undefined,
+        message: `Skapade ${totalCreated} aktivitet(er) från ${input.activities.length} förfrågningar${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+      }
+      
+      console.log('✅ [TOOL] batch_create_activities result:', summary)
+      return JSON.stringify(summary)
+    }
+  })
+
+  const queryActivitiesTool = tool<WheelContext>({
+    name: 'query_activities',
+    description: 'Search and filter activities by name, date range, ring, or group. Use this to find specific activities like "all Q4 campaigns" or "activities containing REA".',
+    parameters: z.object({
+      nameContains: z.string().nullable().describe('Filter by activity name (partial match, case-insensitive, null to skip)'),
+      ringName: z.string().nullable().describe('Filter by ring name (partial match, null to skip)'),
+      groupName: z.string().nullable().describe('Filter by activity group name (partial match, null to skip)'),
+      startAfter: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().describe('Filter: activities starting on or after this date (null to skip)'),
+      endBefore: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().describe('Filter: activities ending on or before this date (null to skip)'),
+      quarter: z.number().min(1).max(4).nullable().describe('Filter by quarter 1-4 (null to skip)'),
+    }),
+    async execute(input: any, ctx: RunContext<WheelContext>) {
+      const { supabase, currentPageId } = ctx.context
+      console.log('🔧 [TOOL] query_activities called with filters:', input)
+      
+      // Build base query with joins
+      let query = supabase
+        .from('items')
+        .select('*, wheel_rings!inner(name, type), activity_groups!inner(name, color)')
+        .eq('page_id', currentPageId)
+      
+      // Apply date filters
+      if (input.startAfter) {
+        query = query.gte('start_date', input.startAfter)
+      }
+      if (input.endBefore) {
+        query = query.lte('end_date', input.endBefore)
+      }
+      
+      // Apply quarter filter (convert to date range)
+      if (input.quarter) {
+        const { data: pageData } = await supabase
+          .from('wheel_pages')
+          .select('year')
+          .eq('id', currentPageId)
+          .single()
+        
+        if (pageData) {
+          const year = pageData.year
+          const quarterStarts = [
+            `${year}-01-01`, // Q1
+            `${year}-04-01`, // Q2
+            `${year}-07-01`, // Q3
+            `${year}-10-01`, // Q4
+          ]
+          const quarterEnds = [
+            `${year}-03-31`,
+            `${year}-06-30`,
+            `${year}-09-30`,
+            `${year}-12-31`,
+          ]
+          
+          const qStart = quarterStarts[input.quarter - 1]
+          const qEnd = quarterEnds[input.quarter - 1]
+          
+          // Activity overlaps with quarter if it starts before quarter ends AND ends after quarter starts
+          query = query.lte('start_date', qEnd).gte('end_date', qStart)
+        }
+      }
+      
+      const { data: items, error } = await query.order('start_date')
+      
+      if (error) {
+        console.error('[query_activities] Query error:', error)
+        throw new Error(`Kunde inte söka aktiviteter: ${error.message}`)
+      }
+      
+      // Post-filter by name, ring, and group (case-insensitive partial match)
+      let filtered = items || []
+      
+      if (input.nameContains) {
+        const nameLower = input.nameContains.toLowerCase()
+        filtered = filtered.filter((i: any) => 
+          i.name.toLowerCase().includes(nameLower)
+        )
+      }
+      
+      if (input.ringName) {
+        const ringLower = input.ringName.toLowerCase()
+        filtered = filtered.filter((i: any) => 
+          i.wheel_rings?.name.toLowerCase().includes(ringLower)
+        )
+      }
+      
+      if (input.groupName) {
+        const groupLower = input.groupName.toLowerCase()
+        filtered = filtered.filter((i: any) => 
+          i.activity_groups?.name.toLowerCase().includes(groupLower)
+        )
+      }
+      
+      const result = {
+        success: true,
+        count: filtered.length,
+        filters: input,
+        activities: filtered.map((i: any) => ({
+          id: i.id,
+          name: i.name,
+          startDate: i.start_date,
+          endDate: i.end_date,
+          ring: i.wheel_rings?.name || 'Unknown',
+          group: i.activity_groups?.name || 'Unknown',
+          description: i.description,
+        }))
+      }
+      
+      console.log('✅ [TOOL] query_activities found:', result.count, 'activities')
       return JSON.stringify(result)
     }
   })
@@ -1648,8 +2021,43 @@ When user says "ta bort", "radera", "delete":
 Example: User says "Ta bort Oktoberfest"
 → Call delete_activity with {name: "Oktoberfest"}
 
+BULK OPERATIONS (NEW - VERY EFFICIENT):
+When user asks to create MULTIPLE similar activities, use batch_create_activities:
+- "Skapa 12 månadskampanjer" → Build array of 12 activities, call batch_create_activities
+- "Lägg till kvartalsrapporter" → Build array of 4 activities, call batch_create_activities
+- MUCH faster than calling create_activity 12 times!
+- First get_current_context to get ring/group IDs, then build activities array
+
+SEARCH/FILTER ACTIVITIES (NEW):
+When user wants to FIND or FILTER activities, use query_activities:
+- "Visa alla kampanjer i Q4" → query_activities with quarter: 4
+- "Hitta aktiviteter med 'REA'" → query_activities with nameContains: "REA"
+- "Vilka aktiviteter är i ringen Marketing?" → query_activities with ringName: "Marketing"
+- "Visa aktiviteter mellan mars och maj" → query_activities with startAfter/endBefore
+- Returns filtered list with all activity details
+
+WORKFLOW EXAMPLE (Bulk):
+User: "Skapa månadskampanjer för hela året"
+1. get_current_context → Get ring/group IDs
+2. Build activities array: Jan kampanj, Feb kampanj, ... Dec kampanj
+3. batch_create_activities with the array
+4. Report: "Skapat 12 månadskampanjer!"
+
+WORKFLOW EXAMPLE (Search):
+User: "Vilka kampanjer har vi i Q2?"
+1. query_activities with quarter: 2, groupName: "Kampanj"
+2. Show results: "Hittade 3 kampanjer: [list]"
+
 Speak Swedish naturally. Be concise.`,
-    tools: [getContextTool, createActivityTool, updateActivityTool, deleteActivityTool, listActivitiesTool],
+    tools: [
+      getContextTool, 
+      createActivityTool, 
+      batchCreateActivitiesTool,
+      updateActivityTool, 
+      deleteActivityTool, 
+      listActivitiesTool,
+      queryActivitiesTool
+    ],
   })
 
   // ──────────────────────────────────────────────────────────────────
@@ -2048,12 +2456,12 @@ Returnera ENDAST giltig JSON i detta format:
         rings: z.array(z.object({
           name: z.string(),
           type: z.enum(['inner', 'outer']),
-          description: z.string().nullable().optional()
+          description: z.string().nullable().describe('Description (null if not needed)')
         })),
         activityGroups: z.array(z.object({
           name: z.string(),
           color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-          description: z.string().nullable().optional()
+          description: z.string().nullable().describe('Description (null if not needed)')
         })),
         activities: z.array(z.object({
           name: z.string(),
@@ -2061,7 +2469,7 @@ Returnera ENDAST giltig JSON i detta format:
           endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
           ring: z.string(),
           group: z.string(),
-          description: z.string().nullable().optional()
+          description: z.string().nullable().describe('Description (null if not needed)')
         }))
       })
     }),
@@ -2417,6 +2825,93 @@ Prata svenska naturligt.`,
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SSE STREAMING HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Get user-friendly Swedish status message for tool execution
+ */
+function getToolStatusMessage(toolName: string, args?: any): string {
+  const messages: Record<string, (args?: any) => string> = {
+    'get_current_context': () => 'Hämtar aktuell kontext...',
+    'create_activity': (a) => `Skapar aktivitet "${a?.name || 'ny aktivitet'}"...`,
+    'batch_create_activities': (a) => `Skapar ${a?.activities?.length || 'flera'} aktiviteter...`,
+    'query_activities': () => 'Söker efter aktiviteter...',
+    'update_activity': (a) => `Uppdaterar "${a?.activityName || 'aktivitet'}"...`,
+    'delete_activity': (a) => `Tar bort "${a?.name || 'aktivitet'}"...`,
+    'list_activities': () => 'Hämtar aktivitetslista...',
+    'create_ring': (a) => `Skapar ring "${a?.name || 'ny ring'}"...`,
+    'update_ring': (a) => `Uppdaterar ring "${a?.ringName || 'ring'}"...`,
+    'delete_ring': (a) => `Tar bort ring "${a?.name || 'ring'}"...`,
+    'toggle_ring_visibility': (a) => `${a?.visible ? 'Visar' : 'Döljer'} ring "${a?.ringName || 'ring'}"...`,
+    'create_activity_group': (a) => `Skapar aktivitetsgrupp "${a?.name || 'ny grupp'}"...`,
+    'update_activity_group': (a) => `Uppdaterar grupp "${a?.groupName || 'grupp'}"...`,
+    'delete_activity_group': (a) => `Tar bort grupp "${a?.name || 'grupp'}"...`,
+    'toggle_group_visibility': (a) => `${a?.visible ? 'Visar' : 'Döljer'} grupp "${a?.groupName || 'grupp'}"...`,
+    'create_label': (a) => `Skapar etikett "${a?.name || 'ny etikett'}"...`,
+    'update_label': (a) => `Uppdaterar etikett "${a?.labelName || 'etikett'}"...`,
+    'delete_label': (a) => `Tar bort etikett "${a?.name || 'etikett'}"...`,
+    'create_year_page': (a) => `Skapar sida för år ${a?.year || ''}...`,
+    'smart_copy_year': (a) => `Kopierar år ${a?.sourceYear || ''} till ${a?.targetYear || ''}...`,
+    'suggest_wheel_structure': () => 'Genererar strukturförslag med AI...',
+    'analyze_wheel': () => 'Analyserar hjulet med AI...',
+    'suggest_plan': () => 'Skapar projektplan med AI...',
+    'apply_suggested_plan': () => 'Applicerar förslag...',
+  }
+
+  const messageFunc = messages[toolName]
+  if (messageFunc) {
+    return messageFunc(args)
+  }
+  
+  // Fallback for unknown tools
+  return `Kör ${toolName}...`
+}
+
+/**
+ * Safe JSON stringifier that handles circular references
+ */
+function safeStringify(obj: any): string {
+  const seen = new WeakSet()
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]'
+      }
+      seen.add(value)
+    }
+    return value
+  })
+}
+
+/**
+ * Send SSE event to client
+ */
+function sendSSEEvent(controller: ReadableStreamDefaultController, type: string, data: any) {
+  const encoder = new TextEncoder()
+  const event = {
+    type,
+    timestamp: Date.now(),
+    ...data
+  }
+  try {
+    const message = `data: ${safeStringify(event)}\n\n`
+    controller.enqueue(encoder.encode(message))
+  } catch (error) {
+    console.error('[SSE] Failed to send event:', error)
+    // Send a simplified error event
+    const fallbackEvent = {
+      type: 'error',
+      timestamp: Date.now(),
+      message: 'Ett tekniskt fel uppstod',
+      error: 'Serialization error'
+    }
+    const message = `data: ${JSON.stringify(fallbackEvent)}\n\n`
+    controller.enqueue(encoder.encode(message))
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════════
 
@@ -2488,63 +2983,174 @@ serve(async (req: Request) => {
       console.log('🆕 [AI] Fresh conversation - no previous context')
     }
 
-    // Run agent with just the new user message (OpenAI SDK handles history)
-    console.log('🚀 [AI] Starting agent execution...')
-    const result = await run(orchestrator, userMessage, runOptions)
+    // SSE STREAMING RESPONSE - Always stream for better UX
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Send initial status
+          sendSSEEvent(controller, 'status', { 
+            message: 'Startar AI-assistent...',
+            stage: 'init'
+          })
 
-    console.log('✅ [AI] Agent execution complete')
-    console.log('[AI Assistant V2] Result:', { 
-      finalOutput: result.finalOutput,
-      agentUsed: result.agent?.name,
-      newHistoryLength: result.history.length,
-      historyRoles: result.history.map((h: any) => h.role)
-    })
-    
-    // Log tool calls for debugging (check if agents actually executed tools)
-    const toolCalls = result.history.filter((h: any) => 
-      h.role === 'assistant' && 
-      h.content && 
-      typeof h.content !== 'string' &&
-      Array.isArray(h.content)
-    )
-    if (toolCalls.length > 0) {
-      console.log('🔧 [AI] Tool calls detected:', toolCalls.length)
-      toolCalls.forEach((call: any, idx: number) => {
-        console.log(`  Tool call ${idx + 1}:`, JSON.stringify(call, null, 2))
-      })
-    } else {
-      console.log('⚠️ [AI] No tool calls detected in history')
-    }
+          // Run agent with just the new user message (OpenAI SDK handles history)
+          console.log('🚀 [AI] Starting agent execution...')
+          sendSSEEvent(controller, 'status', { 
+            message: 'AI arbetar...',
+            stage: 'thinking'
+          })
 
-    // Collect tool execution summary for verification
-    const toolExecutionSummary: string[] = []
-    result.history.forEach((item: any) => {
-      if (item.role === 'tool' && item.name) {
-        toolExecutionSummary.push(`${item.name}`)
+          const result = await run(orchestrator, userMessage, runOptions)
+
+          console.log('✅ [AI] Agent execution complete')
+          console.log('[AI] Result keys:', Object.keys(result))
+          console.log('[AI] result.finalOutput type:', typeof result.finalOutput)
+          console.log('[AI] result.finalOutput value:', result.finalOutput)
+          console.log('[AI] result.history length:', result.history?.length || 0)
+          
+          // Log last few history items to understand what's happening
+          if (result.history && result.history.length > 0) {
+            const lastThree = result.history.slice(-3)
+            console.log('[AI] Last 3 history items:')
+            lastThree.forEach((item: any, i: number) => {
+              console.log(`  [${i}] role=${item.role}, name=${item.name || 'none'}, content type=${typeof item.content}`)
+              if (Array.isArray(item.content)) {
+                console.log(`      content parts:`, item.content.map((p: any) => p.type).join(', '))
+              }
+            })
+          }
+          
+          // Extract the actual response text
+          // According to OpenAI Agents SDK docs, it should be result.finalOutput
+          let finalOutput = ''
+          
+          if (result.finalOutput && typeof result.finalOutput === 'string') {
+            console.log('[AI] Using result.finalOutput (primary)')
+            finalOutput = result.finalOutput
+          } else if (result.finalOutput && typeof result.finalOutput === 'object') {
+            console.log('[AI] result.finalOutput is object, stringifying')
+            finalOutput = JSON.stringify(result.finalOutput)
+          } else if (result.history && result.history.length > 0) {
+            console.log('[AI] Fallback: extracting from result.history')
+            // Find the last assistant message that's not a tool call
+            const assistantMessages = result.history.filter((h: any) => h.role === 'assistant')
+            console.log('[AI] Found', assistantMessages.length, 'assistant messages')
+            
+            // Get the last one
+            const lastMessage = assistantMessages[assistantMessages.length - 1]
+            if (lastMessage) {
+              console.log('[AI] Last message content type:', typeof lastMessage.content)
+              if (typeof lastMessage.content === 'string') {
+                finalOutput = lastMessage.content
+              } else if (Array.isArray(lastMessage.content)) {
+                const textParts = lastMessage.content.filter((p: any) => p.type === 'text')
+                console.log('[AI] Text parts found:', textParts.length)
+                if (textParts.length > 0) {
+                  finalOutput = textParts.map((p: any) => p.text).join('\n')
+                }
+              }
+            }
+          }
+          
+          console.log('[AI] Final extracted output length:', finalOutput.length)
+          if (finalOutput) {
+            console.log('[AI] Output preview:', finalOutput.substring(0, 150))
+          }
+          
+          // Analyze history for tool executions and agent handoffs
+          const toolExecutionSummary: string[] = []
+          const agentHandoffs: string[] = []
+          let currentAgent = 'Year Wheel Assistant'
+          
+          // SIMPLIFIED: Just send processing status, analyze after completion
+          sendSSEEvent(controller, 'status', {
+            message: 'Bearbetar resultat...',
+            stage: 'processing'
+          })
+          
+          if (result.history) {
+            result.history.forEach((item: any) => {
+              // Detect agent handoffs
+              if (item.role === 'assistant' && item.name && item.name !== currentAgent) {
+                currentAgent = item.name
+                agentHandoffs.push(currentAgent)
+              }
+              
+              // Detect tool calls
+              if (item.role === 'assistant' && item.content && Array.isArray(item.content)) {
+                item.content.forEach((part: any) => {
+                  if (part.type === 'tool_use') {
+                    const toolName = part.name
+                    toolExecutionSummary.push(toolName)
+                    console.log(`🔧 [AI] Tool: ${toolName}`)
+                  }
+                })
+              }
+            })
+          }
+          
+          console.log('📊 [AI] Tools executed:', toolExecutionSummary.length > 0 ? toolExecutionSummary.join(', ') : 'None')
+          console.log('👥 [AI] Agent handoffs:', agentHandoffs.length > 0 ? agentHandoffs.join(' → ') : 'None')
+
+          // Extract lastResponseId from the result for OpenAI Agents SDK state management
+          const lastResponseId = result.lastResponseId || null
+          console.log('🔑 [AI] lastResponseId for next turn:', lastResponseId || '(none)')
+
+          // CRITICAL: Ensure finalOutput exists and is valid
+          if (!finalOutput || typeof finalOutput !== 'string' || finalOutput.trim().length === 0) {
+            console.error('[AI] Invalid finalOutput:', finalOutput)
+            console.error('[AI] Full result keys:', Object.keys(result))
+            throw new Error('AI returnerade inget giltigt svar. Försök igen.')
+          }
+
+          // Send completion event with full response
+          const completeEvent = {
+            success: true,
+            message: finalOutput,
+            agentUsed: result.agent?.name || currentAgent,
+            lastResponseId,
+            toolsExecuted: toolExecutionSummary,
+            agentPath: agentHandoffs.length > 0 ? agentHandoffs : undefined,
+            stage: 'done'
+          }
+          
+          console.log('[AI] Sending complete event:', { messageLength: completeEvent.message.length })
+          sendSSEEvent(controller, 'complete', completeEvent)
+
+          // Small delay to ensure event is sent
+          await new Promise(resolve => setTimeout(resolve, 50))
+
+          // Close stream
+          controller.close()
+          console.log('[AI] Stream closed successfully')
+        } catch (error) {
+          console.error('[AI Assistant V2] Error:', error)
+          
+          // Send error event
+          sendSSEEvent(controller, 'error', {
+            success: false,
+            error: (error as Error).message,
+            message: `Fel: ${(error as Error).message}`,
+            stage: 'error'
+          })
+          
+          // Small delay to ensure error event is sent
+          await new Promise(resolve => setTimeout(resolve, 50))
+          
+          controller.close()
+        }
       }
     })
-    
-    console.log('📊 [AI] Tools executed:', toolExecutionSummary.length > 0 ? toolExecutionSummary.join(', ') : 'None')
 
-    // Extract lastResponseId from the result for OpenAI Agents SDK state management
-    // This allows the frontend to chain requests using previousResponseId
-    const lastResponseId = result.lastResponseId || null
-    console.log('🔑 [AI] lastResponseId for next turn:', lastResponseId || '(none)')
-
-    // Return response with lastResponseId for server-side state management
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: result.finalOutput,
-        agentUsed: result.agent?.name || 'Year Wheel Assistant',
-        lastResponseId, // For OpenAI Agents SDK server-side conversation management
-        toolsExecuted: toolExecutionSummary, // For debugging/verification
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+      status: 200,
+    })
   } catch (error) {
     console.error('[AI Assistant V2] Error:', error)
     return new Response(

@@ -263,15 +263,10 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   const cleanAIResponse = (text) => {
     if (!text) return text;
     
-    console.log('[cleanAIResponse] INPUT has newlines?', text.includes('\n'));
-    console.log('[cleanAIResponse] INPUT length:', text.length);
-    
     // Remove UUID patterns (preserve newlines!)
     text = text.replace(/\(?\s*ID:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\s*\)?/gi, '');
     text = text.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '');
     text = text.replace(/\b(page_id|pageId):\s*[^\s,)]+/gi, '');
-    
-    console.log('[cleanAIResponse] After UUID removal has newlines?', text.includes('\n'));
     
     // Remove ALL emojis (but NOT newlines!)
     text = text.replace(/[\u{1F600}-\u{1F64F}]/gu, '');
@@ -284,14 +279,8 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     text = text.replace(/[\u{1FA00}-\u{1FAFF}]/gu, '');
     text = text.replace(/[\u{FE00}-\u{FE0F}]/gu, '');
     
-    console.log('[cleanAIResponse] After emoji removal has newlines?', text.includes('\n'));
-    console.log('[cleanAIResponse] OUTPUT length:', text.length);
-    
     // ONLY trim whitespace from start/end, NOT internal newlines!
-    const result = text.trim();
-    console.log('[cleanAIResponse] After trim has newlines?', result.includes('\n'));
-    
-    return result;
+    return text.trim();
   };
 
   // Make error messages more user-friendly
@@ -319,6 +308,9 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     return cleanAIResponse(errorText);
   };
 
+  // State for streaming status
+  const [streamingStatus, setStreamingStatus] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -332,6 +324,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    setStreamingStatus('Ansluter...');
 
     try {
       // Get current session token
@@ -340,18 +333,10 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         throw new Error(t('editor:aiAssistant.noSession'));
       }
 
-      // OPENAI AGENTS SDK RECOMMENDED APPROACH:
-      // Use previousResponseId to let OpenAI manage conversation state server-side
-      // This is the official pattern per: https://openai.github.io/openai-agents-js/guides/running-agents/
-      // 
-      // Benefits:
-      // ✅ OpenAI manages history server-side (no manual history management)
-      // ✅ Prevents "Multiple handoffs" error - each request is independent with automatic context
-      // ✅ Cost-effective - only necessary context is included
-      // ✅ No payload bloat - don't send 50+ messages back and forth
-      // ✅ Simpler code - just pass the last response ID
-
-      // Call AI Assistant V2 edge function (using OpenAI Agents SDK)
+      // OPENAI AGENTS SDK + SSE STREAMING
+      // Use previousResponseId for server-side conversation state
+      // SSE provides real-time updates during AI execution
+      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant-v2`, {
         method: 'POST',
         headers: {
@@ -360,51 +345,91 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         },
         body: JSON.stringify({
           userMessage: userMessage.content,
-          previousResponseId: lastResponseId, // OpenAI Agents SDK server-side state management
+          previousResponseId: lastResponseId,
           wheelId,
           currentPageId
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Network error' }));
         console.error('🔴 [AI Assistant] Edge function error:', errorData);
         throw new Error(errorData.error || t('editor:aiAssistant.edgeFunctionError'));
       }
 
-      const result = await response.json();
+      // Handle SSE stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalResult = null;
 
-      let assistantMessage = '';
-      if (result.message) {
-        assistantMessage = result.message;
-      } else if (typeof result.result === 'string') {
-        try {
-          const parsed = JSON.parse(result.result);
-          assistantMessage = parsed.message || parsed.content || result.result;
-        } catch {
-          assistantMessage = result.result;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            switch (data.type) {
+              case 'status':
+                setStreamingStatus(data.message);
+                break;
+              
+              case 'agent':
+                setStreamingStatus(`🤖 ${data.message}`);
+                break;
+              
+              case 'tool':
+                setStreamingStatus(`🔧 ${data.message}`);
+                break;
+              
+              case 'tool_result':
+                // Optional: show tool completion briefly
+                setStreamingStatus(`✓ ${data.message}`);
+                break;
+              
+              case 'complete':
+                finalResult = data;
+                setStreamingStatus(null);
+                break;
+              
+              case 'error':
+                throw new Error(data.message);
+            }
+          } catch (parseError) {
+            console.error('[AI SSE] Parse error:', parseError, 'Line:', line);
+          }
         }
-      } else if (result.result && typeof result.result === 'object') {
-        assistantMessage = result.result.message || result.result.content || JSON.stringify(result.result, null, 2);
-      } else {
-        assistantMessage = 'Klart!';
       }
 
+      if (!finalResult || !finalResult.success) {
+        throw new Error('No final result received from AI');
+      }
+
+      // Process the final result
+      let assistantMessage = finalResult.message || '';
+
       // CRITICAL: Convert escaped newlines to actual newlines FIRST
-      // OpenAI Agents SDK returns \n as literal string characters
       if (typeof assistantMessage === 'string') {
         assistantMessage = assistantMessage.replace(/\\n/g, '\n');
       }
 
-      // Clean up the response before displaying
+      // Clean up the response
       assistantMessage = cleanAIResponse(assistantMessage);
 
-      // Store the response ID for the next turn (OpenAI Agents SDK server-side state)
-      if (result.lastResponseId) {
-        setLastResponseId(result.lastResponseId);
+      // Store the response ID for the next turn
+      if (finalResult.lastResponseId) {
+        setLastResponseId(finalResult.lastResponseId);
       }
 
-      // Just append the assistant's message - don't replace all messages
+      // Append the assistant's message
       if (assistantMessage && assistantMessage.trim().length > 0) {
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -430,6 +455,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       }]);
     } finally {
       setIsLoading(false);
+      setStreamingStatus(null);
     }
   };
 
@@ -549,9 +575,16 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                   {t('editor:aiAssistant.loading')}
                 </span>
               </div>
-              <div className="text-xs text-gray-600 mt-1">
-                AI-assistenten arbetar...
-              </div>
+              {streamingStatus && (
+                <div className="text-xs text-gray-600 mt-1 animate-pulse">
+                  {streamingStatus}
+                </div>
+              )}
+              {!streamingStatus && (
+                <div className="text-xs text-gray-600 mt-1">
+                  AI-assistenten arbetar...
+                </div>
+              )}
             </div>
           </div>
         )}
