@@ -461,7 +461,7 @@ export default function CastReceiverPage() {
               setEnteredCode('');
               setSearchParams({});
             }}
-            className="mt-6 px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white text-lg font-semibold rounded-xl transition-all focus:outline-none focus:ring-4 focus:ring-gray-500"
+            className="mt-6 px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white text-lg font-semibold rounded-sm transition-all focus:outline-none focus:ring-4 focus:ring-gray-500"
           >
             {t('common:actions.cancel')}
           </button>
@@ -568,7 +568,7 @@ export default function CastReceiverPage() {
 
       {/* Control Panel Overlay */}
       {showControls && (
-        <div className="absolute bottom-20 right-4 z-50 bg-black bg-opacity-90 backdrop-blur-md px-6 py-5 rounded-xl shadow-2xl border border-gray-700">
+        <div className="absolute bottom-20 right-4 z-50 bg-black bg-opacity-90 backdrop-blur-md px-6 py-5 rounded-sm shadow-2xl border border-gray-700">
           <h3 className="text-white text-lg font-semibold mb-4">{t('common:cast.displaySettings')}</h3>
           
           {/* Zoom Control */}
@@ -635,7 +635,7 @@ export default function CastReceiverPage() {
 
       {/* Item Detail Overlay - Bottom Left */}
       {displayedItem && (
-        <div className="absolute bottom-8 left-8 z-50 bg-white rounded-xl shadow-2xl border-2 border-gray-300 overflow-hidden transition-all duration-300 ease-out">
+        <div className="absolute bottom-8 left-8 z-50 bg-white rounded-sm shadow-2xl border-2 border-gray-300 overflow-hidden transition-all duration-300 ease-out">
           <div className="p-6 space-y-4" style={{ maxWidth: '400px' }}>
             {/* Item Color Bar */}
             {wheelData?.organizationData?.activityGroups?.find(g => g.id === displayedItem.activityId) && (

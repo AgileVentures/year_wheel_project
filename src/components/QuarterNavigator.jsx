@@ -84,7 +84,7 @@ function QuarterNavigator({
                 key={index}
                 onClick={() => handleQuarterClick(index)}
                 className={`
-                  relative px-2 py-3 rounded-md text-sm font-medium
+                  relative px-2 py-3 rounded-sm text-sm font-medium
                   transition-all duration-200
                   ${isCurrentQuarter 
                     ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600 ring-offset-2' 
