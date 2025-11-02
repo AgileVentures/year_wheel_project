@@ -20,7 +20,11 @@ function PresentationControlDialog({
   onZoomedQuarterChange,
   // Rotation control props
   rotation,
-  onRotationChange
+  onRotationChange,
+  isAutoRotating,
+  onAutoRotateChange,
+  autoRotateSpeed,
+  onAutoRotateSpeedChange
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -30,12 +34,12 @@ function PresentationControlDialog({
   const isMobile = window.innerWidth < 768;
   
   const [expandedSections, setExpandedSections] = useState({
-    innerRings: true,
-    outerRings: true,
-    activityGroups: true,
-    labels: true,
-    months: true,
-    quarters: true
+    innerRings: false,  // Collapsed by default
+    outerRings: false,  // Collapsed by default
+    activityGroups: false,  // Collapsed by default
+    labels: false,  // Collapsed by default
+    months: true,   // Expanded - important for quick access
+    quarters: true  // Expanded - important for quick access
   });
 
   // Drag-and-drop state for reordering
@@ -302,14 +306,14 @@ function PresentationControlDialog({
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('innerRings', true); }}
                     className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.showAll')}
                   >
                     <Eye size={18} />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('innerRings', false); }}
                     className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.hideAll')}
                   >
@@ -358,14 +362,14 @@ function PresentationControlDialog({
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', true); }}
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', true); }}
                     className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.showAll')}
                   >
                     <Eye size={18} />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('rings', false); }}
+                    onClick={(e) => { e.stopPropagation(); toggleAllInSection('outerRings', false); }}
                     className="no-drag p-2 hover:bg-gray-200 rounded-sm"
                     title={t('common:actions.hideAll')}
                   >
@@ -618,8 +622,8 @@ function PresentationControlDialog({
           {/* Rotation Controls */}
           {onRotationChange && (
             <div className="border border-gray-200 rounded bg-gray-50">
-              <div className="p-2">
-                <div className="flex items-center justify-between mb-2">
+              <div className="p-2 space-y-2">
+                <div className="flex items-center justify-between">
                   <span className="font-medium text-xs text-gray-700">
                     {t('common:controls.rotation')}
                   </span>
@@ -627,10 +631,13 @@ function PresentationControlDialog({
                     {Math.round(rotation || 0)}°
                   </span>
                 </div>
+                
+                {/* Manual rotation buttons */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onRotationChange((rotation || 0) - 15)}
-                    className="no-drag flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded transition-colors"
+                    disabled={isAutoRotating}
+                    className="no-drag flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded transition-colors"
                     title={t('common:controls.rotateLeft')}
                   >
                     <RotateCcw size={16} />
@@ -638,20 +645,68 @@ function PresentationControlDialog({
                   </button>
                   <button
                     onClick={() => onRotationChange(0)}
-                    className="no-drag px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded transition-colors text-xs font-medium"
+                    disabled={isAutoRotating}
+                    className="no-drag px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded transition-colors text-xs font-medium"
                     title={t('common:controls.resetRotation')}
                   >
                     0°
                   </button>
                   <button
                     onClick={() => onRotationChange((rotation || 0) + 15)}
-                    className="no-drag flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded transition-colors"
+                    disabled={isAutoRotating}
+                    className="no-drag flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded transition-colors"
                     title={t('common:controls.rotateRight')}
                   >
                     <span className="text-xs font-medium">15°</span>
                     <RotateCw size={16} />
                   </button>
                 </div>
+                
+                {/* Auto-rotation controls */}
+                {onAutoRotateChange && (
+                  <div className="pt-2 border-t border-gray-300 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="no-drag flex items-center gap-1.5 flex-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isAutoRotating}
+                          onChange={(e) => onAutoRotateChange(e.target.checked)}
+                          className="no-drag"
+                          style={{ width: '14px', height: '14px' }}
+                        />
+                        <span className="text-xs font-medium">
+                          {t('common:controls.autoRotate', 'Auto-rotering')}
+                        </span>
+                      </label>
+                    </div>
+                    
+                    {isAutoRotating && onAutoRotateSpeedChange && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600">
+                            {t('common:controls.speed', 'Hastighet')}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {autoRotateSpeed}°/frame
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="5"
+                          step="0.5"
+                          value={autoRotateSpeed}
+                          onChange={(e) => onAutoRotateSpeedChange(parseFloat(e.target.value))}
+                          className="no-drag w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-400">
+                          <span>{t('common:controls.slow', 'Långsam')}</span>
+                          <span>{t('common:controls.fast', 'Snabb')}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

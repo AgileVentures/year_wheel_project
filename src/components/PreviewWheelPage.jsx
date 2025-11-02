@@ -40,9 +40,23 @@ function PreviewWheelPage() {
   const [isCopying, setIsCopying] = useState(false);
   const pendingCopyProcessedRef = useRef(false);
   const [showControlDialog, setShowControlDialog] = useState(false);
+  const [isAutoRotating, setIsAutoRotating] = useState(false);
+  const [autoRotateSpeed, setAutoRotateSpeed] = useState(1); // degrees per frame
   
   // Local state for organizationData to allow toggling visibility
   const [localOrgData, setLocalOrgData] = useState(null);
+  
+  // Auto-rotation effect
+  useEffect(() => {
+    if (!isAutoRotating) return;
+    
+    const intervalMs = 50; // 20fps
+    const interval = setInterval(() => {
+      setRotation(prev => (prev + autoRotateSpeed) % 360);
+    }, intervalMs);
+    
+    return () => clearInterval(interval);
+  }, [isAutoRotating, autoRotateSpeed]);
   
   // Throttle rotation updates for casting (avoid flooding)
   const lastRotationSentRef = useRef(0);
@@ -698,6 +712,10 @@ function PreviewWheelPage() {
           onZoomedQuarterChange={setZoomedQuarter}
           rotation={rotation}
           onRotationChange={handleRotationChange}
+          isAutoRotating={isAutoRotating}
+          onAutoRotateChange={setIsAutoRotating}
+          autoRotateSpeed={autoRotateSpeed}
+          onAutoRotateSpeedChange={setAutoRotateSpeed}
         />
       )}
 

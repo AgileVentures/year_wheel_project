@@ -394,22 +394,6 @@ export default function CastReceiverPage() {
               : t('common:cast.startCastingFromMobile')}
           </p>
           
-          {/* Debug Information */}
-          <div className="bg-black bg-opacity-40 rounded-sm p-4 mb-6 text-left font-mono text-xs">
-            <div className="text-[#9FCB3E] font-bold mb-2">🔍 DEBUG INFO</div>
-            <div className="space-y-1 text-gray-300">
-              <div><span className="text-[#A4E6E0]">Channel:</span> {debugInfo.channelName || 'N/A'}</div>
-              <div><span className="text-[#A4E6E0]">Status:</span> {debugInfo.channelStatus}</div>
-              <div><span className="text-[#A4E6E0]">Realtime Connected:</span> {debugInfo.realtimeConnected ? '✅ YES' : '❌ NO'}</div>
-              <div><span className="text-[#A4E6E0]">Messages Received:</span> {debugInfo.messagesReceived}</div>
-              <div><span className="text-[#A4E6E0]">Last Message Type:</span> {debugInfo.lastMessageType}</div>
-              <div><span className="text-[#A4E6E0]">Last Message Time:</span> {debugInfo.lastMessageTime || 'N/A'}</div>
-              <div className="pt-2 border-t border-gray-600">
-                <span className="text-[#A4E6E0]">Session Token:</span> {sessionToken}
-              </div>
-            </div>
-          </div>
-          
           {/* Cancel button - go back to code input */}
           <button
             onClick={() => {
@@ -442,21 +426,14 @@ export default function CastReceiverPage() {
   // Render YearWheel
   return (
     <div className="h-screen w-screen bg-[#1B2A63] overflow-hidden relative">
-      {/* Connection indicator with debug info */}
-      <div className="absolute top-4 right-4 z-50 flex flex-col items-end gap-2">
+      {/* Connection indicator */}
+      <div className="absolute top-4 right-4 z-50">
         <div className="flex items-center space-x-2 bg-black bg-opacity-50 px-4 py-2 rounded-full">
           <span className="flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-[#9FCB3E] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-[#9FCB3E]"></span>
           </span>
           <span className="text-white text-sm font-medium">{t('common:cast.connected')}</span>
-        </div>
-        {/* Mini debug panel */}
-        <div className="bg-black bg-opacity-70 rounded-sm px-3 py-2 text-xs font-mono text-gray-300 max-w-xs">
-          <div className="text-[#9FCB3E] font-bold mb-1">DEBUG</div>
-          <div>Messages: {debugInfo.messagesReceived}</div>
-          <div>Last: {debugInfo.lastMessageType}</div>
-          <div className="text-[10px] text-gray-400 truncate">Channel: {debugInfo.channelName}</div>
         </div>
       </div>
 
