@@ -657,7 +657,7 @@ export default function CastReceiverPage() {
               {/* Ring */}
               {wheelData?.organizationData?.rings?.find(r => r.id === displayedItem.ringId) && (
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold text-gray-600 min-w-[100px]">Ring:</span>
+                  <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.ring')}:</span>
                   <span className="text-gray-900">
                     {wheelData.organizationData.rings.find(r => r.id === displayedItem.ringId).name}
                   </span>
@@ -667,7 +667,7 @@ export default function CastReceiverPage() {
               {/* Activity Group */}
               {wheelData?.organizationData?.activityGroups?.find(g => g.id === displayedItem.activityId) && (
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold text-gray-600 min-w-[100px]">Category:</span>
+                  <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.category')}:</span>
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-4 h-4 rounded-sm flex-shrink-0"
@@ -685,7 +685,7 @@ export default function CastReceiverPage() {
               {/* Label (optional) */}
               {displayedItem.labelId && wheelData?.organizationData?.labels?.find(l => l.id === displayedItem.labelId) && (
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold text-gray-600 min-w-[100px]">Label:</span>
+                  <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.label')}:</span>
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-4 h-4 rounded-sm flex-shrink-0"
@@ -703,7 +703,7 @@ export default function CastReceiverPage() {
               {/* Dates */}
               {displayedItem.startDate && (
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold text-gray-600 min-w-[100px]">Start:</span>
+                  <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.start')}:</span>
                   <span className="text-gray-900">
                     {new Date(displayedItem.startDate).toLocaleDateString(undefined, { 
                       year: 'numeric', 
@@ -716,7 +716,7 @@ export default function CastReceiverPage() {
               
               {displayedItem.endDate && (
                 <div className="flex items-start gap-2">
-                  <span className="font-semibold text-gray-600 min-w-[100px]">End:</span>
+                  <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.end')}:</span>
                   <span className="text-gray-900">
                     {new Date(displayedItem.endDate).toLocaleDateString(undefined, { 
                       year: 'numeric', 

@@ -515,7 +515,7 @@ function PresentationControlDialog({
                                 }}
                                 className="no-drag flex-shrink-0 px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-sm transition-colors"
                               >
-                                Hide
+                                {t('common:cast.hideFromTV')}
                               </button>
                             ) : (
                               <button
@@ -525,7 +525,7 @@ function PresentationControlDialog({
                                 }}
                                 className="no-drag flex-shrink-0 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-sm transition-colors"
                               >
-                                Show
+                                {t('common:cast.showOnTV')}
                               </button>
                             )}
                           </div>

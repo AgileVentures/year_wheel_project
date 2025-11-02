@@ -351,6 +351,13 @@
     "displayZoom": "Display Zoom",
     "stopCasting": "Stop Casting",
     "showItemsOnTV": "Show Items on TV",
-    "noVisibleItems": "No visible items to display"
+    "noVisibleItems": "No visible items to display",
+    "showOnTV": "Show",
+    "hideFromTV": "Hide",
+    "ring": "Ring",
+    "category": "Category",
+    "label": "Label",
+    "start": "Start",
+    "end": "End"
   }
 }

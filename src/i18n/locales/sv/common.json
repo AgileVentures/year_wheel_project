@@ -350,6 +350,13 @@
     "displayZoom": "Bildskärmszoom",
     "stopCasting": "Stoppa casting",
     "showItemsOnTV": "Visa aktiviteter på TV",
-    "noVisibleItems": "Inga synliga aktiviteter att visa"
+    "noVisibleItems": "Inga synliga aktiviteter att visa",
+    "showOnTV": "Visa",
+    "hideFromTV": "Dölj",
+    "ring": "Ring",
+    "category": "Kategori",
+    "label": "Etikett",
+    "start": "Start",
+    "end": "Slut"
   }
 }
