@@ -49,7 +49,9 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
   // Fetch comment count
   useEffect(() => {
     const loadCommentCount = async () => {
-      if (item.id && wheel) {
+      // Only fetch comments for valid UUIDs (not temporary/week IDs)
+      const isValidUUID = item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+      if (isValidUUID && wheel) {
         const { data } = await getCommentCount(item.id);
         if (data !== null) {
           setCommentCount(data);

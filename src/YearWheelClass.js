@@ -3994,6 +3994,12 @@ class YearWheel {
     const region = this.dragState.draggedItemRegion;
     const item = this.dragState.draggedItem;
 
+    // Safety check - if no item, don't draw preview
+    if (!item) {
+      console.warn('[drawDragPreviewInRotatedContext] No draggedItem in dragState');
+      return;
+    }
+
     // Get activity group color
     const activityGroup = this.organizationData.activityGroups.find(
       (a) => a.id === item.activityId

@@ -620,7 +620,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (payload.old.id === currentPageId && filtered.length > 0) {
           const newCurrentPage = filtered[0];
           setCurrentPageId(newCurrentPage.id);
-          setOrganizationData(newCurrentPage.organization_data);
+          // CRITICAL: Filter items to only those belonging to this page's year
+          const cleanedOrgData = {
+            ...newCurrentPage.organization_data,
+            items: filterItemsByYear(newCurrentPage.organization_data.items, newCurrentPage.year)
+          };
+          setOrganizationData(cleanedOrgData);
           setYear(String(newCurrentPage.year));
         }
         
@@ -1304,8 +1309,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         setCurrentPageId(sortedPages[0].id);
         // Load first page's data (with user's saved colors)
         if (sortedPages[0].organization_data) {
-          // console.log('[LoadPages] Loading page data from database');
-          setOrganizationData(sortedPages[0].organization_data);
+          // CRITICAL: Filter items to only those belonging to this page's year
+          const pageYear = sortedPages[0].year;
+          const cleanedOrgData = {
+            ...sortedPages[0].organization_data,
+            items: filterItemsByYear(sortedPages[0].organization_data.items, pageYear)
+          };
+          setOrganizationData(cleanedOrgData);
         }
         if (sortedPages[0].year) {
           setYear(String(sortedPages[0].year));
