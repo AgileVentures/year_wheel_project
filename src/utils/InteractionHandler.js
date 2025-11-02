@@ -322,9 +322,15 @@ class InteractionHandler {
     const { x, y } = this.getCanvasCoordinates(event);
     const dragMode = this.detectDragZone(x, y, itemRegion);
     
+    // CRITICAL: Look up fresh item data from organizationData (single source of truth)
     const freshItem = this.wheel.organizationData.items.find(
-      i => i.id === itemRegion.item.id
+      i => i.id === itemRegion.itemId
     );
+    
+    // If item not found in current organizationData, skip (year filtered out)
+    if (!freshItem) {
+      return;
+    }
 
     // Calculate screen angles
     const dx = x - this.wheel.center.x;
@@ -659,7 +665,10 @@ class InteractionHandler {
     if (this.wheel.clickableItems) {
       for (const itemRegion of this.wheel.clickableItems) {
         if (this.isPointInItemRegion(x, y, itemRegion)) {
-          newHoveredItem = itemRegion.item;
+          // CRITICAL: Look up fresh item data from organizationData (single source of truth)
+          newHoveredItem = this.wheel.organizationData.items.find(
+            i => i.id === itemRegion.itemId
+          );
           hoverZone = this.detectDragZone(x, y, itemRegion);
           break;
         }
@@ -725,7 +734,15 @@ class InteractionHandler {
       if (this.wheel.clickableItems) {
         for (const itemRegion of this.wheel.clickableItems) {
           if (this.isPointInItemRegion(x, y, itemRegion)) {
-            this.options.onItemClick(itemRegion.item);
+            // CRITICAL: Look up fresh item data from organizationData (single source of truth)
+            const freshItem = this.wheel.organizationData.items.find(
+              i => i.id === itemRegion.itemId
+            );
+            
+            // If item not found in current organizationData, skip (year filtered out)
+            if (freshItem) {
+              this.options.onItemClick(freshItem);
+            }
             return;
           }
         }
