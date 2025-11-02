@@ -20,6 +20,12 @@ export const CAST_MESSAGE_TYPES = {
   // Display zoom for TV (50-200%)
   DISPLAY_ZOOM: 'wheel:display_zoom',
   
+  // Show item details on TV
+  SHOW_ITEM: 'wheel:show_item',
+  
+  // Hide item details on TV
+  HIDE_ITEM: 'wheel:hide_item',
+  
   // Organization data changes (immediate)
   UPDATE: 'wheel:update',
   

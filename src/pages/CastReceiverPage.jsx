@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import YearWheel from '../YearWheel';
 import { CAST_NAMESPACE, CAST_MESSAGE_TYPES } from '../constants/castMessages';
 import { useRealtimeCastReceiver } from '../hooks/useRealtimeCast';
+import { useRealtimeWheel } from '../hooks/useRealtimeWheel';
+import { fetchPage } from '../services/wheelService';
 
 /**
  * Cast Receiver Page
@@ -45,6 +47,7 @@ export default function CastReceiverPage() {
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
   const [displayZoom, setDisplayZoom] = useState(100); // Display zoom for TV (50-200%)
   const [showControls, setShowControls] = useState(false); // Toggle control panel
+  const [displayedItem, setDisplayedItem] = useState(null); // Item to display on TV overlay
   
   // Debug state - visible on screen
   const [debugInfo, setDebugInfo] = useState({
@@ -190,6 +193,18 @@ export default function CastReceiverPage() {
         }
         break;
 
+      case CAST_MESSAGE_TYPES.SHOW_ITEM:
+        if (message.data && message.data.item) {
+          console.log('[Receiver] Showing item on TV:', message.data.item);
+          setDisplayedItem(message.data.item);
+        }
+        break;
+
+      case CAST_MESSAGE_TYPES.HIDE_ITEM:
+        console.log('[Receiver] Hiding item from TV');
+        setDisplayedItem(null);
+        break;
+
       case CAST_MESSAGE_TYPES.UPDATE:
         if (message.data.organizationData) {
           setWheelData(prev => ({
@@ -253,6 +268,20 @@ export default function CastReceiverPage() {
             setZoomedMonth(null);
             setZoomedQuarter(null);
           }
+          break;
+
+        case CAST_MESSAGE_TYPES.SHOW_ITEM:
+          // Show item details on TV
+          if (message.payload && message.payload.item) {
+            console.log('[Receiver] Showing item on TV:', message.payload.item);
+            setDisplayedItem(message.payload.item);
+          }
+          break;
+
+        case CAST_MESSAGE_TYPES.HIDE_ITEM:
+          // Hide item details from TV
+          console.log('[Receiver] Hiding item from TV');
+          setDisplayedItem(null);
           break;
 
         case CAST_MESSAGE_TYPES.UPDATE:
@@ -322,6 +351,29 @@ export default function CastReceiverPage() {
       }
     }
   };
+
+  // Handle realtime database changes
+  const handleDatabaseChange = useCallback(async (eventType, tableName, payload) => {
+    console.log('[Receiver] Database change:', eventType, tableName);
+    
+    // Reload wheel data from database
+    if (wheelData?.wheelId && wheelData?.pageId) {
+      try {
+        const page = await fetchPage(wheelData.pageId);
+        if (page) {
+          setWheelData(prev => ({
+            ...prev,
+            organizationData: page.organization_data
+          }));
+        }
+      } catch (error) {
+        console.error('[Receiver] Error reloading page data:', error);
+      }
+    }
+  }, [wheelData?.wheelId, wheelData?.pageId]);
+
+  // Subscribe to realtime database updates
+  useRealtimeWheel(wheelData?.wheelId, wheelData?.pageId, handleDatabaseChange);
 
   // Show code input screen FIRST if no code submitted yet
   if (!isCodeSubmitted) {
@@ -433,7 +485,7 @@ export default function CastReceiverPage() {
 
   // Render YearWheel
   return (
-    <div className="h-screen w-screen bg-[#1B2A63] overflow-hidden relative">
+    <div className="h-screen w-screen bg-white overflow-hidden relative">
       {/* Connection indicator */}
       <div className="absolute top-4 right-4 z-50">
         <div className="flex items-center space-x-2 bg-black bg-opacity-50 px-4 py-2 rounded-full">
@@ -577,6 +629,113 @@ export default function CastReceiverPage() {
             >
               {t('common:actions.reset')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Item Detail Overlay - Bottom Left */}
+      {displayedItem && (
+        <div className="absolute bottom-8 left-8 z-50 bg-white rounded-xl shadow-2xl border-2 border-gray-300 overflow-hidden transition-all duration-300 ease-out">
+          <div className="p-6 space-y-4" style={{ maxWidth: '400px' }}>
+            {/* Item Color Bar */}
+            {wheelData?.organizationData?.activityGroups?.find(g => g.id === displayedItem.activityId) && (
+              <div 
+                className="h-2 rounded-sm -mt-6 -mx-6 mb-4"
+                style={{ 
+                  backgroundColor: wheelData.organizationData.activityGroups.find(g => g.id === displayedItem.activityId).color 
+                }}
+              />
+            )}
+
+            {/* Item Name */}
+            <h3 className="text-2xl font-bold text-gray-900 leading-tight">
+              {displayedItem.name}
+            </h3>
+
+            {/* Item Details */}
+            <div className="space-y-2 text-base">
+              {/* Ring */}
+              {wheelData?.organizationData?.rings?.find(r => r.id === displayedItem.ringId) && (
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-gray-600 min-w-[100px]">Ring:</span>
+                  <span className="text-gray-900">
+                    {wheelData.organizationData.rings.find(r => r.id === displayedItem.ringId).name}
+                  </span>
+                </div>
+              )}
+
+              {/* Activity Group */}
+              {wheelData?.organizationData?.activityGroups?.find(g => g.id === displayedItem.activityId) && (
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-gray-600 min-w-[100px]">Category:</span>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded-sm flex-shrink-0"
+                      style={{ 
+                        backgroundColor: wheelData.organizationData.activityGroups.find(g => g.id === displayedItem.activityId).color 
+                      }}
+                    />
+                    <span className="text-gray-900">
+                      {wheelData.organizationData.activityGroups.find(g => g.id === displayedItem.activityId).name}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Label (optional) */}
+              {displayedItem.labelId && wheelData?.organizationData?.labels?.find(l => l.id === displayedItem.labelId) && (
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-gray-600 min-w-[100px]">Label:</span>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded-sm flex-shrink-0"
+                      style={{ 
+                        backgroundColor: wheelData.organizationData.labels.find(l => l.id === displayedItem.labelId).color 
+                      }}
+                    />
+                    <span className="text-gray-900">
+                      {wheelData.organizationData.labels.find(l => l.id === displayedItem.labelId).name}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Dates */}
+              {displayedItem.startDate && (
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-gray-600 min-w-[100px]">Start:</span>
+                  <span className="text-gray-900">
+                    {new Date(displayedItem.startDate).toLocaleDateString(undefined, { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                </div>
+              )}
+              
+              {displayedItem.endDate && (
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-gray-600 min-w-[100px]">End:</span>
+                  <span className="text-gray-900">
+                    {new Date(displayedItem.endDate).toLocaleDateString(undefined, { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                </div>
+              )}
+
+              {/* Description */}
+              {displayedItem.description && (
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="text-gray-700 leading-relaxed">
+                    {displayedItem.description}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

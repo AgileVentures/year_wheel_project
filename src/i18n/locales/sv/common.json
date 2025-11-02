@@ -348,6 +348,8 @@
     "hideControls": "Dölj kontroller",
     "displaySettings": "Visningsinställningar",
     "displayZoom": "Bildskärmszoom",
-    "stopCasting": "Stoppa casting"
+    "stopCasting": "Stoppa casting",
+    "showItemsOnTV": "Visa aktiviteter på TV",
+    "noVisibleItems": "Inga synliga aktiviteter att visa"
   }
 }

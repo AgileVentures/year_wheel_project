@@ -66,10 +66,13 @@ function MonthNavigator({
 
   // Handle month click with smart zoom logic
   const handleMonthClick = (monthIndex) => {
-    if (currentMonth === monthIndex) {
+    // CRITICAL: Use explicit null checks because monthIndex can be 0 (January)
+    // Never use truthy/falsy checks with indices!
+    
+    if (currentMonth !== null && currentMonth !== undefined && currentMonth === monthIndex) {
       // Clicking current month again = reset to full year
       onResetZoom?.();
-    } else if (currentQuarter !== null) {
+    } else if (currentQuarter !== null && currentQuarter !== undefined) {
       // If a quarter is zoomed, first reset to full year, then zoom to month
       onResetZoom?.();
       setTimeout(() => {

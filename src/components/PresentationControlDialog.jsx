@@ -28,7 +28,9 @@ function PresentationControlDialog({
   // Display zoom control for casting
   displayZoom,
   onDisplayZoomChange,
-  sendMessage
+  sendMessage,
+  onShowItemOnTV,
+  onHideItemOnTV
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -43,8 +45,12 @@ function PresentationControlDialog({
     activityGroups: false,  // Collapsed by default
     labels: false,  // Collapsed by default
     months: true,   // Expanded - important for quick access
-    quarters: true  // Expanded - important for quick access
+    quarters: true, // Expanded - important for quick access
+    tvItems: false  // Collapsed by default
   });
+
+  // Track which item is currently shown on TV
+  const [shownItemId, setShownItemId] = useState(null);
 
   // Drag-and-drop state for reordering
   const [draggedItem, setDraggedItem] = useState(null);
@@ -443,6 +449,99 @@ function PresentationControlDialog({
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+            
+            {/* Items Display on TV - For Casting */}
+            {sendMessage && onShowItemOnTV && onHideItemOnTV && organizationData.items && organizationData.items.length > 0 && (
+              <div className="border border-gray-200 rounded-sm overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100">
+                <button
+                  onClick={() => toggleSection('tvItems')}
+                  className="no-drag w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedSections.tvItems ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+                    <span className="font-semibold text-base text-gray-900">
+                      {t('common:cast.showItemsOnTV')}
+                    </span>
+                    <span className="text-sm text-gray-500">({organizationData.items.length})</span>
+                  </div>
+                </button>
+                
+                {expandedSections.tvItems && (
+                  <div className="border-t border-gray-200 bg-white p-3 space-y-2 max-h-64 overflow-y-auto">
+                    {organizationData.items
+                      .filter(item => {
+                        // Only show items that are visible (ring and activity group are visible)
+                        const ring = organizationData.rings.find(r => r.id === item.ringId);
+                        const activityGroup = organizationData.activityGroups?.find(g => g.id === item.activityId);
+                        return ring?.visible && activityGroup?.visible;
+                      })
+                      .map(item => {
+                        const activityGroup = organizationData.activityGroups?.find(g => g.id === item.activityId);
+                        const ring = organizationData.rings.find(r => r.id === item.ringId);
+                        
+                        const isShown = shownItemId === item.id;
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className={`no-drag w-full flex items-center gap-2 p-2 rounded-sm transition-colors border ${
+                              isShown 
+                                ? 'bg-blue-100 border-blue-500 border-2' 
+                                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                            }`}
+                          >
+                            <div
+                              className="w-3 h-3 rounded-sm flex-shrink-0"
+                              style={{ backgroundColor: activityGroup?.color || '#888' }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {item.name}
+                              </div>
+                              <div className="text-xs text-gray-500 flex items-center gap-2">
+                                <span>{ring?.name}</span>
+                                {item.startDate && (
+                                  <span>• {new Date(item.startDate).toLocaleDateString()}</span>
+                                )}
+                              </div>
+                            </div>
+                            {isShown ? (
+                              <button
+                                onClick={() => {
+                                  onHideItemOnTV();
+                                  setShownItemId(null);
+                                }}
+                                className="no-drag flex-shrink-0 px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-sm transition-colors"
+                              >
+                                Hide
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  onShowItemOnTV(item);
+                                  setShownItemId(item.id);
+                                }}
+                                className="no-drag flex-shrink-0 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-sm transition-colors"
+                              >
+                                Show
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    {organizationData.items.filter(item => {
+                      const ring = organizationData.rings.find(r => r.id === item.ringId);
+                      const activityGroup = organizationData.activityGroups?.find(g => g.id === item.activityId);
+                      return ring?.visible && activityGroup?.visible;
+                    }).length === 0 && (
+                      <div className="p-6 text-center text-gray-500 text-sm">
+                        {t('common:cast.noVisibleItems')}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
             

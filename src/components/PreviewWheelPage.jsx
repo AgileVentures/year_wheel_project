@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { fetchWheel, fetchPages, fetchPageData, createWheel, createPage, saveWheelData } from '../services/wheelService';
+import { fetchWheel, fetchPages, fetchPageData, fetchPage, createWheel, createPage, saveWheelData } from '../services/wheelService';
 import YearWheel from '../YearWheel';
 import CastButton from './CastButton';
 import { Eye, Lock, ChevronLeft, ChevronRight, Calendar, Copy, Settings } from 'lucide-react';
@@ -12,6 +12,7 @@ import { useCastManager } from '../hooks/useCastManager';
 import { useRealtimeCast } from '../hooks/useRealtimeCast';
 import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import { CAST_MESSAGE_TYPES, HEARTBEAT_INTERVAL_MS } from '../constants/castMessages';
+import { useRealtimeWheel } from '../hooks/useRealtimeWheel';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -74,6 +75,20 @@ function PreviewWheelPage() {
     setDisplayZoom(newZoom);
     if (isActivelyCasting && activeSendMessage) {
       activeSendMessage('wheel:display_zoom', { zoom: newZoom });
+    }
+  }, [isActivelyCasting, activeSendMessage]);
+  
+  // Handle showing item details on TV
+  const handleShowItemOnTV = useCallback((item) => {
+    if (isActivelyCasting && activeSendMessage) {
+      activeSendMessage('wheel:show_item', { item });
+    }
+  }, [isActivelyCasting, activeSendMessage]);
+  
+  // Handle hiding item details on TV
+  const handleHideItemOnTV = useCallback(() => {
+    if (isActivelyCasting && activeSendMessage) {
+      activeSendMessage('wheel:hide_item', {});
     }
   }, [isActivelyCasting, activeSendMessage]);
   
@@ -185,6 +200,31 @@ function PreviewWheelPage() {
       }));
     }
   }, [currentPageItems, wheelData]);
+
+  // Handle realtime database changes
+  const handleDatabaseChange = useCallback(async (eventType, tableName, payload) => {
+    console.log('[PreviewWheel] Database change:', eventType, tableName);
+    
+    // Reload current page data from database
+    if (pages.length > 0 && pages[currentPageIndex]) {
+      try {
+        const items = await fetchPageData(pages[currentPageIndex].id);
+        setCurrentPageItems(items);
+        
+        // Also reload the page's organization data if it changed
+        const page = await fetchPage(pages[currentPageIndex].id);
+        if (page) {
+          setLocalOrgData(page.organization_data);
+        }
+      } catch (error) {
+        console.error('[PreviewWheel] Error reloading page data:', error);
+      }
+    }
+  }, [pages, currentPageIndex]);
+
+  // Subscribe to realtime database updates for current page
+  const currentPageId = pages[currentPageIndex]?.id;
+  useRealtimeWheel(wheelId, currentPageId, handleDatabaseChange);
 
   // Copy template to user's account
   const handleCopyTemplate = async () => {
@@ -728,6 +768,8 @@ function PreviewWheelPage() {
           displayZoom={displayZoom}
           onDisplayZoomChange={handleDisplayZoomChange}
           sendMessage={isActivelyCasting ? activeSendMessage : null}
+          onShowItemOnTV={handleShowItemOnTV}
+          onHideItemOnTV={handleHideItemOnTV}
         />
       )}
 

@@ -349,6 +349,8 @@
     "hideControls": "Hide controls",
     "displaySettings": "Display Settings",
     "displayZoom": "Display Zoom",
-    "stopCasting": "Stop Casting"
+    "stopCasting": "Stop Casting",
+    "showItemsOnTV": "Show Items on TV",
+    "noVisibleItems": "No visible items to display"
   }
 }
