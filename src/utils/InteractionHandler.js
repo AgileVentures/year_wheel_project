@@ -763,11 +763,11 @@ class InteractionHandler {
             
             // If item not found in current organizationData, skip (year filtered out)
             if (freshItem) {
-              // Pass client coordinates for tooltip positioning
+              // Pass item, position, and original event (for modifier keys)
               this.options.onItemClick(freshItem, {
                 x: event.clientX,
                 y: event.clientY
-              });
+              }, event);
             }
             return;
           }

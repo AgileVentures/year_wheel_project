@@ -299,7 +299,7 @@
   "selection": {
     "enterMode": "Select multiple",
     "exitMode": "Exit selection",
-    "enterModeTooltip": "Select multiple activities",
+    "enterModeTooltip": "Select multiple activities (or Cmd/Ctrl+Click)",
     "exitModeTooltip": "Exit selection mode",
     "selected": "{{count}} selected",
     "selectedOne": "{{count}} selected",

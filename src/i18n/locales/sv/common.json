@@ -298,7 +298,7 @@
   "selection": {
     "enterMode": "Markera flera",
     "exitMode": "Avsluta markering",
-    "enterModeTooltip": "Markera flera aktiviteter",
+    "enterModeTooltip": "Markera flera aktiviteter (eller Cmd/Ctrl+Klick)",
     "exitModeTooltip": "Avsluta markeringsläge",
     "selected": "{{count}} markerade",
     "selectedOne": "{{count}} markerad",

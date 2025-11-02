@@ -316,7 +316,7 @@ function YearWheel({
     }
   }, [selectedItems, clearSelections, t]);
 
-  const handleItemClick = useCallback((item, position) => {
+  const handleItemClick = useCallback((item, position, event) => {
     // If external click handler provided (e.g., for casting), call it
     // This takes priority over all other modes
     if (onItemClick) {
@@ -324,8 +324,11 @@ function YearWheel({
       return;
     }
     
-    // In selection mode, ONLY toggle item selection (no tooltip, no other actions)
-    if (selectionMode) {
+    // Check for modifier key: Cmd (Mac) or Ctrl (Windows/Linux)
+    const isMultiSelectClick = event && (event.metaKey || event.ctrlKey);
+    
+    // Multi-select mode (either explicit mode OR modifier key held)
+    if (selectionMode || isMultiSelectClick) {
       setSelectedItems(prev => {
         const newSet = new Set(prev);
         if (newSet.has(item.id)) {
@@ -335,6 +338,10 @@ function YearWheel({
         }
         return newSet;
       });
+      // Activate selection mode if using modifier key
+      if (isMultiSelectClick && !selectionMode) {
+        setSelectionMode(true);
+      }
       return; // Early return - don't show tooltip in selection mode
     }
     
