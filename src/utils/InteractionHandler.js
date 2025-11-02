@@ -65,8 +65,30 @@ class InteractionHandler {
   // ============================================================================
 
   attachListeners() {
-    if (this.options.readonly) return;
+    // In readonly mode, only attach click listener if onItemClick callback provided
+    // This allows readonly wheels to respond to item clicks (e.g., for casting to TV)
+    if (this.options.readonly) {
+      if (this.options.onItemClick) {
+        this.canvas.addEventListener('click', this.boundHandlers.click);
+        // Also add touch support for mobile devices
+        this.canvas.addEventListener("touchend", (e) => {
+          // Prevent the click event from firing (avoid double trigger)
+          e.preventDefault();
+          // Convert touch to click-like event
+          if (e.changedTouches && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const clickEvent = {
+              clientX: touch.clientX,
+              clientY: touch.clientY
+            };
+            this.boundHandlers.click(clickEvent);
+          }
+        });
+      }
+      return;
+    }
     
+    // Full interaction mode (not readonly)
     this.canvas.addEventListener('mousedown', this.boundHandlers.mouseDown);
     this.canvas.addEventListener('mousemove', this.boundHandlers.mouseMove);
     this.canvas.addEventListener('mouseup', this.boundHandlers.mouseUp);
@@ -741,7 +763,11 @@ class InteractionHandler {
             
             // If item not found in current organizationData, skip (year filtered out)
             if (freshItem) {
-              this.options.onItemClick(freshItem);
+              // Pass client coordinates for tooltip positioning
+              this.options.onItemClick(freshItem, {
+                x: event.clientX,
+                y: event.clientY
+              });
             }
             return;
           }

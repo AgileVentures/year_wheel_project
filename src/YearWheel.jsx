@@ -255,6 +255,9 @@ function YearWheel({
       if (!newMode) {
         setSelectedItems(new Set());
       }
+      // Always close tooltip when toggling selection mode
+      setSelectedItem(null);
+      setTooltipPosition(null);
       return newMode;
     });
   }, []);
@@ -315,12 +318,13 @@ function YearWheel({
 
   const handleItemClick = useCallback((item, position) => {
     // If external click handler provided (e.g., for casting), call it
+    // This takes priority over all other modes
     if (onItemClick) {
       onItemClick(item);
       return;
     }
     
-    // In selection mode, toggle item selection
+    // In selection mode, ONLY toggle item selection (no tooltip, no other actions)
     if (selectionMode) {
       setSelectedItems(prev => {
         const newSet = new Set(prev);
@@ -331,13 +335,10 @@ function YearWheel({
         }
         return newSet;
       });
-      // Close tooltip when in selection mode
-      setSelectedItem(null);
-      setTooltipPosition(null);
-      return;
+      return; // Early return - don't show tooltip in selection mode
     }
     
-    // Normal mode: show tooltip
+    // Normal mode: show tooltip only
     setSelectedItem(item);
     
     // Position tooltip at upper left of container with some padding
@@ -536,6 +537,12 @@ function YearWheel({
   useEffect(() => {
     if (yearWheel && yearWheel.updateSelection) {
       yearWheel.updateSelection(selectionMode, Array.from(selectedItems));
+    }
+    
+    // Close tooltip when entering selection mode
+    if (selectionMode) {
+      setSelectedItem(null);
+      setTooltipPosition(null);
     }
   }, [selectionMode, selectedItems, yearWheel]);
   
@@ -776,7 +783,7 @@ function YearWheel({
                 title={selectionMode ? t('common:selection.exitModeTooltip') : t('common:selection.enterModeTooltip')}
               >
                 <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
                 {selectionMode ? t('common:selection.exitMode') : t('common:selection.enterMode')}
               </button>
@@ -857,8 +864,8 @@ function YearWheel({
         />
       )}
 
-      {/* Item Tooltip */}
-      {selectedItem && tooltipPosition && (
+      {/* Item Tooltip - Don't show in selection mode */}
+      {!selectionMode && selectedItem && tooltipPosition && (
         <ItemTooltip
           item={selectedItem}
           organizationData={yearFilteredOrgData}

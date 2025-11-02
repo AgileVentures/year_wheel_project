@@ -192,25 +192,9 @@ class YearWheel {
       );
     }
     
-    // Always register click handler (even in readonly mode) if callback provided
-    // This allows readonly wheels to still respond to item clicks (e.g., for casting)
-    if (this.options.onItemClick) {
-      this.canvas.addEventListener("click", this.boundHandlers.handleClick);
-      // Also add touch support for mobile devices
-      this.canvas.addEventListener("touchend", (e) => {
-        // Prevent the click event from firing (avoid double trigger)
-        e.preventDefault();
-        // Convert touch to click-like event
-        if (e.changedTouches && e.changedTouches.length > 0) {
-          const touch = e.changedTouches[0];
-          const clickEvent = {
-            clientX: touch.clientX,
-            clientY: touch.clientY
-          };
-          this.boundHandlers.handleClick(clickEvent);
-        }
-      });
-    }
+    // NOTE: Click handling is now managed by InteractionHandler
+    // The old click listener registration here has been removed to prevent double-click events
+    // InteractionHandler properly handles clicks in both readonly and edit modes
   }
 
   /**
