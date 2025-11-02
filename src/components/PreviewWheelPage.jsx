@@ -201,6 +201,9 @@ function PreviewWheelPage() {
     }
   }, [currentPageItems, wheelData]);
 
+  // Subscribe to realtime database updates for current page
+  const currentPageId = pages[currentPageIndex]?.id;
+  
   // Handle realtime database changes
   const handleDatabaseChange = useCallback(async (eventType, tableName, payload) => {
     console.log('[PreviewWheel] Database change:', eventType, tableName);
@@ -221,9 +224,7 @@ function PreviewWheelPage() {
       }
     }
   }, [pages, currentPageIndex]);
-
-  // Subscribe to realtime database updates for current page
-  const currentPageId = pages[currentPageIndex]?.id;
+  
   useRealtimeWheel(wheelId, currentPageId, handleDatabaseChange);
 
   // Copy template to user's account
