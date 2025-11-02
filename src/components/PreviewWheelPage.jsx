@@ -450,8 +450,20 @@ function PreviewWheelPage() {
   // Supports both Chrome Cast (Android) and Supabase Realtime (iOS)
   
   // Sync rotation changes to cast receiver (throttled)
+  const lastCastRotationSentRef = useRef(0);
+  const lastCastRotationValueRef = useRef(0);
+  
   useEffect(() => {
     if (!isActivelyCasting || !activeSendMessage) return;
+    
+    // Throttle cast messages - only send every 200ms AND if rotation changed by at least 1 degree
+    const now = Date.now();
+    const rotationChanged = Math.abs(rotation - lastCastRotationValueRef.current) >= 1;
+    
+    if (now - lastCastRotationSentRef.current < 200 && !rotationChanged) return;
+    
+    lastCastRotationSentRef.current = now;
+    lastCastRotationValueRef.current = rotation;
     
     activeSendMessage(CAST_MESSAGE_TYPES.ROTATE, {
       rotation
@@ -733,6 +745,7 @@ function PreviewWheelPage() {
             onRotationChange={handleRotationChange}
             readonly={true}
             hideControls={isMobileDevice && isPresentationMode}
+            onItemClick={isActivelyCasting ? handleShowItemOnTV : undefined}
           />
         </div>
 

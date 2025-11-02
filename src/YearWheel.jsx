@@ -50,6 +50,7 @@ function YearWheel({
   onDragStart,
   onUpdateAktivitet,
   onDeleteAktivitet,
+  onItemClick, // External callback for item clicks (e.g., cast to TV)
   readonly = false,
   hideControls = false,
   broadcastActivity,
@@ -313,6 +314,12 @@ function YearWheel({
   }, [selectedItems, clearSelections, t]);
 
   const handleItemClick = useCallback((item, position) => {
+    // If external click handler provided (e.g., for casting), call it
+    if (onItemClick) {
+      onItemClick(item);
+      return;
+    }
+    
     // In selection mode, toggle item selection
     if (selectionMode) {
       setSelectedItems(prev => {
@@ -344,7 +351,7 @@ function YearWheel({
       // Fallback to click position if container ref not available
       setTooltipPosition(position);
     }
-  }, [selectionMode]);
+  }, [onItemClick, selectionMode]);
 
   const handleDragStart = useCallback((item) => {
     if (onDragStartRef.current) {
