@@ -293,6 +293,95 @@ function PresentationControlDialog({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-4">
+            {/* Rotation Controls - Mobile */}
+            {onRotationChange && (
+              <div className="border border-gray-200 rounded-sm overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-base text-gray-900">
+                      {t('common:controls.rotation', 'Rotation')}
+                    </span>
+                    <span className="text-sm text-gray-600 font-mono">
+                      {Math.round(rotation || 0)}°
+                    </span>
+                  </div>
+                  
+                  {/* Manual rotation buttons */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onRotationChange((rotation || 0) - 15)}
+                      disabled={isAutoRotating}
+                      className="no-drag flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-sm transition-colors shadow-sm"
+                      title={t('common:controls.rotateLeft')}
+                    >
+                      <RotateCcw size={20} />
+                      <span className="text-sm font-medium">15°</span>
+                    </button>
+                    <button
+                      onClick={() => onRotationChange(0)}
+                      disabled={isAutoRotating}
+                      className="no-drag px-4 py-3 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-sm transition-colors text-sm font-medium shadow-sm"
+                      title={t('common:controls.resetRotation')}
+                    >
+                      0°
+                    </button>
+                    <button
+                      onClick={() => onRotationChange((rotation || 0) + 15)}
+                      disabled={isAutoRotating}
+                      className="no-drag flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-sm transition-colors shadow-sm"
+                      title={t('common:controls.rotateRight')}
+                    >
+                      <span className="text-sm font-medium">15°</span>
+                      <RotateCw size={20} />
+                    </button>
+                  </div>
+                  
+                  {/* Auto-rotation controls */}
+                  {onAutoRotateChange && (
+                    <div className="pt-3 border-t border-blue-200 space-y-3">
+                      <label className="no-drag flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isAutoRotating}
+                          onChange={(e) => onAutoRotateChange(e.target.checked)}
+                          className="no-drag w-5 h-5"
+                        />
+                        <span className="text-base font-medium">
+                          {t('common:controls.autoRotate', 'Auto-rotering')}
+                        </span>
+                      </label>
+                      
+                      {isAutoRotating && onAutoRotateSpeedChange && (
+                        <div className="space-y-2 bg-white rounded-sm p-3 border border-blue-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-700 font-medium">
+                              {t('common:controls.speed', 'Hastighet')}
+                            </span>
+                            <span className="text-sm text-gray-600 font-mono">
+                              {autoRotateSpeed}°/frame
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.5"
+                            max="5"
+                            step="0.5"
+                            value={autoRotateSpeed}
+                            onChange={(e) => onAutoRotateSpeedChange(parseFloat(e.target.value))}
+                            className="no-drag w-full h-2 bg-blue-100 rounded-sm appearance-none cursor-pointer"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>{t('common:controls.slow', 'Långsam')}</span>
+                            <span>{t('common:controls.fast', 'Snabb')}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {/* Inner Rings Section */}
             <div className="border border-gray-200 rounded-sm overflow-hidden">
               <button
