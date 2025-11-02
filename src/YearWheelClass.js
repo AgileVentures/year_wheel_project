@@ -127,6 +127,8 @@ class YearWheel {
     this.animationSpeed = 0.15; // Default: 0.15 rad/s (slow/smooth)
     this.animationEasing = true; // Use easing for smoother animation
     this.easingProgress = 0; // Track easing progress (0-1)
+    this.lastRotationCallbackTime = 0; // Track last rotation callback for throttling
+    this.rotationCallbackThrottle = 100; // Only send rotation updates every 100ms during animation
     this.isDragging = false;
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
@@ -3453,9 +3455,13 @@ class YearWheel {
     const rotationThisFrame = (this.animationSpeed * speedMultiplier * cappedDelta) / 1000;
     this.rotationAngle -= rotationThisFrame;
 
-    // Notify rotation change for casting sync
+    // Throttled rotation callback for casting sync (only every 100ms during animation)
     if (this.onRotationChange) {
-      this.onRotationChange(this.rotationAngle);
+      const timeSinceLastCallback = now - this.lastRotationCallbackTime;
+      if (timeSinceLastCallback >= this.rotationCallbackThrottle) {
+        this.onRotationChange(this.rotationAngle);
+        this.lastRotationCallbackTime = now;
+      }
     }
 
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -3475,6 +3481,7 @@ class YearWheel {
 
     this.isAnimating = true;
     this.lastAnimationTime = 0;
+    this.lastRotationCallbackTime = 0; // Reset throttle timer
     this.easingProgress = 0; // Reset easing
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
   }
@@ -3486,7 +3493,13 @@ class YearWheel {
       this.animationFrameId = null;
     }
     this.lastAnimationTime = 0;
+    this.lastRotationCallbackTime = 0;
     this.easingProgress = 0;
+    
+    // Send final rotation position when stopping
+    if (this.onRotationChange) {
+      this.onRotationChange(this.rotationAngle);
+    }
   }
 
   // Update animation speed on the fly
