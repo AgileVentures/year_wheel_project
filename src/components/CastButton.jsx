@@ -224,6 +224,11 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
       <QRCastModal
         isOpen={showQRModal}
         onClose={() => {
+          // Just close the modal, don't disconnect the session
+          setShowQRModal(false);
+        }}
+        onDisconnect={() => {
+          // Only disconnect when explicitly requested
           setShowQRModal(false);
           setSessionToken(null);
           if (stopRealtimeSession) {

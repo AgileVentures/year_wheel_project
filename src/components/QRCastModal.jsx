@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
  * Shows a pairing code that users can type on their TV
  * Used when Chrome Cast SDK is not available (iOS devices)
  */
-export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
+export const QRCastModal = ({ isOpen, onClose, onDisconnect, sessionToken, isConnected }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
@@ -146,6 +146,7 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
             </button>
           )}
           
+          {/* Close button - doesn't disconnect */}
           <button
             onClick={onClose}
             className={`w-full px-4 py-3 rounded-sm transition-colors font-medium text-lg ${
@@ -156,6 +157,16 @@ export const QRCastModal = ({ isOpen, onClose, sessionToken, isConnected }) => {
           >
             {isConnected ? t('cast.closeAndKeepCasting') : t('common:actions.close')}
           </button>
+          
+          {/* Disconnect button - only show when connected */}
+          {isConnected && onDisconnect && (
+            <button
+              onClick={onDisconnect}
+              className="w-full px-4 py-3 bg-red-500 text-white rounded-sm hover:bg-red-600 transition-colors font-medium"
+            >
+              {t('cast.stopCasting', { defaultValue: 'Stoppa casting' })}
+            </button>
+          )}
         </div>
 
         {/* Helper text */}
