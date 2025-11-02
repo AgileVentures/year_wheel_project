@@ -70,6 +70,22 @@ function PreviewWheelPage() {
     setRotation(newRotation);
   }, []);
   
+  // Device detection
+  const { isIOS, supportsCast, isMobile, isTablet } = useDeviceDetection();
+  const isMobileDevice = isMobile || isTablet || window.innerWidth < 768;
+  
+  // Cast manager hooks (Chrome Cast for Android, Realtime for iOS)
+  const { isCasting, sendCastMessage } = useCastManager();
+  const realtimeCast = useRealtimeCast();
+  const { 
+    isConnected: isRealtimeConnected, 
+    sendMessage: sendRealtimeMessage 
+  } = realtimeCast;
+  
+  // Determine which casting method is active
+  const isActivelyCasting = isCasting || isRealtimeConnected;
+  const activeSendMessage = (isIOS || !supportsCast) ? sendRealtimeMessage : sendCastMessage;
+  
   // Handle display zoom change for casting
   const handleDisplayZoomChange = useCallback((newZoom) => {
     setDisplayZoom(newZoom);
@@ -91,22 +107,6 @@ function PreviewWheelPage() {
       activeSendMessage('wheel:hide_item', {});
     }
   }, [isActivelyCasting, activeSendMessage]);
-  
-  // Device detection
-  const { isIOS, supportsCast, isMobile, isTablet } = useDeviceDetection();
-  const isMobileDevice = isMobile || isTablet || window.innerWidth < 768;
-  
-  // Cast manager hooks (Chrome Cast for Android, Realtime for iOS)
-  const { isCasting, sendCastMessage } = useCastManager();
-  const realtimeCast = useRealtimeCast();
-  const { 
-    isConnected: isRealtimeConnected, 
-    sendMessage: sendRealtimeMessage 
-  } = realtimeCast;
-  
-  // Determine which casting method is active
-  const isActivelyCasting = isCasting || isRealtimeConnected;
-  const activeSendMessage = (isIOS || !supportsCast) ? sendRealtimeMessage : sendCastMessage;
 
   useEffect(() => {
     const loadWheel = async () => {
