@@ -24,7 +24,11 @@ function PresentationControlDialog({
   isAutoRotating,
   onAutoRotateChange,
   autoRotateSpeed,
-  onAutoRotateSpeedChange
+  onAutoRotateSpeedChange,
+  // Display zoom control for casting
+  displayZoom,
+  onDisplayZoomChange,
+  sendMessage
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [position, setPosition] = useState({ x: 20, y: 20 });
@@ -378,6 +382,66 @@ function PresentationControlDialog({
                       )}
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+            
+            {/* Display Zoom Controls - For Casting */}
+            {sendMessage && onDisplayZoomChange && (
+              <div className="border border-gray-200 rounded-sm overflow-hidden bg-gradient-to-br from-green-50 to-green-100">
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-base text-gray-900">
+                      {t('common:cast.displayZoom')}
+                    </span>
+                    <span className="text-sm text-gray-600 font-mono">
+                      {displayZoom || 100}%
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onDisplayZoomChange(Math.max(50, (displayZoom || 100) - 10))}
+                      disabled={(displayZoom || 100) <= 50}
+                      className="no-drag w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-sm text-xl font-bold transition-colors"
+                    >
+                      −
+                    </button>
+                    
+                    <input
+                      type="range"
+                      min="50"
+                      max="200"
+                      value={displayZoom || 100}
+                      onChange={(e) => onDisplayZoomChange(parseInt(e.target.value))}
+                      className="no-drag flex-1 h-2 bg-gray-200 rounded-sm appearance-none cursor-pointer accent-[#00A4A6]"
+                    />
+                    
+                    <button
+                      onClick={() => onDisplayZoomChange(Math.min(200, (displayZoom || 100) + 10))}
+                      disabled={(displayZoom || 100) >= 200}
+                      className="no-drag w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-sm text-xl font-bold transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                  
+                  {/* Preset Zoom Buttons */}
+                  <div className="flex gap-2 flex-wrap">
+                    {[75, 100, 125, 150].map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => onDisplayZoomChange(preset)}
+                        className={`no-drag px-3 py-1.5 rounded-sm text-xs font-medium transition-colors ${
+                          (displayZoom || 100) === preset
+                            ? 'bg-[#00A4A6] text-white'
+                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                        }`}
+                      >
+                        {preset}%
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

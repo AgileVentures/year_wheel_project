@@ -529,7 +529,7 @@ export default function CastReceiverPage() {
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setDisplayZoom(Math.max(50, displayZoom - 10))}
-                className="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xl font-bold transition-colors"
+                className="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white rounded-sm text-xl font-bold transition-colors"
                 disabled={displayZoom <= 50}
               >
                 −
@@ -541,13 +541,13 @@ export default function CastReceiverPage() {
                 max="200"
                 value={displayZoom}
                 onChange={(e) => setDisplayZoom(parseInt(e.target.value))}
-                className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#00A4A6]"
+                className="flex-1 h-2 bg-gray-700 rounded-sm appearance-none cursor-pointer accent-[#00A4A6]"
                 style={{ minWidth: '200px' }}
               />
               
               <button
                 onClick={() => setDisplayZoom(Math.min(200, displayZoom + 10))}
-                className="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xl font-bold transition-colors"
+                className="w-10 h-10 flex items-center justify-center bg-gray-700 hover:bg-gray-600 text-white rounded-sm text-xl font-bold transition-colors"
                 disabled={displayZoom >= 200}
               >
                 +
@@ -560,7 +560,7 @@ export default function CastReceiverPage() {
                 <button
                   key={preset}
                   onClick={() => setDisplayZoom(preset)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-sm text-sm font-medium transition-colors ${
                     displayZoom === preset
                       ? 'bg-[#00A4A6] text-white'
                       : 'bg-gray-700 text-white hover:bg-gray-600'
@@ -573,7 +573,7 @@ export default function CastReceiverPage() {
             
             <button
               onClick={() => setDisplayZoom(100)}
-              className="w-full mt-3 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+              className="w-full mt-3 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-sm transition-colors"
             >
               {t('common:actions.reset')}
             </button>

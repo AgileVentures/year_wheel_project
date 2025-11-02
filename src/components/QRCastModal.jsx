@@ -7,21 +7,12 @@ import { useTranslation } from 'react-i18next';
  * Shows a pairing code that users can type on their TV
  * Used when Chrome Cast SDK is not available (iOS devices)
  */
-export const QRCastModal = ({ isOpen, onClose, onDisconnect, sessionToken, isConnected, sendMessage }) => {
+export const QRCastModal = ({ isOpen, onClose, onDisconnect, sessionToken, isConnected }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
-  const [displayZoom, setDisplayZoom] = useState(100); // Display zoom control (50-200%)
 
   // Construct receiver URL
   const receiverUrl = `${window.location.origin}/cast-receiver?code=${sessionToken}`;
-  
-  // Send display zoom changes to receiver
-  const handleZoomChange = (newZoom) => {
-    setDisplayZoom(newZoom);
-    if (isConnected && sendMessage) {
-      sendMessage('wheel:display_zoom', { zoom: newZoom });
-    }
-  };
 
   const handleCopyCode = async () => {
     try {
@@ -130,63 +121,6 @@ export const QRCastModal = ({ isOpen, onClose, onDisconnect, sessionToken, isCon
               <div className="flex-1">
                 <p className="text-gray-700">{t('cast.codeStep3')}</p>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Display Zoom Controls - Only show when connected */}
-        {isConnected && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">
-              {t('cast.displayZoom')}
-            </h3>
-            
-            <div className="flex items-center gap-3 mb-3">
-              <button
-                onClick={() => handleZoomChange(Math.max(50, displayZoom - 10))}
-                className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-300 rounded-lg text-xl font-bold transition-colors disabled:opacity-50"
-                disabled={displayZoom <= 50}
-              >
-                −
-              </button>
-              
-              <input
-                type="range"
-                min="50"
-                max="200"
-                value={displayZoom}
-                onChange={(e) => handleZoomChange(parseInt(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#00A4A6]"
-              />
-              
-              <button
-                onClick={() => handleZoomChange(Math.min(200, displayZoom + 10))}
-                className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 border border-gray-300 rounded-lg text-xl font-bold transition-colors disabled:opacity-50"
-                disabled={displayZoom >= 200}
-              >
-                +
-              </button>
-              
-              <span className="text-sm font-mono font-semibold text-gray-700 min-w-[50px] text-center">
-                {displayZoom}%
-              </span>
-            </div>
-            
-            {/* Preset Zoom Buttons */}
-            <div className="flex gap-2 flex-wrap">
-              {[75, 100, 125, 150].map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => handleZoomChange(preset)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    displayZoom === preset
-                      ? 'bg-[#00A4A6] text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-                  }`}
-                >
-                  {preset}%
-                </button>
-              ))}
             </div>
           </div>
         )}

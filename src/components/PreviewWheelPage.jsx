@@ -42,6 +42,7 @@ function PreviewWheelPage() {
   const [showControlDialog, setShowControlDialog] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(false);
   const [autoRotateSpeed, setAutoRotateSpeed] = useState(1); // degrees per frame
+  const [displayZoom, setDisplayZoom] = useState(100); // TV display zoom (50-200%)
   
   // Local state for organizationData to allow toggling visibility
   const [localOrgData, setLocalOrgData] = useState(null);
@@ -67,6 +68,14 @@ function PreviewWheelPage() {
     lastRotationSentRef.current = now;
     setRotation(newRotation);
   }, []);
+  
+  // Handle display zoom change for casting
+  const handleDisplayZoomChange = useCallback((newZoom) => {
+    setDisplayZoom(newZoom);
+    if (isActivelyCasting && activeSendMessage) {
+      activeSendMessage('wheel:display_zoom', { zoom: newZoom });
+    }
+  }, [isActivelyCasting, activeSendMessage]);
   
   // Device detection
   const { isIOS, supportsCast, isMobile, isTablet } = useDeviceDetection();
@@ -716,6 +725,9 @@ function PreviewWheelPage() {
           onAutoRotateChange={setIsAutoRotating}
           autoRotateSpeed={autoRotateSpeed}
           onAutoRotateSpeedChange={setAutoRotateSpeed}
+          displayZoom={displayZoom}
+          onDisplayZoomChange={handleDisplayZoomChange}
+          sendMessage={isActivelyCasting ? activeSendMessage : null}
         />
       )}
 

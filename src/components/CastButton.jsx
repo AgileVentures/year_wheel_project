@@ -238,7 +238,6 @@ export default function CastButton({ wheelData, realtimeCast, onCastStart, onCas
         sessionToken={sessionToken}
         wheelData={wheelData}
         isConnected={isRealtimeConnected}
-        sendMessage={realtimeCast?.sendMessage}
       />
     </>
   );
