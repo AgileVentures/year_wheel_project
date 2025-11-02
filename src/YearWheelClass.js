@@ -3490,9 +3490,15 @@ class YearWheel {
         if (this.isPointInItemRegion(x, y, itemRegion)) {
           // Start activity drag
           const dragMode = this.detectDragZone(x, y, itemRegion);
+          // CRITICAL: Look up fresh item data from organizationData (single source of truth)
           const freshItem = this.organizationData.items.find(
-            (i) => i.id === itemRegion.item.id
-          ) || itemRegion.item; // Fallback to cached item if not found (e.g., for clusters)
+            (i) => i.id === itemRegion.itemId
+          );
+          
+          // If item not found in current organizationData, skip (year filtered out)
+          if (!freshItem) {
+            return;
+          }
 
           // CRITICAL: Don't allow dragging clustered items (they need special handling)
           if (freshItem.isCluster) {
@@ -3580,18 +3586,6 @@ class YearWheel {
 
   dragActivity(event) {
     if (!this.dragState.isDragging) return;
-
-    // DEBUG: Check what data we have during drag
-    if (!this._dragDataLogged) {
-      console.log('[dragActivity] organizationData.items count:', this.organizationData.items.length);
-      console.log('[dragActivity] Current year:', this.year);
-      console.log('[dragActivity] Sample item years:', this.organizationData.items.slice(0, 3).map(i => ({
-        name: i.name,
-        start: i.startDate,
-        end: i.endDate
-      })));
-      this._dragDataLogged = true;
-    }
 
     // Get current mouse position and convert to angle
     const rect = this.canvas.getBoundingClientRect();
@@ -3774,6 +3768,10 @@ class YearWheel {
 
     this.canvas.style.cursor = "default";
 
+    // CRITICAL: Invalidate cache to force fresh render with updated clickableItems
+    // This prevents stale hover states after drag ends
+    this.invalidateCache();
+
     // Broadcast the drag operation to other users (real-time collaboration)
     if (this.broadcastOperation) {
       this.broadcastOperation('drag', updatedItem.id, {
@@ -3877,11 +3875,12 @@ class YearWheel {
     }
 
     // Only update if hover state actually changed
-    // Look up fresh item data from organizationData instead of using cached item
+    // CRITICAL: Always look up fresh item data from organizationData (single source of truth)
+    // clickableItems now stores only itemId, not the full object reference
     let newHoveredItem = hoveredItemRegion
       ? this.organizationData.items.find(
-          (i) => i.id === hoveredItemRegion.item.id
-        ) || hoveredItemRegion.item
+          (i) => i.id === hoveredItemRegion.itemId
+        )
       : null;
     
     // CRITICAL: Don't show hover for clustered items (they need special handling)
@@ -3982,10 +3981,15 @@ class YearWheel {
     for (const itemRegion of this.clickableItems) {
       if (this.isPointInItemRegion(x, y, itemRegion)) {
         if (this.options.onItemClick) {
-          // Look up fresh item data from organizationData instead of using cached snapshot
+          // CRITICAL: Look up fresh item data from organizationData (single source of truth)
           const freshItem = this.organizationData.items.find(
-            (i) => i.id === itemRegion.item.id
-          ) || itemRegion.item;
+            (i) => i.id === itemRegion.itemId
+          );
+          
+          // If item not found in current organizationData, skip (year filtered out)
+          if (!freshItem) {
+            break;
+          }
           
           // TODO: For clustered items, show a selection dialog
           // For now, just trigger the click handler - the parent can handle clusters
@@ -4861,10 +4865,10 @@ class YearWheel {
             );
           });
 
-          // Cluster by week if in full year view (not zoomed) and not dragging
+          // Cluster by week if in full year view (not zoomed)
+          // DON'T disable clustering during drag - just skip rendering the dragged item later
           if (this.zoomedMonth === null && this.zoomedQuarter === null) {
-            const draggedItemId = this.dragState?.draggedItem?.id || null;
-            ringItems = this.clusterItemsByWeek(ringItems, draggedItemId);
+            ringItems = this.clusterItemsByWeek(ringItems, null); // Always cluster
           }
 
           // Assign items to tracks to handle overlaps
@@ -5097,8 +5101,10 @@ class YearWheel {
             }
 
             // Store clickable region for this item
+            // CRITICAL: Store only item ID, not the full object reference
+            // This prevents stale data when organizationData updates
             this.clickableItems.push({
-              item: item,
+              itemId: item.id, // Store ID only, look up fresh data later
               startRadius: itemStartRadius,
               endRadius: itemStartRadius + itemWidth,
               startAngle: this.toRadians(adjustedStartAngle),
@@ -5251,10 +5257,10 @@ class YearWheel {
         return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
       });
 
-      // Cluster by week if in full year view (not zoomed) and not dragging
+      // Cluster by week if in full year view (not zoomed)
+      // DON'T disable clustering during drag - just skip rendering the dragged item later
       if (this.zoomedMonth === null && this.zoomedQuarter === null) {
-        const draggedItemId = this.dragState?.draggedItem?.id || null;
-        ringItems = this.clusterItemsByWeek(ringItems, draggedItemId);
+        ringItems = this.clusterItemsByWeek(ringItems, null); // Always cluster
       }
 
       // SAFETY CHECK: Prevent negative radius
@@ -5464,8 +5470,10 @@ class YearWheel {
           }
 
           // Store clickable region for this item
+          // CRITICAL: Store only item ID, not the full object reference
+          // This prevents stale data when organizationData updates
           this.clickableItems.push({
-            item: item,
+            itemId: item.id, // Store ID only, look up fresh data later
             startRadius: itemStartRadius,
             endRadius: itemStartRadius + itemWidth,
             startAngle: this.toRadians(adjustedStartAngle),

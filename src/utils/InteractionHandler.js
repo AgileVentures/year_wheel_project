@@ -487,6 +487,27 @@ class InteractionHandler {
     };
 
     // Prepare update object
+    // Safety check - if no dragged item, just reset state and return
+    if (!this.dragState.draggedItem) {
+      this.dragState = {
+        isDragging: false,
+        dragMode: null,
+        draggedItem: null,
+        draggedItemRegion: null,
+        startMouseAngle: 0,
+        currentMouseAngle: 0,
+        initialStartAngle: 0,
+        initialEndAngle: 0,
+        previewStartAngle: 0,
+        previewEndAngle: 0,
+        targetRing: null,
+        targetRingInfo: null,
+      };
+      this.wheel.canvas.style.cursor = 'default';
+      this.wheel.create();
+      return;
+    }
+    
     const updates = {
       startDate: formatDate(newStartDate),
       endDate: formatDate(newEndDate)

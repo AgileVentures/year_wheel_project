@@ -103,7 +103,8 @@ function YearWheel({
     const filteredItems = organizationData.items.filter(item => {
       const startYear = new Date(item.startDate).getFullYear();
       const endYear = new Date(item.endDate).getFullYear();
-      return currentYear >= startYear && currentYear <= endYear;
+      // Include item if it overlaps with the year
+      return startYear <= currentYear && endYear >= currentYear;
     });
     
     return {
