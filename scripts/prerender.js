@@ -40,7 +40,7 @@ const pagesToPrerender = [
   {
     path: '/pricing',
     title: 'Priser - YearWheel',
-    description: 'Börja gratis med 2 årshjul. Uppgradera till Premium för obegränsat antal hjul, AI-assistans och teamsamarbete.'
+    description: 'Börja gratis med 3 årshjul och 1 team. Uppgradera till Premium för obegränsat antal hjul, AI-assistans och teamsamarbete.'
   }
 ];
 

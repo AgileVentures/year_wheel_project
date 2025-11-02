@@ -19,17 +19,9 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
 
   if (!item) return null;
 
-  console.log('[ItemTooltip] Rendering with item:', item.id, item.name);
-  console.log('[ItemTooltip] Item dates:', item.startDate, item.endDate);
-  console.log('[ItemTooltip] organizationData rings:', organizationData.rings.length);
-  console.log('[ItemTooltip] organizationData activityGroups:', organizationData.activityGroups.length);
-  console.log('[ItemTooltip] organizationData items:', organizationData.items.length);
-
   const ring = organizationData.rings.find(r => r.id === item.ringId);
   const activity = organizationData.activityGroups.find(a => a.id === item.activityId);
   const label = organizationData.labels.find(l => l.id === item.labelId);
-  
-  console.log('[ItemTooltip] Lookup results - ring:', ring?.name, 'activity:', activity?.name, 'label:', label?.name);
   const startDate = new Date(item.startDate);
   const endDate = new Date(item.endDate);
 

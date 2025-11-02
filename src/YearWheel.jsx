@@ -310,10 +310,6 @@ function YearWheel({
   }, [selectedItems, clearSelections, t]);
 
   const handleItemClick = useCallback((item, position) => {
-    console.log('[YearWheel] Item clicked:', item.id, item.name);
-    console.log('[YearWheel] Item dates:', item.startDate, item.endDate);
-    console.log('[YearWheel] Current year prop:', year);
-    
     // In selection mode, toggle item selection
     if (selectionMode) {
       setSelectedItems(prev => {
@@ -332,7 +328,6 @@ function YearWheel({
     }
     
     // Normal mode: show tooltip
-    console.log('[YearWheel] Setting selected item and showing tooltip');
     setSelectedItem(item);
     
     // Position tooltip at upper left of container with some padding
@@ -822,7 +817,7 @@ function YearWheel({
       {selectedItem && tooltipPosition && (
         <ItemTooltip
           item={selectedItem}
-          organizationData={organizationData}
+          organizationData={yearFilteredOrgData}
           position={tooltipPosition}
           onEdit={setEditingItem}
           onDelete={handleDeleteAktivitet}

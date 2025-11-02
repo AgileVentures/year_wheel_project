@@ -3492,7 +3492,12 @@ class YearWheel {
           const dragMode = this.detectDragZone(x, y, itemRegion);
           const freshItem = this.organizationData.items.find(
             (i) => i.id === itemRegion.item.id
-          );
+          ) || itemRegion.item; // Fallback to cached item if not found (e.g., for clusters)
+
+          // CRITICAL: Don't allow dragging clustered items (they need special handling)
+          if (freshItem.isCluster) {
+            return; // Exit early - don't start drag for clusters
+          }
 
           // Calculate mouse angle at drag start in SCREEN coordinates
           // We'll draw the preview in rotated context, so use raw screen angle
@@ -3506,8 +3511,10 @@ class YearWheel {
           const screenStartAngle = itemRegion.startAngle + this.rotationAngle;
           const screenEndAngle = itemRegion.endAngle + this.rotationAngle;
 
+          // Set PENDING drag state - only activate after movement threshold
           this.dragState = {
-            isDragging: true,
+            isDragging: false, // Not dragging yet - waiting for movement
+            isPending: true, // Pending drag activation
             dragMode: dragMode,
             draggedItem: freshItem,
             draggedItemRegion: itemRegion,
@@ -3517,22 +3524,13 @@ class YearWheel {
             initialEndAngle: screenEndAngle, // Screen coordinates
             previewStartAngle: screenStartAngle, // Screen coordinates
             previewEndAngle: screenEndAngle, // Screen coordinates
+            startX: x, // Store initial mouse position
+            startY: y,
           };
 
-          // Notify parent that drag has started (for undo/redo batch mode)
-          if (this.onDragStart) {
-            this.onDragStart();
-          }
+          // Don't notify parent or change cursor yet - wait for actual drag
 
-          // Set cursor based on drag mode
-          if (dragMode === "resize-start" || dragMode === "resize-end") {
-            this.canvas.style.cursor = "ew-resize";
-          } else {
-            this.canvas.style.cursor = "grabbing"; // Use grabbing cursor for better UX
-          }
-
-          // Immediate visual feedback - redraw with drag state active
-          this.create();
+          return; // Don't start wheel rotation
 
           return; // Don't start wheel rotation
         }
@@ -3794,6 +3792,39 @@ class YearWheel {
   }
 
   handleMouseMove(event) {
+    // Check if we have a pending drag that needs activation
+    if (this.dragState.isPending && !this.dragState.isDragging) {
+      const rect = this.canvas.getBoundingClientRect();
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      
+      // Calculate movement distance
+      const dx = x - this.dragState.startX;
+      const dy = y - this.dragState.startY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Activate drag if moved more than 5 pixels
+      const DRAG_THRESHOLD = 5;
+      if (distance > DRAG_THRESHOLD) {
+        this.dragState.isDragging = true;
+        this.dragState.isPending = false;
+        
+        // Notify parent that drag has started (for undo/redo batch mode)
+        if (this.onDragStart) {
+          this.onDragStart();
+        }
+        
+        // Set cursor based on drag mode
+        if (this.dragState.dragMode === "resize-start" || this.dragState.dragMode === "resize-end") {
+          this.canvas.style.cursor = "ew-resize";
+        } else {
+          this.canvas.style.cursor = "grabbing";
+        }
+      }
+    }
+    
     // Handle activity dragging
     if (this.dragState.isDragging) {
       this.dragActivity(event);
@@ -3835,11 +3866,17 @@ class YearWheel {
 
     // Only update if hover state actually changed
     // Look up fresh item data from organizationData instead of using cached item
-    const newHoveredItem = hoveredItemRegion
+    let newHoveredItem = hoveredItemRegion
       ? this.organizationData.items.find(
           (i) => i.id === hoveredItemRegion.item.id
         ) || hoveredItemRegion.item
       : null;
+    
+    // CRITICAL: Don't show hover for clustered items (they need special handling)
+    // Clustered items have IDs like "week-2025-25-..." and isCluster flag
+    if (newHoveredItem && newHoveredItem.isCluster) {
+      newHoveredItem = null; // Skip hover display for clusters
+    }
     const hoveredItemId = this.hoveredItem ? this.hoveredItem.id : null;
     const newHoveredItemId = newHoveredItem ? newHoveredItem.id : null;
 
@@ -3901,6 +3938,25 @@ class YearWheel {
   }
 
   handleClick(event) {
+    // Clear pending drag state
+    if (this.dragState.isPending) {
+      this.dragState = {
+        isDragging: false,
+        isPending: false,
+        dragMode: null,
+        draggedItem: null,
+        draggedItemRegion: null,
+        startMouseAngle: 0,
+        currentMouseAngle: 0,
+        initialStartAngle: 0,
+        initialEndAngle: 0,
+        previewStartAngle: 0,
+        previewEndAngle: 0,
+        targetRing: null,
+        targetRingInfo: null,
+      };
+    }
+    
     // Don't handle clicks if we were dragging
     if (this.isDragging || this.dragState.isDragging) return;
 
@@ -3917,9 +3973,13 @@ class YearWheel {
           // Look up fresh item data from organizationData instead of using cached snapshot
           const freshItem = this.organizationData.items.find(
             (i) => i.id === itemRegion.item.id
-          );
+          ) || itemRegion.item;
+          
+          // TODO: For clustered items, show a selection dialog
+          // For now, just trigger the click handler - the parent can handle clusters
+          
           // Pass client coordinates for tooltip positioning
-          this.options.onItemClick(freshItem || itemRegion.item, {
+          this.options.onItemClick(freshItem, {
             x: event.clientX,
             y: event.clientY,
           });
