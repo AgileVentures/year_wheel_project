@@ -3581,6 +3581,18 @@ class YearWheel {
   dragActivity(event) {
     if (!this.dragState.isDragging) return;
 
+    // DEBUG: Check what data we have during drag
+    if (!this._dragDataLogged) {
+      console.log('[dragActivity] organizationData.items count:', this.organizationData.items.length);
+      console.log('[dragActivity] Current year:', this.year);
+      console.log('[dragActivity] Sample item years:', this.organizationData.items.slice(0, 3).map(i => ({
+        name: i.name,
+        start: i.startDate,
+        end: i.endDate
+      })));
+      this._dragDataLogged = true;
+    }
+
     // Get current mouse position and convert to angle
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
