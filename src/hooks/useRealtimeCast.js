@@ -48,20 +48,51 @@ export function useRealtimeCast() {
       channel
         .on('broadcast', { event: 'cast-message' }, ({ payload }) => {
           console.log('[useRealtimeCast] Received message:', payload);
+          
+          // Handle READY signal from receiver
+          if (payload && payload.type === CAST_MESSAGE_TYPES.ACK) {
+            console.log('[useRealtimeCast] 📥 Receiver is READY! Sending INIT now...');
+            
+            // Send INIT immediately when receiver signals ready
+            if (initialState) {
+              channel.send({
+                type: 'broadcast',
+                event: 'cast-message',
+                payload: {
+                  type: CAST_MESSAGE_TYPES.INIT,
+                  data: initialState,
+                  timestamp: Date.now()
+                }
+              });
+              
+              // Send queued messages after INIT
+              if (messageQueueRef.current.length > 0) {
+                console.log('[useRealtimeCast] Sending queued messages:', messageQueueRef.current.length);
+                messageQueueRef.current.forEach(msg => {
+                  channel.send({
+                    type: 'broadcast',
+                    event: 'cast-message',
+                    payload: msg
+                  });
+                });
+                messageQueueRef.current = [];
+              }
+            }
+          }
         })
         .subscribe((status) => {
           console.log('[useRealtimeCast] Channel status:', status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('[useRealtimeCast] ✅ Connected!');
+            console.log('[useRealtimeCast] ✅ Connected! Waiting for receiver...');
             setIsConnected(true);
             setSessionToken(token);
             setError(null);
             
-            // Send initial state after a short delay to ensure receiver is ready
+            // Also send INIT after delay as fallback (in case receiver doesn't send READY)
             if (initialState) {
               setTimeout(() => {
-                console.log('[useRealtimeCast] Sending INIT with data:', initialState.title);
+                console.log('[useRealtimeCast] ⏰ Fallback: Sending INIT (3s timeout)');
                 channel.send({
                   type: 'broadcast',
                   event: 'cast-message',
@@ -84,7 +115,7 @@ export function useRealtimeCast() {
                   });
                   messageQueueRef.current = [];
                 }
-              }, 1000); // 1 second delay to ensure receiver is listening
+              }, 3000); // 3 second fallback delay
             }
           } else if (status === 'CHANNEL_ERROR') {
             console.error('[useRealtimeCast] ❌ Channel error');
@@ -245,6 +276,21 @@ export function useRealtimeCastReceiver(sessionToken) {
           console.log('[useRealtimeCastReceiver] ✅ Listening for messages');
           setIsConnected(true);
           setError(null);
+          
+          // Send READY signal to sender to trigger INIT
+          setTimeout(() => {
+            console.log('[useRealtimeCastReceiver] 📤 Sending READY signal...');
+            channel.send({
+              type: 'broadcast',
+              event: 'cast-message',
+              payload: {
+                type: CAST_MESSAGE_TYPES.ACK,
+                timestamp: Date.now()
+              }
+            }).catch(err => {
+              console.error('[useRealtimeCastReceiver] Failed to send READY:', err);
+            });
+          }, 100); // Small delay to ensure channel is fully ready
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.error('[useRealtimeCastReceiver] ❌ Connection failed');
           setError('Connection failed');

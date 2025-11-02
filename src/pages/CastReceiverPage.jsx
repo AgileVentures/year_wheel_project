@@ -43,6 +43,16 @@ export default function CastReceiverPage() {
   const [rotation, setRotation] = useState(0);
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
+  
+  // Debug state - visible on screen
+  const [debugInfo, setDebugInfo] = useState({
+    channelStatus: 'Not started',
+    messagesReceived: 0,
+    lastMessageType: 'None',
+    lastMessageTime: null,
+    channelName: null,
+    realtimeConnected: false
+  });
 
   // Initialize Cast Receiver (skip if using Realtime or waiting for code)
   useEffect(() => {
@@ -102,8 +112,17 @@ export default function CastReceiverPage() {
   useEffect(() => {
     if (!sessionToken) return;
     
+    const channelName = `cast:${sessionToken}`;
     console.log('[Receiver] Realtime setup with token:', sessionToken);
     console.log('[Receiver] Realtime connected:', realtimeReceiver.isConnected);
+    
+    // Update debug info
+    setDebugInfo(prev => ({
+      ...prev,
+      channelName: channelName,
+      channelStatus: realtimeReceiver.isConnected ? 'SUBSCRIBED' : 'CONNECTING',
+      realtimeConnected: realtimeReceiver.isConnected
+    }));
     
     // Update connection status based on Realtime
     setIsConnected(realtimeReceiver.isConnected);
@@ -111,10 +130,21 @@ export default function CastReceiverPage() {
     if (realtimeReceiver.error) {
       console.error('[Receiver] Realtime error:', realtimeReceiver.error);
       setConnectionError(realtimeReceiver.error);
+      setDebugInfo(prev => ({
+        ...prev,
+        channelStatus: `ERROR: ${realtimeReceiver.error}`
+      }));
     }
 
     // Set up message handler
     realtimeReceiver.onMessage((message) => {
+      console.log('[Receiver] 🔍 RAW MESSAGE:', JSON.stringify(message, null, 2));
+      setDebugInfo(prev => ({
+        ...prev,
+        messagesReceived: prev.messagesReceived + 1,
+        lastMessageType: message?.type || 'Unknown',
+        lastMessageTime: new Date().toLocaleTimeString()
+      }));
       handleRealtimeMessage(message);
     });
   }, [sessionToken, realtimeReceiver]);
@@ -358,11 +388,27 @@ export default function CastReceiverPage() {
         <div className="text-center max-w-lg px-8">
           <img src="/year_wheel_symbol.svg" alt="YearWheel" className="w-32 h-32 mx-auto mb-6 animate-pulse opacity-60" />
           <p className="text-2xl font-semibold mb-2">{t('common:cast.waitingForConnection')}</p>
-          <p className="text-gray-400 mb-8">
+          <p className="text-gray-400 mb-4">
             {sessionToken 
               ? t('common:cast.connectingWithCode')
               : t('common:cast.startCastingFromMobile')}
           </p>
+          
+          {/* Debug Information */}
+          <div className="bg-black bg-opacity-40 rounded-sm p-4 mb-6 text-left font-mono text-xs">
+            <div className="text-[#9FCB3E] font-bold mb-2">🔍 DEBUG INFO</div>
+            <div className="space-y-1 text-gray-300">
+              <div><span className="text-[#A4E6E0]">Channel:</span> {debugInfo.channelName || 'N/A'}</div>
+              <div><span className="text-[#A4E6E0]">Status:</span> {debugInfo.channelStatus}</div>
+              <div><span className="text-[#A4E6E0]">Realtime Connected:</span> {debugInfo.realtimeConnected ? '✅ YES' : '❌ NO'}</div>
+              <div><span className="text-[#A4E6E0]">Messages Received:</span> {debugInfo.messagesReceived}</div>
+              <div><span className="text-[#A4E6E0]">Last Message Type:</span> {debugInfo.lastMessageType}</div>
+              <div><span className="text-[#A4E6E0]">Last Message Time:</span> {debugInfo.lastMessageTime || 'N/A'}</div>
+              <div className="pt-2 border-t border-gray-600">
+                <span className="text-[#A4E6E0]">Session Token:</span> {sessionToken}
+              </div>
+            </div>
+          </div>
           
           {/* Cancel button - go back to code input */}
           <button
@@ -396,13 +442,22 @@ export default function CastReceiverPage() {
   // Render YearWheel
   return (
     <div className="h-screen w-screen bg-[#1B2A63] overflow-hidden relative">
-      {/* Connection indicator */}
-      <div className="absolute top-4 right-4 z-50 flex items-center space-x-2 bg-black bg-opacity-50 px-4 py-2 rounded-full">
-        <span className="flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-[#9FCB3E] opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#9FCB3E]"></span>
-        </span>
-        <span className="text-white text-sm font-medium">{t('common:cast.connected')}</span>
+      {/* Connection indicator with debug info */}
+      <div className="absolute top-4 right-4 z-50 flex flex-col items-end gap-2">
+        <div className="flex items-center space-x-2 bg-black bg-opacity-50 px-4 py-2 rounded-full">
+          <span className="flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-[#9FCB3E] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#9FCB3E]"></span>
+          </span>
+          <span className="text-white text-sm font-medium">{t('common:cast.connected')}</span>
+        </div>
+        {/* Mini debug panel */}
+        <div className="bg-black bg-opacity-70 rounded-sm px-3 py-2 text-xs font-mono text-gray-300 max-w-xs">
+          <div className="text-[#9FCB3E] font-bold mb-1">DEBUG</div>
+          <div>Messages: {debugInfo.messagesReceived}</div>
+          <div>Last: {debugInfo.lastMessageType}</div>
+          <div className="text-[10px] text-gray-400 truncate">Channel: {debugInfo.channelName}</div>
+        </div>
       </div>
 
       {/* Disconnect button (TV remote friendly - large and accessible) */}
