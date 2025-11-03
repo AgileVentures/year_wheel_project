@@ -3905,6 +3905,15 @@ class YearWheel {
       return;
     }
 
+    // Skip hover detection entirely in selection mode (no need for hover feedback when selecting)
+    if (this.selectionMode) {
+      // Reset cursor to default in selection mode
+      if (this.canvas.style.cursor !== 'default') {
+        this.canvas.style.cursor = 'default';
+      }
+      return;
+    }
+
     // Handle hover detection for activities (throttled to prevent excessive redraws)
     const now = Date.now();
     const timeSinceLastCheck = now - this.lastHoverCheck;
