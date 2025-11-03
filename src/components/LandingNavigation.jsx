@@ -10,7 +10,6 @@ function LandingNavigation({
   scrollToFeatures,
   scrollToTemplates, 
   scrollToPricing, 
-  scrollToComparison, 
   scrollToAuth 
 }) {
   const { t } = useTranslation(['landing', 'auth']);
@@ -56,9 +55,6 @@ function LandingNavigation({
               </button>
               <button onClick={scrollToPricing} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
                 {t('landing:nav.pricing')}
-              </button>
-              <button onClick={scrollToComparison} className="text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                {t('landing:nav.comparison')}
               </button>
               <LanguageSwitcher />
               <button
@@ -125,15 +121,6 @@ function LandingNavigation({
                 className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-sm font-medium transition-colors"
               >
                 {t('landing:nav.pricing')}
-              </button>
-              <button
-                onClick={() => {
-                  scrollToComparison();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-sm font-medium transition-colors"
-              >
-                {t('landing:nav.comparison')}
               </button>
               <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
                 <button

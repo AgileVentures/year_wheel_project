@@ -23,6 +23,17 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'system-ui', 'sans-serif'],
       },
+      borderRadius: {
+        'none': '0px',
+        'sm': '0.125rem',
+        DEFAULT: '0.125rem',  // Make 'rounded' use the sm value (2px)
+        'md': '0.25rem',      // Keep md available if needed (4px)
+        'lg': '0.5rem',       // Keep lg available if needed (8px)
+        'xl': '0.75rem',
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+        'full': '9999px',
+      },
     },
   },
   plugins: [
