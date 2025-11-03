@@ -324,6 +324,14 @@ function YearWheel({
       return;
     }
     
+    // CRITICAL: Validate that the item exists in current organizationData
+    // This prevents showing stale data when canvas clickableItems array is out of sync
+    const currentItem = yearFilteredOrgData?.items?.find(i => i.id === item.id);
+    if (!currentItem) {
+      console.warn('[YearWheel] Clicked item not found in current data, ignoring click');
+      return; // Item doesn't exist in current data - ignore the click
+    }
+    
     // Check for modifier key: Cmd (Mac) or Ctrl (Windows/Linux)
     const isMultiSelectClick = event && (event.metaKey || event.ctrlKey);
     
@@ -331,10 +339,10 @@ function YearWheel({
     if (selectionMode || isMultiSelectClick) {
       setSelectedItems(prev => {
         const newSet = new Set(prev);
-        if (newSet.has(item.id)) {
-          newSet.delete(item.id);
+        if (newSet.has(currentItem.id)) {
+          newSet.delete(currentItem.id);
         } else {
-          newSet.add(item.id);
+          newSet.add(currentItem.id);
         }
         return newSet;
       });
@@ -345,8 +353,8 @@ function YearWheel({
       return; // Early return - don't show tooltip in selection mode
     }
     
-    // Normal mode: show tooltip only
-    setSelectedItem(item);
+    // Normal mode: show tooltip with validated current item
+    setSelectedItem(currentItem); // Use validated item, not the one from canvas
     
     // Position tooltip at upper left of container with some padding
     if (containerRef.current) {
@@ -359,7 +367,7 @@ function YearWheel({
       // Fallback to click position if container ref not available
       setTooltipPosition(position);
     }
-  }, [onItemClick, selectionMode]);
+  }, [onItemClick, selectionMode, yearFilteredOrgData]);
 
   const handleDragStart = useCallback((item) => {
     if (onDragStartRef.current) {

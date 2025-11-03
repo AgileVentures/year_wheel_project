@@ -231,6 +231,11 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
+    // CRITICAL: Detect if items array changed (added/removed items)
+    const oldItemsCount = this.organizationData?.items?.length || 0;
+    const newItemsCount = newOrganizationData?.items?.length || 0;
+    const itemsChanged = oldItemsCount !== newItemsCount;
+    
     this.organizationData = newOrganizationData;
 
     // Recalculate maxRadius in case outer rings were added/removed/toggled
@@ -238,6 +243,13 @@ class YearWheel {
 
     // Invalidate cache if ring structure changed
     this.invalidateCache();
+    
+    // CRITICAL: If items were added/removed, clear hover state immediately to prevent stale data
+    if (itemsChanged && this.hoveredItem) {
+      this.hoveredItem = null;
+      this.canvas.style.cursor = "default";
+    }
+    
     // DON'T redraw during drag - it will cause wheel to go blank
     // The drag handler (dragActivity) already calls create() to show preview
     if (!this.dragState || !this.dragState.isDragging) {
@@ -3949,6 +3961,21 @@ class YearWheel {
           (i) => i.id === hoveredItemRegion.itemId
         )
       : null;
+    
+    // CRITICAL: Validate that the item still exists and matches the hovered region
+    // This prevents stale data from showing when organizationData updates but clickableItems hasn't rebuilt yet
+    if (newHoveredItem && hoveredItemRegion) {
+      // Verify the item's position matches the hovered region (basic sanity check)
+      // If item data doesn't roughly match the region, it's likely stale - skip hover
+      const itemStartDate = new Date(newHoveredItem.startDate);
+      const itemEndDate = new Date(newHoveredItem.endDate);
+      const itemYear = itemStartDate.getFullYear();
+      
+      // If item is from a different year than the wheel, skip it (cross-page pollution)
+      if (itemYear !== parseInt(this.year)) {
+        newHoveredItem = null;
+      }
+    }
     
     // CRITICAL: Don't show hover for clustered items (they need special handling)
     // Clustered items have IDs like "week-2025-25-..." and isCluster flag
