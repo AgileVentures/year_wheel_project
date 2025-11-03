@@ -2239,7 +2239,7 @@ Var konkret och åsiktsstark. Använd domänexpertis. Svara på svenska.`
     name: 'Analysis Agent',
     model: 'gpt-4o',
     modelSettings: {
-      tool_choice: 'required' // Force tool usage - cannot respond without calling tools
+      tool_choice: 'auto' // Allow tool call first, then text response
     },
     instructions: `Du är Analysis Agent. 
 
