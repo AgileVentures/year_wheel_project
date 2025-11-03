@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useCanonicalUrl } from '../../hooks/useCanonicalUrl';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 import LanguageSwitcher from '../LanguageSwitcher';
 
 function AuthPage() {
   const { t } = useTranslation(['auth']);
+  
+  // Set canonical URL for auth page (but use noindex to avoid duplicate content)
+  useCanonicalUrl('https://yearwheel.se/auth', { noindex: true });
+  
   // Check if coming from an invite link and whether it's a new user
   const hasInviteToken = sessionStorage.getItem('pendingInviteToken');
   const inviteIsNewUser = sessionStorage.getItem('inviteIsNewUser');

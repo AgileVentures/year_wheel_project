@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 import { Crown, Check, Sparkles, Users, FileImage, History, Share2, Zap, Calendar, Copy } from 'lucide-react';
 import SubscriptionModal from './subscription/SubscriptionModal';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -14,6 +15,9 @@ function PricingPage() {
   const { user } = useAuth();
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [billingCycle, setBillingCycle] = useState('yearly'); // 'monthly' or 'yearly'
+  
+  // Set canonical URL for pricing page
+  useCanonicalUrl('https://yearwheel.se/pricing');
 
   const handleGetStarted = () => {
     if (user) {

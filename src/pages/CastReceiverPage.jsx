@@ -6,6 +6,7 @@ import { CAST_NAMESPACE, CAST_MESSAGE_TYPES } from '../constants/castMessages';
 import { useRealtimeCastReceiver } from '../hooks/useRealtimeCast';
 import { useRealtimeWheel } from '../hooks/useRealtimeWheel';
 import { fetchPage } from '../services/wheelService';
+import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 
 /**
  * Cast Receiver Page
@@ -18,6 +19,9 @@ import { fetchPage } from '../services/wheelService';
 export default function CastReceiverPage() {
   const { t } = useTranslation(['common']);
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // This page should not be indexed by search engines
+  useCanonicalUrl('https://yearwheel.se/cast-receiver', { noindex: true });
   
   // Handle pairing code flow
   const codeFromUrl = searchParams.get('code');

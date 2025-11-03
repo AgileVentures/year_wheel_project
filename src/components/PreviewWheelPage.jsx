@@ -13,6 +13,7 @@ import { useRealtimeCast } from '../hooks/useRealtimeCast';
 import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import { CAST_MESSAGE_TYPES, HEARTBEAT_INTERVAL_MS } from '../constants/castMessages';
 import { useRealtimeWheel } from '../hooks/useRealtimeWheel';
+import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -25,6 +26,9 @@ function PreviewWheelPage() {
   const { t } = useTranslation(['common']);
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  
+  // Set canonical URL for this preview page
+  useCanonicalUrl(`https://yearwheel.se/preview-wheel/${wheelId}`);
   
   // Check if we're in presentation mode
   const isPresentationMode = searchParams.get('presentation') === 'true';

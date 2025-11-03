@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 import Hero from './Hero';
 import LandingNavigation from './LandingNavigation';
 import MobileDemoMessage from './MobileDemoMessage';
@@ -18,6 +19,9 @@ const LandingPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Set canonical URL for main landing page
+  useCanonicalUrl('https://yearwheel.se/');
   const featuresRef = useRef(null);
   const pricingRef = useRef(null);
   const aboutRef = useRef(null);

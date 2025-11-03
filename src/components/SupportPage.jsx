@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 import { Mail, ArrowLeft, MessageCircle, Clock } from 'lucide-react';
 import Footer from './Footer';
 import LandingNavigation from './LandingNavigation';
 
 function SupportPage() {
   const { t } = useTranslation(['support', 'common']);
+  
+  // Set canonical URL for support page
+  useCanonicalUrl('https://yearwheel.se/support');
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

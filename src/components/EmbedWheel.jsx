@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import YearWheel from '../YearWheel';
 import { supabase } from '../lib/supabase';
+import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 
 export default function EmbedWheel() {
   const { wheelId } = useParams();
@@ -9,6 +10,9 @@ export default function EmbedWheel() {
   const [selectedPage, setSelectedPage] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Embed pages should not be indexed by search engines
+  useCanonicalUrl(`https://yearwheel.se/embed/${wheelId}`, { noindex: true });
 
   useEffect(() => {
     loadWheel();

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { useCanonicalUrl } from '../../hooks/useCanonicalUrl';
 import { supabase } from '../../lib/supabase';
 import { fetchUserWheels, fetchTeamWheels, createWheel, deleteWheel, duplicateWheel, fetchTemplateWheels, checkIsAdmin } from '../../services/wheelService';
 import { getMyInvitations } from '../../services/teamService';
@@ -162,6 +163,9 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffili
 function Dashboard({ onSelectWheel }) {
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
+  
+  // Dashboard should not be indexed by search engines
+  useCanonicalUrl('https://yearwheel.se/dashboard', { noindex: true });
   
   // Check URL params for initial view
   const urlParams = new URLSearchParams(window.location.search);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowLeft } from 'lucide-react';
@@ -14,6 +15,9 @@ function LegalPage() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Set canonical URL for legal pages
+  useCanonicalUrl(`https://yearwheel.se/legal/${document}`);
 
   useEffect(() => {
     const loadDocument = async () => {
