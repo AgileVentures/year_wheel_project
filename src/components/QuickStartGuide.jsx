@@ -240,7 +240,7 @@ function QuickStartGuide() {
           <p className="text-gray-700 mb-6">Skapa 2-3 fler aktiviteter för att se hur hjulet byggs upp. Varje aktivitet staplas ovanpå andra i samma ring, vilket skapar en komplett visuell bild av ditt år.</p>
 
           <div className="space-y-6">
-            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2">Aktivitet 2: Sommarkampanj</h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li><strong>Ring:</strong> Marknadsföring</li>
@@ -249,7 +249,7 @@ function QuickStartGuide() {
               </ul>
             </div>
 
-            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
               <h4 className="font-semibold text-purple-900 mb-2">Aktivitet 3: Månatligt nyhetsbrev (återkommande)</h4>
               <ul className="text-sm text-purple-800 space-y-1 mb-3">
                 <li><strong>Ring:</strong> Marknadsföring</li>
@@ -258,12 +258,12 @@ function QuickStartGuide() {
                 <li><strong>Återkommande:</strong> ✓ Markera checkbox</li>
                 <li><strong>Frekvens:</strong> Varje månad</li>
               </ul>
-              <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Återkommande aktivitet" className="w-full rounded-lg shadow-md" />
+              <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Återkommande aktivitet" className="w-full rounded-sm shadow-md" />
               <p className="text-sm text-purple-700 italic mt-2">Formulär för återkommande aktiviteter - välj frekvens och se förhandsgranskning</p>
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
             <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Flera aktiviteter" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-green-900 italic">Hjulet med flera aktiviteter - se hur återkommande aktiviteter visas som röda rutor varje månad</p>
           </div>
