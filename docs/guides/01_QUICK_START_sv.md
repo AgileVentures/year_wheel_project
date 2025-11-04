@@ -12,6 +12,10 @@
 
 1. Gå till [yearwheel.com](https://yearwheel.com)
 2. Klicka på **"Kom igång gratis"**
+
+![Inloggningsformulär](images/QUICK_START_02_login_box.png)
+*Skapa konto med e-post eller använd Google-inloggning*
+
 3. Ange din e-postadress och lösenord eller använd ditt Google-konto
 4. Kolla din e-post för verifieringslänk (valfritt för omedelbar användning)
 
@@ -19,15 +23,27 @@
 
 ## Steg 2: Skapa ditt första hjul
 
+![Instrumentpanel](images/QUICK_START_03_dashboard.png)
+*Din instrumentpanel - här ser du alla dina årshjul*
+
 1. Klicka på **"Skapa nytt hjul"** på din instrumentpanel
+
+![Skapa nytt hjul modal](images/QUICK_START_04_create_wheel.png)
+*Ge ditt hjul en titel och välj år*
 2. Ditt hjul skapas automatiskt med:
    - En månadsring (Jan-Dec)
    - Standardringar
    - Innevarande år
 
+![Nytt hjul skapat](images/QUICK_START_05_wheel_created.png)
+*Ditt nya årshjul har skapats och visas på instrumentpanelen*
+
 ---
 
 ## Steg 3: Konfigurera dina ringar
+
+![Redigerare med ringar](images/QUICK_START_06_editor.png)
+*Redigerarens vy med sidopanel där du konfigurerar ringar och aktivitetsgrupper*
 
 **Ringar** är huvudkategorierna i ditt hjul - som avdelningar, projekt eller fokusområden. De visas som cirkulära band runt årshjulet där du placerar aktiviteter.
 
@@ -44,6 +60,9 @@
 - **För projektfaser**: Planering, Utveckling, Lansering, Utvärdering
 
 **Obs**: Inre ringar är närmare centrum. Du kan också lägga till yttre ringar som visas på utsidan av hjulet.
+
+![Redigerare med konfigurerade ringar](images/QUICK_START_07_editor_with_changes_01.png)
+*Hjulet nu med flera ringar konfigurerade - Försäljning, Produkt, Marknadsföring, Drift*
 
 ---
 
@@ -72,17 +91,23 @@ När du har många aktiviteter på ditt hjul hjälper färger dig att omedelbart
 
 En **aktivitet** är vilken händelse, projekt, kampanj eller uppgift som helst du vill spåra under året. Den visas som en färgad båge på ditt hjul.
 
-1. Klicka på **"+ Lägg till objekt"** högst upp i sidofältet
+![Skapa ny aktivitet modal](images/QUICK_START_08_create_new_activity.png)
+*Formulär för att skapa en ny aktivitet med alla nödvändiga fält*
+
+1. Klicka på **"+ Lägg till aktivitet"** högst upp i sidofältet
 2. Fyll i formuläret:
    - **Namn**: "Vårproduktlansering"
    - **Ring**: Välj "Marknadsföring" (detta bestämmer VILKEN ring den visas i)
    - **Aktivitetsgrupp**: Välj "Kampanjer" (detta bestämmer FÄRGEN)
-   - **Startdatum**: Välj ett datum (t.ex. 15 januari 2026)
-   - **Slutdatum**: Välj ett datum (t.ex. 31 mars 2026)
+   - **Startdatum**: Välj ett datum (t.ex. 15 januari 2025)
+   - **Slutdatum**: Välj ett datum (t.ex. 31 mars 2025)
    - **Beskrivning** (valfritt): Lägg till detaljer om denna aktivitet
 3. Klicka på **"Lägg till aktivitet"**
 
 Se din aktivitet visas på hjulet som en färgad båge i Marknadsföringsringen! 
+
+![Hjul med första aktiviteten](images/QUICK_START_09_editor_with_changes_02.png)
+*Hjulet visar nu din första aktivitet - en blå båge i Produktringen för Vårproduktlansering*
 
 **Vad du kommer att se**: Ett färgat segment (båge) som börjar den 15 januari och slutar den 31 mars, placerad i den ring du valde, med färgen från din aktivitetsgrupp.
 
@@ -96,15 +121,21 @@ Skapa 2-3 fler aktiviteter för att se hur hjulet byggs upp. Varje aktivitet sta
 - Namn: "Sommarkampanj"
 - Ring: Marknadsföring
 - Grupp: "Kampanjer" (kan använda samma eller olika färg)
-- Datum: 1 juni - 31 augusti 2026
+- Datum: 1 juni - 31 augusti 2025
 
 **Aktivitet 3:**
 - Namn: "Månatligt nyhetsbrev"  
 - Ring: Marknadsföring
 - Grupp: Återkommande (om du skapade denna grupp)
-- Datum: 20 januari - 21 januari 2026. Välj återkommande event och markera "månadsvis"
+- Datum: 20 januari - 31 december 2025. Välj återkommande event och markera "månadsvis". Välj längden på aktiviteten.
+
+![Skapa återkommande aktivitet](images/QUICK_START_10_create_recurring_activity.png)
+*Formulär för återkommande aktiviteter med frekvensval och förhandsgranskning av alla datum*
 
 **Tips**: Om du har flera ringar (Marknadsföring, Försäljning, Produkt), prova att lägga till aktiviteter i olika ringar för att se hur de visas som separata band på hjulet.
+
+![Hjul med flera aktiviteter](images/QUICK_START_11_editor_with_changes_03.png)
+*Hjulet med flera aktiviteter - se hur återkommande aktiviteter visas som röda rutor varje månad*
 
 ---
 
@@ -128,6 +159,12 @@ Start- och slutdatumen uppdateras automatiskt! ✨
 
 **Flytta mellan ringar:**
 - Du kan också dra en aktivitet **radiellt** (inåt/utåt) för att flytta den till en annan ring
+
+![Dra-och-släpp i aktion](images/QUICK_START_12_drag_and_drop.png)
+*När du hovrar över en aktivitet visas handikonen - klicka och dra för att flytta*
+
+![Zoomad vy av dra-och-släpp](images/QUICK_START_13_drag_and_drop_zoomed_in.png)
+*Närbild av dra-och-släpp-funktionen - se hur markören ändras vid kanterna för storleksändring*
 
 **Tips**: Detta är mycket snabbare än att öppna formulär och ändra datum manuellt. De flesta användare gör alla sina planeringsändringar med dra-och-släpp!
 
