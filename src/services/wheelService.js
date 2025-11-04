@@ -540,10 +540,17 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
     const key = group.name.toLowerCase().trim();
     const existingMatch = existingByName.get(key);
     
+    // Ensure color is always a valid 6-char hex (database constraint)
+    let validColor = group.color;
+    if (!validColor || !/^#[0-9A-Fa-f]{6}$/.test(validColor)) {
+      // Generate random color if missing or invalid
+      validColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+    }
+    
     const groupData = {
       wheel_id: wheelId,  // Primary FK - groups are shared across all pages
       name: group.name.trim(),
-      color: group.color || null, // Save the color from the group
+      color: validColor,
       visible: group.visible !== undefined ? group.visible : true,
     };
 
