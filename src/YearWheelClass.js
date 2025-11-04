@@ -244,10 +244,14 @@ class YearWheel {
     // Invalidate cache if ring structure changed
     this.invalidateCache();
     
-    // CRITICAL: If items were added/removed, clear hover state immediately to prevent stale data
-    if (itemsChanged && this.hoveredItem) {
-      this.hoveredItem = null;
-      this.canvas.style.cursor = "default";
+    // CRITICAL: If items were added/removed/changed, immediately clear clickableItems AND hover state
+    // This prevents stale clickableItems from being used by hover handler before create() rebuilds them
+    if (itemsChanged) {
+      this.clickableItems = []; // Clear stale positions immediately
+      if (this.hoveredItem) {
+        this.hoveredItem = null;
+        this.canvas.style.cursor = "default";
+      }
     }
     
     // DON'T redraw during drag - it will cause wheel to go blank
@@ -3935,6 +3939,18 @@ class YearWheel {
       return; // Skip this hover check
     }
     this.lastHoverCheck = now;
+    
+    // CRITICAL: Skip hover detection if clickableItems is empty (being rebuilt)
+    // This prevents stale data from being used during the brief moment between
+    // organizationData update and create() rebuilding clickableItems
+    if (!this.clickableItems || this.clickableItems.length === 0) {
+      // Clear any existing hover state
+      if (this.hoveredItem) {
+        this.hoveredItem = null;
+        this.canvas.style.cursor = "default";
+      }
+      return;
+    }
 
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;

@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-/* eslint-disable react/prop-types */import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+/* eslint-disable react/prop-types */import { useRef, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
@@ -527,7 +527,8 @@ function YearWheel({
 
   // Update organization data without recreating the wheel instance
   // This preserves drag state and prevents wheel from going blank during drag
-  useEffect(() => {
+  // CRITICAL: Use useLayoutEffect for synchronous update before paint to prevent flicker
+  useLayoutEffect(() => {
     if (yearWheel && yearFilteredOrgData) {
       yearWheel.updateOrganizationData(yearFilteredOrgData);
     }
