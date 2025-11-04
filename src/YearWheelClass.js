@@ -133,6 +133,7 @@ class YearWheel {
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
     this.clickableItems = []; // Store clickable item regions
+    this.justFinishedDrag = false; // Prevent tooltip immediately after drag ends
 
     // Selection mode support
     this.selectionMode = options.selectionMode || false;
@@ -231,11 +232,6 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
-    // CRITICAL: Detect if items array changed (added/removed items)
-    const oldItemsCount = this.organizationData?.items?.length || 0;
-    const newItemsCount = newOrganizationData?.items?.length || 0;
-    const itemsChanged = oldItemsCount !== newItemsCount;
-    
     this.organizationData = newOrganizationData;
 
     // Recalculate maxRadius in case outer rings were added/removed/toggled
@@ -244,14 +240,13 @@ class YearWheel {
     // Invalidate cache if ring structure changed
     this.invalidateCache();
     
-    // CRITICAL: If items were added/removed/changed, immediately clear clickableItems AND hover state
-    // This prevents stale clickableItems from being used by hover handler before create() rebuilds them
-    if (itemsChanged) {
-      this.clickableItems = []; // Clear stale positions immediately
-      if (this.hoveredItem) {
-        this.hoveredItem = null;
-        this.canvas.style.cursor = "default";
-      }
+    // CRITICAL: ALWAYS clear clickableItems and hover state when organization data changes
+    // This prevents stale clickableItems from showing phantom items at old positions
+    // This fixes the "hovering over old position shows old item" bug
+    this.clickableItems = []; // Clear stale positions immediately
+    if (this.hoveredItem) {
+      this.hoveredItem = null;
+      this.canvas.style.cursor = "default";
     }
     
     // DON'T redraw during drag - it will cause wheel to go blank
@@ -3842,6 +3837,12 @@ class YearWheel {
 
     this.canvas.style.cursor = "default";
 
+    // CRITICAL: Suppress tooltip for 300ms after drag ends to prevent accidental activation
+    this.justFinishedDrag = true;
+    setTimeout(() => {
+      this.justFinishedDrag = false;
+    }, 300);
+
     // CRITICAL: Invalidate cache to force fresh render with updated clickableItems
     // This prevents stale hover states after drag ends
     this.invalidateCache();
@@ -4059,6 +4060,9 @@ class YearWheel {
   }
 
   handleClick(event) {
+    // CRITICAL: Suppress clicks immediately after drag ends to prevent tooltip activation
+    if (this.justFinishedDrag) return;
+    
     // Clear pending drag state
     if (this.dragState.isPending) {
       this.dragState = {

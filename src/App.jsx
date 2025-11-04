@@ -986,13 +986,23 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
       
-      // CRITICAL: Update the ref with UUIDs but DON'T call setOrganizationData
-      // This prevents triggering undo tracking and another auto-save cycle
-      // The UUIDs are now in database and ref - canvas will get them on next reload
+      // CRITICAL: Update latestValuesRef FIRST before state update
       latestValuesRef.current.organizationData = updatedOrgData;
       
-      // CRITICAL: Mark current undo position as saved
+      // Temporarily disable auto-save during UUID state update
+      const wasAutoSaveEnabled = autoSaveEnabled;
+      setAutoSaveEnabled(false);
+      
+      // Update React state with UUIDs so canvas gets updated data
+      // This WILL trigger undo tracking, but we mark it as saved immediately after
+      setOrganizationData(updatedOrgData);
+      
+      // CRITICAL: Mark current undo position as saved immediately
+      // This prevents the UUID update from showing as an "unsaved change"
       markSaved();
+      
+      // Re-enable auto-save after a brief delay
+      setTimeout(() => setAutoSaveEnabled(wasAutoSaveEnabled), 100);
       
     } catch (error) {
       console.error('[Auto-save] Error:', error);
@@ -1016,12 +1026,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Auto-save on organizationData changes (for real-time collaboration)
   useEffect(() => {
-    // Skip if initial load, loading data, currently saving, or data came from realtime
-    if (isInitialLoad.current || isLoadingData.current || isSavingRef.current || isRealtimeUpdate.current) {
+    // Skip if initial load, loading data, currently saving, auto-save disabled, or data came from realtime
+    if (isInitialLoad.current || isLoadingData.current || isSavingRef.current || isRealtimeUpdate.current || !autoSaveEnabled) {
       return;
     }
     autoSaveOrganizationData();
-  }, [organizationData, autoSaveOrganizationData]);
+  }, [organizationData, autoSaveOrganizationData, autoSaveEnabled]);
 
   // Check admin status on mount
   useEffect(() => {
