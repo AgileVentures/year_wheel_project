@@ -540,12 +540,11 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
     const key = group.name.toLowerCase().trim();
     const existingMatch = existingByName.get(key);
     
-    // Ensure color is always a valid 6-char hex (database constraint)
-    let validColor = group.color;
-    if (!validColor || !/^#[0-9A-Fa-f]{6}$/.test(validColor)) {
-      // Generate random color if missing or invalid
-      validColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-    }
+    // Ensure color is valid 6-char hex (database constraint)
+    // Color should always be set by frontend, default to blue if somehow missing
+    const validColor = (group.color && /^#[0-9A-Fa-f]{6}$/.test(group.color)) 
+      ? group.color 
+      : '#3B82F6';
     
     const groupData = {
       wheel_id: wheelId,  // Primary FK - groups are shared across all pages
