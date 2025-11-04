@@ -922,23 +922,63 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // CRITICAL: Filter items to only those belonging to this page's year
       // This ensures organization_data JSONB only contains page-specific items
-      const currentYearNum = parseInt(year);
+      const currentYearNum = parseInt(currentYear); // USE currentYear from ref, not year from closure!
+      
+      console.log('[AutoSave] Filtering items for year:', currentYearNum);
+      console.log('[AutoSave] Total items before filter:', currentOrgData.items?.length);
+      
       const pageSpecificItems = (currentOrgData.items || []).filter(item => {
         const itemStartYear = new Date(item.startDate).getFullYear();
         const itemEndYear = new Date(item.endDate).getFullYear();
         // Include item if it overlaps with current year
-        return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
+        const overlaps = itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
+        
+        if (!overlaps) {
+          console.log('[AutoSave] Excluding item:', item.name, 'Start:', itemStartYear, 'End:', itemEndYear);
+        }
+        
+        return overlaps;
       });
+      
+      console.log('[AutoSave] Items after filter:', pageSpecificItems.length);
       
       const pageSpecificOrgData = {
         ...currentOrgData,
         items: pageSpecificItems
       };
       
-      // Save the page data to database
-      console.log('[AutoSave] Saving to page:', pageIdToUse, 'with', pageSpecificItems.length, 'items');
+      // CRITICAL: Save to database tables first (rings, activity_groups, items)
+      // This syncs data to individual tables, not just JSONB
+      console.log('[AutoSave] Calling saveWheelData for page:', pageIdToUse, 'with', pageSpecificItems.length, 'items');
+      const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrgData, pageIdToUse);
+      
+      // Update organization data with any new UUIDs from database
+      const updatedOrgData = {
+        ...currentOrgData,
+        rings: currentOrgData.rings.map(ring => ({
+          ...ring,
+          id: ringIdMap.get(ring.id) || ring.id
+        })),
+        activityGroups: currentOrgData.activityGroups.map(group => ({
+          ...group,
+          id: activityIdMap.get(group.id) || group.id
+        })),
+        labels: currentOrgData.labels.map(label => ({
+          ...label,
+          id: labelIdMap.get(label.id) || label.id
+        })),
+        items: currentOrgData.items.map(item => ({
+          ...item,
+          ringId: ringIdMap.get(item.ringId) || item.ringId,
+          activityId: activityIdMap.get(item.activityId) || item.activityId,
+          labelId: labelIdMap.get(item.labelId) || item.labelId
+        }))
+      };
+      
+      // Then save the page's JSONB organization_data
+      console.log('[AutoSave] Saving to page JSONB:', pageIdToUse);
       await updatePage(pageIdToUse, {
-        organization_data: pageSpecificOrgData,
+        organization_data: updatedOrgData,
       });
       
       console.log('[AutoSave] Successfully saved!');
@@ -946,8 +986,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
       
+      // CRITICAL: Update the ref FIRST to prevent UUID update from being tracked as a change
+      latestValuesRef.current.organizationData = updatedOrgData;
+      
+      // CRITICAL: Keep isSavingRef = true during state update to prevent triggering another auto-save
+      // The useEffect watching organizationData will see isSavingRef and skip
+      
+      // Update React state with database UUIDs (prevents duplicates on reload)
+      setOrganizationData(updatedOrgData);
+      
       // CRITICAL: Mark current undo position as saved
-      // This keeps hasUnsavedChanges flag in sync with actual save state
       markSaved();
       
     } catch (error) {
@@ -972,8 +1020,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Auto-save on organizationData changes (for real-time collaboration)
   useEffect(() => {
-    // Skip if initial load, loading data, or data came from realtime
-    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+    // Skip if initial load, loading data, currently saving, or data came from realtime
+    if (isInitialLoad.current || isLoadingData.current || isSavingRef.current || isRealtimeUpdate.current) {
       return;
     }
     autoSaveOrganizationData();
