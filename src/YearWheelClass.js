@@ -3759,6 +3759,15 @@ class YearWheel {
       return;
     }
 
+    // CRITICAL: If we had a pending drag state (mousedown but minimal movement),
+    // still suppress the tooltip to prevent it from opening
+    if (this.dragState.isPending) {
+      this.justFinishedDrag = true;
+      setTimeout(() => {
+        this.justFinishedDrag = false;
+      }, 300);
+    }
+
     // Handle wheel rotation drag end
     if (!this.isDragging) return;
     this.isDragging = false;
