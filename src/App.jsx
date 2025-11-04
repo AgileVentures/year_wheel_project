@@ -834,17 +834,58 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const autoSaveOrganizationData = useDebouncedCallback(async () => {
     // Don't auto-save if:
     // 1. No wheelId (localStorage mode)
-    // 2. No currentPageId
-    // 3. Currently loading data
-    // 4. This is the initial load
-    // 5. Data came from remote realtime update (don't echo back)
-    // 6. Auto-save is disabled
-    if (!wheelId || !currentPageId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
+    // 2. Currently loading data
+    // 3. This is the initial load
+    // 4. Data came from remote realtime update (don't echo back)
+    // 5. Auto-save is disabled
+    if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
       return;
     }
 
     // Get latest organizationData from ref
-    const { organizationData: currentOrgData } = latestValuesRef.current;
+    const { organizationData: currentOrgData, year: currentYear, currentPageId: currentCurrentPageId } = latestValuesRef.current;
+    
+    // If no currentPageId, create a page for this year (same logic as handleSave)
+    let pageIdToUse = currentCurrentPageId;
+    if (!pageIdToUse && wheelId) {
+      console.log('[AutoSave] No currentPageId, checking for existing pages...');
+      
+      try {
+        const existingPages = await fetchPages(wheelId);
+        const pageForYear = existingPages.find(p => p.year === parseInt(currentYear));
+        
+        if (pageForYear) {
+          console.log('[AutoSave] Found existing page for year', currentYear, ':', pageForYear.id);
+          pageIdToUse = pageForYear.id;
+          
+          // Update local state to use existing page
+          setCurrentPageId(pageForYear.id);
+          setPages(existingPages);
+        } else {
+          console.log('[AutoSave] No page found for year', currentYear, ', creating new page...');
+          const defaultPage = await createPage(wheelId, {
+            year: parseInt(currentYear),
+            title: currentYear,
+            organizationData: currentOrgData
+          });
+          pageIdToUse = defaultPage.id;
+          
+          // Update local state to reflect the new page
+          setCurrentPageId(defaultPage.id);
+          setPages(prevPages => [...prevPages, defaultPage]);
+          
+          console.log('[AutoSave] Created new page:', defaultPage.id);
+        }
+      } catch (error) {
+        console.error('[AutoSave] Error creating/finding page:', error);
+        return; // Abort auto-save if page creation fails
+      }
+    }
+    
+    if (!pageIdToUse) {
+      console.warn('[AutoSave] Still no pageId after attempt to create/find page');
+      return;
+    }
 
     // Skip if this data has remote update flag (don't save remote changes back)
     const hasRemoteUpdate = currentOrgData.items?.some(item => item._remoteUpdate);
@@ -880,7 +921,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       };
       
       // Save the page data to database
-      await updatePage(currentPageId, {
+      await updatePage(pageIdToUse, {
         organization_data: pageSpecificOrgData,
       });
       
