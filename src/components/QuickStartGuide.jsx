@@ -407,7 +407,7 @@ function QuickStartGuide() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white rounded-sm shadow-lg overflow-hidden">
           {/* Hero Image */}
           {steps[currentStep].image && (
             <div className="relative">
