@@ -832,6 +832,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Auto-save organizationData changes for real-time collaboration
   const autoSaveOrganizationData = useDebouncedCallback(async () => {
+    console.log('[AutoSave] Starting auto-save organizationData...', {
+      wheelId,
+      isLoadingData: isLoadingData.current,
+      isInitialLoad: isInitialLoad.current,
+      isRealtimeUpdate: isRealtimeUpdate.current,
+      autoSaveEnabled
+    });
+    
     // Don't auto-save if:
     // 1. No wheelId (localStorage mode)
     // 2. Currently loading data
@@ -839,11 +847,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // 4. Data came from remote realtime update (don't echo back)
     // 5. Auto-save is disabled
     if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
+      console.log('[AutoSave] Aborted - conditions not met');
       return;
     }
 
     // Get latest organizationData from ref
     const { organizationData: currentOrgData, year: currentYear, currentPageId: currentCurrentPageId } = latestValuesRef.current;
+    
+    console.log('[AutoSave] Got data from ref:', {
+      currentPageId: currentCurrentPageId,
+      currentYear,
+      itemsCount: currentOrgData?.items?.length
+    });
     
     // If no currentPageId, create a page for this year (same logic as handleSave)
     let pageIdToUse = currentCurrentPageId;
@@ -921,9 +936,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       };
       
       // Save the page data to database
+      console.log('[AutoSave] Saving to page:', pageIdToUse, 'with', pageSpecificItems.length, 'items');
       await updatePage(pageIdToUse, {
         organization_data: pageSpecificOrgData,
       });
+      
+      console.log('[AutoSave] Successfully saved!');
       
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
