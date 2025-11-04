@@ -370,7 +370,9 @@ function OrganizationPanel({
 
   // Add new aktivitet
   const handleAddAktivitet = (newAktivitet) => {
-    const updatedItems = [...(organizationData.items || []), newAktivitet];
+    // Handle both single item and batch array of items
+    const itemsToAdd = Array.isArray(newAktivitet) ? newAktivitet : [newAktivitet];
+    const updatedItems = [...(organizationData.items || []), ...itemsToAdd];
     onOrganizationChange({ ...organizationData, items: updatedItems });
   };
 

@@ -16,7 +16,10 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
     time: '',
     description: '',
     linkedWheelId: '',
-    linkType: 'reference'
+    linkType: 'reference',
+    isRecurring: false,
+    recurringFrequency: 'weekly',
+    recurringDuration: 1 // Duration in days for each instance
   });
 
   const [errors, setErrors] = useState({});
@@ -25,6 +28,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
   const [loadingWheels, setLoadingWheels] = useState(false);
   const [selectedWheelPreview, setSelectedWheelPreview] = useState(null);
   const [showDescription, setShowDescription] = useState(false);
+  const [recurringPreview, setRecurringPreview] = useState([]);
 
   // Fetch accessible wheels on mount
   useEffect(() => {
@@ -64,6 +68,55 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
     loadPreview();
   }, [formData.linkedWheelId]);
 
+  // Calculate recurring dates
+  const calculateRecurringDates = (startDate, endDate, frequency, duration) => {
+    const dates = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    let current = new Date(start);
+    
+    while (current <= end) {
+      const instanceStart = new Date(current);
+      const instanceEnd = new Date(current);
+      instanceEnd.setDate(instanceEnd.getDate() + duration - 1);
+      
+      // Only add if instance end is within the boundary
+      if (instanceEnd <= end) {
+        dates.push({
+          startDate: instanceStart.toISOString().split('T')[0],
+          endDate: instanceEnd.toISOString().split('T')[0]
+        });
+      }
+      
+      // Move to next occurrence
+      if (frequency === 'weekly') {
+        current.setDate(current.getDate() + 7);
+      } else if (frequency === 'monthly') {
+        current.setMonth(current.getMonth() + 1);
+      } else if (frequency === 'quarterly') {
+        current.setMonth(current.getMonth() + 3);
+      }
+    }
+    
+    return dates;
+  };
+
+  // Update preview when recurring settings change
+  useEffect(() => {
+    if (formData.isRecurring && formData.startDate && formData.endDate) {
+      const dates = calculateRecurringDates(
+        formData.startDate,
+        formData.endDate,
+        formData.recurringFrequency,
+        formData.recurringDuration
+      );
+      setRecurringPreview(dates);
+    } else {
+      setRecurringPreview([]);
+    }
+  }, [formData.isRecurring, formData.startDate, formData.endDate, formData.recurringFrequency, formData.recurringDuration]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
@@ -87,24 +140,57 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
       return;
     }
 
-    // Create new item
-    const newItem = {
-      id: `item-${Date.now()}`,
-      name: formData.name,
-      ringId: formData.ringId,
-      activityId: formData.activityId,
-      labelId: formData.labelId,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      ...(formData.time && { time: formData.time }),
-      ...(formData.description && { description: formData.description }),
-      ...(formData.linkedWheelId && { 
-        linkedWheelId: formData.linkedWheelId,
-        linkType: formData.linkType 
-      })
-    };
-
-    onAddItem(newItem);
+    // Handle recurring activities
+    if (formData.isRecurring) {
+      const recurringDates = calculateRecurringDates(
+        formData.startDate,
+        formData.endDate,
+        formData.recurringFrequency,
+        formData.recurringDuration
+      );
+      
+      // Batch create all recurring items at once (more efficient than forEach)
+      const recurringGroupId = `recurring-${Date.now()}`;
+      const newItems = recurringDates.map((dates, index) => ({
+        id: `item-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+        name: formData.name,
+        ringId: formData.ringId,
+        activityId: formData.activityId,
+        labelId: formData.labelId,
+        startDate: dates.startDate,
+        endDate: dates.endDate,
+        ...(formData.time && { time: formData.time }),
+        ...(formData.description && { description: formData.description }),
+        ...(formData.linkedWheelId && { 
+          linkedWheelId: formData.linkedWheelId,
+          linkType: formData.linkType 
+        }),
+        isRecurringInstance: true,
+        recurringGroup: recurringGroupId
+      }));
+      
+      // Add all items at once
+      onAddItem(newItems);
+    } else {
+      // Create single item
+      const newItem = {
+        id: `item-${Date.now()}`,
+        name: formData.name,
+        ringId: formData.ringId,
+        activityId: formData.activityId,
+        labelId: formData.labelId,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        ...(formData.time && { time: formData.time }),
+        ...(formData.description && { description: formData.description }),
+        ...(formData.linkedWheelId && { 
+          linkedWheelId: formData.linkedWheelId,
+          linkType: formData.linkType 
+        })
+      };
+      onAddItem(newItem);
+    }
+    
     onClose();
   };
 
@@ -210,7 +296,10 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:addItemModal.endDateLabel')}
+                  {formData.isRecurring 
+                    ? t('editor:addItemModal.recurringEndDateLabel', 'Slutdatum (upprepar till)')
+                    : t('editor:addItemModal.endDateLabel')
+                  }
                 </label>
                 <input
                   type="date"
@@ -225,6 +314,78 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                   <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
                 )}
               </div>
+
+              {/* Recurring checkbox */}
+              <div className="flex items-start gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="isRecurring"
+                  checked={formData.isRecurring}
+                  onChange={(e) => handleChange('isRecurring', e.target.checked)}
+                  className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                  {t('editor:addItemModal.recurringLabel', 'Återkommande aktivitet')}
+                </label>
+              </div>
+
+              {/* Recurring options */}
+              {formData.isRecurring && (
+                <div className="space-y-3 pl-6 border-l-2 border-blue-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      {t('editor:addItemModal.recurringFrequencyLabel', 'Frekvens')}
+                    </label>
+                    <select
+                      value={formData.recurringFrequency}
+                      onChange={(e) => handleChange('recurringFrequency', e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="weekly">{t('editor:addItemModal.weekly', 'Varje vecka')}</option>
+                      <option value="monthly">{t('editor:addItemModal.monthly', 'Varje månad')}</option>
+                      <option value="quarterly">{t('editor:addItemModal.quarterly', 'Varje kvartal')}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      {t('editor:addItemModal.recurringDurationLabel', 'Varaktighet per tillfälle')}
+                    </label>
+                    <select
+                      value={formData.recurringDuration}
+                      onChange={(e) => handleChange('recurringDuration', parseInt(e.target.value))}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                      <option value="1">{t('editor:addItemModal.duration1day', '1 dag')}</option>
+                      <option value="2">{t('editor:addItemModal.duration2days', '2 dagar')}</option>
+                      <option value="3">{t('editor:addItemModal.duration3days', '3 dagar')}</option>
+                      <option value="7">{t('editor:addItemModal.duration1week', '1 vecka')}</option>
+                      <option value="14">{t('editor:addItemModal.duration2weeks', '2 veckor')}</option>
+                    </select>
+                  </div>
+
+                  {/* Preview of recurring dates */}
+                  {recurringPreview.length > 0 && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-sm">
+                      <p className="text-xs font-medium text-blue-900 mb-2">
+                        {t('editor:addItemModal.recurringPreview', 'Kommer att skapa {{count}} aktiviteter:', { count: recurringPreview.length })}
+                      </p>
+                      <div className="max-h-32 overflow-y-auto space-y-1">
+                        {recurringPreview.slice(0, 10).map((date, index) => (
+                          <p key={index} className="text-xs text-blue-800">
+                            {new Date(date.startDate).toLocaleDateString('sv-SE')} - {new Date(date.endDate).toLocaleDateString('sv-SE')}
+                          </p>
+                        ))}
+                        {recurringPreview.length > 10 && (
+                          <p className="text-xs text-blue-700 italic">
+                            {t('editor:addItemModal.andMore', '...och {{count}} till', { count: recurringPreview.length - 10 })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">

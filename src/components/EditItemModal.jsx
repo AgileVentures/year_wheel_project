@@ -24,6 +24,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
   const [loadingWheels, setLoadingWheels] = useState(false);
   const [selectedWheelPreview, setSelectedWheelPreview] = useState(null);
   const [showDescription, setShowDescription] = useState(!!item.description);
+  const isRecurringInstance = item.isRecurringInstance || false;
 
   // Fetch accessible wheels on mount
   useEffect(() => {
@@ -152,6 +153,19 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Recurring instance notice */}
+          {isRecurringInstance && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-sm">
+              <p className="text-sm text-blue-900">
+                <span className="font-medium">ℹ️ {t('editor:editItemModal.recurringNotice', 'Återkommande aktivitet')}</span>
+                <br />
+                <span className="text-xs text-blue-700">
+                  {t('editor:editItemModal.recurringNoticeText', 'Detta är en del av en återkommande aktivitetsserie. Ändringar påverkar endast denna instans.')}
+                </span>
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-6">
             {/* Left column - Basic Info & Dates */}
             <div className="space-y-4">
