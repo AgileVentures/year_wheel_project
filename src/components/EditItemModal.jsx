@@ -13,6 +13,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
     startDate: item.startDate,
     endDate: item.endDate,
     time: item.time || '',
+    description: item.description || '',
     linkedWheelId: item.linkedWheelId || '',
     linkType: item.linkType || 'reference'
   });
@@ -22,6 +23,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
   const [accessibleWheels, setAccessibleWheels] = useState([]);
   const [loadingWheels, setLoadingWheels] = useState(false);
   const [selectedWheelPreview, setSelectedWheelPreview] = useState(null);
+  const [showDescription, setShowDescription] = useState(!!item.description);
 
   // Fetch accessible wheels on mount
   useEffect(() => {
@@ -92,6 +94,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
       startDate: formData.startDate,
       endDate: formData.endDate,
       ...(formData.time ? { time: formData.time } : {}),
+      ...(formData.description ? { description: formData.description } : {}),
       linkedWheelId: formData.linkedWheelId || null,
       linkType: formData.linkedWheelId ? formData.linkType : null
     };
@@ -223,6 +226,32 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder={t('editor:editItemModal.timePlaceholder')}
                 />
+              </div>
+
+              {/* Description - Collapsible */}
+              <div>
+                {!showDescription ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDescription(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                  >
+                    + Lägg till beskrivning (valfritt)
+                  </button>
+                ) : (
+                  <>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => handleChange('description', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                      placeholder="Lägg till detaljer om denna aktivitet..."
+                    />
+                  </>
+                )}
               </div>
             </div>
 

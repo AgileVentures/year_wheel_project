@@ -14,6 +14,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     time: '',
+    description: '',
     linkedWheelId: '',
     linkType: 'reference'
   });
@@ -23,6 +24,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
   const [accessibleWheels, setAccessibleWheels] = useState([]);
   const [loadingWheels, setLoadingWheels] = useState(false);
   const [selectedWheelPreview, setSelectedWheelPreview] = useState(null);
+  const [showDescription, setShowDescription] = useState(false);
 
   // Fetch accessible wheels on mount
   useEffect(() => {
@@ -95,6 +97,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
       startDate: formData.startDate,
       endDate: formData.endDate,
       ...(formData.time && { time: formData.time }),
+      ...(formData.description && { description: formData.description }),
       ...(formData.linkedWheelId && { 
         linkedWheelId: formData.linkedWheelId,
         linkType: formData.linkType 
@@ -234,6 +237,32 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   placeholder={t('editor:addItemModal.timePlaceholder')}
                 />
+              </div>
+
+              {/* Description - Collapsible */}
+              <div>
+                {!showDescription ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDescription(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                  >
+                    + Lägg till beskrivning (valfritt)
+                  </button>
+                ) : (
+                  <>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => handleChange('description', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                      placeholder="Lägg till detaljer om denna aktivitet..."
+                    />
+                  </>
+                )}
               </div>
             </div>
 
