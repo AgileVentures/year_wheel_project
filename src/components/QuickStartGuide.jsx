@@ -259,7 +259,7 @@ function QuickStartGuide() {
                 <li><strong>Frekvens:</strong> Varje månad</li>
               </ul>
               <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Återkommande aktivitet" className="w-full rounded-lg shadow-md" />
-              <p className="text-xs text-purple-700 italic mt-2">Formulär för återkommande aktiviteter - välj frekvens och se förhandsgranskning</p>
+              <p className="text-sm text-purple-700 italic mt-2">Formulär för återkommande aktiviteter - välj frekvens och se förhandsgranskning</p>
             </div>
           </div>
 
@@ -420,7 +420,7 @@ function QuickStartGuide() {
               />
               {steps[currentStep].imageCaption && (
                 <div className="bg-gray-50 border-t border-gray-100 px-4 py-2">
-                  <p className="text-gray-600 text-xs sm:text-sm italic text-center">{steps[currentStep].imageCaption}</p>
+                  <p className="text-gray-600 text-sm italic text-center">{steps[currentStep].imageCaption}</p>
                 </div>
               )}
             </div>
@@ -437,7 +437,7 @@ function QuickStartGuide() {
               </h2>
             </div>
 
-            <div className="prose prose-lg max-w-none">
+            <div className="prose max-w-none">
               {steps[currentStep].content}
             </div>
           </div>
