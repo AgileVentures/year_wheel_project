@@ -79,6 +79,7 @@
     Content-Type = "text/plain"
 
 # Redirect all routes to index.html for client-side routing (except static files)
+# Note: force = false means it won't redirect if the file exists on disk
 [[redirects]]
   from = "/*"
   to = "/index.html"
