@@ -65,6 +65,7 @@ function Footer({ variant = 'full' }) {
             <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.product')}</h4>
             <ul className="space-y-2 text-sm">
               <li><Link to="/pricing" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.pricing')}</Link></li>
+              <li><Link to="/guide/quick-start" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.quickStart', 'Quick Start Guide')}</Link></li>
               <li><Link to="/auth" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:nav.getStarted')}</Link></li>
             </ul>
           </div>

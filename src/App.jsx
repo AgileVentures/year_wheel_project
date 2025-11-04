@@ -36,6 +36,7 @@ const HRPlanering = lazy(() => import("./pages/landing/HRPlanering"));
 const Marknadsplanering = lazy(() => import("./pages/landing/Marknadsplanering"));
 const SkolaUtbildning = lazy(() => import("./pages/landing/SkolaUtbildning"));
 const Projektplanering = lazy(() => import("./pages/landing/Projektplanering"));
+const QuickStartGuide = lazy(() => import("./components/QuickStartGuide"));
 
 // Lazy load heavy editor components with retry logic (only needed in editor route)
 const lazyWithRetry = (componentImport) => 
@@ -3048,6 +3049,7 @@ function AppContent() {
         <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/support" element={<SupportPage />} />
+        <Route path="/guide/quick-start" element={<QuickStartGuide />} />
         <Route path="/legal/:document" element={<LegalPage />} />
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
