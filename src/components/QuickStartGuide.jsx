@@ -28,7 +28,7 @@ function QuickStartGuide() {
             </li>
           </ol>
           
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
             <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Inloggningsformulär" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-blue-900 italic">Skapa konto med e-post eller använd Google-inloggning</p>
           </div>
@@ -60,7 +60,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
             <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Skapa nytt hjul" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-blue-900 italic">Ge ditt hjul en titel och välj år</p>
           </div>
@@ -79,7 +79,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
             <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Hjul skapat" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-green-900 italic">Ditt nya årshjul har skapats och visas på instrumentpanelen</p>
           </div>
@@ -93,7 +93,7 @@ function QuickStartGuide() {
       imageCaption: "Redigerarens vy med sidopanel där du konfigurerar ringar och aktivitetsgrupper",
       content: (
         <>
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
             <p className="text-purple-900 font-medium mb-2">💡 Vad är ringar?</p>
             <p className="text-sm text-purple-800"><strong>Ringar</strong> är huvudkategorierna i ditt hjul - som avdelningar, projekt eller fokusområden. De visas som cirkulära band runt årshjulet där du placerar aktiviteter.</p>
           </div>
@@ -121,7 +121,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
             <p className="text-amber-900 font-medium mb-2">📚 Exempel på ringar:</p>
             <ul className="text-sm text-amber-800 space-y-2">
               <li><strong>För affärsplanering:</strong> Marknadsföring, Försäljning, Produkt, Drift</li>
@@ -130,7 +130,7 @@ function QuickStartGuide() {
             </ul>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
             <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Konfigurerade ringar" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-blue-900 italic">Hjulet nu med flera ringar konfigurerade - Försäljning, Produkt, Marknadsföring, Drift</p>
           </div>
@@ -142,7 +142,7 @@ function QuickStartGuide() {
       time: "2 minuter",
       content: (
         <>
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
             <p className="text-purple-900 font-medium mb-2">🎨 Vad är aktivitetsgrupper?</p>
             <p className="text-sm text-purple-800"><strong>Aktivitetsgrupper</strong> bestämmer färgen på dina aktiviteter. Tänk på dem som färgkodningskategorier - alla aktiviteter i samma grupp får samma färg på ditt hjul.</p>
           </div>
@@ -170,7 +170,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
             <p className="text-amber-900 font-medium mb-2">📚 Exempel på grupper:</p>
             <ul className="text-sm text-amber-800 space-y-2">
               <li><strong>Efter typ:</strong> Kampanjer, Event, Återkommande uppgifter, Milstolpar</li>
@@ -179,7 +179,7 @@ function QuickStartGuide() {
             </ul>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
             <p className="text-green-900 font-medium mb-2">💡 Varför färger är viktiga</p>
             <p className="text-sm text-green-800">När du har många aktiviteter på ditt hjul hjälper färger dig att omedelbart se mönster - som att se alla Q2-aktiviteter på en gång, eller identifiera alla högprioriterade objekt.</p>
           </div>
@@ -193,7 +193,7 @@ function QuickStartGuide() {
       imageCaption: "Formulär för att skapa en ny aktivitet med alla nödvändiga fält",
       content: (
         <>
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
             <p className="text-purple-900 font-medium mb-2">📅 Vad är en aktivitet?</p>
             <p className="text-sm text-purple-800">En <strong>aktivitet</strong> är vilken händelse, projekt, kampanj eller uppgift som helst du vill spåra under året. Den visas som en färgad båge på ditt hjul.</p>
           </div>
@@ -223,7 +223,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
             <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="Första aktiviteten" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-green-900 italic">🎉 Hjulet visar nu din första aktivitet - en blå båge i Produktringen för Vårproduktlansering</p>
           </div>
@@ -240,7 +240,7 @@ function QuickStartGuide() {
           <p className="text-gray-700 mb-6">Skapa 2-3 fler aktiviteter för att se hur hjulet byggs upp. Varje aktivitet staplas ovanpå andra i samma ring, vilket skapar en komplett visuell bild av ditt år.</p>
 
           <div className="space-y-6">
-            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2">Aktivitet 2: Sommarkampanj</h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li><strong>Ring:</strong> Marknadsföring</li>
@@ -249,7 +249,7 @@ function QuickStartGuide() {
               </ul>
             </div>
 
-            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
               <h4 className="font-semibold text-purple-900 mb-2">Aktivitet 3: Månatligt nyhetsbrev (återkommande)</h4>
               <ul className="text-sm text-purple-800 space-y-1">
                 <li><strong>Ring:</strong> Marknadsföring</li>
@@ -261,7 +261,7 @@ function QuickStartGuide() {
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
             <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Flera aktiviteter" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-green-900 italic">Hjulet med flera aktiviteter - se hur återkommande aktiviteter visas som röda rutor varje månad</p>
           </div>
@@ -278,7 +278,7 @@ function QuickStartGuide() {
           <p className="text-gray-700 mb-6 font-medium">🎯 Du kan flytta och ändra storlek på aktiviteter direkt på hjulet!</p>
 
           <div className="space-y-6">
-            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-3">👆 Flytta en aktivitet:</h4>
               <ol className="text-sm text-blue-800 space-y-2">
                 <li>1. <strong>Placera muspekaren</strong> över en aktivitet på hjulet</li>
@@ -289,7 +289,7 @@ function QuickStartGuide() {
               <p className="mt-3 text-sm text-blue-900 font-medium">✨ Start- och slutdatumen uppdateras automatiskt!</p>
             </div>
 
-            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
               <h4 className="font-semibold text-purple-900 mb-3">↔️ Ändra storlek på en aktivitet:</h4>
               <ol className="text-sm text-purple-800 space-y-2">
                 <li>1. <strong>Placera muspekaren</strong> över kanten på en aktivitet</li>
@@ -299,18 +299,18 @@ function QuickStartGuide() {
               </ol>
             </div>
 
-            <div className="p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
               <h4 className="font-semibold text-green-900 mb-2">🔄 Flytta mellan ringar:</h4>
               <p className="text-sm text-green-800">Du kan också dra en aktivitet <strong>radiellt</strong> (inåt/utåt) för att flytta den till en annan ring</p>
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
             <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Zoom på dra-och-släpp" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-blue-900 italic">Närbild av dra-och-släpp-funktionen - se hur markören ändras vid kanterna för storleksändring</p>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
             <p className="text-amber-900 font-medium">💡 Pro tips:</p>
             <p className="text-sm text-amber-800 mt-1">Detta är mycket snabbare än att öppna formulär och ändra datum manuellt. De flesta användare gör alla sina planeringsändringar med dra-och-släpp!</p>
           </div>
@@ -337,7 +337,7 @@ function QuickStartGuide() {
             </li>
           </ol>
           
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
             <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Login form" className="w-full rounded-sm shadow-md mb-3" />
             <p className="text-sm text-blue-900 italic">Create account with email or use Google sign-in</p>
           </div>
@@ -407,7 +407,7 @@ function QuickStartGuide() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white rounded-sm shadow-lg overflow-hidden">
           {/* Hero Image */}
           {steps[currentStep].image && (
             <div className="relative">
@@ -445,7 +445,7 @@ function QuickStartGuide() {
             <button
               onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
               disabled={currentStep === 0}
-              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-sm font-medium transition-all ${
                 currentStep === 0
                   ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm'
@@ -458,7 +458,7 @@ function QuickStartGuide() {
             {currentStep === totalSteps - 1 ? (
               <Link
                 to="/auth"
-                className="flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#00A4A6] to-[#2E9E97] text-white rounded-lg font-medium hover:shadow-lg transition-all text-sm sm:text-base"
+                className="flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#00A4A6] to-[#2E9E97] text-white rounded-sm font-medium hover:shadow-lg transition-all text-sm sm:text-base"
               >
                 <Check size={18} className="sm:w-5 sm:h-5" />
                 {isSwedish ? 'Kom igång!' : 'Get Started!'}
@@ -466,7 +466,7 @@ function QuickStartGuide() {
             ) : (
               <button
                 onClick={() => setCurrentStep(Math.min(totalSteps - 1, currentStep + 1))}
-                className="flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#00A4A6] to-[#2E9E97] text-white rounded-lg font-medium hover:shadow-lg transition-all text-sm sm:text-base"
+                className="flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-[#00A4A6] to-[#2E9E97] text-white rounded-sm font-medium hover:shadow-lg transition-all text-sm sm:text-base"
               >
                 <span className="hidden sm:inline">{isSwedish ? 'Nästa' : 'Next'}</span>
                 <ChevronRight size={18} className="sm:w-5 sm:h-5" />
