@@ -986,14 +986,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
       
-      // CRITICAL: Update the ref FIRST to prevent UUID update from being tracked as a change
+      // CRITICAL: Update the ref with UUIDs but DON'T call setOrganizationData
+      // This prevents triggering undo tracking and another auto-save cycle
+      // The UUIDs are now in database and ref - canvas will get them on next reload
       latestValuesRef.current.organizationData = updatedOrgData;
-      
-      // CRITICAL: Keep isSavingRef = true during state update to prevent triggering another auto-save
-      // The useEffect watching organizationData will see isSavingRef and skip
-      
-      // Update React state with database UUIDs (prevents duplicates on reload)
-      setOrganizationData(updatedOrgData);
       
       // CRITICAL: Mark current undo position as saved
       markSaved();
