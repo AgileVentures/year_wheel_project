@@ -832,14 +832,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Auto-save organizationData changes for real-time collaboration
   const autoSaveOrganizationData = useDebouncedCallback(async () => {
-    console.log('[AutoSave] Starting auto-save organizationData...', {
-      wheelId,
-      isLoadingData: isLoadingData.current,
-      isInitialLoad: isInitialLoad.current,
-      isRealtimeUpdate: isRealtimeUpdate.current,
-      autoSaveEnabled
-    });
-    
     // Don't auto-save if:
     // 1. No wheelId (localStorage mode)
     // 2. Currently loading data
@@ -847,37 +839,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // 4. Data came from remote realtime update (don't echo back)
     // 5. Auto-save is disabled
     if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
-      console.log('[AutoSave] Aborted - conditions not met');
       return;
     }
 
     // Get latest organizationData from ref
     const { organizationData: currentOrgData, year: currentYear, currentPageId: currentCurrentPageId } = latestValuesRef.current;
     
-    console.log('[AutoSave] Got data from ref:', {
-      currentPageId: currentCurrentPageId,
-      currentYear,
-      itemsCount: currentOrgData?.items?.length
-    });
-    
     // If no currentPageId, create a page for this year (same logic as handleSave)
     let pageIdToUse = currentCurrentPageId;
     if (!pageIdToUse && wheelId) {
-      console.log('[AutoSave] No currentPageId, checking for existing pages...');
-      
       try {
         const existingPages = await fetchPages(wheelId);
         const pageForYear = existingPages.find(p => p.year === parseInt(currentYear));
         
         if (pageForYear) {
-          console.log('[AutoSave] Found existing page for year', currentYear, ':', pageForYear.id);
           pageIdToUse = pageForYear.id;
           
           // Update local state to use existing page
           setCurrentPageId(pageForYear.id);
           setPages(existingPages);
         } else {
-          console.log('[AutoSave] No page found for year', currentYear, ', creating new page...');
           const defaultPage = await createPage(wheelId, {
             year: parseInt(currentYear),
             title: currentYear,
@@ -888,17 +869,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           // Update local state to reflect the new page
           setCurrentPageId(defaultPage.id);
           setPages(prevPages => [...prevPages, defaultPage]);
-          
-          console.log('[AutoSave] Created new page:', defaultPage.id);
         }
       } catch (error) {
-        console.error('[AutoSave] Error creating/finding page:', error);
+        console.error('Error creating/finding page:', error);
         return; // Abort auto-save if page creation fails
       }
     }
     
     if (!pageIdToUse) {
-      console.warn('[AutoSave] Still no pageId after attempt to create/find page');
       return;
     }
 
@@ -924,23 +902,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // This ensures organization_data JSONB only contains page-specific items
       const currentYearNum = parseInt(currentYear); // USE currentYear from ref, not year from closure!
       
-      console.log('[AutoSave] Filtering items for year:', currentYearNum);
-      console.log('[AutoSave] Total items before filter:', currentOrgData.items?.length);
-      
       const pageSpecificItems = (currentOrgData.items || []).filter(item => {
         const itemStartYear = new Date(item.startDate).getFullYear();
         const itemEndYear = new Date(item.endDate).getFullYear();
         // Include item if it overlaps with current year
-        const overlaps = itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
-        
-        if (!overlaps) {
-          console.log('[AutoSave] Excluding item:', item.name, 'Start:', itemStartYear, 'End:', itemEndYear);
-        }
-        
-        return overlaps;
+        return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
       });
-      
-      console.log('[AutoSave] Items after filter:', pageSpecificItems.length);
       
       const pageSpecificOrgData = {
         ...currentOrgData,
@@ -949,7 +916,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // CRITICAL: Save to database tables first (rings, activity_groups, items)
       // This syncs data to individual tables, not just JSONB
-      console.log('[AutoSave] Calling saveWheelData for page:', pageIdToUse, 'with', pageSpecificItems.length, 'items');
       const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrgData, pageIdToUse);
       
       // Update organization data with any new UUIDs from database
@@ -976,12 +942,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       };
       
       // Then save the page's JSONB organization_data
-      console.log('[AutoSave] Saving to page JSONB:', pageIdToUse);
       await updatePage(pageIdToUse, {
         organization_data: updatedOrgData,
       });
-      
-      console.log('[AutoSave] Successfully saved!');
       
       // Mark the save timestamp to ignore our own broadcasts
       lastSaveTimestamp.current = Date.now();
