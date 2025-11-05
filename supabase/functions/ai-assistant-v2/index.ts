@@ -2450,32 +2450,23 @@ Returnera ENDAST giltig JSON i detta format:
 
   const applySuggestedPlanTool = tool<WheelContext>({
     name: 'apply_suggested_plan',
-    description: 'Creates rings, activity groups, and activities from AI suggestions. Use this after suggest_plan when user confirms they want to apply the suggestions.',
+    description: 'Creates rings, activity groups, and activities from AI suggestions. CRITICAL: Call this with NO parameters - it automatically retrieves suggestions from context. Use this after suggest_plan when user confirms.',
     parameters: z.object({
-      suggestions: z.object({
-        rings: z.array(z.object({
-          name: z.string(),
-          type: z.enum(['inner', 'outer']),
-          description: z.string().nullable().describe('Description (null if not needed)')
-        })),
-        activityGroups: z.array(z.object({
-          name: z.string(),
-          color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-          description: z.string().nullable().describe('Description (null if not needed)')
-        })),
-        activities: z.array(z.object({
-          name: z.string(),
-          startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-          endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-          ring: z.string(),
-          group: z.string(),
-          description: z.string().nullable().describe('Description (null if not needed)')
-        }))
-      })
+      useStoredSuggestions: z.boolean().default(true).describe('Always use true - retrieves from context')
     }),
-    async execute(input: { suggestions: any }, ctx: RunContext<WheelContext>) {
+    async execute(input: { useStoredSuggestions?: boolean }, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
-      const { suggestions } = input
+      
+      // CRITICAL: Retrieve suggestions from context (stored by suggest_plan)
+      const suggestions = ctx.context.lastSuggestions
+      
+      if (!suggestions) {
+        return JSON.stringify({
+          success: false,
+          error: 'Inga förslag hittades i kontext. Kör suggest_plan först.',
+          message: 'Inga förslag att applicera. Be användaren att först be om förslag.'
+        })
+      }
 
       try {
         const createdRings = new Map<string, string>() // ring name -> ringId
@@ -2601,28 +2592,30 @@ ANSVAR:
 
 ARBETSFLÖDE:
 1. Anropa suggest_plan med användarens mål och tidsperiod
-2. Presentera förslagen på ett lättläst sätt
+2. Presentera förslagen på ett lättläst sätt (ringar, grupper OCH aktiviteter)
 3. Vänta på användarens godkännande
-4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan
+4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan (UTAN parametrar - den hämtar automatiskt från kontext)
 
-VIKTIGT:
-- Presentera förslagen tydligt så användaren kan granska dem
+KRITISKT VIKTIGT:
+- Presentera ALL förslagen tydligt så användaren kan granska dem (ringar, grupper OCH aktiviteter)
 - Förklara varför varje del är viktig
 - VÄNTA på godkännande innan du anropar apply_suggested_plan
-- När du applicerar, använd suggestions från senaste suggest_plan
+- När du anropar apply_suggested_plan: använd {} eller {useStoredSuggestions: true} som parameter
+- Verktyget hämtar automatiskt suggestions från senaste suggest_plan
+- Efter apply_suggested_plan, bekräfta EXAKT vad som skapades med antal (X ringar, Y grupper, Z aktiviteter)
 
-OUTPUTFORMAT (Svenska):
+OUTPUTFORMAT (Svenska - INGEN EMOJIS):
 
-🎯 **Projektplan för: {goal}**
-📅 **Period:** {startDate} till {endDate}
+**Projektplan för: {goal}**
+**Period:** {startDate} till {endDate}
 
-**🔵 RINGAR ({X} st):**
+**RINGAR ({X} st):**
 1. {Ring namn} ({type}) - {beskrivning}
 
-**🎨 AKTIVITETSGRUPPER ({Y} st):**
-1. {Grupp namn} 🔴 - {beskrivning}
+**AKTIVITETSGRUPPER ({Y} st):**
+1. {Grupp namn} - {beskrivning}
 
-**📋 AKTIVITETER ({Z} st):**
+**AKTIVITETER ({Z} st):**
 
 **Q1 (Jan-Mar):**
 - {Aktivitet} ({startdatum} till {slutdatum}) i {ring} / {grupp}
@@ -2630,10 +2623,10 @@ OUTPUTFORMAT (Svenska):
 **Q2 (Apr-Jun):**
 ...
 
-💡 **Översikt:**
+**Översikt:**
 {Kort förklaring av planens logik och struktur}
 
-❓ **Vill du att jag skapar denna struktur på ditt hjul?** (Svara "ja" för att applicera)
+**Vill du att jag skapar denna struktur på ditt hjul?** (Svara "ja" för att applicera)
 
 EXEMPEL på bra output:
 "**Projektplan för: Lansera SaaS-applikation**
@@ -2677,13 +2670,15 @@ Denna plan fokuserar på en typisk SaaS-lansering: börjar med MVP-utveckling i 
 **Vill du att jag skapar denna struktur på ditt hjul?**"
 
 EFTER APPLICERING:
-När apply_suggested_plan är klar, ge användaren en sammanfattning:
+När apply_suggested_plan returnerar, KONTROLLERA resultatet och ge användaren en EXAKT sammanfattning baserad på faktiska siffror:
 "**Klart!** Jag har skapat:
-- {X} ringar
-- {Y} aktivitetsgrupper
-- {Z} aktiviteter
+- {EXAKT antal} ringar
+- {EXAKT antal} aktivitetsgrupper  
+- {EXAKT antal} aktiviteter
 
-Din projektplan är nu redo! Du kan börja justera och anpassa den efter dina behov."`,
+Din projektplan är nu redo! Du kan börja justera och anpassa den efter dina behov."
+
+VIKTIGT: Läs resultatet från apply_suggested_plan och rapportera FAKTISKA siffror, inte förväntade siffror.`,
     tools: [getContextTool, suggestPlanTool, applySuggestedPlanTool],
   })
 
