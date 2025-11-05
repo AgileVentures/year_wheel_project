@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Check, Home } from 'lucide-react';
@@ -8,6 +8,11 @@ function QuickStartGuide() {
   const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const isSwedish = i18n.language === 'sv';
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
 
   const steps = isSwedish ? [
     {
