@@ -37,6 +37,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
   const [wheelContext, setWheelContext] = useState(null);
   const [position, setPosition] = useState({ x: window.innerWidth - 440, y: 20 });
   const [size, setSize] = useState({ width: 420, height: 650 });
@@ -51,11 +52,12 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   // Store the last response ID to chain context across turns
   const [lastResponseId, setLastResponseId] = useState(null);
   
-  // Reset conversation when switching wheels or pages
+  // Reset conversation only when switching wheels (NOT when changing pages)
+  // This allows users to navigate between years while keeping conversation history
   useEffect(() => {
     setLastResponseId(null);
     setMessages([]);
-  }, [wheelId, currentPageId]);
+  }, [wheelId]);
   
   useEffect(() => {
     if (wheelId && isOpen) {
@@ -323,6 +325,10 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
     setIsLoading(true);
     setStreamingStatus('Ansluter...');
 
@@ -627,19 +633,34 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="p-4 bg-white">
-          <div className="flex gap-2">
-            <input
+          <div className="flex gap-2 items-end">
+            <textarea
+              ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                // Auto-grow textarea
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              }}
+              onKeyDown={(e) => {
+                // Submit on Enter (without Shift)
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
               placeholder={t('editor:aiAssistant.placeholder')}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm bg-white resize-none overflow-hidden"
+              style={{ minHeight: '38px', maxHeight: '200px' }}
+              rows={1}
               disabled={isLoading}
               data-onboarding="ai-input-field"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="bg-purple-600 text-white px-4 py-2 rounded-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              className="bg-purple-600 text-white px-4 py-2 rounded-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex-shrink-0"
             >
               {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             </button>

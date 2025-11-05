@@ -303,7 +303,7 @@ async function createRing(
   const defaultColor = '#408cfb'
   const finalColor = args.color || defaultColor
 
-  // Check if ring exists
+  // Check if ring exists (wheel scoped - migration 015 reverted to wheel scope)
   const { data: existingByName } = await supabase
     .from('wheel_rings')
     .select('id, name')
@@ -321,7 +321,7 @@ async function createRing(
     }
   }
 
-  // Auto-calculate ring_order
+  // Auto-calculate ring_order for this wheel
   const { data: existingRings } = await supabase
     .from('wheel_rings')
     .select('ring_order')
@@ -362,7 +362,7 @@ async function createGroup(
   wheelId: string,
   args: z.infer<typeof CreateGroupInput>
 ) {
-  // Check if group exists
+  // Check if group exists (wheel scoped - migration 015 reverted to wheel scope)
   const { data: existing } = await supabase
     .from('activity_groups')
     .select('id, name')
@@ -2495,44 +2495,40 @@ Returnera ENDAST giltig JSON i detta format:
 
   const applySuggestedPlanTool = tool<WheelContext>({
     name: 'apply_suggested_plan',
-    description: 'Creates rings, activity groups, and activities from AI suggestions. CRITICAL: Must pass the complete suggestions object that was returned from suggest_plan. Use this after suggest_plan when user confirms.',
+    description: 'Creates rings, activity groups, and activities from AI suggestions. Pass the EXACT JSON string returned by suggest_plan (do not modify it). Use this after suggest_plan when user confirms.',
     parameters: z.object({
-      suggestions: z.object({
-        rings: z.array(z.object({
-          name: z.string(),
-          type: z.enum(['inner', 'outer']),
-          description: z.string().nullable()
-        })),
-        activityGroups: z.array(z.object({
-          name: z.string(),
-          color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-          description: z.string().nullable()
-        })),
-        activities: z.array(z.object({
-          name: z.string(),
-          startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-          endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-          ring: z.string(),
-          group: z.string(),
-          description: z.string().nullable()
-        }))
-      }).describe('Complete suggestions object from suggest_plan tool result')
+      suggestionsJson: z.string().describe('The complete suggestions JSON string returned from suggest_plan tool - pass it exactly as received')
     }),
-    async execute(input: { suggestions: any }, ctx: RunContext<WheelContext>) {
+    async execute(input: { suggestionsJson: string }, ctx: RunContext<WheelContext>) {
       console.log('🚀 [apply_suggested_plan] TOOL CALLED!')
-      console.log('[apply_suggested_plan] Rings:', input.suggestions?.rings?.length || 0)
-      console.log('[apply_suggested_plan] Groups:', input.suggestions?.activityGroups?.length || 0)
-      console.log('[apply_suggested_plan] Activities:', input.suggestions?.activities?.length || 0)
+      console.log('[apply_suggested_plan] Received JSON length:', input.suggestionsJson?.length || 0)
+      
+      let suggestions: any
+      try {
+        // Parse the JSON string
+        const parsed = JSON.parse(input.suggestionsJson)
+        // Handle both direct suggestions and wrapped in success response
+        suggestions = parsed.suggestions || parsed
+        console.log('[apply_suggested_plan] Parsed suggestions - Rings:', suggestions?.rings?.length || 0)
+        console.log('[apply_suggested_plan] Parsed suggestions - Groups:', suggestions?.activityGroups?.length || 0)
+        console.log('[apply_suggested_plan] Parsed suggestions - Activities:', suggestions?.activities?.length || 0)
+      } catch (error) {
+        console.error('[apply_suggested_plan] JSON parse error:', error)
+        return JSON.stringify({
+          success: false,
+          error: 'Invalid JSON format',
+          message: 'Kunde inte tolka förslagen. Försök anropa suggest_plan igen.'
+        })
+      }
       
       const { supabase, wheelId } = ctx.context
-      const suggestions = input.suggestions
 
       try {
         const createdRings = new Map<string, string>() // ring name -> ringId
         const createdGroups = new Map<string, string>() // group name -> groupId
         const errors: string[] = []
 
-        // 1. Create rings
+        // 1. Create rings (wheel scoped - shared across all pages)
         console.log('[apply_suggested_plan] Creating rings:', suggestions.rings?.length || 0)
         for (const ring of suggestions.rings || []) {
           try {
@@ -2552,7 +2548,7 @@ Returnera ENDAST giltig JSON i detta format:
           }
         }
 
-        // 2. Create activity groups
+        // 2. Create activity groups (wheel scoped - shared across all pages)
         console.log('[apply_suggested_plan] Creating activity groups:', suggestions.activityGroups?.length || 0)
         for (const group of suggestions.activityGroups || []) {
           try {
@@ -2573,22 +2569,28 @@ Returnera ENDAST giltig JSON i detta format:
 
         // 3. Create activities
         console.log('[apply_suggested_plan] Creating activities:', suggestions.activities?.length || 0)
+        console.log('[apply_suggested_plan] Available rings:', Array.from(createdRings.keys()))
+        console.log('[apply_suggested_plan] Available groups:', Array.from(createdGroups.keys()))
         let activitiesCreated = 0
         
         for (const activity of suggestions.activities || []) {
           try {
+            console.log(`[apply_suggested_plan] Processing activity: "${activity.name}" (ring: "${activity.ring}", group: "${activity.group}")`)
             const ringId = createdRings.get(activity.ring)
             const groupId = createdGroups.get(activity.group)
 
             if (!ringId) {
+              console.error(`[apply_suggested_plan] RING NOT FOUND: "${activity.ring}" for activity "${activity.name}"`)
               errors.push(`Aktivitet "${activity.name}": Ring "${activity.ring}" hittades inte`)
               continue
             }
             if (!groupId) {
+              console.error(`[apply_suggested_plan] GROUP NOT FOUND: "${activity.group}" for activity "${activity.name}"`)
               errors.push(`Aktivitet "${activity.name}": Grupp "${activity.group}" hittades inte`)
               continue
             }
 
+            console.log(`[apply_suggested_plan] Creating activity with ringId=${ringId}, groupId=${groupId}`)
             const result = await createActivity(ctx, {
               name: activity.name,
               startDate: activity.startDate,
@@ -2601,6 +2603,9 @@ Returnera ENDAST giltig JSON i detta format:
             if (result.success) {
               activitiesCreated += result.itemsCreated || 1
               console.log('[apply_suggested_plan] Created activity:', activity.name)
+            } else {
+              console.error('[apply_suggested_plan] Activity creation returned failure:', activity.name, result)
+              errors.push(`Aktivitet "${activity.name}": ${result.message || 'Okänt fel'}`)
             }
           } catch (error) {
             console.error('[apply_suggested_plan] Error creating activity:', activity.name, error)
@@ -2608,18 +2613,30 @@ Returnera ENDAST giltig JSON i detta format:
           }
         }
 
+        // Determine overall success: all rings/groups created AND most activities created
+        const expectedActivities = suggestions.activities?.length || 0
+        const successRate = expectedActivities > 0 ? (activitiesCreated / expectedActivities) : 1
+        const overallSuccess = createdRings.size > 0 && createdGroups.size > 0 && successRate >= 0.8
+
         const summary = {
-          success: true,
+          success: overallSuccess,
           created: {
             rings: createdRings.size,
             groups: createdGroups.size,
             activities: activitiesCreated
           },
+          expected: {
+            rings: suggestions.rings?.length || 0,
+            groups: suggestions.activityGroups?.length || 0,
+            activities: expectedActivities
+          },
           errors: errors.length > 0 ? errors : undefined,
-          message: `Skapade: ${createdRings.size} ringar, ${createdGroups.size} grupper, ${activitiesCreated} aktiviteter${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+          message: overallSuccess 
+            ? `Skapade: ${createdRings.size} ringar, ${createdGroups.size} grupper, ${activitiesCreated} aktiviteter`
+            : `VARNING: Endast ${activitiesCreated} av ${expectedActivities} aktiviteter skapades! Fel: ${errors.join(', ')}`
         }
 
-        console.log('[apply_suggested_plan] Summary:', summary)
+        console.log('[apply_suggested_plan] Summary:', JSON.stringify(summary, null, 2))
         return JSON.stringify(summary)
       } catch (error) {
         console.error('[apply_suggested_plan] Fatal error:', error)
@@ -2650,15 +2667,17 @@ ANSVAR:
 - Applicera förslag när användaren godkänner
 
 ARBETSFLÖDE:
-1. Anropa suggest_plan med användarens mål och tidsperiod → SPARA RESULTATET
+1. Anropa suggest_plan med användarens mål och tidsperiod → SPARA DEN RÅA JSON-STRÄNGEN SOM RETURNERAS
 2. Presentera förslagen på ett lättläst sätt (ringar, grupper OCH aktiviteter)
 3. Vänta på användarens godkännande
-4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan med suggestions-objektet från steg 1
+4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan med DEN EXAKTA JSON-STRÄNGEN från steg 1
 
 KRITISKT VIKTIGT FÖR STEG 4:
-Du MÅSTE skicka hela suggestions-objektet (inkl rings, activityGroups OCH activities) till apply_suggested_plan.
-Parametern ska vara: { suggestions: { rings: [array från suggest_plan], activityGroups: [array från suggest_plan], activities: [array från suggest_plan] } }
-MISSLYCKANDE ATT INKLUDERA activities-arrayen resulterar i att INGA aktiviteter skapas!
+- Skicka den KOMPLETTA JSON-strängen från suggest_plan till apply_suggested_plan
+- Parametern ska vara: { suggestionsJson: "<hela JSON-strängen från suggest_plan>" }
+- ÄNDRA INTE JSON-strängen, skicka den exakt som du fick den
+- JSON-strängen innehåller rings, activityGroups OCH activities
+- Om du inte skickar hela JSON-strängen kommer INGA aktiviteter att skapas!
 
 ANDRA KRITISKA REGLER:
 - Presentera ALLA förslagen tydligt så användaren kan granska dem (ringar, grupper OCH aktiviteter)
