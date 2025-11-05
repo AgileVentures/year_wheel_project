@@ -517,6 +517,7 @@ function YearWheel({
     showLabels,
     weekRingDisplayMode,
     renderSize, // Include renderSize to recreate wheel when resolution changes
+    yearFilteredOrgData, // CRITICAL: Recreate wheel when organization data changes (items, rings, groups updated)
     // zoomedMonth and zoomedQuarter excluded - updated via updateZoomState to prevent wheel recreation
     monthNames,
     handleItemClick,

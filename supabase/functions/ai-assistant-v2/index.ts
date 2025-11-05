@@ -773,21 +773,22 @@ async function updateActivity(
   }
 ) {
   const { supabase, wheelId } = ctx.context
-  console.log('[updateActivity] Searching for:', activityName)
+  console.log('[updateActivity] Searching for EXACT match:', activityName)
 
-  // Find items matching the name across ALL pages in this wheel
+  // Find items with EXACT name match across ALL pages in this wheel
+  // CRITICAL: Use .eq() for exact match, not .ilike() for partial match
   const { data: items, error: findError } = await supabase
     .from('items')
     .select('*, wheel_pages!inner(wheel_id, year)')
     .eq('wheel_pages.wheel_id', wheelId)
-    .ilike('name', `%${activityName}%`)
+    .eq('name', activityName)
 
   if (findError) throw findError
 
   if (!items || items.length === 0) {
     return {
       success: false,
-      message: `Hittade ingen aktivitet med namnet "${activityName}"`
+      message: `Hittade ingen aktivitet med exakt namnet "${activityName}"`
     }
   }
 
@@ -1764,7 +1765,7 @@ VISIBILITY MANAGEMENT (NEW):
 
   const queryActivitiesTool = tool<WheelContext>({
     name: 'query_activities',
-    description: 'Search and filter activities by name, date range, ring, or group. Use this to find specific activities like "all Q4 campaigns" or "activities containing REA".',
+    description: 'Search and filter activities across ALL years/pages in the wheel by name, date range, ring, or group. Use this to find specific activities like "all activities named Månadsbrev" or "activities containing REA".',
     parameters: z.object({
       nameContains: z.string().nullable().describe('Filter by activity name (partial match, case-insensitive, null to skip)'),
       ringName: z.string().nullable().describe('Filter by ring name (partial match, null to skip)'),
@@ -1774,14 +1775,14 @@ VISIBILITY MANAGEMENT (NEW):
       quarter: z.number().min(1).max(4).nullable().describe('Filter by quarter 1-4 (null to skip)'),
     }),
     async execute(input: any, ctx: RunContext<WheelContext>) {
-      const { supabase, currentPageId } = ctx.context
+      const { supabase, wheelId, currentPageId } = ctx.context
       console.log('🔧 [TOOL] query_activities called with filters:', input)
       
-      // Build base query with joins
+      // Build base query with joins - search ENTIRE wheel, not just current page
       let query = supabase
         .from('items')
-        .select('*, wheel_rings!inner(name, type), activity_groups!inner(name, color)')
-        .eq('page_id', currentPageId)
+        .select('*, wheel_rings!inner(name, type), activity_groups!inner(name, color), wheel_pages!inner(year)')
+        .eq('wheel_id', wheelId)
       
       // Apply date filters
       if (input.startAfter) {
@@ -1911,19 +1912,19 @@ VISIBILITY MANAGEMENT (NEW):
 
   const listActivitiesTool = tool<WheelContext>({
     name: 'list_activities',
-    description: 'List all activities for the current page',
+    description: 'List all activities for the entire wheel (all years/pages)',
     parameters: z.object({}),
     async execute(_input: {}, ctx: RunContext<WheelContext>) {
-      const { supabase, currentPageId } = ctx.context
+      const { supabase, wheelId } = ctx.context
       const { data: items, error } = await supabase
         .from('items')
-        .select('name, start_date, end_date')
-        .eq('page_id', currentPageId)
+        .select('name, start_date, end_date, wheel_pages!inner(year)')
+        .eq('wheel_id', wheelId)
         .order('start_date')
 
       if (error) throw error
       if (!items || items.length === 0) {
-        return 'Inga aktiviteter hittades på denna sida'
+        return 'Inga aktiviteter hittades i detta hjul'
       }
 
       return JSON.stringify(items)
@@ -2015,6 +2016,44 @@ AUTOMATIC PAGE CREATION:
 - If extending activity to span years, all required pages are auto-created
 - User never needs to worry about page management
 
+BATCH UPDATE WORKFLOW (CRITICAL):
+When user says "ändra alla X", "uppdatera alla Y till Z", "gör alla förekomster av A till B":
+1. Call query_activities to find all matching activities (searches ALL years automatically!)
+   - Example: "ändra alla Månadsbrev till 1 dag" → query_activities with nameContains: "Månadsbrev"
+   - This finds activities across ALL pages/years in the wheel
+   - Query returns EXACT name for each activity
+2. For EACH activity found, call update_activity with its EXACT FULL NAME from query result
+   - CRITICAL: Use the exact "name" field from query result, NOT the search term!
+   - Example: If query returns name: "Månadsbrev Januari", use "Månadsbrev Januari" in update_activity
+   - Example: If 12 activities found → call update_activity 12 times with 12 different exact names
+3. Report results: "Uppdaterade 12 aktiviteter: [list names and years]"
+
+BATCH UPDATE EXAMPLE:
+User: "Ändra alla förekomster av Månadsbrev till att vara 1 dag långa"
+Step 1: query_activities({nameContains: "Månadsbrev"}) → Returns 12 activities
+  Example result: [{name: "Månadsbrev Januari", startDate: "2026-01-15", endDate: "2026-01-31"}, ...]
+Step 2: For EACH activity, use its EXACT FULL NAME from query result:
+  - Activity 1: update_activity({activityName: "Månadsbrev Januari", newStartDate: "2026-01-15", newEndDate: "2026-01-15"})
+  - Activity 2: update_activity({activityName: "Månadsbrev Februari", newStartDate: "2026-02-15", newEndDate: "2026-02-15"})
+  - ... (repeat for all 12, using EXACT name from query result for each!)
+Step 3: Report: "Klart! Jag har uppdaterat alla 12 Månadsbrev-aktiviteter till att vara 1 dag långa."
+
+CRITICAL FOR BATCH UPDATES:
+- query_activities returns the EXACT name field for each activity
+- You MUST use that EXACT name when calling update_activity
+- Do NOT use partial names or search terms
+- Example: If query returns name: "Månadsbrev Januari", use "Månadsbrev Januari" (not "Månadsbrev")
+
+IMPORTANT FOR BATCH UPDATES:
+- query_activities automatically searches ALL years/pages - you don't need to specify
+- ALWAYS query first to find activities
+- Use the EXACT "name" field from each query result when calling update_activity
+- update_activity requires EXACT name match (not partial match!)
+- If you use partial name, it will update ALL matching activities to same value (BUG!)
+- Update each one individually (no batch update tool exists yet)
+- Keep original start dates, just adjust end dates for duration changes
+- Report total count, years covered, and success/failures
+
 DELETE ACTIVITIES:
 When user says "ta bort", "radera", "delete":
 1. Call delete_activity with the activity name
@@ -2030,11 +2069,12 @@ When user asks to create MULTIPLE similar activities, use batch_create_activitie
 
 SEARCH/FILTER ACTIVITIES (NEW):
 When user wants to FIND or FILTER activities, use query_activities:
+- SEARCHES ACROSS ALL YEARS/PAGES IN THE WHEEL (not just current page!)
 - "Visa alla kampanjer i Q4" → query_activities with quarter: 4
 - "Hitta aktiviteter med 'REA'" → query_activities with nameContains: "REA"
 - "Vilka aktiviteter är i ringen Marketing?" → query_activities with ringName: "Marketing"
 - "Visa aktiviteter mellan mars och maj" → query_activities with startAfter/endBefore
-- Returns filtered list with all activity details
+- Returns filtered list with all activity details including year
 
 WORKFLOW EXAMPLE (Bulk):
 User: "Skapa månadskampanjer för hela året"
@@ -2429,6 +2469,11 @@ Returnera ENDAST giltig JSON i detta format:
 
         const suggestions = JSON.parse(response.choices[0].message.content || '{}')
 
+        console.log('💾 [suggest_plan] Storing suggestions in context')
+        console.log('[suggest_plan] Rings:', suggestions.rings?.length || 0)
+        console.log('[suggest_plan] Groups:', suggestions.activityGroups?.length || 0)
+        console.log('[suggest_plan] Activities:', suggestions.activities?.length || 0)
+
         // Store suggestions in context for potential later use
         ctx.context.lastSuggestions = suggestions
 
@@ -2450,23 +2495,37 @@ Returnera ENDAST giltig JSON i detta format:
 
   const applySuggestedPlanTool = tool<WheelContext>({
     name: 'apply_suggested_plan',
-    description: 'Creates rings, activity groups, and activities from AI suggestions. CRITICAL: Call this with NO parameters - it automatically retrieves suggestions from context. Use this after suggest_plan when user confirms.',
+    description: 'Creates rings, activity groups, and activities from AI suggestions. CRITICAL: Must pass the complete suggestions object that was returned from suggest_plan. Use this after suggest_plan when user confirms.',
     parameters: z.object({
-      useStoredSuggestions: z.boolean().default(true).describe('Always use true - retrieves from context')
+      suggestions: z.object({
+        rings: z.array(z.object({
+          name: z.string(),
+          type: z.enum(['inner', 'outer']),
+          description: z.string().nullable()
+        })),
+        activityGroups: z.array(z.object({
+          name: z.string(),
+          color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+          description: z.string().nullable()
+        })),
+        activities: z.array(z.object({
+          name: z.string(),
+          startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          ring: z.string(),
+          group: z.string(),
+          description: z.string().nullable()
+        }))
+      }).describe('Complete suggestions object from suggest_plan tool result')
     }),
-    async execute(input: { useStoredSuggestions?: boolean }, ctx: RunContext<WheelContext>) {
+    async execute(input: { suggestions: any }, ctx: RunContext<WheelContext>) {
+      console.log('🚀 [apply_suggested_plan] TOOL CALLED!')
+      console.log('[apply_suggested_plan] Rings:', input.suggestions?.rings?.length || 0)
+      console.log('[apply_suggested_plan] Groups:', input.suggestions?.activityGroups?.length || 0)
+      console.log('[apply_suggested_plan] Activities:', input.suggestions?.activities?.length || 0)
+      
       const { supabase, wheelId } = ctx.context
-      
-      // CRITICAL: Retrieve suggestions from context (stored by suggest_plan)
-      const suggestions = ctx.context.lastSuggestions
-      
-      if (!suggestions) {
-        return JSON.stringify({
-          success: false,
-          error: 'Inga förslag hittades i kontext. Kör suggest_plan först.',
-          message: 'Inga förslag att applicera. Be användaren att först be om förslag.'
-        })
-      }
+      const suggestions = input.suggestions
 
       try {
         const createdRings = new Map<string, string>() // ring name -> ringId
@@ -2591,18 +2650,22 @@ ANSVAR:
 - Applicera förslag när användaren godkänner
 
 ARBETSFLÖDE:
-1. Anropa suggest_plan med användarens mål och tidsperiod
+1. Anropa suggest_plan med användarens mål och tidsperiod → SPARA RESULTATET
 2. Presentera förslagen på ett lättläst sätt (ringar, grupper OCH aktiviteter)
 3. Vänta på användarens godkännande
-4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan (UTAN parametrar - den hämtar automatiskt från kontext)
+4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan med suggestions-objektet från steg 1
 
-KRITISKT VIKTIGT:
-- Presentera ALL förslagen tydligt så användaren kan granska dem (ringar, grupper OCH aktiviteter)
+KRITISKT VIKTIGT FÖR STEG 4:
+Du MÅSTE skicka hela suggestions-objektet (inkl rings, activityGroups OCH activities) till apply_suggested_plan.
+Parametern ska vara: { suggestions: { rings: [array från suggest_plan], activityGroups: [array från suggest_plan], activities: [array från suggest_plan] } }
+MISSLYCKANDE ATT INKLUDERA activities-arrayen resulterar i att INGA aktiviteter skapas!
+
+ANDRA KRITISKA REGLER:
+- Presentera ALLA förslagen tydligt så användaren kan granska dem (ringar, grupper OCH aktiviteter)
 - Förklara varför varje del är viktig
 - VÄNTA på godkännande innan du anropar apply_suggested_plan
-- När du anropar apply_suggested_plan: använd {} eller {useStoredSuggestions: true} som parameter
-- Verktyget hämtar automatiskt suggestions från senaste suggest_plan
 - Efter apply_suggested_plan, bekräfta EXAKT vad som skapades med antal (X ringar, Y grupper, Z aktiviteter)
+- Om apply_suggested_plan returnerar errors array, rapportera dessa till användaren
 
 OUTPUTFORMAT (Svenska - INGEN EMOJIS):
 
@@ -2732,6 +2795,8 @@ DELEGERINGSREGLER (KRITISKA):
 - "flytta aktivitet", "ändra datum", "byt ring"
 - "ta bort aktivitet", "radera"
 - "lista aktiviteter", "visa aktiviteter"
+- **"ändra alla förekomster", "uppdatera alla X", "byt alla Y"** - BATCH UPDATES
+- **"titta på ringen X", "visa aktiviteter i ring Y"** - QUERIES
 - If user mentions creating/adding something WITH a date or time period → Activity Agent
 - ⚠️ ÄVEN OM användaren säger "1. Lägg till X, 2. Analysera Y" → Välj Activity Agent!
 - ⚠️ Skapa först, analysera senare!
