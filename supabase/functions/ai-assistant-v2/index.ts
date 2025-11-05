@@ -32,6 +32,8 @@ interface WheelContext {
   userId: string
   currentYear: number
   currentPageId: string
+  // Store ALL pages so AI knows what years exist
+  allPages?: Array<{ id: string; year: number; title: string; page_order: number }>
   // Store suggestions for "suggest then create" workflow
   lastSuggestions?: {
     rings: Array<{ name: string; type: string; description?: string }>
@@ -2669,11 +2671,22 @@ ANSVAR:
 - Föreslå lämpliga färgkoder och struktur
 - Applicera förslag när användaren godkänner
 
+MULTI-YEAR PAGES (KRITISKT):
+- Hjul kan ha FLERA sidor (pages) - en för varje år
+- Anropa get_current_context för att se vilka år som finns: {pages: [{id, year, title}]}
+- Aktiviteter måste matcha befintliga år!
+- Om aktivitet sträcker sig 2025-11-01 till 2026-01-31 OCH båda årens sidor finns:
+  → suggest_plan skapar automatiskt rätt aktiviteter
+  → createActivity i apply_suggested_plan delar upp i två segments (2025-11-01 till 2025-12-31 + 2026-01-01 till 2026-01-31)
+- Om användaren ber om aktiviteter för år som INTE finns:
+  → Säg tydligt: "Jag ser att sidan för {år} inte finns ännu. Vill du att jag skapar den först?"
+
 ARBETSFLÖDE:
-1. Anropa suggest_plan med användarens mål och tidsperiod → SPARA DEN RÅA JSON-STRÄNGEN SOM RETURNERAS
-2. Presentera förslagen på ett lättläst sätt (ringar, grupper OCH aktiviteter)
-3. Vänta på användarens godkännande
-4. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan med DEN EXAKTA JSON-STRÄNGEN från steg 1
+1. Anropa get_current_context för att se vilka år/sidor som finns
+2. Anropa suggest_plan med användarens mål och tidsperiod → SPARA DEN RÅA JSON-STRÄNGEN SOM RETURNERAS
+3. Presentera förslagen på ett lättläst sätt (ringar, grupper OCH aktiviteter)
+4. Vänta på användarens godkännande
+5. När användaren säger "ja", "applicera", "skapa det", etc. → Anropa apply_suggested_plan med DEN EXAKTA JSON-STRÄNGEN från steg 1
 
 KRITISKT VIKTIGT FÖR STEG 4:
 - Skicka den KOMPLETTA JSON-strängen från suggest_plan till apply_suggested_plan
@@ -3039,6 +3052,20 @@ serve(async (req: Request) => {
 
     if (pageError) throw pageError
 
+    // Fetch ALL pages for this wheel so AI knows what years exist
+    const { data: allPages, error: allPagesError } = await supabase
+      .from('wheel_pages')
+      .select('id, year, title, page_order')
+      .eq('wheel_id', wheelId)
+      .order('year', { ascending: true })
+
+    if (allPagesError) {
+      console.error('[AI] Error fetching pages:', allPagesError)
+    }
+
+    console.log(`[AI] Wheel has ${allPages?.length || 0} pages:`, allPages?.map((p: any) => `${p.year} (${p.id})`).join(', '))
+    console.log(`[AI] Current page: ${pageData.year} (${pageData.id})`)
+
     // Create wheel context that will be passed to all tools
     const wheelContext: WheelContext = {
       supabase,
@@ -3047,6 +3074,7 @@ serve(async (req: Request) => {
       currentYear: pageData.year,
       currentPageId: currentPageId || wheelId,
       lastSuggestions: undefined, // Will be populated by tools if needed
+      allPages: allPages || [], // ✅ NEW: AI knows what pages exist
     }
 
     // OPENAI AGENTS SDK RECOMMENDED APPROACH:

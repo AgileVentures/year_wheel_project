@@ -327,6 +327,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           
           // Fetch items for this specific page only
           const pageItems = await fetchPageData(pageToLoad.id);
+          console.log(`[loadWheelData] Fetched ${pageItems.length} items for page ${pageToLoad.id} (year: ${pageToLoad.year})`);
           
           // Fetch rings, activity groups, and labels from database tables
           // CRITICAL: Use wheel_id - rings are SHARED across all pages!
@@ -425,7 +426,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             }
             
             // Filter items to only include current year
+            const beforeFilter = orgData.items.length;
             orgData.items = filterItemsByYear(orgData.items, parseInt(yearToLoad));
+            const afterFilter = orgData.items.length;
+            console.log(`[loadWheelData] Year filter: ${beforeFilter} items → ${afterFilter} items for year ${yearToLoad}`);
             
             orgDataToSet = orgData;
           }
