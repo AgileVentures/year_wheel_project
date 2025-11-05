@@ -138,7 +138,9 @@ async function createActivity(
   args: z.infer<typeof CreateActivityInput>
 ) {
   const { supabase, wheelId } = ctx.context
-  console.log('[createActivity] Input:', { wheelId, ...args })
+  const callId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  console.log(`[createActivity ${callId}] ========== START ==========`)
+  console.log(`[createActivity ${callId}] Input:`, { wheelId, ...args })
 
   // Fetch all pages for this wheel
   const { data: pages, error: pagesError } = await supabase
@@ -284,7 +286,8 @@ async function createActivity(
     }
   }
 
-  console.log(`[createActivity] Successfully created ${itemsCreated.length} item(s)`)
+  console.log(`[createActivity ${callId}] Successfully created ${itemsCreated.length} item(s)`)
+  console.log(`[createActivity ${callId}] ========== END ==========`)
 
   return {
     success: true,

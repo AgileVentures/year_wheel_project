@@ -1190,7 +1190,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
         }
         
-        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrganizationData, pageIdToUse);
+        // CRITICAL FIX: Only save items that belong to the current page's year
+        // This prevents items from other years getting saved to wrong pages
+        const pageSpecificItems = (currentOrganizationData.items || []).filter(item => {
+          const itemStartYear = new Date(item.startDate).getFullYear();
+          const itemEndYear = new Date(item.endDate).getFullYear();
+          const currentYearNum = parseInt(currentYear);
+          // Include item if it overlaps with current year
+          return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
+        });
+        
+        console.log(`[handleSave] Saving ${pageSpecificItems.length} items (of ${currentOrganizationData.items.length} total) to page ${pageIdToUse} for year ${currentYear}`);
+        
+        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, {
+          ...currentOrganizationData,
+          items: pageSpecificItems // Only save items for this year
+        }, pageIdToUse);
         
         // Update local state with new database UUIDs (replace temporary IDs)
         const updatedOrgData = {
@@ -1207,6 +1222,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             ...label,
             id: labelIdMap.get(label.id) || label.id
           })),
+          // Update ALL items with UUIDs (not just page-specific ones)
           items: currentOrganizationData.items.map(item => ({
             ...item,
             ringId: ringIdMap.get(item.ringId) || item.ringId,
@@ -1218,10 +1234,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Update React state with UUIDs
         setOrganizationData(updatedOrgData);
         
-        // Also update the page's JSONB organization_data and year
+        // Also update the page's JSONB organization_data and year (with filtered items)
         if (currentCurrentPageId) {
           await updatePage(currentCurrentPageId, {
-            organization_data: updatedOrgData,
+            organization_data: {
+              ...updatedOrgData,
+              items: pageSpecificItems // JSONB only gets page-specific items
+            },
             year: parseInt(currentYear)
           });
         }

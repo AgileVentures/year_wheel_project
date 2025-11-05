@@ -690,6 +690,19 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
     await supabase.from('items').delete().in('id', toDelete);
   }
 
+  // Fetch all pages for this wheel to map years to page IDs
+  const { data: allPages } = await supabase
+    .from('wheel_pages')
+    .select('id, year')
+    .eq('wheel_id', wheelId)
+    .order('year');
+  
+  // Create a map of year -> page_id for quick lookup
+  const yearToPageId = new Map();
+  if (allPages) {
+    allPages.forEach(page => yearToPageId.set(page.year, page.id));
+  }
+  
   // Upsert items
   for (const item of items) {
     // Check if item exists in database (not just if it has an ID)
@@ -720,6 +733,29 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       labelId = null;
     }
     
+    // CRITICAL FIX: Determine correct page_id based on item's start date year
+    // This prevents items from getting assigned to the wrong page
+    let determinedPageId = item.pageId; // Explicit pageId takes precedence
+    
+    if (!determinedPageId && item.startDate) {
+      // Calculate page_id from start date year
+      const itemYear = new Date(item.startDate).getFullYear();
+      determinedPageId = yearToPageId.get(itemYear);
+      
+      if (!determinedPageId) {
+        console.warn(`No page found for year ${itemYear} for item "${item.name}". Using fallback pageId parameter.`);
+        determinedPageId = pageId; // Last resort fallback
+      }
+    } else if (!determinedPageId) {
+      // No pageId and no startDate - use fallback
+      determinedPageId = pageId;
+    }
+    
+    if (!determinedPageId) {
+      console.warn(`Cannot determine page_id for item "${item.name}". Skipping.`);
+      continue;
+    }
+    
     const itemData = {
       wheel_id: wheelId,
       ring_id: ringId,
@@ -729,11 +765,28 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       start_date: item.startDate,
       end_date: item.endDate,
       time: item.time || null,
-      page_id: item.pageId || pageId || null, // ⚠️ Use item's pageId or fall back to function parameter
+      page_id: determinedPageId, // ✅ Now properly determined from dates
     };
     
     try {
       if (isNew) {
+        // DEDUPLICATION: Check if item with same key attributes already exists
+        const { data: existingItem } = await supabase
+          .from('items')
+          .select('id')
+          .eq('wheel_id', wheelId)
+          .eq('page_id', determinedPageId)
+          .eq('name', item.name)
+          .eq('start_date', item.startDate)
+          .eq('end_date', item.endDate)
+          .eq('ring_id', ringId)
+          .single();
+        
+        if (existingItem) {
+          console.log(`Item "${item.name}" already exists (${item.startDate} to ${item.endDate}), skipping insert.`);
+          continue; // Skip duplicate insert
+        }
+        
         const { error } = await supabase.from('items').insert(itemData);
         if (error) {
           console.error(`Error inserting item "${item.name}":`, error);
