@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Check, Home } from 'lucide-react';
@@ -8,10 +8,11 @@ function QuickStartGuide() {
   const { t, i18n } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const isSwedish = i18n.language === 'sv';
+  const contentRef = useRef(null);
 
   // Scroll to top when step changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [currentStep]);
 
   const steps = isSwedish ? [
@@ -413,7 +414,7 @@ function QuickStartGuide() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12">
+      <main ref={contentRef} className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12">
         <div className="bg-white rounded-sm shadow-lg overflow-hidden">
           {/* Hero Image */}
           {steps[currentStep].image && (
