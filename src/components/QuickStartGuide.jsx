@@ -34,7 +34,7 @@ function QuickStartGuide() {
             </li>
           </ol>
           
-          <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Inloggningsformulär" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Inloggningsformulär" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Skapa konto med e-post eller använd Google-inloggning</p>
 
           <ol className="space-y-3 mt-6" start="3">
@@ -64,7 +64,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Skapa nytt hjul" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Skapa nytt hjul" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Ge ditt hjul en titel och välj år</p>
 
           <ol className="space-y-3 mt-6" start="2">
@@ -81,7 +81,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Hjul skapat" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Hjul skapat" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Ditt nya årshjul har skapats och visas på instrumentpanelen</p>
         </>
       )
@@ -130,7 +130,7 @@ function QuickStartGuide() {
             </ul>
           </div>
 
-          <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Konfigurerade ringar" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Konfigurerade ringar" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Hjulet nu med flera ringar konfigurerade - Försäljning, Produkt, Marknadsföring, Drift</p>
         </>
       )
@@ -221,7 +221,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="Första aktiviteten" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="Första aktiviteten" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">🎉 Hjulet visar nu din första aktivitet - en blå båge i Produktringen för Vårproduktlansering</p>
         </>
       )
@@ -254,12 +254,12 @@ function QuickStartGuide() {
                 <li><strong>Återkommande:</strong> ✓ Markera checkbox</li>
                 <li><strong>Frekvens:</strong> Varje månad</li>
               </ul>
-              <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Återkommande aktivitet" className="w-full rounded-sm shadow-md" />
+              <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Återkommande aktivitet" className="w-full" />
               <p className="text-purple-700 italic mt-2">Formulär för återkommande aktiviteter - välj frekvens och se förhandsgranskning</p>
             </div>
           </div>
 
-          <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Flera aktiviteter" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Flera aktiviteter" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Hjulet med flera aktiviteter - se hur återkommande aktiviteter visas som röda rutor varje månad</p>
         </>
       )
@@ -301,7 +301,7 @@ function QuickStartGuide() {
             </div>
           </div>
 
-          <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Zoom på dra-och-släpp" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Zoom på dra-och-släpp" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Närbild av dra-och-släpp-funktionen - se hur markören ändras vid kanterna för storleksändring</p>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
@@ -331,7 +331,7 @@ function QuickStartGuide() {
             </li>
           </ol>
           
-          <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Login form" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Login form" className="mt-4 sm:mt-6 w-full" />
 
           
           <p className="text-gray-600 italic text-center">Create account with email or use Google sign-in</p>
@@ -363,7 +363,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Create new wheel" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Create new wheel" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Give your wheel a title and select year</p>
 
           <ol className="space-y-3 mt-6" start="2">
@@ -380,7 +380,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Wheel created" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Wheel created" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Your new year wheel has been created and appears on the dashboard</p>
         </>
       )
@@ -433,7 +433,7 @@ function QuickStartGuide() {
             </ul>
           </div>
 
-          <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Configured rings" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Configured rings" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">The wheel now with multiple rings configured - Sales, Product, Marketing, Operations</p>
         </>
       )
@@ -528,7 +528,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="First activity" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="First activity" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">🎉 The wheel now shows your first activity - a blue arc in the Product ring for Spring Product Launch</p>
         </>
       )
@@ -561,12 +561,12 @@ function QuickStartGuide() {
                 <li><strong>Recurring:</strong> ✓ Check the checkbox</li>
                 <li><strong>Frequency:</strong> Every month</li>
               </ul>
-              <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Recurring activity" className="w-full rounded-lg shadow-md" />
+              <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Recurring activity" className="w-full" />
               <p className="text-purple-700 italic mt-2">Recurring activity form - select frequency and see preview</p>
             </div>
           </div>
 
-          <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Multiple activities" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Multiple activities" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">The wheel with multiple activities - see how recurring activities appear as red boxes each month</p>
         </>
       )
@@ -608,7 +608,7 @@ function QuickStartGuide() {
             </div>
           </div>
 
-          <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Drag and drop zoom" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Drag and drop zoom" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Close-up of the drag and drop feature - see how the cursor changes at the edges for resizing</p>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
