@@ -345,8 +345,8 @@ function QuickStartGuide() {
             </li>
           </ol>
           
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Login form" className="w-full rounded-sm shadow-md mb-3" />
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Login form" className="w-full rounded-lg shadow-md mb-3" />
             <p className="text-sm text-blue-900 italic">Create account with email or use Google sign-in</p>
           </div>
 
@@ -363,7 +363,287 @@ function QuickStartGuide() {
         </>
       )
     },
-    // Add more English steps here...
+    {
+      title: "Create Your First Wheel",
+      time: "30 seconds",
+      image: "/docs/guides/images/QUICK_START_03_dashboard.png",
+      imageCaption: "Your dashboard - here you see all your year wheels",
+      content: (
+        <>
+          <ol className="space-y-3">
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">1</span>
+              <span>Click <strong>"Create New Wheel"</strong> on your dashboard</span>
+            </li>
+          </ol>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Create new wheel" className="w-full rounded-lg shadow-md mb-3" />
+            <p className="text-sm text-blue-900 italic">Give your wheel a title and select year</p>
+          </div>
+
+          <ol className="space-y-3 mt-6" start="2">
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">2</span>
+              <div>
+                <span>Your wheel is created automatically with:</span>
+                <ul className="mt-2 ml-6 space-y-1 list-disc text-gray-700">
+                  <li>A month ring (Jan-Dec)</li>
+                  <li>Default rings</li>
+                  <li>The current year</li>
+                </ul>
+              </div>
+            </li>
+          </ol>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+            <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Wheel created" className="w-full rounded-lg shadow-md mb-3" />
+            <p className="text-sm text-green-900 italic">Your new year wheel has been created and appears on the dashboard</p>
+          </div>
+        </>
+      )
+    },
+    {
+      title: "Set Up Your Rings",
+      time: "2 minutes",
+      image: "/docs/guides/images/QUICK_START_06_editor.png",
+      imageCaption: "Editor view with side panel where you configure rings and activity groups",
+      content: (
+        <>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-purple-900 font-medium mb-2">💡 What are rings?</p>
+            <p className="text-sm text-purple-800"><strong>Rings</strong> are the main categories in your wheel - like departments, projects, or focus areas. They appear as circular bands around the year wheel where you place activities.</p>
+          </div>
+
+          <ol className="space-y-3">
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">1</span>
+              <span>Open the left sidebar (click ☰ if closed)</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">2</span>
+              <span>Find the <strong>"Inner Rings"</strong> section - your new wheel starts with one default ring called "Ring 1"</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">3</span>
+              <span><strong>Click directly on "Ring 1"</strong> to edit the name</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">4</span>
+              <span>Type your first category (e.g., "Marketing") and press Tab or click outside</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">5</span>
+              <span>Click <strong>"+ Add"</strong> to add more rings (aim for 3-5 total)</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">6</span>
+              <span>Name each ring for your main categories</span>
+            </li>
+          </ol>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-amber-900 font-medium mb-2">📚 Example rings:</p>
+            <ul className="text-sm text-amber-800 space-y-2">
+              <li><strong>For business planning:</strong> Marketing, Sales, Product, Operations</li>
+              <li><strong>For personal planning:</strong> Personal, Family, Work, Health</li>
+              <li><strong>For project phases:</strong> Planning, Development, Launch, Review</li>
+            </ul>
+          </div>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Configured rings" className="w-full rounded-lg shadow-md mb-3" />
+            <p className="text-sm text-blue-900 italic">The wheel now with multiple rings configured - Sales, Product, Marketing, Operations</p>
+          </div>
+        </>
+      )
+    },
+    {
+      title: "Create Activity Groups",
+      time: "2 minutes",
+      content: (
+        <>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-purple-900 font-medium mb-2">🎨 What are activity groups?</p>
+            <p className="text-sm text-purple-800"><strong>Activity Groups</strong> determine the color of your activities. Think of them as color-coding categories - all activities in the same group will have the same color on your wheel.</p>
+          </div>
+
+          <ol className="space-y-3">
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">1</span>
+              <span>Scroll to the <strong>"Activity Groups"</strong> section (below the rings)</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">2</span>
+              <span>Click <strong>"+ Add Activity Group"</strong></span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">3</span>
+              <span>Enter a name (e.g., "Campaigns")</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">4</span>
+              <span>Choose a color (e.g., blue)</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">5</span>
+              <span>Click <strong>"Add"</strong></span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">6</span>
+              <span>Repeat to create 3-4 more groups with different colors</span>
+            </li>
+          </ol>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-amber-900 font-medium mb-2">📚 Example groups:</p>
+            <ul className="text-sm text-amber-800 space-y-2">
+              <li><strong>By type:</strong> Campaigns, Events, Recurring Tasks, Milestones</li>
+              <li><strong>By status:</strong> Planned, In Progress, Completed</li>
+              <li><strong>By priority:</strong> High Priority, Medium Priority, Low Priority</li>
+            </ul>
+          </div>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+            <p className="text-green-900 font-medium mb-2">💡 Why colors matter</p>
+            <p className="text-sm text-green-800">When you have many activities on your wheel, colors help you instantly recognize patterns - like seeing all Q2 activities at a glance, or spotting all high-priority items.</p>
+          </div>
+        </>
+      )
+    },
+    {
+      title: "Add Your First Activity",
+      time: "1 minute",
+      image: "/docs/guides/images/QUICK_START_08_create_new_activity.png",
+      imageCaption: "Form for creating a new activity with all necessary fields",
+      content: (
+        <>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-purple-900 font-medium mb-2">📅 What is an activity?</p>
+            <p className="text-sm text-purple-800">An <strong>activity</strong> is any event, project, campaign, or task you want to track during the year. It appears as a colored arc on your wheel.</p>
+          </div>
+
+          <ol className="space-y-3">
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">1</span>
+              <span>Click <strong>"+ Add Activity"</strong> at the top of the sidebar</span>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">2</span>
+              <div>
+                <span>Fill in the form:</span>
+                <ul className="mt-2 ml-6 space-y-1 text-gray-700">
+                  <li><strong>Name:</strong> "Spring Product Launch"</li>
+                  <li><strong>Ring:</strong> Select "Marketing" <span className="text-sm text-gray-500">(determines WHICH ring)</span></li>
+                  <li><strong>Activity Group:</strong> Select "Campaigns" <span className="text-sm text-gray-500">(determines COLOR)</span></li>
+                  <li><strong>Start Date:</strong> January 15, 2025</li>
+                  <li><strong>End Date:</strong> March 31, 2025</li>
+                  <li><strong>Description:</strong> (optional) Add details</li>
+                </ul>
+              </div>
+            </li>
+            <li className="flex items-start">
+              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full text-sm font-medium mr-3 mt-0.5">3</span>
+              <span>Click <strong>"Add Activity"</strong></span>
+            </li>
+          </ol>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+            <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="First activity" className="w-full rounded-lg shadow-md mb-3" />
+            <p className="text-sm text-green-900 italic">🎉 The wheel now shows your first activity - a blue arc in the Product ring for Spring Product Launch</p>
+          </div>
+        </>
+      )
+    },
+    {
+      title: "Add More Activities",
+      time: "2 minutes",
+      image: "/docs/guides/images/QUICK_START_10_create_recurring_activity.png",
+      imageCaption: "Form for recurring activities with frequency selection and preview",
+      content: (
+        <>
+          <p className="text-gray-700 mb-6">Create 2-3 more activities to see how the wheel builds up. Each activity will stack on top of others in the same ring, creating a complete visual of your year.</p>
+
+          <div className="space-y-6">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-2">Activity 2: Summer Campaign</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li><strong>Ring:</strong> Marketing</li>
+                <li><strong>Group:</strong> "Campaigns"</li>
+                <li><strong>Dates:</strong> June 1 - August 31, 2025</li>
+              </ul>
+            </div>
+
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-purple-900 mb-2">Activity 3: Monthly Newsletter (recurring)</h4>
+              <ul className="text-sm text-purple-800 space-y-1 mb-3">
+                <li><strong>Ring:</strong> Marketing</li>
+                <li><strong>Group:</strong> "Recurring Tasks"</li>
+                <li><strong>Dates:</strong> January 20 - January 21, 2025</li>
+                <li><strong>Recurring:</strong> ✓ Check the checkbox</li>
+                <li><strong>Frequency:</strong> Every month</li>
+              </ul>
+              <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Recurring activity" className="w-full rounded-lg shadow-md" />
+              <p className="text-sm text-purple-700 italic mt-2">Recurring activity form - select frequency and see preview</p>
+            </div>
+          </div>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+            <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Multiple activities" className="w-full rounded-lg shadow-md mb-3" />
+            <p className="text-sm text-green-900 italic">The wheel with multiple activities - see how recurring activities appear as red boxes each month</p>
+          </div>
+        </>
+      )
+    },
+    {
+      title: "Try Drag & Drop Editing",
+      time: "Try it yourself!",
+      image: "/docs/guides/images/QUICK_START_12_drag_and_drop.png",
+      imageCaption: "When you hover over an activity, the hand icon appears - click and drag to move",
+      content: (
+        <>
+          <p className="text-gray-700 mb-6 font-medium">🎯 You can move and resize activities directly on the wheel!</p>
+
+          <div className="space-y-6">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-3">👆 Move an activity:</h4>
+              <ol className="text-sm text-blue-800 space-y-2">
+                <li>1. <strong>Hover</strong> over an activity on the wheel</li>
+                <li>2. <strong>Click and hold</strong> in the middle of the activity</li>
+                <li>3. <strong>Drag</strong> to a different month or time period</li>
+                <li>4. <strong>Release</strong> to drop</li>
+              </ol>
+              <p className="mt-3 text-sm text-blue-900 font-medium">✨ Start and end dates update automatically!</p>
+            </div>
+
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-purple-900 mb-3">↔️ Resize an activity:</h4>
+              <ol className="text-sm text-purple-800 space-y-2">
+                <li>1. <strong>Hover</strong> over the edge of an activity</li>
+                <li>2. Wait for the cursor to change to resize arrows</li>
+                <li>3. <strong>Click and drag</strong> the edge to make it longer or shorter</li>
+                <li>4. <strong>Release</strong> when done</li>
+              </ol>
+            </div>
+
+            <div className="p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-900 mb-2">🔄 Move between rings:</h4>
+              <p className="text-sm text-green-800">You can also drag an activity <strong>radially</strong> (inward/outward) to move it to a different ring</p>
+            </div>
+          </div>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Drag and drop zoom" className="w-full rounded-lg shadow-md mb-3" />
+            <p className="text-sm text-blue-900 italic">Close-up of the drag and drop feature - see how the cursor changes at the edges for resizing</p>
+          </div>
+
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-amber-900 font-medium">💡 Pro tip:</p>
+            <p className="text-sm text-amber-800 mt-1">This is much faster than opening forms and changing dates manually. Most users do all their planning adjustments with drag and drop!</p>
+          </div>
+        </>
+      )
+    }
   ];
 
   const totalSteps = steps.length;
