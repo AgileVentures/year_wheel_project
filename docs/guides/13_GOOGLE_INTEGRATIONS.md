@@ -10,10 +10,10 @@
 
 YearWheel's Google Integrations allow seamless synchronization between your annual planning wheel and external Google services. This enables:
 
-- 📅 **Google Calendar sync**: Import events as activities automatically
-- 📊 **Google Sheets sync**: Pull data from spreadsheets into rings
-- 🔄 **Bi-directional sync** (coming): Changes in YearWheel reflect in Google tools
-- 🕐 **Scheduled updates**: Hourly, daily, or manual sync frequency
+- **Google Calendar sync**: Import events as activities automatically
+- **Google Sheets sync**: Pull data from spreadsheets into rings
+- **Bi-directional sync** (coming): Changes in YearWheel reflect in Google tools
+- **Scheduled updates**: Hourly, daily, or manual sync frequency
 
 **Key benefits:**
 - No duplicate data entry
@@ -35,7 +35,7 @@ YearWheel's Google Integrations allow seamless synchronization between your annu
 - **Google Sheets**: Read access (view sheet data)
 - **OAuth consent**: One-time authorization through Google's secure flow
 
-**📸 Screenshot: Google OAuth consent screen**
+**Screenshot: Google OAuth consent screen**
 
 ---
 
@@ -59,7 +59,7 @@ YearWheel's Google Integrations allow seamless synchronization between your annu
 
 ### Step 1: Connect Your Google Account
 
-**📸 Screenshot: User profile or settings page with "Connect Google" button**
+**Screenshot: User profile or settings page with "Connect Google" button**
 
 1. **Navigate to**: Profile settings or Integrations page
 2. **Click**: **"Connect Google Calendar"** button
@@ -69,7 +69,7 @@ YearWheel's Google Integrations allow seamless synchronization between your annu
 6. **Click**: **"Allow"** button
 7. **Redirect back**: Returns to YearWheel with success message
 
-**📸 Screenshot: Google permission request showing required scopes**
+**Screenshot: Google permission request showing required scopes**
 
 ### Success indicators:
 ✅ Green "Connected" badge appears  
@@ -81,7 +81,7 @@ YearWheel's Google Integrations allow seamless synchronization between your annu
 
 ### Step 2: Choose a Calendar to Sync
 
-**📸 Screenshot: Calendar selection dropdown showing multiple calendars**
+**Screenshot: Calendar selection dropdown showing multiple calendars**
 
 After connecting:
 
@@ -91,7 +91,7 @@ After connecting:
 4. **Select**: **"Connect Integration"** or **"Sync with Google Calendar"**
 5. **Modal opens**: Google Calendar Integration settings
 
-**📸 Screenshot: Ring Integration modal with calendar dropdown**
+**Screenshot: Ring Integration modal with calendar dropdown**
 
 6. **Choose calendar**: Dropdown lists all your Google calendars:
    - Primary calendar
@@ -105,7 +105,7 @@ After connecting:
 
 ### Step 3: Configure Sync Settings
 
-**📸 Screenshot: Sync configuration panel with all options visible**
+**Screenshot: Sync configuration panel with all options visible**
 
 **Mapping Options:**
 
@@ -139,7 +139,7 @@ Sync Frequency: Daily at 6:00 AM
 - **Keyword filters**: Only sync events containing "campaign" or "launch"
 - **Exclude patterns**: Skip events with "[internal]" in title
 
-**📸 Screenshot: Filter configuration with examples**
+**Screenshot: Filter configuration with examples**
 
 ---
 
@@ -152,7 +152,7 @@ Sync Frequency: Daily at 6:00 AM
    - "Creating activities... (15/32)"
    - "Sync complete! 32 events imported."
 
-**📸 Screenshot: Sync progress dialog**
+**Screenshot: Sync progress dialog**
 
 4. **Observe wheel**: Calendar events now appear as activities
 5. **Check sidebar**: Activities marked with Google Calendar icon (📅)
@@ -170,10 +170,10 @@ Sync Frequency: Daily at 6:00 AM
 
 ### Identifying synced activities:
 
-**📸 Screenshot: Activity card with Google Calendar badge**
+**Screenshot: Activity card with Google Calendar badge**
 
 Synced activities have:
-- 📅 Small Google Calendar icon/badge
+- Small Google Calendar icon/badge
 - "Source: Google Calendar" in details
 - External ID (hidden, used for updates)
 - Slightly grayed out or special border (visual differentiation)
@@ -186,7 +186,7 @@ Synced activities have:
 - **Can hide**: Uncheck ring visibility to hide all calendar activities
 - **Can delete**: Removes from YearWheel only, not Google Calendar
 
-**📸 Screenshot: Edit modal for synced activity showing disabled fields**
+**Screenshot: Edit modal for synced activity showing disabled fields**
 
 ### Sync updates:
 
@@ -231,13 +231,13 @@ If already connected for Calendar, skip to Step 2.
 
 ### Step 2: Select Spreadsheet and Sheet
 
-**📸 Screenshot: Spreadsheet selection interface**
+**Screenshot: Spreadsheet selection interface**
 
 1. **Navigate to**: Ring settings in wheel editor
 2. **Click**: **"Connect Integration"** → **"Google Sheets"**
 3. **Modal opens**: Google Sheets integration wizard
 
-**📸 Screenshot: Wizard showing spreadsheet picker**
+**Screenshot: Wizard showing spreadsheet picker**
 
 4. **Select spreadsheet**: 
    - Dropdown lists all sheets you have access to
@@ -253,7 +253,7 @@ If already connected for Calendar, skip to Step 2.
 
 ### Step 3: Map Columns to Fields
 
-**📸 Screenshot: Column mapping interface showing spreadsheet preview**
+**Screenshot: Column mapping interface showing spreadsheet preview**
 
 **The magic happens here:** YearWheel needs to know which spreadsheet columns map to activity fields.
 
@@ -288,13 +288,13 @@ If already connected for Calendar, skip to Step 2.
    - Select column: "Status" or any text column
    - Populates activity description
 
-**📸 Screenshot: Completed column mapping with preview**
+**Screenshot: Completed column mapping with preview**
 
 ---
 
 ### Step 4: Configure Sync Options
 
-**📸 Screenshot: Sync options panel**
+**Screenshot: Sync options panel**
 
 **Options:**
 
@@ -326,14 +326,14 @@ If already connected for Calendar, skip to Step 2.
    - Shows table of pending activities
    - Highlights any errors (invalid dates, missing required fields)
 
-**📸 Screenshot: Import preview table**
+**Screenshot: Import preview table**
 
 2. **Review**: Check that mapping is correct
 3. **Click**: **"Import to Wheel"** button
 4. **Wait**: Progress bar
 5. **Success**: "Imported 15 activities from Google Sheets"
 
-**📸 Screenshot: Wheel showing imported Sheets activities**
+**Screenshot: Wheel showing imported Sheets activities**
 
 ### Success indicators:
 ✅ Activities from spreadsheet appear on wheel  
@@ -357,7 +357,7 @@ If already connected for Calendar, skip to Step 2.
 2. Updates activity name and date automatically
 3. Shows "Last synced: 2 minutes ago" indicator
 
-**📸 Screenshot: Sync status indicator showing recent update**
+**Screenshot: Sync status indicator showing recent update**
 
 ### Disconnecting Sheets sync:
 
@@ -380,7 +380,7 @@ If already connected for Calendar, skip to Step 2.
 
 **Result**: Complete picture with minimal manual entry!
 
-**📸 Screenshot: Wheel with three rings - Calendar sync, Sheets sync, Manual**
+**Screenshot: Wheel with three rings - Calendar sync, Sheets sync, Manual**
 
 ---
 
@@ -429,7 +429,7 @@ If already connected for Calendar, skip to Step 2.
 3. Manually trigger sync: "Sync Now" button
 4. Check sync logs for errors
 
-**📸 Screenshot: Sync logs showing filtered events**
+**Screenshot: Sync logs showing filtered events**
 
 ---
 
@@ -490,7 +490,7 @@ If already connected for Calendar, skip to Step 2.
 3. Click "Remove Access"
 4. YearWheel will lose sync capability until re-authorized
 
-**📸 Screenshot: Google's third-party app management page**
+**Screenshot: Google's third-party app management page**
 
 ---
 
@@ -515,22 +515,22 @@ If already connected for Calendar, skip to Step 2.
 
 ## Pro Tips
 
-💡 **Color coding**: Use Google Calendar colors to auto-assign activity groups  
-💡 **Naming convention**: Prefix calendar events with [CLIENT] or [PROJECT] for easy filtering  
-💡 **Backup before sync**: Export wheel as .yrw before first big sync  
-💡 **Separate rings**: One ring for calendar sync, one for Sheets, keeps it organized  
-💡 **Recurring events**: YearWheel syncs each instance as separate activity
+**Color coding**: Use Google Calendar colors to auto-assign activity groups  
+**Naming convention**: Prefix calendar events with [CLIENT] or [PROJECT] for easy filtering  
+**Backup before sync**: Export wheel as .yrw before first big sync  
+**Separate rings**: One ring for calendar sync, one for Sheets, keeps it organized  
+**Recurring events**: YearWheel syncs each instance as separate activity
 
 ---
 
 ## Future Enhancements (Roadmap)
 
 *Coming features (check latest version):*
-- 🔄 **Bi-directional sync**: Changes in YearWheel push back to Google
-- 📧 **Gmail integration**: Create activities from email threads
-- 📁 **Google Drive**: Link files to activities
-- 🔔 **Notification sync**: Google Calendar reminders → YearWheel notifications
-- 📊 **Advanced Sheets formulas**: Support computed date columns
+- **Bi-directional sync**: Changes in YearWheel push back to Google
+- **Gmail integration**: Create activities from email threads
+- **Google Drive**: Link files to activities
+- **Notification sync**: Google Calendar reminders → YearWheel notifications
+- **Advanced Sheets formulas**: Support computed date columns
 
 ---
 

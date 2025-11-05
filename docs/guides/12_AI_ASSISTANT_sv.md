@@ -1,656 +1,614 @@
-# YearWheel AI-assistent - Avancerad användarguide
-
-**Syfte**: Fördjupning i AI-driven naturlig språkplanering  
-**Målgrupp**: Premium-användare, avancerade användare, supportteam  
-**Tidsåtgång**: ~10-15 minuter att demonstrera
-
----
+# AI-Assistent
 
 ## Översikt
 
-YearWheel AI-assistenten (Premium-funktion) låter användare generera kompletta årsplaner med hjälp av naturliga språkbeskrivningar. Driven av OpenAI GPT-4.1 via Vercel AI SDK kan den skapa ringar, aktivitetsgrupper, aktiviteter med datum och till och med innehåll för inre ringar från konversationsliknande prompter.
+AI-Assistenten hjälper dig att planera och organisera ditt Årshjul med naturligt språk. Det är ett flytande, dragbart fönster som ansluter till ett kraftfullt multi-agent-system drivet av OpenAI GPT-4 och OpenAI Agents SDK.
 
-**Huvudfunktioner:**
-- 🤖 Förståelse av naturligt språk
-- 📅 Automatisk datumgenerering och fördelning
-- 🎨 Intelligent färgtilldelning
-- 🔄 Iterativ förfining
-- 📝 Kontextmedvetenhet
+## Nyckelfunktioner
 
----
+### Naturlig Språkplanering
 
-## Komma åt AI-assistenten
+Beskriv helt enkelt vad du vill på svenska:
 
-**📸 Skärmdump: AI-assistentknapp i redigeraren (vanligtvis höger sidofält eller flytande knapp)**
+- "Lägg till julkampanj i december"
+- "Skapa ring för Kampanjer"
+- "Föreslå struktur för HR-planering"
+- "Analysera mitt hjul och ge rekommendationer"
 
-### Placering:
-- **I hjulredigeraren**: Leta efter AI-assistentikonen (✨ eller 🤖) i headern eller höger sidofält
-- **Endast synlig**: För Premium-användare
-- **Indikator**: Lila/blå accent för att särskilja från vanliga verktyg
+### Multi-Agent-System
 
-### Öppna assistenten:
-1. **Klicka**: På AI-assistentknappen
-2. **Sidofält öppnas**: Höger panel med chattgränssnitt
-3. **Observera**: Välkomstmeddelande och exempelprompts
+AI-Assistenten använder 4 specialiserade agenter som arbetar tillsammans:
 
----
+**Orkestreringsagent**: Huvudkoordinator som analyserar din begäran och delegerar till rätt specialist
 
-## Gränssnittskomponenter
+**Strukturagent**: Skapar och hanterar ringar, aktivitetsgrupper, etiketter och årssidor
 
-**📸 Skärmdump: AI-assistentpanel helt öppen med alla element märkta**
+**Aktivitetsagent**: Skapar, uppdaterar, tar bort och söker efter aktiviteter
 
-### Huvudelement:
+**Analysagent**: Ger AI-drivna insikter, domänidentifiering och kvalitetsbedömning
 
-**1. Chattinmatningsområde (Nederkant)**
-- Stort textfält för att skriva prompter
-- Teckenbegränsningsindikator
-- Skicka-knapp (pappersplansikon)
-- Rensa/återställningsknapp
+**Planeringsagent**: Genererar kompletta projektplaner med ringar, grupper och exempelaktiviteter
 
-**2. Konversationshistorik (Mitten)**
-- Användarprompter (högerjusterade, vanligtvis blå/lila)
-- AI-svar (vänsterjusterade, vanligtvis grå/vita)
-- Genererade innehållsförhandsvisningar
-- Åtgärdsknappar (Tillämpa, Redigera, Återskapa)
+### Realtidsströmning
 
-**3. Exempelprompts (Topp - Första gången)**
-- Förskrivna förslag för att komma igång
-- Klicka för att använda exempel
-- Försvinner efter första interaktionen
+Se AI:n arbeta i realtid med Server-Sent Events (SSE):
 
-**4. Inställningar/Alternativ (Ikon)**
-- Temperaturkontroll (kreativitetsnivå)
-- Modellval (om flera modeller finns tillgängliga)
-- Rensa konversationshistorik
+- Statusuppdateringar ("Hämtar aktuell kontext...")
+- Verktygsexekveringsframsteg ("Skapar aktivitet...")
+- Agentsvar som strömmas ord för ord
+- Felhantering med vänliga meddelanden
 
----
+### Serversidans Konversationstillstånd
 
-## Grundläggande användning: Skapa din första AI-plan
+AI:n använder OpenAI:s Agents SDK med serversideshantering av konversation genom `lastResponseId`. Detta säkerställer:
 
-**📸 Skärmdump: AI-assistent med exempelprompt inmatad**
+- Konversationskontinuitet över flera förfrågningar
+- Korrekt kontext från tidigare meddelanden
+- Effektiva flervändararbetsflöden (som strukturförslag som kräver bekräftelse)
 
-### Enkelt promptexempel:
+## Hur Man Använder
 
-**Användare skriver:**
-```
-Skapa en årlig marknadsföringsplan för 2026 med kvartalsvisa kampanjer
-```
+### Öppna Assistenten
 
-**AI svarar med:**
-```
-Jag skapar en marknadsföringsplan för 2026. Här är vad jag föreslår:
+Klicka på **AI**-knappen i editorns verktygsfält. Ett flytande fönster visas som du kan:
 
-Ringar:
-- Marknadsföringskampanjer (yttre)
-- Budget & Planering (yttre)
-- Kvartalsmål (inre)
+- Dra för att flytta (klicka och håll rubriken)
+- Ändra storlek från vilken kant eller hörn som helst
+- Minimera med minimeringsknappen
+- Stänga med X-knappen eller Esc-tangenten
 
-Aktivitetsgrupper:
-- Q1 Kampanjer (Blå #3B82F6)
-- Q2 Kampanjer (Grön #10B981)
-- Q3 Kampanjer (Gul #F59E0B)
-- Q4 Kampanjer (Röd #EF4444)
+### Fönsterkontroller
 
-Aktiviteter:
-1. Nyårslansering
-   - Ring: Marknadsföringskampanjer
-   - Grupp: Q1 Kampanjer
-   - Datum: 5 jan - 28 feb, 2026
+Det flytande fönstret har:
 
-2. Vårkampanj
-   - Ring: Marknadsföringskampanjer
-   - Grupp: Q1 Kampanjer
-   - Datum: 1 mar - 31 mar, 2026
+- **Dragbar rubrik**: Flytta fönstret var som helst på skärmen
+- **8 storlekshandtag**: Hörn och kanter för storleksändring
+- **Minimeringsknapp**: Fäll ihop till endast rubrik
+- **Stängknapp**: Stäng assistenten
+- **Automatiska vyportbegränsningar**: Fönstret stannar inom synligt område
 
-... (fortsätter med fler aktiviteter)
+### Grundläggande Arbetsflöde
 
-Innehåll för inre ring (Kvartalsmål):
-- Q1: "Bygga varumärkesmedvetenhet, 50K sociala följare"
-- Q2: "Lansera 2 nya produkter, 100K webbplatsbesökare"
-- Q3: "Expandera till nya marknader, 25% intäktstillväxt"
-- Q4: "Högsäsongsoptimering, 200K kunder"
+1. Skriv din begäran på svenska
+2. Tryck Enter eller klicka Skicka
+3. Se realtidsstatusuppdateringar
+4. AI-agenten utför lämpliga verktyg
+5. Få bekräftelse med detaljer
 
-Vill du att jag tillämpar detta på ditt hjul?
-```
-
-### Tillämpa den genererade planen:
-
-**📸 Skärmdump: AI-svar med "Tillämpa på hjul"-knapp markerad**
-
-1. **Granska**: AI:ns föreslagna struktur
-2. **Klicka**: **"Tillämpa på hjul"**-knappen längst ner i AI-svaret
-3. **Observera**: Laddningsindikator
-4. **Vänta**: 3-5 sekunder medan AI skapar ringar, grupper och aktiviteter
-5. **Framgång**: Bekräftelsemeddelande + alla element visas på hjulet
-
-**📸 Skärmdump: Hjul efter AI-tillämpning - visar nyligen skapad struktur**
-
-### Framgångsindikatorer:
-✅ Alla föreslagna ringar skapade  
-✅ Aktivitetsgrupper med korrekta färger  
-✅ Aktiviteter placerade vid korrekta datum  
-✅ Innehåll för inre ring (om det finns) ifyllt
-
----
-
-## Avancerade prompttekniker
-
-### 1. Specifik organisationsstruktur
-
-**Effektiv prompt:**
-```
-Skapa en HR-årsplan för 2026 med dessa avdelningar:
-- Rekrytering (25 positioner att fylla under året)
-- Onboarding (månatliga kohorter)
-- Utbildning & Utveckling (kvartalsvisa workshops)
-- Retentionsprogram (pågående initiativ)
-- Prestationsutvärderingar (halvårscykler)
-
-Använd professionella färger och fördela aktiviteter jämnt över året.
-```
-
-**📸 Skärmdump: Komplext HR-hjul genererat från detaljerad prompt**
-
-**Varför detta fungerar:**
-- ✅ Specifika avdelningsnamn
-- ✅ Kvantifierade mål (25 positioner, månatliga, kvartalsvisa)
-- ✅ Tidsmönster explicit angivna
-- ✅ Färgvägledning inkluderad
-
-### 2. Datumspecifik planering
-
-**Effektiv prompt:**
-```
-Skapa en produktlanseringsplan med:
-- Beta-testning: 15 jan - 28 feb, 2026
-- Marknadsföringsuppbyggnad: 1 feb - 31 mar, 2026
-- Lanseringsevent: 1 april, 2026
-- Support efter lansering: 2 april - 30 juni, 2026
-- Utvärdering & iteration: 1 juli - 31 aug, 2026
-```
-
-**Varför detta fungerar:**
-- ✅ Exakta datum angivna
-- ✅ Sekventiella beroenden tydliga
-- ✅ Överlappande aktiviteter (marknadsföring startar innan beta slutar)
-
-### 3. Branschspecifik terminologi
-
-**Effektiv prompt:**
-```
-Skapa en SaaS startup-roadmap för 2026 med:
-- Sprintcykler (2-veckors sprints, agil metodik)
-- Funktionsreleaser (stora releaser kvartalsvis, mindre månatliga)
-- Customer success-milstolpar (onboarding, adoption, retention)
-- Fundraising-tidslinje (Seed-förlängning Q1, Serie A-förberedelse Q3-Q4)
-- Teamtillväxt (anställ 3 ingenjörer Q1, 2 säljare Q2, 1 designer Q3)
-```
-
-**📸 Skärmdump: Tech startup-hjul med agila-specifika aktiviteter**
-
-**Varför detta fungerar:**
-- ✅ Branschjargong (sprints, Serie A, adoption)
-- ✅ Realistiska tidslinjer för techföretag
-- ✅ Flera parallella spår (utveckling, försäljning, fundraising)
-
-### 4. Eventdriven planering
-
-**Effektiv prompt:**
-```
-Skapa ett konferensplaneringshjul för en techkonferens i september 2026:
-- Lokalbokning: Nov 2025 - Jan 2026
-- Talarrekrytering: Jan - April 2026
-- Sponsorrekrytering: Feb - Juni 2026
-- Marknadsföringskampanj: Maj - Sept 2026
-- Registrering öppnar: 1 juni, 2026
-- Event: 15-17 sept, 2026
-- Uppföljning efter event: 18 sept - 31 okt, 2026
-```
-
-**Varför detta fungerar:**
-- ✅ Arbetar bakåt från nyckeldatum (sept-konferens)
-- ✅ Ledtider lämpliga för eventplanering
-- ✅ Aktiviteter efter event inkluderade
-
----
-
-## Iterativ förfining
-
-AI-assistenten behåller konversationskontext, vilket möjliggör iterativa förbättringar.
-
-**📸 Skärmdump: Flerstegskonversation som visar förfining**
-
-### Exempelkonversation:
-
-**Användare Tur 1:**
-```
-Skapa en grundläggande årlig marknadsföringsplan för 2026
-```
-
-**AI svarar med grundläggande plan**
-
-**Användare Tur 2:**
-```
-Lägg till en sociala medier-strategi med dagliga inlägg
-```
-
-**AI lägger till:**
-```
-Jag lägger till en sociala medier-strategi till din befintliga plan:
-
-Ny aktivitetsgrupp:
-- Sociala medier (Lila #8B5CF6)
-
-Nya aktiviteter:
-1. Dagliga sociala inlägg (återkommande)
-   - Ring: Marknadsföringskampanjer
-   - Grupp: Sociala medier
-   - Datum: 1 jan - 31 dec, 2026
-
-2. Instagram-kampanj
-   - Ring: Marknadsföringskampanjer
-   - Grupp: Sociala medier
-   - Datum: 1 jan - 31 mar, 2026
-
-... (fortsätter)
-
-Ska jag lägga till dessa på hjulet utan att ta bort befintliga aktiviteter?
-```
-
-**Användare Tur 3:**
-```
-Ja, och lägg också till budgetgenomgångar den 1:a i varje kvartal
-```
-
-**AI lägger till:**
-```
-Perfekt! Jag lägger till kvartalsvisa budgetgenomgångar:
-
-Nya aktiviteter:
-1. Q1 Budgetgenomgång
-   - Ring: Budget & Planering
-   - Grupp: Milstolpar
-   - Datum: 1 jan, 2026
-
-2. Q2 Budgetgenomgång
-   - Ring: Budget & Planering
-   - Grupp: Milstolpar
-   - Datum: 1 april, 2026
-
-... (fortsätter för Q3, Q4)
-
-Tillämpar alla ändringar nu...
-```
-
-### Bästa praxis för iteration:
-💡 **Var specifik om vad som ska läggas till/ändras**: "Lägg till X" vs "Ändra allt till X"  
-💡 **Referera till befintliga element**: "Lägg till sociala medier i Marknadsföringsringen"  
-💡 **En ändring åt gången** för tydlighet  
-💡 **Ställ frågor** om AI:ns tolkning verkar fel
-
----
-
-## Vad AI:n kan göra
-
-### ✅ Funktioner:
-
-**1. Skapa organisationsstruktur:**
-- Generera ringar (inre och yttre)
-- Definiera aktivitetsgrupper med intelligenta färgpaletter
-- Sätta ringorientering (horisontell/vertikal för inre ringar)
-
-**2. Generera aktiviteter:**
-- Tolka naturliga språkdatum ("tidigt i mars", "slutet av Q2", "genom sommaren")
-- Fördela aktiviteter intelligent (undvik överbeläggning)
-- Skapa återkommande aktiviteter ("månatliga möten", "veckorapporter")
-- Hantera överlappande aktiviteter (vanligt i verkliga planer)
-
-**3. Skriva innehåll:**
-- Inre ringtext (mål, teman, anteckningar)
-- Aktivitetsbeskrivningar
-- Vettiga aktivitetsnamn
-
-**4. Tillämpa affärslogik:**
-- Förstå kvartalsmönster
-- Känna igen vanliga affärscykler (räkenskapsår, läsår, säsonger)
-- Följa sekventiella beroenden ("X före Y")
-
-**5. Hantera modifieringar:**
-- Lägga till i befintlig plan utan att förstöra den
-- Modifiera specifika ringar eller grupper
-- Ersätta aktiviteter som matchar kriterier
-- Skifta tidslinjer ("flytta allt 2 veckor senare")
-
-### ❌ Nuvarande begränsningar:
-
-**Kan inte (än):**
-- ❌ Radera specifika ringar/aktiviteter (kan föreslå, men du raderar manuellt)
-- ❌ Importera från externa kalendrar direkt
-- ❌ Förstå visuella designpreferenser utöver färger
-- ❌ Få tillgång till realtidsdata (teamtillgänglighet, faktiska kalenderkonflikter)
-- ❌ Komma ihåg mellan sessioner (varje hjul har oberoende AI-kontext)
-
----
-
-## Tips för promptteknik
-
-### Gör:
-
-✅ **Var specifik om kvantiteter**
-- Bra: "Skapa 4 kvartalsvisa genomgångar"
-- Dåligt: "Skapa några genomgångar"
-
-✅ **Specificera datumformat du föredrar**
-- Bra: "15 jan, 2026" eller "15 januari, 2026"
-- Dåligt: "15/1/26" (tvetydigt: US vs Europeiskt format)
-
-✅ **Nämn parallellt vs sekventiellt**
-- Bra: "Marknadsföring och Utveckling sker samtidigt"
-- Dåligt: Anta att AI vet att de överlappar
-
-✅ **Använd punktlistor för komplexa förfrågningar**
-- Lättare för AI att tolka strukturerade listor
-
-✅ **Referera till året**
-- Bra: "Skapa plan för 2026"
-- Dåligt: "Skapa plan för nästa år" (tänk om det är 2027?)
-
-### Gör inte:
-
-❌ **Vagt språk**
-- Dåligt: "Skapa lite marknadsföringssaker"
-- Bättre: "Skapa 3 marknadsföringskampanjer i Q1-Q3"
-
-❌ **Anta att AI kommer ihåg från andra hjul**
-- Varje hjuls AI-kontext är oberoende
-
-❌ **Alltför långa prompter (>500 ord)**
-- Dela upp i flera turer
-
-❌ **Tvetydiga tidsreferenser**
-- Dåligt: "Snart", "senare", "så småningom"
-- Bättre: "I februari", "Q3", "Mitt på året"
-
----
-
-## Vanliga användningsfall
-
-### 1. Komplett årsplan från grunden
-
-**Promptmall:**
-```
-Skapa en [AVDELNING] årsplan för [ÅR] med:
-
-Ringar:
-- [Ring 1 namn och syfte]
-- [Ring 2 namn och syfte]
-- [Ring 3 namn och syfte]
-
-Nyckelaktiviteter:
-- [Aktivitetstyp 1]: [timing/frekvens]
-- [Aktivitetstyp 2]: [timing/frekvens]
-- [Aktivitetstyp 3]: [timing/frekvens]
-
-Använd [färgschemapreferens] och inkludera kvartalsmål i en inre ring.
-```
-
-**Exempel:**
-```
-Skapa en Content Marketing årsplan för 2026 med:
-
-Ringar:
-- Blogginlägg (yttre)
-- Videoinnehåll (yttre)
-- Sociala medier (yttre)
-- Innehållsstrategi (inre)
-
-Nyckelaktiviteter:
-- Blogginlägg: 2 per vecka, året runt
-- YouTube-videor: 1 per vecka, året runt
-- Podcasts: Varannan vecka, startar Q2
-- Webbinarier: Månatliga, startar Q1
-- E-böcker: Kvartalsvisa
-
-Använd livliga, moderna färger och inkludera kvartalsvisa innehållsteman i den inre ringen.
-```
-
-### 2. Lägg till i befintligt hjul
-
-**Promptmall:**
-```
-Lägg till [NYTT ELEMENT] till mitt befintliga hjul:
-- [Detaljer om nytt element]
-- Bör passa in i [TIDSRAM]
-- Relaterat till [BEFINTLIGT ELEMENT]
-```
-
-**Exempel:**
-```
-Lägg till en produktlanserings­kampanj till mitt befintliga hjul:
-- Förlanserings­aktiviteter: Jan-Feb 2026
-- Lanseringsevent: 1 mars, 2026
-- Support efter lansering: Mars-Maj 2026
-- Bör koppla till befintlig Marknadsföringsring
-```
-
-### 3. Generera återkommande aktiviteter
-
-**Promptmall:**
-```
-Skapa [FREKVENS] [AKTIVITETSTYP] genom [TIDSRAM]
-```
-
-**Exempel:**
-```
-- "Skapa månatliga teammöten genom 2026"
-- "Skapa varannan veckas sprintplaneringsmöten från jan till dec 2026"
-- "Skapa kvartalsvisa styrelsemöten på första måndagen i varje kvartal"
-```
-
-### 4. Temabaserad planering
-
-**Promptmall:**
-```
-Skapa en [TEMA]-baserad årsplan där varje [PERIOD] fokuserar på:
-- [Period 1]: [Tema 1]
-- [Period 2]: [Tema 2]
-- [Period 3]: [Tema 3]
-- [Period 4]: [Tema 4]
-```
-
-**Exempel:**
-```
-Skapa en personlig utvecklingsplan för 2026 där varje kvartal fokuserar på:
-- Q1: Fysisk hälsa (gym 3x/vecka, näring, sömn)
-- Q2: Ekonomisk hälsa (budgetering, investeringar, sidoinkomst)
-- Q3: Karriärutveckling (certifieringar, nätverk, portfölj)
-- Q4: Relationer (familjetid, vänskap, gemenskap)
-```
-
----
-
-## Felsöka AI-svar
-
-### Om AI missförstår:
-
-**❌ Problem:** AI skapar aktiviteter i fel månader
-
-**✅ Lösning:**
-```
-Vårkampanjen bör vara feb-april, inte maj-juli. Vänligen justera.
-```
-
-### Om AI genererar för många aktiviteter:
-
-**❌ Problem:** Hjulet blir rörigt
-
-**✅ Lösning:**
-```
-Det är för många aktiviteter. Behåll endast de 5 viktigaste kampanjerna per kvartal.
-```
-
-### Om färgerna inte fungerar:
-
-**❌ Problem:** Färgerna är för lika eller krockar
-
-**✅ Lösning:**
-```
-Använd mer distinkta färger: blå för Q1, grön för Q2, orange för Q3, röd för Q4.
-```
-
-### Om datum inte stämmer överens:
-
-**❌ Problem:** Aktiviteter startar innan beroenden är klara
-
-**✅ Lösning:**
-```
-Flytta marknadsföringskampanj till att starta EFTER att produktutveckling slutförts den 28 feb.
-```
-
----
-
-## Avancerat: Kombinera AI med manuell redigering
-
-**Bästa arbetsflöde:**
-1. **AI genererar struktur** (ringar, grupper, huvudaktiviteter)
-2. **Användare förfinar manuellt** (justera specifika datum, lägg till detaljer)
-3. **AI lägger till kompletterande aktiviteter** (återkommande uppgifter, mindre objekt)
-4. **Användare slutför** (dölj ringar för presentation, exportera)
-
-**📸 Skärmdump: Delad skärm som visar AI-förslag + manuella dra-och-släpp-justeringar**
-
-### Varför detta hybrida tillvägagångssätt fungerar:
-- AI hanterar bulk/tråkigt arbete (50+ aktiviteter)
-- Människa säkerställer noggrannhet och anpassning till verkligheten
-- AI kan återskapa sektioner utan att påverka manuella redigeringar (om promptad noggrant)
-
----
-
-## Tips för supportteam
-
-### Hjälpa användare att komma igång:
-
-**📸 Skärmdump: Supportrepresentant guidar användare genom första AI-prompt**
-
-1. **Börja enkelt**: "Prova att be den skapa en grundläggande marknadsföringsplan först"
-2. **Visa exempel**: Ha 3-4 förskrivna prompter redo
-3. **Iterera tillsammans**: Gör 2-3 förfiningar med användaren som tittar på
-4. **Förklara kontext**: "AI:n kommer ihåg vår konversation, så du kan bygga på den"
-
-### Vanliga användarfrågor:
-
-**F: "Kommer AI radera mitt befintliga arbete?"**
-- S: Nej, om du inte specifikt ber den ersätta allt. Standardinställningen är additiv.
-
-**F: "Kan AI läsa min Google Kalender?"**
-- S: Inte ännu, men du kan beskriva händelser och AI kommer att skapa dem.
-
-**F: "Hur får jag AI att generera bättre resultat?"**
-- S: Var mer specifik (kvantiteter, datum, beroenden).
-
-**F: "Kan jag ångra AI-ändringar?"**
-- S: Ja, Ctrl+Z / Cmd+Z fungerar, eller använd Versionshistorik för att återställa hela hjulet.
-
-**F: "Används min data för att träna AI-modeller?"**
-- S: Nej, konversationer används inte för träning (enligt OpenAI:s policy för företagskunder).
-
----
-
-## Exempelskript för vanliga scenarier
-
-### Scenario 1: HR-chef - Ny anställds onboarding
+Exempel:
 
 ```
-Skapa ett medarbetaronboarding-program för 2026:
+Användare: "Skapa kampanj i november"
 
-Ringar:
-- Rekrytering (yttre) - anställningspipeline-aktiviteter
-- Onboarding (yttre) - första 90 dagarnas program
-- Retention (yttre) - pågående engagemang
-- Månatliga teman (inre) - fokusområden
+Status: Hämtar aktuell kontext...
+Status: Skapar aktivitet "kampanj"...
+AI: Klart! Jag har skapat aktiviteten:
 
-Aktiviteter:
-- Jobbannonser: Kontinuerligt genom året
-- Intervjuveckor: Första veckan i varje månad
-- Anställningsprocesser: 2 veckor efter intervjuer
-- Onboarding-kohorter: Månatliga börjar den 15:e
-- 30-60-90 dagars uppföljningar: För varje kohort
-- Teambuilding-event: Kvartalsvisa
-- Prestationsutvärderingar: Juni och december
-
-Använd professionella, företagsfärger.
+Kampanj
+November 2025 (2025-11-01 till 2025-11-30)
+Ring: Kampanjer
+Grupp: Kampanj
 ```
 
-### Scenario 2: Frilansare - Hantering av flera kunder
+## Tillgängliga Verktyg (24 Totalt)
+
+### Kontextverktyg
+
+**get_current_context**: Hämtar aktuella ringar, grupper, etiketter, sidor (år) och dagens datum. Returnerar ENDAST synliga objekt från aktuell sida.
+
+### Strukturagentverktyg (15 verktyg)
+
+**Ringhantering**:
+- create_ring: Skapa yttre (aktivitets)ringar eller inre (text)ringar
+- update_ring: Ändra ringnamn eller färg
+- delete_ring: Ta bort ring (misslyckas om aktiviteter finns)
+- toggle_ring_visibility: Visa/dölj ring utan att ta bort
+
+**Aktivitetsgruppshantering**:
+- create_activity_group: Skapa ny aktivitetskategori
+- update_activity_group: Ändra gruppnamn eller färg
+- delete_activity_group: Ta bort grupp (misslyckas om aktiviteter finns)
+- toggle_group_visibility: Visa/dölj grupp utan att ta bort
+
+**Etiketthantering**:
+- create_label: Skapa valfria aktivitetsetiketter
+- update_label: Ändra etikettnamn eller färg
+- delete_label: Ta bort etikett (säkert även om den används)
+
+**Årssidshantering**:
+- create_year_page: Lägg till nytt år med valfri strukturkopiering
+- smart_copy_year: Kopiera ALLA aktiviteter från ett år till ett annat med automatisk datumjustering
+
+**AI-Drivna Förslag**:
+- suggest_wheel_structure: AI genererar komplett struktur (ringar, grupper, exempelaktiviteter) baserat på domän eller användningsfall
+
+### Aktivitetsagentverktyg (6 verktyg)
+
+- create_activity: Skapa enskild aktivitet med datum, ring, grupp, valfri etikett
+- batch_create_activities: Skapa flera aktiviteter i en operation
+- query_activities: Sök efter namn, datumintervall, ring, grupp eller kvartal
+- update_activity: Ändra aktivitetsnamn, datum, ring eller grupp (stöder flytt mellan år)
+- delete_activity: Ta bort aktivitet efter namn
+- list_activities: Visa alla aktiviteter för aktuell sida
+
+### Analysagentverktyg (1 verktyg)
+
+- analyze_wheel: AI-driven analys med domänidentifiering, kvalitetsbedömning, distributionsstatistik och specifika rekommendationer
+
+### Planeringsagentverktyg (2 verktyg)
+
+- suggest_plan: AI genererar komplett projektplan för ett mål och tidsperiod
+- apply_suggested_plan: Skapar ringar, grupper och aktiviteter från föreslagen plan
+
+## Agentarbetsflöden
+
+### Strukturagent
+
+**Syfte**: Hanterar hjulets struktur (ringar, grupper, etiketter, årssidor)
+
+**När aktiverad**:
+- "skapa ring", "ny ring"
+- "skapa aktivitetsgrupp", "ny grupp"
+- "föreslå struktur för [domän]"
+- "skapa år", "kopiera år"
+- "ändra färg på", "byt namn på"
+- "ta bort ring/grupp"
+- "dölj ring", "visa grupp"
+
+**Föreslå Strukturarbetsflöde**:
+1. Användare: "Föreslå struktur för marknadsföring"
+2. AI anropar suggest_wheel_structure med domän
+3. AI presenterar förslag med beskrivningar
+4. AI frågar: "Vill du att jag skapar denna struktur?"
+5. Användaren bekräftar
+6. AI skapar ringar (får ID:n) → skapar grupper (med ring-ID:n)
+7. Användaren kan sedan be Aktivitetsagenten lägga till aktiviteter
+
+### Aktivitetsagent
+
+**Syfte**: Skapar och hanterar aktiviteter/händelser
+
+**När aktiverad** (HÖGSTA PRIORITET):
+- ALLA former av "lägg till", "skapa", "ny" + aktivitet/event
+- "flytta aktivitet", "ändra datum"
+- "ta bort aktivitet"
+- "lista aktiviteter"
+- Flerstegsförfrågningar som "1. Lägg till X, 2. Omstrukturera Y"
+
+**Smart Matchning**: AI matchar automatiskt nyckelord till ringar/grupper:
+- "kampanj" → hittar "Kampanjer"-ring + "Kampanj"-grupp
+- "rea" → hittar "REA"-grupp
+- "event" → hittar "Händelser"-ring
+
+**Datumhantering**:
+- "idag" → använder aktuellt datum från kontext
+- "november" → innevarande år om månad >= nu, annars nästa år
+- "en vecka" → 7 dagars varaktighet
+- Konverterar alltid till ÅÅÅÅ-MM-DD-format
+
+**Fleråriga Aktiviteter**: Skapar/hittar automatiskt årssidor och delar aktiviteter över år.
+
+### Analysagent
+
+**Syfte**: Ger insikter och kvalitetsbedömning
+
+**När aktiverad** (LÄGSTA PRIORITET):
+- ENDAST när INGET annat begärs
+- "analysera", "hur ser det ut"
+- "ge rekommendationer"
+- "vilken domän", "statistik"
+
+**Utdata inkluderar**:
+- Domänidentifiering (t.ex. "Marknadsföringsstrategi", "Produktlansering")
+- Kvalitetsbedömning med specifik feedback
+- Bästa praxis för domänen
+- Topp 3 handlingsbara rekommendationer
+- Kvartalsfördelningsstatistik
+- Ring- och gruppfördelning
+
+### Planeringsagent
+
+**Syfte**: Genererar kompletta projektplaner
+
+**När aktiverad**:
+- "föreslå aktiviteter för [mål]"
+- "skapa plan för [projekt]"
+- "jag ska starta [nytt projekt]"
+- "hjälp mig planera [mål]"
+
+**Arbetsflöde**:
+1. Användaren beskriver mål och eventuellt tidsperiod
+2. AI anropar suggest_plan (använder GPT-4 för domänexpertis)
+3. AI presenterar strukturerad plan med ringar, grupper, aktiviteter per kvartal
+4. AI ber om bekräftelse
+5. Användaren bekräftar
+6. AI anropar apply_suggested_plan
+7. All struktur skapas, användaren kan sedan justera
+
+## Avancerade Funktioner
+
+### Fleråriga Aktiviteter
+
+Skapa aktiviteter som sträcker sig över flera år:
 
 ```
-Skapa en frilansarbetsplan för 2026 som hanterar 3 kunder:
-
-Ringar:
-- Kund A Projekt (yttre)
-- Kund B Projekt (yttre)
-- Kund C Projekt (yttre)
-- Personlig utveckling (yttre)
-- Månatliga intäktsmål (inre)
-
-Kund A: Hemsideomdesign (jan-mars), sedan underhåll
-Kund B: Pågående innehållsskrivning (2 artiklar/vecka hela året)
-Kund C: Sociala medier-hantering (startar april, pågående)
-
-Personligt: Ta augusti ledigt för semester, professionell utveckling i Q4
-
-Använd distinkta färger per kund.
+"Lägg till produktutveckling från oktober 2025 till mars 2026"
 ```
 
-### Scenario 3: Ideell organisation - Insamlingskalender
+AI:n gör automatiskt:
+- Kontrollerar om årssidor finns för 2025 och 2026
+- Skapar saknade sidor med struktur kopierad från befintliga sidor
+- Delar aktivitet: Okt-Dec 2025-segment + Jan-Mar 2026-segment
+- Kopplar båda segmenten till samma ring och grupp
+
+### Smart Datumtolkning
+
+Naturliga språkdatum konverteras intelligent:
+
+- "november" (inget år) → Innevarande år om Nov >= nuvarande månad, annars nästa år
+- "idag" → Använder datum från get_current_context-verktyg
+- "en vecka i december" → Dec 1-7 av lämpligt år
+- "Q2" → 1 april till 30 juni
+
+### Batchoperationer
+
+Skapa flera aktiviteter effektivt:
 
 ```
-Skapa en ideell insamlingskalender för 2026:
-
-Stora event:
-- Vår-gala: 15 april
-- Sommar-löparlopp: 20 juli
-- Höst-auktion: 10 oktober
-- Årsslutsgivarkampanj: 15 nov - 31 dec
-
-Stödjande aktiviteter:
-- Bidragsansökningar: Kvartalsvisa (förfallodatum: 1 mars, 1 juni, 1 sept, 1 dec)
-- Givarkontakt: Kontinuerlig
-- Nyhetsbrev: Månatligt, skickat den 5:e
-- Styrelsemöten: Varannan månad, första torsdagen
-
-Använd varma, vänliga färger.
+"Skapa 12 månatliga kampanjer för 2025"
 ```
 
----
+AI använder `batch_create_activities` för att skapa alla 12 i en databasoperation.
 
-## Prestanda & bästa praxis
+### Synlighetshantering
 
-### Svarstider:
-- Enkla planer (1-2 ringar, <10 aktiviteter): 3-5 sekunder
-- Komplexa planer (5+ ringar, 50+ aktiviteter): 10-15 sekunder
-- Iterativa tillägg: 2-4 sekunder
+Dölj/visa utan att ta bort:
 
-### Optimeringstips:
-💡 Begär aktiviteter i batchar om du skapar 100+ objekt  
-💡 Använd "Tillämpa på hjul" selektivt (granska innan tillämpning)  
-💡 Rensa konversationshistorik om kontexten blir för lång  
-💡 Dela upp mycket komplexa årsplaner i kvartal (generera Q1, sedan Q2, etc.)
+```
+"Dölj ringen Kampanjer"
+"Visa gruppen Marketing igen"
+```
 
----
+Dolda objekt stannar i databasen men är inte synliga på hjulet. Detta är användbart för:
+- Säsongsringar som inte alltid behövs
+- Testning av olika strukturer
+- Tillfällig förenkling av vyn
 
-## Framtida förbättringar (Roadmap)
+### Flyttningar Mellan År
 
-*Kommande funktioner (kontrollera senaste versionen):*
-- 🔄 Synk med Google Kalender (importera händelser direkt)
-- 📊 Importera från Google Sheets / Excel
-- 🗣️ Röstinmatning för prompter
-- 🤝 Team-AI-kontext (AI kommer ihåg teammönster)
-- 🎨 Stilinlärning (AI anpassar sig till dina färgpreferenser över tid)
-- 📈 Prediktiva förslag ("Baserat på förra året, överväg att lägga till...")
+Flytta aktiviteter mellan år sömlöst:
 
----
+```
+"Flytta Google-kampanj till 2026"
+```
 
-**Slut på AI-assistentguide**
+AI:n:
+- Tar bort gamla aktivitetsobjekt
+- Skapar nya objekt på målårssida
+- Bevarar alla andra egenskaper (ring, grupp, etikett)
+- Behåller aktivitetsnamn och beskrivning
 
-*För mer hjälp: support@yearwheel.com*
+## Integration med Data
+
+### Hjulkontext Laddad
+
+Varje AI-förfrågan inkluderar:
+
+```javascript
+{
+  title: "Marknadsplan 2025",
+  year: 2025,
+  stats: {
+    rings: 5,
+    activityGroups: 8,
+    items: 42
+  }
+}
+```
+
+### Verktygsresultat
+
+När AI utför verktyg får den strukturerade JSON-svar:
+
+```json
+{
+  "success": true,
+  "itemsCreated": 1,
+  "message": "Aktivitet 'Julkampanj' skapad",
+  "ringName": "Kampanjer",
+  "groupName": "Kampanj"
+}
+```
+
+Detta gör att AI:n kan ge dig detaljerad, korrekt feedback om vad som skapades.
+
+## Premiumfunktioner
+
+**AI-Assistenten kräver ett Premium-abonnemang.**
+
+Gratisanvändare ser en uppgraderingsuppmaning när de klickar på AI-knappen.
+
+### Vad Ingår
+
+- Obegränsade AI-förfrågningar
+- Alla 4 specialiserade agenter
+- 24 databasverktyg
+- GPT-4-driven analys
+- Strukturförslag
+- Planeringshjälp med domänexpertis
+- Realtidsströmmande svar
+
+## Markdown-Rendering
+
+AI-svar renderas med:
+
+- **marked**: Tolkar markdown-syntax
+- **DOMPurify**: Sanerar HTML för att förhindra XSS-attacker
+- **Ren formatering**: Rubriker, listor, fetstil, kodblock fungerar alla
+
+AI:n formaterar automatiskt svar med:
+
+```markdown
+### Rubriker för sektioner
+**Fetstil** för betoning
+- Punktlistor
+1. Numrerade listor
+```
+
+## Svarsrensning
+
+Innan rendering rensas svar för att ta bort:
+
+- UUID:er (databas-ID:n som inte är relevanta för användare)
+- Emojis (alla Unicode-emojitecken)
+- Onödiga mellanslag
+
+Detta säkerställer professionell, fokuserad utdata.
+
+## Felhantering
+
+### Vanliga Fel och Lösningar
+
+**"Det finns ett strukturellt problem"**
+
+Orsak: Årssidor finns inte för begärda datum
+
+Lösning: 
+- Skapa årssida först: "Skapa år 2026"
+- Eller byt till befintligt år i sidnavigatorn
+
+**"Ring/Grupp hittades inte"**
+
+Orsak: Saknad struktur (inga ringar eller aktivitetsgrupper finns)
+
+Lösning:
+- Skapa struktur: "Skapa ring Kampanjer"
+- Eller be om förslag: "Föreslå struktur för marknadsföring"
+
+**"Foreign key constraint violation"**
+
+Orsak: Försök att referera till icke-existerande ringar eller grupper
+
+Lösning:
+- Se till att strukturen finns innan aktiviteter skapas
+- AI:ns get_current_context-verktyg hjälper till att förhindra detta
+
+### Vänliga Felmeddelanden
+
+AI:n konverterar tekniska fel till svenska:
+
+```
+Databasfel: "foreign key constraint"
+→ "Strukturen saknas. Skapa ringar och grupper först."
+
+404 Not Found
+→ "Kunde inte hitta den begärda resursen."
+```
+
+## Dataflöde
+
+1. **Användaren skriver meddelande** → Frontend skickar till Edge Function
+2. **Edge Function** → Initierar agenter med WheelContext (supabase-klient, wheelId, userId, currentYear, currentPageId)
+3. **Orkestreringsagent** → Analyserar avsikt, delegerar till specialist
+4. **Specialistagent** → Utför lämpliga verktyg
+5. **Verktyg** → Frågar/uppdaterar Supabase-databas
+6. **Verktygsresultat** → Återgår till agent som JSON
+7. **Agent** → Formaterar svar på svenska
+8. **SSE-Ström** → Skickar statusuppdateringar, verktygsanrop, resultat till frontend
+9. **Frontend** → Renderar markdown-svar i AI-fönster
+
+## SSE-Händelsetyper
+
+Frontend tar emot dessa händelsetyper:
+
+- **status**: Verktygsexekveringsstatus ("Hämtar aktuell kontext...")
+- **agent**: Agenttänkande/svarande (strömmad text)
+- **tool**: Verktygsanrop startar (verktygsnamn + argument)
+- **tool_result**: Verktyget slutfört (resultatdata)
+- **complete**: Konversation avslutad (inkluderar lastResponseId)
+- **error**: Fel uppstod (vänligt meddelande)
+
+## Konversationskontinuitet
+
+AI:n använder `lastResponseId`-tokens från OpenAI Agents SDK:
+
+```javascript
+// Första begäran
+POST /ai-assistant-v2
+Body: { message: "Föreslå struktur för HR" }
+Response: { lastResponseId: "abc123..." }
+
+// Uppföljningsbegäran
+POST /ai-assistant-v2
+Body: { 
+  message: "Ja, skapa den", 
+  lastResponseId: "abc123..."  // Bibehåller kontext
+}
+```
+
+Detta möjliggör flervändararbetsflöden som:
+1. AI föreslår struktur
+2. Användaren granskar och bekräftar
+3. AI skapar baserat på tidigare förslag
+
+## Begränsningar
+
+### Språk
+
+Svarar för närvarande främst på svenska. Engelsk input förstås men svar är på svenska.
+
+### Ingen Direkt Kalender/Sheets-Synk
+
+AI-Assistenten synkroniserar INTE direkt med Google Calendar eller Sheets. Den funktionaliteten hanteras av Google-integrationspanelen separat.
+
+AI:n kan:
+- Skapa aktiviteter manuellt
+- Organisera aktiviteter i ringar och grupper
+- Föreslå strukturer
+
+AI:n kan inte:
+- Synkronisera kalenderhändelser direkt
+- Importera från kalkylblad
+- Mappa kolumner eller kalendrar
+
+För Google-integrationer, använd de dedikerade Google Calendar- och Google Sheets-panelerna i editorn.
+
+### Ingen Konversationshistorik-UI
+
+Varje begäran är oberoende (såvida inte lastResponseId används för flervänd). Det finns ingen beständig chatthistorik som visas i UI:t. Konversationen återställs när du stänger fönstret.
+
+### Endast Databasoperationer
+
+AI:n modifierar endast databasposter (wheel_pages, wheel_rings, activity_groups, items, labels). Den kan inte:
+- Redigera canvas-renderingsinställningar
+- Ändra UI-preferenser
+- Modifiera abonnemangsplaner
+- Få åtkomst till andra användares hjul
+
+## Tekniska Detaljer
+
+### Edge Function
+
+- **Plats**: `supabase/functions/ai-assistant-v2/index.ts`
+- **Runtime**: Deno (Supabase Edge Functions)
+- **Modell**: GPT-4 (OpenAI)
+- **Ramverk**: OpenAI Agents SDK v0.1.9
+- **Strömning**: Server-Sent Events (SSE)
+
+### Frontend-Komponent
+
+- **Plats**: `src/components/AIAssistant.jsx`
+- **Tillstånd**: React hooks (useState, useEffect, useRef)
+- **Position**: Dragbar med vyportbegränsningar
+- **Storlek**: Storleksbar med min/max-begränsningar
+- **Rendering**: marked + DOMPurify för säker markdown
+
+### Använda Databastabeller
+
+- wheel_pages (organization_data JSONB)
+- wheel_rings
+- activity_groups
+- labels
+- items
+
+### Autentisering
+
+Kräver giltig Supabase-autentiseringstoken. Användar-ID extraheras från JWT och används för:
+- RLS-policies
+- Hjulägarskapsverifiering
+- Premiumstatuskontroll
+
+## Bästa Praxis
+
+### Var Specifik
+
+**Bra**: "Lägg till julkampanj 15-31 december i ringen Kampanjer"
+
+**Mindre optimalt**: "Lägg till kampanj"
+
+### Använd Naturligt Språk
+
+**Bra**: "Skapa 12 månatliga recensioner"
+
+**Mindre optimalt**: "create_activity name='Review' start='2025-01-01' end='2025-01-31'"
+
+### Bygg Struktur Först
+
+Innan du skapar aktiviteter:
+1. Skapa ringar: "Skapa ring Kampanjer"
+2. Skapa grupper: "Skapa aktivitetsgrupp Kampanj med färg #ff0000"
+3. Skapa sedan aktiviteter: "Lägg till julkampanj i december"
+
+Eller använd strukturförslag:
+1. "Föreslå struktur för marknadsföring"
+2. Granska förslag
+3. Bekräfta: "Ja, skapa det"
+4. Lägg sedan till specifika aktiviteter
+
+### Flerstegsförfrågningar
+
+Aktivitetsagenten hanterar flerstegsförfrågningar sekventiellt:
+
+```
+"1. Lägg till utvärdering i mars
+ 2. Omstrukturera kampanjer till Q2
+ 3. Inför buffertar mellan projekt"
+```
+
+AI utför varje steg i ordning och rapporterar alla resultat.
+
+### Analys Efter Skapande
+
+Efter att ha lagt till många aktiviteter:
+
+```
+"Analysera mitt hjul och ge rekommendationer"
+```
+
+Få insikter om:
+- Domänpassning
+- Planeringskvalitet
+- Saknade kritiska aktiviteter
+- Arbetsbelastningsfördelning
+- Specifika förbättringar
+
+## Integritet & Säkerhet
+
+### Data Skickad till OpenAI
+
+- Din meddelandetext
+- Hjultitel och år
+- Ring-, grupp-, etikettnamn och ID:n (endast synliga objekt)
+- Aktivitetsnamn och datum (endast aktuell sida)
+- Grundläggande statistik (antal)
+
+### Data SOM INTE Skickas
+
+- Användarens e-post eller personlig information
+- Andra användares hjul
+- Fullständigt databasinnehåll
+- Betalningsinformation
+- Konversationshistorik (lagras inte på våra servrar)
+
+### Serversidebearbetning
+
+All AI-bearbetning sker i Supabase Edge Functions (inte på frontend). Detta säkerställer:
+- Databasuppgifter exponeras aldrig för webbläsaren
+- RLS-policies tillämpas
+- Premiumstatus verifieras på serversidan
+- OpenAI API-nyckel säkrad
+
+## Tangentbordsgenvägar
+
+- **Esc**: Stäng AI-assistentfönster
+- **Enter**: Skicka meddelande (när fokuserad i textområde)
+
+## Kommer Snart
+
+- Engelska språksvar
+- Röstinmatning
+- Beständig konversationshistorik i UI
+- Mallförslagsbibliotek
+- Fler specialiserade agenter (Budgetagent, Resursagent, Tidslinje-agent)
+- Ångra/gör om-stöd för AI-åtgärder
+- Aktivitetsmallar med smarta standardvärden

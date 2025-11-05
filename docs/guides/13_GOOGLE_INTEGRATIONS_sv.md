@@ -10,10 +10,10 @@
 
 YearWheels Google-integrationer möjliggör sömlös synkronisering mellan ditt årliga planeringshjul och externa Google-tjänster. Detta möjliggör:
 
-- 📅 **Google Kalender-synk**: Importera händelser som aktiviteter automatiskt
-- 📊 **Google Kalkylark-synk**: Hämta data från kalkylark till ringar
-- 🔄 **Tvåvägssynk** (kommer): Ändringar i YearWheel återspeglas i Google-verktyg
-- 🕐 **Schemalagda uppdateringar**: Varje timme, dagligen eller manuell synkfrekvens
+- **Google Kalender-synk**: Importera händelser som aktiviteter automatiskt
+- **Google Kalkylark-synk**: Hämta data från kalkylark till ringar
+- **Tvåvägssynk** (kommer): Ändringar i YearWheel återspeglas i Google-verktyg
+- **Schemalagda uppdateringar**: Varje timme, dagligen eller manuell synkfrekvens
 
 **Huvudfördelar:**
 - Ingen duplicerad datainmatning
@@ -35,7 +35,7 @@ YearWheels Google-integrationer möjliggör sömlös synkronisering mellan ditt 
 - **Google Kalkylark**: Läsåtkomst (visa arkdata)
 - **OAuth-samtycke**: Engångsauktorisering genom Googles säkra flöde
 
-**📸 Skärmdump: Googles OAuth-samtyckeskärm**
+**Skärmdump: Googles OAuth-samtyckeskärm**
 
 ---
 
@@ -59,7 +59,7 @@ YearWheels Google-integrationer möjliggör sömlös synkronisering mellan ditt 
 
 ### Steg 1: Anslut ditt Google-konto
 
-**📸 Skärmdump: Användarprofilsida eller inställningssida med "Anslut Google"-knapp**
+**Skärmdump: Användarprofilsida eller inställningssida med "Anslut Google"-knapp**
 
 1. **Navigera till**: Profilinställningar eller Integrationer-sida
 2. **Klicka**: **"Anslut Google Kalender"**-knappen
@@ -69,7 +69,7 @@ YearWheels Google-integrationer möjliggör sömlös synkronisering mellan ditt 
 6. **Klicka**: **"Tillåt"**-knappen
 7. **Omdirigera tillbaka**: Återvänder till YearWheel med framgångsmeddelande
 
-**📸 Skärmdump: Googles behörighetsbegäran som visar nödvändiga scope**
+**Skärmdump: Googles behörighetsbegäran som visar nödvändiga scope**
 
 ### Framgångsindikatorer:
 ✅ Grön "Ansluten"-märkning visas  
@@ -81,7 +81,7 @@ YearWheels Google-integrationer möjliggör sömlös synkronisering mellan ditt 
 
 ### Steg 2: Välj en kalender att synka
 
-**📸 Skärmdump: Kalenderval-dropdown som visar flera kalendrar**
+**Skärmdump: Kalenderval-dropdown som visar flera kalendrar**
 
 Efter anslutning:
 
@@ -91,7 +91,7 @@ Efter anslutning:
 4. **Välj**: **"Anslut integration"** eller **"Synka med Google Kalender"**
 5. **Modal öppnas**: Google Kalender-integrationsinställningar
 
-**📸 Skärmdump: Ring-integrationsmodal med kalender-dropdown**
+**Skärmdump: Ring-integrationsmodal med kalender-dropdown**
 
 6. **Välj kalender**: Dropdown listar alla dina Google-kalendrar:
    - Primär kalender
@@ -105,7 +105,7 @@ Efter anslutning:
 
 ### Steg 3: Konfigurera synkinställningar
 
-**📸 Skärmdump: Synkkonfigurationspanel med alla alternativ synliga**
+**Skärmdump: Synkkonfigurationspanel med alla alternativ synliga**
 
 **Mappningsalternativ:**
 
@@ -139,7 +139,7 @@ Synkfrekvens: Dagligen kl. 06:00
 - **Nyckelordsfilter**: Synka endast händelser som innehåller "kampanj" eller "lansering"
 - **Exkluderingsmönster**: Hoppa över händelser med "[intern]" i titeln
 
-**📸 Skärmdump: Filterkonfiguration med exempel**
+**Skärmdump: Filterkonfiguration med exempel**
 
 ---
 
@@ -152,7 +152,7 @@ Synkfrekvens: Dagligen kl. 06:00
    - "Skapar aktiviteter... (15/32)"
    - "Synkning klar! 32 händelser importerade."
 
-**📸 Skärmdump: Synkförloppsdialog**
+**Skärmdump: Synkförloppsdialog**
 
 4. **Observera hjulet**: Kalenderhändelser visas nu som aktiviteter
 5. **Kontrollera sidofältet**: Aktiviteter markerade med Google Kalender-ikon (📅)
@@ -170,10 +170,10 @@ Synkfrekvens: Dagligen kl. 06:00
 
 ### Identifiera synkade aktiviteter:
 
-**📸 Skärmdump: Aktivitetskort med Google Kalender-märkning**
+**Skärmdump: Aktivitetskort med Google Kalender-märkning**
 
 Synkade aktiviteter har:
-- 📅 Liten Google Kalender-ikon/märkning
+- Liten Google Kalender-ikon/märkning
 - "Källa: Google Kalender" i detaljer
 - Externt ID (dolt, används för uppdateringar)
 - Lätt gråtonad eller speciell kant (visuell differentiering)
@@ -186,7 +186,7 @@ Synkade aktiviteter har:
 - **Kan dölja**: Avmarkera ringsynlighet för att dölja alla kalenderaktiviteter
 - **Kan radera**: Tar bort från YearWheel endast, inte Google Kalender
 
-**📸 Skärmdump: Redigeringsmodal för synkad aktivitet som visar inaktiverade fält**
+**Skärmdump: Redigeringsmodal för synkad aktivitet som visar inaktiverade fält**
 
 ### Synkuppdateringar:
 
@@ -231,13 +231,13 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
 
 ### Steg 2: Välj kalkylark och blad
 
-**📸 Skärmdump: Kalkylarksvalgränssnitt**
+**Skärmdump: Kalkylarksvalgränssnitt**
 
 1. **Navigera till**: Ringinställningar i hjulredigeraren
 2. **Klicka**: **"Anslut integration"** → **"Google Kalkylark"**
 3. **Modal öppnas**: Google Kalkylark-integrationsguide
 
-**📸 Skärmdump: Guide som visar kalkylarksväljare**
+**Skärmdump: Guide som visar kalkylarksväljare**
 
 4. **Välj kalkylark**: 
    - Dropdown listar alla ark du har tillgång till
@@ -253,7 +253,7 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
 
 ### Steg 3: Mappa kolumner till fält
 
-**📸 Skärmdump: Kolumnmappningsgränssnitt som visar kalkylarkförhandsgranskning**
+**Skärmdump: Kolumnmappningsgränssnitt som visar kalkylarkförhandsgranskning**
 
 **Här händer magin:** YearWheel behöver veta vilka kalkylarkkolumner som mappar till aktivitetsfält.
 
@@ -288,13 +288,13 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
    - Välj kolumn: "Status" eller valfri textkolumn
    - Fyller i aktivitetsbeskrivning
 
-**📸 Skärmdump: Slutförd kolumnmappning med förhandsgranskning**
+**Skärmdump: Slutförd kolumnmappning med förhandsgranskning**
 
 ---
 
 ### Steg 4: Konfigurera synkalternativ
 
-**📸 Skärmdump: Synkalternativpanel**
+**Skärmdump: Synkalternativpanel**
 
 **Alternativ:**
 
@@ -326,14 +326,14 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
    - Visar tabell över väntande aktiviteter
    - Markerar eventuella fel (ogiltiga datum, saknade obligatoriska fält)
 
-**📸 Skärmdump: Importförhandsgranskningstabellen**
+**Skärmdump: Importförhandsgranskningstabellen**
 
 2. **Granska**: Kontrollera att mappningen är korrekt
 3. **Klicka**: **"Importera till hjul"**-knappen
 4. **Vänta**: Förloppsindikator
 5. **Framgång**: "Importerade 15 aktiviteter från Google Kalkylark"
 
-**📸 Skärmdump: Hjul som visar importerade Kalkylark-aktiviteter**
+**Skärmdump: Hjul som visar importerade Kalkylark-aktiviteter**
 
 ### Framgångsindikatorer:
 ✅ Aktiviteter från kalkylark visas på hjulet  
@@ -357,7 +357,7 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
 2. Uppdaterar aktivitetsnamn och datum automatiskt
 3. Visar "Senast synkad: 2 minuter sedan"-indikator
 
-**📸 Skärmdump: Synkstatusindikator som visar senaste uppdatering**
+**Skärmdump: Synkstatusindikator som visar senaste uppdatering**
 
 ### Koppla bort Kalkylark-synk:
 
@@ -380,7 +380,7 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
 
 **Resultat**: Komplett bild med minimal manuell inmatning!
 
-**📸 Skärmdump: Hjul med tre ringar - Kalendersynk, Kalkylarksynk, Manuell**
+**Skärmdump: Hjul med tre ringar - Kalendersynk, Kalkylarksynk, Manuell**
 
 ---
 
@@ -429,7 +429,7 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
 3. Utför manuell synkning: "Synka nu"-knapp
 4. Kontrollera synkloggar för fel
 
-**📸 Skärmdump: Synkloggar som visar filtrerade händelser**
+**Skärmdump: Synkloggar som visar filtrerade händelser**
 
 ---
 
@@ -490,7 +490,7 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
 3. Klicka "Ta bort åtkomst"
 4. YearWheel kommer att förlora synkförmåga tills återauktorisering
 
-**📸 Skärmdump: Googles tredjepartsapp-hanteringssida**
+**Skärmdump: Googles tredjepartsapp-hanteringssida**
 
 ---
 
@@ -515,22 +515,22 @@ Om redan ansluten för Kalender, hoppa till Steg 2.
 
 ## Pro-tips
 
-💡 **Färgkodning**: Använd Google Kalender-färger för att automatiskt tilldela aktivitetsgrupper  
-💡 **Namnkonvention**: Prefixa kalenderhändelser med [KUND] eller [PROJEKT] för enkel filtrering  
-💡 **Backup innan synk**: Exportera hjul som .yrw innan första stora synken  
-💡 **Separata ringar**: En ring för kalendersynk, en för Kalkylark, håller det organiserat  
-💡 **Återkommande händelser**: YearWheel synkar varje instans som separat aktivitet
+**Färgkodning**: Använd Google Kalender-färger för att automatiskt tilldela aktivitetsgrupper  
+**Namnkonvention**: Prefixa kalenderhändelser med [KUND] eller [PROJEKT] för enkel filtrering  
+**Backup innan synk**: Exportera hjul som .yrw innan första stora synken  
+**Separata ringar**: En ring för kalendersynk, en för Kalkylark, håller det organiserat  
+**Återkommande händelser**: YearWheel synkar varje instans som separat aktivitet
 
 ---
 
 ## Framtida förbättringar (Roadmap)
 
 *Kommande funktioner (kontrollera senaste versionen):*
-- 🔄 **Tvåvägssynk**: Ändringar i YearWheel skjuts tillbaka till Google
-- 📧 **Gmail-integration**: Skapa aktiviteter från e-posttrådar
-- 📁 **Google Drive**: Länka filer till aktiviteter
-- 🔔 **Notifieringssynk**: Google Kalender-påminnelser → YearWheel-notifieringar
-- 📊 **Avancerade Kalkylark-formler**: Stöd för beräknade datumkolumner
+- **Tvåvägssynk**: Ändringar i YearWheel skjuts tillbaka till Google
+- **Gmail-integration**: Skapa aktiviteter från e-posttrådar
+- **Google Drive**: Länka filer till aktiviteter
+- **Notifieringssynk**: Google Kalender-påminnelser → YearWheel-notifieringar
+- **Avancerade Kalkylark-formler**: Stöd för beräknade datumkolumner
 
 ---
 

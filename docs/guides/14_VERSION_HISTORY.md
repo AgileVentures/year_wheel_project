@@ -10,12 +10,12 @@
 
 YearWheel's Version History is a comprehensive versioning system that automatically tracks every change to your wheels, allowing you to:
 
-- 📜 View complete history of changes
+- View complete history of changes
 - ⏪ Restore previous versions
-- 🔍 Compare versions side-by-side
-- 👥 See who made what changes (team wheels)
-- 💾 Create manual snapshots (save points)
-- 🔄 Branch from historical versions
+- Compare versions side-by-side
+- See who made what changes (team wheels)
+- Create manual snapshots (save points)
+- Branch from historical versions
 
 **Think of it as "Git for annual planning"** - but simpler and visual.
 
@@ -25,7 +25,7 @@ YearWheel's Version History is a comprehensive versioning system that automatica
 
 ### Automatic Version Creation
 
-**📸 Screenshot: Version timeline showing auto-save points**
+**Screenshot: Version timeline showing auto-save points**
 
 YearWheel automatically creates versions when:
 - ✅ Any activity is added, edited, or deleted
@@ -48,30 +48,30 @@ You can also create manual "save points":
 - After completing quarterly planning
 - Before applying AI assistant suggestions
 
-**📸 Screenshot: "Create Snapshot" button in header**
+**Screenshot: "Create Snapshot" button in header**
 
 **How to create:**
-1. **Click**: Version History icon in header (clock ⏱️ or history 📜 icon)
+1. **Click**: Version History icon in header (clock or history icon)
 2. **Click**: **"Create Snapshot"** button
 3. **Enter description**: "Before Q2 revisions" or "Final 2026 plan"
 4. **Click**: **"Save Snapshot"**
 
 Manual snapshots are:
 - ⭐ Marked with star badge
-- 📌 Pinned to top of version list
-- 📝 Include your custom description
-- 🔒 Never auto-deleted (even when hitting version limits)
+- Pinned to top of version list
+- Include your custom description
+- Never auto-deleted (even when hitting version limits)
 
 ---
 
 ## Accessing Version History
 
-**📸 Screenshot: Version History button location in editor header**
+**Screenshot: Version History button location in editor header**
 
 ### Opening Version History:
 
 **Method 1: Header button**
-1. **In wheel editor**: Click **"Version History"** button (or ⏱️ icon)
+1. **In wheel editor**: Click **"Version History"** button (or icon)
 2. **Modal opens**: Full-screen version history interface
 
 **Method 2: Keyboard shortcut**
@@ -85,18 +85,18 @@ Manual snapshots are:
 
 ## Version History Interface
 
-**📸 Screenshot: Full version history modal with all sections labeled**
+**Screenshot: Full version history modal with all sections labeled**
 
 ### Main components:
 
 **1. Version Timeline (Left Sidebar)**
 - Chronological list of versions (newest first)
 - Each entry shows:
-  - 📅 Date and time
-  - 👤 User who made change (team wheels)
-  - 📝 Change description (auto or manual)
+  - Date and time
+  - User who made change (team wheels)
+  - Change description (auto or manual)
   - ⭐ Star badge for manual snapshots
-  - 🔢 Version number
+  - Version number
 
 **2. Preview Area (Center)**
 - Visual preview of selected version's wheel
@@ -119,7 +119,7 @@ Manual snapshots are:
 
 ## Viewing Version Details
 
-**📸 Screenshot: Version details panel showing change log**
+**Screenshot: Version details panel showing change log**
 
 ### Change Log Format
 
@@ -130,9 +130,9 @@ Each version's details show:
 - ✅ New ring: "Budget Planning"
 
 **Modified:**
-- 📝 Activity "Spring Launch": Dates changed from Jan 15 - Feb 28 to Jan 20 - March 5
-- 📝 Ring "Marketing": Renamed from "Marketing & Comm" to "Marketing"
-- 📝 Activity group "Q1": Color changed from #3B82F6 to #2563EB
+- Activity "Spring Launch": Dates changed from Jan 15 - Feb 28 to Jan 20 - March 5
+- Ring "Marketing": Renamed from "Marketing & Comm" to "Marketing"
+- Activity group "Q1": Color changed from #3B82F6 to #2563EB
 
 **Deleted:**
 - ❌ Activity "Old Campaign" removed
@@ -140,7 +140,7 @@ Each version's details show:
 
 ### Viewing the Wheel State
 
-**📸 Screenshot: Preview of historical version showing older state**
+**Screenshot: Preview of historical version showing older state**
 
 The preview shows:
 - Exactly how the wheel looked at that point in time
@@ -160,7 +160,7 @@ The preview shows:
 
 **⚠️ IMPORTANT:** Restoring creates a NEW version based on the old one. Current state is not deleted!
 
-**📸 Screenshot: Restore confirmation dialog**
+**Screenshot: Restore confirmation dialog**
 
 ### Restoration Process:
 
@@ -178,7 +178,7 @@ The preview shows:
 4. You're back in editor with restored state
 5. Success message: "Restored version from [date]"
 
-**📸 Screenshot: Success message after restoration**
+**Screenshot: Success message after restoration**
 
 ### After Restoration:
 
@@ -193,7 +193,7 @@ The preview shows:
 
 ## Comparing Versions
 
-**📸 Screenshot: Version comparison view with side-by-side wheels**
+**Screenshot: Version comparison view with side-by-side wheels**
 
 ### Side-by-Side Comparison
 
@@ -223,7 +223,7 @@ The preview shows:
   - 🔴 Red: Deleted items
   - 🟡 Yellow: Modified items
 
-**📸 Screenshot: Diff view showing detailed changes**
+**Screenshot: Diff view showing detailed changes**
 
 ### Practical Use Cases
 
@@ -245,15 +245,15 @@ The preview shows:
 
 ## Team Collaboration Features
 
-**📸 Screenshot: Version list showing different users' contributions**
+**Screenshot: Version list showing different users' contributions**
 
 ### User Attribution
 
 For team wheels, each version shows:
-- 👤 User avatar and name
+- User avatar and name
 - 📧 Email (on hover)
 - 🕐 Timestamp
-- 📝 What they changed
+- What they changed
 
 **Example timeline:**
 ```
@@ -272,7 +272,7 @@ v44 - AI Assistant - 5 hours ago
 
 ### Presence Indicators
 
-**📸 Screenshot: Real-time presence indicators on version timeline**
+**Screenshot: Real-time presence indicators on version timeline**
 
 When multiple users are editing:
 - 🟢 Green dot: Currently viewing/editing
@@ -291,7 +291,7 @@ Shows who's looking at version history simultaneously!
 - ✅ Regular editing work
 - ✅ Incremental changes
 - ✅ "Just in case" protection
-- ⏱️ Automatic, no action needed
+- Automatic, no action needed
 
 **Manual Snapshots:**
 - ⭐ Before major restructuring
@@ -299,7 +299,7 @@ Shows who's looking at version history simultaneously!
 - ⭐ Before risky operations (bulk delete, AI generation)
 - ⭐ Versions you want to easily find later
 
-**📸 Screenshot: Timeline mixing auto-saves and manual snapshots (stars)**
+**Screenshot: Timeline mixing auto-saves and manual snapshots (stars)**
 
 ### Snapshot Management
 
@@ -349,7 +349,7 @@ Each version stores:
 2. Manually copy activities from version B
 3. Create snapshot: "Merged A + B"
 
-**📸 Screenshot: Conceptual diagram of version tree with branches**
+**Screenshot: Conceptual diagram of version tree with branches**
 
 ---
 
@@ -386,13 +386,13 @@ Premium users: Unlimited storage for versions
 
 ## Exporting Versions
 
-**📸 Screenshot: Export options for specific version**
+**Screenshot: Export options for specific version**
 
 ### Why export a version:
 
-- 💾 Local backup of important milestones
+- Local backup of important milestones
 - 📧 Email to stakeholder for review
-- 🔄 Move to different YearWheel account
+- Move to different YearWheel account
 - 📦 Archive for compliance/records
 
 ### How to export:
@@ -448,7 +448,7 @@ Premium users: Unlimited storage for versions
 - **After closing**: Open version history, restore the pre-restoration version
 - All versions are preserved, nothing is lost!
 
-**📸 Screenshot: Version list showing restoration chain (v32 → v47 → v48)**
+**Screenshot: Version list showing restoration chain (v32 → v47 → v48)**
 
 ---
 
@@ -509,7 +509,7 @@ Premium users: Unlimited storage for versions
 4. If not satisfied: Restore snapshot, try different prompt
 5. If satisfied: Create snapshot: "After AI - Final"
 
-**📸 Screenshot: Version list showing AI-generated versions**
+**Screenshot: Version list showing AI-generated versions**
 
 ### Version History + Team Collaboration:
 
@@ -563,7 +563,7 @@ A: Yes, automatically converted to your browser's timezone.
 - 🔀 **Visual diff**: Side-by-side wheel comparison with highlighted changes
 - 📊 **Version analytics**: Activity count trends, change velocity over time
 - 🔔 **Version notifications**: Alert when team member restores old version
-- 📝 **Version comments**: Add notes to versions ("This is the approved plan")
+- **Version comments**: Add notes to versions ("This is the approved plan")
 - 🏷️ **Version tags**: Label versions (v2.0, v3.0) for easier navigation
 - 🔐 **Version locking**: Prevent restoration of certain versions (compliance)
 

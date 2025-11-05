@@ -184,9 +184,9 @@ Now that you have the basics, explore these powerful features:
 
 ## Need Help?
 
-- 📖 **[Full Documentation](00_INDEX.md)**
+- **[Full Documentation](00_INDEX.md)**
 - ❓ **[FAQ](reference/FAQ.md)**
-- 💬 **[Contact Support](mailto:support@yearwheel.com)**
+- **[Contact Support](mailto:support@yearwheel.com)**
 
 ---
 

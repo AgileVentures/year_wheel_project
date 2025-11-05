@@ -183,9 +183,9 @@ Nu när du har grunderna, utforska dessa kraftfulla funktioner:
 
 ## Behöver du hjälp?
 
-- 📖 **[Fullständig dokumentation](00_INDEX_sv.md)**
+- **[Fullständig dokumentation](00_INDEX_sv.md)**
 - ❓ **[Vanliga frågor](reference/FAQ_sv.md)**
-- 💬 **[Kontakta support](mailto:support@yearwheel.com)**
+- **[Kontakta support](mailto:support@yearwheel.com)**
 
 ---
 
