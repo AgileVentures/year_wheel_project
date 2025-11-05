@@ -34,10 +34,8 @@ function QuickStartGuide() {
             </li>
           </ol>
           
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Inloggningsformulär" className="w-full rounded-sm shadow-md mb-3" />
-            <p className="text-blue-900 italic">Skapa konto med e-post eller använd Google-inloggning</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Inloggningsformulär" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <p className="text-gray-600 italic text-center">Skapa konto med e-post eller använd Google-inloggning</p>
 
           <ol className="space-y-3 mt-6" start="3">
             <li className="flex items-start">
@@ -66,10 +64,8 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Skapa nytt hjul" className="w-full rounded-sm shadow-md mb-3" />
-            <p className="text-blue-900 italic">Ge ditt hjul en titel och välj år</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Skapa nytt hjul" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <p className="text-gray-600 italic text-center">Ge ditt hjul en titel och välj år</p>
 
           <ol className="space-y-3 mt-6" start="2">
             <li className="flex items-start">
@@ -85,10 +81,8 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
-            <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Hjul skapat" className="w-full rounded-sm shadow-md mb-3" />
-            <p className="text-green-900 italic">Ditt nya årshjul har skapats och visas på instrumentpanelen</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Hjul skapat" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <p className="text-gray-600 italic text-center">Ditt nya årshjul har skapats och visas på instrumentpanelen</p>
         </>
       )
     },
@@ -136,10 +130,8 @@ function QuickStartGuide() {
             </ul>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Konfigurerade ringar" className="w-full rounded-sm shadow-md mb-3" />
-            <p className="text-blue-900 italic">Hjulet nu med flera ringar konfigurerade - Försäljning, Produkt, Marknadsföring, Drift</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Konfigurerade ringar" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <p className="text-gray-600 italic text-center">Hjulet nu med flera ringar konfigurerade - Försäljning, Produkt, Marknadsföring, Drift</p>
         </>
       )
     },
@@ -229,10 +221,8 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
-            <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="Första aktiviteten" className="w-full rounded-sm shadow-md mb-3" />
-            <p className="text-green-900 italic">🎉 Hjulet visar nu din första aktivitet - en blå båge i Produktringen för Vårproduktlansering</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="Första aktiviteten" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <p className="text-gray-600 italic text-center">🎉 Hjulet visar nu din första aktivitet - en blå båge i Produktringen för Vårproduktlansering</p>
         </>
       )
     },
@@ -269,10 +259,8 @@ function QuickStartGuide() {
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
-            <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Flera aktiviteter" className="w-full rounded-sm shadow-md mb-3" />
-            <p className="text-green-900 italic">Hjulet med flera aktiviteter - se hur återkommande aktiviteter visas som röda rutor varje månad</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Flera aktiviteter" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <p className="text-gray-600 italic text-center">Hjulet med flera aktiviteter - se hur återkommande aktiviteter visas som röda rutor varje månad</p>
         </>
       )
     },
@@ -313,10 +301,8 @@ function QuickStartGuide() {
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Zoom på dra-och-släpp" className="w-full rounded-sm shadow-md mb-3" />
-            <p className="text-blue-900 italic">Närbild av dra-och-släpp-funktionen - se hur markören ändras vid kanterna för storleksändring</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Zoom på dra-och-släpp" className="mt-4 sm:mt-6 w-full rounded-sm shadow-md" />
+          <p className="text-gray-600 italic text-center">Närbild av dra-och-släpp-funktionen - se hur markören ändras vid kanterna för storleksändring</p>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
             <p className="text-amber-900 font-medium">💡 Pro tips:</p>
@@ -345,10 +331,10 @@ function QuickStartGuide() {
             </li>
           </ol>
           
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Login form" className="w-full rounded-lg shadow-md mb-3" />
-            <p className="text-blue-900 italic">Create account with email or use Google sign-in</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_02_login_box.png" alt="Login form" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+
+          
+          <p className="text-gray-600 italic text-center">Create account with email or use Google sign-in</p>
 
           <ol className="space-y-3 mt-6" start="3">
             <li className="flex items-start">
@@ -377,10 +363,8 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Create new wheel" className="w-full rounded-lg shadow-md mb-3" />
-            <p className="text-blue-900 italic">Give your wheel a title and select year</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_04_create_wheel.png" alt="Create new wheel" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <p className="text-gray-600 italic text-center">Give your wheel a title and select year</p>
 
           <ol className="space-y-3 mt-6" start="2">
             <li className="flex items-start">
@@ -396,10 +380,8 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
-            <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Wheel created" className="w-full rounded-lg shadow-md mb-3" />
-            <p className="text-green-900 italic">Your new year wheel has been created and appears on the dashboard</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_05_wheel_created.png" alt="Wheel created" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <p className="text-gray-600 italic text-center">Your new year wheel has been created and appears on the dashboard</p>
         </>
       )
     },
@@ -451,10 +433,8 @@ function QuickStartGuide() {
             </ul>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Configured rings" className="w-full rounded-lg shadow-md mb-3" />
-            <p className="text-blue-900 italic">The wheel now with multiple rings configured - Sales, Product, Marketing, Operations</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_07_editor_with_changes_01.png" alt="Configured rings" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <p className="text-gray-600 italic text-center">The wheel now with multiple rings configured - Sales, Product, Marketing, Operations</p>
         </>
       )
     },
@@ -548,10 +528,8 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
-            <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="First activity" className="w-full rounded-lg shadow-md mb-3" />
-            <p className="text-green-900 italic">🎉 The wheel now shows your first activity - a blue arc in the Product ring for Spring Product Launch</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="First activity" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <p className="text-gray-600 italic text-center">🎉 The wheel now shows your first activity - a blue arc in the Product ring for Spring Product Launch</p>
         </>
       )
     },
@@ -588,10 +566,8 @@ function QuickStartGuide() {
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
-            <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Multiple activities" className="w-full rounded-lg shadow-md mb-3" />
-            <p className="text-green-900 italic">The wheel with multiple activities - see how recurring activities appear as red boxes each month</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_11_editor_with_changes_03.png" alt="Multiple activities" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <p className="text-gray-600 italic text-center">The wheel with multiple activities - see how recurring activities appear as red boxes each month</p>
         </>
       )
     },
@@ -632,10 +608,8 @@ function QuickStartGuide() {
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Drag and drop zoom" className="w-full rounded-lg shadow-md mb-3" />
-            <p className="text-blue-900 italic">Close-up of the drag and drop feature - see how the cursor changes at the edges for resizing</p>
-          </div>
+          <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Drag and drop zoom" className="mt-4 sm:mt-6 w-full rounded-lg shadow-md" />
+          <p className="text-gray-600 italic text-center">Close-up of the drag and drop feature - see how the cursor changes at the edges for resizing</p>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
             <p className="text-amber-900 font-medium">💡 Pro tip:</p>
