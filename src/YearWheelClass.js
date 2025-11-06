@@ -105,6 +105,11 @@ class YearWheel {
       targetRingInfo: null, // Stores { ring, startRadius, endRadius, type }
     };
 
+    // Store pending item updates (optimistic rendering)
+    // Maps item ID to { item: updatedItem, renderCount: number }
+    // renderCount tracks how many times we've rendered with this pending update
+    this.pendingItemUpdates = new Map();
+
     // Use month names from options if provided, otherwise fallback to Swedish
     this.monthNames = options.monthNames || [
       "Januari",
@@ -232,6 +237,8 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
+    console.log('[YearWheelClass] updateOrganizationData CALLED - size:', this.pendingItemUpdates.size);
+    
     this.organizationData = newOrganizationData;
 
     // Recalculate maxRadius in case outer rings were added/removed/toggled
@@ -5097,8 +5104,27 @@ class YearWheel {
               return;
             }
 
-            let itemStartDate = new Date(item.startDate);
-            let itemEndDate = new Date(item.endDate);
+            // OPTIMISTIC UPDATE: Use pending update if available (prevents phantom rendering)
+            // When drag ends, updated item is stored here and used immediately
+            // before React state update arrives (~50-100ms delay)
+            const pendingData = this.pendingItemUpdates.get(item.id);
+            const itemToRender = pendingData ? pendingData.item : item;
+            
+            if (pendingData) {
+              // Check if organizationData now has the updated version
+              // If dates and ring match, React state has been updated - safe to clear
+              if (item.startDate === pendingData.item.startDate && 
+                  item.endDate === pendingData.item.endDate &&
+                  item.ringId === pendingData.item.ringId) {
+                console.log('[OUTER RING] organizationData now matches pending update - clearing for item:', item.id);
+                this.pendingItemUpdates.delete(item.id);
+              } else {
+                console.log('[OUTER RING] Using pending update for item:', item.id, '(organizationData still has old data)');
+              }
+            }
+
+            let itemStartDate = new Date(itemToRender.startDate);
+            let itemEndDate = new Date(itemToRender.endDate);
 
             // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
             if (itemEndDate < minDate || itemStartDate > maxDate) return;
@@ -5131,12 +5157,12 @@ class YearWheel {
             const adjustedEndAngle = this.initAngle + endAngle;
 
             // Get color from activity group (use Map lookup for O(1) instead of array.find O(n))
-            const activityGroup = activityGroupMap.get(item.activityId);
+            const activityGroup = activityGroupMap.get(itemToRender.activityId);
             let itemColor = activityGroup ? activityGroup.color : ring.color;
 
             // Check if this item is hovered
             const isHovered =
-              this.hoveredItem && this.hoveredItem.id === item.id;
+              this.hoveredItem && this.hoveredItem.id === itemToRender.id;
             if (isHovered) {
               itemColor = this.getHoverColor(itemColor);
             }
@@ -5170,7 +5196,7 @@ class YearWheel {
             const textOrientation = this.chooseTextOrientation(
               angularWidth,
               itemWidth,
-              item.name,
+              itemToRender.name,
               middleRadius
             );
 
@@ -5191,7 +5217,7 @@ class YearWheel {
               endAngle: adjustedEndAngle,
               color: itemColor,
               textFunction: textFunction,
-              text: item.name,
+              text: itemToRender.name,
               fontSize: this.size / 48,
               isVertical: textOrientation === "vertical",
               highlight: isHovered,
@@ -5199,12 +5225,12 @@ class YearWheel {
             });
             
             // Collect editor avatar if someone is editing this item (real-time collaboration)
-            this.collectEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
+            this.collectEditorAvatar(itemToRender, itemStartRadius, itemWidth, adjustedEndAngle);
 
             // Collect label indicator to draw last (on top)
-            if (item.labelId) {
+            if (itemToRender.labelId) {
               this.labelsToDraw.push({
-                item,
+                item: itemToRender,
                 startRadius: itemStartRadius,
                 width: itemWidth,
                 startAngle: adjustedStartAngle,
@@ -5213,9 +5239,9 @@ class YearWheel {
             }
 
             // Collect linked wheel indicator to draw last (on top)
-            if (item.linkedWheelId) {
+            if (itemToRender.linkedWheelId) {
               this.linkedWheelsToDraw.push({
-                item,
+                item: itemToRender,
                 startRadius: itemStartRadius,
                 width: itemWidth,
                 startAngle: adjustedStartAngle,
@@ -5224,15 +5250,20 @@ class YearWheel {
             }
 
             // Store clickable region for this item
-            // CRITICAL: Store only item ID, not the full object reference
-            // This prevents stale data when organizationData updates
-            this.clickableItems.push({
-              itemId: item.id, // Store ID only, look up fresh data later
-              startRadius: itemStartRadius,
-              endRadius: itemStartRadius + itemWidth,
-              startAngle: this.toRadians(adjustedStartAngle),
-              endAngle: this.toRadians(adjustedEndAngle),
-            });
+            // CRITICAL: Only store if this is fresh data (from pending update OR from organizationData with no pending update)
+            // Skip storing if we're rendering stale organizationData while a pending update exists
+            const isStaleData = !pendingData && this.pendingItemUpdates.has(item.id);
+            if (!isStaleData) {
+              this.clickableItems.push({
+                itemId: itemToRender.id, // Store ID only, look up fresh data later
+                startRadius: itemStartRadius,
+                endRadius: itemStartRadius + itemWidth,
+                startAngle: this.toRadians(adjustedStartAngle),
+                endAngle: this.toRadians(adjustedEndAngle),
+              });
+            } else {
+              console.log('[OUTER RING] SKIPPING clickable region for stale item:', item.id);
+            }
 
             // Draw selection border if item is selected
             if (this.selectedItems.includes(item.id)) {
@@ -5468,8 +5499,27 @@ class YearWheel {
             return;
           }
 
-          let itemStartDate = new Date(item.startDate);
-          let itemEndDate = new Date(item.endDate);
+          // OPTIMISTIC UPDATE: Use pending update if available (prevents phantom rendering)
+          // When drag ends, updated item is stored here and used immediately
+          // before React state update arrives (~50-100ms delay)
+          const pendingData = this.pendingItemUpdates.get(item.id);
+          const itemToRender = pendingData ? pendingData.item : item;
+          
+          if (pendingData) {
+            // Check if organizationData now has the updated version
+            // If dates and ring match, React state has been updated - safe to clear
+            if (item.startDate === pendingData.item.startDate && 
+                item.endDate === pendingData.item.endDate &&
+                item.ringId === pendingData.item.ringId) {
+              console.log('[INNER RING] organizationData now matches pending update - clearing for item:', item.id);
+              this.pendingItemUpdates.delete(item.id);
+            } else {
+              console.log('[INNER RING] Using pending update for item:', item.id, '(organizationData still has old data)');
+            }
+          }
+
+          let itemStartDate = new Date(itemToRender.startDate);
+          let itemEndDate = new Date(itemToRender.endDate);
 
           // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
           if (itemEndDate < minDate || itemStartDate > maxDate) return;
@@ -5501,22 +5551,22 @@ class YearWheel {
           const adjustedEndAngle = this.initAngle + endAngle;
 
           // Get color from activity group (use Map lookup for O(1) instead of array.find O(n))
-          const activityGroup = activityGroupMap.get(item.activityId);
+          const activityGroup = activityGroupMap.get(itemToRender.activityId);
           let itemColor = activityGroup
             ? activityGroup.color
             : this.sectionColors[0];
 
           // Check if this item is hovered
-          const isHovered = this.hoveredItem && this.hoveredItem.id === item.id;
+          const isHovered = this.hoveredItem && this.hoveredItem.id === itemToRender.id;
           if (isHovered) {
             itemColor = this.getHoverColor(itemColor);
           }
 
           // Get track assignment for this item
-          const trackIndex = itemToTrack.get(item.id) || 0;
+          const trackIndex = itemToTrack.get(itemToRender.id) || 0;
 
           // Get pre-calculated overlap info for this item (INNER RINGS)
-          const overlapInfo = itemOverlapInfo.get(item.id);
+          const overlapInfo = itemOverlapInfo.get(itemToRender.id);
           const localOverlapCount = overlapInfo ? overlapInfo.overlapCount : 1;
 
           // Determine height based on LOCAL overlaps in this specific region
@@ -5539,7 +5589,7 @@ class YearWheel {
           const textOrientation = this.chooseTextOrientation(
             angularWidth,
             itemWidth,
-            item.name,
+            itemToRender.name,
             middleRadius
           );
 
@@ -5560,7 +5610,7 @@ class YearWheel {
             endAngle: adjustedEndAngle,
             color: itemColor,
             textFunction: textFunction,
-            text: item.name,
+            text: itemToRender.name,
             fontSize: this.size / 62,
             isVertical: textOrientation === "vertical",
             highlight: isHovered,
@@ -5568,12 +5618,12 @@ class YearWheel {
           });
           
           // Collect editor avatar if someone is editing this item (real-time collaboration)
-          this.collectEditorAvatar(item, itemStartRadius, itemWidth, adjustedEndAngle);
+          this.collectEditorAvatar(itemToRender, itemStartRadius, itemWidth, adjustedEndAngle);
 
           // Collect label indicator to draw last (on top)
-          if (item.labelId) {
+          if (itemToRender.labelId) {
             this.labelsToDraw.push({
-              item,
+              item: itemToRender,
               startRadius: itemStartRadius,
               width: itemWidth,
               startAngle: adjustedStartAngle,
@@ -5582,9 +5632,9 @@ class YearWheel {
           }
 
           // Collect linked wheel indicator to draw last (on top)
-          if (item.linkedWheelId) {
+          if (itemToRender.linkedWheelId) {
             this.linkedWheelsToDraw.push({
-              item,
+              item: itemToRender,
               startRadius: itemStartRadius,
               width: itemWidth,
               startAngle: adjustedStartAngle,
@@ -5593,15 +5643,20 @@ class YearWheel {
           }
 
           // Store clickable region for this item
-          // CRITICAL: Store only item ID, not the full object reference
-          // This prevents stale data when organizationData updates
-          this.clickableItems.push({
-            itemId: item.id, // Store ID only, look up fresh data later
-            startRadius: itemStartRadius,
-            endRadius: itemStartRadius + itemWidth,
-            startAngle: this.toRadians(adjustedStartAngle),
-            endAngle: this.toRadians(adjustedEndAngle),
-          });
+          // CRITICAL: Only store if this is fresh data (from pending update OR from organizationData with no pending update)
+          // Skip storing if we're rendering stale organizationData while a pending update exists
+          const isStaleData = !pendingData && this.pendingItemUpdates.has(item.id);
+          if (!isStaleData) {
+            this.clickableItems.push({
+              itemId: itemToRender.id, // Store ID only, look up fresh data later
+              startRadius: itemStartRadius,
+              endRadius: itemStartRadius + itemWidth,
+              startAngle: this.toRadians(adjustedStartAngle),
+              endAngle: this.toRadians(adjustedEndAngle),
+            });
+          } else {
+            console.log('[INNER RING] SKIPPING clickable region for stale item:', item.id);
+          }
 
           // Draw selection border if item is selected
           if (this.selectedItems.includes(item.id)) {

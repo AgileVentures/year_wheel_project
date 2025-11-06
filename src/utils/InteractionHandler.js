@@ -553,6 +553,16 @@ class InteractionHandler {
       ...updates
     };
 
+    // OPTIMISTIC UPDATE: Store pending update so canvas uses new position immediately
+    // This prevents phantom rendering at old position while waiting for React state update
+    console.log('[InteractionHandler] Setting pending update for item:', updatedItem.id);
+    console.log('[InteractionHandler] pendingItemUpdates before:', this.wheel.pendingItemUpdates.size);
+    this.wheel.pendingItemUpdates.set(updatedItem.id, { item: updatedItem, renderCount: 0 });
+    console.log('[InteractionHandler] pendingItemUpdates after:', this.wheel.pendingItemUpdates.size);
+    
+    // NOTE: We DON'T clear clickableItems here anymore
+    // The rendering will use pending updates and rebuild clickableItems with correct positions
+
     // Notify parent of changes
     if (this.wheel.options?.onUpdateAktivitet) {
       this.wheel.options.onUpdateAktivitet(updatedItem);
@@ -687,10 +697,12 @@ class InteractionHandler {
     if (this.wheel.clickableItems) {
       for (const itemRegion of this.wheel.clickableItems) {
         if (this.isPointInItemRegion(x, y, itemRegion)) {
-          // CRITICAL: Look up fresh item data from organizationData (single source of truth)
-          newHoveredItem = this.wheel.organizationData.items.find(
+          // CRITICAL: Look up fresh item data - check pending updates first, then organizationData
+          // This prevents hover from using stale position after drag (optimistic update)
+          const itemFromData = this.wheel.organizationData.items.find(
             i => i.id === itemRegion.itemId
           );
+          newHoveredItem = this.wheel.pendingItemUpdates.get(itemRegion.itemId) || itemFromData;
           hoverZone = this.detectDragZone(x, y, itemRegion);
           break;
         }
