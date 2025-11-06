@@ -89,25 +89,12 @@ class YearWheel {
     this.hoveredItem = null; // Track currently hovered activity
     this.hoverRedrawPending = false; // Prevent excessive redraws on hover
 
-    // Drag state for activity manipulation
-    this.dragState = {
-      isDragging: false,
-      dragMode: null, // 'move', 'resize-start', 'resize-end'
-      draggedItem: null,
-      draggedItemRegion: null,
-      startMouseAngle: 0,
-      currentMouseAngle: 0,
-      initialStartAngle: 0,
-      initialEndAngle: 0,
-      previewStartAngle: 0,
-      previewEndAngle: 0,
-      targetRing: null, // Track which ring we're dragging over (for ring switching)
-      targetRingInfo: null, // Stores { ring, startRadius, endRadius, type }
-    };
+    // Drag state for activity manipulation (kept in sync with InteractionHandler)
+    this.dragState = this.createEmptyDragState();
 
-    // Store pending item updates (optimistic rendering)
-    // Maps item ID to { item: updatedItem, renderCount: number }
-    // renderCount tracks how many times we've rendered with this pending update
+  // Store pending item updates (optimistic rendering)
+  // Maps item ID to { item: updatedItem, timestamp }
+  // timestamp lets us detect stale optimistic data while waiting for React state
     this.pendingItemUpdates = new Map();
 
     // Use month names from options if provided, otherwise fallback to Swedish
@@ -157,15 +144,6 @@ class YearWheel {
     this.lastHoverCheck = 0;
     this.hoverThrottleMs = 16; // ~60fps max for hover checks
 
-    // Store bound event handlers for cleanup
-    this.boundHandlers = {
-      startDrag: this.startDrag.bind(this),
-      handleMouseMove: this.handleMouseMove.bind(this),
-      stopDrag: this.stopDrag.bind(this),
-      handleMouseLeave: this.handleMouseLeave.bind(this),
-      handleClick: this.handleClick.bind(this),
-    };
-
     // Bind animateWheel once to avoid creating new functions each frame
     this.boundAnimateWheel = this.animateWheel.bind(this);
 
@@ -182,25 +160,7 @@ class YearWheel {
     
     this.exportManager = new ExportManager(this);
 
-    // Add event listeners (skip if readonly mode)
-    // Note: InteractionHandler now manages event listeners internally
-    // We keep the old boundHandlers for backward compatibility but they will be deprecated
-    if (!this.readonly) {
-      this.canvas.addEventListener("mousedown", this.boundHandlers.startDrag);
-      this.canvas.addEventListener(
-        "mousemove",
-        this.boundHandlers.handleMouseMove
-      );
-      this.canvas.addEventListener("mouseup", this.boundHandlers.stopDrag);
-      this.canvas.addEventListener(
-        "mouseleave",
-        this.boundHandlers.handleMouseLeave
-      );
-    }
-    
-    // NOTE: Click handling is now managed by InteractionHandler
-    // The old click listener registration here has been removed to prevent double-click events
-    // InteractionHandler properly handles clicks in both readonly and edit modes
+    // NOTE: InteractionHandler now manages all event listeners (mouse + touch)
   }
 
   /**
@@ -213,6 +173,31 @@ class YearWheel {
       this.size, 
       this.organizationData.rings
     );
+  }
+
+  // Provide a canonical empty drag state so InteractionHandler can sync with the renderer
+  createEmptyDragState() {
+    return {
+      isDragging: false,
+      dragMode: null,
+      draggedItem: null,
+      draggedItemRegion: null,
+      startMouseAngle: 0,
+      currentMouseAngle: 0,
+      initialStartAngle: 0,
+      initialEndAngle: 0,
+      previewStartAngle: 0,
+      previewEndAngle: 0,
+      targetRing: null,
+      targetRingInfo: null,
+    };
+  }
+
+  // Sync drag state coming from InteractionHandler (prevents duplicate state machines)
+  updateDragStateFromHandler(handlerState = null) {
+    this.dragState = handlerState
+      ? { ...handlerState }
+      : this.createEmptyDragState();
   }
 
   // Generate cache key to detect when background needs redrawing
@@ -237,8 +222,6 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateOrganizationData(newOrganizationData) {
-    console.log('[YearWheelClass] updateOrganizationData CALLED - size:', this.pendingItemUpdates.size);
-    
     this.organizationData = newOrganizationData;
 
     // Recalculate maxRadius in case outer rings were added/removed/toggled
@@ -304,6 +287,9 @@ class YearWheel {
     if (changed) {
       this.selectionMode = selectionMode;
       this.selectedItems = selectedItems;
+      if (this.interactionHandler) {
+        this.interactionHandler.options.selectionMode = selectionMode;
+      }
       // Redraw to show/hide selection borders
       if (!this.dragState || !this.dragState.isDragging) {
         this.create();
@@ -395,29 +381,14 @@ class YearWheel {
 
   // Cleanup method to remove event listeners
   cleanup() {
-    if (this.canvas && this.boundHandlers) {
-      this.canvas.removeEventListener(
-        "mousedown",
-        this.boundHandlers.startDrag
-      );
-      this.canvas.removeEventListener(
-        "mousemove",
-        this.boundHandlers.handleMouseMove
-      );
-      this.canvas.removeEventListener("mouseup", this.boundHandlers.stopDrag);
-      this.canvas.removeEventListener(
-        "mouseleave",
-        this.boundHandlers.handleMouseLeave
-      );
-      this.canvas.removeEventListener("click", this.boundHandlers.handleClick);
+    if (this.interactionHandler) {
+      this.interactionHandler.destroy();
     }
 
     // Stop any animations
     this.stopSpinning();
     this.isDragging = false;
-    if (this.dragState) {
-      this.dragState.isDragging = false;
-    }
+    this.updateDragStateFromHandler();
     
     // CRITICAL: Clear all cached data to prevent memory leaks
     if (this.textMeasurementCache) {
@@ -428,7 +399,6 @@ class YearWheel {
     }
     this.clickableItems = [];
     this.hoveredItem = null;
-    this.draggedItem = null;
     this.cacheValid = false;
   }
 
@@ -3536,641 +3506,6 @@ class YearWheel {
     }
   }
 
-  startDrag(event) {
-    // In selection mode, disable drag entirely (only allow clicks)
-    if (this.selectionMode) {
-      return;
-    }
-
-    // Check if clicking on an activity
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
-
-    // Calculate distance from center to check if we're in the activity ring area
-    const dx = x - this.center.x;
-    const dy = y - this.center.y;
-    const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
-
-    // Don't allow ANY interaction if clicking in the center circle
-    if (distanceFromCenter <= this.minRadius) {
-      return; // Early exit - no rotation, no activity drag
-    }
-
-    // Only check activities if we're outside the center circle (minRadius)
-    if (distanceFromCenter > this.minRadius) {
-      // Check if click is on any activity
-      for (const itemRegion of this.clickableItems) {
-        if (this.isPointInItemRegion(x, y, itemRegion)) {
-          // Start activity drag
-          const dragMode = this.detectDragZone(x, y, itemRegion);
-          // CRITICAL: Look up fresh item data from organizationData (single source of truth)
-          const freshItem = this.organizationData.items.find(
-            (i) => i.id === itemRegion.itemId
-          );
-          
-          // If item not found in current organizationData, skip (year filtered out)
-          if (!freshItem) {
-            return;
-          }
-
-          // CRITICAL: Don't allow dragging clustered items (they need special handling)
-          if (freshItem.isCluster) {
-            return; // Exit early - don't start drag for clusters
-          }
-
-          // Calculate mouse angle at drag start in SCREEN coordinates
-          // We'll draw the preview in rotated context, so use raw screen angle
-          let startMouseAngle = Math.atan2(dy, dx);
-
-          // Normalize to 0-2π
-          while (startMouseAngle < 0) startMouseAngle += Math.PI * 2;
-          while (startMouseAngle >= Math.PI * 2) startMouseAngle -= Math.PI * 2;
-
-          // Convert stored angles (non-rotated) to screen angles (rotated) for preview
-          const screenStartAngle = itemRegion.startAngle + this.rotationAngle;
-          const screenEndAngle = itemRegion.endAngle + this.rotationAngle;
-
-          // Set PENDING drag state - only activate after movement threshold
-          this.dragState = {
-            isDragging: false, // Not dragging yet - waiting for movement
-            isPending: true, // Pending drag activation
-            dragMode: dragMode,
-            draggedItem: freshItem,
-            draggedItemRegion: itemRegion,
-            startMouseAngle: startMouseAngle,
-            currentMouseAngle: startMouseAngle,
-            initialStartAngle: screenStartAngle, // Screen coordinates
-            initialEndAngle: screenEndAngle, // Screen coordinates
-            previewStartAngle: screenStartAngle, // Screen coordinates
-            previewEndAngle: screenEndAngle, // Screen coordinates
-            startX: x, // Store initial mouse position
-            startY: y,
-          };
-
-          // Don't notify parent or change cursor yet - wait for actual drag
-
-          return; // Don't start wheel rotation
-
-          return; // Don't start wheel rotation
-        }
-      }
-      
-      // If not clicking on an activity but outside center, start wheel rotation drag
-      // This allows rotating the wheel by dragging the month/week rings or empty spaces
-      // Stop auto-rotation if it's running
-      if (this.isAnimating) {
-        this.stopSpinning();
-      }
-      
-      this.isDragging = true;
-      this.lastMouseAngle = this.getMouseAngle(event);
-      this.canvas.style.cursor = "grabbing"; // Show grabbing cursor during wheel rotation
-    }
-    // If clicking inside center circle (minRadius), do nothing - don't rotate
-  }
-
-  drag(event) {
-    if (!this.isDragging) return;
-
-    const currentMouseAngle = this.getMouseAngle(event);
-    // Calculate the difference from last mouse position (not from drag start)
-    // This makes rotation follow the cursor smoothly without acceleration
-    let angleDifference = currentMouseAngle - this.lastMouseAngle;
-    
-    // Normalize difference to shortest path to avoid jumps across the 0/2π boundary
-    while (angleDifference <= -Math.PI) angleDifference += Math.PI * 2;
-    while (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
-
-    // Update rotation by the incremental difference
-    this.rotationAngle += angleDifference;
-    
-    // Notify callback if provided (for casting sync)
-    if (this.onRotationChange) {
-      this.onRotationChange(this.rotationAngle);
-    }
-    
-    // Update lastMouseAngle for next frame
-    this.lastMouseAngle = currentMouseAngle;
-
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.drawRotatingElements();
-    this.drawStaticElements();
-  }
-
-  dragActivity(event) {
-    if (!this.dragState.isDragging) return;
-
-    // Get current mouse position and convert to angle
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
-
-    // Calculate mouse angle relative to center
-    // Since we now draw preview in rotated context, we DON'T subtract rotation here
-    const dx = x - this.center.x;
-    const dy = y - this.center.y;
-    const rawMouseAngle = Math.atan2(dy, dx);
-
-    // DON'T subtract rotationAngle - the preview will be drawn in rotated context
-    let mouseAngle = rawMouseAngle;
-
-    // Normalize angle to 0-2π range
-    while (mouseAngle < 0) mouseAngle += Math.PI * 2;
-    while (mouseAngle >= Math.PI * 2) mouseAngle -= Math.PI * 2;
-
-    // Store for reference
-    this.dragState.currentMouseAngle = mouseAngle;
-
-    // Minimum activity size (1 week)
-    const minWeekAngle = this.toRadians((7 / 365) * 360);
-
-    // Update preview angles based on drag mode
-    if (this.dragState.dragMode === "move") {
-      // Detect target ring for ring switching
-      const targetRingInfo = this.detectTargetRing(x, y);
-      this.dragState.targetRingInfo = targetRingInfo;
-      this.dragState.targetRing = targetRingInfo ? targetRingInfo.ring : null;
-
-      // Calculate the angle difference from start to current mouse position
-      // DON'T normalize to shortest path - we want to follow the actual drag direction
-      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
-
-      // Apply the delta directly to both start and end angles
-      this.dragState.previewStartAngle =
-        this.dragState.initialStartAngle + angleDelta;
-      this.dragState.previewEndAngle =
-        this.dragState.initialEndAngle + angleDelta;
-
-      // Normalize both angles to 0-2π for consistent rendering
-      while (this.dragState.previewStartAngle < 0)
-        this.dragState.previewStartAngle += Math.PI * 2;
-      while (this.dragState.previewStartAngle >= Math.PI * 2)
-        this.dragState.previewStartAngle -= Math.PI * 2;
-      while (this.dragState.previewEndAngle < 0)
-        this.dragState.previewEndAngle += Math.PI * 2;
-      while (this.dragState.previewEndAngle >= Math.PI * 2)
-        this.dragState.previewEndAngle -= Math.PI * 2;
-    } else if (this.dragState.dragMode === "resize-start") {
-      // Resize start - calculate delta and apply to start angle only
-      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
-      let newStartAngle = this.dragState.initialStartAngle + angleDelta;
-
-      // Normalize
-      while (newStartAngle < 0) newStartAngle += Math.PI * 2;
-      while (newStartAngle >= Math.PI * 2) newStartAngle -= Math.PI * 2;
-
-      // Keep end fixed
-      this.dragState.previewEndAngle = this.dragState.initialEndAngle;
-
-      // Calculate span and enforce minimum
-      let span = this.dragState.previewEndAngle - newStartAngle;
-      if (span < 0) span += Math.PI * 2;
-
-      if (span >= minWeekAngle) {
-        this.dragState.previewStartAngle = newStartAngle;
-      }
-    } else if (this.dragState.dragMode === "resize-end") {
-      // Resize end - calculate delta and apply to end angle only
-      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
-      let newEndAngle = this.dragState.initialEndAngle + angleDelta;
-
-      // Normalize
-      while (newEndAngle < 0) newEndAngle += Math.PI * 2;
-      while (newEndAngle >= Math.PI * 2) newEndAngle -= Math.PI * 2;
-
-      // Keep start fixed
-      this.dragState.previewStartAngle = this.dragState.initialStartAngle;
-
-      // Calculate span and enforce minimum
-      let span = newEndAngle - this.dragState.previewStartAngle;
-      if (span < 0) span += Math.PI * 2;
-
-      if (span >= minWeekAngle) {
-        this.dragState.previewEndAngle = newEndAngle;
-      }
-    }
-
-    // Redraw with new preview position
-    this.create();
-  }
-
-  stopDrag(event) {
-    // Handle activity drag end
-    if (this.dragState.isDragging) {
-      this.stopActivityDrag();
-      return;
-    }
-
-    // CRITICAL: If we had a pending drag state (mousedown but minimal movement),
-    // still suppress the tooltip to prevent it from opening
-    if (this.dragState.isPending) {
-      this.justFinishedDrag = true;
-      setTimeout(() => {
-        this.justFinishedDrag = false;
-      }, 300);
-    }
-
-    // Handle wheel rotation drag end
-    if (!this.isDragging) return;
-    this.isDragging = false;
-    this.canvas.style.cursor = "default"; // Reset cursor to default
-  }
-
-  stopActivityDrag() {
-    if (!this.dragState.isDragging) return;
-
-    // Convert screen angles back to logical angles by subtracting rotation
-    let logicalStartAngle =
-      this.dragState.previewStartAngle - this.rotationAngle;
-    let logicalEndAngle = this.dragState.previewEndAngle - this.rotationAngle;
-
-    // Normalize logical angles
-    while (logicalStartAngle < 0) logicalStartAngle += Math.PI * 2;
-    while (logicalStartAngle >= Math.PI * 2) logicalStartAngle -= Math.PI * 2;
-    while (logicalEndAngle < 0) logicalEndAngle += Math.PI * 2;
-    while (logicalEndAngle >= Math.PI * 2) logicalEndAngle -= Math.PI * 2;
-
-    // Convert logical angles to dates
-    let newStartDate = this.angleToDate(this.toDegrees(logicalStartAngle));
-    let newEndDate = this.angleToDate(this.toDegrees(logicalEndAngle));
-
-    // Clamp dates to current year (Jan 1 - Dec 31)
-    const yearStart = new Date(this.year, 0, 1);
-    const yearEnd = new Date(this.year, 11, 31);
-
-    if (newStartDate < yearStart) newStartDate = yearStart;
-    if (newStartDate > yearEnd) newStartDate = yearEnd;
-    if (newEndDate > yearEnd) newEndDate = yearEnd;
-    if (newEndDate < yearStart) newEndDate = yearStart;
-
-    // Ensure end date is not before start date
-    if (newEndDate < newStartDate) newEndDate = new Date(newStartDate);
-
-    // Format dates as YYYY-MM-DD
-    const formatDate = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    };
-
-    // Create updated item with new dates and potentially new ring
-    const updatedItem = {
-      ...this.dragState.draggedItem,
-      startDate: formatDate(newStartDate),
-      endDate: formatDate(newEndDate),
-    };
-
-    // If target ring changed (only in move mode), update ringId
-    if (
-      this.dragState.targetRing &&
-      this.dragState.targetRing.id !== this.dragState.draggedItem.ringId
-    ) {
-      updatedItem.ringId = this.dragState.targetRing.id;
-    }
-
-    // CRITICAL: Reset drag state BEFORE calling callback
-    // This ensures updateOrganizationData can call create() to redraw
-    this.dragState = {
-      isDragging: false,
-      dragMode: null,
-      draggedItem: null,
-      draggedItemRegion: null,
-      startMouseAngle: 0,
-      currentMouseAngle: 0,
-      initialStartAngle: 0,
-      initialEndAngle: 0,
-      previewStartAngle: 0,
-      previewEndAngle: 0,
-      targetRing: null,
-      targetRingInfo: null,
-    };
-
-    this.canvas.style.cursor = "default";
-
-    // CRITICAL: Suppress tooltip for 300ms after drag ends to prevent accidental activation
-    this.justFinishedDrag = true;
-    setTimeout(() => {
-      this.justFinishedDrag = false;
-    }, 300);
-
-    // CRITICAL: Invalidate cache to force fresh render with updated clickableItems
-    // This prevents stale hover states after drag ends
-    this.invalidateCache();
-
-    // Broadcast the drag operation to other users (real-time collaboration)
-    if (this.broadcastOperation) {
-      this.broadcastOperation('drag', updatedItem.id, {
-        startDate: updatedItem.startDate,
-        endDate: updatedItem.endDate,
-        ringId: updatedItem.ringId,
-      });
-    }
-
-    // Call update callback AFTER resetting drag state
-    if (this.options.onUpdateAktivitet) {
-      this.options.onUpdateAktivitet(updatedItem);
-    }
-  }
-
-  getMouseAngle(event) {
-    const rect = this.canvas.getBoundingClientRect();
-    // Convert screen coordinates to canvas coordinates accounting for scaling
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const canvasX = (event.clientX - rect.left) * scaleX;
-    const canvasY = (event.clientY - rect.top) * scaleY;
-    
-    // Calculate angle from center
-    const dx = canvasX - this.center.x;
-    const dy = canvasY - this.center.y;
-    return Math.atan2(dy, dx);
-  }
-
-  handleMouseMove(event) {
-    // Check if we have a pending drag that needs activation
-    if (this.dragState.isPending && !this.dragState.isDragging) {
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      const x = (event.clientX - rect.left) * scaleX;
-      const y = (event.clientY - rect.top) * scaleY;
-      
-      // Calculate movement distance
-      const dx = x - this.dragState.startX;
-      const dy = y - this.dragState.startY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      // Activate drag if moved more than 5 pixels
-      const DRAG_THRESHOLD = 5;
-      if (distance > DRAG_THRESHOLD) {
-        this.dragState.isDragging = true;
-        this.dragState.isPending = false;
-        
-        // Notify parent that drag has started (for undo/redo batch mode)
-        if (this.onDragStart) {
-          this.onDragStart();
-        }
-        
-        // Set cursor based on drag mode
-        if (this.dragState.dragMode === "resize-start" || this.dragState.dragMode === "resize-end") {
-          this.canvas.style.cursor = "ew-resize";
-        } else {
-          this.canvas.style.cursor = "grabbing";
-        }
-      }
-    }
-    
-    // Handle activity dragging
-    if (this.dragState.isDragging) {
-      this.dragActivity(event);
-      return;
-    }
-
-    // Handle wheel rotation dragging
-    if (this.isDragging) {
-      this.drag(event);
-      return;
-    }
-
-    // Skip hover detection entirely in selection mode (no need for hover feedback when selecting)
-    if (this.selectionMode) {
-      // Reset cursor to default in selection mode
-      if (this.canvas.style.cursor !== 'default') {
-        this.canvas.style.cursor = 'default';
-      }
-      return;
-    }
-
-    // Handle hover detection for activities (throttled to prevent excessive redraws)
-    const now = Date.now();
-    const timeSinceLastCheck = now - this.lastHoverCheck;
-
-    // Throttle hover checks to ~60fps max
-    if (timeSinceLastCheck < this.hoverThrottleMs) {
-      return; // Skip this hover check
-    }
-    this.lastHoverCheck = now;
-    
-    // CRITICAL: Skip hover detection if clickableItems is empty (being rebuilt)
-    // This prevents stale data from being used during the brief moment between
-    // organizationData update and create() rebuilding clickableItems
-    if (!this.clickableItems || this.clickableItems.length === 0) {
-      // Clear any existing hover state
-      if (this.hoveredItem) {
-        this.hoveredItem = null;
-        this.canvas.style.cursor = "default";
-      }
-      return;
-    }
-
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
-
-    let hoveredItemRegion = null;
-    let hoverZone = null;
-    for (const itemRegion of this.clickableItems) {
-      if (this.isPointInItemRegion(x, y, itemRegion)) {
-        hoveredItemRegion = itemRegion;
-        // Detect which zone we're hovering over
-        hoverZone = this.detectDragZone(x, y, itemRegion);
-        break;
-      }
-    }
-
-    // Only update if hover state actually changed
-    // CRITICAL: Always look up fresh item data from organizationData (single source of truth)
-    // clickableItems now stores only itemId, not the full object reference
-    let newHoveredItem = hoveredItemRegion
-      ? this.organizationData.items.find(
-          (i) => i.id === hoveredItemRegion.itemId
-        )
-      : null;
-    
-    // CRITICAL: Validate that the item still exists and matches the hovered region
-    // This prevents stale data from showing when organizationData updates but clickableItems hasn't rebuilt yet
-    if (newHoveredItem && hoveredItemRegion) {
-      // Verify the item's position matches the hovered region (basic sanity check)
-      // If item data doesn't roughly match the region, it's likely stale - skip hover
-      const itemStartDate = new Date(newHoveredItem.startDate);
-      const itemEndDate = new Date(newHoveredItem.endDate);
-      const itemYear = itemStartDate.getFullYear();
-      
-      // If item is from a different year than the wheel, skip it (cross-page pollution)
-      if (itemYear !== parseInt(this.year)) {
-        newHoveredItem = null;
-      }
-    }
-    
-    // CRITICAL: Don't show hover for clustered items (they need special handling)
-    // Clustered items have IDs like "week-2025-25-..." and isCluster flag
-    if (newHoveredItem && newHoveredItem.isCluster) {
-      newHoveredItem = null; // Skip hover display for clusters
-    }
-    const hoveredItemId = this.hoveredItem ? this.hoveredItem.id : null;
-    const newHoveredItemId = newHoveredItem ? newHoveredItem.id : null;
-
-    // Set cursor based on hover zone
-    let newCursor = "default";
-    if (newHoveredItem) {
-      if (hoverZone === "resize-start" || hoverZone === "resize-end") {
-        newCursor = "ew-resize"; // East-west resize cursor for edges
-      } else {
-        newCursor = "move"; // Move cursor for middle
-      }
-    }
-
-    if (
-      hoveredItemId !== newHoveredItemId ||
-      this.canvas.style.cursor !== newCursor
-    ) {
-      this.hoveredItem = newHoveredItem;
-      this.canvas.style.cursor = newCursor;
-
-      // Use requestAnimationFrame to prevent excessive redraws
-      if (!this.hoverRedrawPending) {
-        this.hoverRedrawPending = true;
-        requestAnimationFrame(() => {
-          this.create();
-          this.hoverRedrawPending = false;
-        });
-      }
-    }
-  }
-
-  handleMouseLeave() {
-    // Cancel activity drag if mouse leaves canvas
-    if (this.dragState.isDragging) {
-      this.dragState = {
-        isDragging: false,
-        dragMode: null,
-        draggedItem: null,
-        draggedItemRegion: null,
-        startMouseAngle: 0,
-        currentMouseAngle: 0,
-        initialStartAngle: 0,
-        initialEndAngle: 0,
-        previewStartAngle: 0,
-        previewEndAngle: 0,
-        targetRing: null,
-        targetRingInfo: null,
-      };
-      this.canvas.style.cursor = "default";
-      this.create(); // Redraw without preview
-    }
-
-    this.stopDrag();
-    if (this.hoveredItem) {
-      this.hoveredItem = null;
-      this.canvas.style.cursor = "default";
-      this.create(); // Redraw without hover state
-    }
-  }
-
-  handleClick(event) {
-    // CRITICAL: Suppress clicks immediately after drag ends to prevent tooltip activation
-    if (this.justFinishedDrag) return;
-    
-    // Clear pending drag state
-    if (this.dragState.isPending) {
-      this.dragState = {
-        isDragging: false,
-        isPending: false,
-        dragMode: null,
-        draggedItem: null,
-        draggedItemRegion: null,
-        startMouseAngle: 0,
-        currentMouseAngle: 0,
-        initialStartAngle: 0,
-        initialEndAngle: 0,
-        previewStartAngle: 0,
-        previewEndAngle: 0,
-        targetRing: null,
-        targetRingInfo: null,
-      };
-    }
-    
-    // Don't handle clicks if we were dragging
-    if (this.isDragging || this.dragState.isDragging) return;
-
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
-
-    // Check if click is on any item
-    for (const itemRegion of this.clickableItems) {
-      if (this.isPointInItemRegion(x, y, itemRegion)) {
-        if (this.options.onItemClick) {
-          // CRITICAL: Look up fresh item data from organizationData (single source of truth)
-          const freshItem = this.organizationData.items.find(
-            (i) => i.id === itemRegion.itemId
-          );
-          
-          // If item not found in current organizationData, skip (year filtered out)
-          if (!freshItem) {
-            break;
-          }
-          
-          // TODO: For clustered items, show a selection dialog
-          // For now, just trigger the click handler - the parent can handle clusters
-          
-          // Pass client coordinates for tooltip positioning
-          this.options.onItemClick(freshItem, {
-            x: event.clientX,
-            y: event.clientY,
-          });
-        }
-        break;
-      }
-    }
-  }
-
-  isPointInItemRegion(x, y, region) {
-    // Calculate distance from center
-    const dx = x - this.center.x;
-    const dy = y - this.center.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // Check if within radius range
-    if (distance < region.startRadius || distance > region.endRadius) {
-      return false;
-    }
-
-    // Calculate angle (accounting for rotation)
-    // this.rotationAngle is already in radians, no need to convert
-    let angle = Math.atan2(dy, dx) - this.rotationAngle;
-
-    // Normalize angle to 0-2π range
-    while (angle < 0) angle += Math.PI * 2;
-    while (angle >= Math.PI * 2) angle -= Math.PI * 2;
-
-    // Check if within angle range
-    let startAngle = region.startAngle;
-    let endAngle = region.endAngle;
-
-    // Normalize angles
-    while (startAngle < 0) startAngle += Math.PI * 2;
-    while (endAngle < 0) endAngle += Math.PI * 2;
-    while (startAngle >= Math.PI * 2) startAngle -= Math.PI * 2;
-    while (endAngle >= Math.PI * 2) endAngle -= Math.PI * 2;
-
-    // Handle wraparound
-    if (startAngle < endAngle) {
-      return angle >= startAngle && angle <= endAngle;
-    } else {
-      return angle >= startAngle || angle <= endAngle;
-    }
-  }
 
   create() {
     // Set canvas internal dimensions (for drawing resolution)
@@ -5111,15 +4446,27 @@ class YearWheel {
             const itemToRender = pendingData ? pendingData.item : item;
             
             if (pendingData) {
-              // Check if organizationData now has the updated version
-              // If dates and ring match, React state has been updated - safe to clear
-              if (item.startDate === pendingData.item.startDate && 
-                  item.endDate === pendingData.item.endDate &&
-                  item.ringId === pendingData.item.ringId) {
-                console.log('[OUTER RING] organizationData now matches pending update - clearing for item:', item.id);
+              const age = Date.now() - pendingData.timestamp;
+              
+              // DON'T check for matches in the first 300ms - give React time to update
+              if (age < 300) {
+                // Too soon - keep using pending update
+              } else if (age > 5000) {
+                // Waited 5 seconds - timeout, clear it
+                console.log('[OUTER RING] TIMEOUT - clearing stale update (age:', age, 'ms) for:', item.id);
                 this.pendingItemUpdates.delete(item.id);
               } else {
-                console.log('[OUTER RING] Using pending update for item:', item.id, '(organizationData still has old data)');
+                // 300ms-5000ms: check if organizationData has caught up
+                const datesMatch = item.startDate === pendingData.item.startDate && 
+                                  item.endDate === pendingData.item.endDate;
+                const ringMatches = item.ringId === pendingData.item.ringId;
+                
+                if (datesMatch && ringMatches) {
+                  // organizationData now has our changes - safe to clear
+                  console.log('[OUTER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
+                  this.pendingItemUpdates.delete(item.id);
+                }
+                // else: keep using pending update
               }
             }
 
@@ -5506,15 +4853,27 @@ class YearWheel {
           const itemToRender = pendingData ? pendingData.item : item;
           
           if (pendingData) {
-            // Check if organizationData now has the updated version
-            // If dates and ring match, React state has been updated - safe to clear
-            if (item.startDate === pendingData.item.startDate && 
-                item.endDate === pendingData.item.endDate &&
-                item.ringId === pendingData.item.ringId) {
-              console.log('[INNER RING] organizationData now matches pending update - clearing for item:', item.id);
+            const age = Date.now() - pendingData.timestamp;
+            
+            // DON'T check for matches in the first 300ms - give React time to update
+            if (age < 300) {
+              // Too soon - keep using pending update
+            } else if (age > 5000) {
+              // Waited 5 seconds - timeout, clear it
+              console.log('[INNER RING] TIMEOUT - clearing stale update (age:', age, 'ms) for:', item.id);
               this.pendingItemUpdates.delete(item.id);
             } else {
-              console.log('[INNER RING] Using pending update for item:', item.id, '(organizationData still has old data)');
+              // 300ms-5000ms: check if organizationData has caught up
+              const datesMatch = item.startDate === pendingData.item.startDate && 
+                                item.endDate === pendingData.item.endDate;
+              const ringMatches = item.ringId === pendingData.item.ringId;
+              
+              if (datesMatch && ringMatches) {
+                // organizationData now has our changes - safe to clear
+                console.log('[INNER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
+                this.pendingItemUpdates.delete(item.id);
+              }
+              // else: keep using pending update
             }
           }
 

@@ -354,6 +354,11 @@ class InteractionHandler {
       return;
     }
 
+    // Clustered items require special handling and cannot be dragged directly
+    if (freshItem.isCluster) {
+      return;
+    }
+
     // Calculate screen angles
     const dx = x - this.wheel.center.x;
     const dy = y - this.wheel.center.y;
@@ -378,6 +383,10 @@ class InteractionHandler {
       targetRingInfo: null,
     };
 
+    if (this.wheel.updateDragStateFromHandler) {
+      this.wheel.updateDragStateFromHandler(this.dragState);
+    }
+
     // Notify parent
     if (this.wheel.onDragStart) {
       this.wheel.onDragStart();
@@ -388,6 +397,14 @@ class InteractionHandler {
       this.canvas.style.cursor = 'ew-resize';
     } else {
       this.canvas.style.cursor = 'grabbing';
+    }
+
+    if (this.wheel.updateDragStateFromHandler) {
+      this.wheel.updateDragStateFromHandler(this.dragState);
+    }
+
+    if (this.wheel.updateDragStateFromHandler) {
+      this.wheel.updateDragStateFromHandler(this.dragState);
     }
 
     // Trigger redraw
@@ -531,8 +548,13 @@ class InteractionHandler {
         targetRing: null,
         targetRingInfo: null,
       };
+      if (this.wheel.updateDragStateFromHandler) {
+        this.wheel.updateDragStateFromHandler(this.dragState);
+      }
       this.wheel.canvas.style.cursor = 'default';
-      this.wheel.create();
+      if (this.wheel.create) {
+        this.wheel.create();
+      }
       return;
     }
     
@@ -553,22 +575,41 @@ class InteractionHandler {
       ...updates
     };
 
-    // OPTIMISTIC UPDATE: Store pending update so canvas uses new position immediately
-    // This prevents phantom rendering at old position while waiting for React state update
-    console.log('[InteractionHandler] Setting pending update for item:', updatedItem.id);
-    console.log('[InteractionHandler] pendingItemUpdates before:', this.wheel.pendingItemUpdates.size);
-    this.wheel.pendingItemUpdates.set(updatedItem.id, { item: updatedItem, renderCount: 0 });
-    console.log('[InteractionHandler] pendingItemUpdates after:', this.wheel.pendingItemUpdates.size);
-    
-    // NOTE: We DON'T clear clickableItems here anymore
-    // The rendering will use pending updates and rebuild clickableItems with correct positions
+    const existing = this.wheel.pendingItemUpdates.get(updatedItem.id);
+    const isDuplicate =
+      existing &&
+      existing.item.startDate === updatedItem.startDate &&
+      existing.item.endDate === updatedItem.endDate &&
+      existing.item.ringId === updatedItem.ringId;
 
-    // Notify parent of changes
-    if (this.wheel.options?.onUpdateAktivitet) {
-      this.wheel.options.onUpdateAktivitet(updatedItem);
+    if (!isDuplicate) {
+      this.wheel.pendingItemUpdates.set(updatedItem.id, {
+        item: updatedItem,
+        timestamp: Date.now()
+      });
+
+      if (this.wheel.invalidateCache) {
+        this.wheel.invalidateCache();
+      }
+
+      if (this.wheel.broadcastOperation) {
+        this.wheel.broadcastOperation('drag', updatedItem.id, {
+          startDate: updatedItem.startDate,
+          endDate: updatedItem.endDate,
+          ringId: updatedItem.ringId,
+        });
+      }
+
+      if (this.wheel.options?.onUpdateAktivitet) {
+        this.wheel.options.onUpdateAktivitet(updatedItem);
+      }
     }
 
-    // Reset drag state
+    this.wheel.justFinishedDrag = true;
+    setTimeout(() => {
+      this.wheel.justFinishedDrag = false;
+    }, 300);
+
     this.dragState = {
       isDragging: false,
       dragMode: null,
@@ -584,10 +625,14 @@ class InteractionHandler {
       targetRingInfo: null,
     };
 
-    // Reset cursor
-    this.canvas.style.cursor = 'default';
+    if (this.wheel.updateDragStateFromHandler) {
+      this.wheel.updateDragStateFromHandler(this.dragState);
+    }
 
-    // Trigger redraw
+    this.canvas.style.cursor = 'default';
+    this.hoveredItem = null;
+    this.wheel.hoveredItem = null;
+
     if (this.wheel.create) {
       this.wheel.create();
     }
@@ -624,6 +669,10 @@ class InteractionHandler {
     this.wheel.rotationAngle += angleDifference;
     this.lastMouseAngle = currentMouseAngle;
 
+    if (this.wheel.onRotationChange) {
+      this.wheel.onRotationChange(this.wheel.rotationAngle);
+    }
+
     // Trigger redraw
     if (this.wheel.create) {
       this.wheel.create();
@@ -638,6 +687,10 @@ class InteractionHandler {
 
     this.isRotating = false;
     this.canvas.style.cursor = 'default';
+
+    if (this.wheel.onRotationChange) {
+      this.wheel.onRotationChange(this.wheel.rotationAngle);
+    }
   }
 
   // ============================================================================
@@ -683,6 +736,24 @@ class InteractionHandler {
       return;
     }
 
+    if (this.options.selectionMode) {
+      if (this.hoveredItem || this.wheel.hoveredItem) {
+        this.hoveredItem = null;
+        this.wheel.hoveredItem = null;
+        if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+          this.wheel.hoverRedrawPending = true;
+          requestAnimationFrame(() => {
+            if (this.wheel.create) this.wheel.create();
+            this.wheel.hoverRedrawPending = false;
+          });
+        }
+      }
+      if (this.canvas.style.cursor !== 'default') {
+        this.canvas.style.cursor = 'default';
+      }
+      return;
+    }
+
     // Handle hover (throttled)
     const now = Date.now();
     if (now - this.lastHoverCheck < this.hoverThrottleMs) {
@@ -694,39 +765,72 @@ class InteractionHandler {
     let newHoveredItem = null;
     let hoverZone = null;
 
-    if (this.wheel.clickableItems) {
-      for (const itemRegion of this.wheel.clickableItems) {
-        if (this.isPointInItemRegion(x, y, itemRegion)) {
-          // CRITICAL: Look up fresh item data - check pending updates first, then organizationData
-          // This prevents hover from using stale position after drag (optimistic update)
-          const itemFromData = this.wheel.organizationData.items.find(
-            i => i.id === itemRegion.itemId
-          );
-          newHoveredItem = this.wheel.pendingItemUpdates.get(itemRegion.itemId) || itemFromData;
-          hoverZone = this.detectDragZone(x, y, itemRegion);
-          break;
+    const clickableItems = this.wheel.clickableItems;
+    if (!clickableItems || clickableItems.length === 0) {
+      if (this.hoveredItem || this.wheel.hoveredItem) {
+        this.hoveredItem = null;
+        this.wheel.hoveredItem = null;
+        if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+          this.wheel.hoverRedrawPending = true;
+          requestAnimationFrame(() => {
+            if (this.wheel.create) this.wheel.create();
+            this.wheel.hoverRedrawPending = false;
+          });
         }
+      }
+      if (this.canvas.style.cursor !== 'default') {
+        this.canvas.style.cursor = 'default';
+      }
+      return;
+    }
+
+    for (const itemRegion of clickableItems) {
+      if (this.isPointInItemRegion(x, y, itemRegion)) {
+        const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
+        const itemFromData = this.wheel.organizationData.items.find(
+          (i) => i.id === itemRegion.itemId
+        );
+        const resolvedItem = pendingEntry ? pendingEntry.item : itemFromData;
+
+        if (resolvedItem) {
+          const startYear = new Date(resolvedItem.startDate).getFullYear();
+          const inViewYear = startYear === parseInt(this.wheel.year, 10);
+          const zoomActive = this.wheel.zoomedMonth !== null || this.wheel.zoomedQuarter !== null;
+
+          if ((zoomActive || inViewYear) && !resolvedItem.isCluster) {
+            newHoveredItem = resolvedItem;
+            hoverZone = this.detectDragZone(x, y, itemRegion);
+          }
+        }
+
+        break;
       }
     }
 
-    // Update cursor based on hover zone
-    if (hoverZone === 'resize-start' || hoverZone === 'resize-end') {
-      this.canvas.style.cursor = 'ew-resize';
-    } else if (hoverZone === 'move') {
-      this.canvas.style.cursor = 'grab';
-    } else {
-      this.canvas.style.cursor = 'default';
+    let newCursor = 'default';
+    if (newHoveredItem) {
+      if (hoverZone === 'resize-start' || hoverZone === 'resize-end') {
+        newCursor = 'ew-resize';
+      } else {
+        newCursor = 'grab';
+      }
     }
 
-    // Update hovered item if changed
-    if (newHoveredItem?.id !== this.hoveredItem?.id) {
+    if (this.canvas.style.cursor !== newCursor) {
+      this.canvas.style.cursor = newCursor;
+    }
+
+    const prevId = this.hoveredItem ? this.hoveredItem.id : null;
+    const nextId = newHoveredItem ? newHoveredItem.id : null;
+
+    if (prevId !== nextId) {
       this.hoveredItem = newHoveredItem;
-      
+      this.wheel.hoveredItem = newHoveredItem;
+
       if (this.wheel.onHoverChange) {
         this.wheel.onHoverChange(newHoveredItem);
       }
 
-      // Trigger redraw with throttling
       if (this.wheel.create && !this.wheel.hoverRedrawPending) {
         this.wheel.hoverRedrawPending = true;
         requestAnimationFrame(() => {
@@ -758,9 +862,29 @@ class InteractionHandler {
     }
 
     this.canvas.style.cursor = 'default';
+
+    if (this.hoveredItem || this.wheel.hoveredItem) {
+      this.hoveredItem = null;
+      this.wheel.hoveredItem = null;
+      if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+        this.wheel.hoverRedrawPending = true;
+        requestAnimationFrame(() => {
+          if (this.wheel.create) this.wheel.create();
+          this.wheel.hoverRedrawPending = false;
+        });
+      }
+    }
   }
 
   handleClick(event) {
+    if (this.wheel.justFinishedDrag) {
+      return;
+    }
+
+    if (this.dragState.isDragging || this.isRotating) {
+      return;
+    }
+
     // Handle click events (for item selection, etc.)
     if (this.options.onItemClick) {
       const { x, y } = this.getCanvasCoordinates(event);
@@ -769,9 +893,11 @@ class InteractionHandler {
         for (const itemRegion of this.wheel.clickableItems) {
           if (this.isPointInItemRegion(x, y, itemRegion)) {
             // CRITICAL: Look up fresh item data from organizationData (single source of truth)
-            const freshItem = this.wheel.organizationData.items.find(
-              i => i.id === itemRegion.itemId
+            const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
+            const freshItemFromData = this.wheel.organizationData.items.find(
+              (i) => i.id === itemRegion.itemId
             );
+            const freshItem = pendingEntry ? pendingEntry.item : freshItemFromData;
             
             // If item not found in current organizationData, skip (year filtered out)
             if (freshItem) {
@@ -826,9 +952,13 @@ class InteractionHandler {
       targetRing: null,
       targetRingInfo: null,
     };
+    if (this.wheel.updateDragStateFromHandler) {
+      this.wheel.updateDragStateFromHandler(this.dragState);
+    }
     
     this.isRotating = false;
     this.hoveredItem = null;
+    this.wheel.hoveredItem = null;
     this.canvas.style.cursor = 'default';
   }
 
