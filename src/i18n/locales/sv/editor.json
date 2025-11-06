@@ -307,6 +307,7 @@
     "deleteTitle": "Radera version?",
     "deleteConfirm": "Radera version {{number}}? Detta går inte att ångra.",
     "restored": "Version {{number}} återställd!",
+  "restoringInProgress": "Återställer version...",
     "deleted": "Version raderad",
     "restoreError": "Kunde inte återställa version",
     "deleteError": "Kunde inte radera version",

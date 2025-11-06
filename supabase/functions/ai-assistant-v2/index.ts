@@ -53,7 +53,11 @@ const CreateActivityInput = z.object({
 
 const CreateRingInput = z.object({
   name: z.string().describe('Ring name'),
-  type: z.enum(['inner', 'outer']).describe('Ring type - outer for activities, inner for text'),
+  type: z.enum(['inner', 'outer']).describe(
+    'Ring type. BOTH inner and outer rings kan innehålla aktiviteter. ' +
+    'Rekommendation: använd "outer" för mindre/externa händelser (helgdagar, lov, säsonger, terminer). ' +
+    'Använd "inner" för huvudspår, strategiska aktiviteter eller textbaserad planering.'
+  ),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).nullable().describe('Hex color code (defaults to #408cfb)'),
 })
 
@@ -215,12 +219,21 @@ async function createActivity(
       
       console.log(`[createActivity] Copying structure from page ${referencePage.year} to new page ${year}`)
       
+      const { data: nextOrder, error: orderError } = await supabase
+        .rpc('get_next_page_order', { p_wheel_id: wheelId })
+
+      if (orderError) {
+        console.error(`[createActivity] Error fetching page order for year ${year}:`, orderError)
+        throw new Error(`Kunde inte hämta sidordning för år ${year}`)
+      }
+
       const { data: newPage, error: pageError } = await supabase
         .from('wheel_pages')
         .insert({
           wheel_id: wheelId,
           year: year,
           title: `${year}`,
+          page_order: nextOrder ?? pages.length,
           organization_data: organizationData
         })
         .select()
@@ -231,11 +244,23 @@ async function createActivity(
         throw new Error(`Kunde inte skapa sida för år ${year}. Skapa sidan manuellt först, eller välj ett annat datumintervall.`)
       }
       pages.push(newPage)
+      // Update in-memory context so subsequent tool calls know about the page
+      const normalizedPages = ctx.context.allPages || []
+      if (!normalizedPages.some((p: any) => p.id === newPage.id)) {
+        normalizedPages.push({
+          id: newPage.id,
+          year: newPage.year,
+          title: newPage.title,
+          page_order: newPage.page_order,
+        })
+        ctx.context.allPages = normalizedPages
+      }
       console.log(`[createActivity] Successfully created page for year ${year} with copied structure`)
     }
   }
 
   const itemsCreated = []
+  const itemsByPage = new Map<string, any[]>()
 
   if (startYear === endYear) {
     // Single year activity
@@ -259,6 +284,9 @@ async function createActivity(
 
     if (insertError) throw insertError
     itemsCreated.push(newItem)
+    const byPage = itemsByPage.get(page.id) || []
+    byPage.push(mapDbItemToOrgItem(newItem))
+    itemsByPage.set(page.id, byPage)
   } else {
     // Cross-year activity - split into segments
     for (let year = startYear; year <= endYear; year++) {
@@ -285,7 +313,28 @@ async function createActivity(
 
       if (insertError) throw insertError
       itemsCreated.push(newItem)
+      const byPage = itemsByPage.get(page.id) || []
+      byPage.push(mapDbItemToOrgItem(newItem))
+      itemsByPage.set(page.id, byPage)
     }
+  }
+
+  // Update organization_data JSONB so frontend + agent context stay in sync
+  for (const [pageId, newItems] of itemsByPage.entries()) {
+    await updatePageOrganizationData(supabase, pageId, (orgData) => {
+      let changed = false
+      newItems.forEach((item) => {
+        const existingIndex = orgData.items.findIndex((existing: any) => existing.id === item.id)
+        if (existingIndex !== -1) {
+          orgData.items[existingIndex] = item
+          changed = true
+        } else {
+          orgData.items.push(item)
+          changed = true
+        }
+      })
+      return changed
+    })
   }
 
   console.log(`[createActivity ${callId}] Successfully created ${itemsCreated.length} item(s)`)
@@ -311,12 +360,67 @@ async function createRing(
   // Check if ring exists (wheel scoped - migration 015 reverted to wheel scope)
   const { data: existingByName } = await supabase
     .from('wheel_rings')
-    .select('id, name')
+    .select('id, name, type, color, visible, orientation')
     .eq('wheel_id', wheelId)
     .ilike('name', args.name)
     .maybeSingle()
 
   if (existingByName) {
+    // Ensure organization_data JSON includes the ring with latest metadata
+    await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+      const current = orgData.rings.find((r: any) => r.id === existingByName.id)
+      const visible = existingByName.visible !== false
+      const colorToUse = existingByName.type === 'outer'
+        ? existingByName.color || finalColor
+        : undefined
+
+      if (current) {
+        let changed = false
+        if (current.name !== existingByName.name) {
+          current.name = existingByName.name
+          changed = true
+        }
+        if (existingByName.type === 'outer') {
+          if (current.color !== colorToUse) {
+            current.color = colorToUse
+            changed = true
+          }
+        } else {
+          const orientation = existingByName.orientation || current.orientation || 'vertical'
+          if (current.orientation !== orientation) {
+            current.orientation = orientation
+            changed = true
+          }
+          if (!Array.isArray(current.data)) {
+            current.data = cloneInnerRingData(current.data)
+            changed = true
+          }
+        }
+        if (current.visible !== visible) {
+          current.visible = visible
+          changed = true
+        }
+        return changed
+      }
+
+      const newEntry: any = {
+        id: existingByName.id,
+        name: existingByName.name,
+        type: existingByName.type,
+        visible,
+      }
+
+      if (existingByName.type === 'outer') {
+        newEntry.color = colorToUse
+      } else {
+        newEntry.orientation = existingByName.orientation || 'vertical'
+        newEntry.data = cloneInnerRingData([])
+      }
+
+      orgData.rings.push(newEntry)
+      return true
+    })
+
     return {
       success: true,
       message: `Ring "${args.name}" finns redan`,
@@ -354,9 +458,32 @@ async function createRing(
 
   if (error) throw new Error(`Kunde inte skapa ring: ${error.message}`)
 
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    if (orgData.rings.some((r: any) => r.id === ring.id)) {
+      return false
+    }
+
+    const entry: any = {
+      id: ring.id,
+      name: ring.name,
+      type: ring.type,
+      visible: ring.visible !== false,
+    }
+
+    if (ring.type === 'outer') {
+      entry.color = ring.color || finalColor
+    } else {
+      entry.orientation = ring.orientation || 'vertical'
+      entry.data = cloneInnerRingData([])
+    }
+
+    orgData.rings.push(entry)
+    return true
+  })
+
   return {
-    success: true,
-    message: `Ring "${args.name}" skapad (typ: ${args.type === 'outer' ? 'yttre (aktiviteter)' : 'inre (text)'}, färg: ${finalColor})`,
+  success: true,
+  message: `Ring "${args.name}" skapad (typ: ${args.type === 'outer' ? 'outer – extern händelselager' : 'inner – huvudspår/strategi'}, färg: ${finalColor})`,
     ringId: ring.id,
     ringName: ring.name,
   }
@@ -370,12 +497,43 @@ async function createGroup(
   // Check if group exists (wheel scoped - migration 015 reverted to wheel scope)
   const { data: existing } = await supabase
     .from('activity_groups')
-    .select('id, name')
+    .select('id, name, color, visible')
     .eq('wheel_id', wheelId)
     .ilike('name', args.name)
     .maybeSingle()
 
   if (existing) {
+    await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+      const current = orgData.activityGroups.find((g: any) => g.id === existing.id)
+      const normalizedColor = existing.color || args.color
+      const visible = existing.visible !== false
+
+      if (current) {
+        let changed = false
+        if (current.name !== existing.name) {
+          current.name = existing.name
+          changed = true
+        }
+        if (normalizedColor && current.color !== normalizedColor) {
+          current.color = normalizedColor
+          changed = true
+        }
+        if (current.visible !== visible) {
+          current.visible = visible
+          changed = true
+        }
+        return changed
+      }
+
+      orgData.activityGroups.push({
+        id: existing.id,
+        name: existing.name,
+        color: normalizedColor || args.color,
+        visible,
+      })
+      return true
+    })
+
     return {
       success: true,
       message: `Aktivitetsgrupp "${args.name}" finns redan`,
@@ -398,6 +556,20 @@ async function createGroup(
 
   if (error) throw new Error(`Kunde inte skapa aktivitetsgrupp: ${error.message}`)
 
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    if (orgData.activityGroups.some((g: any) => g.id === group.id)) {
+      return false
+    }
+
+    orgData.activityGroups.push({
+      id: group.id,
+      name: group.name,
+      color: group.color || args.color,
+      visible: group.visible !== false,
+    })
+    return true
+  })
+
   return {
     success: true,
     message: `Aktivitetsgrupp "${args.name}" skapad med färg ${args.color}`,
@@ -414,7 +586,7 @@ async function updateRing(
 ) {
   const { data: ring, error: findError } = await supabase
     .from('wheel_rings')
-    .select('id, name')
+    .select('id, name, type, color, visible, orientation')
     .eq('wheel_id', wheelId)
     .ilike('name', `%${ringName}%`)
     .maybeSingle()
@@ -431,12 +603,72 @@ async function updateRing(
   if (updates.newName) updateData.name = updates.newName
   if (updates.newColor) updateData.color = updates.newColor
 
-  const { error: updateError } = await supabase
-    .from('wheel_rings')
-    .update(updateData)
-    .eq('id', ring.id)
+  let updatedRing = ring
 
-  if (updateError) throw updateError
+  if (Object.keys(updateData).length > 0) {
+    const { data: updated, error: updateError } = await supabase
+      .from('wheel_rings')
+      .update(updateData)
+      .eq('id', ring.id)
+      .select('id, name, type, color, visible, orientation')
+      .single()
+
+    if (updateError) throw updateError
+    updatedRing = updated
+  }
+
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    const current = orgData.rings.find((r: any) => r.id === updatedRing.id)
+    const visible = updatedRing.visible !== false
+    const targetColor = updatedRing.type === 'outer'
+      ? updatedRing.color || updates.newColor || ring.color
+      : undefined
+
+    if (current) {
+      let changed = false
+      if (current.name !== updatedRing.name) {
+        current.name = updatedRing.name
+        changed = true
+      }
+      if (current.visible !== visible) {
+        current.visible = visible
+        changed = true
+      }
+      if (updatedRing.type === 'outer' && targetColor && current.color !== targetColor) {
+        current.color = targetColor
+        changed = true
+      }
+      if (updatedRing.type === 'inner') {
+        const orientation = updatedRing.orientation || current.orientation || 'vertical'
+        if (current.orientation !== orientation) {
+          current.orientation = orientation
+          changed = true
+        }
+        if (!Array.isArray(current.data)) {
+          current.data = cloneInnerRingData(current.data)
+          changed = true
+        }
+      }
+      return changed
+    }
+
+    const entry: any = {
+      id: updatedRing.id,
+      name: updatedRing.name,
+      type: updatedRing.type,
+      visible,
+    }
+
+    if (updatedRing.type === 'outer') {
+      entry.color = targetColor || '#408cfb'
+    } else {
+      entry.orientation = updatedRing.orientation || 'vertical'
+      entry.data = cloneInnerRingData([])
+    }
+
+    orgData.rings.push(entry)
+    return true
+  })
 
   return {
     success: true,
@@ -480,6 +712,15 @@ async function deleteRing(supabase: any, wheelId: string, ringName: string) {
 
   if (deleteError) throw deleteError
 
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    const index = orgData.rings.findIndex((r: any) => r.id === ring.id)
+    if (index === -1) {
+      return false
+    }
+    orgData.rings.splice(index, 1)
+    return true
+  })
+
   return {
     success: true,
     message: `Ring "${ringName}" har tagits bort`
@@ -494,7 +735,7 @@ async function updateGroup(
 ) {
   const { data: group, error: findError } = await supabase
     .from('activity_groups')
-    .select('id, name')
+    .select('id, name, color, visible')
     .eq('wheel_id', wheelId)
     .ilike('name', `%${groupName}%`)
     .maybeSingle()
@@ -511,12 +752,50 @@ async function updateGroup(
   if (updates.newName) updateData.name = updates.newName
   if (updates.newColor) updateData.color = updates.newColor
 
-  const { error: updateError } = await supabase
-    .from('activity_groups')
-    .update(updateData)
-    .eq('id', group.id)
+  let updatedGroup = group
 
-  if (updateError) throw updateError
+  if (Object.keys(updateData).length > 0) {
+    const { data: updated, error: updateError } = await supabase
+      .from('activity_groups')
+      .update(updateData)
+      .eq('id', group.id)
+      .select('id, name, color, visible')
+      .single()
+
+    if (updateError) throw updateError
+    updatedGroup = updated
+  }
+
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    const current = orgData.activityGroups.find((g: any) => g.id === updatedGroup.id)
+    const normalizedColor = updatedGroup.color || updates.newColor || group.color || '#3B82F6'
+    const visible = updatedGroup.visible !== false
+
+    if (current) {
+      let changed = false
+      if (current.name !== updatedGroup.name) {
+        current.name = updatedGroup.name
+        changed = true
+      }
+      if (current.color !== normalizedColor) {
+        current.color = normalizedColor
+        changed = true
+      }
+      if (current.visible !== visible) {
+        current.visible = visible
+        changed = true
+      }
+      return changed
+    }
+
+    orgData.activityGroups.push({
+      id: updatedGroup.id,
+      name: updatedGroup.name,
+      color: normalizedColor,
+      visible,
+    })
+    return true
+  })
 
   return {
     success: true,
@@ -560,6 +839,15 @@ async function deleteGroup(supabase: any, wheelId: string, groupName: string) {
 
   if (deleteError) throw deleteError
 
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    const index = orgData.activityGroups.findIndex((g: any) => g.id === group.id)
+    if (index === -1) {
+      return false
+    }
+    orgData.activityGroups.splice(index, 1)
+    return true
+  })
+
   return {
     success: true,
     message: `Aktivitetsgrupp "${groupName}" har tagits bort`
@@ -574,12 +862,43 @@ async function createLabel(
   // Check if label exists
   const { data: existing } = await supabase
     .from('labels')
-    .select('id, name')
+    .select('id, name, color, visible')
     .eq('wheel_id', wheelId)
     .ilike('name', args.name)
     .maybeSingle()
 
   if (existing) {
+    await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+      const current = orgData.labels.find((l: any) => l.id === existing.id)
+      const normalizedColor = existing.color || args.color
+      const visible = existing.visible !== false
+
+      if (current) {
+        let changed = false
+        if (current.name !== existing.name) {
+          current.name = existing.name
+          changed = true
+        }
+        if (normalizedColor && current.color !== normalizedColor) {
+          current.color = normalizedColor
+          changed = true
+        }
+        if (current.visible !== visible) {
+          current.visible = visible
+          changed = true
+        }
+        return changed
+      }
+
+      orgData.labels.push({
+        id: existing.id,
+        name: existing.name,
+        color: normalizedColor || args.color,
+        visible,
+      })
+      return true
+    })
+
     return {
       success: true,
       message: `Label "${args.name}" finns redan`,
@@ -602,6 +921,20 @@ async function createLabel(
 
   if (error) throw new Error(`Kunde inte skapa label: ${error.message}`)
 
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    if (orgData.labels.some((l: any) => l.id === label.id)) {
+      return false
+    }
+
+    orgData.labels.push({
+      id: label.id,
+      name: label.name,
+      color: label.color || args.color,
+      visible: label.visible !== false,
+    })
+    return true
+  })
+
   return {
     success: true,
     message: `Label "${args.name}" skapad med färg ${args.color}`,
@@ -618,7 +951,7 @@ async function updateLabel(
 ) {
   const { data: label, error: findError } = await supabase
     .from('labels')
-    .select('id, name')
+    .select('id, name, color, visible')
     .eq('wheel_id', wheelId)
     .ilike('name', `%${labelName}%`)
     .maybeSingle()
@@ -635,12 +968,50 @@ async function updateLabel(
   if (updates.newName) updateData.name = updates.newName
   if (updates.newColor) updateData.color = updates.newColor
 
-  const { error: updateError } = await supabase
-    .from('labels')
-    .update(updateData)
-    .eq('id', label.id)
+  let updatedLabel = label
 
-  if (updateError) throw updateError
+  if (Object.keys(updateData).length > 0) {
+    const { data: updated, error: updateError } = await supabase
+      .from('labels')
+      .update(updateData)
+      .eq('id', label.id)
+      .select('id, name, color, visible')
+      .single()
+
+    if (updateError) throw updateError
+    updatedLabel = updated
+  }
+
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    const current = orgData.labels.find((l: any) => l.id === updatedLabel.id)
+    const normalizedColor = updatedLabel.color || updates.newColor || label.color || '#3B82F6'
+    const visible = updatedLabel.visible !== false
+
+    if (current) {
+      let changed = false
+      if (current.name !== updatedLabel.name) {
+        current.name = updatedLabel.name
+        changed = true
+      }
+      if (current.color !== normalizedColor) {
+        current.color = normalizedColor
+        changed = true
+      }
+      if (current.visible !== visible) {
+        current.visible = visible
+        changed = true
+      }
+      return changed
+    }
+
+    orgData.labels.push({
+      id: updatedLabel.id,
+      name: updatedLabel.name,
+      color: normalizedColor,
+      visible,
+    })
+    return true
+  })
 
   return {
     success: true,
@@ -672,6 +1043,15 @@ async function deleteLabel(supabase: any, wheelId: string, labelName: string) {
 
   if (deleteError) throw deleteError
 
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    const index = orgData.labels.findIndex((l: any) => l.id === label.id)
+    if (index === -1) {
+      return false
+    }
+    orgData.labels.splice(index, 1)
+    return true
+  })
+
   return {
     success: true,
     message: `Label "${labelName}" har tagits bort`
@@ -694,18 +1074,19 @@ async function suggestWheelStructure(
   const systemPrompt = `You are an expert in annual planning and organizational structure design. Your task is to suggest a Year Wheel structure based on the user's domain or use case.
 
 A Year Wheel consists of:
-1. **Rings** - Horizontal bands that categorize activities (e.g., "Marketing", "Sales", "HR")
-   - "outer" type: For main activity categories (most common)
-   - "inner" type: For supporting information or detailed breakdowns
+1. **Rings** - Horisontella band som organiserar aktiviteter (t.ex. "Marknadsföring", "HR", "Projekt")
+  - BOTH ring types can contain activities – skillnaden är visuell och konceptuell
+  - **"outer" ringar**: Rekommenderas för mindre eller externa händelser såsom helgdagar, lov, säsonger, terminer och externa milstolpar
+  - **"inner" ringar**: Rekommenderas för huvudspår, strategiska initiativ, projektfaser eller textbaserad planering
    
 2. **Activity Groups** - Color-coded categories that help organize activities within rings (e.g., "Campaign", "Event", "Training")
 
 3. **Activities** - Individual tasks/events placed on specific rings with start/end dates
 
 BEST PRACTICES:
-- Use 3-6 rings for clarity (too many = cluttered, too few = not useful)
-- Outer rings should represent major functional areas or themes
-- Inner rings can be used for subtasks, notes, or supporting information
+- Use 3-6 rings for tydlighet (för många = rörigt, för få = inte användbart)
+- Outer ringar fungerar bäst som kontextlager (helgdagar, externa kampanjer, terminer)
+- Inner ringar håller huvudspåren (team, projekt, strategier) eller detaljerad text
 - Activity groups should be distinct and meaningful color categories
 - Colors should be visually distinguishable and professional
 - Think about natural workflows and annual cycles
@@ -807,12 +1188,39 @@ async function updateActivity(
     if (updates.newActivityGroupId) updateData.activity_id = updates.newActivityGroupId
 
     const itemIds = items.map((i: any) => i.id)
-    const { error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await supabase
       .from('items')
       .update(updateData)
       .in('id', itemIds)
+      .select('*')
 
     if (updateError) throw updateError
+
+    if (updatedRows && updatedRows.length > 0) {
+      const updatesByPage = new Map<string, any[]>()
+      updatedRows.forEach((row: any) => {
+        if (!row.page_id) return
+        const list = updatesByPage.get(row.page_id) || []
+        list.push(mapDbItemToOrgItem(row))
+        updatesByPage.set(row.page_id, list)
+      })
+
+      for (const [pageId, updateItems] of updatesByPage.entries()) {
+        await updatePageOrganizationData(supabase, pageId, (orgData) => {
+          let changed = false
+          updateItems.forEach((item) => {
+            const index = orgData.items.findIndex((existing: any) => existing.id === item.id)
+            if (index !== -1) {
+              const existing = orgData.items[index]
+              // Update relevant fields while preserving optional metadata
+              orgData.items[index] = { ...existing, ...item }
+              changed = true
+            }
+          })
+          return changed
+        })
+      }
+    }
 
     let message = `Uppdaterade ${items.length} objekt för "${activityName}"`
     if (updates.newName) message += ` → nytt namn: "${updates.newName}"`
@@ -830,6 +1238,14 @@ async function updateActivity(
   const oldEndDate = firstItem.end_date
   const newStartDate = updates.newStartDate || oldStartDate
   const newEndDate = updates.newEndDate || oldEndDate
+
+  const itemsByPageToRemove = new Map<string, string[]>()
+  items.forEach((item: any) => {
+    if (!item.page_id) return
+    const list = itemsByPageToRemove.get(item.page_id) || []
+    list.push(item.id)
+    itemsByPageToRemove.set(item.page_id, list)
+  })
   
   const newStartYear = new Date(newStartDate).getFullYear()
   const newEndYear = new Date(newEndDate).getFullYear()
@@ -854,12 +1270,30 @@ async function updateActivity(
   for (let year = newStartYear; year <= newEndYear; year++) {
     const pageExists = allPages.find((p: { year: number }) => p.year === year)
     if (!pageExists) {
+      const referencePage = allPages[0]
+      const referenceOrgData = referencePage?.organization_data || {}
+      const organizationData = {
+        rings: referenceOrgData.rings || [],
+        activityGroups: referenceOrgData.activityGroups || referenceOrgData.activities || [],
+        labels: referenceOrgData.labels || [],
+        items: [],
+      }
+
+      const { data: nextOrder, error: orderError } = await supabase
+        .rpc('get_next_page_order', { p_wheel_id: wheelId })
+
+      if (orderError) {
+        throw new Error(`Kunde inte hämta sidordning för år ${year}: ${orderError.message}`)
+      }
+
       const { data: newPage, error: pageError } = await supabase
         .from('wheel_pages')
         .insert({
           wheel_id: wheelId,
           year: year,
-          organization_data: { rings: [], activityGroups: [], labels: [], items: [] }
+          title: `${year}`,
+          page_order: nextOrder ?? allPages.length,
+          organization_data: organizationData
         })
         .select()
         .single()
@@ -868,6 +1302,17 @@ async function updateActivity(
         throw new Error(`Kunde inte skapa sida för år ${year}: ${pageError.message}`)
       }
       allPages.push(newPage)
+
+      const normalizedPages = ctx.context.allPages || []
+      if (!normalizedPages.some((p: any) => p.id === newPage.id)) {
+        normalizedPages.push({
+          id: newPage.id,
+          year: newPage.year,
+          title: newPage.title,
+          page_order: newPage.page_order,
+        })
+        ctx.context.allPages = normalizedPages
+      }
     }
   }
 
@@ -880,8 +1325,17 @@ async function updateActivity(
 
   if (deleteError) throw deleteError
 
+  for (const [pageId, ids] of itemsByPageToRemove.entries()) {
+    await updatePageOrganizationData(supabase, pageId, (orgData) => {
+      const before = orgData.items.length
+      orgData.items = orgData.items.filter((item: any) => !ids.includes(item.id))
+      return orgData.items.length !== before
+    })
+  }
+
   // Create new items across the new date range
   const itemsCreated = []
+  const newItemsByPage = new Map<string, any[]>()
 
   if (newStartYear === newEndYear) {
     // Single year activity
@@ -905,6 +1359,9 @@ async function updateActivity(
 
     if (insertError) throw insertError
     itemsCreated.push(newItem)
+    const list = newItemsByPage.get(page.id) || []
+    list.push(mapDbItemToOrgItem(newItem))
+    newItemsByPage.set(page.id, list)
   } else {
     // Cross-year activity - split into segments
     for (let year = newStartYear; year <= newEndYear; year++) {
@@ -931,7 +1388,26 @@ async function updateActivity(
 
       if (insertError) throw insertError
       itemsCreated.push(newItem)
+      const list = newItemsByPage.get(page.id) || []
+      list.push(mapDbItemToOrgItem(newItem))
+      newItemsByPage.set(page.id, list)
     }
+  }
+
+  for (const [pageId, newItems] of newItemsByPage.entries()) {
+    await updatePageOrganizationData(supabase, pageId, (orgData) => {
+      let changed = false
+      newItems.forEach((item) => {
+        const index = orgData.items.findIndex((existing: any) => existing.id === item.id)
+        if (index !== -1) {
+          orgData.items[index] = { ...orgData.items[index], ...item }
+        } else {
+          orgData.items.push(item)
+        }
+        changed = true
+      })
+      return changed
+    })
   }
 
   let message = `Uppdaterade "${activityName}" (${oldStartDate} → ${newStartDate} till ${oldEndDate} → ${newEndDate})`
@@ -982,6 +1458,22 @@ async function deleteActivity(
 
   console.log('[deleteActivity] Deleted items:', items.length)
 
+  const itemsByPage = new Map<string, string[]>()
+  items.forEach((item: any) => {
+    if (!item.page_id) return
+    const list = itemsByPage.get(item.page_id) || []
+    list.push(item.id)
+    itemsByPage.set(item.page_id, list)
+  })
+
+  for (const [pageId, ids] of itemsByPage.entries()) {
+    await updatePageOrganizationData(supabase, pageId, (orgData) => {
+      const before = orgData.items.length
+      orgData.items = orgData.items.filter((item: any) => !ids.includes(item.id))
+      return orgData.items.length !== before
+    })
+  }
+
   return {
     success: true,
     itemsDeleted: items.length,
@@ -991,8 +1483,8 @@ async function deleteActivity(
 
 async function getCurrentRingsAndGroups(supabase: any, wheelId: string) {
   const [ringsRes, groupsRes] = await Promise.all([
-    supabase.from('wheel_rings').select('id, name, type, color').eq('wheel_id', wheelId).order('ring_order'),
-    supabase.from('activity_groups').select('id, name, color').eq('wheel_id', wheelId),
+    supabase.from('wheel_rings').select('id, name, type, color, visible, orientation').eq('wheel_id', wheelId).order('ring_order'),
+    supabase.from('activity_groups').select('id, name, color, visible').eq('wheel_id', wheelId),
   ])
 
   if (ringsRes.error) throw new Error(`Kunde inte hämta ringar: ${ringsRes.error.message}`)
@@ -1013,6 +1505,180 @@ function getCurrentDate() {
     day: now.getDate(),
     monthName: now.toLocaleString('sv-SE', { month: 'long' }),
   }
+}
+
+function cloneInnerRingData(data: any) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return Array.from({ length: 12 }, () => [''])
+  }
+  return data.map((entry: any) => (Array.isArray(entry) ? [...entry] : ['']))
+}
+
+function cloneRing(ring: any) {
+  const cloned: any = { ...ring }
+  if (ring.type === 'inner') {
+    cloned.data = cloneInnerRingData(ring.data)
+    cloned.orientation = ring.orientation || 'vertical'
+  }
+  return cloned
+}
+
+function cloneItem(item: any) {
+  return { ...item }
+}
+
+function normalizeOrgData(raw: any = {}) {
+  const rings = Array.isArray(raw.rings)
+    ? raw.rings.map((ring: any) => cloneRing(ring))
+    : []
+
+  const legacyGroups = Array.isArray(raw.activities)
+    ? raw.activities.map((group: any) => ({ ...group }))
+    : []
+
+  const activityGroups = Array.isArray(raw.activityGroups)
+    ? raw.activityGroups.map((group: any) => ({ ...group }))
+    : legacyGroups
+
+  const labels = Array.isArray(raw.labels)
+    ? raw.labels.map((label: any) => ({ ...label }))
+    : []
+
+  const items = Array.isArray(raw.items)
+    ? raw.items.map((item: any) => cloneItem(item))
+    : []
+
+  const normalized: any = {
+    ...raw,
+    rings,
+    activityGroups,
+    labels,
+    items,
+  }
+
+  // Maintain legacy alias so older clients remain compatible
+  normalized.activities = normalized.activityGroups
+
+  return normalized
+}
+
+async function updateOrgDataAcrossPages(
+  supabase: any,
+  wheelId: string,
+  mutate: (orgData: any, pageId: string) => boolean,
+  targetPageIds?: string[]
+) {
+  let query = supabase
+    .from('wheel_pages')
+    .select('id, organization_data')
+    .eq('wheel_id', wheelId)
+
+  if (targetPageIds && targetPageIds.length > 0) {
+    query = query.in('id', targetPageIds)
+  }
+
+  const { data: pages, error } = await query
+
+  if (error) {
+    throw new Error(`Kunde inte hämta sidor för att uppdatera struktur: ${error.message}`)
+  }
+
+  if (!pages || pages.length === 0) {
+    return 0
+  }
+
+  let updatedCount = 0
+
+  for (const page of pages) {
+    const normalized = normalizeOrgData(page.organization_data)
+    const changed = mutate(normalized, page.id)
+
+    if (!changed) {
+      continue
+    }
+
+    const { error: updateError } = await supabase
+      .from('wheel_pages')
+      .update({
+        organization_data: {
+          ...normalized,
+          activities: normalized.activityGroups,
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', page.id)
+
+    if (updateError) {
+      throw new Error(`Kunde inte uppdatera organization_data för sida ${page.id}: ${updateError.message}`)
+    }
+
+    updatedCount++
+  }
+
+  return updatedCount
+}
+
+async function updatePageOrganizationData(
+  supabase: any,
+  pageId: string,
+  mutate: (orgData: any) => boolean
+) {
+  const { data: page, error } = await supabase
+    .from('wheel_pages')
+    .select('organization_data')
+    .eq('id', pageId)
+    .single()
+
+  if (error) {
+    throw new Error(`Kunde inte hämta sida ${pageId}: ${error.message}`)
+  }
+
+  const normalized = normalizeOrgData(page?.organization_data || {})
+  const changed = mutate(normalized)
+
+  if (!changed) {
+    return false
+  }
+
+  const { error: updateError } = await supabase
+    .from('wheel_pages')
+    .update({
+      organization_data: {
+        ...normalized,
+        activities: normalized.activityGroups,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', pageId)
+
+  if (updateError) {
+    throw new Error(`Kunde inte uppdatera organization_data för sida ${pageId}: ${updateError.message}`)
+  }
+
+  return true
+}
+
+function mapDbItemToOrgItem(dbItem: any) {
+  const orgItem: any = {
+    id: dbItem.id,
+    ringId: dbItem.ring_id,
+    activityId: dbItem.activity_id,
+    labelId: dbItem.label_id ?? null,
+    name: dbItem.name,
+    startDate: dbItem.start_date,
+    endDate: dbItem.end_date,
+    time: dbItem.time ?? null,
+    pageId: dbItem.page_id ?? null,
+  }
+
+  if (dbItem.description) orgItem.description = dbItem.description
+  if (dbItem.linked_wheel_id) orgItem.linkedWheelId = dbItem.linked_wheel_id
+  if (dbItem.link_type) orgItem.linkType = dbItem.link_type
+  if (dbItem.source) orgItem.source = dbItem.source
+  if (dbItem.external_id) orgItem.externalId = dbItem.external_id
+  if (dbItem.sync_metadata) orgItem.syncMetadata = dbItem.sync_metadata
+
+  return orgItem
 }
 
 async function createYearPage(
@@ -1055,7 +1721,7 @@ async function createYearPage(
     const { rings, groups } = await getCurrentRingsAndGroups(supabase, wheelId)
     const { data: labels } = await supabase
       .from('labels')
-      .select('id, name, color')
+      .select('id, name, color, visible')
       .eq('wheel_id', wheelId)
 
     organizationData = {
@@ -1064,20 +1730,20 @@ async function createYearPage(
         name: r.name,
         type: r.type,
         color: r.color,
-        visible: true,
-        orientation: r.type === 'inner' ? 'vertical' : null
+        visible: r.visible !== false,
+        orientation: r.type === 'inner' ? r.orientation || 'vertical' : null
       })),
       activityGroups: groups.map((g: any) => ({
         id: g.id,
         name: g.name,
         color: g.color,
-        visible: true
+        visible: g.visible !== false
       })),
       labels: (labels || []).map((l: any) => ({
         id: l.id,
         name: l.name,
         color: l.color,
-        visible: true
+        visible: l.visible !== false
       })),
       items: []
     }
@@ -1179,12 +1845,26 @@ async function smartCopyYear(
     time: item.time
   }))
 
+  let insertedItems: any[] = []
   if (itemsToInsert.length > 0) {
-    const { error: insertError } = await supabase
+    const { data: inserted, error: insertError } = await supabase
       .from('items')
       .insert(itemsToInsert)
+      .select('*')
 
     if (insertError) throw insertError
+    insertedItems = inserted || []
+
+    if (insertedItems.length > 0) {
+      await updatePageOrganizationData(supabase, newPageId, (orgData) => {
+        const insertedIds = new Set(insertedItems.map((item) => item.id))
+        orgData.items = orgData.items.filter((item: any) => !insertedIds.has(item.id))
+        insertedItems.forEach((item) => {
+          orgData.items.push(mapDbItemToOrgItem(item))
+        })
+        return insertedItems.length > 0
+      })
+    }
   }
 
   return {
@@ -1296,7 +1976,9 @@ function createAgentSystem() {
   
   const createRingTool = tool<WheelContext>({
     name: 'create_ring',
-    description: 'Create a new ring. Use "inner" type for activity rings (most common), "outer" for text rings.',
+    description: 'Skapa en ny ring. Både "inner" och "outer" kan innehålla aktiviteter. ' +
+      'Rekommendation: "outer" för mindre/externa händelser (helgdagar, lov, säsonger, terminer). ' +
+      '"inner" för huvudspår, strategiska aktiviteter eller textbaserad planering.',
     parameters: CreateRingInput,
     async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext>) {
       console.log('🔧 [TOOL] create_ring called with:', JSON.stringify(input, null, 2))
@@ -1549,6 +2231,18 @@ function createAgentSystem() {
     async execute(input: z.infer<typeof CreateYearPageInput>, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
       const result = await createYearPage(supabase, wheelId, input.year, input.copyStructure)
+      if (result.success && result.pageId) {
+        const pages = ctx.context.allPages || []
+        if (!pages.some((p: any) => p.id === result.pageId)) {
+          pages.push({
+            id: result.pageId,
+            year: result.year ?? input.year,
+            title: `${result.year ?? input.year}`,
+            page_order: pages.length,
+          })
+          ctx.context.allPages = pages
+        }
+      }
       return JSON.stringify(result)
     }
   })
@@ -1560,6 +2254,18 @@ function createAgentSystem() {
     async execute(input: z.infer<typeof SmartCopyYearInput>, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
       const result = await smartCopyYear(supabase, wheelId, input.sourceYear, input.targetYear)
+      if (result.success && result.pageId) {
+        const pages = ctx.context.allPages || []
+        if (!pages.some((p: any) => p.id === result.pageId)) {
+          pages.push({
+            id: result.pageId,
+            year: result.year ?? input.targetYear,
+            title: `${result.year ?? input.targetYear}`,
+            page_order: pages.length,
+          })
+          ctx.context.allPages = pages
+        }
+      }
       return JSON.stringify(result)
     }
   })
@@ -1579,7 +2285,12 @@ function createAgentSystem() {
   const structureAgent = new Agent<WheelContext>({
     name: 'Structure Agent',
     model: 'gpt-4o',
-    instructions: `You manage the Year Wheel structure: rings, activity groups, labels, and year pages. Respond in Swedish with markdown formatting. No emojis.
+  instructions: `Du ansvarar för årshjulets struktur: ringar, aktivitetsgrupper, etiketter och årssidor. Svara på svenska med markdown-formattering. Inga emojis.
+
+RINGTYPER (KRITISKT):
+- Både "inner" och "outer" kan innehålla aktiviteter
+- **Outer**: Används typiskt för mindre/externa händelser (helgdagar, lov, säsonger, terminer, externa milstolpar)
+- **Inner**: Används för huvudspår, strategiska initiativ, projektfaser eller textbaserad planering
 
 STRUCTURE SUGGESTIONS:
 When user asks for structure ideas for a domain:
@@ -1600,8 +2311,7 @@ CRUD OPERATIONS:
 - create/update/delete tools for rings, groups, and labels
 - Update/delete operations search by partial name match
 - Delete fails if items still reference the structure (prevents orphaned data)
-
-Ring types: "outer" (for activities), "inner" (for month-specific text)`,
+`,
     tools: [
       getContextTool, 
       createRingTool, 
@@ -1657,8 +2367,9 @@ Ring types: "outer" (for activities), "inner" (for month-specific text)`,
       const results: Array<{ index: number; name: string; itemsCreated: number }> = []
       const errors: Array<{ index: number; name: string; error: string }> = []
       
-      // Create activities in parallel for speed
-      const promises = input.activities.map(async (activity: any, index: number) => {
+      // Run sequentially to avoid organization_data race conditions
+      for (let index = 0; index < input.activities.length; index++) {
+        const activity = input.activities[index]
         try {
           const result = await createActivity(ctx, {
             name: activity.name,
@@ -1668,7 +2379,7 @@ Ring types: "outer" (for activities), "inner" (for month-specific text)`,
             activityGroupId: activity.activityGroupId,
             labelId: activity.labelId || null,
           })
-          
+
           if (result.success) {
             results.push({
               index,
@@ -1676,7 +2387,6 @@ Ring types: "outer" (for activities), "inner" (for month-specific text)`,
               itemsCreated: result.itemsCreated || 1
             })
           }
-          return result
         } catch (error) {
           console.error('[batch_create_activities] Error creating activity:', activity.name, error)
           errors.push({
@@ -1684,11 +2394,8 @@ Ring types: "outer" (for activities), "inner" (for month-specific text)`,
             name: activity.name,
             error: (error as Error).message
           })
-          return null
         }
-      })
-      
-      await Promise.all(promises)
+      }
       
       const totalCreated = results.reduce((sum, r) => sum + r.itemsCreated, 0)
       
@@ -1877,7 +2584,14 @@ Ring types: "outer" (for activities), "inner" (for month-specific text)`,
   const activityAgent = new Agent<WheelContext>({
     name: 'Activity Agent',
     model: 'gpt-4o',
-    instructions: `You create, update, and delete activities in the Year Wheel. Respond in Swedish with markdown formatting. No emojis.
+    instructions: `Du skapar, uppdaterar och tar bort aktiviteter i årshjulet. Svara på svenska med markdown-formattering. Inga emojis.
+
+RINGVAL:
+- Både "inner" och "outer" ringar kan innehålla aktiviteter
+- Matcha användarens beskrivning mot ringar baserat på betydelse:
+  * Outer → mindre/externa händelser (helgdagar, lov, säsonger, externa deadlines)
+  * Inner → huvudspår, teamarbete, projektfaser, strategiska initiativ
+- Om båda passar: välj den ring vars namn ligger närmast användarens formulering
 
 WORKFLOW:
 1. Call get_current_context (provides current date and all ring/group IDs)

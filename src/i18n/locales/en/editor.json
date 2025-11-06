@@ -307,6 +307,7 @@
     "deleteTitle": "Delete version?",
     "deleteConfirm": "Delete version {{number}}? This cannot be undone.",
     "restored": "Version {{number}} restored!",
+  "restoringInProgress": "Restoring version...",
     "deleted": "Version deleted",
     "restoreError": "Could not restore version",
     "deleteError": "Could not delete version",

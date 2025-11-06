@@ -166,7 +166,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm relative">
       <div className="bg-white rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -366,6 +366,15 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {isRestoring && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm cursor-wait">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+          <p className="mt-4 text-sm text-gray-700" aria-live="assertive">
+            {t('editor:versionHistory.restoringInProgress')}
+          </p>
         </div>
       )}
     </div>
