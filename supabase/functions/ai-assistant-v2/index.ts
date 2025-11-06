@@ -3032,9 +3032,23 @@ Returnera ENDAST giltig JSON i detta format:
       const { supabase, wheelId } = ctx.context
 
       try {
-        const createdRings = new Map<string, string>() // ring name -> ringId
-        const createdGroups = new Map<string, string>() // group name -> groupId
+        const ringLookup = new Map<string, string>() // ring name -> ringId
+        const groupLookup = new Map<string, string>() // group name -> groupId
+        const ringStats = {
+          created: 0,
+          reused: 0,
+          createdNames: [] as string[],
+          reusedNames: [] as string[],
+        }
+        const groupStats = {
+          created: 0,
+          reused: 0,
+          createdNames: [] as string[],
+          reusedNames: [] as string[],
+        }
         const errors: string[] = []
+        const successfulActivities: string[] = []
+        const failedActivities: string[] = []
 
         // 1. Create rings (wheel scoped - shared across all pages)
         console.log('[apply_suggested_plan] Creating rings:', suggestions.rings?.length || 0)
@@ -3047,8 +3061,16 @@ Returnera ENDAST giltig JSON i detta format:
             })
             
             if (result.success && result.ringId) {
-              createdRings.set(ring.name, result.ringId)
-              console.log('[apply_suggested_plan] Created ring:', ring.name, '→', result.ringId)
+              ringLookup.set(ring.name, result.ringId)
+              if (result.alreadyExists) {
+                ringStats.reused++
+                ringStats.reusedNames.push(ring.name)
+                console.log('[apply_suggested_plan] Reused ring:', ring.name, '→', result.ringId)
+              } else {
+                ringStats.created++
+                ringStats.createdNames.push(ring.name)
+                console.log('[apply_suggested_plan] Created ring:', ring.name, '→', result.ringId)
+              }
             }
           } catch (error) {
             console.error('[apply_suggested_plan] Error creating ring:', ring.name, error)
@@ -3066,8 +3088,16 @@ Returnera ENDAST giltig JSON i detta format:
             })
             
             if (result.success && result.groupId) {
-              createdGroups.set(group.name, result.groupId)
-              console.log('[apply_suggested_plan] Created group:', group.name, '→', result.groupId)
+              groupLookup.set(group.name, result.groupId)
+              if ((result as any).alreadyExists) {
+                groupStats.reused++
+                groupStats.reusedNames.push(group.name)
+                console.log('[apply_suggested_plan] Reused group:', group.name, '→', result.groupId)
+              } else {
+                groupStats.created++
+                groupStats.createdNames.push(group.name)
+                console.log('[apply_suggested_plan] Created group:', group.name, '→', result.groupId)
+              }
             }
           } catch (error) {
             console.error('[apply_suggested_plan] Error creating group:', group.name, error)
@@ -3077,24 +3107,26 @@ Returnera ENDAST giltig JSON i detta format:
 
         // 3. Create activities
         console.log('[apply_suggested_plan] Creating activities:', suggestions.activities?.length || 0)
-        console.log('[apply_suggested_plan] Available rings:', Array.from(createdRings.keys()))
-        console.log('[apply_suggested_plan] Available groups:', Array.from(createdGroups.keys()))
+        console.log('[apply_suggested_plan] Available rings:', Array.from(ringLookup.keys()))
+        console.log('[apply_suggested_plan] Available groups:', Array.from(groupLookup.keys()))
         let activitiesCreated = 0
         
         for (const activity of suggestions.activities || []) {
           try {
             console.log(`[apply_suggested_plan] Processing activity: "${activity.name}" (ring: "${activity.ring}", group: "${activity.group}")`)
-            const ringId = createdRings.get(activity.ring)
-            const groupId = createdGroups.get(activity.group)
+            const ringId = ringLookup.get(activity.ring)
+            const groupId = groupLookup.get(activity.group)
 
             if (!ringId) {
               console.error(`[apply_suggested_plan] RING NOT FOUND: "${activity.ring}" for activity "${activity.name}"`)
               errors.push(`Aktivitet "${activity.name}": Ring "${activity.ring}" hittades inte`)
+              failedActivities.push(activity.name)
               continue
             }
             if (!groupId) {
               console.error(`[apply_suggested_plan] GROUP NOT FOUND: "${activity.group}" for activity "${activity.name}"`)
               errors.push(`Aktivitet "${activity.name}": Grupp "${activity.group}" hittades inte`)
+              failedActivities.push(activity.name)
               continue
             }
 
@@ -3110,28 +3142,59 @@ Returnera ENDAST giltig JSON i detta format:
 
             if (result.success) {
               activitiesCreated += result.itemsCreated || 1
+              successfulActivities.push(activity.name)
               console.log('[apply_suggested_plan] Created activity:', activity.name)
             } else {
               console.error('[apply_suggested_plan] Activity creation returned failure:', activity.name, result)
               errors.push(`Aktivitet "${activity.name}": ${result.message || 'Okänt fel'}`)
+              failedActivities.push(activity.name)
             }
           } catch (error) {
             console.error('[apply_suggested_plan] Error creating activity:', activity.name, error)
             errors.push(`Aktivitet "${activity.name}": ${(error as Error).message}`)
+            failedActivities.push(activity.name)
           }
         }
 
         // Determine overall success: all rings/groups created AND most activities created
         const expectedActivities = suggestions.activities?.length || 0
         const successRate = expectedActivities > 0 ? (activitiesCreated / expectedActivities) : 1
-        const overallSuccess = createdRings.size > 0 && createdGroups.size > 0 && successRate >= 0.8
+        const totalSuggestedRings = suggestions.rings?.length || 0
+        const totalSuggestedGroups = suggestions.activityGroups?.length || 0
+        const ringCoverage = ringStats.created + ringStats.reused
+        const groupCoverage = groupStats.created + groupStats.reused
+        const overallSuccess =
+          (totalSuggestedRings === 0 || ringCoverage >= totalSuggestedRings) &&
+          (totalSuggestedGroups === 0 || groupCoverage >= totalSuggestedGroups) &&
+          (expectedActivities === 0 || successRate >= 0.8) &&
+          errors.length === 0
+
+        const ringMessage = `${ringStats.created} nya${ringStats.reused ? ` (+${ringStats.reused} återanvända)` : ''}`
+        const groupMessage = `${groupStats.created} nya${groupStats.reused ? ` (+${groupStats.reused} återanvända)` : ''}`
+        const activityMessage = expectedActivities > 0
+          ? `${activitiesCreated}/${expectedActivities} skapade`
+          : `${activitiesCreated} skapade`
+
+        const messageParts = [
+          `Ringar: ${ringMessage}`,
+          `Grupper: ${groupMessage}`,
+          `Aktiviteter: ${activityMessage}`,
+        ]
+
+        if (errors.length > 0) {
+          messageParts.push(`Fel: ${errors.join('; ')}`)
+        }
 
         const summary = {
           success: overallSuccess,
           created: {
-            rings: createdRings.size,
-            groups: createdGroups.size,
+            rings: ringStats.created,
+            groups: groupStats.created,
             activities: activitiesCreated
+          },
+          reused: {
+            rings: ringStats.reused,
+            groups: groupStats.reused
           },
           expected: {
             rings: suggestions.rings?.length || 0,
@@ -3139,9 +3202,21 @@ Returnera ENDAST giltig JSON i detta format:
             activities: expectedActivities
           },
           errors: errors.length > 0 ? errors : undefined,
-          message: overallSuccess 
-            ? `Skapade: ${createdRings.size} ringar, ${createdGroups.size} grupper, ${activitiesCreated} aktiviteter`
-            : `VARNING: Endast ${activitiesCreated} av ${expectedActivities} aktiviteter skapades! Fel: ${errors.join(', ')}`
+          details: {
+            rings: {
+              created: ringStats.createdNames,
+              reused: ringStats.reusedNames,
+            },
+            groups: {
+              created: groupStats.createdNames,
+              reused: groupStats.reusedNames,
+            },
+            activities: {
+              successful: successfulActivities,
+              failed: failedActivities,
+            },
+          },
+          message: messageParts.join(' · ')
         }
 
         console.log('[apply_suggested_plan] Summary:', JSON.stringify(summary, null, 2))

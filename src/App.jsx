@@ -574,6 +574,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (isSavingRef.current) {
       return;
     }
+
+    // Ignore realtime churn while user is dragging to prevent visual snapbacks
+    if (isDraggingRef.current) {
+      return;
+    }
     
     // Ignore broadcasts from our own recent saves (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
@@ -826,7 +831,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // 3. This is the initial load
     // 4. Data came from realtime update
     // 5. Auto-save is disabled
-    if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
+    if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || isDraggingRef.current || !autoSaveEnabled) {
       return;
     }
 
@@ -1025,7 +1030,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Auto-save ONLY on metadata changes (title, colors, settings)
   useEffect(() => {
     // Skip if initial load, loading data, or data came from realtime
-    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current || isDraggingRef.current) {
       return;
     }
     autoSave();
