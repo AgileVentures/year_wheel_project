@@ -19,13 +19,15 @@ import { produce, current, freeze } from 'immer';
  * @param {number} options.limit - Max history entries (default: 50)
  * @param {boolean} options.enableKeyboard - Enable keyboard shortcuts (default: true)
  * @param {Object} options.shouldSkipHistory - Ref that indicates whether to skip adding to history
+ * @param {Function} options.onStateRestored - Callback fired after undo/redo/jump sets a historical state
  * @returns {Object} { state, setState, undo, redo, canUndo, canRedo, clear, historyLength, currentIndex }
  */
 export function useUndoRedo(initialState, options = {}) {
   const {
     limit = 10,
     enableKeyboard = true,
-    shouldSkipHistory = null
+    shouldSkipHistory = null,
+    onStateRestored = null
   } = options;
 
   // Current state
@@ -38,12 +40,17 @@ export function useUndoRedo(initialState, options = {}) {
   // Refs to track current values synchronously (prevents stale closures)
   const historyRef = useRef(history);
   const currentIndexRef = useRef(currentIndex);
+  const onStateRestoredRef = useRef(onStateRestored);
   
   // Update refs whenever state changes
   useEffect(() => {
     historyRef.current = history;
     currentIndexRef.current = currentIndex;
   }, [history, currentIndex]);
+
+  useEffect(() => {
+    onStateRestoredRef.current = onStateRestored;
+  }, [onStateRestored]);
   
   // Flag to prevent adding to history during undo/redo
   const isUndoRedoAction = useRef(false);
@@ -189,40 +196,16 @@ export function useUndoRedo(initialState, options = {}) {
         return false;
       }
       
-      // SAFETY: Prevent undoing to a state with empty items if current state has items
-      // This prevents the wheel from going blank due to bad initial history state
-      // CRITICAL: Get current state from the current history entry, not from closure
-      const currentState = currentHist[currentIdx]?.state;
-      const targetState = historyEntry.state;
-      
-      console.log('[UNDO SAFETY CHECK]', {
-        currentItems: currentState?.organizationData?.items?.length || 0,
-        targetItems: targetState?.organizationData?.items?.length || 0,
-        currentIdx,
-        newIndex
-      });
-      
-      if (currentState?.organizationData?.items?.length > 0 && 
-          (!targetState?.organizationData?.items || targetState.organizationData.items.length === 0)) {
-        console.warn('[UNDO SAFETY] Preventing undo to empty state. Current items:', 
-          currentState.organizationData.items.length, 'Target items:', 
-          targetState?.organizationData?.items?.length || 0);
-        
-        // Show a toast to inform the user
-        const event = new CustomEvent('showToast', {
-          detail: { message: 'Kan inte ångra längre (initial tillstånd)', type: 'info' }
-        });
-        window.dispatchEvent(event);
-        
-        return false;
-      }
-      
       // Set flag IMMEDIATELY before any state updates
       isUndoRedoAction.current = true;
       
       // Update both index and state
       setCurrentIndex(newIndex);
       setStateInternal(historyEntry.state);
+
+      if (onStateRestoredRef.current) {
+        onStateRestoredRef.current(historyEntry.state, historyEntry.label || null, 'undo');
+      }
       
       // Keep flag set for longer to ensure all effects complete
       requestAnimationFrame(() => {
@@ -265,34 +248,16 @@ export function useUndoRedo(initialState, options = {}) {
       const currentState = currentHist[currentIdx]?.state;
       const targetState = historyEntry.state;
       
-      console.log('[REDO SAFETY CHECK]', {
-        currentItems: currentState?.organizationData?.items?.length || 0,
-        targetItems: targetState?.organizationData?.items?.length || 0,
-        currentIdx,
-        newIndex
-      });
-      
-      if (currentState?.organizationData?.items?.length > 0 && 
-          (!targetState?.organizationData?.items || targetState.organizationData.items.length === 0)) {
-        console.warn('[REDO SAFETY] Preventing redo to empty state. Current items:', 
-          currentState.organizationData.items.length, 'Target items:', 
-          targetState?.organizationData?.items?.length || 0);
-        
-        // Show a toast to inform the user
-        const event = new CustomEvent('showToast', {
-          detail: { message: 'Kan inte göra om till tomt tillstånd', type: 'info' }
-        });
-        window.dispatchEvent(event);
-        
-        return false;
-      }
-      
       // Set flag IMMEDIATELY before any state updates
       isUndoRedoAction.current = true;
       
       // Update both index and state
       setCurrentIndex(newIndex);
       setStateInternal(historyEntry.state);
+
+      if (onStateRestoredRef.current) {
+        onStateRestoredRef.current(historyEntry.state, historyEntry.label || null, 'redo');
+      }
       
       // Keep flag set for longer to ensure all effects complete
       requestAnimationFrame(() => {
@@ -337,6 +302,10 @@ export function useUndoRedo(initialState, options = {}) {
       isUndoRedoAction.current = true;
       setCurrentIndex(saveIndex);
       setStateInternal(historyEntry.state);
+
+      if (onStateRestoredRef.current) {
+        onStateRestoredRef.current(historyEntry.state, historyEntry.label || null, 'undoToSave');
+      }
       
       // Reset flag after state update
       setTimeout(() => {
@@ -466,6 +435,10 @@ export function useUndoRedo(initialState, options = {}) {
         setCurrentIndex(index);
         // State is already frozen when stored, no need to call current()
         setStateInternal(entry.state);
+
+        if (onStateRestoredRef.current) {
+          onStateRestoredRef.current(entry.state, entry.label || null, 'jump');
+        }
         
         // Keep flag set for longer to ensure all effects complete
         requestAnimationFrame(() => {

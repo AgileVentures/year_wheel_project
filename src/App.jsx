@@ -80,6 +80,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
   // Flag to prevent history during data load operations
   const isLoadingData = useRef(false);
+  const broadcastOperationRef = useRef(null);
+
+  const [yearWheelRef, setYearWheelRef] = useState(null);
+
+  const handleUndoRedoStateRestored = useCallback((restoredState) => {
+    if (yearWheelRef && typeof yearWheelRef.clearPendingItemUpdates === 'function') {
+      yearWheelRef.clearPendingItemUpdates();
+    }
+    const broadcastFn = broadcastOperationRef.current;
+    if (broadcastFn && restoredState?.organizationData) {
+      broadcastFn('restore', null, {
+        organizationData: restoredState.organizationData,
+      });
+    }
+  }, [yearWheelRef]);
   
   // Undo/Redo for main editable states
   const {
@@ -129,7 +144,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   }, {
     limit: 10, // Keep last 10 undo steps
     enableKeyboard: true,
-    shouldSkipHistory: isLoadingData // Skip history during data load
+    shouldSkipHistory: isLoadingData, // Skip history during data load
+    onStateRestored: handleUndoRedoStateRestored
   });
 
   // Extract states from undo-managed object
@@ -226,7 +242,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showLabels, setShowLabels] = useState(false); // Default to false - labels shown on hover
   const [weekRingDisplayMode, setWeekRingDisplayMode] = useState('week-numbers'); // 'week-numbers' or 'dates'
   const [downloadFormat, setDownloadFormat] = useState(isPremium ? "png" : "png-white");
-  const [yearWheelRef, setYearWheelRef] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
@@ -748,11 +763,36 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         ...prev,
         items: [...prev.items, { ...operation.data, _remoteUpdate: true }]
       }));
+    } else if (operation.type === 'restore') {
+      const incomingOrgData = operation.data?.organizationData;
+      if (!incomingOrgData) {
+        return;
+      }
+
+      isRealtimeUpdate.current = true;
+
+      setOrganizationData(() => ({
+        ...incomingOrgData,
+        items: (incomingOrgData.items || []).map(item => ({
+          ...item,
+          _remoteUpdate: true,
+          _remoteUser: operation.userEmail,
+          _remoteTimestamp: operation.timestamp,
+        })),
+      }), { type: 'remoteRestore' });
+
+      setTimeout(() => {
+        isRealtimeUpdate.current = false;
+      }, 0);
     }
   }, [setOrganizationData]);
 
   // Real-time operations broadcasting
   const { broadcastOperation } = useWheelOperations(wheelId, currentPageId, handleIncomingOperation);
+
+  useEffect(() => {
+    broadcastOperationRef.current = broadcastOperation;
+  }, [broadcastOperation]);
 
   // Combine activeEditors from presence channel + recent operations for avatar display
   const combinedActiveEditors = [

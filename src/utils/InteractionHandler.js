@@ -558,31 +558,28 @@ class InteractionHandler {
       return;
     }
     
+    const originalItem = this.dragState.draggedItem;
     const updates = {
       startDate: formatDate(newStartDate),
       endDate: formatDate(newEndDate)
     };
 
-    // Handle ring switching
     if (this.dragState.targetRing && 
-        this.dragState.targetRing.id !== this.dragState.draggedItem.ringId) {
+        this.dragState.targetRing.id !== originalItem.ringId) {
       updates.ringId = this.dragState.targetRing.id;
     }
 
-    // Create updated item with new dates and potentially new ring
     const updatedItem = {
-      ...this.dragState.draggedItem,
+      ...originalItem,
       ...updates
     };
 
-    const existing = this.wheel.pendingItemUpdates.get(updatedItem.id);
-    const isDuplicate =
-      existing &&
-      existing.item.startDate === updatedItem.startDate &&
-      existing.item.endDate === updatedItem.endDate &&
-      existing.item.ringId === updatedItem.ringId;
+    const hasChanges =
+      originalItem.startDate !== updatedItem.startDate ||
+      originalItem.endDate !== updatedItem.endDate ||
+      originalItem.ringId !== updatedItem.ringId;
 
-    if (!isDuplicate) {
+    if (hasChanges) {
       this.wheel.pendingItemUpdates.set(updatedItem.id, {
         item: updatedItem,
         timestamp: Date.now()

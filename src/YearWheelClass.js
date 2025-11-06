@@ -195,9 +195,40 @@ class YearWheel {
 
   // Sync drag state coming from InteractionHandler (prevents duplicate state machines)
   updateDragStateFromHandler(handlerState = null) {
-    this.dragState = handlerState
-      ? { ...handlerState }
-      : this.createEmptyDragState();
+    if (handlerState) {
+      // Keep a direct reference so the renderer always sees live drag updates
+      this.dragState = handlerState;
+    } else {
+      this.dragState = this.createEmptyDragState();
+    }
+  }
+
+  // Clear optimistic pending updates (used after undo/redo to avoid stale previews)
+  clearPendingItemUpdates(itemIds = null) {
+    if (!itemIds) {
+      if (this.pendingItemUpdates.size === 0) {
+        return;
+      }
+      this.pendingItemUpdates.clear();
+    } else {
+      let removedAny = false;
+      for (const id of itemIds) {
+        if (this.pendingItemUpdates.delete(id)) {
+          removedAny = true;
+        }
+      }
+      if (!removedAny) {
+        return;
+      }
+    }
+
+    // Invalidate caches so hit regions rebuild with the restored data
+    this.invalidateCache();
+
+    // Redraw only if we're not mid-drag (drag loop manages its own rendering)
+    if (!this.dragState || !this.dragState.isDragging) {
+      this.create();
+    }
   }
 
   // Generate cache key to detect when background needs redrawing
@@ -4608,8 +4639,6 @@ class YearWheel {
                 startAngle: this.toRadians(adjustedStartAngle),
                 endAngle: this.toRadians(adjustedEndAngle),
               });
-            } else {
-              console.log('[OUTER RING] SKIPPING clickable region for stale item:', item.id);
             }
 
             // Draw selection border if item is selected
@@ -5013,8 +5042,6 @@ class YearWheel {
               startAngle: this.toRadians(adjustedStartAngle),
               endAngle: this.toRadians(adjustedEndAngle),
             });
-          } else {
-            console.log('[INNER RING] SKIPPING clickable region for stale item:', item.id);
           }
 
           // Draw selection border if item is selected
