@@ -5,7 +5,9 @@
     "pricing": "Pricing",
     "comparison": "Comparison",
     "login": "Log in",
-    "getStarted": "Get started free"
+    "getStarted": "Get started free",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "philosophy": {
     "text": "Planning is cyclical – activities recur, processes repeat, and patterns emerge. YearWheel helps you see connections between years, create structure, and build on previous experience."

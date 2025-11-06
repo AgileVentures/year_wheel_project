@@ -175,6 +175,8 @@
     "saveToDatabase": "Save to database",
     "saveToBrowser": "Save to browser storage",
     "showGuide": "Show quick guide",
+  "startTour": "Show quick tour",
+  "aiTour": "Show AI tour",
     "template": "Template",
     "markAsTemplate": "Mark as template",
     "templateWheelVisibleOnLanding": "Template wheel (visible on landing page)",

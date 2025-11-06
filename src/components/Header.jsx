@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FileUp, FolderOpen, History, Undo, Redo, Copy, Check, Sparkles, FileSpreadsheet, Eye, Link2, Share2, MessageSquare, Clipboard, Presentation } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FolderOpen, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
@@ -11,7 +11,7 @@ import UndoHistoryMenu from './UndoHistoryMenu';
 import TemplateSelectionModal from './TemplateSelectionModal';
 import WheelCommentsPanel from './WheelCommentsPanel';
 import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function Header({ 
   onSave, 
@@ -69,15 +69,37 @@ function Header({
 }) {
   const { t } = useTranslation(['common', 'subscription']);
   const navigate = useNavigate();
-  const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [showImageExportMenu, setShowImageExportMenu] = useState(false);
-  const [showShareMenu, setShowShareMenu] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   const [copiedLink, setCopiedLink] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
   
+  useEffect(() => {
+    if (!showMobileMenu) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setShowMobileMenu(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showMobileMenu]);
+
+  useEffect(() => {
+    if (showMobileMenu) {
+      setShowImageExportMenu(false);
+    }
+  }, [showMobileMenu]);
+
   // Get unread notification count for badge
   const { unreadCount } = useRealtimeNotifications({ autoFetch: wheelId ? true : false });
   
@@ -122,6 +144,26 @@ function Header({
   const handleExport = async (format) => {
     onDownloadFormatChange && onDownloadFormatChange(format);
     onDownloadImage && onDownloadImage(false);
+  };
+
+  const closeMobileMenu = () => setShowMobileMenu(false);
+
+  const runMobileAction = (callback) => async () => {
+    closeMobileMenu();
+    if (typeof callback === 'function') {
+      await callback();
+    }
+  };
+
+  const mobileActionClass = 'w-full flex items-center justify-between px-4 py-3 rounded-sm bg-gray-50 hover:bg-gray-100 text-sm font-medium text-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-50';
+  const mobileDangerClass = 'w-full flex items-center justify-between px-4 py-3 rounded-sm bg-red-50 hover:bg-red-100 text-sm font-medium text-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-50';
+
+  const handleOpenCommentsPanel = () => {
+    if (!wheelData) {
+      console.warn('wheelData is missing');
+      return;
+    }
+    setShowCommentsPanel(true);
   };
   
   return (
@@ -204,6 +246,7 @@ function Header({
             <button 
               className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               title={t('common:header.fileOperations')}
+              aria-label={t('common:header.fileOperations')}
             >
               <FolderOpen size={14} />
             </button>
@@ -285,6 +328,7 @@ function Header({
             onClick={() => setShowImageExportMenu(!showImageExportMenu)}
             className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex items-center gap-1"
             title={t('common:header.imageExport')}
+            aria-label={t('common:header.imageExport')}
           >
             <Image size={16} />
             <ChevronDown size={14} />
@@ -549,6 +593,7 @@ function Header({
                   : 'text-gray-400 cursor-not-allowed opacity-50'
               }`}
               title={isPremium ? t('common:header.aiAssistant') : `${t('common:header.aiAssistant')} - ${t('subscription:premium')}`}
+              aria-label={t('common:header.aiAssistant')}
             >
               <Sparkles size={14} className={isPremium ? "text-amber-500" : "text-gray-400"} />
             </button>
@@ -581,16 +626,10 @@ function Header({
             
             {/* Wheel Comments Button with Badge */}
             <button
-              onClick={() => {
-                console.log('Comments button clicked', { wheelData, organizationData });
-                if (!wheelData) {
-                  console.warn('wheelData is missing');
-                  return;
-                }
-                setShowCommentsPanel(true);
-              }}
+              onClick={handleOpenCommentsPanel}
               className="relative flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               title={t('notifications:wheelComments.allComments')}
+              aria-label={t('notifications:wheelComments.allComments')}
             >
               <MessageSquare size={18} />
               {unreadCount > 0 && (
@@ -611,165 +650,21 @@ function Header({
 
         {/* Mobile "More" Menu - Shows hidden features on small screens */}
         <div className="lg:hidden">
-          <Dropdown
-            trigger={
-              <button 
-                className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors relative"
-                title={t('common:header.moreOptions')}
-              >
-                <Menu size={18} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {unreadCount > 9 ? '9' : unreadCount}
-                  </span>
-                )}
-              </button>
-            }
+          <button
+            type="button"
+            onClick={() => setShowMobileMenu(true)}
+            className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors relative"
+            aria-label={t('common:header.moreOptions')}
+            aria-expanded={showMobileMenu}
+            aria-controls="mobile-header-drawer"
           >
-            {/* Undo/Redo */}
-            {onUndo && onRedo && (
-              <>
-                <DropdownItem
-                  icon={Undo}
-                  label={t('common:header.undo')}
-                  onClick={onUndo}
-                  disabled={!canUndo}
-                />
-                <DropdownItem
-                  icon={Redo}
-                  label={t('common:header.redo')}
-                  onClick={onRedo}
-                  disabled={!canRedo}
-                />
-                <DropdownDivider />
-              </>
+            <MoreVertical size={18} aria-hidden="true" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {unreadCount > 9 ? '9' : unreadCount}
+              </span>
             )}
-
-            {/* File Operations */}
-            <DropdownItem
-              icon={Upload}
-              label={t('common:header.importFile')}
-              onClick={onLoadFromFile}
-            />
-            <DropdownItem
-              icon={Download}
-              label={t('common:header.exportFile')}
-              onClick={onSaveToFile}
-            />
-            {onExportData && (
-              <DropdownItem
-                icon={FileSpreadsheet}
-                label={
-                  <span className="flex items-center gap-2">
-                    {t('common:header.exportData')}
-                    <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
-                  </span>
-                }
-                onClick={onExportData}
-              />
-            )}
-
-            {/* Image Export */}
-            <DropdownDivider />
-            <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
-              {t('common:header.imageExport')}
-            </div>
-            <DropdownItem
-              icon={Image}
-              label={t('common:header.downloadImage')}
-              onClick={() => onDownloadImage && onDownloadImage(false)}
-            />
-            <DropdownItem
-              icon={Clipboard}
-              label={t('common:header.copyToClipboard')}
-              onClick={() => onDownloadImage && onDownloadImage(true)}
-            />
-
-            {/* Sharing Links */}
-            {wheelId && isPublic && (
-              <>
-                <DropdownDivider />
-                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
-                  {t('common:header.sharingLinks')}
-                </div>
-                <DropdownItem
-                  icon={Eye}
-                  label={copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
-                  onClick={handleCopyPreviewLink}
-                />
-                <DropdownItem
-                  icon={Presentation}
-                  label={t('common:header.presentationMode')}
-                  onClick={handleOpenPresentationMode}
-                />
-                <DropdownItem
-                  icon={Link2}
-                  label={
-                    <span className="flex items-center gap-2">
-                      {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
-                      <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
-                    </span>
-                  }
-                  onClick={handleCopyEmbedLink}
-                />
-              </>
-            )}
-
-            {/* Comments */}
-            {wheelId && (
-              <>
-                <DropdownDivider />
-                <DropdownItem
-                  icon={MessageSquare}
-                  label={
-                    <span className="flex items-center gap-2">
-                      {t('notifications:wheelComments.allComments')}
-                      {unreadCount > 0 && (
-                        <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </span>
-                  }
-                  onClick={() => {
-                    if (!wheelData) return;
-                    setShowCommentsPanel(true);
-                  }}
-                />
-              </>
-            )}
-
-            {/* Onboarding */}
-            {onStartOnboarding && (
-              <>
-                <DropdownDivider />
-                <DropdownItem
-                  icon={Sparkles}
-                  label={t('common:header.startTour')}
-                  onClick={onStartOnboarding}
-                />
-                {!!wheelId && !!onToggleAI && onStartAIOnboarding && (
-                  <DropdownItem
-                    icon={Sparkles}
-                    label={t('common:header.aiTour')}
-                    onClick={onStartAIOnboarding}
-                  />
-                )}
-              </>
-            )}
-
-            {/* Version History */}
-            {onVersionHistory && (
-              <>
-                <DropdownDivider />
-                <DropdownItem
-                  icon={History}
-                  label={t('common:header.versionHistory')}
-                  onClick={onVersionHistory}
-                />
-              </>
-            )}
-          </Dropdown>
+          </button>
         </div>
         
         <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
@@ -790,6 +685,408 @@ function Header({
           </span>
         </button>
       </div>
+
+      {showMobileMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            onClick={closeMobileMenu}
+            aria-hidden="true"
+          />
+          <div
+            id="mobile-header-drawer"
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-xs bg-white shadow-2xl flex flex-col"
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h2 className="text-base font-semibold text-gray-900">{t('common:header.moreOptions')}</h2>
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
+                aria-label={t('common:actions.close')}
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+              {(onUndo && onRedo) || onVersionHistory ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500 mb-2">{t('common:header.history')}</p>
+                  <div className="space-y-2">
+                    {onUndo && onRedo && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={runMobileAction(onUndo)}
+                          disabled={!canUndo}
+                          className={mobileActionClass}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Undo size={16} aria-hidden="true" />
+                            {t('common:header.undo')}
+                          </span>
+                          {undoLabel ? (
+                            <span className="text-xs text-gray-500 truncate max-w-[120px]">{undoLabel}</span>
+                          ) : null}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={runMobileAction(onRedo)}
+                          disabled={!canRedo}
+                          className={mobileActionClass}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Redo size={16} aria-hidden="true" />
+                            {t('common:header.redo')}
+                          </span>
+                          {redoLabel ? (
+                            <span className="text-xs text-gray-500 truncate max-w-[120px]">{redoLabel}</span>
+                          ) : null}
+                        </button>
+                      </>
+                    )}
+                    {onVersionHistory && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onVersionHistory)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <History size={16} aria-hidden="true" />
+                          {t('common:header.versionHistory')}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {(onLoadFromFile || onSaveToFile || onExportData || onTemplateSelect || onReset) && (
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500 mb-2">{t('common:header.fileOperations')}</p>
+                  <div className="space-y-2">
+                    {onLoadFromFile && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onLoadFromFile)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Upload size={16} aria-hidden="true" />
+                          {t('common:header.importFile')}
+                        </span>
+                      </button>
+                    )}
+                    {onSaveToFile && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onSaveToFile)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Download size={16} aria-hidden="true" />
+                          {t('common:header.exportFile')}
+                        </span>
+                      </button>
+                    )}
+                    {onExportData && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onExportData)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <FileSpreadsheet size={16} aria-hidden="true" />
+                          <span className="flex items-center gap-2">
+                            {t('common:header.exportData')}
+                            <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                          </span>
+                        </span>
+                      </button>
+                    )}
+                    {onTemplateSelect && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(() => setShowTemplateModal(true))}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Sparkles size={16} aria-hidden="true" />
+                          {t('common:header.useTemplate')}
+                        </span>
+                      </button>
+                    )}
+                    {onReset && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onReset)}
+                        className={mobileDangerClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <RotateCcw size={16} aria-hidden="true" />
+                          {t('common:header.resetAll')}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-xs font-semibold uppercase text-gray-500 mb-2">{t('common:header.imageExport')}</p>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={runMobileAction(() => handleExport('png-white'))}
+                    className={mobileActionClass}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Download size={16} aria-hidden="true" />
+                      {t('common:actions.download')}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-500 truncate max-w-[120px]">
+                      {t('common:header.pngWhite')}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runMobileAction(() => handleCopyToClipboard('png-white'))}
+                    className={mobileActionClass}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Clipboard size={16} aria-hidden="true" />
+                      {t('common:header.copyToClipboard')}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-500 truncate max-w-[120px]">
+                      {t('common:header.pngWhite')}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runMobileAction(() => handleExport('svg'))}
+                    className={mobileActionClass}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Download size={16} aria-hidden="true" />
+                      {t('common:actions.download')}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-500">SVG</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runMobileAction(() => handleExport('png'))}
+                    disabled={!isPremium}
+                    className={mobileActionClass}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Download size={16} aria-hidden="true" />
+                      {t('common:actions.download')}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs font-semibold text-gray-500 truncate max-w-[120px]">
+                      {t('common:header.pngTransparent')}
+                      {!isPremium && (
+                        <span className="text-amber-600">{t('subscription:premium')}</span>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runMobileAction(() => handleCopyToClipboard('png'))}
+                    disabled={!isPremium}
+                    className={mobileActionClass}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Clipboard size={16} aria-hidden="true" />
+                      {t('common:header.copyToClipboard')}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs font-semibold text-gray-500 truncate max-w-[120px]">
+                      {t('common:header.pngTransparent')}
+                      {!isPremium && (
+                        <span className="text-amber-600">{t('subscription:premium')}</span>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runMobileAction(() => handleExport('jpeg'))}
+                    disabled={!isPremium}
+                    className={mobileActionClass}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Download size={16} aria-hidden="true" />
+                      {t('common:actions.download')}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs font-semibold text-gray-500">
+                      JPEG
+                      {!isPremium && (
+                        <span className="text-amber-600">{t('subscription:premium')}</span>
+                      )}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runMobileAction(() => handleExport('pdf'))}
+                    disabled={!isPremium}
+                    className={mobileActionClass}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Download size={16} aria-hidden="true" />
+                      {t('common:actions.download')}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs font-semibold text-gray-500">
+                      PDF
+                      {!isPremium && (
+                        <span className="text-amber-600">{t('subscription:premium')}</span>
+                      )}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {wheelId && (
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500 mb-2">{t('common:actions.share')}</p>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={runMobileAction(handleOpenCommentsPanel)}
+                      disabled={!wheelData}
+                      className={mobileActionClass}
+                    >
+                      <span className="flex items-center gap-3">
+                        <MessageSquare size={16} aria-hidden="true" />
+                        {t('notifications:wheelComments.allComments')}
+                      </span>
+                      {unreadCount > 0 && (
+                        <span className="text-xs font-semibold text-white bg-red-500 rounded-full px-2 py-0.5">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </button>
+
+                    {isPublic && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={runMobileAction(handleCopyPreviewLink)}
+                          className={mobileActionClass}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Eye size={16} aria-hidden="true" />
+                            {copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={runMobileAction(handleOpenPresentationMode)}
+                          className={mobileActionClass}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Presentation size={16} aria-hidden="true" />
+                            {t('common:header.presentationMode')}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={runMobileAction(handleCopyEmbedLink)}
+                          className={mobileActionClass}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Link2 size={16} aria-hidden="true" />
+                            {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
+                          </span>
+                          <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                            BETA
+                          </span>
+                        </button>
+                      </>
+                    )}
+
+                    {onTogglePublic && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onTogglePublic)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          {isPublic ? <Globe size={16} aria-hidden="true" /> : <Lock size={16} aria-hidden="true" />}
+                          {isPublic ? t('subscription:publicShare.public') : t('subscription:publicShare.private')}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {isPublic ? t('subscription:publicShare.isPublic') : t('subscription:publicShare.makePublic')}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(onToggleAI || onStartOnboarding || (isAdmin && onToggleTemplate)) && (
+                <div>
+                  <p className="text-xs font-semibold uppercase text-gray-500 mb-2">{t('common:actions.more')}</p>
+                  <div className="space-y-2">
+                    {onToggleAI && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onToggleAI)}
+                        disabled={!isPremium}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Sparkles size={16} aria-hidden="true" />
+                          {t('common:header.aiAssistant')}
+                        </span>
+                        {!isPremium && (
+                          <span className="text-xs text-amber-600 font-semibold">{t('subscription:premium')}</span>
+                        )}
+                      </button>
+                    )}
+                    {onStartOnboarding && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onStartOnboarding)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Sparkles size={16} aria-hidden="true" />
+                          {t('common:header.startTour')}
+                        </span>
+                      </button>
+                    )}
+                    {onStartAIOnboarding && onToggleAI && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onStartAIOnboarding)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Sparkles size={16} aria-hidden="true" />
+                          {t('common:header.aiTour')}
+                        </span>
+                      </button>
+                    )}
+                    {wheelId && isAdmin && onToggleTemplate && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onToggleTemplate)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Sparkles size={16} aria-hidden="true" />
+                          {isTemplate ? t('common:header.template') : t('common:header.markAsTemplate')}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Template Selection Modal */}
       <TemplateSelectionModal

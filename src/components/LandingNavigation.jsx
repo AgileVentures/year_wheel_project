@@ -13,6 +13,9 @@ function LandingNavigation({
   scrollToAuth 
 }) {
   const { t } = useTranslation(['landing', 'auth']);
+  const menuToggleLabel = mobileMenuOpen
+    ? t('landing:nav.closeMenu', 'Close menu')
+    : t('landing:nav.openMenu', 'Open menu');
 
   const handleLoginClick = () => {
     setAuthMode('login');
@@ -77,7 +80,8 @@ function LandingNavigation({
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-                aria-label="Toggle menu"
+                aria-label={menuToggleLabel}
+                title={menuToggleLabel}
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
