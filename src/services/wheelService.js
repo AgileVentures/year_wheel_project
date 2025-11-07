@@ -816,7 +816,7 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   // when items change page_id (e.g., multi-year activities getting re-assigned).
   const { data: existing } = await supabase
     .from('items')
-    .select('id, name, page_id, start_date, end_date')
+    .select('id, name, page_id, start_date, end_date, created_at')
     .eq('wheel_id', wheelId);
 
   console.log(`[syncItems] Found ${existing?.length || 0} existing items in database`);
@@ -825,7 +825,8 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       id: i.id.substring(0, 8),
       name: i.name,
       pageId: i.page_id.substring(0, 8),
-      dates: `${i.start_date} to ${i.end_date}`
+      dates: `${i.start_date} to ${i.end_date}`,
+      createdAt: i.created_at
     })));
   }
 
@@ -845,7 +846,25 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   const existingPageItems = existing?.filter(i => i.page_id === pageId) || [];
   const existingPageIds = new Set(existingPageItems.map(i => i.id));
   
-  const toDelete = [...existingPageIds].filter(id => !currentIds.has(id));
+  // CRITICAL SAFETY: Never delete items created in the last 10 seconds
+  // (they might be continuation items not yet in organizationData)
+  const now = new Date();
+  const recentlyCreated = new Set(
+    existing
+      ?.filter(i => {
+        const createdAt = new Date(i.created_at);
+        const ageSeconds = (now - createdAt) / 1000;
+        return ageSeconds < 10;
+      })
+      .map(i => i.id) || []
+  );
+  
+  if (recentlyCreated.size > 0) {
+    console.log(`[syncItems] Found ${recentlyCreated.size} recently created items (will not delete):`, 
+      [...recentlyCreated].map(id => id.substring(0, 8)));
+  }
+  
+  const toDelete = [...existingPageIds].filter(id => !currentIds.has(id) && !recentlyCreated.has(id));
   
   console.log(`[syncItems] Items on current page (${pageId?.substring(0, 8)}): ${existingPageItems.length}`);
   console.log(`[syncItems] Items to DELETE: ${toDelete.length}`, toDelete.map(id => id.substring(0, 8)));
@@ -1004,6 +1023,7 @@ const mapDbItemToClient = (dbItem) => {
 };
 
 export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Map(), activityIdMap = new Map(), labelIdMap = new Map()) => {
+  console.log(`[updateSingleItem] wheelId=${wheelId?.substring(0,8)}, pageId=${pageId?.substring(0,8)}, item.pageId=${item.pageId?.substring(0,8)}, item.name="${item.name}", dates=${item.startDate} to ${item.endDate}`);
   
   // Map old IDs to new database UUIDs
   let ringId = ringIdMap.get(item.ringId) || item.ringId;
@@ -1028,6 +1048,9 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     labelId = null;
   }
   
+  const determinedPageId = item.pageId || pageId || null;
+  console.log(`[updateSingleItem] Using page_id: ${determinedPageId?.substring(0,8)} (item.pageId=${item.pageId?.substring(0,8)}, pageId param=${pageId?.substring(0,8)})`);
+  
   const itemData = {
     wheel_id: wheelId,
     ring_id: ringId,
@@ -1038,7 +1061,7 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     end_date: item.endDate,
     time: item.time || null,
     description: item.description || null,
-    page_id: item.pageId || pageId || null,
+    page_id: determinedPageId,
     // Wheel linking fields (optional)
     linked_wheel_id: item.linkedWheelId || null,
     link_type: item.linkType || null,
@@ -1048,7 +1071,10 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
   // Check if item exists in database
   const isNew = !item.id || item.id.startsWith('item-');
   
+  console.log(`[updateSingleItem] isNew=${isNew}, item.id=${item.id?.substring(0,8) || 'NONE'}`);
+  
   if (isNew) {
+    console.log(`[updateSingleItem] INSERTING new item "${item.name}" with page_id=${determinedPageId?.substring(0,8)}`);
     const { data, error } = await supabase
       .from('items')
       .insert(itemData)
@@ -1058,9 +1084,11 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
       console.error(`Error inserting item "${item.name}":`, error);
       throw error;
     }
+    console.log(`[updateSingleItem] INSERT successful, new id=${data.id.substring(0,8)}, page_id=${data.page_id.substring(0,8)}`);
     return mapDbItemToClient(data);
   }
 
+  console.log(`[updateSingleItem] UPDATING item "${item.name}" id=${item.id.substring(0,8)} with page_id=${determinedPageId?.substring(0,8)}`);
   const { data, error } = await supabase
     .from('items')
     .update(itemData)
@@ -1071,6 +1099,7 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     console.error(`Error updating item "${item.name}":`, error);
     throw error;
   }
+  console.log(`[updateSingleItem] UPDATE successful, page_id=${data.page_id.substring(0,8)}`);
 
   return mapDbItemToClient(data);
 };
