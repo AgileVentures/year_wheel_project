@@ -5093,6 +5093,10 @@ class YearWheel {
     }
 
     // NOW draw month ring AFTER inner rings (so it's on top)
+    if (this.shouldDrawYearBoundaryHighlight(zoomStartDate, zoomEndDate)) {
+      this.drawYearBoundaryHighlight(zoomStartDate, zoomEndDate);
+    }
+
     if (this.showMonthRing) {
       // Get months for current zoom level
       const monthsToDisplay = this.getMonthsForZoom();
@@ -5297,6 +5301,137 @@ class YearWheel {
     // FINALLY draw drag preview INSIDE the rotated context
     this.drawDragPreviewInRotatedContext();
 
+    this.context.restore();
+  }
+
+  shouldDrawYearBoundaryHighlight(visibleStartDate, visibleEndDate) {
+    if (!visibleEndDate || !(visibleEndDate instanceof Date)) {
+      return false;
+    }
+
+    return visibleEndDate.getMonth() === 11 && visibleEndDate.getDate() >= 31;
+  }
+
+  drawYearBoundaryHighlight(visibleStartDate, visibleEndDate) {
+    if (!this.renderedRingPositions || this.renderedRingPositions.size === 0) {
+      return;
+    }
+
+    const startDate = visibleStartDate instanceof Date
+      ? visibleStartDate
+      : new Date(parseInt(this.year, 10) || new Date().getFullYear(), 0, 1);
+    const endDate = visibleEndDate instanceof Date
+      ? visibleEndDate
+      : new Date(parseInt(this.year, 10) || new Date().getFullYear(), 11, 31);
+
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    const totalVisibleDays = Math.max(
+      1,
+      Math.round((endDate.getTime() - startDate.getTime()) / MS_PER_DAY) + 1
+    );
+
+    let highlightDays = 5;
+    if (this.zoomedMonth !== null) {
+      highlightDays = 2;
+    } else if (this.zoomedQuarter !== null) {
+      highlightDays = 3;
+    }
+    highlightDays = Math.min(highlightDays, totalVisibleDays);
+
+    let highlightSpanDegrees = (highlightDays / totalVisibleDays) * 360;
+    highlightSpanDegrees = Math.min(20, Math.max(2.5, highlightSpanDegrees));
+    const highlightSpanRadians = this.toRadians(highlightSpanDegrees);
+
+    const boundaryAngle = this.toRadians(this.initAngle);
+    const startAngle = boundaryAngle - highlightSpanRadians / 2;
+    const endAngle = boundaryAngle + highlightSpanRadians / 2;
+
+    let innerRadius = Number.POSITIVE_INFINITY;
+    let outerRadius = 0;
+
+    for (const ringInfo of this.renderedRingPositions.values()) {
+      innerRadius = Math.min(innerRadius, ringInfo.startRadius);
+      outerRadius = Math.max(outerRadius, ringInfo.endRadius);
+    }
+
+    if (!Number.isFinite(innerRadius) || outerRadius <= innerRadius) {
+      innerRadius = this.minRadius;
+      outerRadius = this.maxRadius - this.size / 50;
+    }
+
+    const radiusPadding = this.size / 180;
+    innerRadius = Math.max(this.minRadius, innerRadius - radiusPadding);
+    outerRadius = Math.min(this.maxRadius, outerRadius + radiusPadding);
+
+    const startOuterX = this.center.x + Math.cos(startAngle) * outerRadius;
+    const startOuterY = this.center.y + Math.sin(startAngle) * outerRadius;
+    const endOuterX = this.center.x + Math.cos(endAngle) * outerRadius;
+    const endOuterY = this.center.y + Math.sin(endAngle) * outerRadius;
+
+    const angularGradient = this.context.createLinearGradient(
+      startOuterX,
+      startOuterY,
+      endOuterX,
+      endOuterY
+    );
+    angularGradient.addColorStop(0, "rgba(255, 255, 255, 0)");
+    angularGradient.addColorStop(0.5, "rgba(255, 255, 255, 0.32)");
+    angularGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+    this.context.save();
+    this.context.shadowColor = "rgba(15, 23, 42, 0.35)";
+    this.context.shadowBlur = Math.max(4, this.size / 150);
+    this.context.shadowOffsetX = 0;
+    this.context.shadowOffsetY = 0;
+    this.context.fillStyle = angularGradient;
+    this.context.beginPath();
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      innerRadius,
+      startAngle,
+      endAngle,
+      false
+    );
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      outerRadius,
+      endAngle,
+      startAngle,
+      true
+    );
+    this.context.closePath();
+    this.context.fill();
+    this.context.restore();
+
+    const lineInnerRadius = Math.max(this.minRadius, innerRadius - this.size / 220);
+    const lineOuterRadius = Math.min(this.maxRadius, outerRadius + this.size / 90);
+    const lineStartX = this.center.x + Math.cos(boundaryAngle) * lineInnerRadius;
+    const lineStartY = this.center.y + Math.sin(boundaryAngle) * lineInnerRadius;
+    const lineEndX = this.center.x + Math.cos(boundaryAngle) * lineOuterRadius;
+    const lineEndY = this.center.y + Math.sin(boundaryAngle) * lineOuterRadius;
+
+    this.context.save();
+    this.context.strokeStyle = "rgba(30, 41, 59, 0.55)";
+    this.context.lineWidth = Math.max(1.5, this.size / 620);
+    this.context.shadowColor = "rgba(15, 23, 42, 0.4)";
+    this.context.shadowBlur = Math.max(2, this.size / 210);
+    this.context.shadowOffsetX = 0;
+    this.context.shadowOffsetY = 0;
+    this.context.beginPath();
+    this.context.moveTo(lineStartX, lineStartY);
+    this.context.lineTo(lineEndX, lineEndY);
+    this.context.stroke();
+    this.context.restore();
+
+    this.context.save();
+    this.context.strokeStyle = "rgba(255, 255, 255, 0.65)";
+    this.context.lineWidth = Math.max(0.75, this.size / 900);
+    this.context.beginPath();
+    this.context.moveTo(lineStartX, lineStartY);
+    this.context.lineTo(lineEndX, lineEndY);
+    this.context.stroke();
     this.context.restore();
   }
 
