@@ -615,17 +615,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
         
         if (Object.keys(updates).length > 0) {
-          // Allow loaded data to be added to history
+          const previousLoadingFlag = isLoadingData.current;
+          const shouldResetHistoryAfterLoad = reason === 'manual' && isInitialLoad.current;
+          const historyLabel = reason === 'realtime'
+            ? { type: 'legacyString', text: 'Synkroniserad från servern' }
+            : 'Ladda hjul';
+
+          // Temporarily allow undo stack to capture the refreshed state
           isLoadingData.current = false;
-          setUndoableStates(updates, 'Ladda hjul');
-          // Immediately block again to prevent other effects
-          isLoadingData.current = true;
+          setUndoableStates(updates, historyLabel);
+          // Restore loading guard immediately after state update
+          isLoadingData.current = previousLoadingFlag;
           
-          // CRITICAL: Clear history after load to ensure we start with a clean slate
-          // This prevents undoing to an empty initial state
-          setTimeout(() => {
-            clearHistory();
-          }, 100); // Short delay to ensure state is fully updated
+          if (shouldResetHistoryAfterLoad) {
+            // On true initial load we still seed a clean history baseline
+            setTimeout(() => {
+              clearHistory();
+            }, 100); // Short delay to ensure state is fully updated
+          }
         }
         
         // Load other settings
