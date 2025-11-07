@@ -444,8 +444,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           // IMPORTANT: Year will be set via setUndoableStates() to avoid creating history entry
           yearToLoad = String(pageToLoad.year || new Date().getFullYear());
           
-          // Fetch items for this specific page only
-          const pageItems = await fetchPageData(pageToLoad.id);
+          // Fetch items for this specific page AND multi-year items that overlap
+          const pageItems = await fetchPageData(pageToLoad.id, pageToLoad.year, wheelId);
           console.log(`[loadWheelData] Fetched ${pageItems.length} items for page ${pageToLoad.id} (year: ${pageToLoad.year})`);
           
           // Fetch rings, activity groups, and labels from database tables
@@ -705,17 +705,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     // COMPLETELY IGNORE all events if we're in the middle of saving
     if (isSavingRef.current) {
+      console.log('[Realtime] Ignoring update - save in progress');
       return;
     }
 
     // Ignore realtime churn while user is dragging to prevent visual snapbacks
     if (isDraggingRef.current) {
+      console.log('[Realtime] Ignoring update - drag in progress');
       return;
     }
     
     // Ignore broadcasts from our own recent saves (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
     if (timeSinceLastSave < 5000) {
+      console.log('[Realtime] Ignoring update - recent save (<5s)');
+      return;
+    }
+    
+    // CRITICAL: Check if we have unsaved changes - don't overwrite local work!
+    if (hasUnsavedChanges) {
+      console.log('[Realtime] Ignoring update - unsaved local changes exist');
       return;
     }
     
@@ -1670,8 +1679,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         setCurrentPageId(pageId);
         
-        // Fetch fresh data for the new page
-        const pageItems = await fetchPageData(pageId);
+        // Fetch fresh data for the new page AND multi-year items that overlap
+        const newPageYear = newPage.year || new Date().getFullYear();
+        const pageItems = await fetchPageData(pageId, newPageYear, wheelId);
         
         // Fetch rings, activity groups, and labels from database (wheel-level, shared)
         const { data: dbRings } = await supabase
@@ -1933,8 +1943,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       setCurrentPageId(newPage.id);
       setYear(String(nextYear));
       
-      // Fetch items from database to get the real UUIDs
-      const savedItems = await fetchPageData(newPage.id);
+      // Fetch items from database to get the real UUIDs AND multi-year items
+      const savedItems = await fetchPageData(newPage.id, nextYear, wheelId);
       
       // Update organizationData with saved items (keep wheel-level structures)
       setOrganizationData(prevData => ({

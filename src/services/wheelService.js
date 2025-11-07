@@ -222,13 +222,59 @@ export const fetchWheel = async (wheelId) => {
  * @property {string|null} linkedWheelId - Reference to another wheel (for inter-wheel linking)
  * @property {string|null} linkType - Type of link: 'reference' or 'dependency'
  */
-export const fetchPageData = async (pageId) => {
-  const { data: items, error: itemsError } = await supabase
+/**
+ * Fetch items for a specific page
+ * CRITICAL: Also fetches multi-year items that span into this page's year
+ * 
+ * @param {string} pageId - The page ID
+ * @param {number} pageYear - The year of this page (to find multi-year items)
+ * @param {string} wheelId - The wheel ID (to find all items for this wheel)
+ * @returns {Promise<Array>} Items for this page
+ */
+export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => {
+  let items = [];
+  
+  // First, fetch items assigned to this page
+  const { data: pageItems, error: itemsError } = await supabase
     .from('items')
     .select('*')
     .eq('page_id', pageId);
 
   if (itemsError) throw itemsError;
+  
+  items = pageItems || [];
+  
+  // If we have both pageYear and wheelId, also fetch multi-year items that overlap with this year
+  if (pageYear && wheelId) {
+    const yearStart = `${pageYear}-01-01`;
+    const yearEnd = `${pageYear}-12-31`;
+    
+    // Find items from other pages of the same wheel that overlap with this year
+    const { data: multiYearItems, error: multiYearError } = await supabase
+      .from('items')
+      .select('*')
+      .eq('wheel_id', wheelId)
+      .neq('page_id', pageId) // Different page
+      .or(`start_date.lte.${yearEnd},end_date.gte.${yearStart}`); // Overlaps with this year
+    
+    if (multiYearError) {
+      console.error('Error fetching multi-year items:', multiYearError);
+    } else if (multiYearItems && multiYearItems.length > 0) {
+      // Filter to only include items that actually span into this year
+      const filteredMultiYear = multiYearItems.filter(item => {
+        const startDate = new Date(item.start_date);
+        const endDate = new Date(item.end_date);
+        const yearStartDate = new Date(yearStart);
+        const yearEndDate = new Date(yearEnd);
+        
+        // Item overlaps if: start <= yearEnd AND end >= yearStart
+        return startDate <= yearEndDate && endDate >= yearStartDate;
+      });
+      
+      console.log(`[fetchPageData] Found ${filteredMultiYear.length} multi-year items for year ${pageYear}`);
+      items = [...items, ...filteredMultiYear];
+    }
+  }
 
   return items.map(i => ({
     id: i.id,
