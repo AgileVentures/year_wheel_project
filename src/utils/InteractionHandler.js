@@ -584,7 +584,7 @@ class InteractionHandler {
     if (newEndDate > yearEnd) {
       overflowEndDate = new Date(newEndDate.getTime());
       
-      console.log(`[InteractionHandler] Item extends past year end: ${formatDate(newEndDate)} > ${formatDate(yearEnd)}`);
+      console.log(`[InteractionHandler] Item extends past year end: ${newEndDate.toISOString().split('T')[0]} > ${yearEnd.toISOString().split('T')[0]}`);
 
       if (
         originalItem &&
@@ -606,7 +606,7 @@ class InteractionHandler {
       }
 
       // Always clamp current year's item to December 31
-      console.log(`[InteractionHandler] Clamping "${originalItem?.name}" endDate from ${formatDate(newEndDate)} to ${formatDate(yearEnd)}`);
+      console.log(`[InteractionHandler] Clamping "${originalItem?.name}" endDate from ${newEndDate.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
       newEndDate = yearEnd;
     }
 
