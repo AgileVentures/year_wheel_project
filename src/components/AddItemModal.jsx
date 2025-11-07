@@ -331,7 +331,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
 
               {/* Recurring options */}
               {formData.isRecurring && (
-                <div className="space-y-3 pl-6 border-l-2 border-blue-200">
+                <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">
