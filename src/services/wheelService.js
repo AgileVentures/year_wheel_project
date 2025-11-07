@@ -821,24 +821,18 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
 
   console.log(`[syncItems] Found ${existing?.length || 0} existing items in database`);
   if (existing && existing.length > 0) {
-    console.log('[syncItems] Existing items:', existing.map(i => ({
-      id: i.id.substring(0, 8),
-      name: i.name,
-      pageId: i.page_id.substring(0, 8),
-      dates: `${i.start_date} to ${i.end_date}`,
-      createdAt: i.created_at
-    })));
+    existing.forEach((i, idx) => {
+      console.log(`[syncItems]   Item ${idx + 1}: id=${i.id.substring(0, 8)}, name="${i.name}", pageId=${i.page_id.substring(0, 8)}, dates=${i.start_date} to ${i.end_date}, created=${i.created_at}`);
+    });
   }
 
   const existingIds = new Set(existing?.map(i => i.id) || []);
   const currentIds = new Set(items.map(i => i.id).filter(id => id && !id.startsWith('item-')));
 
-  console.log(`[syncItems] Items to sync (from organizationData):`, items.map(i => ({
-    id: i.id ? i.id.substring(0, 8) : 'NEW',
-    name: i.name,
-    dates: `${i.startDate} to ${i.endDate}`,
-    pageId: i.pageId ? i.pageId.substring(0, 8) : 'NONE'
-  })));
+  console.log(`[syncItems] Items to sync (from organizationData):`);
+  items.forEach((i, idx) => {
+    console.log(`[syncItems]   Item ${idx + 1}: id=${i.id ? i.id.substring(0, 8) : 'NEW'}, name="${i.name}", pageId=${i.pageId ? i.pageId.substring(0, 8) : 'NONE'}, dates=${i.startDate} to ${i.endDate}`);
+  });
 
   // CRITICAL: Only delete items that are truly removed from the wheel,
   // NOT items that just moved to a different page (multi-year activities).
@@ -854,15 +848,16 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       ?.filter(i => {
         const createdAt = new Date(i.created_at);
         const ageSeconds = (now - createdAt) / 1000;
-        return ageSeconds < 10;
+        const isRecent = ageSeconds < 10;
+        if (isRecent) {
+          console.log(`[syncItems]   Recently created: id=${i.id.substring(0, 8)}, name="${i.name}", age=${ageSeconds.toFixed(1)}s`);
+        }
+        return isRecent;
       })
       .map(i => i.id) || []
   );
   
-  if (recentlyCreated.size > 0) {
-    console.log(`[syncItems] Found ${recentlyCreated.size} recently created items (will not delete):`, 
-      [...recentlyCreated].map(id => id.substring(0, 8)));
-  }
+  console.log(`[syncItems] Found ${recentlyCreated.size} recently created items that will be protected from deletion`);
   
   const toDelete = [...existingPageIds].filter(id => !currentIds.has(id) && !recentlyCreated.has(id));
   

@@ -467,91 +467,80 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             .eq('wheel_id', wheelId);
           
           
-          if (pageToLoad.organization_data) {
-            const orgData = pageToLoad.organization_data;
-            
-            // Replace items with page-specific items from database
-            orgData.items = pageItems;
-            
-            // Replace rings, activityGroups, labels with database versions (using UUIDs)
-            // Keep any client-ID entities from JSONB for backward compatibility
-            const jsonbRings = orgData.rings || [];
-            const jsonbGroups = orgData.activityGroups || orgData.activities || [];
-            const jsonbLabels = orgData.labels || [];
-            
-            // Merge: Use DB entities (UUID-based) + keep client-ID entities from JSONB
-            orgData.rings = [
-              ...(dbRings || []).map(r => ({
-                id: r.id,
-                name: r.name,
-                type: r.type,  // ✅ FIXED: Database column is 'type' not 'ring_type'
-                visible: r.visible,
-                orientation: r.orientation || 'vertical',
-                color: r.color || '#408cfb',  // Fallback to blue if null
-                data: r.data || [[""]]
-              })),
-              ...jsonbRings.filter(r => !r.id.match(/^[0-9a-f-]{36}$/i)) // Keep client IDs like "ring-123"
-            ];
-            
-            orgData.activityGroups = [
-              ...(dbActivityGroups || []).map(g => ({
-                id: g.id,
-                name: g.name,
-                color: g.color || '#8B5CF6',  // Fallback to purple if null
-                visible: g.visible
-              })),
-              ...jsonbGroups.filter(g => !g.id.match(/^[0-9a-f-]{36}$/i)) // Keep client IDs like "group-123"
-            ];
-            
-            orgData.labels = [
-              ...(dbLabels || []).map(l => ({
-                id: l.id,
-                name: l.name,
-                color: l.color,
-                visible: l.visible
-              })),
-              ...jsonbLabels.filter(l => !l.id.match(/^[0-9a-f-]{36}$/i)) // Keep client IDs like "label-123"
-            ];
-                        
-            // Backward compatibility: convert old 'activities' to 'activityGroups'
-            if (orgData.activities && !orgData.activityGroups) {
-              orgData.activityGroups = orgData.activities;
-              delete orgData.activities;
-            }
-            
-            // Ensure at least one activity group exists
-            if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
-              orgData.activityGroups = [{
-                id: "group-1",
-                name: "Aktivitetsgrupp 1",
-                color: wheelData.colors?.[0] || "#F5E6D3",
-                visible: true
-              }];
-            }
-            
-            // Apply color fallback for outer rings (use wheel colors if ring has no color)
-            if (orgData.rings && orgData.rings.length > 0) {
-              orgData.rings = orgData.rings.map((ring, index) => {
-                if (ring.type === 'outer' && !ring.color) {
-                  const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
-                  const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
-                  return {
-                    ...ring,
-                    color: fallbackColor
-                  };
-                }
-                return ring;
-              });
-            }
-            
-            // Filter items to only include current year
-            const beforeFilter = orgData.items.length;
-            orgData.items = filterItemsByYear(orgData.items, parseInt(yearToLoad));
-            const afterFilter = orgData.items.length;
-            console.log(`[loadWheelData] Year filter: ${beforeFilter} items → ${afterFilter} items for year ${yearToLoad}`);
-            
-            orgDataToSet = orgData;
+          // CRITICAL: Build organization data from DATABASE, not JSONB
+          // JSONB is just a backup - database tables are the source of truth
+          const orgData = {
+            rings: [],
+            activityGroups: [],
+            labels: [],
+            items: pageItems // Items ALWAYS come from database
+          };
+          
+          // Rings from database (shared across all pages)
+          orgData.rings = (dbRings || []).map(r => ({
+            id: r.id,
+            name: r.name,
+            type: r.type,
+            visible: r.visible,
+            orientation: r.orientation || 'vertical',
+            color: r.color || '#408cfb',
+            data: r.data || [[""]]
+          }));
+          
+          // Activity groups from database (shared across all pages)
+          orgData.activityGroups = (dbActivityGroups || []).map(g => ({
+            id: g.id,
+            name: g.name,
+            color: g.color || '#8B5CF6',
+            visible: g.visible
+          }));
+          
+          // Labels from database (shared across all pages)
+          orgData.labels = (dbLabels || []).map(l => ({
+            id: l.id,
+            name: l.name,
+            color: l.color,
+            visible: l.visible
+          }));
+          
+          // Backward compatibility: convert old 'activities' to 'activityGroups'
+          if (orgData.activities && !orgData.activityGroups) {
+            orgData.activityGroups = orgData.activities;
+            delete orgData.activities;
           }
+          
+          // Ensure at least one activity group exists
+          if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
+            orgData.activityGroups = [{
+              id: "group-1",
+              name: "Aktivitetsgrupp 1",
+              color: wheelData.colors?.[0] || "#F5E6D3",
+              visible: true
+            }];
+          }
+          
+          // Apply color fallback for outer rings (use wheel colors if ring has no color)
+          if (orgData.rings && orgData.rings.length > 0) {
+            orgData.rings = orgData.rings.map((ring, index) => {
+              if (ring.type === 'outer' && !ring.color) {
+                const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
+                const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
+                return {
+                  ...ring,
+                  color: fallbackColor
+                };
+              }
+              return ring;
+            });
+          }
+          
+          // Filter items to only include current year
+          const beforeFilter = orgData.items.length;
+          orgData.items = filterItemsByYear(orgData.items, parseInt(yearToLoad));
+          const afterFilter = orgData.items.length;
+          console.log(`[loadWheelData] Year filter: ${beforeFilter} items → ${afterFilter} items for year ${yearToLoad}`);
+          
+          orgDataToSet = orgData;
         } else {
           // Fallback: Load from wheel's organization data (legacy support)
           yearToLoad = String(wheelData.year || new Date().getFullYear());
@@ -1416,23 +1405,67 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Update React state with UUIDs
         setOrganizationData(updatedOrgData);
         
-        // Update the page's organization_data JSONB
-        // Filter items to only include those for this page's year (for JSONB storage)
-        const pageYear = parseInt(currentYear);
-        const pageItems = updatedOrgData.items.filter(item => {
-          const itemStartYear = new Date(item.startDate).getFullYear();
-          return itemStartYear === pageYear; // Items belong to their start year's page
+        // CRITICAL: Update ALL pages' organization_data JSONB with their respective items
+        // This ensures continuation items appear when opening the wheel in another browser
+        
+        // Fetch ALL items from the database for this wheel (after syncItems has saved them)
+        const { data: allWheelItems, error: fetchError } = await supabase
+          .from('items')
+          .select('*')
+          .eq('wheel_id', wheelId);
+        
+        if (fetchError) {
+          console.error('[handleSave] Failed to fetch all wheel items:', fetchError);
+          throw fetchError;
+        }
+        
+        // Convert database items to client format
+        const clientItems = (allWheelItems || []).map(i => ({
+          id: i.id,
+          ringId: i.ring_id,
+          activityId: i.activity_id,
+          labelId: i.label_id,
+          name: i.name,
+          startDate: i.start_date,
+          endDate: i.end_date,
+          time: i.time,
+          description: i.description,
+          pageId: i.page_id,
+          linkedWheelId: i.linked_wheel_id,
+          linkType: i.link_type,
+        }));
+        
+        // Update ALL pages' JSONB with their respective items
+        const allPagesData = pages.map(page => {
+          const pageYear = page.year;
+          // Each page gets items that START in its year
+          const pageItems = clientItems.filter(item => {
+            const itemStartYear = new Date(item.startDate).getFullYear();
+            return itemStartYear === pageYear;
+          });
+          
+          console.log(`[handleSave] Page ${page.year}: ${pageItems.length} items (${pageItems.map(i => i.name).join(', ')})`);
+          
+          return {
+            pageId: page.id,
+            year: pageYear,
+            organization_data: {
+              rings: updatedOrgData.rings,
+              activityGroups: updatedOrgData.activityGroups,
+              labels: updatedOrgData.labels,
+              items: pageItems
+            }
+          };
         });
         
-        if (currentCurrentPageId) {
-          await updatePage(currentCurrentPageId, {
-            organization_data: {
-              ...updatedOrgData,
-              items: pageItems // Page JSONB gets items that START in this year
-            },
-            year: pageYear
-          });
-        }
+        // Update all pages in parallel
+        await Promise.all(
+          allPagesData.map(({ pageId, year, organization_data }) =>
+            updatePage(pageId, { organization_data, year })
+          )
+        );
+        
+        console.log(`[handleSave] Updated ${allPagesData.length} pages with latest data`);
         
         // Mark the save timestamp to ignore our own broadcasts
         lastSaveTimestamp.current = Date.now();
@@ -1641,25 +1674,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (pageId === currentPageId) return;
     
     try {
-      // Save current page data before switching
-      if (currentPageId) {
-        // CRITICAL: Filter items to only those belonging to this page's year
-        const currentYearNum = parseInt(year);
-        const pageSpecificItems = (organizationData.items || []).filter(item => {
-          const itemStartYear = new Date(item.startDate).getFullYear();
-          const itemEndYear = new Date(item.endDate).getFullYear();
-          // Include item if it overlaps with current year
-          return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
-        });
-        
-        await updatePage(currentPageId, {
-          organization_data: {
-            ...organizationData,
-            items: pageSpecificItems
-          },
-          year: currentYearNum
-        });
-      }
+      // NOTE: We DO NOT save organization_data.items here anymore!
+      // Items are stored in the `items` table only.
+      // JSONB organization_data only contains rings, activityGroups, labels (wheel-level data)
       
       // Load new page data
       const newPage = pages.find(p => p.id === pageId);
@@ -2835,6 +2852,27 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         );
 
         createdSegments.push({ year: segment.year, item: savedItem });
+
+        // CRITICAL: Update the target page's organization_data JSONB in the database
+        // This ensures the continuation item appears when loading in other browsers/tabs
+        try {
+          const pageOrgData = targetPage.organization_data || {};
+          const existingPageItems = pageOrgData.items || [];
+          const itemExists = existingPageItems.some(existing => existing.id === savedItem.id);
+          const updatedPageItems = itemExists
+            ? existingPageItems.map(existing => existing.id === savedItem.id ? savedItem : existing)
+            : [...existingPageItems, savedItem];
+
+          await updatePage(pageId, {
+            organization_data: {
+              ...pageOrgData,
+              items: updatedPageItems,
+            },
+          });
+        } catch (pageUpdateError) {
+          console.error('[MultiYear] Failed to update page organization_data:', pageUpdateError);
+          // Continue anyway - item is saved to items table
+        }
 
         setPages((prevPages) => {
           let updated = prevPages.map((page) => {
