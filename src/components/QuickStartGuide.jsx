@@ -392,7 +392,7 @@ function QuickStartGuide() {
       imageCaption: "Editor view with side panel where you configure rings and activity groups",
       content: (
         <>
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
             <p className="text-purple-900 font-medium mb-2">💡 What are rings?</p>
             <p className="text-purple-800"><strong>Rings</strong> are the main categories in your wheel - like departments, projects, or focus areas. They appear as circular bands around the year wheel where you place activities.</p>
           </div>
@@ -424,7 +424,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
             <p className="text-amber-900 font-medium mb-2">📚 Example rings:</p>
             <ul className="text-amber-800 space-y-2">
               <li><strong>For business planning:</strong> Marketing, Sales, Product, Operations</li>
@@ -443,7 +443,7 @@ function QuickStartGuide() {
       time: "2 minutes",
       content: (
         <>
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
             <p className="text-purple-900 font-medium mb-2">🎨 What are activity groups?</p>
             <p className="text-purple-800"><strong>Activity Groups</strong> determine the color of your activities. Think of them as color-coding categories - all activities in the same group will have the same color on your wheel.</p>
           </div>
@@ -475,7 +475,7 @@ function QuickStartGuide() {
             </li>
           </ol>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
             <p className="text-amber-900 font-medium mb-2">📚 Example groups:</p>
             <ul className="text-amber-800 space-y-2">
               <li><strong>By type:</strong> Campaigns, Events, Recurring Tasks, Milestones</li>
@@ -484,7 +484,7 @@ function QuickStartGuide() {
             </ul>
           </div>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
             <p className="text-green-900 font-medium mb-2">💡 Why colors matter</p>
             <p className="text-green-800">When you have many activities on your wheel, colors help you instantly recognize patterns - like seeing all Q2 activities at a glance, or spotting all high-priority items.</p>
           </div>
@@ -498,7 +498,7 @@ function QuickStartGuide() {
       imageCaption: "Form for creating a new activity with all necessary fields",
       content: (
         <>
-          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
             <p className="text-purple-900 font-medium mb-2">📅 What is an activity?</p>
             <p className="text-purple-800">An <strong>activity</strong> is any event, project, campaign, or task you want to track during the year. It appears as a colored arc on your wheel.</p>
           </div>
@@ -543,7 +543,7 @@ function QuickStartGuide() {
           <p className="text-gray-700 mb-6">Create 2-3 more activities to see how the wheel builds up. Each activity will stack on top of others in the same ring, creating a complete visual of your year.</p>
 
           <div className="space-y-6">
-            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2">Activity 2: Summer Campaign</h4>
               <ul className="text-blue-800 space-y-1">
                 <li><strong>Ring:</strong> Marketing</li>
@@ -552,7 +552,7 @@ function QuickStartGuide() {
               </ul>
             </div>
 
-            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
               <h4 className="font-semibold text-purple-900 mb-2">Activity 3: Monthly Newsletter (recurring)</h4>
               <ul className="text-purple-800 space-y-1 mb-3">
                 <li><strong>Ring:</strong> Marketing</li>
@@ -581,7 +581,7 @@ function QuickStartGuide() {
           <p className="text-gray-700 mb-6 font-medium">🎯 You can move and resize activities directly on the wheel!</p>
 
           <div className="space-y-6">
-            <div className="p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-3">👆 Move an activity:</h4>
               <ol className="text-blue-800 space-y-2">
                 <li>1. <strong>Hover</strong> over an activity on the wheel</li>
@@ -592,7 +592,7 @@ function QuickStartGuide() {
               <p className="mt-3 text-blue-900 font-medium">✨ Start and end dates update automatically!</p>
             </div>
 
-            <div className="p-3 sm:p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
               <h4 className="font-semibold text-purple-900 mb-3">↔️ Resize an activity:</h4>
               <ol className="text-purple-800 space-y-2">
                 <li>1. <strong>Hover</strong> over the edge of an activity</li>
@@ -602,7 +602,7 @@ function QuickStartGuide() {
               </ol>
             </div>
 
-            <div className="p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
               <h4 className="font-semibold text-green-900 mb-2">🔄 Move between rings:</h4>
               <p className="text-green-800">You can also drag an activity <strong>radially</strong> (inward/outward) to move it to a different ring</p>
             </div>
@@ -611,7 +611,7 @@ function QuickStartGuide() {
           <img src="/docs/guides/images/QUICK_START_13_drag_and_drop_zoomed_in.png" alt="Drag and drop zoom" className="mt-4 sm:mt-6 w-full" />
           <p className="text-gray-600 italic text-center">Close-up of the drag and drop feature - see how the cursor changes at the edges for resizing</p>
 
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
             <p className="text-amber-900 font-medium">💡 Pro tip:</p>
             <p className="text-amber-800 mt-1">This is much faster than opening forms and changing dates manually. Most users do all their planning adjustments with drag and drop!</p>
           </div>

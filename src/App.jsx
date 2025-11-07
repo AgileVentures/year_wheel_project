@@ -8,6 +8,7 @@ import PageNavigator from "./components/PageNavigator";
 import Toast from "./components/Toast";
 import ConfirmDialog from "./components/ConfirmDialog";
 import CookieConsent from "./components/CookieConsent";
+import VersionHistoryModal from "./components/VersionHistoryModal";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import { useSubscription } from "./hooks/useSubscription.jsx";
@@ -48,8 +49,6 @@ const lazyWithRetry = (componentImport) =>
       return new Promise(() => {});
     })
   );
-
-const VersionHistoryModal = lazyWithRetry(() => import("./components/VersionHistoryModal"));
 const AddPageModal = lazyWithRetry(() => import("./components/AddPageModal"));
 const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal"));
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
@@ -3613,13 +3612,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       {/* Version History Modal */}
       {showVersionHistory && wheelId && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
-          <VersionHistoryModal
-            wheelId={wheelId}
-            onRestore={handleRestoreVersion}
-            onClose={() => setShowVersionHistory(false)}
-          />
-        </Suspense>
+        <VersionHistoryModal
+          wheelId={wheelId}
+          onRestore={handleRestoreVersion}
+          onClose={() => setShowVersionHistory(false)}
+        />
       )}
 
       {/* Add Page Modal */}

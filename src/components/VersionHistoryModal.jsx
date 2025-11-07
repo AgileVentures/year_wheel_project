@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, History, User, Clock, RotateCcw, Eye, Trash2, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listVersions, restoreVersion, deleteVersion, getVersion } from '../services/wheelService';
 import { showConfirmDialog } from '../utils/dialogs';
+import YearWheel from '../YearWheel';
 
 /**
  * VersionHistoryModal - Beautiful UI for viewing and restoring wheel versions
@@ -22,10 +23,6 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
   const [previewVersion, setPreviewVersion] = useState(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  useEffect(() => {
-    loadVersions();
-  }, [wheelId]);
-
   const loadVersions = async () => {
     try {
       setIsLoading(true);
@@ -39,6 +36,11 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadVersions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wheelId]);
 
   const handleRestore = async (version) => {
     const confirmed = await showConfirmDialog({
@@ -166,8 +168,12 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm relative">
-      <div className="bg-white rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div 
+      data-testid="version-history-modal" 
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+      style={{ zIndex: 9999 }}
+    >
+      <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -327,8 +333,8 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
 
       {/* Preview Modal */}
       {previewVersion && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
-          <div className="bg-white rounded-sm shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70" style={{ zIndex: 10000 }}>
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[95vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
                 {t('editor:versionHistory.previewTitle', { number: previewVersion.version_number })}
@@ -340,11 +346,20 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <div className="flex-1 overflow-auto p-6 bg-gray-50">
-              <div className="bg-white rounded-sm p-6 border border-gray-200">
-                <pre className="text-xs text-gray-700 whitespace-pre-wrap overflow-auto max-h-96">
-                  {JSON.stringify(previewVersion.snapshot_data, null, 2)}
-                </pre>
+            <div className="flex-1 overflow-auto p-6 bg-gray-50 flex items-center justify-center">
+              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-lg">
+                <YearWheel
+                  organizationData={previewVersion.snapshot_data?.organizationData || previewVersion.snapshot_data}
+                  year={previewVersion.snapshot_data?.year || new Date().getFullYear()}
+                  colors={previewVersion.snapshot_data?.colors || ['#FE6D73', '#17C3B2', '#227C9D', '#FFCB77', '#FEF9EF']}
+                  showWeekRing={previewVersion.snapshot_data?.showWeekRing ?? true}
+                  showMonthRing={previewVersion.snapshot_data?.showMonthRing ?? true}
+                  showRingNames={previewVersion.snapshot_data?.showRingNames ?? true}
+                  weekRingDisplayMode={previewVersion.snapshot_data?.weekRingDisplayMode || 'week-numbers'}
+                  showLabels={previewVersion.snapshot_data?.showLabels ?? true}
+                  size={600}
+                  readOnly={true}
+                />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex gap-3 justify-end">
