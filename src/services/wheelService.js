@@ -232,6 +232,8 @@ export const fetchWheel = async (wheelId) => {
  * @returns {Promise<Array>} Items for this page
  */
 export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => {
+  console.log(`[fetchPageData] Fetching for pageId=${pageId?.substring(0, 8)}, year=${pageYear}, wheelId=${wheelId?.substring(0, 8)}`);
+  
   let items = [];
   
   // First, fetch items assigned to this page
@@ -242,12 +244,15 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
 
   if (itemsError) throw itemsError;
   
+  console.log(`[fetchPageData] Found ${pageItems?.length || 0} items assigned to this page`);
   items = pageItems || [];
   
   // If we have both pageYear and wheelId, also fetch multi-year items that overlap with this year
   if (pageYear && wheelId) {
     const yearStart = `${pageYear}-01-01`;
     const yearEnd = `${pageYear}-12-31`;
+    
+    console.log(`[fetchPageData] Searching for multi-year items overlapping ${yearStart} to ${yearEnd}`);
     
     // Find items from other pages of the same wheel that overlap with this year
     const { data: multiYearItems, error: multiYearError } = await supabase
@@ -258,8 +263,17 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
       .or(`start_date.lte.${yearEnd},end_date.gte.${yearStart}`); // Overlaps with this year
     
     if (multiYearError) {
-      console.error('Error fetching multi-year items:', multiYearError);
+      console.error('[fetchPageData] Error fetching multi-year items:', multiYearError);
     } else if (multiYearItems && multiYearItems.length > 0) {
+      console.log(`[fetchPageData] Found ${multiYearItems.length} potential multi-year items:`, 
+        multiYearItems.map(i => ({
+          id: i.id.substring(0, 8),
+          name: i.name,
+          pageId: i.page_id.substring(0, 8),
+          dates: `${i.start_date} to ${i.end_date}`
+        }))
+      );
+      
       // Filter to only include items that actually span into this year
       const filteredMultiYear = multiYearItems.filter(item => {
         const startDate = new Date(item.start_date);
@@ -271,11 +285,15 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
         return startDate <= yearEndDate && endDate >= yearStartDate;
       });
       
-      console.log(`[fetchPageData] Found ${filteredMultiYear.length} multi-year items for year ${pageYear}`);
+      console.log(`[fetchPageData] After filtering: ${filteredMultiYear.length} multi-year items for year ${pageYear}`);
       items = [...items, ...filteredMultiYear];
+    } else {
+      console.log(`[fetchPageData] No multi-year items found for year ${pageYear}`);
     }
   }
 
+  console.log(`[fetchPageData] Total items to return: ${items.length}`);
+  
   return items.map(i => ({
     id: i.id,
     ringId: i.ring_id,
@@ -791,26 +809,50 @@ const syncLabels = async (wheelId, pageId, labels) => {
  * Uses ID mappings to convert temporary IDs to database UUIDs
  */
 export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
-  // Fetch existing items - SCOPED TO PAGE if pageId provided
-  let query = supabase
+  console.log(`[syncItems] Starting sync for wheelId=${wheelId}, pageId=${pageId}, items count=${items.length}`);
+  
+  // CRITICAL FIX: We need to compare against ALL existing items in the wheel,
+  // not just those for the current page. This prevents accidental deletion
+  // when items change page_id (e.g., multi-year activities getting re-assigned).
+  const { data: existing } = await supabase
     .from('items')
-    .select('id')
+    .select('id, name, page_id, start_date, end_date')
     .eq('wheel_id', wheelId);
-  
-  // CRITICAL: If pageId is provided, only sync items for that page
-  if (pageId) {
-    query = query.eq('page_id', pageId);
+
+  console.log(`[syncItems] Found ${existing?.length || 0} existing items in database`);
+  if (existing && existing.length > 0) {
+    console.log('[syncItems] Existing items:', existing.map(i => ({
+      id: i.id.substring(0, 8),
+      name: i.name,
+      pageId: i.page_id.substring(0, 8),
+      dates: `${i.start_date} to ${i.end_date}`
+    })));
   }
-  
-  const { data: existing } = await query;
 
   const existingIds = new Set(existing?.map(i => i.id) || []);
   const currentIds = new Set(items.map(i => i.id).filter(id => id && !id.startsWith('item-')));
 
-  // Delete removed items (only within the scoped page if pageId provided)
-  const toDelete = [...existingIds].filter(id => !currentIds.has(id));
+  console.log(`[syncItems] Items to sync (from organizationData):`, items.map(i => ({
+    id: i.id ? i.id.substring(0, 8) : 'NEW',
+    name: i.name,
+    dates: `${i.startDate} to ${i.endDate}`,
+    pageId: i.pageId ? i.pageId.substring(0, 8) : 'NONE'
+  })));
+
+  // CRITICAL: Only delete items that are truly removed from the wheel,
+  // NOT items that just moved to a different page (multi-year activities).
+  // We filter to only consider items from the CURRENT page for deletion.
+  const existingPageItems = existing?.filter(i => i.page_id === pageId) || [];
+  const existingPageIds = new Set(existingPageItems.map(i => i.id));
+  
+  const toDelete = [...existingPageIds].filter(id => !currentIds.has(id));
+  
+  console.log(`[syncItems] Items on current page (${pageId?.substring(0, 8)}): ${existingPageItems.length}`);
+  console.log(`[syncItems] Items to DELETE: ${toDelete.length}`, toDelete.map(id => id.substring(0, 8)));
+  
   if (toDelete.length > 0) {
     await supabase.from('items').delete().in('id', toDelete);
+    console.log(`[syncItems] DELETED ${toDelete.length} items from database`);
   }
 
   // Fetch all pages for this wheel to map years to page IDs
