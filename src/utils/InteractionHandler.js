@@ -583,6 +583,8 @@ class InteractionHandler {
 
     if (newEndDate > yearEnd) {
       overflowEndDate = new Date(newEndDate.getTime());
+      
+      console.log(`[InteractionHandler] Item extends past year end: ${formatDate(newEndDate)} > ${formatDate(yearEnd)}`);
 
       if (
         originalItem &&
@@ -590,18 +592,21 @@ class InteractionHandler {
         this.options.onExtendActivityToNextYear
       ) {
         try {
+          console.log(`[InteractionHandler] Calling onExtendActivityToNextYear for "${originalItem.name}"`);
           await this.options.onExtendActivityToNextYear({
             item: originalItem,
             overflowEndDate,
             currentYearEnd: yearEnd,
             dragMode: this.dragState.dragMode,
           });
+          console.log(`[InteractionHandler] onExtendActivityToNextYear completed`);
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
         }
       }
 
       // Always clamp current year's item to December 31
+      console.log(`[InteractionHandler] Clamping "${originalItem?.name}" endDate from ${formatDate(newEndDate)} to ${formatDate(yearEnd)}`);
       newEndDate = yearEnd;
     }
 
@@ -652,11 +657,14 @@ class InteractionHandler {
       endDate: formatDate(newEndDate),
     };
 
+    console.log(`[InteractionHandler] Updating item "${originalItem.name}" with dates: ${updates.startDate} to ${updates.endDate}`);
+
     if (
       this.dragState.targetRing &&
       this.dragState.targetRing.id !== originalItem.ringId
     ) {
       updates.ringId = this.dragState.targetRing.id;
+      console.log(`[InteractionHandler] Also moving to ring: ${this.dragState.targetRing.id}`);
     }
 
     const updatedItem = {
@@ -668,6 +676,8 @@ class InteractionHandler {
       originalItem.startDate !== updatedItem.startDate ||
       originalItem.endDate !== updatedItem.endDate ||
       originalItem.ringId !== updatedItem.ringId;
+
+    console.log(`[InteractionHandler] hasChanges: ${hasChanges}`);
 
     if (hasChanges) {
       this.wheel.pendingItemUpdates.set(updatedItem.id, {
