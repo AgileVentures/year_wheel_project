@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-/* eslint-disable no-debugger */
+ 
 const textColor = "#333333";
 
 function toRadians(deg) {

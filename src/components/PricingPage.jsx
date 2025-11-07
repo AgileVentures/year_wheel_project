@@ -9,6 +9,18 @@ import LanguageSwitcher from './LanguageSwitcher';
 // import ComparisonTable from './ComparisonTable';
 import Footer from './Footer';
 
+const premiumFeatureIcons = [
+  Sparkles,
+  Calendar,
+  Copy,
+  Zap,
+  Users,
+  FileImage,
+  History,
+  Share2,
+  Check,
+];
+
 function PricingPage() {
   const { t } = useTranslation(['landing', 'common']);
   const navigate = useNavigate();
@@ -190,26 +202,12 @@ function PricingPage() {
 
             <div className="space-y-4 flex-grow">
               {t('landing:pricing.premium.features', { returnObjects: true }).map((feature, index) => {
-                // Icon mapping for each feature
-                const getIcon = () => {
-                  const iconMap = [
-                    <Sparkles className="w-3 h-3 text-[#00A4A6]" />,  // AI assistant
-                    <Calendar className="w-3 h-3 text-[#00A4A6]" />,  // Google Integration
-                    <Copy className="w-3 h-3 text-[#00A4A6]" />,      // SmartCopy
-                    <Zap className="w-3 h-3 text-[#00A4A6]" />,       // Unlimited wheels
-                    <Users className="w-3 h-3 text-[#00A4A6]" />,     // Unlimited teams
-                    <FileImage className="w-3 h-3 text-[#00A4A6]" />, // All export formats
-                    <History className="w-3 h-3 text-[#00A4A6]" />,   // Version history
-                    <Share2 className="w-3 h-3 text-[#00A4A6]" />,    // Share & collaborate
-                    <Check className="w-3 h-3 text-[#00A4A6]" />      // Priority support
-                  ];
-                  return iconMap[index] || <Check className="w-3 h-3 text-[#00A4A6]" />;
-                };
+                const IconComponent = premiumFeatureIcons[index] || Check;
 
                 return (
-                  <div key={index} className="flex items-start gap-3">
+                  <div key={feature} className="flex items-start gap-3">
                     <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      {getIcon()}
+                      <IconComponent className="w-3 h-3 text-[#00A4A6]" aria-hidden="true" />
                     </div>
                     <span className={`text-white ${index < 3 ? 'font-semibold' : ''}`}>{feature}</span>
                   </div>

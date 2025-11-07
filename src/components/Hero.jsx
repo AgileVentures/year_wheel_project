@@ -14,7 +14,6 @@ function Hero() {
           alt="YearWheel Planning"
           className="w-full h-full object-cover"
           loading="eager"
-          fetchpriority="high"
           width="2030"
           height="4284"
         />

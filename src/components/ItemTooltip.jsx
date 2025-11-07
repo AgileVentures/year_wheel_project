@@ -17,49 +17,62 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
   const [commentCount, setCommentCount] = useState(0);
   const tooltipRef = useRef(null);
 
-  if (!item) return null;
-
-  const ring = organizationData.rings.find(r => r.id === item.ringId);
-  const activity = organizationData.activityGroups.find(a => a.id === item.activityId);
-  const label = organizationData.labels.find(l => l.id === item.labelId);
-  const startDate = new Date(item.startDate);
-  const endDate = new Date(item.endDate);
+  const ring = item ? organizationData.rings.find(r => r.id === item.ringId) : null;
+  const activity = item ? organizationData.activityGroups.find(a => a.id === item.activityId) : null;
+  const label = item ? organizationData.labels.find(l => l.id === item.labelId) : null;
+  const startDate = item ? new Date(item.startDate) : null;
+  const endDate = item ? new Date(item.endDate) : null;
 
   // Fetch linked wheel info if item has linkedWheelId
   useEffect(() => {
     const loadLinkedWheelInfo = async () => {
-      if (item.linkedWheelId) {
-        setLoadingLinkedWheel(true);
-        try {
-          const wheelInfo = await fetchLinkedWheelInfo(item.linkedWheelId);
-          setLinkedWheelInfo(wheelInfo);
-        } catch (error) {
-          console.error('Error loading linked wheel info:', error);
-          setLinkedWheelInfo(null);
-        } finally {
-          setLoadingLinkedWheel(false);
-        }
-      } else {
+      if (!item || !item.linkedWheelId) {
         setLinkedWheelInfo(null);
+        setLoadingLinkedWheel(false);
+        return;
+      }
+
+      setLoadingLinkedWheel(true);
+      try {
+        const wheelInfo = await fetchLinkedWheelInfo(item.linkedWheelId);
+        setLinkedWheelInfo(wheelInfo);
+      } catch (error) {
+        console.error('Error loading linked wheel info:', error);
+        setLinkedWheelInfo(null);
+      } finally {
+        setLoadingLinkedWheel(false);
       }
     };
+
     loadLinkedWheelInfo();
-  }, [item.linkedWheelId]);
+  }, [item]);
 
   // Fetch comment count
   useEffect(() => {
     const loadCommentCount = async () => {
-      // Only fetch comments for valid UUIDs (not temporary/week IDs)
-      const isValidUUID = item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
-      if (isValidUUID && wheel) {
-        const { data } = await getCommentCount(item.id);
-        if (data !== null) {
-          setCommentCount(data);
+      if (!item) {
+        setCommentCount(0);
+        return;
+      }
+
+      try {
+        // Only fetch comments for valid UUIDs (not temporary/week IDs)
+        const isValidUUID = item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+        if (isValidUUID && wheel) {
+          const { data } = await getCommentCount(item.id);
+          if (data !== null) {
+            setCommentCount(data);
+          }
+        } else {
+          setCommentCount(0);
         }
+      } catch (error) {
+        console.error('Error loading comment count:', error);
+        setCommentCount(0);
       }
     };
     loadCommentCount();
-  }, [item.id, wheel]);
+  }, [item, wheel]);
 
   // Update position when prop changes
   useEffect(() => {
@@ -116,6 +129,10 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
       setIsDragging(true);
     }
   };
+
+  if (!item) {
+    return null;
+  }
 
   return (
     <div

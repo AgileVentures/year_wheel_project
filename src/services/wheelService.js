@@ -1017,6 +1017,144 @@ const mapDbItemToClient = (dbItem) => {
   };
 };
 
+export const saveWheelSnapshot = async (wheelId, snapshot) => {
+  if (!wheelId) throw new Error('wheelId is required for saveWheelSnapshot');
+  if (!snapshot) throw new Error('snapshot is required for saveWheelSnapshot');
+
+  const {
+    metadata = {},
+    globalOrganizationData = {},
+    pages = [],
+  } = snapshot;
+
+  const sanitizedMetadata = metadata && typeof metadata === 'object' ? metadata : {};
+
+  if (Object.keys(sanitizedMetadata).length > 0) {
+    await updateWheel(wheelId, sanitizedMetadata);
+  }
+
+  const baseRings = Array.isArray(globalOrganizationData.rings)
+    ? globalOrganizationData.rings.map((ring) => ({ ...ring }))
+    : [];
+  const baseActivityGroups = Array.isArray(globalOrganizationData.activityGroups)
+    ? globalOrganizationData.activityGroups.map((group) => ({ ...group }))
+    : [];
+  const baseLabels = Array.isArray(globalOrganizationData.labels)
+    ? globalOrganizationData.labels.map((label) => ({ ...label }))
+    : [];
+
+  const ringIdMap = await syncRings(wheelId, null, baseRings);
+  const activityIdMap = await syncActivityGroups(wheelId, null, baseActivityGroups);
+  const labelIdMap = await syncLabels(wheelId, null, baseLabels);
+
+  const normalizedPages = Array.isArray(pages) ? pages : [];
+
+  const ensureItemId = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `item-${crypto.randomUUID()}`;
+    }
+    return `item-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  for (const page of normalizedPages) {
+    if (!page || !page.id || !page.organizationData) {
+      continue;
+    }
+
+    const rawItems = Array.isArray(page.organizationData.items)
+      ? page.organizationData.items
+      : [];
+
+    const sanitizedItems = rawItems
+      .filter(Boolean)
+      .map((item) => {
+        const { _remoteUpdate, _remoteUser, _remoteTimestamp, ...cleanItem } = item;
+        const mappedRingId = ringIdMap.get(cleanItem.ringId) || cleanItem.ringId;
+        const mappedActivityId = activityIdMap.get(cleanItem.activityId) || cleanItem.activityId;
+        const mappedLabelId = cleanItem.labelId ? (labelIdMap.get(cleanItem.labelId) || cleanItem.labelId) : null;
+
+        return {
+          ...cleanItem,
+          id: cleanItem.id || ensureItemId(),
+          pageId: cleanItem.pageId || page.id,
+          ringId: mappedRingId,
+          activityId: mappedActivityId,
+          labelId: mappedLabelId,
+        };
+      });
+
+    await syncItems(
+      wheelId,
+      sanitizedItems,
+      ringIdMap,
+      activityIdMap,
+      labelIdMap,
+      page.id
+    );
+  }
+
+  const { data: persistedItems, error: persistedItemsError } = await supabase
+    .from('items')
+    .select('*')
+    .eq('wheel_id', wheelId);
+
+  if (persistedItemsError) {
+    throw persistedItemsError;
+  }
+
+  const itemsByPage = {};
+  (persistedItems || []).forEach((dbItem) => {
+    const clientItem = mapDbItemToClient(dbItem);
+    if (!clientItem) {
+      return;
+    }
+
+    if (!itemsByPage[clientItem.pageId]) {
+      itemsByPage[clientItem.pageId] = [];
+    }
+
+    itemsByPage[clientItem.pageId].push(clientItem);
+  });
+
+  const normalizedRings = baseRings.map((ring) => ({
+    ...ring,
+    id: ringIdMap.get(ring.id) || ring.id,
+  }));
+
+  const normalizedActivityGroups = baseActivityGroups.map((group) => ({
+    ...group,
+    id: activityIdMap.get(group.id) || group.id,
+  }));
+
+  const normalizedLabels = baseLabels.map((label) => ({
+    ...label,
+    id: labelIdMap.get(label.id) || label.id,
+  }));
+
+  for (const page of normalizedPages) {
+    if (!page || !page.id || !page.organizationData) {
+      continue;
+    }
+
+    await updatePage(page.id, {
+      organization_data: {
+        rings: normalizedRings,
+        activityGroups: normalizedActivityGroups,
+        labels: normalizedLabels,
+        items: itemsByPage[page.id] || [],
+      },
+      year: page.year ?? null,
+    });
+  }
+
+  return {
+    ringIdMap,
+    activityIdMap,
+    labelIdMap,
+    itemsByPage,
+  };
+};
+
 export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Map(), activityIdMap = new Map(), labelIdMap = new Map()) => {
   console.log(`[updateSingleItem] wheelId=${wheelId?.substring(0,8)}, pageId=${pageId?.substring(0,8)}, item.pageId=${item.pageId?.substring(0,8)}, item.name="${item.name}", dates=${item.startDate} to ${item.endDate}`);
   

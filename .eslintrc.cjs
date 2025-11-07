@@ -16,5 +16,10 @@ module.exports = {
       'warn',
       { allowConstantExport: true },
     ],
+    'react/prop-types': 'off',
+    'react/no-unescaped-entities': 'off',
+    'no-unused-vars': ['warn', { args: 'none', ignoreRestSiblings: true }],
+    'no-undef': 'warn',
+    'no-case-declarations': 'warn',
   },
 }

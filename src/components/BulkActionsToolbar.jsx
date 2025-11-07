@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+ 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 

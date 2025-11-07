@@ -54,7 +54,7 @@ const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
-import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem, deleteSingleItem, syncItems } from "./services/wheelService";
+import { fetchWheel, fetchPageData, saveWheelSnapshot, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence, useWheelActivity } from "./hooks/useWheelPresence";
@@ -197,61 +197,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     JSON.stringify(undoableStates?.organizationData)
   ]);
-  
-  // Wrapper functions for setting undo-tracked state
-  const setTitle = useCallback((value) => {
-    setUndoableStates(prevStates => ({
-      ...prevStates,
-      title: typeof value === 'function' ? value(prevStates.title) : value
-    }), { type: CHANGE_TYPES.CHANGE_TITLE });
-  }, [setUndoableStates]);
-
-  const setYear = useCallback((value) => {
-    setUndoableStates(prevStates => ({
-      ...prevStates,
-      year: typeof value === 'function' ? value(prevStates.year) : value
-    }), { type: CHANGE_TYPES.CHANGE_YEAR });
-  }, [setUndoableStates]);
-  
-  const setColors = useCallback((value) => {
-    setUndoableStates(prevStates => ({
-      ...prevStates,
-      colors: typeof value === 'function' ? value(prevStates.colors) : value
-    }), { type: CHANGE_TYPES.CHANGE_COLORS });
-  }, [setUndoableStates]);  const setOrganizationData = useCallback((value, explicitLabel) => {
-    // Pre-calculate the new data and detect changes for auto-labeling
-    let finalLabel = explicitLabel;
-    
-    if (!finalLabel) {
-      const currentOrgData = undoableStates?.organizationData;
-      const newOrgData = typeof value === 'function' ? value(currentOrgData) : value;
-      
-      // Use the detection helper to determine change type
-      const changeType = detectOrganizationChange(currentOrgData, newOrgData);
-      finalLabel = { type: changeType };
-    }
-    
-    // Now update state with the calculated label
-    setUndoableStates(prevStates => {
-      const currentOrgData = prevStates.organizationData;
-      const newOrgData = typeof value === 'function' ? value(currentOrgData) : value;
-      
-      // CRITICAL: Update ref immediately so auto-save gets the latest data
-      latestValuesRef.current = {
-        ...latestValuesRef.current,
-        organizationData: newOrgData
-      };
-      
-      // CRITICAL: Spread previous states to preserve all fields
-      return { 
-        ...prevStates,
-        organizationData: newOrgData 
-      };
-    }, finalLabel);
-  }, [setUndoableStates, undoableStates]);
-  
-  // Other non-undoable states
-  const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
   
   // Keep ringsData for backward compatibility when loading old files
@@ -283,9 +228,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
   // Multi-page state
   const [pages, setPages] = useState([]);
+  const pagesRef = useRef(pages);
   const [currentPageId, setCurrentPageId] = useState(null);
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [wheelData, setWheelData] = useState(null); // Store full wheel object including team_id
+
+  useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
   
   // AI Assistant state
   const [isAIOpen, setIsAIOpen] = useState(false);
@@ -344,7 +294,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Expose handleSave for code paths defined above its declaration
   const handleSaveRef = useRef(null);
   // Queue item persistence operations to avoid race conditions
-  const itemPersistenceQueueRef = useRef(Promise.resolve());
 
   // Load wheel data function (memoized to avoid recreating)
   const loadWheelData = useCallback(async (rawOptions) => {
@@ -950,233 +899,339 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     year,
     currentPageId,
     hasUnsavedChanges,
+    pages,
   };
   hasUnsavedChangesRef.current = hasUnsavedChanges;
   
 
 
-  // Lightweight auto-save ONLY for wheel metadata (title, colors, settings)
-  // organizationData changes are handled by realtime, so we don't auto-save those
-  const autoSave = useDebouncedCallback(async () => {
-    // Don't auto-save if:
-    // 1. No wheelId (localStorage mode)
-    // 2. Currently loading data
-    // 3. This is the initial load
-    // 4. Data came from realtime update
-    // 5. Auto-save is disabled
-    if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || isDraggingRef.current || !autoSaveEnabled) {
-      return;
+  const fullSaveQueueRef = useRef(Promise.resolve());
+
+  const buildWheelSnapshot = useCallback(() => {
+    if (!wheelId) {
+      return null;
     }
 
-    // Get latest values from ref (not from closure)
-    const {
-      title: currentTitle,
-      colors: currentColors,
-      showWeekRing: currentShowWeekRing,
-      showMonthRing: currentShowMonthRing,
-      showRingNames: currentShowRingNames,
-      showLabels: currentShowLabels,
-      weekRingDisplayMode: currentWeekRingDisplayMode,
-    } = latestValuesRef.current;
-
-    try {
-      // Mark as saving to prevent realtime interference
-      isSavingRef.current = true;
-      
-      // LIGHTWEIGHT: Only update wheel metadata (no heavy database table syncing)
-      await updateWheel(wheelId, {
-        title: currentTitle,
-        colors: currentColors,
-        showWeekRing: currentShowWeekRing,
-        showMonthRing: currentShowMonthRing,
-        showRingNames: currentShowRingNames,
-        showLabels: currentShowLabels,
-        weekRingDisplayMode: currentWeekRingDisplayMode,
-      });
-      
-      // Mark the save timestamp to ignore our own broadcasts
-      lastSaveTimestamp.current = Date.now();
-      
-      // CRITICAL: Mark current undo position as saved
-      // This keeps hasUnsavedChanges flag in sync with actual save state
-      markSaved();
-      
-    } catch (error) {
-      // Show error toast only on failure
-      const event = new CustomEvent('showToast', { 
-        detail: { message: 'Auto-sparning misslyckades', type: 'error' } 
-      });
-      window.dispatchEvent(event);
-    } finally {
-      isSavingRef.current = false;
-    }
-  }, 10000); // Wait 10 seconds after last metadata change (much less aggressive)
-
-  // Auto-save organizationData changes for real-time collaboration
-  const autoSaveOrganizationData = useDebouncedCallback(async () => {
-    // Don't auto-save if:
-    // 1. No wheelId (localStorage mode)
-    // 2. Currently loading data
-    // 3. This is the initial load
-    // 4. Data came from remote realtime update (don't echo back)
-    // 5. Auto-save is disabled
-    if (!wheelId || isLoadingData.current || isInitialLoad.current || isRealtimeUpdate.current || !autoSaveEnabled) {
-      return;
+    const latest = latestValuesRef.current;
+    if (!latest) {
+      return null;
     }
 
-    // Get latest organizationData from ref
-    const { organizationData: currentOrgData, year: currentYear, currentPageId: currentCurrentPageId } = latestValuesRef.current;
-    
-    // If no currentPageId, create a page for this year (same logic as handleSave)
-    let pageIdToUse = currentCurrentPageId;
-    if (!pageIdToUse && wheelId) {
-      try {
-        const existingPages = await fetchPages(wheelId);
-        const pageForYear = existingPages.find(p => p.year === parseInt(currentYear));
-        
-        if (pageForYear) {
-          pageIdToUse = pageForYear.id;
-          
-          // Update local state to use existing page
-          setCurrentPageId(pageForYear.id);
-          setPages(existingPages);
-        } else {
-          const defaultPage = await createPage(wheelId, {
-            year: parseInt(currentYear),
-            title: currentYear,
-            organizationData: currentOrgData
-          });
-          pageIdToUse = defaultPage.id;
-          
-          // Update local state to reflect the new page
-          setCurrentPageId(defaultPage.id);
-          setPages(prevPages => [...prevPages, defaultPage]);
-        }
-      } catch (error) {
-        console.error('Error creating/finding page:', error);
-        return; // Abort auto-save if page creation fails
+    const stripRemoteFields = (entry) => {
+      if (!entry) {
+        return entry;
       }
-    }
-    
-    if (!pageIdToUse) {
-      return;
+      const { _remoteUpdate, _remoteUser, _remoteTimestamp, ...clean } = entry;
+      return { ...clean };
+    };
+
+    const globalOrg = latest.organizationData || {
+      rings: [],
+      activityGroups: [],
+      labels: [],
+      items: [],
+    };
+
+    const normalizedGlobal = {
+      rings: (globalOrg.rings || []).map(stripRemoteFields),
+      activityGroups: (globalOrg.activityGroups || []).map(stripRemoteFields),
+      labels: (globalOrg.labels || []).map(stripRemoteFields),
+    };
+
+    const allPages = pagesRef.current || [];
+
+    const pagesSnapshot = allPages
+      .map((page) => {
+        if (!page) {
+          return null;
+        }
+
+        const pageYear = toYearNumber(page.year);
+        const baseOrgSource = page.id === latest.currentPageId
+          ? globalOrg
+          : page.organization_data || null;
+
+        if (!baseOrgSource) {
+          return { id: page.id, year: pageYear, organizationData: null };
+        }
+
+        const rawItems = Array.isArray(baseOrgSource.items) ? baseOrgSource.items : [];
+        const itemsSource = page.id === latest.currentPageId || Array.isArray(baseOrgSource.items)
+          ? rawItems
+          : null;
+
+        if (!itemsSource) {
+          return { id: page.id, year: pageYear, organizationData: null };
+        }
+
+        const pageItems = itemsSource
+          .filter((item) => {
+            if (!item) {
+              return false;
+            }
+
+            if (item.pageId && item.pageId !== page.id) {
+              return false;
+            }
+
+            if (pageYear == null) {
+              return true;
+            }
+
+            const startYear = item.startDate ? new Date(item.startDate).getFullYear() : null;
+            const endYear = item.endDate ? new Date(item.endDate).getFullYear() : startYear;
+
+            if (startYear == null || endYear == null) {
+              return false;
+            }
+
+            return startYear <= pageYear && endYear >= pageYear;
+          })
+          .map((item) => {
+            const cleanItem = stripRemoteFields(item);
+            const ensureId =
+              cleanItem.id ||
+              (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+                ? `item-${crypto.randomUUID()}`
+                : `item-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+            return {
+              ...cleanItem,
+              id: ensureId,
+              pageId: cleanItem.pageId || page.id,
+            };
+          });
+
+        return {
+          id: page.id,
+          year: pageYear,
+          organizationData: {
+            rings: normalizedGlobal.rings,
+            activityGroups: normalizedGlobal.activityGroups,
+            labels: normalizedGlobal.labels,
+            items: pageItems,
+          },
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      metadata: {
+        title: latest.title,
+        colors: latest.colors,
+        showWeekRing: latest.showWeekRing,
+        showMonthRing: latest.showMonthRing,
+        showRingNames: latest.showRingNames,
+        showLabels: latest.showLabels,
+        weekRingDisplayMode: latest.weekRingDisplayMode,
+        year: latest.year,
+      },
+      globalOrganizationData: normalizedGlobal,
+      pages: pagesSnapshot,
+    };
+  }, [wheelId]);
+
+  const executeFullSave = useCallback(async (reason = 'auto') => {
+    if (!wheelId) {
+      return null;
     }
 
-    // Skip if this data has remote update flag (don't save remote changes back)
-    const hasRemoteUpdate = currentOrgData.items?.some(item => item._remoteUpdate);
-    if (hasRemoteUpdate) {
-      // Clean up remote flags
-      setOrganizationData(prev => ({
-        ...prev,
-        items: prev.items.map(item => {
-          const { _remoteUpdate, _remoteUser, _remoteTimestamp, ...cleanItem } = item;
-          return cleanItem;
-        })
-      }));
-      return;
-    }
+    isSavingRef.current = true;
+    setIsSaving(true);
 
     try {
-      // Mark as saving to prevent realtime interference
-      isSavingRef.current = true;
-      
-      // CRITICAL: Filter items to only those belonging to this page's year
-      // This ensures organization_data JSONB only contains page-specific items
-      const currentYearNum = parseInt(currentYear); // USE currentYear from ref, not year from closure!
-      
-      const pageSpecificItems = (currentOrgData.items || []).filter(item => {
-        const itemStartYear = new Date(item.startDate).getFullYear();
-        const itemEndYear = new Date(item.endDate).getFullYear();
-        // Include item if it overlaps with current year
-        return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
-      });
-      
-      const pageSpecificOrgData = {
-        ...currentOrgData,
-        items: pageSpecificItems
-      };
-      
-      // CRITICAL: Save to database tables first (rings, activity_groups, items)
-      // This syncs data to individual tables, not just JSONB
-      const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrgData, pageIdToUse);
-      
-      // Update organization data with any new UUIDs from database
-      const updatedOrgData = {
-        ...currentOrgData,
-        rings: currentOrgData.rings.map(ring => ({
-          ...ring,
-          id: ringIdMap.get(ring.id) || ring.id
-        })),
-        activityGroups: currentOrgData.activityGroups.map(group => ({
-          ...group,
-          id: activityIdMap.get(group.id) || group.id
-        })),
-        labels: currentOrgData.labels.map(label => ({
-          ...label,
-          id: labelIdMap.get(label.id) || label.id
-        })),
-        items: currentOrgData.items.map(item => ({
-          ...item,
-          ringId: ringIdMap.get(item.ringId) || item.ringId,
-          activityId: activityIdMap.get(item.activityId) || item.activityId,
-          labelId: labelIdMap.get(item.labelId) || item.labelId
-        }))
-      };
-      
-      // Then save the page's JSONB organization_data
-      await updatePage(pageIdToUse, {
-        organization_data: updatedOrgData,
-      });
-      
-      // Mark the save timestamp to ignore our own broadcasts
+      let snapshot = buildWheelSnapshot();
+      if (!snapshot) {
+        return null;
+      }
+
+      let latest = latestValuesRef.current;
+
+      if (!snapshot.pages || snapshot.pages.length === 0) {
+        const fallbackYear = toYearNumber(latest?.year) ?? new Date().getFullYear();
+
+        try {
+          const newPagePayload = {
+            year: fallbackYear,
+            title: latest?.title || String(fallbackYear),
+            organizationData: {
+              rings: snapshot.globalOrganizationData?.rings || [],
+              activityGroups: snapshot.globalOrganizationData?.activityGroups || [],
+              labels: snapshot.globalOrganizationData?.labels || [],
+              items: filterItemsByYear(latest?.organizationData?.items || [], fallbackYear),
+            },
+          };
+
+          const createdPage = await createPage(wheelId, newPagePayload);
+
+          if (createdPage) {
+            pagesRef.current = [...(pagesRef.current || []), createdPage];
+            setPages(pagesRef.current);
+            setCurrentPageId((prev) => prev || createdPage.id);
+
+            latestValuesRef.current = {
+              ...latestValuesRef.current,
+              currentPageId: createdPage.id,
+            };
+
+            snapshot = buildWheelSnapshot();
+            if (!snapshot) {
+              return null;
+            }
+
+            latest = latestValuesRef.current;
+          }
+        } catch (pageError) {
+          console.error('[FullSave] Failed to ensure default page before saving:', pageError);
+          throw pageError;
+        }
+      }
+
+      const result = await saveWheelSnapshot(wheelId, snapshot);
+      const { ringIdMap, activityIdMap, labelIdMap, itemsByPage } = result || {};
+
+      const remapCollection = (collection, mapRef) =>
+        (collection || []).map((entry) => ({
+          ...entry,
+          id: mapRef?.get(entry.id) || entry.id,
+        }));
+
+      const normalizedRings = remapCollection(snapshot.globalOrganizationData.rings, ringIdMap);
+      const normalizedActivityGroups = remapCollection(snapshot.globalOrganizationData.activityGroups, activityIdMap);
+      const normalizedLabels = remapCollection(snapshot.globalOrganizationData.labels, labelIdMap);
+
+      setOrganizationData((prev) => {
+        const currentPageItems =
+          (itemsByPage && latest.currentPageId && itemsByPage[latest.currentPageId]) || prev.items || [];
+
+        const next = {
+          ...prev,
+          rings: normalizedRings,
+          activityGroups: normalizedActivityGroups,
+          labels: normalizedLabels,
+          items: currentPageItems,
+        };
+
+        latestValuesRef.current = {
+          ...latestValuesRef.current,
+          organizationData: next,
+        };
+
+        return next;
+      }, { type: 'syncFromSnapshot' });
+
+      if (itemsByPage) {
+        setPages((prevPages) => {
+          if (!Array.isArray(prevPages)) {
+            return prevPages;
+          }
+
+          return prevPages.map((page) => {
+            const pageItems = itemsByPage[page.id];
+            if (!pageItems) {
+              return page;
+            }
+
+            return {
+              ...page,
+              organization_data: {
+                rings: normalizedRings,
+                activityGroups: normalizedActivityGroups,
+                labels: normalizedLabels,
+                items: pageItems,
+              },
+            };
+          });
+        });
+      }
+
       lastSaveTimestamp.current = Date.now();
-      
-      // CRITICAL: Update latestValuesRef FIRST before state update
-      latestValuesRef.current.organizationData = updatedOrgData;
-      
-      // Temporarily disable auto-save during UUID state update
-      const wasAutoSaveEnabled = autoSaveEnabled;
-      setAutoSaveEnabled(false);
-      
-      // Update React state with UUIDs so canvas gets updated data
-      // This WILL trigger undo tracking, but we mark it as saved immediately after
-      setOrganizationData(updatedOrgData);
-      
-      // CRITICAL: Mark current undo position as saved immediately
-      // This prevents the UUID update from showing as an "unsaved change"
       markSaved();
-      
-      // Re-enable auto-save after a brief delay
-      setTimeout(() => setAutoSaveEnabled(wasAutoSaveEnabled), 100);
-      
+
+      if (reason === 'manual') {
+        try {
+          await createVersion(
+            wheelId,
+            {
+              ...snapshot.metadata,
+              organizationData: {
+                rings: normalizedRings,
+                activityGroups: normalizedActivityGroups,
+                labels: normalizedLabels,
+                items:
+                  (itemsByPage && latest.currentPageId && itemsByPage[latest.currentPageId]) ||
+                  [],
+              },
+            },
+            null,
+            false
+          );
+        } catch (versionError) {
+          console.error('[FullSave] Failed to create version snapshot:', versionError);
+        }
+      }
+
+      return result;
     } catch (error) {
-      console.error('[Auto-save] Error:', error);
-      const event = new CustomEvent('showToast', { 
-        detail: { message: 'Auto-sparning misslyckades', type: 'error' } 
+      console.error('[FullSave] Failed to persist snapshot:', error);
+      const event = new CustomEvent('showToast', {
+        detail: { message: 'Kunde inte spara ändringarna', type: 'error' },
       });
       window.dispatchEvent(event);
+      throw error;
     } finally {
       isSavingRef.current = false;
+      setIsSaving(false);
     }
-  }, 3000); // Wait 3 seconds after last change
+  }, [wheelId, buildWheelSnapshot, markSaved, filterItemsByYear]);
 
-  // Auto-save ONLY on metadata changes (title, colors, settings)
+  const enqueueFullSave = useCallback((reason = 'auto') => {
+    fullSaveQueueRef.current = fullSaveQueueRef.current.then(
+      () => executeFullSave(reason),
+      () => executeFullSave(reason)
+    );
+    return fullSaveQueueRef.current;
+  }, [executeFullSave]);
+
+  const scheduleFullSave = useDebouncedCallback((reason = 'auto') => {
+    enqueueFullSave(reason);
+  }, 1200);
+
+  const queueFullSave = useCallback((reason = 'auto') => {
+    if (!wheelId || !autoSaveEnabled) {
+      return;
+    }
+
+    if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+      return;
+    }
+
+    scheduleFullSave(reason);
+  }, [wheelId, autoSaveEnabled, scheduleFullSave]);
+
   useEffect(() => {
-    // Skip if initial load, loading data, or data came from realtime
+    if (!wheelId) {
+      return;
+    }
+
     if (isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current || isDraggingRef.current) {
       return;
     }
-    autoSave();
-  }, [title, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, autoSave]);
 
-  // Auto-save on organizationData changes (for real-time collaboration)
+    queueFullSave('metadata-change');
+  }, [wheelId, title, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, queueFullSave]);
+
   useEffect(() => {
-    // Skip if initial load, loading data, currently saving, auto-save disabled, or data came from realtime
+    if (!wheelId) {
+      return;
+    }
+
     if (isInitialLoad.current || isLoadingData.current || isSavingRef.current || isRealtimeUpdate.current || !autoSaveEnabled) {
       return;
     }
-    autoSaveOrganizationData();
-  }, [organizationData, autoSaveOrganizationData, autoSaveEnabled]);
+
+    queueFullSave('organization-change');
+  }, [wheelId, organizationData, queueFullSave, autoSaveEnabled]);
 
   // Check admin status on mount
   useEffect(() => {
@@ -1300,248 +1355,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
   // DO NOT automatically apply colors here - it causes unwanted data overwrites and save loops
 
-  const handleSave = useCallback(async (options = {}) => {
-    const { silent = false } = options;
-    // If we have a wheelId, save to database
-    if (wheelId) {
-      // Temporarily disable auto-save during manual save
-      const wasAutoSaveEnabled = autoSaveEnabled;
-      setAutoSaveEnabled(false);
-      isSavingRef.current = true;
-      isLoadingData.current = true; // Prevent auto-save during reload
-      setIsSaving(true); // Update UI
-      
-      try {
-        // Get latest values from ref (not from closure) - CRITICAL for immediate saves after state changes
-        const {
-          title: currentTitle,
-          colors: currentColors,
-          showWeekRing: currentShowWeekRing,
-          showMonthRing: currentShowMonthRing,
-          showRingNames: currentShowRingNames,
-          showLabels: currentShowLabels,
-          weekRingDisplayMode: currentWeekRingDisplayMode,
-          organizationData: currentOrganizationData,
-          year: currentYear,
-          currentPageId: currentCurrentPageId
-        } = latestValuesRef.current;
-        
-        // First, update wheel metadata (title, colors, settings)
-        await updateWheel(wheelId, {
-          title: currentTitle,
-          colors: currentColors,
-          showWeekRing: currentShowWeekRing,
-          showMonthRing: currentShowMonthRing,
-          showRingNames: currentShowRingNames,
-          showLabels: currentShowLabels,
-          weekRingDisplayMode: currentWeekRingDisplayMode,
-        });
-        
-        // CRITICAL: Always call saveWheelData to sync to database tables
-        // This syncs rings, activity groups, labels, and items to their respective tables
-        
-        // If no currentPageId exists (single-page wheel or after template load), find or create a page
-        let pageIdToUse = currentCurrentPageId;
-        if (!pageIdToUse && wheelId) {
-          console.log('[handleSave] No currentPageId, checking for existing pages...');
-          
-          // First, get current pages to check if one exists for this year
-          const existingPages = await fetchPages(wheelId);
-          const pageForYear = existingPages.find(p => p.year === parseInt(currentYear));
-          
-          if (pageForYear) {
-            console.log('[handleSave] Found existing page for year', currentYear, ':', pageForYear.id);
-            pageIdToUse = pageForYear.id;
-            
-            // Update local state to use existing page
-            setCurrentPageId(pageForYear.id);
-            setPages(existingPages);
-          } else {
-            console.log('[handleSave] No page found for year', currentYear, ', creating new page...');
-            const defaultPage = await createPage(wheelId, {
-              year: parseInt(currentYear),
-              title: currentYear,
-              organizationData: currentOrganizationData
-            });
-            pageIdToUse = defaultPage.id;
-            
-            // Update local state to reflect the new page
-            setCurrentPageId(defaultPage.id);
-            setPages([...existingPages, defaultPage]);
-            
-            console.log('[handleSave] Created new page:', defaultPage.id);
-          }
-        }
-        
-        // CRITICAL FIX: Save ALL items - syncItems will assign them to correct pages based on dates
-        // Multi-year items will be assigned to their start year's page but visible on all overlapping years
-        console.log(`[handleSave] Saving ${currentOrganizationData.items.length} items to database`);
-        
-        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, currentOrganizationData, pageIdToUse);
-        
-        // Update local state with new database UUIDs (replace temporary IDs)
-        const updatedOrgData = {
-          ...currentOrganizationData,
-          rings: currentOrganizationData.rings.map(ring => ({
-            ...ring,
-            id: ringIdMap.get(ring.id) || ring.id
-          })),
-          activityGroups: currentOrganizationData.activityGroups.map(group => ({
-            ...group,
-            id: activityIdMap.get(group.id) || group.id
-          })),
-          labels: currentOrganizationData.labels.map(label => ({
-            ...label,
-            id: labelIdMap.get(label.id) || label.id
-          })),
-          items: currentOrganizationData.items.map(item => ({
-            ...item,
-            ringId: ringIdMap.get(item.ringId) || item.ringId,
-            activityId: activityIdMap.get(item.activityId) || item.activityId,
-            labelId: labelIdMap.get(item.labelId) || item.labelId
-          }))
-        };
-        
-        // Update React state with UUIDs
-        setOrganizationData(updatedOrgData);
-        
-        // CRITICAL: Update ALL pages' organization_data JSONB with their respective items
-        // This ensures continuation items appear when opening the wheel in another browser
-        
-        // Fetch ALL items from the database for this wheel (after syncItems has saved them)
-        const { data: allWheelItems, error: fetchError } = await supabase
-          .from('items')
-          .select('*')
-          .eq('wheel_id', wheelId);
-        
-        if (fetchError) {
-          console.error('[handleSave] Failed to fetch all wheel items:', fetchError);
-          throw fetchError;
-        }
-        
-        // Convert database items to client format
-        const clientItems = (allWheelItems || []).map(i => ({
-          id: i.id,
-          ringId: i.ring_id,
-          activityId: i.activity_id,
-          labelId: i.label_id,
-          name: i.name,
-          startDate: i.start_date,
-          endDate: i.end_date,
-          time: i.time,
-          description: i.description,
-          pageId: i.page_id,
-          linkedWheelId: i.linked_wheel_id,
-          linkType: i.link_type,
-        }));
-        
-        // Update ALL pages' JSONB with their respective items
-        const allPagesData = pages.map(page => {
-          const pageYear = page.year;
-          // Each page gets items that START in its year
-          const pageItems = clientItems.filter(item => {
-            const itemStartYear = new Date(item.startDate).getFullYear();
-            return itemStartYear === pageYear;
-          });
-          
-          console.log(`[handleSave] Page ${page.year}: ${pageItems.length} items (${pageItems.map(i => i.name).join(', ')})`);
-          
-          return {
-            pageId: page.id,
-            year: pageYear,
-            organization_data: {
-              rings: updatedOrgData.rings,
-              activityGroups: updatedOrgData.activityGroups,
-              labels: updatedOrgData.labels,
-              items: pageItems
-            }
-          };
-        });
-        
-        // Update all pages in parallel
-        await Promise.all(
-          allPagesData.map(({ pageId, year, organization_data }) =>
-            updatePage(pageId, { organization_data, year })
-          )
-        );
-        
-        console.log(`[handleSave] Updated ${allPagesData.length} pages with latest data`);
-        
-        // Mark the save timestamp to ignore our own broadcasts
-        lastSaveTimestamp.current = Date.now();
-        
-        // Create version snapshot after successful save
-        try {
-          await createVersion(
-            wheelId,
-            {
-              title: currentTitle,
-              year: currentYear,
-              colors: currentColors,
-              showWeekRing: currentShowWeekRing,
-              showMonthRing: currentShowMonthRing,
-              showRingNames: currentShowRingNames,
-              showLabels: currentShowLabels,
-              weekRingDisplayMode: currentWeekRingDisplayMode,
-              organizationData: updatedOrgData
-            },
-            null, // No description for auto-save
-            false // Manual save, not auto-save
-          );
-        } catch (versionError) {
-          console.error('[ManualSave] Failed to create version snapshot:', versionError);
-          // Don't fail the entire save if version creation fails
-        }
-        
-        // Mark current undo position as a save point
-        markSaved();
-        
-        // console.log('[ManualSave] Wheel data saved successfully');
-        
-        // Show success feedback
-        if (!silent) {
-          const event = new CustomEvent('showToast', { 
-            detail: { message: 'Data har sparats!', type: 'success' } 
-          });
-          window.dispatchEvent(event);
-        }
-      } catch (error) {
-        console.error('[ManualSave] Error saving wheel:', error);
-        const event = new CustomEvent('showToast', { 
-          detail: { message: 'Kunde inte spara', type: 'error' } 
-        });
-        window.dispatchEvent(event);
-      } finally {
-        isSavingRef.current = false;
-        isLoadingData.current = false; // Re-enable auto-save
-        setIsSaving(false); // Update UI
-        // Re-enable auto-save
-        setAutoSaveEnabled(wasAutoSaveEnabled);
-      }
-    } else {
-      // Fallback to localStorage for backward compatibility
-      const dataToSave = {
-        title,
-        year,
-        colors,
-        ringsData,
-        organizationData,
-        showWeekRing,
-        showMonthRing,
-        showRingNames,
-      };
-      localStorage.setItem("yearWheelData", JSON.stringify(dataToSave));
-      
-      // Mark current undo position as a save point
-      markSaved();
-      
-      // Show success feedback
-      const event = new CustomEvent('showToast', { 
-        detail: { message: 'Data har sparats!', type: 'success' } 
-      });
-      window.dispatchEvent(event);
-    }
-  }, [wheelId, autoSaveEnabled, setOrganizationData, markSaved, title, year, colors, ringsData, organizationData, showWeekRing, showMonthRing, showRingNames]);
+  
 
   useEffect(() => {
     handleSaveRef.current = handleSave;
@@ -1575,6 +1389,51 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       window.dispatchEvent(event);
     }
   };
+
+  const handleSave = useCallback(async (options = {}) => {
+    const { silent = false, reason = 'manual' } = options;
+
+    if (wheelId) {
+      const wasAutoSaveEnabled = autoSaveEnabled;
+      setAutoSaveEnabled(false);
+
+      try {
+        await enqueueFullSave(reason === 'manual' ? 'manual' : reason);
+
+        if (!silent) {
+          showToast('Data har sparats!', 'success');
+        }
+      } catch (error) {
+        console.error('[ManualSave] Error saving wheel:', error);
+        showToast('Kunde inte spara', 'error');
+      } finally {
+        setAutoSaveEnabled(wasAutoSaveEnabled);
+      }
+
+      return;
+    }
+
+    const dataToSave = {
+      title,
+      year,
+      colors,
+      ringsData,
+      organizationData,
+      showWeekRing,
+      showMonthRing,
+      showRingNames,
+      showWeekNumbers,
+      showLabels,
+      showQuarterHighlights,
+    };
+
+    localStorage.setItem('yearWheelData', JSON.stringify(dataToSave));
+    markSaved();
+
+    if (!silent) {
+      showToast('Data har sparats lokalt!', 'success');
+    }
+  }, [wheelId, autoSaveEnabled, enqueueFullSave, showToast, title, year, colors, ringsData, organizationData, showWeekRing, showMonthRing, showRingNames, showWeekNumbers, showLabels, showQuarterHighlights, markSaved]);
 
   const handleToggleTemplate = async () => {
     if (!wheelId || !isAdmin) return;
@@ -1930,48 +1789,38 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
       
       
-      // Now save the items to the database using saveWheelData
-      // This will insert items into the 'items' table (not just JSONB)
       const itemsToSave = copiedItems.map(item => ({
         ...item,
-        pageId: newPage.id // Set the page ID
+        pageId: newPage.id
       }));
-      
-      
-      await saveWheelData(wheelId, {
-        rings: organizationData.rings || [],
-        activityGroups: organizationData.activityGroups || [],
-        labels: organizationData.labels || [],
-        items: itemsToSave
-      }, newPage.id);
-      
-      
-      // Sort pages by year after adding
-      const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
-      setPages(updatedPages);
-      setShowAddPageModal(false);
-      
-      // Switch to the new page
-      setCurrentPageId(newPage.id);
-      setYear(String(nextYear));
-      
-      // Fetch items from database to get the real UUIDs AND multi-year items
-      const savedItems = await fetchPageData(newPage.id, nextYear, wheelId);
-      
-      // Update organizationData with saved items (keep wheel-level structures)
-      setOrganizationData(prevData => ({
-        ...prevData,  // Keep rings, activityGroups, labels from wheel level
-        items: savedItems  // Use items from database with real UUIDs
-      }));
-      
-      
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: `SmartCopy: ${savedItems.length} aktiviteter kopierade till ${nextYear}!`, 
-          type: 'success' 
-        }
+
+      const hydratedPage = {
+        ...newPage,
+        organization_data: {
+          rings: [...(organizationData.rings || [])],
+          activityGroups: [...(organizationData.activityGroups || [])],
+          labels: [...(organizationData.labels || [])],
+          items: itemsToSave,
+        },
+      };
+
+      setPages(prevPages => {
+        const nextPages = Array.isArray(prevPages) ? [...prevPages, hydratedPage] : [hydratedPage];
+        return nextPages.sort((a, b) => a.year - b.year);
       });
-      window.dispatchEvent(event);
+      setShowAddPageModal(false);
+
+      setCurrentPageId(hydratedPage.id);
+      setYear(String(nextYear));
+
+      setOrganizationData(prevData => ({
+        ...prevData,
+        items: itemsToSave,
+      }), { type: 'smartCopy', params: { year: nextYear } });
+
+      await enqueueFullSave('smart-copy');
+
+      showToast(`SmartCopy: ${itemsToSave.length} aktiviteter kopierade till ${nextYear}!`, 'success');
     } catch (error) {
       const event = new CustomEvent('showToast', {
         detail: { message: `SmartCopy misslyckades: ${error.message}`, type: 'error' }
@@ -2191,94 +2040,84 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         );
       }
 
-      // CRITICAL: Save restored data DIRECTLY to database BEFORE updating state
-      // This ensures database has the restored data before any realtime events can fire
-      
-      // Save wheel metadata
-      await updateWheel(wheelId, {
-        title: versionData.title,
-        colors: versionData.colors,
-        showWeekRing: versionData.showWeekRing ?? showWeekRing,
-        showMonthRing: versionData.showMonthRing ?? showMonthRing,
-        showRingNames: versionData.showRingNames ?? showRingNames,
-      });
-      
-      // Save organization data to current page
-      if (currentPageId && versionData.organizationData) {
-        const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(
-          wheelId, 
-          versionData.organizationData, 
-          currentPageId
-        );
-        
-        // Update organization_data with mapped IDs
-        const updatedOrgData = {
-          ...versionData.organizationData,
-          rings: versionData.organizationData.rings.map(ring => ({
-            ...ring,
-            id: ringIdMap.get(ring.id) || ring.id
-          })),
-          activityGroups: versionData.organizationData.activityGroups.map(group => ({
-            ...group,
-            id: activityIdMap.get(group.id) || group.id
-          })),
-          labels: versionData.organizationData.labels.map(label => ({
-            ...label,
-            id: labelIdMap.get(label.id) || label.id
-          })),
-          items: versionData.organizationData.items.map(item => ({
-            ...item,
-            ringId: ringIdMap.get(item.ringId) || item.ringId,
-            activityId: activityIdMap.get(item.activityId) || item.activityId,
-            labelId: labelIdMap.get(item.labelId) || item.labelId
-          }))
+      const cloneOrgData = (data) => {
+        if (!data) {
+          return null;
+        }
+
+        return {
+          rings: [...(data.rings || [])],
+          activityGroups: [...(data.activityGroups || [])],
+          labels: [...(data.labels || [])],
+          items: [...(data.items || [])],
         };
-        
-        // Update page with restored data
-        await updatePage(currentPageId, {
-          organization_data: updatedOrgData,
-          year: parseInt(versionData.year || year)
+      };
+
+      const restoredOrgData = cloneOrgData(versionData.organizationData);
+
+      if (currentPageId && restoredOrgData) {
+        setPages((prevPages) => {
+          if (!Array.isArray(prevPages)) {
+            return prevPages;
+          }
+
+          return prevPages.map((page) => {
+            if (page.id !== currentPageId) {
+              return page;
+            }
+
+            return {
+              ...page,
+              organization_data: {
+                ...(page.organization_data || {}),
+                ...restoredOrgData,
+              },
+            };
+          });
         });
-        
-        // NOW update local state to match database
-        const versionUpdates = {};
-        if (versionData.title) versionUpdates.title = versionData.title;
-        if (versionData.colors) versionUpdates.colors = versionData.colors;
-        versionUpdates.organizationData = updatedOrgData;
-        setUndoableStates(versionUpdates);
-      } else {
-        // No currentPageId - just update state
-        const versionUpdates = {};
-        if (versionData.title) versionUpdates.title = versionData.title;
-        if (versionData.colors) versionUpdates.colors = versionData.colors;
-        if (versionData.organizationData) versionUpdates.organizationData = versionData.organizationData;
+      }
+
+      const versionUpdates = {};
+      if (versionData.title) {
+        versionUpdates.title = versionData.title;
+      }
+      if (versionData.colors) {
+        versionUpdates.colors = versionData.colors;
+      }
+      if (restoredOrgData) {
+        versionUpdates.organizationData = restoredOrgData;
+      }
+
+      if (Object.keys(versionUpdates).length > 0) {
         setUndoableStates(versionUpdates);
       }
-      
-      // Clear undo history after version restore (new data context)
+
+      latestValuesRef.current = {
+        ...latestValuesRef.current,
+        title: versionData.title ?? latestValuesRef.current?.title,
+        colors: versionData.colors ?? latestValuesRef.current?.colors,
+        showWeekRing: versionData.showWeekRing ?? latestValuesRef.current?.showWeekRing,
+        showMonthRing: versionData.showMonthRing ?? latestValuesRef.current?.showMonthRing,
+        showRingNames: versionData.showRingNames ?? latestValuesRef.current?.showRingNames,
+        organizationData: restoredOrgData ?? latestValuesRef.current?.organizationData,
+        year: versionData.year ?? latestValuesRef.current?.year,
+      };
+
       clearHistory();
-      
-      // Set non-undoable states
+
       if (versionData.year) setYear(versionData.year.toString());
       if (typeof versionData.showWeekRing === 'boolean') setShowWeekRing(versionData.showWeekRing);
       if (typeof versionData.showMonthRing === 'boolean') setShowMonthRing(versionData.showMonthRing);
       if (typeof versionData.showRingNames === 'boolean') setShowRingNames(versionData.showRingNames);
-      
-      // Wait for state and database to settle
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Reset flags
+
+      await enqueueFullSave('restore-version');
+
       lastSaveTimestamp.current = Date.now();
       isSavingRef.current = false;
       isLoadingData.current = false;
       isRestoringVersion.current = false;
-      
-      // Show success message
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Version återställd!', type: 'success' }
-      });
-      window.dispatchEvent(event);
-      
+
+      showToast('Version återställd!', 'success');
       setShowVersionHistory(false);
     } catch (error) {
       console.error('Error restoring version:', error);
@@ -2530,195 +2369,58 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const { reason = 'item-update', delay = 0 } = options;
 
-    const run = async (attempt = 0, candidateItem = item) => {
-      const latest = latestValuesRef.current;
-      const activePageId = latest?.currentPageId || currentPageId;
+    const run = () => enqueueFullSave(reason);
 
-      if (!activePageId) {
-        if (handleSaveRef.current) {
-          await handleSaveRef.current({ silent: true, reason: `${reason}-no-page` });
-        }
-        return null;
-      }
+    if (delay > 0) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          run().then(resolve).catch(reject);
+        }, delay);
+      });
+    }
 
-      const itemForPersistence = {
-        ...candidateItem,
-        pageId: candidateItem.pageId || activePageId,
-      };
-
-      try {
-        const savedItem = await updateSingleItem(
-          wheelId,
-          activePageId,
-          itemForPersistence,
-          new Map(),
-          new Map(),
-          new Map()
-        );
-
-        if (savedItem) {
-          const normalizedSavedItem = {
-            ...savedItem,
-            pageId: savedItem.pageId || activePageId,
-            _remoteUpdate: undefined,
-            _remoteUser: undefined,
-            _remoteTimestamp: undefined,
-          };
-
-          const latestOrgData = latest?.organizationData || {};
-          const existingItem = (latestOrgData.items || []).find(
-            (it) => it.id === itemForPersistence.id || it.id === normalizedSavedItem.id
-          );
-
-          const shouldSync =
-            !existingItem ||
-            normalizedSavedItem.id !== existingItem.id ||
-            normalizedSavedItem.startDate !== existingItem.startDate ||
-            normalizedSavedItem.endDate !== existingItem.endDate ||
-            (normalizedSavedItem.time || null) !== (existingItem?.time || null) ||
-            (normalizedSavedItem.description || null) !== (existingItem?.description || null) ||
-            normalizedSavedItem.ringId !== existingItem?.ringId ||
-            normalizedSavedItem.activityId !== existingItem?.activityId ||
-            (normalizedSavedItem.labelId || null) !== (existingItem?.labelId || null) ||
-            (normalizedSavedItem.linkType || null) !== (existingItem?.linkType || null) ||
-            (normalizedSavedItem.linkedWheelId || null) !== (existingItem?.linkedWheelId || null) ||
-            (normalizedSavedItem.pageId || activePageId) !== (existingItem?.pageId || activePageId);
-
-          if (shouldSync) {
-            setOrganizationData((prev) => {
-              const items = Array.isArray(prev.items) ? prev.items : [];
-
-              const indexByOldId = items.findIndex((existing) => existing.id === itemForPersistence.id);
-              const indexByNewId = items.findIndex((existing) => existing.id === normalizedSavedItem.id);
-
-              let updatedItems;
-
-              if (indexByOldId === -1 && indexByNewId === -1) {
-                updatedItems = [...items, normalizedSavedItem];
-              } else {
-                updatedItems = items.slice();
-
-                if (indexByOldId !== -1) {
-                  updatedItems[indexByOldId] = {
-                    ...updatedItems[indexByOldId],
-                    ...normalizedSavedItem,
-                  };
-
-                  if (indexByNewId !== -1 && indexByNewId !== indexByOldId) {
-                    updatedItems.splice(indexByNewId, 1);
-                  }
-                } else if (indexByNewId !== -1) {
-                  updatedItems[indexByNewId] = {
-                    ...updatedItems[indexByNewId],
-                    ...normalizedSavedItem,
-                  };
-                }
-              }
-
-              const nextOrgData = {
-                ...prev,
-                items: updatedItems,
-              };
-
-              latestValuesRef.current = {
-                ...latestValuesRef.current,
-                organizationData: nextOrgData,
-              };
-
-              return nextOrgData;
-            }, { type: 'syncItemFromDb' });
-          }
-        }
-
-        lastSaveTimestamp.current = Date.now();
-        markSaved();
-        return savedItem;
-      } catch (error) {
-        console.error(`[ItemPersist] Failed to persist item (${reason}):`, error);
-        const needsFullSync = typeof error?.message === 'string' && (
-          error.message.includes('Invalid ring_id') ||
-          error.message.includes('Invalid activity_id') ||
-          error.message.includes('could not resolve ring_id') ||
-          error.message.includes('could not resolve activity_id')
-        );
-
-        if (needsFullSync && attempt === 0 && handleSaveRef.current) {
-          await handleSaveRef.current({ silent: true, reason: `${reason}-fallback` });
-          const latestAfterSave = latestValuesRef.current;
-          const refreshedItem =
-            latestAfterSave?.organizationData?.items?.find((existing) => existing.id === itemForPersistence.id) ||
-            candidateItem;
-          return run(attempt + 1, refreshedItem);
-        }
-
-        showToast('Kunde inte spara ändringen', 'error');
-        throw error;
-      }
-    };
-
-    const queueRunner = async () => {
-      if (delay > 0) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-      return run();
-    };
-
-    itemPersistenceQueueRef.current = itemPersistenceQueueRef.current
-      .catch(() => {})
-      .then(queueRunner);
-
-    return itemPersistenceQueueRef.current;
-  }, [wheelId, currentPageId, setOrganizationData, showToast, markSaved, handleSaveRef, updateSingleItem]);
+    return run();
+  }, [wheelId, enqueueFullSave]);
 
   const persistMultipleItems = useCallback((items, options = {}) => {
-    if (!items) {
-      return Promise.resolve([]);
+    if (!wheelId) {
+      return Promise.resolve(Array.isArray(items) ? items : items ? [items] : []);
     }
 
-    const itemsArray = Array.isArray(items) ? items : [items];
-    const baseReason = options.reason || 'item-batch';
+    const { reason = 'item-batch', delay = 0 } = options;
 
-    return Promise.all(
-      itemsArray.map((item, index) =>
-        persistItemToDatabase(item, {
-          ...options,
-          reason: `${baseReason}-${index}`,
-          delay: options.delay ?? index * 25,
-        })
-      )
-    );
-  }, [persistItemToDatabase]);
+    const run = () => enqueueFullSave(reason).then(() => items);
+
+    if (delay > 0) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          run().then(resolve).catch(reject);
+        }, delay);
+      });
+    }
+
+    return run();
+  }, [wheelId, enqueueFullSave]);
 
   const persistItemDeletion = useCallback((itemId, options = {}) => {
-    if (!wheelId || !itemId) {
+    if (!wheelId) {
       return Promise.resolve();
     }
 
-    if (!UUID_REGEX.test(itemId)) {
-      // Item was never persisted to the database
-      return Promise.resolve();
+    const { reason = 'item-delete', delay = 0 } = options;
+
+    const run = () => enqueueFullSave(reason);
+
+    if (delay > 0) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          run().then(resolve).catch(reject);
+        }, delay);
+      });
     }
 
-    const { reason = 'item-delete' } = options;
-
-    const run = async () => {
-      try {
-        await deleteSingleItem(itemId);
-        lastSaveTimestamp.current = Date.now();
-        markSaved();
-      } catch (error) {
-        console.error(`[ItemPersist] Failed to delete item (${reason}):`, error);
-        showToast('Kunde inte radera aktiviteten', 'error');
-        throw error;
-      }
-    };
-
-    itemPersistenceQueueRef.current = itemPersistenceQueueRef.current
-      .catch(() => {})
-      .then(run);
-
-    return itemPersistenceQueueRef.current;
-  }, [wheelId, showToast, markSaved, deleteSingleItem]);
+    return run();
+  }, [wheelId, enqueueFullSave]);
 
   const handlePersistNewItems = useCallback((items) => {
     return persistMultipleItems(items, { reason: 'item-create' });
@@ -2795,6 +2497,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const createdSegments = [];
 
+    const ensureArray = (value) => (Array.isArray(value) ? value : []);
+
+    const generateItemId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return `item-${crypto.randomUUID()}`;
+      }
+      return `item-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    };
+
+    const isMatchingContinuation = (candidate, startDate, endDate) =>
+      candidate &&
+      candidate.name === item.name &&
+      candidate.ringId === item.ringId &&
+      candidate.activityId === item.activityId &&
+      (candidate.labelId || null) === (item.labelId || null) &&
+      candidate.startDate === startDate &&
+      candidate.endDate === endDate;
+
     for (const segment of segments) {
       try {
         const ensured = await ensurePageForYear(segment.year);
@@ -2805,30 +2525,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         const pageId = targetPage.id;
 
-        let existingMatch = null;
-        try {
-          const { data: existingCandidate } = await supabase
-            .from('items')
-            .select('id, start_date, end_date')
-            .eq('wheel_id', wheelId)
-            .eq('page_id', pageId)
-            .eq('ring_id', item.ringId)
-            .eq('activity_id', item.activityId)
-            .eq('name', item.name)
-            .maybeSingle();
+        const latestPages = pagesRef.current || [];
+        const pageEntry = latestPages.find((page) => page.id === pageId);
+        const existingItems = ensureArray(pageEntry?.organization_data?.items);
+        const existingMatch = existingItems.find((candidate) =>
+          isMatchingContinuation(candidate, segment.startDate, segment.endDate)
+        );
 
-          if (existingCandidate) {
-            existingMatch = existingCandidate;
-          }
-        } catch (lookupError) {
-          // PGRST116 means no rows, safe to ignore
-          if (lookupError?.code !== 'PGRST116') {
-            console.warn('[MultiYear] Lookup for existing continuation failed:', lookupError);
-          }
+        if (existingMatch) {
+          createdSegments.push({ year: segment.year, item: existingMatch, alreadyExisted: true });
+          continue;
         }
 
-        const payload = {
-          id: existingMatch?.id,
+        const newItem = {
+          id: generateItemId(),
           ringId: item.ringId,
           activityId: item.activityId,
           labelId: item.labelId || null,
@@ -2842,89 +2552,52 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           linkType: item.linkType || null,
         };
 
-        const savedItem = await updateSingleItem(
-          wheelId,
-          pageId,
-          payload,
-          new Map(),
-          new Map(),
-          new Map()
-        );
-
-        createdSegments.push({ year: segment.year, item: savedItem });
-
-        // CRITICAL: Update the target page's organization_data JSONB in the database
-        // This ensures the continuation item appears when loading in other browsers/tabs
-        try {
-          const pageOrgData = targetPage.organization_data || {};
-          const existingPageItems = pageOrgData.items || [];
-          const itemExists = existingPageItems.some(existing => existing.id === savedItem.id);
-          const updatedPageItems = itemExists
-            ? existingPageItems.map(existing => existing.id === savedItem.id ? savedItem : existing)
-            : [...existingPageItems, savedItem];
-
-          await updatePage(pageId, {
-            organization_data: {
-              ...pageOrgData,
-              items: updatedPageItems,
-            },
-          });
-        } catch (pageUpdateError) {
-          console.error('[MultiYear] Failed to update page organization_data:', pageUpdateError);
-          // Continue anyway - item is saved to items table
-        }
-
         setPages((prevPages) => {
-          let updated = prevPages.map((page) => {
+          if (!Array.isArray(prevPages)) {
+            return prevPages;
+          }
+
+          return prevPages.map((page) => {
             if (page.id !== pageId) {
               return page;
             }
 
-            const existingItems = page.organization_data?.items || [];
-            const itemExists = existingItems.some((existing) => existing.id === savedItem.id);
-            const updatedItems = itemExists
-              ? existingItems.map((existing) => existing.id === savedItem.id ? savedItem : existing)
-              : [...existingItems, savedItem];
+            const nextOrgData = {
+              ...(page.organization_data || {}),
+              items: [...ensureArray(page.organization_data?.items), newItem],
+            };
 
             return {
               ...page,
-              organization_data: {
-                ...(page.organization_data || {}),
-                items: updatedItems,
-              },
+              organization_data: nextOrgData,
             };
           });
-
-          const hasPage = updated.some((page) => page.id === pageId);
-          if (!hasPage) {
-            updated = [
-              ...updated,
-              {
-                ...targetPage,
-                organization_data: {
-                  ...(targetPage.organization_data || {}),
-                  items: [savedItem],
-                },
-              },
-            ];
-          }
-
-          updated.sort((a, b) => a.year - b.year);
-          return updated;
         });
 
+        if ((latestValuesRef.current?.currentPageId || currentPageId) === pageId) {
+          setOrganizationData((prev) => ({
+            ...prev,
+            items: [...ensureArray(prev.items), newItem],
+          }), { type: 'appendContinuation' });
+        }
+
+        createdSegments.push({ year: segment.year, item: newItem, alreadyExisted: false });
+
         if (broadcastOperation) {
-          broadcastOperation(existingMatch ? 'edit' : 'create', savedItem.id, savedItem);
+          broadcastOperation('create', newItem.id, newItem);
         }
       } catch (segmentError) {
-        console.error('[MultiYear] Failed to create continuation segment:', segmentError);
+        console.error('[MultiYear] Failed to queue continuation segment:', segmentError);
         showToast('Kunde inte skapa fortsättning för aktiviteten.', 'error');
         break;
       }
     }
 
     if (createdSegments.length > 0) {
-      lastSaveTimestamp.current = Date.now();
+      enqueueFullSave('multi-year-continuation').catch((error) => {
+        console.error('[MultiYear] Snapshot save failed:', error);
+        showToast('Kunde inte spara fortsättningen.', 'error');
+      });
 
       const continuationYears = createdSegments.map((segment) => segment.year);
       const minYear = Math.min(...continuationYears);
@@ -2936,7 +2609,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       showToast(successMessage, 'success');
     }
-  }, [wheelId, ensurePageForYear, broadcastOperation, updateSingleItem, setPages, showToast, showConfirmDialog]);
+  }, [wheelId, ensurePageForYear, pagesRef, currentPageId, setPages, setOrganizationData, enqueueFullSave, broadcastOperation, showToast, showConfirmDialog]);
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
@@ -3183,163 +2856,85 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               
               const years = Object.keys(itemsByYear).sort();
               
-              // Get or create pages for each year
-              const { data: existingPages } = await supabase
-                .from('wheel_pages')
-                .select('id, year, page_order')
-                .eq('wheel_id', wheelId)
-                .order('year');
-              
-              const pagesByYear = {};
-              const usedPageOrders = new Set();
-              
-              existingPages?.forEach(page => {
-                pagesByYear[page.year] = page.id;
-                if (page.page_order !== null && page.page_order !== undefined) {
-                  usedPageOrders.add(page.page_order);
-                }
-              });
-              
-              // Create missing pages
+              const preparedPages = [];
+
               for (const yearStr of years) {
-                const year = parseInt(yearStr);
-                if (!pagesByYear[year]) {
-                  // Find next available page_order (starting from 1, not 0)
-                  let newPageOrder = 1;
-                  while (usedPageOrders.has(newPageOrder)) {
-                    newPageOrder++;
-                  }
-                  usedPageOrders.add(newPageOrder);
-                  
-                  const { data: newPage, error: insertError } = await supabase
-                    .from('wheel_pages')
-                    .insert({
-                      wheel_id: wheelId,
-                      year: year,
-                      title: `${data.title} ${year}`,
-                      page_order: newPageOrder,
-                      organization_data: { rings: [], activityGroups: [], labels: [], items: [] }
-                    })
-                    .select()
-                    .single();
-                  
-                  if (insertError) {
-                    // Maybe page already exists? Try to find it
-                    const { data: existingPage } = await supabase
-                      .from('wheel_pages')
-                      .select('id, year')
-                      .eq('wheel_id', wheelId)
-                      .eq('year', year)
-                      .single();
-                    
-                    if (existingPage) {
-                      pagesByYear[year] = existingPage.id;
-                    } else {
-                      throw new Error(`Could not create or find page for year ${year}: ${insertError.message}`);
-                    }
-                  } else if (newPage) {
-                    pagesByYear[year] = newPage.id;
-                  } else {
-                    throw new Error(`Failed to create page for year ${year}: no data returned`);
-                  }
+                const year = Number.parseInt(yearStr, 10);
+                if (!Number.isFinite(year)) {
+                  continue;
                 }
-              }
-              
-              // OPTIMIZATION: Rings/ActivityGroups/Labels are WHEEL-SCOPED (shared across all pages)
-              // So we only need to sync them ONCE, not once per page
-              
-              // Use the first page to sync shared data
-              const firstPageId = pagesByYear[years[0]];
-              const sharedOrgData = {
-                rings: processedOrgData.rings,
-                activityGroups: processedOrgData.activityGroups,
-                labels: processedOrgData.labels,
-                items: [] // No items yet
-              };
-              
-              const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, sharedOrgData, firstPageId);
-              
-              // Now save items to their respective pages
-              for (const yearStr of years) {
-                const year = parseInt(yearStr);
-                const pageId = pagesByYear[year];
-                const yearItems = itemsByYear[yearStr];
-                
-                // Map item foreign keys to database UUIDs
-                const mappedItems = yearItems.map(item => ({
-                  ...item,
-                  ringId: ringIdMap.get(item.ringId) || item.ringId,
-                  activityId: activityIdMap.get(item.activityId) || item.activityId,
-                  labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
-                }));
-                
-                // Sync items only (rings/groups/labels already synced)
-                await syncItems(wheelId, mappedItems, ringIdMap, activityIdMap, labelIdMap, pageId);
-                
-                // Update page's organization_data with all data (including mapped IDs)
-                const yearOrgData = {
-                  rings: processedOrgData.rings.map(r => ({ ...r, id: ringIdMap.get(r.id) || r.id })),
-                  activityGroups: processedOrgData.activityGroups.map(g => ({ ...g, id: activityIdMap.get(g.id) || g.id })),
-                  labels: processedOrgData.labels.map(l => ({ ...l, id: labelIdMap.get(l.id) || l.id })),
-                  items: mappedItems
-                };
-                
-                await updatePage(pageId, {
-                  organization_data: yearOrgData,
-                  year: year
+
+                const ensured = await ensurePageForYear(year);
+                const targetPage = ensured?.page;
+                if (!targetPage) {
+                  continue;
+                }
+
+                preparedPages.push({
+                  ...targetPage,
+                  organization_data: {
+                    rings: [...processedOrgData.rings],
+                    activityGroups: [...processedOrgData.activityGroups],
+                    labels: [...processedOrgData.labels],
+                    items: [...(itemsByYear[yearStr] || [])],
+                  },
                 });
               }
-              
-              // Update processedOrgData with database UUIDs for local state
-              processedOrgData.rings = processedOrgData.rings.map(ring => ({
-                ...ring,
-                id: ringIdMap.get(ring.id) || ring.id
-              }));
-              
-              processedOrgData.activityGroups = processedOrgData.activityGroups.map(group => ({
-                ...group,
-                id: activityIdMap.get(group.id) || group.id
-              }));
-              
-              processedOrgData.labels = processedOrgData.labels.map(label => ({
-                ...label,
-                id: labelIdMap.get(label.id) || label.id
-              }));
-              
-              processedOrgData.items = processedOrgData.items.map(item => ({
-                ...item,
-                ringId: ringIdMap.get(item.ringId) || item.ringId,
-                activityId: activityIdMap.get(item.activityId) || item.activityId,
-                labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
-              }));
-              
-              // ALWAYS reload pages to reflect new pages created during import
-              const { data: refreshedPages } = await supabase
-                .from('wheel_pages')
-                .select('*')
-                .eq('wheel_id', wheelId)
-                .order('page_order');
-              
-              if (refreshedPages && refreshedPages.length > 0) {
-                setWheelPages(refreshedPages);
-                
-                // Set currentPageId to the first page with items OR the file's year
-                const fileYear = parseInt(data.year);
-                const pageForFileYear = refreshedPages.find(p => p.year === fileYear);
-                
-                if (pageForFileYear) {
-                  setCurrentPageId(pageForFileYear.id);
-                } else if (refreshedPages[0]) {
-                  // Fallback: use first page
-                  setCurrentPageId(refreshedPages[0].id);
-                }
+
+              if (preparedPages.length === 0) {
+                throw new Error('Kunde inte skapa sidor för importerat innehåll.');
               }
-              
-              // Show success feedback
-              const toastEvent = new CustomEvent('showToast', { 
-                detail: { message: `Fil laddad! ${years.length} år importerade`, type: 'success' } 
-              });
-              window.dispatchEvent(toastEvent);
+
+              const sortedPreparedPages = [...preparedPages].sort((a, b) => a.year - b.year);
+
+              setPages(sortedPreparedPages);
+              pagesRef.current = sortedPreparedPages;
+
+              const fileYear = Number.parseInt(data.year, 10);
+              const pageForFileYear = sortedPreparedPages.find((page) => page.year === fileYear) || sortedPreparedPages[0];
+
+              if (pageForFileYear) {
+                setCurrentPageId(pageForFileYear.id);
+                setYear(String(pageForFileYear.year || fileYear));
+
+                const pageOrgData = pageForFileYear.organization_data || {
+                  rings: [],
+                  activityGroups: [],
+                  labels: [],
+                  items: [],
+                };
+
+                setOrganizationData(() => ({
+                  rings: [...pageOrgData.rings],
+                  activityGroups: [...pageOrgData.activityGroups],
+                  labels: [...pageOrgData.labels],
+                  items: [...pageOrgData.items],
+                }), { type: 'importFile', params: { year: pageForFileYear.year } });
+
+                latestValuesRef.current = {
+                  ...latestValuesRef.current,
+                  title: data.title,
+                  colors: data.colors || colors,
+                  showWeekRing: data.showWeekRing ?? showWeekRing,
+                  showMonthRing: data.showMonthRing ?? showMonthRing,
+                  showRingNames: data.showRingNames ?? showRingNames,
+                  showLabels: data.showLabels ?? showLabels,
+                  weekRingDisplayMode: data.weekRingDisplayMode ?? weekRingDisplayMode,
+                  currentPageId: pageForFileYear.id,
+                  organizationData: {
+                    rings: [...pageOrgData.rings],
+                    activityGroups: [...pageOrgData.activityGroups],
+                    labels: [...pageOrgData.labels],
+                    items: [...pageOrgData.items],
+                  },
+                  pages: sortedPreparedPages,
+                  year: String(pageForFileYear.year || fileYear),
+                };
+              }
+
+              await enqueueFullSave('import-file');
+
+              showToast(`Fil laddad! ${sortedPreparedPages.length} år importerade`, 'success');
             } catch (saveError) {
               saveFailed = true;
               const errorEvent = new CustomEvent('showToast', { 
@@ -3371,6 +2966,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
           if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
           if (data.showRingNames !== undefined) setShowRingNames(data.showRingNames);
+          if (data.showLabels !== undefined) setShowLabels(data.showLabels);
+          if (data.weekRingDisplayMode) setWeekRingDisplayMode(data.weekRingDisplayMode);
 
           if (!wheelId) {
             // localStorage mode - show success after state update

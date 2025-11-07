@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+ 
 import { AlertCircle, Wifi, WifiOff, Shield } from 'lucide-react';
 import { isSSLError, isNetworkError } from '../utils/networkErrors';
 

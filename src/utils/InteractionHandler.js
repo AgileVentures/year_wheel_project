@@ -588,7 +588,7 @@ class InteractionHandler {
 
       if (
         originalItem &&
-        this.dragState.dragMode === 'resize-end' &&
+        (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
         try {
