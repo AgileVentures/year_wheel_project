@@ -1,5 +1,5 @@
 import { Search, Settings, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, Plus, Trash2, Edit2, X, Link as LinkIcon, Info, GripVertical } from 'lucide-react';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
 import AddItemModal from './AddItemModal';
@@ -33,7 +33,10 @@ function OrganizationPanel({
   onReloadData, // Reload wheel data from database
   currentWheelId, // For wheel linking
   broadcastActivity, // Broadcast editing activity
-  activeEditors // Other users' editing activity
+  activeEditors, // Other users' editing activity
+  onPersistItems = () => Promise.resolve(),
+  onPersistItem = () => Promise.resolve(),
+  onPersistItemDelete = () => Promise.resolve()
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [searchQuery, setSearchQuery] = useState('');
@@ -46,6 +49,7 @@ function OrganizationPanel({
   const [infoDialog, setInfoDialog] = useState(null); // { title, content } for info dialog
   const [draggedRing, setDraggedRing] = useState(null); // Track which ring is being dragged
   const [dragOverSection, setDragOverSection] = useState(null); // Track which section is being dragged over ('inner' or 'outer')
+  const ringSaveTimeoutRef = useRef(null); // Batch silent saves after structural ring changes
   
   // Local state for title to avoid updating history on every keystroke
   const [localTitle, setLocalTitle] = useState(title || '');
@@ -57,6 +61,36 @@ function OrganizationPanel({
   
   // Track which fields are currently being edited (have focus)
   const editingFieldRef = useRef({ type: null, id: null });
+
+  // Ensure pending silent saves do not fire after unmount
+  useEffect(() => {
+    return () => {
+      if (ringSaveTimeoutRef.current) {
+        clearTimeout(ringSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const queueSilentRingSave = useCallback((reason = 'ring-structure') => {
+    if (!onSaveToDatabase) {
+      return;
+    }
+
+    if (ringSaveTimeoutRef.current) {
+      clearTimeout(ringSaveTimeoutRef.current);
+    }
+
+    // Wait a tick so latest state is reflected in refs before saving
+    ringSaveTimeoutRef.current = setTimeout(() => {
+      Promise.resolve(onSaveToDatabase({ silent: true, reason }))
+        .catch((err) => {
+          console.error(`[OrganizationPanel] Silent save failed (${reason})`, err);
+        })
+        .finally(() => {
+          ringSaveTimeoutRef.current = null;
+        });
+    }, 150);
+  }, [onSaveToDatabase]);
   
   // Sync local title when prop changes (e.g., from undo/redo or load)
   useEffect(() => {
@@ -374,6 +408,10 @@ function OrganizationPanel({
     const itemsToAdd = Array.isArray(newAktivitet) ? newAktivitet : [newAktivitet];
     const updatedItems = [...(organizationData.items || []), ...itemsToAdd];
     onOrganizationChange({ ...organizationData, items: updatedItems });
+
+    Promise.resolve(onPersistItems(itemsToAdd)).catch((error) => {
+      console.error('[OrganizationPanel] Failed to persist added items:', error);
+    });
   };
 
   // Update aktivitet
@@ -382,12 +420,20 @@ function OrganizationPanel({
       item.id === updatedAktivitet.id ? updatedAktivitet : item
     );
     onOrganizationChange({ ...organizationData, items: updatedItems });
+
+    Promise.resolve(onPersistItem(updatedAktivitet)).catch((error) => {
+      console.error('[OrganizationPanel] Failed to persist updated item:', error);
+    });
   };
 
   // Delete aktivitet
   const handleDeleteAktivitet = (aktivitetId) => {
     const updatedItems = organizationData.items.filter(item => item.id !== aktivitetId);
     onOrganizationChange({ ...organizationData, items: updatedItems });
+
+    Promise.resolve(onPersistItemDelete(aktivitetId)).catch((error) => {
+      console.error('[OrganizationPanel] Failed to delete item from database:', error);
+    });
   };
 
   // Sort aktiviteter for list view
@@ -472,6 +518,7 @@ function OrganizationPanel({
     
     // Update state - this will trigger auto-save after 2 seconds
     onOrganizationChange(updatedOrgData);
+    queueSilentRingSave('ring-add-inner');
   };
 
   const handleAddOuterRing = async () => {
@@ -486,6 +533,7 @@ function OrganizationPanel({
     
     // Update state - this will trigger auto-save after 2 seconds
     onOrganizationChange(updatedOrgData);
+    queueSilentRingSave('ring-add-outer');
   };
 
   const handleRemoveRing = (ringId) => {
@@ -504,6 +552,7 @@ function OrganizationPanel({
       rings: updatedRings,
       items: updatedItems
     });
+    queueSilentRingSave('ring-remove');
   };
 
   const handleRingNameChange = (ringId, newName) => {
@@ -612,6 +661,7 @@ function OrganizationPanel({
       
       onOrganizationChange({ ...organizationData, rings });
       setDraggedRing(null);
+      queueSilentRingSave('ring-reorder');
       return;
     }
 
@@ -640,6 +690,7 @@ function OrganizationPanel({
 
     onOrganizationChange({ ...organizationData, rings });
     setDraggedRing(null);
+    queueSilentRingSave('ring-type-swap');
   };
 
   const handleDrop = (e, targetType) => {
@@ -683,6 +734,7 @@ function OrganizationPanel({
 
     onOrganizationChange({ ...organizationData, rings: updatedRings });
     setDraggedRing(null);
+    queueSilentRingSave('ring-type-move');
   };
 
   // Activity Group management

@@ -126,6 +126,7 @@ class YearWheel {
     this.dragStartAngle = 0;
     this.clickableItems = []; // Store clickable item regions
     this.justFinishedDrag = false; // Prevent tooltip immediately after drag ends
+  this.skipNextClick = false; // Ignore synthetic click directly after drag
 
     // Selection mode support
     this.selectionMode = options.selectionMode || false;
@@ -155,7 +156,8 @@ class YearWheel {
     this.interactionHandler = new InteractionHandler(this.canvas, this, {
       readonly: this.readonly,
       selectionMode: this.selectionMode,
-      onItemClick: options.onItemClick
+      onItemClick: options.onItemClick,
+      onExtendActivityToNextYear: options.onExtendActivityToNextYear
     });
     
     this.exportManager = new ExportManager(this);

@@ -400,6 +400,42 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 // Optional: show tool completion briefly
                 setStreamingStatus(`✓ ${data.message}`);
                 break;
+
+              case 'refresh': {
+                const scopeLabel = data.scope === 'structure'
+                  ? 'Uppdaterar struktur...'
+                  : data.scope === 'activities'
+                    ? 'Uppdaterar aktiviteter...'
+                    : 'Uppdaterar årshjul...'
+                setStreamingStatus(scopeLabel);
+
+                if (onWheelUpdate) {
+                  try {
+                    const reloadResult = await onWheelUpdate({
+                      reason: data.reason || 'ai-refresh',
+                      scope: data.scope,
+                      source: 'ai-assistant',
+                      payload: data.payload,
+                      silent: true,
+                    });
+                    if (reloadResult?.status === 'deferred') {
+                      setStreamingStatus('Spara dina ändringar så laddas AI-strukturen in.');
+                    } else if (reloadResult?.status === 'error') {
+                      setStreamingStatus('Kunde inte uppdatera hjulet – försök spara eller ladda om.');
+                    }
+                  } catch (refreshError) {
+                    console.error('[AI SSE] onWheelUpdate error during refresh:', refreshError);
+                  }
+                }
+
+                // Refresh lightweight context stats so greeting numbers stay accurate
+                try {
+                  await loadWheelContext();
+                } catch (contextError) {
+                  console.error('[AI SSE] loadWheelContext error during refresh:', contextError);
+                }
+                break;
+              }
               
               case 'complete':
                 finalResult = data;
@@ -444,7 +480,14 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         }]);
       }
 
-      if (onWheelUpdate) await onWheelUpdate();
+      if (onWheelUpdate) {
+        const reloadResult = await onWheelUpdate({ reason: 'ai-complete', source: 'ai-assistant', silent: true });
+        if (reloadResult?.status === 'deferred') {
+          setStreamingStatus('Spara dina ändringar så visas AI-resultatet.');
+        } else if (reloadResult?.status === 'error') {
+          setStreamingStatus('Kunde inte uppdatera hjulet – kontrollera nätverket.');
+        }
+      }
       await loadWheelContext();
 
     } catch (error) {

@@ -50,6 +50,7 @@ function YearWheel({
   onDragStart,
   onUpdateAktivitet,
   onDeleteAktivitet,
+  onExtendActivityBeyondYear,
   onItemClick, // External callback for item clicks (e.g., cast to TV)
   readonly = false,
   hideControls = false,
@@ -479,9 +480,10 @@ function YearWheel({
         zoomedQuarter,
         monthNames,
         zoomLevel, // Pass zoom level for smart text scaling
-        onItemClick: handleItemClick,
-        onDragStart: handleDragStart,
-        onUpdateAktivitet: handleUpdateAktivitet,
+    onItemClick: handleItemClick,
+    onDragStart: handleDragStart,
+    onUpdateAktivitet: handleUpdateAktivitet,
+    onExtendActivityToNextYear: onExtendActivityBeyondYear,
         onRotationChange, // Pass rotation callback for casting sync
         selectionMode,
         selectedItems: Array.from(selectedItems),
@@ -523,6 +525,7 @@ function YearWheel({
     handleItemClick,
     handleDragStart,
     handleUpdateAktivitet,
+    onExtendActivityBeyondYear,
     // organizationData excluded - updated via updateOrganizationData to prevent wheel recreation during drag
   ]);
 

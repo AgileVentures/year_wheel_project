@@ -34,6 +34,7 @@ class InteractionHandler {
       initialEndAngle: 0,
       previewStartAngle: 0,
       previewEndAngle: 0,
+      currentAngleDelta: 0,
       targetRing: null,
       targetRingInfo: null,
     };
@@ -362,11 +363,13 @@ class InteractionHandler {
     // Calculate screen angles
     const dx = x - this.wheel.center.x;
     const dy = y - this.wheel.center.y;
-    let startMouseAngle = Math.atan2(dy, dx);
-    startMouseAngle = this.normalizeAngle(startMouseAngle);
+    const rawStartMouseAngle = Math.atan2(dy, dx);
+    let startMouseAngle = this.normalizeAngle(rawStartMouseAngle);
 
     const screenStartAngle = itemRegion.startAngle + this.wheel.rotationAngle;
     const screenEndAngle = itemRegion.endAngle + this.wheel.rotationAngle;
+    const normalizedStartAngle = this.normalizeAngle(screenStartAngle);
+    const normalizedEndAngle = this.normalizeAngle(screenEndAngle);
 
     this.dragState = {
       isDragging: true,
@@ -375,10 +378,18 @@ class InteractionHandler {
       draggedItemRegion: itemRegion,
       startMouseAngle,
       currentMouseAngle: startMouseAngle,
-      initialStartAngle: screenStartAngle,
-      initialEndAngle: screenEndAngle,
-      previewStartAngle: screenStartAngle,
-      previewEndAngle: screenEndAngle,
+      rawStartMouseAngle,
+      lastRawMouseAngle: rawStartMouseAngle,
+      angleWrapOffset: 0,
+      initialStartAngle: normalizedStartAngle,
+      initialEndAngle: normalizedEndAngle,
+      previewStartAngle: normalizedStartAngle,
+      previewEndAngle: normalizedEndAngle,
+      rawInitialStartAngle: screenStartAngle,
+      rawInitialEndAngle: screenEndAngle,
+      rawPreviewStartAngle: screenStartAngle,
+      rawPreviewEndAngle: screenEndAngle,
+      currentAngleDelta: 0,
       targetRing: null,
       targetRingInfo: null,
     };
@@ -424,9 +435,26 @@ class InteractionHandler {
     const dx = x - this.wheel.center.x;
     const dy = y - this.wheel.center.y;
     const rawMouseAngle = Math.atan2(dy, dx);
-    const mouseAngle = this.normalizeAngle(rawMouseAngle);
+    const lastRawMouseAngle = this.dragState.lastRawMouseAngle ?? rawMouseAngle;
+    let wrapOffset = this.dragState.angleWrapOffset ?? 0;
 
+    const rawDifference = rawMouseAngle - lastRawMouseAngle;
+    if (rawDifference > Math.PI) {
+      wrapOffset -= Math.PI * 2;
+    } else if (rawDifference < -Math.PI) {
+      wrapOffset += Math.PI * 2;
+    }
+
+  const cumulativeMouseAngle = rawMouseAngle + wrapOffset;
+  const cumulativeStartAngle = this.dragState.rawStartMouseAngle;
+  const angleDelta = cumulativeMouseAngle - cumulativeStartAngle;
+
+    const mouseAngle = this.normalizeAngle(cumulativeMouseAngle);
+
+    this.dragState.angleWrapOffset = wrapOffset;
+    this.dragState.lastRawMouseAngle = rawMouseAngle;
     this.dragState.currentMouseAngle = mouseAngle;
+  this.dragState.currentAngleDelta = angleDelta;
 
     // Minimum activity size (1 week)
     const minWeekAngle = LayoutCalculator.degreesToRadians((7 / 365) * 360);
@@ -438,20 +466,20 @@ class InteractionHandler {
       this.dragState.targetRing = targetRingInfo ? targetRingInfo.ring : null;
 
       // Calculate angle delta
-      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
-
       // Apply delta to both start and end
-      this.dragState.previewStartAngle = this.normalizeAngle(
-        this.dragState.initialStartAngle + angleDelta
-      );
-      this.dragState.previewEndAngle = this.normalizeAngle(
-        this.dragState.initialEndAngle + angleDelta
-      );
+      const rawStart = this.dragState.rawInitialStartAngle + angleDelta;
+      const rawEnd = this.dragState.rawInitialEndAngle + angleDelta;
+
+      this.dragState.rawPreviewStartAngle = rawStart;
+      this.dragState.rawPreviewEndAngle = rawEnd;
+
+      this.dragState.previewStartAngle = this.normalizeAngle(rawStart);
+      this.dragState.previewEndAngle = this.normalizeAngle(rawEnd);
       
     } else if (this.dragState.dragMode === 'resize-start') {
       // Resize start edge
-      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
-      let newStartAngle = this.normalizeAngle(this.dragState.initialStartAngle + angleDelta);
+      const rawStart = this.dragState.rawInitialStartAngle + angleDelta;
+      let newStartAngle = this.normalizeAngle(rawStart);
 
       this.dragState.previewEndAngle = this.dragState.initialEndAngle;
 
@@ -461,12 +489,13 @@ class InteractionHandler {
 
       if (span >= minWeekAngle) {
         this.dragState.previewStartAngle = newStartAngle;
+        this.dragState.rawPreviewStartAngle = rawStart;
       }
       
     } else if (this.dragState.dragMode === 'resize-end') {
       // Resize end edge
-      let angleDelta = mouseAngle - this.dragState.startMouseAngle;
-      let newEndAngle = this.normalizeAngle(this.dragState.initialEndAngle + angleDelta);
+      const rawEnd = this.dragState.rawInitialEndAngle + angleDelta;
+      let newEndAngle = this.normalizeAngle(rawEnd);
 
       this.dragState.previewStartAngle = this.dragState.initialStartAngle;
 
@@ -476,6 +505,7 @@ class InteractionHandler {
 
       if (span >= minWeekAngle) {
         this.dragState.previewEndAngle = newEndAngle;
+        this.dragState.rawPreviewEndAngle = rawEnd;
       }
     }
 
@@ -488,36 +518,95 @@ class InteractionHandler {
   /**
    * Stop activity drag and commit changes
    */
-  stopActivityDrag() {
+  async stopActivityDrag() {
     if (!this.dragState.isDragging) return;
 
-    // Convert screen angles back to logical angles
-    let logicalStartAngle = this.normalizeAngle(
-      this.dragState.previewStartAngle - this.wheel.rotationAngle
-    );
-    let logicalEndAngle = this.normalizeAngle(
-      this.dragState.previewEndAngle - this.wheel.rotationAngle
-    );
+    const originalItem = this.dragState.draggedItem;
+
+    const rawStartAngle = this.dragState.rawPreviewStartAngle ?? this.dragState.previewStartAngle;
+    const rawEndAngle = this.dragState.rawPreviewEndAngle ?? this.dragState.previewEndAngle;
+
+    const logicalStartAngleRaw = rawStartAngle - this.wheel.rotationAngle;
+    const logicalEndAngleRaw = rawEndAngle - this.wheel.rotationAngle;
+
+    const normalizedStartAngle = this.normalizeAngle(logicalStartAngleRaw);
+    const normalizedEndAngle = this.normalizeAngle(logicalEndAngleRaw);
+
+    const unwrappedStartDegrees =
+      LayoutCalculator.radiansToDegrees(logicalStartAngleRaw) - this.wheel.initAngle;
+    const unwrappedEndDegrees =
+      LayoutCalculator.radiansToDegrees(logicalEndAngleRaw) - this.wheel.initAngle;
+
+    const CROSS_EPSILON = 0.0001;
+
+    let forwardWrapCount = 0;
+    if (this.dragState.dragMode === 'resize-end') {
+      const candidate = unwrappedEndDegrees;
+      if (candidate > 360 + CROSS_EPSILON) {
+        forwardWrapCount = Math.floor((candidate + CROSS_EPSILON) / 360);
+      }
+    }
 
     // Convert radians to degrees for angleToDate
-    const startDegrees = LayoutCalculator.radiansToDegrees(logicalStartAngle);
-    const endDegrees = LayoutCalculator.radiansToDegrees(logicalEndAngle);
-    
+    const startDegrees = LayoutCalculator.radiansToDegrees(normalizedStartAngle);
+    const endDegrees = LayoutCalculator.radiansToDegrees(normalizedEndAngle);
+
     // Use wheel's angleToDate method which handles zoom levels and initAngle
     let newStartDate = this.wheel.angleToDate(startDegrees);
     let newEndDate = this.wheel.angleToDate(endDegrees);
 
-    // Clamp to year boundaries
     const yearStart = new Date(this.wheel.year, 0, 1);
     const yearEnd = new Date(this.wheel.year, 11, 31);
 
     if (newStartDate < yearStart) newStartDate = yearStart;
     if (newStartDate > yearEnd) newStartDate = yearEnd;
-    if (newEndDate < yearStart) newEndDate = yearStart;
-    if (newEndDate > yearEnd) newEndDate = yearEnd;
 
-    // Ensure end is after start
-    if (newEndDate < newStartDate) {
+    const angleDelta = this.dragState.currentAngleDelta ?? 0;
+
+    const wrappedForward =
+      this.dragState.dragMode === 'resize-end' &&
+      (forwardWrapCount > 0 || (angleDelta > 0 && normalizedEndAngle < normalizedStartAngle));
+
+    if (wrappedForward) {
+      const wrappedEnd = new Date(newEndDate.getTime());
+      if (forwardWrapCount > 0) {
+        wrappedEnd.setFullYear(wrappedEnd.getFullYear() + forwardWrapCount);
+      } else {
+        wrappedEnd.setFullYear(wrappedEnd.getFullYear() + 1);
+      }
+      newEndDate = wrappedEnd;
+    }
+
+    if (newEndDate < yearStart) newEndDate = yearStart;
+
+    let overflowEndDate = null;
+
+    if (newEndDate > yearEnd) {
+      overflowEndDate = new Date(newEndDate.getTime());
+
+      if (
+        originalItem &&
+        this.dragState.dragMode === 'resize-end' &&
+        this.options.onExtendActivityToNextYear
+      ) {
+        try {
+          await this.options.onExtendActivityToNextYear({
+            item: originalItem,
+            overflowEndDate,
+            currentYearEnd: yearEnd,
+            dragMode: this.dragState.dragMode,
+          });
+        } catch (extensionError) {
+          console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
+        }
+      }
+
+      // Always clamp current year's item to December 31
+      newEndDate = yearEnd;
+    }
+
+    // Ensure end is after start when not intentionally wrapping forward
+    if (newEndDate < newStartDate && !wrappedForward) {
       const temp = newStartDate;
       newStartDate = newEndDate;
       newEndDate = temp;
@@ -532,8 +621,7 @@ class InteractionHandler {
     };
 
     // Prepare update object
-    // Safety check - if no dragged item, just reset state and return
-    if (!this.dragState.draggedItem) {
+    if (!originalItem) {
       this.dragState = {
         isDragging: false,
         dragMode: null,
@@ -545,6 +633,7 @@ class InteractionHandler {
         initialEndAngle: 0,
         previewStartAngle: 0,
         previewEndAngle: 0,
+        currentAngleDelta: 0,
         targetRing: null,
         targetRingInfo: null,
       };
@@ -557,21 +646,22 @@ class InteractionHandler {
       }
       return;
     }
-    
-    const originalItem = this.dragState.draggedItem;
+
     const updates = {
       startDate: formatDate(newStartDate),
-      endDate: formatDate(newEndDate)
+      endDate: formatDate(newEndDate),
     };
 
-    if (this.dragState.targetRing && 
-        this.dragState.targetRing.id !== originalItem.ringId) {
+    if (
+      this.dragState.targetRing &&
+      this.dragState.targetRing.id !== originalItem.ringId
+    ) {
       updates.ringId = this.dragState.targetRing.id;
     }
 
     const updatedItem = {
       ...originalItem,
-      ...updates
+      ...updates,
     };
 
     const hasChanges =
@@ -582,7 +672,7 @@ class InteractionHandler {
     if (hasChanges) {
       this.wheel.pendingItemUpdates.set(updatedItem.id, {
         item: updatedItem,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       if (this.wheel.invalidateCache) {
@@ -603,8 +693,10 @@ class InteractionHandler {
     }
 
     this.wheel.justFinishedDrag = true;
+    this.wheel.skipNextClick = true;
     setTimeout(() => {
       this.wheel.justFinishedDrag = false;
+      this.wheel.skipNextClick = false;
     }, 300);
 
     this.dragState = {
@@ -618,6 +710,7 @@ class InteractionHandler {
       initialEndAngle: 0,
       previewStartAngle: 0,
       previewEndAngle: 0,
+      currentAngleDelta: 0,
       targetRing: null,
       targetRingInfo: null,
     };
@@ -838,9 +931,9 @@ class InteractionHandler {
     }
   }
 
-  handleMouseUp(event) {
+  async handleMouseUp(event) {
     if (this.dragState.isDragging) {
-      this.stopActivityDrag();
+      await this.stopActivityDrag();
       return;
     }
 
@@ -849,9 +942,9 @@ class InteractionHandler {
     }
   }
 
-  handleMouseLeave(event) {
+  async handleMouseLeave(event) {
     if (this.dragState.isDragging) {
-      this.stopActivityDrag();
+      await this.stopActivityDrag();
     }
 
     if (this.isRotating) {
@@ -874,6 +967,11 @@ class InteractionHandler {
   }
 
   handleClick(event) {
+    if (this.wheel.skipNextClick) {
+      this.wheel.skipNextClick = false;
+      return;
+    }
+
     if (this.wheel.justFinishedDrag) {
       return;
     }

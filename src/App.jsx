@@ -55,13 +55,44 @@ const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
-import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem, syncItems } from "./services/wheelService";
+import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin, updateSingleItem, deleteSingleItem, syncItems } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence, useWheelActivity } from "./hooks/useWheelPresence";
 import { useWheelOperations } from "./hooks/useWheelOperations";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
 import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const formatDateOnly = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const toYearNumber = (value) => {
+  if (value instanceof Date) {
+    return value.getFullYear();
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(trimmed, 10);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return null;
+};
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t } = useTranslation(['common']);
@@ -305,11 +336,85 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const isSavingRef = useRef(false);
   // Track if we're currently dragging an item (for batch undo/redo)
   const isDraggingRef = useRef(false);
+  // Track unsaved changes for safe reload decisions
+  const hasUnsavedChangesRef = useRef(false);
+  // Remember deferred reload requests when local edits are pending
+  const pendingRefreshRef = useRef({ needed: false, reason: null, source: null, scope: null, options: null });
+  // Avoid triggering multiple auto-saves for the same pending refresh
+  const autoSaveInFlightRef = useRef(false);
+  // Expose handleSave for code paths defined above its declaration
+  const handleSaveRef = useRef(null);
+  // Queue item persistence operations to avoid race conditions
+  const itemPersistenceQueueRef = useRef(Promise.resolve());
 
   // Load wheel data function (memoized to avoid recreating)
-  const loadWheelData = useCallback(async () => {
+  const loadWheelData = useCallback(async (rawOptions) => {
+    const options = rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions)
+      ? rawOptions
+      : {};
+    const {
+      force = false,
+      reason = 'manual',
+      source = 'unknown',
+      scope = null,
+      silent = false,
+    } = options;
+
     if (!wheelId) return;
     
+    let reloadStatus = 'loaded';
+
+    if (!force) {
+      const hasLocalChanges =
+        hasUnsavedChangesRef.current ||
+        isSavingRef.current ||
+        isDraggingRef.current;
+
+      if (hasLocalChanges) {
+        const alreadyPending = pendingRefreshRef.current?.needed;
+        console.log(`[loadWheelData] Skip reload (${reason}) from ${source} - local changes pending.`);
+
+        pendingRefreshRef.current = {
+          needed: true,
+          reason,
+          source,
+          scope,
+          options: { ...options, force: true },
+        };
+
+        if (source === 'ai-assistant' && handleSaveRef.current && !autoSaveInFlightRef.current) {
+          autoSaveInFlightRef.current = true;
+          handleSaveRef.current({ silent: true, reason: 'ai-assistant-refresh' })
+            .catch((autoSaveError) => {
+              console.error('[loadWheelData] Auto-save before AI refresh failed:', autoSaveError);
+              const event = new CustomEvent('showToast', {
+                detail: {
+                  message: 'Kunde inte spara lokala ändringar innan AI-uppdatering.',
+                  type: 'error',
+                },
+              });
+              window.dispatchEvent(event);
+            })
+            .finally(() => {
+              autoSaveInFlightRef.current = false;
+            });
+        }
+
+        if (!alreadyPending && !silent) {
+          const event = new CustomEvent('showToast', {
+            detail: {
+              message: 'Spara dina ändringar så laddas AI-uppdateringarna in.',
+              type: 'info',
+            },
+          });
+          window.dispatchEvent(event);
+        }
+        return { status: 'deferred', reason, source, scope };
+      }
+    }
+
+    pendingRefreshRef.current = { needed: false, reason: null, source: null, scope: null, options: null };
+
     isLoadingData.current = true; // Prevent auto-save during load
     
     try {
@@ -541,6 +646,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         detail: { message: 'Kunde inte ladda hjul', type: 'error' } 
       });
       window.dispatchEvent(event);
+      reloadStatus = 'error';
     } finally {
       // CRITICAL: Keep isLoadingData true for a bit longer to prevent
       // realtime subscriptions and other effects from adding to history
@@ -552,11 +658,32 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         markSaved();
       }, 550); // Slightly longer than isInitialLoad (500ms) to ensure all effects settle
     }
+
+    return { status: reloadStatus, reason, source, scope };
   }, [wheelId, markSaved]); // Only depend on wheelId - NOT on currentPageId
+
+  useEffect(() => {
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+
+    if (!hasUnsavedChanges) {
+      const pending = pendingRefreshRef.current;
+      if (pending?.needed) {
+        console.log(`[loadWheelData] Applying deferred reload (${pending.reason || 'deferred'})`);
+        const options = pending.options || {
+          force: true,
+          reason: pending.reason || 'deferred',
+          source: pending.source || 'deferred',
+          scope: pending.scope,
+        };
+        pendingRefreshRef.current = { needed: false, reason: null, source: null, scope: null, options: null };
+        loadWheelData(options);
+      }
+    }
+  }, [hasUnsavedChanges, loadWheelData]);
 
   // Throttled reload for realtime updates (max once per second)
   const throttledReload = useThrottledCallback(() => {
-    loadWheelData();
+    loadWheelData({ reason: 'realtime', source: 'realtime', silent: true });
     
     // NO TOAST - too many notifications annoy users
     // Users will see the changes appear on the wheel directly
@@ -817,8 +944,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     weekRingDisplayMode,
     organizationData,
     year,
-    currentPageId
+    currentPageId,
+    hasUnsavedChanges,
   };
+  hasUnsavedChangesRef.current = hasUnsavedChanges;
   
 
 
@@ -1167,7 +1296,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
   // DO NOT automatically apply colors here - it causes unwanted data overwrites and save loops
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (options = {}) => {
+    const { silent = false } = options;
     // If we have a wheelId, save to database
     if (wheelId) {
       // Temporarily disable auto-save during manual save
@@ -1326,10 +1456,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // console.log('[ManualSave] Wheel data saved successfully');
         
         // Show success feedback
-        const event = new CustomEvent('showToast', { 
-          detail: { message: 'Data har sparats!', type: 'success' } 
-        });
-        window.dispatchEvent(event);
+        if (!silent) {
+          const event = new CustomEvent('showToast', { 
+            detail: { message: 'Data har sparats!', type: 'success' } 
+          });
+          window.dispatchEvent(event);
+        }
       } catch (error) {
         console.error('[ManualSave] Error saving wheel:', error);
         const event = new CustomEvent('showToast', { 
@@ -1367,6 +1499,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       window.dispatchEvent(event);
     }
   }, [wheelId, autoSaveEnabled, setOrganizationData, markSaved, title, year, colors, ringsData, organizationData, showWeekRing, showMonthRing, showRingNames]);
+
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  }, [handleSave]);
 
   const handleTogglePublic = async () => {
     if (!wheelId) return;
@@ -1816,6 +1952,114 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   };
 
+  const ensurePageForYear = useCallback(
+    async (targetYear, options = {}) => {
+      if (!wheelId) return null;
+
+      const normalizedTargetYear = toYearNumber(targetYear);
+      if (normalizedTargetYear === null) {
+        console.warn('[MultiYear] Ignoring invalid target year:', targetYear);
+        return null;
+      }
+
+      const findByYear = (pageList) =>
+        (pageList || []).find((page) => toYearNumber(page.year) === normalizedTargetYear);
+
+      const existingLocal = findByYear(pages);
+      if (existingLocal) {
+        return { page: existingLocal, created: false };
+      }
+
+      let existingRemote = null;
+      try {
+        const { data, error } = await supabase
+          .from('wheel_pages')
+          .select('*')
+          .eq('wheel_id', wheelId)
+          .eq('year', normalizedTargetYear)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          throw error;
+        }
+
+        existingRemote = data || null;
+      } catch (lookupError) {
+        console.error('[MultiYear] Failed to verify page existence:', lookupError);
+        showToast('Kunde inte kontrollera befintlig sida för året.', 'error');
+        return null;
+      }
+
+      if (existingRemote) {
+        setPages((prevPages) => {
+          if (prevPages.some((page) => page.id === existingRemote.id)) {
+            return prevPages;
+          }
+
+          const merged = [...prevPages, existingRemote];
+          merged.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
+          return merged;
+        });
+
+        return { page: existingRemote, created: false };
+      }
+
+      const templateOrganizationData = options?.templateOrganizationData || {
+        rings: [],
+        activityGroups: [],
+        labels: [],
+        items: [],
+      };
+
+      try {
+        const newPage = await createPage(wheelId, {
+          year: normalizedTargetYear,
+          title: `${normalizedTargetYear}`,
+          organizationData: templateOrganizationData,
+          overrideColors: options?.overrideColors || null,
+          overrideShowWeekRing: options?.overrideShowWeekRing || null,
+          overrideShowMonthRing: options?.overrideShowMonthRing || null,
+          overrideShowRingNames: options?.overrideShowRingNames || null,
+        });
+
+        setPages((prevPages) => {
+          const merged = [...prevPages, newPage];
+          merged.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
+          return merged;
+        });
+
+        return { page: newPage, created: true };
+      } catch (error) {
+        // 23505 indicates duplicate page (likely due to concurrent creation)
+        if (error?.code === '23505') {
+          try {
+            const refreshedPages = await fetchPages(wheelId);
+            const sortedPages = refreshedPages.sort(
+              (a, b) => toYearNumber(a.year) - toYearNumber(b.year)
+            );
+            setPages(sortedPages);
+            const match = sortedPages.find(
+              (p) => toYearNumber(p.year) === normalizedTargetYear
+            );
+            if (match) {
+              return { page: match, created: false };
+            }
+          } catch (fetchError) {
+            console.error(
+              '[MultiYear] Failed to refresh pages after duplicate page error:',
+              fetchError
+            );
+          }
+        }
+
+        console.error('[MultiYear] Failed to ensure page for year', normalizedTargetYear, error);
+        showToast('Kunde inte skapa sida för nytt år.', 'error');
+        return null;
+      }
+    },
+    [wheelId, pages, showToast]
+  );
+
   // Duplicate a page
   const handleDuplicatePage = async (pageId) => {
     if (!wheelId) return;
@@ -2251,6 +2495,400 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     window.dispatchEvent(event);
   };
 
+  const persistItemToDatabase = useCallback((item, options = {}) => {
+    if (!wheelId || !item) {
+      return Promise.resolve(null);
+    }
+
+    const { reason = 'item-update', delay = 0 } = options;
+
+    const run = async (attempt = 0, candidateItem = item) => {
+      const latest = latestValuesRef.current;
+      const activePageId = latest?.currentPageId || currentPageId;
+
+      if (!activePageId) {
+        if (handleSaveRef.current) {
+          await handleSaveRef.current({ silent: true, reason: `${reason}-no-page` });
+        }
+        return null;
+      }
+
+      const itemForPersistence = {
+        ...candidateItem,
+        pageId: candidateItem.pageId || activePageId,
+      };
+
+      try {
+        const savedItem = await updateSingleItem(
+          wheelId,
+          activePageId,
+          itemForPersistence,
+          new Map(),
+          new Map(),
+          new Map()
+        );
+
+        if (savedItem) {
+          const normalizedSavedItem = {
+            ...savedItem,
+            pageId: savedItem.pageId || activePageId,
+            _remoteUpdate: undefined,
+            _remoteUser: undefined,
+            _remoteTimestamp: undefined,
+          };
+
+          const latestOrgData = latest?.organizationData || {};
+          const existingItem = (latestOrgData.items || []).find(
+            (it) => it.id === itemForPersistence.id || it.id === normalizedSavedItem.id
+          );
+
+          const shouldSync =
+            !existingItem ||
+            normalizedSavedItem.id !== existingItem.id ||
+            normalizedSavedItem.startDate !== existingItem.startDate ||
+            normalizedSavedItem.endDate !== existingItem.endDate ||
+            (normalizedSavedItem.time || null) !== (existingItem?.time || null) ||
+            (normalizedSavedItem.description || null) !== (existingItem?.description || null) ||
+            normalizedSavedItem.ringId !== existingItem?.ringId ||
+            normalizedSavedItem.activityId !== existingItem?.activityId ||
+            (normalizedSavedItem.labelId || null) !== (existingItem?.labelId || null) ||
+            (normalizedSavedItem.linkType || null) !== (existingItem?.linkType || null) ||
+            (normalizedSavedItem.linkedWheelId || null) !== (existingItem?.linkedWheelId || null) ||
+            (normalizedSavedItem.pageId || activePageId) !== (existingItem?.pageId || activePageId);
+
+          if (shouldSync) {
+            setOrganizationData((prev) => {
+              const items = Array.isArray(prev.items) ? prev.items : [];
+
+              const indexByOldId = items.findIndex((existing) => existing.id === itemForPersistence.id);
+              const indexByNewId = items.findIndex((existing) => existing.id === normalizedSavedItem.id);
+
+              let updatedItems;
+
+              if (indexByOldId === -1 && indexByNewId === -1) {
+                updatedItems = [...items, normalizedSavedItem];
+              } else {
+                updatedItems = items.slice();
+
+                if (indexByOldId !== -1) {
+                  updatedItems[indexByOldId] = {
+                    ...updatedItems[indexByOldId],
+                    ...normalizedSavedItem,
+                  };
+
+                  if (indexByNewId !== -1 && indexByNewId !== indexByOldId) {
+                    updatedItems.splice(indexByNewId, 1);
+                  }
+                } else if (indexByNewId !== -1) {
+                  updatedItems[indexByNewId] = {
+                    ...updatedItems[indexByNewId],
+                    ...normalizedSavedItem,
+                  };
+                }
+              }
+
+              const nextOrgData = {
+                ...prev,
+                items: updatedItems,
+              };
+
+              latestValuesRef.current = {
+                ...latestValuesRef.current,
+                organizationData: nextOrgData,
+              };
+
+              return nextOrgData;
+            }, { type: 'syncItemFromDb' });
+          }
+        }
+
+        lastSaveTimestamp.current = Date.now();
+        markSaved();
+        return savedItem;
+      } catch (error) {
+        console.error(`[ItemPersist] Failed to persist item (${reason}):`, error);
+        const needsFullSync = typeof error?.message === 'string' && (
+          error.message.includes('Invalid ring_id') ||
+          error.message.includes('Invalid activity_id') ||
+          error.message.includes('could not resolve ring_id') ||
+          error.message.includes('could not resolve activity_id')
+        );
+
+        if (needsFullSync && attempt === 0 && handleSaveRef.current) {
+          await handleSaveRef.current({ silent: true, reason: `${reason}-fallback` });
+          const latestAfterSave = latestValuesRef.current;
+          const refreshedItem =
+            latestAfterSave?.organizationData?.items?.find((existing) => existing.id === itemForPersistence.id) ||
+            candidateItem;
+          return run(attempt + 1, refreshedItem);
+        }
+
+        showToast('Kunde inte spara ändringen', 'error');
+        throw error;
+      }
+    };
+
+    const queueRunner = async () => {
+      if (delay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+      return run();
+    };
+
+    itemPersistenceQueueRef.current = itemPersistenceQueueRef.current
+      .catch(() => {})
+      .then(queueRunner);
+
+    return itemPersistenceQueueRef.current;
+  }, [wheelId, currentPageId, setOrganizationData, showToast, markSaved, handleSaveRef, updateSingleItem]);
+
+  const persistMultipleItems = useCallback((items, options = {}) => {
+    if (!items) {
+      return Promise.resolve([]);
+    }
+
+    const itemsArray = Array.isArray(items) ? items : [items];
+    const baseReason = options.reason || 'item-batch';
+
+    return Promise.all(
+      itemsArray.map((item, index) =>
+        persistItemToDatabase(item, {
+          ...options,
+          reason: `${baseReason}-${index}`,
+          delay: options.delay ?? index * 25,
+        })
+      )
+    );
+  }, [persistItemToDatabase]);
+
+  const persistItemDeletion = useCallback((itemId, options = {}) => {
+    if (!wheelId || !itemId) {
+      return Promise.resolve();
+    }
+
+    if (!UUID_REGEX.test(itemId)) {
+      // Item was never persisted to the database
+      return Promise.resolve();
+    }
+
+    const { reason = 'item-delete' } = options;
+
+    const run = async () => {
+      try {
+        await deleteSingleItem(itemId);
+        lastSaveTimestamp.current = Date.now();
+        markSaved();
+      } catch (error) {
+        console.error(`[ItemPersist] Failed to delete item (${reason}):`, error);
+        showToast('Kunde inte radera aktiviteten', 'error');
+        throw error;
+      }
+    };
+
+    itemPersistenceQueueRef.current = itemPersistenceQueueRef.current
+      .catch(() => {})
+      .then(run);
+
+    return itemPersistenceQueueRef.current;
+  }, [wheelId, showToast, markSaved, deleteSingleItem]);
+
+  const handlePersistNewItems = useCallback((items) => {
+    return persistMultipleItems(items, { reason: 'item-create' });
+  }, [persistMultipleItems]);
+
+  const handlePersistItemUpdate = useCallback((item) => {
+    return persistItemToDatabase(item, { reason: 'item-update' });
+  }, [persistItemToDatabase]);
+
+  const handlePersistItemRemove = useCallback((itemId) => {
+    return persistItemDeletion(itemId, { reason: 'item-delete' });
+  }, [persistItemDeletion]);
+
+  const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd }) => {
+    if (!wheelId || !item || !overflowEndDate || !currentYearEnd) {
+      return;
+    }
+
+    const overflowDate = new Date(overflowEndDate);
+    const currentYearEndDate = new Date(currentYearEnd);
+
+    if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
+      return;
+    }
+
+    if (overflowDate <= currentYearEndDate) {
+      return;
+    }
+
+    const segments = [];
+    const nextDay = new Date(currentYearEndDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    let segmentStart = nextDay;
+
+    while (segmentStart <= overflowDate) {
+      const segmentYear = segmentStart.getFullYear();
+      const segmentYearEnd = new Date(segmentYear, 11, 31);
+      const segmentEnd = overflowDate <= segmentYearEnd ? overflowDate : segmentYearEnd;
+
+      segments.push({
+        year: segmentYear,
+        startDate: formatDateOnly(segmentStart),
+        endDate: formatDateOnly(segmentEnd),
+      });
+
+      if (segmentEnd >= overflowDate) {
+        break;
+      }
+
+      segmentStart = new Date(segmentYear + 1, 0, 1);
+    }
+
+    if (segments.length === 0) {
+      return;
+    }
+
+    const firstContinuationYear = segments[0].year;
+    const lastContinuationYear = segments[segments.length - 1].year;
+
+    const confirmed = await showConfirmDialog({
+      title: 'Fortsätt över årsskiftet?',
+      message: segments.length === 1
+        ? `Aktiviteten "${item.name}" fortsätter in i ${firstContinuationYear}. Vill du skapa en fortsättning på nästa års sida?`
+        : `Aktiviteten "${item.name}" sträcker sig ända till ${lastContinuationYear}. Vill du skapa fortsättningar för varje år?`,
+      confirmText: 'Skapa fortsättning',
+      cancelText: 'Endast detta år',
+      confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const createdSegments = [];
+
+    for (const segment of segments) {
+      try {
+        const ensured = await ensurePageForYear(segment.year);
+        const targetPage = ensured?.page;
+        if (!targetPage) {
+          continue;
+        }
+
+        const pageId = targetPage.id;
+
+        let existingMatch = null;
+        try {
+          const { data: existingCandidate } = await supabase
+            .from('items')
+            .select('id, start_date, end_date')
+            .eq('wheel_id', wheelId)
+            .eq('page_id', pageId)
+            .eq('ring_id', item.ringId)
+            .eq('activity_id', item.activityId)
+            .eq('name', item.name)
+            .maybeSingle();
+
+          if (existingCandidate) {
+            existingMatch = existingCandidate;
+          }
+        } catch (lookupError) {
+          // PGRST116 means no rows, safe to ignore
+          if (lookupError?.code !== 'PGRST116') {
+            console.warn('[MultiYear] Lookup for existing continuation failed:', lookupError);
+          }
+        }
+
+        const payload = {
+          id: existingMatch?.id,
+          ringId: item.ringId,
+          activityId: item.activityId,
+          labelId: item.labelId || null,
+          name: item.name,
+          startDate: segment.startDate,
+          endDate: segment.endDate,
+          time: item.time || null,
+          description: item.description || null,
+          pageId,
+          linkedWheelId: item.linkedWheelId || null,
+          linkType: item.linkType || null,
+        };
+
+        const savedItem = await updateSingleItem(
+          wheelId,
+          pageId,
+          payload,
+          new Map(),
+          new Map(),
+          new Map()
+        );
+
+        createdSegments.push({ year: segment.year, item: savedItem });
+
+        setPages((prevPages) => {
+          let updated = prevPages.map((page) => {
+            if (page.id !== pageId) {
+              return page;
+            }
+
+            const existingItems = page.organization_data?.items || [];
+            const itemExists = existingItems.some((existing) => existing.id === savedItem.id);
+            const updatedItems = itemExists
+              ? existingItems.map((existing) => existing.id === savedItem.id ? savedItem : existing)
+              : [...existingItems, savedItem];
+
+            return {
+              ...page,
+              organization_data: {
+                ...(page.organization_data || {}),
+                items: updatedItems,
+              },
+            };
+          });
+
+          const hasPage = updated.some((page) => page.id === pageId);
+          if (!hasPage) {
+            updated = [
+              ...updated,
+              {
+                ...targetPage,
+                organization_data: {
+                  ...(targetPage.organization_data || {}),
+                  items: [savedItem],
+                },
+              },
+            ];
+          }
+
+          updated.sort((a, b) => a.year - b.year);
+          return updated;
+        });
+
+        if (broadcastOperation) {
+          broadcastOperation(existingMatch ? 'edit' : 'create', savedItem.id, savedItem);
+        }
+      } catch (segmentError) {
+        console.error('[MultiYear] Failed to create continuation segment:', segmentError);
+        showToast('Kunde inte skapa fortsättning för aktiviteten.', 'error');
+        break;
+      }
+    }
+
+    if (createdSegments.length > 0) {
+      lastSaveTimestamp.current = Date.now();
+
+      const continuationYears = createdSegments.map((segment) => segment.year);
+      const minYear = Math.min(...continuationYears);
+      const maxYear = Math.max(...continuationYears);
+
+      const successMessage = minYear === maxYear
+        ? `Aktiviteten fortsätter nu i ${minYear}.`
+        : `Aktiviteten fortsätter nu i ${minYear}–${maxYear}.`;
+
+      showToast(successMessage, 'success');
+    }
+  }, [wheelId, ensurePageForYear, broadcastOperation, updateSingleItem, setPages, showToast, showConfirmDialog]);
+
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
     isDraggingRef.current = true;
@@ -2262,37 +2900,45 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    // If we're in drag mode, we need to check if dates actually changed
     const wasDragging = isDraggingRef.current;
-    
-    // Calculate label inside functional update to avoid stale closure
-    // BUT: Don't use label if we're in batch mode (drag) - the batch label will be used instead
+
     let calculatedLabel = wasDragging ? undefined : { type: 'changeActivity' };
     let actuallyChanged = false;
-    
-    setOrganizationData(prevData => {
-      const oldItem = prevData.items.find(item => item.id === updatedItem.id);
-      
+
+    setOrganizationData((prevData) => {
+      const oldItem = prevData.items.find((item) => item.id === updatedItem.id);
+
       if (oldItem) {
-        // Determine what type of change occurred
         const ringChanged = oldItem.ringId !== updatedItem.ringId;
-        const datesChanged = oldItem.startDate !== updatedItem.startDate || 
-                            oldItem.endDate !== updatedItem.endDate;
-        
-        // Track if anything actually changed
-        actuallyChanged = ringChanged || datesChanged || oldItem.name !== updatedItem.name;
-        
-        // Create descriptive label based on what changed (only if NOT dragging)
+        const datesChanged = oldItem.startDate !== updatedItem.startDate || oldItem.endDate !== updatedItem.endDate;
+        const activityChanged = oldItem.activityId !== updatedItem.activityId;
+        const labelChanged = (oldItem.labelId || null) !== (updatedItem.labelId || null);
+        const nameChanged = oldItem.name !== updatedItem.name;
+        const timeChanged = (oldItem.time || null) !== (updatedItem.time || null);
+        const descriptionChanged = (oldItem.description || null) !== (updatedItem.description || null);
+        const linkChanged =
+          (oldItem.linkType || null) !== (updatedItem.linkType || null) ||
+          (oldItem.linkedWheelId || null) !== (updatedItem.linkedWheelId || null);
+
+        actuallyChanged =
+          ringChanged ||
+          datesChanged ||
+          activityChanged ||
+          labelChanged ||
+          nameChanged ||
+          timeChanged ||
+          descriptionChanged ||
+          linkChanged;
+
         if (!wasDragging) {
           if (ringChanged && datesChanged) {
             calculatedLabel = { type: 'moveAndChange', params: { name: updatedItem.name } };
           } else if (ringChanged) {
-            // Find ring names for more context
-            const newRing = prevData.rings.find(r => r.id === updatedItem.ringId);
+            const newRing = prevData.rings.find((r) => r.id === updatedItem.ringId);
             if (newRing) {
-              calculatedLabel = { 
-                type: 'moveToRing', 
-                params: { name: updatedItem.name, ring: newRing.name }
+              calculatedLabel = {
+                type: 'moveToRing',
+                params: { name: updatedItem.name, ring: newRing.name },
               };
             } else {
               calculatedLabel = { type: 'moveItem', params: { name: updatedItem.name } };
@@ -2300,68 +2946,53 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           } else if (datesChanged) {
             calculatedLabel = { type: 'changeDates', params: { name: updatedItem.name } };
           } else {
-            // Fallback for other changes (name, color, etc.)
             calculatedLabel = { type: 'editItem', params: { name: updatedItem.name } };
           }
         }
+      } else {
+        actuallyChanged = true;
       }
-      
+
       return {
         ...prevData,
-        items: prevData.items.map(item => 
-          item.id === updatedItem.id ? updatedItem : item
-        )
+        items: prevData.items.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
       };
     }, calculatedLabel);
-    
-    
-    // If this was a drag operation, end the batch
-    // But only if something actually changed
+
     if (wasDragging) {
       isDraggingRef.current = false;
-      
       if (actuallyChanged) {
-        console.log('[UPDATE] Drag resulted in changes, ending batch mode');
         endBatch();
-        // Optimized auto-save: only update the changed item instead of full wheel save
-        setTimeout(async () => {
-          if (wheelId && currentPageId) {
-            try {
-              // Create empty ID maps since we're only updating one item with existing UUIDs
-              await updateSingleItem(wheelId, currentPageId, updatedItem, new Map(), new Map(), new Map());
-              
-              // Update the save timestamp to prevent realtime overwrites
-              lastSaveTimestamp.current = Date.now();
-              
-              // Mark as saved in undo/redo history
-              markSaved();
-            } catch (error) {
-              showToast('Kunde inte spara ändringen', 'error');
-            }
-          }
-        }, 100); // Small delay to ensure state is fully updated
       } else {
         cancelBatch();
       }
     }
-  }, [setOrganizationData, endBatch, cancelBatch, wheelId, currentPageId, markSaved, t]);
+
+    if (actuallyChanged) {
+      persistItemToDatabase(updatedItem, {
+        reason: wasDragging ? 'drag-update' : 'edit-update',
+        delay: wasDragging ? 120 : 0,
+      }).catch(() => {});
+    }
+  }, [setOrganizationData, endBatch, cancelBatch, persistItemToDatabase]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
-    // Calculate label inside functional update to avoid stale closure
     let calculatedLabel = { type: 'removeActivity' };
-    
-    setOrganizationData(prevData => {
-      const itemToDelete = prevData.items.find(item => item.id === itemId);
+
+    setOrganizationData((prevData) => {
+      const itemToDelete = prevData.items.find((item) => item.id === itemId);
       if (itemToDelete) {
         calculatedLabel = { type: 'removeItem', params: { name: itemToDelete.name } };
       }
-      
+
       return {
         ...prevData,
-        items: prevData.items.filter(item => item.id !== itemId)
+        items: prevData.items.filter((item) => item.id !== itemId),
       };
     }, calculatedLabel);
-  }, [setOrganizationData]);
+
+    persistItemDeletion(itemId, { reason: 'delete-item' }).catch(() => {});
+  }, [setOrganizationData, persistItemDeletion]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
@@ -2927,6 +3558,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             broadcastActivity={broadcastActivity}
             activeEditors={combinedActiveEditors}
             broadcastOperation={broadcastOperation}
+            onPersistItems={handlePersistNewItems}
+            onPersistItem={handlePersistItemUpdate}
+            onPersistItemDelete={handlePersistItemRemove}
           />
         </div>
 
@@ -2958,6 +3592,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               onDragStart={handleDragStart}
               onUpdateAktivitet={handleUpdateAktivitet}
               onDeleteAktivitet={handleDeleteAktivitet}
+              onExtendActivityBeyondYear={handleExtendActivityBeyondYear}
               broadcastActivity={broadcastActivity}
               activeEditors={combinedActiveEditors}
               broadcastOperation={broadcastOperation}

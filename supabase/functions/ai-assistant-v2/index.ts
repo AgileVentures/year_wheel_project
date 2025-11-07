@@ -36,10 +36,14 @@ interface WheelContext {
   allPages?: Array<{ id: string; year: number; title: string; page_order: number }>
   // Store suggestions for "suggest then create" workflow
   lastSuggestions?: {
-    rings: Array<{ name: string; type: string; description?: string }>
+    rings: Array<{ name: string; type: string; description?: string; color?: string }>
     activityGroups: Array<{ name: string; color: string; description?: string }>
     activities: Array<{ name: string; startDate: string; endDate: string; ring: string; group: string; description?: string }>
   }
+  lastSuggestionsRaw?: string
+  refreshRequests?: RefreshRequest[]
+    progressEvents?: Array<ProgressEvent>
+    emitEvent?: (type: string, data: any) => void
 }
 
 const CreateActivityInput = z.object({
@@ -133,6 +137,599 @@ const DateRangeInput = z.object({
   month: z.number().min(1).max(12).nullable(),
   year: z.number().nullable(),
 })
+
+type PlanSuggestions = {
+  rings: Array<{ name: string; type: string; description?: string; color?: string }>
+  activityGroups: Array<{ name: string; color: string; description?: string }>
+  activities: Array<{ name: string; startDate: string; endDate: string; ring: string; group: string; description?: string }>
+}
+
+type SuggestionSource = 'input' | 'contextRaw' | 'contextObject'
+
+type ApplySummary = {
+  success: boolean
+  created: { rings: number; groups: number; activities: number }
+  reused: { rings: number; groups: number }
+  expected: { rings: number; groups: number; activities: number }
+  errors?: string[]
+  details: {
+    rings: { created: string[]; reused: string[] }
+    groups: { created: string[]; reused: string[] }
+    activities: { successful: string[]; failed: string[] }
+  }
+  message: string
+  metadata: {
+    suggestionSource: SuggestionSource
+    fallbackUsed: boolean
+    rawLength: number
+  }
+}
+
+type RefreshRequest = {
+  scope: 'structure' | 'activities' | 'labels' | 'pages'
+  reason: string
+  pageId?: string
+  summary?: ApplySummary
+  payload?: Record<string, unknown>
+  dispatched?: boolean
+}
+
+type RefreshOptions = {
+  immediate?: boolean
+}
+
+type ProgressEvent = {
+  message: string
+  stage?: string
+  scope?: string
+  detail?: Record<string, unknown>
+  dispatched?: boolean
+}
+
+function queueProgressEvent(ctx: RunContext<WheelContext>, event: ProgressEvent) {
+  const queue = ctx.context.progressEvents || []
+  const storedEvent: ProgressEvent = { ...event }
+
+  if (ctx.context.emitEvent) {
+    try {
+      ctx.context.emitEvent('status', {
+        message: storedEvent.message,
+        stage: storedEvent.stage || 'progress',
+        scope: storedEvent.scope,
+        detail: storedEvent.detail,
+      })
+      storedEvent.dispatched = true
+    } catch (emitError) {
+      console.error('[applySuggestions] Failed to emit progress event immediately:', emitError)
+    }
+  }
+
+  queue.push(storedEvent)
+  ctx.context.progressEvents = queue
+}
+
+function queueRefreshEvent(
+  ctx: RunContext<WheelContext>,
+  request: RefreshRequest,
+  options: RefreshOptions = {}
+) {
+  const queue = ctx.context.refreshRequests || []
+  const storedRequest: RefreshRequest = { ...request }
+  const shouldDispatchNow = options.immediate !== false
+
+  if (shouldDispatchNow && ctx.context.emitEvent) {
+    try {
+      ctx.context.emitEvent('refresh', storedRequest)
+      storedRequest.dispatched = true
+    } catch (emitError) {
+      console.error('[queueRefreshEvent] Failed to emit refresh event immediately:', emitError)
+    }
+  }
+
+  queue.push(storedRequest)
+  ctx.context.refreshRequests = queue
+}
+
+function sanitizeHexColor(color?: string | null): string | null {
+  if (!color || typeof color !== 'string') return null
+  const trimmed = color.trim()
+  return /^#[0-9A-Fa-f]{6}$/.test(trimmed) ? trimmed : null
+}
+
+function normalizePlanSuggestions(value: any): PlanSuggestions | null {
+  if (!value || typeof value !== 'object') return null
+
+  const rings = Array.isArray(value.rings)
+    ? value.rings
+        .filter((ring: any) => ring && typeof ring.name === 'string')
+        .map((ring: any) => ({
+          name: ring.name.trim(),
+          type: (typeof ring.type === 'string' && ring.type.toLowerCase() === 'inner') ? 'inner' : 'outer',
+          description: typeof ring.description === 'string' ? ring.description.trim() : undefined,
+          color: sanitizeHexColor(ring.color),
+        }))
+    : []
+
+  const activityGroups = Array.isArray(value.activityGroups)
+    ? value.activityGroups
+        .filter((group: any) => group && typeof group.name === 'string' && typeof group.color === 'string')
+        .map((group: any) => ({
+          name: group.name.trim(),
+          color: sanitizeHexColor(group.color) || '#3B82F6',
+          description: typeof group.description === 'string' ? group.description.trim() : undefined,
+        }))
+    : []
+
+  const activities = Array.isArray(value.activities)
+    ? value.activities
+        .filter(
+          (activity: any) =>
+            activity &&
+            typeof activity.name === 'string' &&
+            typeof activity.startDate === 'string' &&
+            typeof activity.endDate === 'string' &&
+            typeof activity.ring === 'string' &&
+            typeof activity.group === 'string'
+        )
+        .map((activity: any) => ({
+          name: activity.name.trim(),
+          startDate: activity.startDate.trim(),
+          endDate: activity.endDate.trim(),
+          ring: activity.ring.trim(),
+          group: activity.group.trim(),
+          description: typeof activity.description === 'string' ? activity.description.trim() : undefined,
+        }))
+    : []
+
+  if (!rings.length && !activityGroups.length && !activities.length) {
+    return null
+  }
+
+  return { rings, activityGroups, activities }
+}
+
+function extractSuggestionsFromJson(raw: string): PlanSuggestions | null {
+  if (!raw || typeof raw !== 'string') return null
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object') {
+      const suggestions = normalizePlanSuggestions(parsed.suggestions ?? parsed)
+      return suggestions
+    }
+  } catch (error) {
+    console.error('[applySuggestions] Failed to parse JSON suggestions:', error)
+    return null
+  }
+  return null
+}
+
+async function applySuggestions(
+  ctx: RunContext<WheelContext>,
+  rawSuggestionsJson?: string
+): Promise<ApplySummary> {
+  const { supabase, wheelId } = ctx.context
+
+  let suggestionSource: SuggestionSource | null = null
+  let suggestions: PlanSuggestions | null = null
+  let rawStringUsed: string | null = null
+
+  if (rawSuggestionsJson) {
+    const parsed = extractSuggestionsFromJson(rawSuggestionsJson)
+    if (parsed) {
+      suggestions = parsed
+      suggestionSource = 'input'
+      rawStringUsed = rawSuggestionsJson
+    }
+  }
+
+  if (!suggestions && ctx.context.lastSuggestionsRaw) {
+    const parsed = extractSuggestionsFromJson(ctx.context.lastSuggestionsRaw)
+    if (parsed) {
+      suggestions = parsed
+      suggestionSource = 'contextRaw'
+      rawStringUsed = ctx.context.lastSuggestionsRaw
+    }
+  }
+
+  if (!suggestions && ctx.context.lastSuggestions) {
+    suggestions = normalizePlanSuggestions(ctx.context.lastSuggestions)
+    if (suggestions) {
+      suggestionSource = 'contextObject'
+      rawStringUsed = JSON.stringify({ success: true, suggestions })
+    }
+  }
+
+  if (!suggestions || !suggestionSource) {
+    throw new Error('Inga giltiga förslag hittades. Kör verktyget "suggest_plan" igen innan du försöker applicera.')
+  }
+
+  ctx.context.lastSuggestions = suggestions
+  ctx.context.lastSuggestionsRaw = rawStringUsed || rawSuggestionsJson || undefined
+
+  console.log('[applySuggestions] Using source:', suggestionSource)
+  console.log('[applySuggestions] Counts:', {
+    rings: suggestions.rings.length,
+    activityGroups: suggestions.activityGroups.length,
+    activities: suggestions.activities.length,
+  })
+
+  queueProgressEvent(ctx, {
+    message: 'Startar applicering av AI-förslag...',
+    stage: 'apply:start',
+    scope: 'structure',
+    detail: {
+      rings: suggestions.rings.length,
+      activityGroups: suggestions.activityGroups.length,
+      activities: suggestions.activities.length,
+      source: suggestionSource,
+    },
+  })
+
+  const ringLookup = new Map<string, string>()
+  const groupLookup = new Map<string, string>()
+
+  const ringStats = {
+    created: 0,
+    reused: 0,
+    createdNames: [] as string[],
+    reusedNames: [] as string[],
+  }
+
+  const groupStats = {
+    created: 0,
+    reused: 0,
+    createdNames: [] as string[],
+    reusedNames: [] as string[],
+  }
+
+  const errors: string[] = []
+  const successfulActivities: string[] = []
+  const failedActivities: string[] = []
+  let totalActivitySegments = 0
+
+  // Rings
+  for (const ring of suggestions.rings) {
+    const ringKey = ring.name.toLowerCase()
+    try {
+      queueProgressEvent(ctx, {
+        message: `Skapar ring "${ring.name}"...`,
+        stage: 'apply:ring:start',
+        scope: 'structure:rings',
+        detail: { name: ring.name, type: ring.type },
+      })
+
+      const result = await createRing(supabase, wheelId, {
+        name: ring.name,
+        type: ring.type === 'inner' ? 'inner' : 'outer',
+        color: ring.type === 'outer' ? (ring.color || '#408cfb') : null,
+      })
+
+      if (result.success && result.ringId) {
+        ringLookup.set(ringKey, result.ringId)
+        if (result.alreadyExists) {
+          ringStats.reused += 1
+          ringStats.reusedNames.push(ring.name)
+          queueProgressEvent(ctx, {
+            message: `Återanvände ring "${ring.name}"`,
+            stage: 'apply:ring:reused',
+            scope: 'structure:rings',
+            detail: { name: ring.name, type: ring.type, ringId: result.ringId },
+          })
+        } else {
+          ringStats.created += 1
+          ringStats.createdNames.push(ring.name)
+          queueProgressEvent(ctx, {
+            message: `Ring "${ring.name}" skapad`,
+            stage: 'apply:ring:created',
+            scope: 'structure:rings',
+            detail: { name: ring.name, type: ring.type, ringId: result.ringId },
+          })
+        }
+
+        queueRefreshEvent(ctx, {
+          scope: 'structure',
+          reason: result.alreadyExists ? 'ring_reused' : 'ring_created',
+          payload: {
+            ringId: result.ringId,
+            ringName: ring.name,
+            type: ring.type,
+            alreadyExists: !!result.alreadyExists,
+          },
+        })
+      }
+    } catch (error) {
+      console.error('[applySuggestions] Ring creation failed:', ring.name, error)
+      errors.push(`Ring "${ring.name}": ${(error as Error).message}`)
+      queueProgressEvent(ctx, {
+        message: `Fel vid skapande av ring "${ring.name}": ${(error as Error).message}`,
+        stage: 'apply:ring:error',
+        scope: 'structure:rings',
+        detail: { name: ring.name, error: (error as Error).message },
+      })
+    }
+  }
+
+  // Activity groups
+  for (const group of suggestions.activityGroups) {
+    const groupKey = group.name.toLowerCase()
+    try {
+      queueProgressEvent(ctx, {
+        message: `Skapar aktivitetsgrupp "${group.name}"...`,
+        stage: 'apply:group:start',
+        scope: 'structure:groups',
+        detail: { name: group.name },
+      })
+
+      const result = await createGroup(supabase, wheelId, {
+        name: group.name,
+        color: group.color,
+      })
+
+      if (result.success && result.groupId) {
+        groupLookup.set(groupKey, result.groupId)
+        if ((result as any).alreadyExists) {
+          groupStats.reused += 1
+          groupStats.reusedNames.push(group.name)
+          queueProgressEvent(ctx, {
+            message: `Återanvände aktivitetsgrupp "${group.name}"`,
+            stage: 'apply:group:reused',
+            scope: 'structure:groups',
+            detail: { name: group.name, groupId: result.groupId },
+          })
+        } else {
+          groupStats.created += 1
+          groupStats.createdNames.push(group.name)
+          queueProgressEvent(ctx, {
+            message: `Aktivitetsgrupp "${group.name}" skapad`,
+            stage: 'apply:group:created',
+            scope: 'structure:groups',
+            detail: { name: group.name, groupId: result.groupId },
+          })
+        }
+
+        queueRefreshEvent(ctx, {
+          scope: 'structure',
+          reason: (result as any).alreadyExists ? 'group_reused' : 'group_created',
+          payload: {
+            groupId: result.groupId,
+            groupName: group.name,
+            color: group.color,
+            alreadyExists: !!(result as any).alreadyExists,
+          },
+        })
+      }
+    } catch (error) {
+      console.error('[applySuggestions] Group creation failed:', group.name, error)
+      errors.push(`Grupp "${group.name}": ${(error as Error).message}`)
+      queueProgressEvent(ctx, {
+        message: `Fel vid skapande av aktivitetsgrupp "${group.name}": ${(error as Error).message}`,
+        stage: 'apply:group:error',
+        scope: 'structure:groups',
+        detail: { name: group.name, error: (error as Error).message },
+      })
+    }
+  }
+
+  // Activities
+  for (const activity of suggestions.activities) {
+    try {
+      queueProgressEvent(ctx, {
+        message: `Skapar aktivitet "${activity.name}" (${activity.ring} / ${activity.group})...`,
+        stage: 'apply:activity:start',
+        scope: 'activities',
+        detail: {
+          name: activity.name,
+          ring: activity.ring,
+          group: activity.group,
+          startDate: activity.startDate,
+          endDate: activity.endDate,
+        },
+      })
+
+      const ringId = ringLookup.get(activity.ring.toLowerCase())
+      const groupId = groupLookup.get(activity.group.toLowerCase())
+
+      if (!ringId) {
+        const message = `Aktivitet "${activity.name}": Ring "${activity.ring}" hittades inte`
+        console.error('[applySuggestions]', message)
+        errors.push(message)
+        failedActivities.push(activity.name)
+        queueProgressEvent(ctx, {
+          message,
+          stage: 'apply:activity:error',
+          scope: 'activities',
+          detail: { name: activity.name, missing: 'ring', ring: activity.ring },
+        })
+        continue
+      }
+
+      if (!groupId) {
+        const message = `Aktivitet "${activity.name}": Grupp "${activity.group}" hittades inte`
+        console.error('[applySuggestions]', message)
+        errors.push(message)
+        failedActivities.push(activity.name)
+        queueProgressEvent(ctx, {
+          message,
+          stage: 'apply:activity:error',
+          scope: 'activities',
+          detail: { name: activity.name, missing: 'group', group: activity.group },
+        })
+        continue
+      }
+
+      const result = await createActivity(ctx, {
+        name: activity.name,
+        startDate: activity.startDate,
+        endDate: activity.endDate,
+        ringId,
+        activityGroupId: groupId,
+        labelId: null,
+      })
+
+      if (result.success) {
+        totalActivitySegments += result.itemsCreated || 1
+        successfulActivities.push(activity.name)
+        queueProgressEvent(ctx, {
+          message: `Aktivitet "${activity.name}" skapad`,
+          stage: 'apply:activity:created',
+          scope: 'activities',
+          detail: {
+            name: activity.name,
+            ring: activity.ring,
+            group: activity.group,
+            ringId,
+            groupId,
+            segments: result.itemsCreated || 1,
+          },
+        })
+
+        queueRefreshEvent(ctx, {
+          scope: 'activities',
+          reason: 'activity_created',
+          payload: {
+            name: activity.name,
+            ring: activity.ring,
+            group: activity.group,
+            ringId,
+            groupId,
+            segments: result.itemsCreated || 1,
+          },
+        })
+      } else {
+        const message = `Aktivitet "${activity.name}": ${result.message || 'Okänt fel'}`
+        errors.push(message)
+        failedActivities.push(activity.name)
+        queueProgressEvent(ctx, {
+          message,
+          stage: 'apply:activity:error',
+          scope: 'activities',
+          detail: { name: activity.name, error: result.message },
+        })
+      }
+    } catch (error) {
+      console.error('[applySuggestions] Activity creation failed:', activity.name, error)
+      errors.push(`Aktivitet "${activity.name}": ${(error as Error).message}`)
+      failedActivities.push(activity.name)
+      queueProgressEvent(ctx, {
+        message: `Fel vid skapande av aktivitet "${activity.name}": ${(error as Error).message}`,
+        stage: 'apply:activity:error',
+        scope: 'activities',
+        detail: { name: activity.name, error: (error as Error).message },
+      })
+    }
+  }
+
+  const expectedActivities = suggestions.activities.length
+  const totalSuggestedRings = suggestions.rings.length
+  const totalSuggestedGroups = suggestions.activityGroups.length
+  const ringCoverage = ringStats.created + ringStats.reused
+  const groupCoverage = groupStats.created + groupStats.reused
+  const successRate = expectedActivities > 0 ? totalActivitySegments / expectedActivities : 1
+
+  const overallSuccess =
+    (totalSuggestedRings === 0 || ringCoverage >= totalSuggestedRings) &&
+    (totalSuggestedGroups === 0 || groupCoverage >= totalSuggestedGroups) &&
+    (expectedActivities === 0 || successRate >= 0.8) &&
+    errors.length === 0
+
+  const ringMessage = `${ringStats.created} nya${ringStats.reused ? ` (+${ringStats.reused} återanvända)` : ''}`
+  const groupMessage = `${groupStats.created} nya${groupStats.reused ? ` (+${groupStats.reused} återanvända)` : ''}`
+  const activityMessage = expectedActivities > 0
+    ? `${totalActivitySegments}/${expectedActivities} skapade`
+    : `${totalActivitySegments} skapade`
+
+  const messageParts = [
+    `Ringar: ${ringMessage}`,
+    `Grupper: ${groupMessage}`,
+    `Aktiviteter: ${activityMessage}`,
+  ]
+
+  if (errors.length > 0) {
+    messageParts.push(`Fel: ${errors.join('; ')}`)
+  }
+
+  const summary: ApplySummary = {
+    success: overallSuccess,
+    created: {
+      rings: ringStats.created,
+      groups: groupStats.created,
+      activities: totalActivitySegments,
+    },
+    reused: {
+      rings: ringStats.reused,
+      groups: groupStats.reused,
+    },
+    expected: {
+      rings: totalSuggestedRings,
+      groups: totalSuggestedGroups,
+      activities: expectedActivities,
+    },
+    errors: errors.length ? errors : undefined,
+    details: {
+      rings: {
+        created: ringStats.createdNames,
+        reused: ringStats.reusedNames,
+      },
+      groups: {
+        created: groupStats.createdNames,
+        reused: groupStats.reusedNames,
+      },
+      activities: {
+        successful: successfulActivities,
+        failed: failedActivities,
+      },
+    },
+    message: messageParts.join(' · '),
+    metadata: {
+      suggestionSource,
+      fallbackUsed: suggestionSource !== 'input',
+      rawLength: rawStringUsed ? rawStringUsed.length : 0,
+    },
+  }
+
+  const ringMappings = suggestions.rings.map((ring) => ({
+    name: ring.name,
+    id: ringLookup.get(ring.name.toLowerCase()) || null,
+  }))
+
+  const groupMappings = suggestions.activityGroups.map((group) => ({
+    name: group.name,
+    id: groupLookup.get(group.name.toLowerCase()) || null,
+  }))
+
+  queueRefreshEvent(
+    ctx,
+    {
+      scope: 'structure',
+      reason: 'apply_suggested_plan',
+      summary,
+      payload: {
+        ringMappings,
+        groupMappings,
+      },
+    },
+    { immediate: false }
+  )
+
+  queueProgressEvent(ctx, {
+    message: summary.message,
+    stage: summary.success ? 'apply:summary:success' : 'apply:summary:warning',
+    scope: 'structure',
+    detail: summary,
+  })
+
+  queueProgressEvent(ctx, {
+    message: summary.success
+      ? 'AI-strukturen skapades utan fel.'
+      : 'AI-strukturen skapades men vissa delar misslyckades. Se detaljer.',
+    stage: summary.success ? 'apply:complete:success' : 'apply:complete:partial',
+    scope: 'structure',
+  })
+
+  console.log('[applySuggestions] Summary:', JSON.stringify(summary))
+
+  return summary
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // DATABASE HELPERS
@@ -1985,6 +2582,20 @@ function createAgentSystem() {
       const { supabase, wheelId } = ctx.context
       const result = await createRing(supabase, wheelId, input)
       console.log('✅ [TOOL] create_ring result:', JSON.stringify(result, null, 2))
+
+      if (result.success && result.ringId) {
+        queueRefreshEvent(ctx, {
+          scope: 'structure',
+          reason: result.alreadyExists ? 'ring_reused' : 'ring_created',
+          payload: {
+            ringId: result.ringId,
+            ringName: result.ringName || input.name,
+            type: input.type,
+            alreadyExists: !!result.alreadyExists,
+          },
+        })
+      }
+
       return JSON.stringify(result)
     }
   })
@@ -1998,6 +2609,20 @@ function createAgentSystem() {
       const { supabase, wheelId } = ctx.context
       const result = await createGroup(supabase, wheelId, input)
       console.log('✅ [TOOL] create_activity_group result:', JSON.stringify(result, null, 2))
+
+      if (result.success && result.groupId) {
+        queueRefreshEvent(ctx, {
+          scope: 'structure',
+          reason: (result as any).alreadyExists ? 'group_reused' : 'group_created',
+          payload: {
+            groupId: result.groupId,
+            groupName: result.groupName || input.name,
+            color: input.color,
+            alreadyExists: !!(result as any).alreadyExists,
+          },
+        })
+      }
+
       return JSON.stringify(result)
     }
   })
@@ -2343,6 +2968,21 @@ CRUD OPERATIONS:
       console.log('🔧 [TOOL] create_activity called with:', JSON.stringify(input, null, 2))
       const result = await createActivity(ctx, input)
       console.log('✅ [TOOL] create_activity result:', JSON.stringify(result, null, 2))
+
+      if (result.success) {
+        queueRefreshEvent(ctx, {
+          scope: 'activities',
+          reason: 'activity_created',
+          payload: {
+            name: input.name,
+            ringId: input.ringId,
+            activityGroupId: input.activityGroupId,
+            labelId: input.labelId,
+            segments: result.itemsCreated || 1,
+          },
+        })
+      }
+
       return JSON.stringify(result)
     }
   })
@@ -2406,6 +3046,19 @@ CRUD OPERATIONS:
         successfulActivities: results.length,
         errors: errors.length > 0 ? errors : undefined,
         message: `Skapade ${totalCreated} aktivitet(er) från ${input.activities.length} förfrågningar${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+      }
+
+      if (totalCreated > 0) {
+        queueRefreshEvent(ctx, {
+          scope: 'activities',
+          reason: 'batch_activity_created',
+          payload: {
+            created: totalCreated,
+            requested: input.activities.length,
+            successfulActivities: results.length,
+            errors: errors.length,
+          },
+        })
       }
       
       console.log('✅ [TOOL] batch_create_activities result:', summary)
@@ -2976,20 +3629,26 @@ Returnera ENDAST giltig JSON i detta format:
         })
 
         const suggestions = JSON.parse(response.choices[0].message.content || '{}')
+        const normalizedSuggestions = normalizePlanSuggestions(suggestions)
 
         console.log('💾 [suggest_plan] Storing suggestions in context')
         console.log('[suggest_plan] Rings:', suggestions.rings?.length || 0)
         console.log('[suggest_plan] Groups:', suggestions.activityGroups?.length || 0)
         console.log('[suggest_plan] Activities:', suggestions.activities?.length || 0)
 
-        // Store suggestions in context for potential later use
-        ctx.context.lastSuggestions = suggestions
+        // Store suggestions (normalized if possible) in context for potential later use
+        ctx.context.lastSuggestions = normalizedSuggestions || suggestions
 
-        return JSON.stringify({
+        const payload = {
           success: true,
           suggestions,
           message: `Genererat förslag med ${suggestions.rings?.length || 0} ringar, ${suggestions.activityGroups?.length || 0} grupper och ${suggestions.activities?.length || 0} aktiviteter`
-        })
+        }
+
+        const payloadString = JSON.stringify(payload)
+        ctx.context.lastSuggestionsRaw = payloadString
+
+        return payloadString
       } catch (error) {
         console.error('[suggest_plan] Error:', error)
         return JSON.stringify({
@@ -3010,216 +3669,10 @@ Returnera ENDAST giltig JSON i detta format:
     async execute(input: { suggestionsJson: string }, ctx: RunContext<WheelContext>) {
       console.log('🚀 [apply_suggested_plan] TOOL CALLED!')
       console.log('[apply_suggested_plan] Received JSON length:', input.suggestionsJson?.length || 0)
-      
-      let suggestions: any
-      try {
-        // Parse the JSON string
-        const parsed = JSON.parse(input.suggestionsJson)
-        // Handle both direct suggestions and wrapped in success response
-        suggestions = parsed.suggestions || parsed
-        console.log('[apply_suggested_plan] Parsed suggestions - Rings:', suggestions?.rings?.length || 0)
-        console.log('[apply_suggested_plan] Parsed suggestions - Groups:', suggestions?.activityGroups?.length || 0)
-        console.log('[apply_suggested_plan] Parsed suggestions - Activities:', suggestions?.activities?.length || 0)
-      } catch (error) {
-        console.error('[apply_suggested_plan] JSON parse error:', error)
-        return JSON.stringify({
-          success: false,
-          error: 'Invalid JSON format',
-          message: 'Kunde inte tolka förslagen. Försök anropa suggest_plan igen.'
-        })
-      }
-      
-      const { supabase, wheelId } = ctx.context
 
       try {
-        const ringLookup = new Map<string, string>() // ring name -> ringId
-        const groupLookup = new Map<string, string>() // group name -> groupId
-        const ringStats = {
-          created: 0,
-          reused: 0,
-          createdNames: [] as string[],
-          reusedNames: [] as string[],
-        }
-        const groupStats = {
-          created: 0,
-          reused: 0,
-          createdNames: [] as string[],
-          reusedNames: [] as string[],
-        }
-        const errors: string[] = []
-        const successfulActivities: string[] = []
-        const failedActivities: string[] = []
-
-        // 1. Create rings (wheel scoped - shared across all pages)
-        console.log('[apply_suggested_plan] Creating rings:', suggestions.rings?.length || 0)
-        for (const ring of suggestions.rings || []) {
-          try {
-            const result = await createRing(supabase, wheelId, {
-              name: ring.name,
-              type: ring.type,
-              color: ring.type === 'outer' ? '#408cfb' : null
-            })
-            
-            if (result.success && result.ringId) {
-              ringLookup.set(ring.name, result.ringId)
-              if (result.alreadyExists) {
-                ringStats.reused++
-                ringStats.reusedNames.push(ring.name)
-                console.log('[apply_suggested_plan] Reused ring:', ring.name, '→', result.ringId)
-              } else {
-                ringStats.created++
-                ringStats.createdNames.push(ring.name)
-                console.log('[apply_suggested_plan] Created ring:', ring.name, '→', result.ringId)
-              }
-            }
-          } catch (error) {
-            console.error('[apply_suggested_plan] Error creating ring:', ring.name, error)
-            errors.push(`Ring "${ring.name}": ${(error as Error).message}`)
-          }
-        }
-
-        // 2. Create activity groups (wheel scoped - shared across all pages)
-        console.log('[apply_suggested_plan] Creating activity groups:', suggestions.activityGroups?.length || 0)
-        for (const group of suggestions.activityGroups || []) {
-          try {
-            const result = await createGroup(supabase, wheelId, {
-              name: group.name,
-              color: group.color
-            })
-            
-            if (result.success && result.groupId) {
-              groupLookup.set(group.name, result.groupId)
-              if ((result as any).alreadyExists) {
-                groupStats.reused++
-                groupStats.reusedNames.push(group.name)
-                console.log('[apply_suggested_plan] Reused group:', group.name, '→', result.groupId)
-              } else {
-                groupStats.created++
-                groupStats.createdNames.push(group.name)
-                console.log('[apply_suggested_plan] Created group:', group.name, '→', result.groupId)
-              }
-            }
-          } catch (error) {
-            console.error('[apply_suggested_plan] Error creating group:', group.name, error)
-            errors.push(`Grupp "${group.name}": ${(error as Error).message}`)
-          }
-        }
-
-        // 3. Create activities
-        console.log('[apply_suggested_plan] Creating activities:', suggestions.activities?.length || 0)
-        console.log('[apply_suggested_plan] Available rings:', Array.from(ringLookup.keys()))
-        console.log('[apply_suggested_plan] Available groups:', Array.from(groupLookup.keys()))
-        let activitiesCreated = 0
-        
-        for (const activity of suggestions.activities || []) {
-          try {
-            console.log(`[apply_suggested_plan] Processing activity: "${activity.name}" (ring: "${activity.ring}", group: "${activity.group}")`)
-            const ringId = ringLookup.get(activity.ring)
-            const groupId = groupLookup.get(activity.group)
-
-            if (!ringId) {
-              console.error(`[apply_suggested_plan] RING NOT FOUND: "${activity.ring}" for activity "${activity.name}"`)
-              errors.push(`Aktivitet "${activity.name}": Ring "${activity.ring}" hittades inte`)
-              failedActivities.push(activity.name)
-              continue
-            }
-            if (!groupId) {
-              console.error(`[apply_suggested_plan] GROUP NOT FOUND: "${activity.group}" for activity "${activity.name}"`)
-              errors.push(`Aktivitet "${activity.name}": Grupp "${activity.group}" hittades inte`)
-              failedActivities.push(activity.name)
-              continue
-            }
-
-            console.log(`[apply_suggested_plan] Creating activity with ringId=${ringId}, groupId=${groupId}`)
-            const result = await createActivity(ctx, {
-              name: activity.name,
-              startDate: activity.startDate,
-              endDate: activity.endDate,
-              ringId: ringId,
-              activityGroupId: groupId,
-              labelId: null
-            })
-
-            if (result.success) {
-              activitiesCreated += result.itemsCreated || 1
-              successfulActivities.push(activity.name)
-              console.log('[apply_suggested_plan] Created activity:', activity.name)
-            } else {
-              console.error('[apply_suggested_plan] Activity creation returned failure:', activity.name, result)
-              errors.push(`Aktivitet "${activity.name}": ${result.message || 'Okänt fel'}`)
-              failedActivities.push(activity.name)
-            }
-          } catch (error) {
-            console.error('[apply_suggested_plan] Error creating activity:', activity.name, error)
-            errors.push(`Aktivitet "${activity.name}": ${(error as Error).message}`)
-            failedActivities.push(activity.name)
-          }
-        }
-
-        // Determine overall success: all rings/groups created AND most activities created
-        const expectedActivities = suggestions.activities?.length || 0
-        const successRate = expectedActivities > 0 ? (activitiesCreated / expectedActivities) : 1
-        const totalSuggestedRings = suggestions.rings?.length || 0
-        const totalSuggestedGroups = suggestions.activityGroups?.length || 0
-        const ringCoverage = ringStats.created + ringStats.reused
-        const groupCoverage = groupStats.created + groupStats.reused
-        const overallSuccess =
-          (totalSuggestedRings === 0 || ringCoverage >= totalSuggestedRings) &&
-          (totalSuggestedGroups === 0 || groupCoverage >= totalSuggestedGroups) &&
-          (expectedActivities === 0 || successRate >= 0.8) &&
-          errors.length === 0
-
-        const ringMessage = `${ringStats.created} nya${ringStats.reused ? ` (+${ringStats.reused} återanvända)` : ''}`
-        const groupMessage = `${groupStats.created} nya${groupStats.reused ? ` (+${groupStats.reused} återanvända)` : ''}`
-        const activityMessage = expectedActivities > 0
-          ? `${activitiesCreated}/${expectedActivities} skapade`
-          : `${activitiesCreated} skapade`
-
-        const messageParts = [
-          `Ringar: ${ringMessage}`,
-          `Grupper: ${groupMessage}`,
-          `Aktiviteter: ${activityMessage}`,
-        ]
-
-        if (errors.length > 0) {
-          messageParts.push(`Fel: ${errors.join('; ')}`)
-        }
-
-        const summary = {
-          success: overallSuccess,
-          created: {
-            rings: ringStats.created,
-            groups: groupStats.created,
-            activities: activitiesCreated
-          },
-          reused: {
-            rings: ringStats.reused,
-            groups: groupStats.reused
-          },
-          expected: {
-            rings: suggestions.rings?.length || 0,
-            groups: suggestions.activityGroups?.length || 0,
-            activities: expectedActivities
-          },
-          errors: errors.length > 0 ? errors : undefined,
-          details: {
-            rings: {
-              created: ringStats.createdNames,
-              reused: ringStats.reusedNames,
-            },
-            groups: {
-              created: groupStats.createdNames,
-              reused: groupStats.reusedNames,
-            },
-            activities: {
-              successful: successfulActivities,
-              failed: failedActivities,
-            },
-          },
-          message: messageParts.join(' · ')
-        }
-
-        console.log('[apply_suggested_plan] Summary:', JSON.stringify(summary, null, 2))
+        const summary = await applySuggestions(ctx, input.suggestionsJson)
+        console.log('[apply_suggested_plan] Summary metadata:', summary.metadata)
         return JSON.stringify(summary)
       } catch (error) {
         console.error('[apply_suggested_plan] Fatal error:', error)
@@ -3511,6 +3964,10 @@ serve(async (req: Request) => {
             stage: 'thinking'
           })
 
+          wheelContext.emitEvent = (type: string, data: any) => {
+            sendSSEEvent(controller, type, data)
+          }
+
           const result = await run(orchestrator, userMessage, runOptions)
 
           console.log('✅ [AI] Agent execution complete')
@@ -3602,6 +4059,36 @@ serve(async (req: Request) => {
           
           console.log('📊 [AI] Tools executed:', toolExecutionSummary.length > 0 ? toolExecutionSummary.join(', ') : 'None')
           console.log('👥 [AI] Agent handoffs:', agentHandoffs.length > 0 ? agentHandoffs.join(' → ') : 'None')
+
+          if (wheelContext.progressEvents && wheelContext.progressEvents.length > 0) {
+            wheelContext.progressEvents.forEach((event) => {
+              if (!event.dispatched) {
+                sendSSEEvent(controller, 'status', {
+                  message: event.message,
+                  stage: event.stage || 'progress',
+                  scope: event.scope,
+                  detail: event.detail,
+                })
+              }
+            })
+            wheelContext.progressEvents = []
+          }
+
+          if (wheelContext.refreshRequests && wheelContext.refreshRequests.length > 0) {
+            wheelContext.refreshRequests.forEach((request) => {
+              if (!request.dispatched) {
+                sendSSEEvent(controller, 'refresh', {
+                  scope: request.scope,
+                  reason: request.reason,
+                  pageId: request.pageId,
+                  summary: request.summary,
+                  payload: request.payload,
+                })
+              }
+            })
+            // Clear the queue so we don't reuse the same requests next turn
+            wheelContext.refreshRequests = []
+          }
 
           // Extract lastResponseId from the result for OpenAI Agents SDK state management
           const lastResponseId = result.lastResponseId || null

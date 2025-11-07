@@ -254,14 +254,17 @@ export const createWheel = async (wheelData) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
+  const defaultColors = wheelData.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8'];
+  const baseYear = parseInt(wheelData.year) || new Date().getFullYear();
+
   // Create wheel
   const { data: wheel, error: wheelError } = await supabase
     .from('year_wheels')
     .insert({
       user_id: user.id,
       title: wheelData.title || 'New wheel',
-      year: parseInt(wheelData.year) || new Date().getFullYear(),
-      colors: wheelData.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8'],
+      year: baseYear,
+      colors: defaultColors,
       show_week_ring: wheelData.showWeekRing !== undefined ? wheelData.showWeekRing : true,
       show_month_ring: wheelData.showMonthRing !== undefined ? wheelData.showMonthRing : true,
       show_ring_names: wheelData.showRingNames !== undefined ? wheelData.showRingNames : true,
@@ -274,9 +277,83 @@ export const createWheel = async (wheelData) => {
 
   if (wheelError) throw wheelError;
 
-  // Create default ring and activity group if provided
-  if (wheelData.organizationData) {
-    await saveWheelData(wheel.id, wheelData.organizationData);
+  // Ensure the wheel has a persisted default page + structure so items can be saved immediately
+  const baseOrganizationData = wheelData.organizationData
+    ? JSON.parse(JSON.stringify(wheelData.organizationData))
+    : {
+        rings: [
+          {
+            id: 'ring-1',
+            name: 'Ring 1',
+            type: 'inner',
+            visible: true,
+            orientation: 'vertical',
+            data: Array.from({ length: 12 }, () => ['']),
+          },
+        ],
+        activityGroups: [
+          {
+            id: 'ag-1',
+            name: 'Planering',
+            color: '#3B82F6',
+            visible: true,
+          },
+        ],
+        labels: [],
+        items: [],
+      };
+
+  try {
+    const initialPage = await createPage(wheel.id, {
+      year: baseYear,
+      title: `${baseYear}`,
+      organizationData: baseOrganizationData,
+      overrideColors: null,
+      overrideShowWeekRing: null,
+      overrideShowMonthRing: null,
+      overrideShowRingNames: null,
+    });
+
+    const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(
+      wheel.id,
+      baseOrganizationData,
+      initialPage.id
+    );
+
+    const normalizedOrgData = {
+      ...baseOrganizationData,
+      rings: (baseOrganizationData.rings || []).map((ring) => ({
+        ...ring,
+        id: ringIdMap.get(ring.id) || ring.id,
+      })),
+      activityGroups: (baseOrganizationData.activityGroups || []).map((group) => ({
+        ...group,
+        id: activityIdMap.get(group.id) || group.id,
+      })),
+      labels: (baseOrganizationData.labels || []).map((label) => ({
+        ...label,
+        id: labelIdMap.get(label.id) || label.id,
+      })),
+      items: (baseOrganizationData.items || []).map((item) => ({
+        ...item,
+        ringId: ringIdMap.get(item.ringId) || item.ringId,
+        activityId: activityIdMap.get(item.activityId) || item.activityId,
+        labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null,
+      })),
+    };
+
+    await updatePage(initialPage.id, {
+      organization_data: normalizedOrgData,
+    });
+  } catch (structureError) {
+    console.error('[wheelService] Failed to initialize default wheel structure:', structureError);
+    // Best-effort cleanup so we don't leave a broken wheel behind
+    try {
+      await supabase.from('year_wheels').delete().eq('id', wheel.id);
+    } catch (cleanupError) {
+      console.error('[wheelService] Failed to clean up wheel after initialization error:', cleanupError);
+    }
+    throw structureError;
   }
 
   return wheel.id;
@@ -816,6 +893,28 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
  * @param {Map} labelIdMap - Label ID mappings (oldId -> newId)
  * @returns {Promise<void>}
  */
+const mapDbItemToClient = (dbItem) => {
+  if (!dbItem) return null;
+
+  return {
+    id: dbItem.id,
+    ringId: dbItem.ring_id,
+    activityId: dbItem.activity_id,
+    labelId: dbItem.label_id,
+    name: dbItem.name,
+    startDate: dbItem.start_date,
+    endDate: dbItem.end_date,
+    time: dbItem.time,
+    description: dbItem.description,
+    pageId: dbItem.page_id,
+    linkedWheelId: dbItem.linked_wheel_id,
+    linkType: dbItem.link_type,
+    source: dbItem.source,
+    externalId: dbItem.external_id,
+    syncMetadata: dbItem.sync_metadata,
+  };
+};
+
 export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Map(), activityIdMap = new Map(), labelIdMap = new Map()) => {
   
   // Map old IDs to new database UUIDs
@@ -850,6 +949,7 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     start_date: item.startDate,
     end_date: item.endDate,
     time: item.time || null,
+    description: item.description || null,
     page_id: item.pageId || pageId || null,
     // Wheel linking fields (optional)
     linked_wheel_id: item.linkedWheelId || null,
@@ -861,19 +961,45 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
   const isNew = !item.id || item.id.startsWith('item-');
   
   if (isNew) {
-    const { error } = await supabase.from('items').insert(itemData);
+    const { data, error } = await supabase
+      .from('items')
+      .insert(itemData)
+      .select('*')
+      .single();
     if (error) {
       console.error(`Error inserting item "${item.name}":`, error);
       throw error;
     }
-  } else {
-    const { error } = await supabase.from('items').update(itemData).eq('id', item.id);
-    if (error) {
-      console.error(`Error updating item "${item.name}":`, error);
-      throw error;
-    }
+    return mapDbItemToClient(data);
+  }
+
+  const { data, error } = await supabase
+    .from('items')
+    .update(itemData)
+    .eq('id', item.id)
+    .select('*')
+    .single();
+  if (error) {
+    console.error(`Error updating item "${item.name}":`, error);
+    throw error;
+  }
+
+  return mapDbItemToClient(data);
+};
+
+export const deleteSingleItem = async (itemId) => {
+  const { error } = await supabase
+    .from('items')
+    .delete()
+    .eq('id', itemId);
+
+  if (error) {
+    console.error(`Error deleting item ${itemId}:`, error);
+    throw error;
   }
 };
+
+export { mapDbItemToClient };
 
 /**
  * Delete a wheel (and all related data via CASCADE)
