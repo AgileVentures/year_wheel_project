@@ -332,36 +332,38 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
               {/* Recurring options */}
               {formData.isRecurring && (
                 <div className="space-y-3 pl-6 border-l-2 border-blue-200">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {t('editor:addItemModal.recurringFrequencyLabel', 'Frekvens')}
-                    </label>
-                    <select
-                      value={formData.recurringFrequency}
-                      onChange={(e) => handleChange('recurringFrequency', e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="weekly">{t('editor:addItemModal.weekly', 'Varje vecka')}</option>
-                      <option value="monthly">{t('editor:addItemModal.monthly', 'Varje månad')}</option>
-                      <option value="quarterly">{t('editor:addItemModal.quarterly', 'Varje kvartal')}</option>
-                    </select>
-                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {t('editor:addItemModal.recurringFrequencyLabel', 'Frekvens')}
+                      </label>
+                      <select
+                        value={formData.recurringFrequency}
+                        onChange={(e) => handleChange('recurringFrequency', e.target.value)}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="weekly">{t('editor:addItemModal.weekly', 'Varje vecka')}</option>
+                        <option value="monthly">{t('editor:addItemModal.monthly', 'Varje månad')}</option>
+                        <option value="quarterly">{t('editor:addItemModal.quarterly', 'Varje kvartal')}</option>
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      {t('editor:addItemModal.recurringDurationLabel', 'Varaktighet per tillfälle')}
-                    </label>
-                    <select
-                      value={formData.recurringDuration}
-                      onChange={(e) => handleChange('recurringDuration', parseInt(e.target.value))}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="1">{t('editor:addItemModal.duration1day', '1 dag')}</option>
-                      <option value="2">{t('editor:addItemModal.duration2days', '2 dagar')}</option>
-                      <option value="3">{t('editor:addItemModal.duration3days', '3 dagar')}</option>
-                      <option value="7">{t('editor:addItemModal.duration1week', '1 vecka')}</option>
-                      <option value="14">{t('editor:addItemModal.duration2weeks', '2 veckor')}</option>
-                    </select>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        {t('editor:addItemModal.recurringDurationLabel', 'Varaktighet per tillfälle')}
+                      </label>
+                      <select
+                        value={formData.recurringDuration}
+                        onChange={(e) => handleChange('recurringDuration', parseInt(e.target.value))}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="1">{t('editor:addItemModal.duration1day', '1 dag')}</option>
+                        <option value="2">{t('editor:addItemModal.duration2days', '2 dagar')}</option>
+                        <option value="3">{t('editor:addItemModal.duration3days', '3 dagar')}</option>
+                        <option value="7">{t('editor:addItemModal.duration1week', '1 vecka')}</option>
+                        <option value="14">{t('editor:addItemModal.duration2weeks', '2 veckor')}</option>
+                      </select>
+                    </div>
                   </div>
 
                   {/* Preview of recurring dates */}
@@ -386,19 +388,6 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                   )}
                 </div>
               )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:addItemModal.timeLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.time}
-                  onChange={(e) => handleChange('time', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder={t('editor:addItemModal.timePlaceholder')}
-                />
-              </div>
 
               {/* Description - Collapsible */}
               <div>

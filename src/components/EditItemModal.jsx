@@ -229,19 +229,6 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:editItemModal.timeLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.time}
-                  onChange={(e) => handleChange('time', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder={t('editor:editItemModal.timePlaceholder')}
-                />
-              </div>
-
               {/* Description - Collapsible */}
               <div>
                 {!showDescription ? (
