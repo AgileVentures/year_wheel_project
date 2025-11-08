@@ -35,6 +35,9 @@ class YearWheel {
     const errors = ConfigValidator.getErrors(this.wheelStructure);
     if (errors.length > 0) {
       console.warn('YearWheel wheelStructure validation warnings:', errors);
+      console.warn('Available rings:', this.wheelStructure.rings?.map(r => ({ id: r.id, name: r.name })));
+      console.warn('Available activityGroups:', this.wheelStructure.activityGroups?.map(a => ({ id: a.id, name: a.name })));
+      console.warn('Items:', this.wheelStructure.items?.map(i => ({ id: i.id, name: i.name, ringId: i.ringId, activityId: i.activityId })));
     }
     // For backward compatibility: merge old ringsData into wheelStructure.rings if needed
     if (

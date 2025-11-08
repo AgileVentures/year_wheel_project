@@ -259,41 +259,30 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
       }
     }
     
-    // Filter items to only those belonging to this year
     const currentYearNum = parseInt(year);
-    const pageSpecificItems = (orgData.items || []).filter((item: any) => {
-      const itemStartYear = new Date(item.startDate).getFullYear();
-      const itemEndYear = new Date(item.endDate).getFullYear();
-      return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
-    });
-    
+
     // Save to database tables (rings, groups, items)
     // @ts-ignore - saveWheelData accepts pageId parameter (wheelService.js line 328)
     const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(wheelId, orgData, pageId);
     
-    // Update page's organization_data JSONB (with filtered items)
+    // Update page's structure JSONB (shared metadata only)
+    const updatedStructure = {
+      rings: orgData.rings.map((ring: any) => ({
+        ...ring,
+        id: ringIdMap.get(ring.id) || ring.id
+      })),
+      activityGroups: orgData.activityGroups.map((group: any) => ({
+        ...group,
+        id: activityIdMap.get(group.id) || group.id
+      })),
+      labels: orgData.labels.map((label: any) => ({
+        ...label,
+        id: labelIdMap.get(label.id) || label.id
+      }))
+    };
+
     await updatePage(pageId, {
-      organization_data: {
-        ...orgData,
-        rings: orgData.rings.map((ring: any) => ({
-          ...ring,
-          id: ringIdMap.get(ring.id) || ring.id
-        })),
-        activityGroups: orgData.activityGroups.map((group: any) => ({
-          ...group,
-          id: activityIdMap.get(group.id) || group.id
-        })),
-        labels: orgData.labels.map((label: any) => ({
-          ...label,
-          id: labelIdMap.get(label.id) || label.id
-        })),
-        items: pageSpecificItems.map((item: any) => ({
-          ...item,
-          ringId: ringIdMap.get(item.ringId) || item.ringId,
-          activityId: activityIdMap.get(item.activityId) || item.activityId,
-          labelId: labelIdMap.get(item.labelId) || item.labelId
-        }))
-      },
+      structure: updatedStructure,
       year: currentYearNum
     });
     

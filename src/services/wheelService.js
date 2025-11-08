@@ -7,6 +7,42 @@
 
 import { supabase } from '../lib/supabase';
 
+let pageScopeSupportCache = null;
+let pageScopeDetectionPromise = null;
+
+export const isPageScopeSupported = async () => {
+  if (pageScopeSupportCache !== null) return pageScopeSupportCache;
+
+  if (!pageScopeDetectionPromise) {
+    pageScopeDetectionPromise = supabase
+      .from('items')
+      .select('page_id')
+      .limit(1)
+      .then(({ error }) => {
+        if (error && error.code === '42703') {
+          pageScopeSupportCache = false;
+        } else if (error) {
+          console.warn('[wheelService] Unable to confirm page_id support, defaulting to true:', error);
+          pageScopeSupportCache = true;
+        } else {
+          pageScopeSupportCache = true;
+        }
+      })
+      .catch((error) => {
+        console.warn('[wheelService] Unexpected error while detecting page_id support, defaulting to true:', error);
+        pageScopeSupportCache = true;
+      })
+      .finally(() => {
+        pageScopeDetectionPromise = null;
+      });
+  }
+
+  await pageScopeDetectionPromise;
+  return pageScopeSupportCache ?? true;
+};
+
+export const getCachedPageScopeSupport = () => pageScopeSupportCache;
+
 /**
  * Fetch all wheels for the current user
  * ONLY returns wheels that the user owns (not public wheels from others)
@@ -26,22 +62,19 @@ export const fetchUserWheels = async () => {
       )
     `)
     .eq('user_id', user.id) // CRITICAL: Only fetch wheels owned by this user
-    .eq('is_template', false) // CRITICAL: Exclude templates from personal wheels
     .order('created_at', { ascending: false }); // Sort by creation date (newest first)
 
   if (error) throw error;
-  return data;
+  return data || [];
 };
 
 /**
- * Fetch team wheels that the user has access to (but doesn't own)
- * Returns wheels from teams where the user is a member
+ * Fetch wheels that belong to teams the current user is part of (not owned by the user)
  */
 export const fetchTeamWheels = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  // Get team IDs where user is a member
   const { data: memberships, error: membershipsError } = await supabase
     .from('team_members')
     .select('team_id')
@@ -52,7 +85,6 @@ export const fetchTeamWheels = async () => {
 
   const teamIds = memberships.map(m => m.team_id);
 
-  // Fetch wheels that belong to these teams
   const { data, error } = await supabase
     .from('year_wheels')
     .select(`
@@ -245,20 +277,41 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
   console.log(`[fetchPageData] Fetching for pageId=${pageId?.substring(0, 8)}, year=${pageYear}, wheelId=${wheelId?.substring(0, 8)}`);
   
   let items = [];
-  
-  // First, fetch items assigned to this page
-  const { data: pageItems, error: itemsError } = await supabase
-    .from('items')
-    .select('*')
-    .eq('page_id', pageId);
+  const supportsPageScope = await isPageScopeSupported();
+  const shouldUsePageScope = supportsPageScope && pageId;
 
-  if (itemsError) throw itemsError;
-  
-  console.log(`[fetchPageData] Found ${pageItems?.length || 0} items assigned to this page`);
-  items = pageItems || [];
+  if (shouldUsePageScope) {
+    const { data: pageItems, error: itemsError } = await supabase
+      .from('items')
+      .select('*')
+      .eq('page_id', pageId);
+
+    if (itemsError) {
+      console.error(`[fetchPageData] ERROR querying items for page_id=${pageId}:`, itemsError);
+      throw itemsError;
+    }
+
+    console.log(`[fetchPageData] Found ${pageItems?.length || 0} items assigned to this page`);
+    if (pageItems && pageItems.length > 0) {
+      pageItems.forEach((item, idx) => {
+        console.log(`[fetchPageData]   Item ${idx + 1}: id=${item.id.substring(0, 8)}, name="${item.name}", dates=${item.start_date} to ${item.end_date}`);
+      });
+    }
+    items = pageItems || [];
+  } else {
+    console.warn('[fetchPageData] Using wheel-scoped items (page_id column disabled)');
+
+    const { data: wheelItems, error: wheelItemsError } = await supabase
+      .from('items')
+      .select('*')
+      .eq('wheel_id', wheelId);
+
+    if (wheelItemsError) throw wheelItemsError;
+    items = wheelItems || [];
+  }
   
   // If we have both pageYear and wheelId, also fetch multi-year items that overlap with this year
-  if (pageYear && wheelId) {
+  if (pageYear && wheelId && shouldUsePageScope) {
     const yearStart = `${pageYear}-01-01`;
     const yearEnd = `${pageYear}-12-31`;
     
@@ -314,7 +367,7 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
     endDate: i.end_date,
     time: i.time,
     description: i.description, // ⚠️ CRITICAL: Include description from synced items
-    pageId: i.page_id, // ⚠️ CRITICAL: Must preserve page_id for save cycle
+  pageId: shouldUsePageScope ? i.page_id : pageId,
     // Wheel linking fields
     linkedWheelId: i.linked_wheel_id,
     linkType: i.link_type,
@@ -533,117 +586,126 @@ export const saveWheelData = async (wheelId, wheelStructure, pageId = null) => {
  */
 const syncRings = async (wheelId, pageId, rings) => {
   const idMap = new Map(); // oldId -> newId
-  
-  // Fetch existing rings for THIS WHEEL with full data for name matching
-  const { data: existingRings } = await supabase
+
+  const { data: existingRings, error: ringsError } = await supabase
     .from('wheel_rings')
     .select('id, name, type')
     .eq('wheel_id', wheelId);
 
-  const existingIds = new Set(existingRings?.map(r => r.id) || []);
-  
-  // Create a map of existing rings by name+type for duplicate detection
+  if (ringsError) throw ringsError;
+
+  const safeExisting = existingRings || [];
+
+  const existingIds = new Set(safeExisting.map((ring) => ring.id));
+
   const existingByNameType = new Map();
-  existingRings?.forEach(r => {
-    const key = `${r.name.toLowerCase().trim()}|${r.type}`;
-    existingByNameType.set(key, r);
+  safeExisting.forEach((ring) => {
+    const key = `${ring.name.toLowerCase().trim()}|${ring.type}`;
+    existingByNameType.set(key, ring);
   });
-  
-  // Only include IDs that are actual database UUIDs (not temporary client IDs)
-  const currentIds = new Set(
-    rings
-      .map(r => r.id)
-      .filter(id => 
-        id && 
-        !id.startsWith('ring-') && 
-        !id.startsWith('inner-ring-') && 
-        !id.startsWith('outer-ring-') &&
-        existingIds.has(id) // Must exist in database
-      )
-  );
 
-  // Delete removed rings
-  const toDelete = [...existingIds].filter(id => !currentIds.has(id));
-  if (toDelete.length > 0) {
-    await supabase.from('wheel_rings').delete().in('id', toDelete);
-  }
+  const retainedIds = new Set();
 
-  // Upsert rings
+  const isValidUUID = (id) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
   for (let i = 0; i < rings.length; i++) {
     const ring = rings[i];
-    
-    // First check if a ring with same name+type already exists (duplicate detection)
     const key = `${ring.name.toLowerCase().trim()}|${ring.type}`;
     const existingMatch = existingByNameType.get(key);
-    
+
     const ringData = {
-      wheel_id: wheelId,  // Primary FK - rings are shared across all pages
+      wheel_id: wheelId,
       name: ring.name,
       type: ring.type,
-      color: null, // Don't save color - let it derive from palette based on ring_order
+      color: null,
       visible: ring.visible !== undefined ? ring.visible : true,
       ring_order: i,
       orientation: ring.orientation || null,
     };
 
     if (existingMatch) {
-      // Ring with same name+type already exists -> UPDATE and reuse UUID
+      const targetId = existingMatch.id;
       await supabase
         .from('wheel_rings')
         .update(ringData)
-        .eq('id', existingMatch.id);
-      
-      // Map to existing UUID
-      idMap.set(ring.id, existingMatch.id);
-      currentIds.add(existingMatch.id);
-      
-      // Update month data for inner rings
+        .eq('id', targetId);
+
+      console.log('[syncRings] matched existing ring', {
+        inputId: ring.id,
+        dbId: targetId,
+        name: ring.name,
+        type: ring.type,
+      });
+
+      idMap.set(ring.id, targetId);
+      retainedIds.add(targetId);
+
       if (ring.type === 'inner' && ring.data) {
-        await saveRingData(existingMatch.id, ring.data);
+        await saveRingData(targetId, ring.data);
       }
     } else {
-      // Check if this is a new ring (no ID, or has a temporary/non-UUID ID)
-      const isNew = !ring.id || 
-                    ring.id.startsWith('ring-') || 
-                    ring.id.startsWith('inner-ring-') || 
-                    ring.id.startsWith('outer-ring-') ||
-                    !existingIds.has(ring.id); // Not in database
-      
+      const isNew = !ring.id ||
+        ring.id.startsWith('ring-') ||
+        ring.id.startsWith('inner-ring-') ||
+        ring.id.startsWith('outer-ring-') ||
+        !existingIds.has(ring.id);
+
       if (isNew) {
-        // Insert new ring
+        const insertPayload = { ...ringData };
+        if (isValidUUID(ring.id)) {
+          insertPayload.id = ring.id;
+        }
+
         const { data: newRing, error } = await supabase
           .from('wheel_rings')
-          .insert(ringData)
+          .insert(insertPayload)
           .select()
           .single();
-        
+
         if (error) throw error;
-        
-        // Map old ID to new UUID
+
+        console.log('[syncRings] inserted new ring', {
+          inputId: ring.id,
+          dbId: newRing.id,
+          name: ring.name,
+          type: ring.type,
+        });
+
         idMap.set(ring.id, newRing.id);
-        
-        // Save month data for inner rings
+        retainedIds.add(newRing.id);
+
         if (ring.type === 'inner' && ring.data) {
           await saveRingData(newRing.id, ring.data);
         }
       } else {
-        // Update existing ring
         await supabase
           .from('wheel_rings')
           .update(ringData)
           .eq('id', ring.id);
-        
-        // Existing rings keep their ID
+
+        console.log('[syncRings] updated ring by id', {
+          id: ring.id,
+          name: ring.name,
+          type: ring.type,
+        });
+
         idMap.set(ring.id, ring.id);
-        
-        // Update month data for inner rings
+        retainedIds.add(ring.id);
+
         if (ring.type === 'inner' && ring.data) {
           await saveRingData(ring.id, ring.data);
         }
       }
     }
   }
-  
+
+  const toDelete = [...existingIds].filter((id) => !retainedIds.has(id));
+
+  if (toDelete.length > 0) {
+    console.warn('[syncRings] Deleting rings not retained', toDelete);
+    await supabase.from('wheel_rings').delete().in('id', toDelete);
+  }
+
   return idMap;
 };
 
@@ -677,84 +739,141 @@ const saveRingData = async (ringId, monthData) => {
  */
 const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
   const idMap = new Map(); // oldId -> newId
-  
-  // Fetch existing for THIS WHEEL with full data for name matching
-  const { data: existing} = await supabase
-    .from('activity_groups')
-    .select('id, name')
-    .eq('wheel_id', wheelId);
+  const supportsPageScope = await isPageScopeSupported();
+  const shouldUsePageScope = supportsPageScope && !!pageId;
+  let applyPageScope = shouldUsePageScope;
 
-  const existingIds = new Set(existing?.map(a => a.id) || []);
-  
-  // Create a map of existing groups by name for duplicate detection
-  const existingByName = new Map();
-  existing?.forEach(g => {
-    const key = g.name.toLowerCase().trim();
-    existingByName.set(key, g);
-  });
-  
-  // Only include IDs that are actual database UUIDs
-  const currentIds = new Set(
-    activityGroups
-      .map(a => a.id)
-      .filter(id => id && !id.startsWith('group-') && existingIds.has(id))
-  );
+  const isValidUUID = (id) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Delete removed
-  const toDelete = [...existingIds].filter(id => !currentIds.has(id));
-  if (toDelete.length > 0) {
-    await supabase.from('activity_groups').delete().in('id', toDelete);
-  }
+  // Fetch existing groups within the correct scope
+  let existing = [];
 
-  // Upsert
-  for (const group of activityGroups) {
-    // Skip groups with empty or missing names
-    if (!group.name || group.name.trim() === '') {
-      console.warn('[wheelService] Skipping activity group with empty name:', group);
-      continue;
-    }
-    
-    // First check if a group with same name already exists (duplicate detection)
-    const key = group.name.toLowerCase().trim();
-    const existingMatch = existingByName.get(key);
-    
-    // Ensure color is valid 6-char hex (database constraint)
-    // Color should always be set by frontend, default to blue if somehow missing
-    const validColor = (group.color && /^#[0-9A-Fa-f]{6}$/.test(group.color)) 
-      ? group.color 
-      : '#3B82F6';
-    
-    const groupData = {
-      wheel_id: wheelId,  // Primary FK - groups are shared across all pages
-      name: group.name.trim(),
-      color: validColor,
-      visible: group.visible !== undefined ? group.visible : true,
-    };
+  if (shouldUsePageScope) {
+    const { data, error } = await supabase
+      .from('activity_groups')
+      .select('id, name, page_id')
+      .eq('page_id', pageId);
 
-    if (existingMatch) {
-      // Group with same name already exists -> UPDATE and reuse UUID
-      await supabase.from('activity_groups').update(groupData).eq('id', existingMatch.id);
-      idMap.set(group.id, existingMatch.id);
-      currentIds.add(existingMatch.id);
-    } else {
-      const isNew = !group.id || group.id.startsWith('group-') || !existingIds.has(group.id);
-      
-      if (isNew) {
-        const { data: newGroup, error } = await supabase
-          .from('activity_groups')
-          .insert(groupData)
-          .select()
-          .single();
-        
-        if (error) throw error;
-        idMap.set(group.id, newGroup.id);
+    if (error) {
+      if (error.code === '42703') {
+        console.warn('[wheelService] activity_groups.page_id column missing; falling back to wheel scope');
+        applyPageScope = false;
       } else {
-        await supabase.from('activity_groups').update(groupData).eq('id', group.id);
-        idMap.set(group.id, group.id);
+        throw error;
+      }
+    } else {
+      existing = data || [];
+
+      // Legacy fallback: if no page-scoped groups exist yet, load wheel-scoped ones
+      if (existing.length === 0) {
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('activity_groups')
+          .select('id, name, page_id')
+          .eq('wheel_id', wheelId)
+          .is('page_id', null);
+
+        if (legacyError) throw legacyError;
+        existing = legacyData || [];
       }
     }
   }
-  
+
+  if (!applyPageScope) {
+    const wheelScopeColumns = 'id, name';
+    const { data, error } = await supabase
+      .from('activity_groups')
+      .select(wheelScopeColumns)
+      .eq('wheel_id', wheelId);
+
+    if (error) throw error;
+    existing = data || [];
+  }
+
+  const existingIds = new Set(existing.map((group) => group.id));
+
+  const existingByName = new Map();
+  existing.forEach((group) => {
+    const key = group.name.toLowerCase().trim();
+    existingByName.set(key, group);
+  });
+
+  const retainedIds = new Set();
+
+  for (const group of activityGroups) {
+    if (!group?.name || group.name.trim() === '') {
+      console.warn('[wheelService] Skipping activity group with empty name:', group);
+      continue;
+    }
+
+    const key = group.name.toLowerCase().trim();
+    const existingMatch = existingByName.get(key);
+
+    const validColor = (group.color && /^#[0-9A-Fa-f]{6}$/.test(group.color))
+      ? group.color
+      : '#3B82F6';
+
+    const payload = {
+      wheel_id: wheelId,
+      name: group.name.trim(),
+      color: validColor,
+      visible: group.visible !== undefined ? group.visible : true,
+      ...(applyPageScope ? { page_id: pageId } : {}),
+    };
+
+    if (existingMatch) {
+      console.log('[syncActivityGroups] updating existing group', {
+        inputId: group.id,
+        dbId: existingMatch.id,
+        name: group.name,
+      });
+      await supabase.from('activity_groups').update(payload).eq('id', existingMatch.id);
+      idMap.set(group.id, existingMatch.id);
+      retainedIds.add(existingMatch.id);
+    } else {
+      const isNew = !group.id || group.id.startsWith('group-') || !existingIds.has(group.id);
+
+      if (isNew) {
+        const insertPayload = { ...payload };
+        if (isValidUUID(group.id)) {
+          insertPayload.id = group.id;
+        }
+
+        const { data: newGroup, error } = await supabase
+          .from('activity_groups')
+          .insert(insertPayload)
+          .select()
+          .single();
+
+        if (error) throw error;
+        console.log('[syncActivityGroups] inserted new group', {
+          inputId: group.id,
+          dbId: newGroup.id,
+          name: group.name,
+        });
+        idMap.set(group.id, newGroup.id);
+        retainedIds.add(newGroup.id);
+      } else {
+        await supabase.from('activity_groups').update(payload).eq('id', group.id);
+        console.log('[syncActivityGroups] updated group by id', {
+          id: group.id,
+          name: group.name,
+        });
+        idMap.set(group.id, group.id);
+        retainedIds.add(group.id);
+      }
+    }
+  }
+
+  const toDelete = [...existingIds].filter((id) => !retainedIds.has(id));
+
+  if (toDelete.length > 0) {
+    const deleteQuery = supabase.from('activity_groups').delete().in('id', toDelete);
+    if (applyPageScope) {
+      deleteQuery.eq('page_id', pageId);
+    }
+    await deleteQuery;
+  }
+
   return idMap;
 };
 
@@ -766,78 +885,124 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
  */
 const syncLabels = async (wheelId, pageId, labels) => {
   const idMap = new Map(); // oldId -> newId
-  
-  // Fetch existing for THIS WHEEL with full data for name matching
-  const { data: existing } = await supabase
-    .from('labels')
-    .select('id, name')
-    .eq('wheel_id', wheelId);
+  const supportsPageScope = await isPageScopeSupported();
+  const shouldUsePageScope = supportsPageScope && !!pageId;
+  let applyPageScope = shouldUsePageScope;
 
-  const existingIds = new Set(existing?.map(l => l.id) || []);
-  
-  // Create a map of existing labels by name for duplicate detection
-  const existingByName = new Map();
-  existing?.forEach(l => {
-    const key = l.name.toLowerCase().trim();
-    existingByName.set(key, l);
-  });
-  
-  // Only include IDs that are actual database UUIDs
-  const currentIds = new Set(
-    labels
-      .map(l => l.id)
-      .filter(id => id && !id.startsWith('label-') && existingIds.has(id))
-  );
+  const isValidUUID = (id) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Delete removed
-  const toDelete = [...existingIds].filter(id => !currentIds.has(id));
-  if (toDelete.length > 0) {
-    await supabase.from('labels').delete().in('id', toDelete);
-  }
+  let existing = [];
+  if (shouldUsePageScope) {
+    const { data, error } = await supabase
+      .from('labels')
+      .select('id, name, page_id')
+      .eq('page_id', pageId);
 
-  // Upsert
-  for (const label of labels) {
-    // Skip labels with empty or missing names
-    if (!label.name || label.name.trim() === '') {
-      console.warn('[wheelService] Skipping label with empty name:', label);
-      continue;
-    }
-    
-    // First check if a label with same name already exists (duplicate detection)
-    const key = label.name.toLowerCase().trim();
-    const existingMatch = existingByName.get(key);
-    
-    const labelData = {
-      wheel_id: wheelId,  // Primary FK - labels are shared across all pages
-      name: label.name.trim(),
-      color: null, // Don't save color - let it derive from palette based on index
-      visible: label.visible !== undefined ? label.visible : true,
-    };
-
-    if (existingMatch) {
-      // Label with same name already exists -> UPDATE and reuse UUID
-      await supabase.from('labels').update(labelData).eq('id', existingMatch.id);
-      idMap.set(label.id, existingMatch.id);
-      currentIds.add(existingMatch.id);
-    } else {
-      const isNew = !label.id || label.id.startsWith('label-') || !existingIds.has(label.id);
-      
-      if (isNew) {
-        const { data: newLabel, error } = await supabase
-          .from('labels')
-          .insert(labelData)
-          .select()
-          .single();
-        
-        if (error) throw error;
-        idMap.set(label.id, newLabel.id);
+    if (error) {
+      if (error.code === '42703') {
+        console.warn('[wheelService] labels.page_id column missing; falling back to wheel scope');
+        applyPageScope = false;
       } else {
-        await supabase.from('labels').update(labelData).eq('id', label.id);
-        idMap.set(label.id, label.id);
+        throw error;
+      }
+    } else {
+      existing = data || [];
+
+      if (existing.length === 0) {
+        const { data: legacyData, error: legacyError } = await supabase
+          .from('labels')
+          .select('id, name, page_id')
+          .eq('wheel_id', wheelId)
+          .is('page_id', null);
+
+        if (legacyError) throw legacyError;
+        existing = legacyData || [];
       }
     }
   }
-  
+
+  if (!applyPageScope) {
+    const wheelScopeColumns = 'id, name';
+    const { data, error } = await supabase
+      .from('labels')
+      .select(wheelScopeColumns)
+      .eq('wheel_id', wheelId);
+
+    if (error) throw error;
+    existing = data || [];
+  }
+
+  const existingIds = new Set(existing.map((label) => label.id));
+
+  const existingByName = new Map();
+  existing.forEach((label) => {
+    const key = label.name.toLowerCase().trim();
+    existingByName.set(key, label);
+  });
+
+  const retainedIds = new Set();
+
+  for (const label of labels) {
+    if (!label?.name || label.name.trim() === '') {
+      console.warn('[wheelService] Skipping label with empty name:', label);
+      continue;
+    }
+
+    const key = label.name.toLowerCase().trim();
+    const existingMatch = existingByName.get(key);
+
+    const validColor = (label.color && /^#[0-9A-Fa-f]{6}$/.test(label.color))
+      ? label.color
+      : '#3B82F6';
+
+    const payload = {
+      wheel_id: wheelId,
+      name: label.name.trim(),
+      color: validColor,
+      visible: label.visible !== undefined ? label.visible : true,
+      ...(applyPageScope ? { page_id: pageId } : {}),
+    };
+
+    if (existingMatch) {
+      await supabase.from('labels').update(payload).eq('id', existingMatch.id);
+      idMap.set(label.id, existingMatch.id);
+      retainedIds.add(existingMatch.id);
+    } else {
+      const isNew = !label.id || label.id.startsWith('label-') || !existingIds.has(label.id);
+
+      if (isNew) {
+        const insertPayload = { ...payload };
+        if (isValidUUID(label.id)) {
+          insertPayload.id = label.id;
+        }
+
+        const { data: newLabel, error } = await supabase
+          .from('labels')
+          .insert(insertPayload)
+          .select()
+          .single();
+
+        if (error) throw error;
+        idMap.set(label.id, newLabel.id);
+        retainedIds.add(newLabel.id);
+      } else {
+        await supabase.from('labels').update(payload).eq('id', label.id);
+        idMap.set(label.id, label.id);
+        retainedIds.add(label.id);
+      }
+    }
+  }
+
+  const toDelete = [...existingIds].filter((id) => !retainedIds.has(id));
+
+  if (toDelete.length > 0) {
+    const deleteQuery = supabase.from('labels').delete().in('id', toDelete);
+    if (applyPageScope) {
+      deleteQuery.eq('page_id', pageId);
+    }
+    await deleteQuery;
+  }
+
   return idMap;
 };
 
@@ -847,34 +1012,64 @@ const syncLabels = async (wheelId, pageId, labels) => {
  */
 export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
   console.log(`[syncItems] Starting sync for wheelId=${wheelId}, pageId=${pageId}, items count=${items.length}`);
+  const supportsPageScope = await isPageScopeSupported();
   
   // CRITICAL FIX: We need to compare against ALL existing items in the wheel,
   // not just those for the current page. This prevents accidental deletion
   // when items change page_id (e.g., multi-year activities getting re-assigned).
   const { data: existing } = await supabase
     .from('items')
-    .select('id, name, page_id, start_date, end_date, created_at')
+    .select(supportsPageScope
+      ? 'id, name, page_id, start_date, end_date, created_at'
+      : 'id, name, start_date, end_date, created_at'
+    )
     .eq('wheel_id', wheelId);
 
   console.log(`[syncItems] Found ${existing?.length || 0} existing items in database`);
   if (existing && existing.length > 0) {
     existing.forEach((i, idx) => {
-      console.log(`[syncItems]   Item ${idx + 1}: id=${i.id.substring(0, 8)}, name="${i.name}", pageId=${i.page_id.substring(0, 8)}, dates=${i.start_date} to ${i.end_date}, created=${i.created_at}`);
+      const pageSnippet = supportsPageScope && i.page_id ? i.page_id.substring(0, 8) : 'N/A';
+      console.log(`[syncItems]   Item ${idx + 1}: id=${i.id.substring(0, 8)}, name="${i.name}", pageId=${pageSnippet}, dates=${i.start_date} to ${i.end_date}, created=${i.created_at}`);
     });
   }
 
   const existingIds = new Set(existing?.map(i => i.id) || []);
-  const currentIds = new Set(items.map(i => i.id).filter(id => id && !id.startsWith('item-')));
+  
+  // Build a content-based lookup for existing items to match temp IDs
+  const existingByContent = new Map();
+  (existing || []).forEach(dbItem => {
+    const key = `${dbItem.name}|${dbItem.start_date}|${dbItem.end_date}`;
+    existingByContent.set(key, dbItem.id);
+  });
 
   console.log(`[syncItems] Items to sync (from wheelStructure):`);
   items.forEach((i, idx) => {
-    console.log(`[syncItems]   Item ${idx + 1}: id=${i.id ? i.id.substring(0, 8) : 'NEW'}, name="${i.name}", pageId=${i.pageId ? i.pageId.substring(0, 8) : 'NONE'}, dates=${i.startDate} to ${i.endDate}`);
+    console.log(`[syncItems]   Item ${idx + 1}: id=${i.id ? i.id.substring(0, 8) : 'NEW'}, name="${i.name}", pageId=${i.pageId ? i.pageId.substring(0, 8) : 'NONE'}, ringId=${i.ringId ? i.ringId.substring(0, 8) : 'NONE'}, activityId=${i.activityId ? i.activityId.substring(0, 8) : 'NONE'}, dates=${i.startDate} to ${i.endDate}`);
+  });
+
+  // Resolve temp IDs to database UUIDs via content matching
+  const currentIds = new Set();
+  items.forEach(item => {
+    if (item.id && !item.id.startsWith('item-')) {
+      // Already has valid UUID
+      currentIds.add(item.id);
+    } else {
+      // Temp ID - try to match by content
+      const contentKey = `${item.name}|${item.startDate}|${item.endDate}`;
+      const matchedId = existingByContent.get(contentKey);
+      if (matchedId) {
+        currentIds.add(matchedId);
+        console.log(`[syncItems] Matched temp ID "${item.id}" to database UUID ${matchedId.substring(0, 8)} via content`);
+      }
+    }
   });
 
   // CRITICAL: Only delete items that are truly removed from the wheel,
   // NOT items that just moved to a different page (multi-year activities).
   // We filter to only consider items from the CURRENT page for deletion.
-  const existingPageItems = existing?.filter(i => i.page_id === pageId) || [];
+  const existingPageItems = supportsPageScope
+    ? existing?.filter(i => i.page_id === pageId) || []
+    : existing || [];
   const existingPageIds = new Set(existingPageItems.map(i => i.id));
   
   // CRITICAL SAFETY: Never delete items created in the last 10 seconds
@@ -898,7 +1093,7 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   
   const toDelete = [...existingPageIds].filter(id => !currentIds.has(id) && !recentlyCreated.has(id));
   
-  console.log(`[syncItems] Items on current page (${pageId?.substring(0, 8)}): ${existingPageItems.length}`);
+  console.log(`[syncItems] Items on current scope (${supportsPageScope ? pageId?.substring(0, 8) : 'wheel'}): ${existingPageItems.length}`);
   console.log(`[syncItems] Items to DELETE: ${toDelete.length}`, toDelete.map(id => id.substring(0, 8)));
   
   if (toDelete.length > 0) {
@@ -907,16 +1102,17 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   }
 
   // Fetch all pages for this wheel to map years to page IDs
-  const { data: allPages } = await supabase
-    .from('wheel_pages')
-    .select('id, year')
-    .eq('wheel_id', wheelId)
-    .order('year');
-  
-  // Create a map of year -> page_id for quick lookup
   const yearToPageId = new Map();
-  if (allPages) {
-    allPages.forEach(page => yearToPageId.set(page.year, page.id));
+  if (supportsPageScope) {
+    const { data: allPages } = await supabase
+      .from('wheel_pages')
+      .select('id, year')
+      .eq('wheel_id', wheelId)
+      .order('year');
+
+    if (allPages) {
+      allPages.forEach(page => yearToPageId.set(page.year, page.id));
+    }
   }
   
   // Upsert items
@@ -949,29 +1145,31 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       labelId = null;
     }
     
-    // CRITICAL FIX: Determine correct page_id based on item's start date year
-    // This prevents items from getting assigned to the wrong page
-    let determinedPageId = item.pageId; // Explicit pageId takes precedence
-    
-    if (!determinedPageId && item.startDate) {
-      // Calculate page_id from start date year
-      const itemYear = new Date(item.startDate).getFullYear();
-      determinedPageId = yearToPageId.get(itemYear);
-      
-      if (!determinedPageId) {
-        console.warn(`No page found for year ${itemYear} for item "${item.name}". Using fallback pageId parameter.`);
-        determinedPageId = pageId; // Last resort fallback
+    let determinedPageId = null;
+
+    if (supportsPageScope) {
+      // CRITICAL FIX: Determine correct page_id based on item's start date year
+      // This prevents items from getting assigned to the wrong page
+      determinedPageId = item.pageId;
+
+      if (!determinedPageId && item.startDate) {
+        const itemYear = new Date(item.startDate).getFullYear();
+        determinedPageId = yearToPageId.get(itemYear);
+
+        if (!determinedPageId) {
+          console.warn(`No page found for year ${itemYear} for item "${item.name}". Using fallback pageId parameter.`);
+          determinedPageId = pageId;
+        }
+      } else if (!determinedPageId) {
+        determinedPageId = pageId;
       }
-    } else if (!determinedPageId) {
-      // No pageId and no startDate - use fallback
-      determinedPageId = pageId;
+
+      if (!determinedPageId) {
+        console.warn(`Cannot determine page_id for item "${item.name}". Skipping.`);
+        continue;
+      }
     }
-    
-    if (!determinedPageId) {
-      console.warn(`Cannot determine page_id for item "${item.name}". Skipping.`);
-      continue;
-    }
-    
+
     const itemData = {
       wheel_id: wheelId,
       ring_id: ringId,
@@ -981,22 +1179,50 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       start_date: item.startDate,
       end_date: item.endDate,
       time: item.time || null,
-      page_id: determinedPageId, // ✅ Now properly determined from dates
     };
+
+    if (supportsPageScope) {
+      itemData.page_id = determinedPageId;
+    }
     
     try {
       if (isNew) {
         // DEDUPLICATION: Check if item with same key attributes already exists
-        const { data: existingItem } = await supabase
-          .from('items')
-          .select('id')
-          .eq('wheel_id', wheelId)
-          .eq('page_id', determinedPageId)
-          .eq('name', item.name)
-          .eq('start_date', item.startDate)
-          .eq('end_date', item.endDate)
-          .eq('ring_id', ringId)
-          .single();
+        let existingItem = null;
+        let existingError = null;
+
+        if (supportsPageScope) {
+          const response = await supabase
+            .from('items')
+            .select('id')
+            .eq('wheel_id', wheelId)
+            .eq('page_id', determinedPageId)
+            .eq('name', item.name)
+            .eq('start_date', item.startDate)
+            .eq('end_date', item.endDate)
+            .eq('ring_id', ringId)
+            .maybeSingle();
+
+          existingItem = response.data;
+          existingError = response.error;
+        } else {
+          const response = await supabase
+            .from('items')
+            .select('id')
+            .eq('wheel_id', wheelId)
+            .eq('name', item.name)
+            .eq('start_date', item.startDate)
+            .eq('end_date', item.endDate)
+            .eq('ring_id', ringId)
+            .maybeSingle();
+
+          existingItem = response.data;
+          existingError = response.error;
+        }
+
+        if (existingError) {
+          console.warn('[saveWheelData] Failed to check for existing item, proceeding with insert:', existingError);
+        }
         
         if (existingItem) {
           console.log(`Item "${item.name}" already exists (${item.startDate} to ${item.endDate}), skipping insert.`);
@@ -1045,7 +1271,7 @@ const mapDbItemToClient = (dbItem) => {
     endDate: dbItem.end_date,
     time: dbItem.time,
     description: dbItem.description,
-    pageId: dbItem.page_id,
+    pageId: Object.prototype.hasOwnProperty.call(dbItem, 'page_id') ? dbItem.page_id : null,
     linkedWheelId: dbItem.linked_wheel_id,
     linkType: dbItem.link_type,
     source: dbItem.source,
@@ -1063,6 +1289,7 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     structure: snapshotStructure,
     globalWheelStructure = {},
     pages = [],
+    activePageId = null,
   } = snapshot;
 
   const structure = snapshotStructure || globalWheelStructure || {};
@@ -1083,9 +1310,33 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     ? structure.labels.map((label) => ({ ...label }))
     : [];
 
+  console.log('[saveWheelSnapshot] base structure snapshot', {
+    rings: baseRings.map((ring) => ({ id: ring.id, name: ring.name, type: ring.type })),
+    activityGroups: baseActivityGroups.map((group) => ({ id: group.id, name: group.name })),
+    labels: baseLabels.map((label) => ({ id: label.id, name: label.name })),
+  });
+
   const ringIdMap = await syncRings(wheelId, null, baseRings);
+  const { data: debugRings, error: debugRingsError } = await supabase
+    .from('wheel_rings')
+    .select('id, name, wheel_id, visible')
+    .eq('wheel_id', wheelId);
+
+  if (debugRingsError) {
+    console.warn('[saveWheelSnapshot] Failed to fetch rings after sync', debugRingsError);
+  } else {
+    console.log('[saveWheelSnapshot] rings persisted after sync', debugRings);
+  }
   const activityIdMap = await syncActivityGroups(wheelId, null, baseActivityGroups);
   const labelIdMap = await syncLabels(wheelId, null, baseLabels);
+
+  const mapToPairs = (map) => Array.from(map.entries()).map(([from, to]) => ({ from, to }));
+
+  console.log('[saveWheelSnapshot] id maps', {
+    ring: mapToPairs(ringIdMap),
+    activity: mapToPairs(activityIdMap),
+    label: mapToPairs(labelIdMap),
+  });
 
   const normalizedPages = Array.isArray(pages) ? pages : [];
 
@@ -1179,11 +1430,10 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     }
 
     await updatePage(page.id, {
-      organization_data: {
+      structure: {
         rings: normalizedRings,
         activityGroups: normalizedActivityGroups,
         labels: normalizedLabels,
-        items: itemsByPage[page.id] || [],
       },
       year: page.year ?? null,
     });
@@ -1199,6 +1449,7 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
 
 export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Map(), activityIdMap = new Map(), labelIdMap = new Map()) => {
   console.log(`[updateSingleItem] wheelId=${wheelId?.substring(0,8)}, pageId=${pageId?.substring(0,8)}, item.pageId=${item.pageId?.substring(0,8)}, item.name="${item.name}", dates=${item.startDate} to ${item.endDate}`);
+  const supportsPageScope = await isPageScopeSupported();
   
   // Map old IDs to new database UUIDs
   let ringId = ringIdMap.get(item.ringId) || item.ringId;
@@ -1223,8 +1474,13 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     labelId = null;
   }
   
-  const determinedPageId = item.pageId || pageId || null;
-  console.log(`[updateSingleItem] Using page_id: ${determinedPageId?.substring(0,8)} (item.pageId=${item.pageId?.substring(0,8)}, pageId param=${pageId?.substring(0,8)})`);
+  const determinedPageId = supportsPageScope ? (item.pageId || pageId || null) : null;
+  const pageLogSnippet = supportsPageScope ? determinedPageId?.substring(0,8) : 'N/A';
+  console.log(`[updateSingleItem] Using page scope: ${pageLogSnippet} (item.pageId=${item.pageId?.substring(0,8)}, pageId param=${pageId?.substring(0,8)})`);
+
+  if (supportsPageScope && !determinedPageId) {
+    throw new Error('[updateSingleItem] page_id is required but could not be determined');
+  }
   
   const itemData = {
     wheel_id: wheelId,
@@ -1236,11 +1492,14 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     end_date: item.endDate,
     time: item.time || null,
     description: item.description || null,
-    page_id: determinedPageId,
     // Wheel linking fields (optional)
     linked_wheel_id: item.linkedWheelId || null,
     link_type: item.linkType || null,
   };
+
+  if (supportsPageScope) {
+    itemData.page_id = determinedPageId;
+  }
   
   
   // Check if item exists in database
@@ -1249,7 +1508,7 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
   console.log(`[updateSingleItem] isNew=${isNew}, item.id=${item.id?.substring(0,8) || 'NONE'}`);
   
   if (isNew) {
-    console.log(`[updateSingleItem] INSERTING new item "${item.name}" with page_id=${determinedPageId?.substring(0,8)}`);
+    console.log(`[updateSingleItem] INSERTING new item "${item.name}" (page scope=${pageLogSnippet})`);
     const { data, error } = await supabase
       .from('items')
       .insert(itemData)
@@ -1259,11 +1518,12 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
       console.error(`Error inserting item "${item.name}":`, error);
       throw error;
     }
-    console.log(`[updateSingleItem] INSERT successful, new id=${data.id.substring(0,8)}, page_id=${data.page_id.substring(0,8)}`);
+    const insertedPageSnippet = supportsPageScope ? data.page_id?.substring(0,8) : 'N/A';
+    console.log(`[updateSingleItem] INSERT successful, new id=${data.id.substring(0,8)}, page scope=${insertedPageSnippet}`);
     return mapDbItemToClient(data);
   }
 
-  console.log(`[updateSingleItem] UPDATING item "${item.name}" id=${item.id.substring(0,8)} with page_id=${determinedPageId?.substring(0,8)}`);
+  console.log(`[updateSingleItem] UPDATING item "${item.name}" id=${item.id.substring(0,8)} (page scope=${pageLogSnippet})`);
   const { data, error } = await supabase
     .from('items')
     .update(itemData)
@@ -1274,7 +1534,8 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     console.error(`Error updating item "${item.name}":`, error);
     throw error;
   }
-  console.log(`[updateSingleItem] UPDATE successful, page_id=${data.page_id.substring(0,8)}`);
+  const updatedPageSnippet = supportsPageScope ? data.page_id?.substring(0,8) : 'N/A';
+  console.log(`[updateSingleItem] UPDATE successful, page scope=${updatedPageSnippet}`);
 
   return mapDbItemToClient(data);
 };
@@ -1582,6 +1843,13 @@ export const createPage = async (wheelId, pageData) => {
 
     if (orderError) throw orderError;
 
+    const baseStructure = pageData.structure || pageData.wheelStructure || {};
+    const structurePayload = {
+      rings: Array.isArray(baseStructure.rings) ? baseStructure.rings : [],
+      activityGroups: Array.isArray(baseStructure.activityGroups) ? baseStructure.activityGroups : [],
+      labels: Array.isArray(baseStructure.labels) ? baseStructure.labels : [],
+    };
+
     // Create page
     const { data, error } = await supabase
       .from('wheel_pages')
@@ -1590,19 +1858,7 @@ export const createPage = async (wheelId, pageData) => {
         page_order: nextOrder,
         year: pageData.year || new Date().getFullYear(),
         title: pageData.title || `Sida ${nextOrder}`,
-        organization_data: (() => {
-          const baseStructure = pageData.structure || pageData.wheelStructure || {};
-          return {
-            rings: Array.isArray(baseStructure.rings) ? baseStructure.rings : [],
-            activityGroups: Array.isArray(baseStructure.activityGroups) ? baseStructure.activityGroups : [],
-            labels: Array.isArray(baseStructure.labels) ? baseStructure.labels : [],
-            items: Array.isArray(pageData.items)
-              ? pageData.items
-              : Array.isArray(baseStructure.items)
-                ? baseStructure.items
-                : [],
-          };
-        })(),
+        structure: structurePayload,
         override_colors: pageData.overrideColors || null,
         override_show_week_ring: pageData.overrideShowWeekRing || null,
         override_show_month_ring: pageData.overrideShowMonthRing || null,

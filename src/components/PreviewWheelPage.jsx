@@ -221,7 +221,13 @@ function PreviewWheelPage() {
         // Also reload the page's organization data if it changed
         const page = await fetchPage(pages[currentPageIndex].id);
         if (page) {
-          setLocalOrgData(page.organization_data);
+          const structureSource = page.structure || {};
+          setLocalOrgData({
+            rings: Array.isArray(structureSource.rings) ? structureSource.rings : [],
+            activityGroups: Array.isArray(structureSource.activityGroups) ? structureSource.activityGroups : [],
+            labels: Array.isArray(structureSource.labels) ? structureSource.labels : [],
+            items: Array.isArray(items) ? items : [],
+          });
         }
       } catch (error) {
         console.error('[PreviewWheel] Error reloading page data:', error);

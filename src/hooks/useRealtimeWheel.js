@@ -1,5 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { getCachedPageScopeSupport, isPageScopeSupported } from '../services/wheelService';
 
 /**
  * Real-time synchronization hook for Year Wheel data
@@ -7,7 +8,7 @@ import { supabase } from '../lib/supabase';
  * Listens to changes in wheel_rings, activity_groups, labels, and items tables
  * and triggers a callback when any changes occur for the specified page.
  * 
- * CRITICAL: Filters by page_id to avoid cross-page contamination!
+ * CRITICAL: Filters by page_id to avoid cross-page contamination when supported.
  * 
  * @param {string} wheelId - The ID of the wheel to monitor (for items only)
  * @param {string} pageId - The ID of the page to monitor (PRIMARY filter)
@@ -27,6 +28,29 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
   const channelRef = useRef(null);
   const wheelIdRef = useRef(wheelId);
   const pageIdRef = useRef(pageId);
+  const [supportsPageScope, setSupportsPageScope] = useState(() => {
+    const cached = getCachedPageScopeSupport();
+    return cached === null ? false : cached;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const cached = getCachedPageScopeSupport();
+    if (cached === null) {
+      isPageScopeSupported().then((supported) => {
+        if (isMounted) {
+          setSupportsPageScope(supported);
+        }
+      });
+    } else {
+      setSupportsPageScope(cached);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Keep IDs in refs to avoid recreating subscriptions
   useEffect(() => {
@@ -111,7 +135,7 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
     );
 
     // Subscribe to items changes (wheel-scoped OR page-scoped)
-    const itemsFilter = pageId 
+    const itemsFilter = supportsPageScope && pageId
       ? `page_id=eq.${pageId}` // Filter by specific page
       : `wheel_id=eq.${wheelId}`; // All items for the wheel
     
@@ -146,7 +170,7 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
         channelRef.current = null;
       }
     };
-  }, [wheelId, pageId, handleChange]); // Re-subscribe when wheelId or pageId changes (pageId optional)
+  }, [wheelId, pageId, handleChange, supportsPageScope]); // Re-subscribe when wheelId, pageId, or page scope support changes
 
   // Return channel status for debugging
   return {

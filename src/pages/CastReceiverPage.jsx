@@ -5,7 +5,7 @@ import YearWheel from '../YearWheel';
 import { CAST_NAMESPACE, CAST_MESSAGE_TYPES } from '../constants/castMessages';
 import { useRealtimeCastReceiver } from '../hooks/useRealtimeCast';
 import { useRealtimeWheel } from '../hooks/useRealtimeWheel';
-import { fetchPage } from '../services/wheelService';
+import { fetchPage, fetchPageData } from '../services/wheelService';
 import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
 
 /**
@@ -365,9 +365,26 @@ export default function CastReceiverPage() {
       try {
         const page = await fetchPage(wheelData.pageId);
         if (page) {
+          const structureSource = page.structure || {};
+          const normalizedStructure = {
+            rings: Array.isArray(structureSource.rings) ? structureSource.rings : [],
+            activityGroups: Array.isArray(structureSource.activityGroups) ? structureSource.activityGroups : [],
+            labels: Array.isArray(structureSource.labels) ? structureSource.labels : [],
+          };
+
+          let pageItems = [];
+          try {
+            pageItems = await fetchPageData(page.id, page.year, wheelData.wheelId);
+          } catch (itemError) {
+            console.error('[Receiver] Error fetching page items:', itemError);
+          }
+
           setWheelData(prev => ({
             ...prev,
-            wheelStructure: page.organization_data
+            wheelStructure: {
+              ...normalizedStructure,
+              items: Array.isArray(pageItems) ? pageItems : [],
+            },
           }));
         }
       } catch (error) {

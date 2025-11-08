@@ -97,6 +97,15 @@ export default function EmbedWheel() {
     );
   }
 
+  const resolvedStructure = selectedPage.structure || {};
+
+  const normalizedStructure = {
+    rings: Array.isArray(resolvedStructure.rings) ? resolvedStructure.rings : [],
+    activityGroups: Array.isArray(resolvedStructure.activityGroups) ? resolvedStructure.activityGroups : [],
+    labels: Array.isArray(resolvedStructure.labels) ? resolvedStructure.labels : [],
+    items: Array.isArray(selectedPage.items) ? selectedPage.items : [],
+  };
+
   // Calculate canvas size based on viewport
   const viewportSize = Math.min(window.innerWidth, window.innerHeight);
   const canvasSize = Math.floor(viewportSize * 0.95);
@@ -116,7 +125,7 @@ export default function EmbedWheel() {
           title={wheelData.title}
           colors={selectedPage.override_colors || wheelData.colors}
           size={canvasSize * 2} // High resolution for sharp rendering
-          wheelStructure={selectedPage.organization_data}
+          wheelStructure={normalizedStructure}
           options={{
             showWeekRing: selectedPage.override_show_week_ring ?? wheelData.show_week_ring,
             showMonthRing: selectedPage.override_show_month_ring ?? wheelData.show_month_ring,

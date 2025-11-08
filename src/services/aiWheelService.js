@@ -6,7 +6,10 @@
  */
 
 import { supabase } from '../lib/supabase';
-import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createPage as createPageService } from './wheelService';
+import { fetchWheel, fetchPageData, saveWheelData, updateWheel, createPage as createPageService, isPageScopeSupported } from './wheelService';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
 /**
  * Helper function to save wheel data and update local IDs with database UUIDs
@@ -38,13 +41,24 @@ const saveAndUpdateIds = async (wheelId, pageId, orgData) => {
     }))
   };
   
-  // Also update wheel_pages.organization_data
+  // Also update wheel_pages.structure (shared metadata only)
   await supabase
     .from('wheel_pages')
-    .update({ organization_data: updatedOrgData })
+    .update({
+      structure: {
+        rings: updatedOrgData.rings,
+        activityGroups: updatedOrgData.activityGroups,
+        labels: updatedOrgData.labels,
+      },
+    })
     .eq('id', pageId);
     
-  return updatedOrgData;
+  return {
+    structure: updatedOrgData,
+    ringIdMap,
+    activityIdMap,
+    labelIdMap,
+  };
 };
 
 /**
@@ -121,12 +135,18 @@ export const aiCreateRing = async (wheelId, pageId, { name, type, color, orienta
     };
     
     // Save to database and update IDs
-    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
+    const { structure: persistedStructure, ringIdMap } = await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
+
+    const resolvedRingId = ringIdMap.get(ringId) || ringId;
+    const persistedRing = persistedStructure.rings.find(r => r.id === resolvedRingId) || {
+      ...newRing,
+      id: resolvedRingId,
+    };
     
     return {
       success: true,
-      ring: newRing,
-      message: `Ring "${name}" skapad`
+      ring: persistedRing,
+      message: `Ring "${persistedRing.name}" skapad`
     };
   } catch (error) {
     console.error('[aiWheelService] Error creating ring:', error);
@@ -159,12 +179,18 @@ export const aiCreateActivityGroup = async (wheelId, pageId, { name, color, visi
       activityGroups: [...orgData.activityGroups, newGroup]
     };
     
-    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
+    const { structure: persistedStructure, activityIdMap } = await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
+
+    const resolvedGroupId = activityIdMap.get(groupId) || groupId;
+    const persistedGroup = persistedStructure.activityGroups.find(g => g.id === resolvedGroupId) || {
+      ...newGroup,
+      id: resolvedGroupId,
+    };
     
     return {
       success: true,
-      activityGroup: newGroup,
-      message: `Aktivitetsgrupp "${name}" skapad`
+      activityGroup: persistedGroup,
+      message: `Aktivitetsgrupp "${persistedGroup.name}" skapad`
     };
   } catch (error) {
     console.error('[aiWheelService] Error creating activity group:', error);
@@ -197,12 +223,18 @@ export const aiCreateLabel = async (wheelId, pageId, { name, color, visible = tr
       labels: [...orgData.labels, newLabel]
     };
     
-    await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
+    const { structure: persistedStructure, labelIdMap } = await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
+
+    const resolvedLabelId = labelIdMap.get(labelId) || labelId;
+    const persistedLabel = persistedStructure.labels.find(l => l.id === resolvedLabelId) || {
+      ...newLabel,
+      id: resolvedLabelId,
+    };
     
     return {
       success: true,
-      label: newLabel,
-      message: `Etikett "${name}" skapad`
+      label: persistedLabel,
+      message: `Etikett "${persistedLabel.name}" skapad`
     };
   } catch (error) {
     console.error('[aiWheelService] Error creating label:', error);
@@ -218,120 +250,254 @@ export const aiCreateLabel = async (wheelId, pageId, { name, color, visible = tr
  */
 export const aiCreateItem = async (wheelId, pageId, { name, startDate, endDate, ringId, activityGroupId, labelId, time }) => {
   try {
-    // Validate page year matches dates
-    const { data: pageData, error: pageYearError } = await supabase
+    const normalizeStructure = (structure) => ({
+      rings: Array.isArray(structure?.rings) ? [...structure.rings] : [],
+      activityGroups: Array.isArray(structure?.activityGroups) ? [...structure.activityGroups] : [],
+      labels: Array.isArray(structure?.labels) ? [...structure.labels] : [],
+    });
+
+    const { data: pageData, error: pageQueryError } = await supabase
       .from('wheel_pages')
-      .select('year')
+      .select('year, structure')
       .eq('id', pageId)
       .single();
-    
-    if (pageYearError || !pageData) {
+
+    if (pageQueryError || !pageData) {
+      console.error('[aiWheelService] Unable to load page metadata for item creation:', pageQueryError);
       return {
         success: false,
         error: 'Kunde inte hämta sidans år'
       };
     }
-    
+
     const pageYear = pageData.year;
-    const startYear = parseInt(startDate.split('-')[0]);
-    const endYear = parseInt(endDate.split('-')[0]);
-    
-    // Validate dates match page year
+    const structure = normalizeStructure(pageData.structure || {});
+
+    const parseYear = (value) => {
+      if (typeof value !== 'string') return NaN;
+      const [yearPart] = value.split('-');
+      return Number.parseInt(yearPart, 10);
+    };
+
+    const startYear = parseYear(startDate);
+    const endYear = parseYear(endDate);
+
     if (startYear !== pageYear || endYear !== pageYear) {
       return {
         success: false,
         error: `Datumen måste vara inom år ${pageYear}. Start: ${startYear}, Slut: ${endYear}. Använd rätt pageId från getAvailablePages().`,
-        pageYear: pageYear,
-        startYear: startYear,
-        endYear: endYear
+        pageYear,
+        startYear,
+        endYear
       };
     }
-    
-    // Validate ring exists (wheel-level check)
-    const { data: ring, error: ringError } = await supabase
+
+    const supportsPageScope = await isPageScopeSupported();
+
+    if (supportsPageScope && !pageId) {
+      return {
+        success: false,
+        error: 'Kunde inte skapa aktivitet - pageId krävs när sidan har aktiverat page_id-kolumnen.'
+      };
+    }
+
+    const wheelData = await fetchWheel(wheelId);
+    const colorPalette = Array.isArray(wheelData.colors) && wheelData.colors.length > 0
+      ? wheelData.colors
+      : ['#3B82F6', '#8B5CF6', '#F97316', '#22C55E'];
+
+    const { data: ringRows, error: ringQueryError } = await supabase
       .from('wheel_rings')
       .select('id')
       .eq('id', ringId)
-      .eq('wheel_id', wheelId)
-      .single();
-    
-    if (ringError || !ring) {
+      .limit(1);
+
+    if (ringQueryError) {
+      console.error('[aiWheelService] Error validating ring before item insert:', ringQueryError);
+      return {
+        success: false,
+        error: 'Kunde inte validera ringen för aktiviteten'
+      };
+    }
+
+    const ringExists = (Array.isArray(ringRows) && ringRows.length > 0)
+      || structure.rings.some(r => r.id === ringId)
+      || (Array.isArray(wheelData.structure?.rings) && wheelData.structure.rings.some(r => r.id === ringId));
+
+    if (!ringExists) {
       return {
         success: false,
         error: `Ring med ID ${ringId} hittades inte`
       };
     }
-    
-    // Auto-create or validate activity group
-    let finalActivityGroupId = activityGroupId;
-    
-    if (!activityGroupId || activityGroupId.trim() === '') {
-      // Check if default group exists
-      const { data: defaultGroup } = await supabase
+
+    const ensureActivityGroupById = async (requestedId) => {
+      if (!requestedId) return null;
+      const trimmedId = requestedId.trim();
+
+      const { data: existingRows, error: existingError } = await supabase
         .from('activity_groups')
         .select('id')
-        .eq('wheel_id', wheelId)
-        .or('name.eq.Allmän,name.eq.General')
-        .limit(1)
-        .single();
-      
-      if (defaultGroup) {
-        finalActivityGroupId = defaultGroup.id;
-      } else {
-        // Create default activity group
-        const { data: newGroup, error: groupError } = await supabase
-          .from('activity_groups')
-          .insert({
-            wheel_id: wheelId,
-            name: 'Allmän',
-            color: null, // Will derive from wheel palette
-            visible: true
-          })
-          .select()
-          .single();
-        
-        if (groupError) {
-          console.error('[aiWheelService] Error creating default activity group:', groupError);
-          return {
-            success: false,
-            error: 'Kunde inte skapa standardgrupp'
-          };
-        }
-        
-        finalActivityGroupId = newGroup.id;
-        console.log('🔧 [AI] Auto-created default activity group "Allmän":', finalActivityGroupId);
+        .eq('id', trimmedId)
+        .limit(1);
+
+      if (existingError) {
+        console.error('[aiWheelService] Error fetching activity group', trimmedId, existingError);
+        throw existingError;
       }
-    } else {
-      // Validate provided activity group exists
-      const { data: activityGroup, error: agError } = await supabase
+
+      if (Array.isArray(existingRows) && existingRows.length > 0) {
+        return existingRows[0].id;
+      }
+
+      const structureGroup = structure.activityGroups.find(group => group.id === trimmedId);
+      if (!structureGroup) {
+        return null;
+      }
+
+      if (!UUID_REGEX.test(trimmedId)) {
+        console.warn('[aiWheelService] Detected non-UUID activity group id in structure, cannot backfill:', trimmedId);
+        return null;
+      }
+
+      const fallbackColor = colorPalette[0] && HEX_COLOR_REGEX.test(colorPalette[0])
+        ? colorPalette[0]
+        : '#3B82F6';
+
+      const resolvedColor = typeof structureGroup.color === 'string' && HEX_COLOR_REGEX.test(structureGroup.color)
+        ? structureGroup.color
+        : fallbackColor;
+
+      const insertPayload = {
+        id: trimmedId,
+        wheel_id: wheelId,
+        name: (structureGroup.name || 'Aktivitetsgrupp').trim(),
+        color: resolvedColor,
+        visible: structureGroup.visible !== false,
+      };
+
+      if (supportsPageScope) {
+        insertPayload.page_id = pageId;
+      }
+
+      const { error: insertError } = await supabase
         .from('activity_groups')
-        .select('id')
-        .eq('id', finalActivityGroupId)
-        .eq('wheel_id', wheelId)
-        .single();
-      
-      if (agError || !activityGroup) {
+        .insert(insertPayload);
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          return trimmedId;
+        }
+        throw insertError;
+      }
+
+      return trimmedId;
+    };
+
+    let finalActivityGroupId = activityGroupId?.trim();
+
+    if (finalActivityGroupId) {
+      const resolved = await ensureActivityGroupById(finalActivityGroupId);
+      if (!resolved) {
         return {
           success: false,
           error: `Aktivitetsgrupp med ID ${finalActivityGroupId} hittades inte`
         };
       }
+      finalActivityGroupId = resolved;
+    } else {
+      const fallbackGroup = structure.activityGroups.find(group => group.visible !== false) || structure.activityGroups[0];
+
+      if (fallbackGroup) {
+        const resolved = await ensureActivityGroupById(fallbackGroup.id);
+        if (resolved) {
+          finalActivityGroupId = resolved;
+        }
+      }
+
+      if (!finalActivityGroupId) {
+        const defaultColor = colorPalette[0] && HEX_COLOR_REGEX.test(colorPalette[0])
+          ? colorPalette[0]
+          : '#3B82F6';
+
+        const defaultGroupPayload = {
+          wheel_id: wheelId,
+          name: 'Allmän',
+          color: defaultColor,
+          visible: true,
+        };
+
+        if (supportsPageScope) {
+          defaultGroupPayload.page_id = pageId;
+        }
+
+        const { data: insertedGroup, error: defaultGroupError } = await supabase
+          .from('activity_groups')
+          .insert(defaultGroupPayload)
+          .select('id, name, color, visible')
+          .single();
+
+        if (defaultGroupError) {
+          console.error('[aiWheelService] Error creating default activity group:', defaultGroupError);
+          return {
+            success: false,
+            error: 'Kunde inte skapa standardgrupp'
+          };
+        }
+
+        finalActivityGroupId = insertedGroup.id;
+
+        if (!structure.activityGroups.some(group => group.id === insertedGroup.id)) {
+          structure.activityGroups.push({
+            id: insertedGroup.id,
+            name: insertedGroup.name,
+            color: insertedGroup.color,
+            visible: insertedGroup.visible,
+          });
+
+          const { error: structureUpdateError } = await supabase
+            .from('wheel_pages')
+            .update({
+              structure: {
+                rings: structure.rings,
+                activityGroups: structure.activityGroups,
+                labels: structure.labels,
+              }
+            })
+            .eq('id', pageId);
+
+          if (structureUpdateError) {
+            console.warn('[aiWheelService] Failed to persist default activity group to page structure:', structureUpdateError);
+          }
+        }
+      }
     }
-    
-    // Insert item directly with page_id
+
+    if (!finalActivityGroupId) {
+      return {
+        success: false,
+        error: 'Ingen aktivitetsgrupp hittades eller kunde skapas'
+      };
+    }
+
+    const itemPayload = {
+      wheel_id: wheelId,
+      ring_id: ringId,
+      activity_id: finalActivityGroupId,
+      label_id: labelId || null,
+      name: name || 'Ny aktivitet',
+      start_date: startDate,
+      end_date: endDate,
+      time: time || null,
+    };
+
+    if (supportsPageScope) {
+      itemPayload.page_id = pageId;
+    }
+
     const { data: newItem, error: insertError } = await supabase
       .from('items')
-      .insert({
-        wheel_id: wheelId,
-        page_id: pageId, // ← CRITICAL: Links to specific page
-        ring_id: ringId,
-        activity_id: finalActivityGroupId,
-        label_id: labelId || null,
-        name: name || 'Ny aktivitet',
-        start_date: startDate,
-        end_date: endDate,
-        time: time || null
-      })
+      .insert(itemPayload)
       .select()
       .single();
     
@@ -491,12 +657,29 @@ export const aiGetAvailablePages = async (wheelId) => {
     
     if (error) throw error;
     
-    const pageList = (pages || []).map(p => ({
-      id: p.id,
-      year: p.year,
-      title: p.title,
-      itemCount: p.organization_data?.items?.length || 0
-    }));
+    const pagesWithCounts = await Promise.all(
+      (pages || []).map(async (p) => {
+        try {
+          const items = await fetchPageData(p.id, p.year, wheelId);
+          return {
+            id: p.id,
+            year: p.year,
+            title: p.title,
+            itemCount: Array.isArray(items) ? items.length : 0,
+          };
+        } catch (countError) {
+          console.error('[aiWheelService] Failed to count items for page', p.id, countError);
+          return {
+            id: p.id,
+            year: p.year,
+            title: p.title,
+            itemCount: 0,
+          };
+        }
+      })
+    );
+
+    const pageList = pagesWithCounts;
     
     let message = `**Tillgängliga sidor:**\n`;
     if (pageList.length === 0) {
