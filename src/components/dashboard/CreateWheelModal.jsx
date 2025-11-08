@@ -6,8 +6,9 @@ import { showToast } from '../../utils/dialogs';
 
 export default function CreateWheelModal({ onClose, onCreate }) {
   const { t } = useTranslation(['dashboard', 'common']);
+  const currentYear = new Date().getFullYear();
   const [title, setTitle] = useState(t('dashboard:createWheel'));
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [yearInput, setYearInput] = useState(String(currentYear));
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,16 +30,37 @@ export default function CreateWheelModal({ onClose, onCreate }) {
     }
   };
 
+  const handleYearChange = (event) => {
+    const { value } = event.target;
+
+    if (value === '') {
+      setYearInput('');
+      return;
+    }
+
+    if (!/^\d{0,4}$/.test(value)) {
+      return;
+    }
+
+    setYearInput(value);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    const parsedYear = Number.parseInt(yearInput, 10);
+    const normalizedYear = Number.isNaN(parsedYear)
+      ? currentYear
+      : Math.min(2100, Math.max(2000, parsedYear));
     
     try {
       await onCreate({
         title: title.trim() || t('dashboard:createWheel'),
-        year,
+        year: normalizedYear,
         team_id: selectedTeam || null,
       });
+      setYearInput(String(currentYear));
       onClose();
     } catch (err) {
       console.error('Error creating wheel:', err);
@@ -82,8 +104,10 @@ export default function CreateWheelModal({ onClose, onCreate }) {
             </label>
             <input
               type="number"
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value))}
+              inputMode="numeric"
+              pattern="\d*"
+              value={yearInput}
+              onChange={handleYearChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="2000"
               max="2100"

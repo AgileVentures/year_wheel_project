@@ -318,8 +318,15 @@ export const createWheel = async (wheelData) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  const defaultColors = wheelData.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8'];
-  const baseYear = parseInt(wheelData.year) || new Date().getFullYear();
+  const defaultColors = Array.isArray(wheelData.colors) && wheelData.colors.length > 0
+    ? wheelData.colors
+    : ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8'];
+
+  const rawYearInput = String(wheelData?.year ?? '').trim();
+  const parsedYear = rawYearInput === '' ? Number.NaN : Number.parseInt(rawYearInput, 10);
+  const currentYear = new Date().getFullYear();
+  let baseYear = Number.isNaN(parsedYear) ? currentYear : parsedYear;
+  baseYear = Math.min(2100, Math.max(2000, baseYear));
 
   // Create wheel
   const { data: wheel, error: wheelError } = await supabase
@@ -367,51 +374,71 @@ export const createWheel = async (wheelData) => {
         items: [],
       };
 
+  if (!Array.isArray(baseOrganizationData.rings)) baseOrganizationData.rings = [];
+  if (!Array.isArray(baseOrganizationData.activityGroups)) baseOrganizationData.activityGroups = [];
+  if (!Array.isArray(baseOrganizationData.labels)) baseOrganizationData.labels = [];
+  if (!Array.isArray(baseOrganizationData.items)) baseOrganizationData.items = [];
+
+  const cloneArray = (arr) => (Array.isArray(arr) ? JSON.parse(JSON.stringify(arr)) : []);
+  const globalRings = cloneArray(baseOrganizationData.rings);
+  const globalActivityGroups = cloneArray(baseOrganizationData.activityGroups);
+  const globalLabels = cloneArray(baseOrganizationData.labels);
+  const baseItems = cloneArray(baseOrganizationData.items);
+
+  const buildOrganizationPayload = () => ({
+    rings: cloneArray(globalRings),
+    activityGroups: cloneArray(globalActivityGroups),
+    labels: cloneArray(globalLabels),
+    items: cloneArray(baseItems),
+  });
+
+  let initialPage;
   try {
-    const initialPage = await createPage(wheel.id, {
+    initialPage = await createPage(wheel.id, {
       year: baseYear,
       title: `${baseYear}`,
-      organizationData: baseOrganizationData,
+      organizationData: buildOrganizationPayload(),
       overrideColors: null,
       overrideShowWeekRing: null,
       overrideShowMonthRing: null,
       overrideShowRingNames: null,
     });
 
-    const { ringIdMap, activityIdMap, labelIdMap } = await saveWheelData(
-      wheel.id,
-      baseOrganizationData,
-      initialPage.id
-    );
-
-    const normalizedOrgData = {
-      ...baseOrganizationData,
-      rings: (baseOrganizationData.rings || []).map((ring) => ({
-        ...ring,
-        id: ringIdMap.get(ring.id) || ring.id,
-      })),
-      activityGroups: (baseOrganizationData.activityGroups || []).map((group) => ({
-        ...group,
-        id: activityIdMap.get(group.id) || group.id,
-      })),
-      labels: (baseOrganizationData.labels || []).map((label) => ({
-        ...label,
-        id: labelIdMap.get(label.id) || label.id,
-      })),
-      items: (baseOrganizationData.items || []).map((item) => ({
-        ...item,
-        ringId: ringIdMap.get(item.ringId) || item.ringId,
-        activityId: activityIdMap.get(item.activityId) || item.activityId,
-        labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null,
-      })),
-    };
-
-    await updatePage(initialPage.id, {
-      organization_data: normalizedOrgData,
+    await saveWheelSnapshot(wheel.id, {
+      metadata: {
+        title: wheel.title,
+        colors: defaultColors,
+        showWeekRing: wheel.show_week_ring,
+        showMonthRing: wheel.show_month_ring,
+        showRingNames: wheel.show_ring_names,
+        showLabels: wheel.show_labels ?? false,
+        weekRingDisplayMode: wheel.week_ring_display_mode || 'week-numbers',
+        year: baseYear,
+      },
+      globalOrganizationData: {
+        rings: cloneArray(globalRings),
+        activityGroups: cloneArray(globalActivityGroups),
+        labels: cloneArray(globalLabels),
+      },
+      pages: [
+        {
+          id: initialPage.id,
+          year: baseYear,
+          organizationData: buildOrganizationPayload(),
+        },
+      ],
     });
   } catch (structureError) {
     console.error('[wheelService] Failed to initialize default wheel structure:', structureError);
-    // Best-effort cleanup so we don't leave a broken wheel behind
+    try {
+      if (initialPage?.id) {
+        await supabase.from('wheel_pages').delete().eq('id', initialPage.id);
+      } else {
+        await supabase.from('wheel_pages').delete().eq('wheel_id', wheel.id);
+      }
+    } catch (cleanupPageError) {
+      console.error('[wheelService] Failed to clean up wheel pages after initialization error:', cleanupPageError);
+    }
     try {
       await supabase.from('year_wheels').delete().eq('id', wheel.id);
     } catch (cleanupError) {
