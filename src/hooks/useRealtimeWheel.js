@@ -58,18 +58,21 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
   }, []); // No dependencies - callback is stable
 
   useEffect(() => {
-    // Don't subscribe if no wheelId or pageId
-    if (!wheelId || !pageId) {
-      // console.log('[Realtime] Missing wheelId or pageId, skipping subscription');
+    // Don't subscribe if no wheelId
+    if (!wheelId) {
+      // console.log('[Realtime] Missing wheelId, skipping subscription');
       return;
     }
 
-
-    // Create a unique channel for this wheel+page combination
-    const channel = supabase.channel(`wheel:${wheelId}:page:${pageId}`);
+    // Create a unique channel for this wheel (optionally filtered by page)
+    const channelName = pageId 
+      ? `wheel:${wheelId}:page:${pageId}`
+      : `wheel:${wheelId}`;
+    
+    const channel = supabase.channel(channelName);
 
     // ARCHITECTURE: Rings/Groups/Labels are SHARED (filter by wheel_id)
-    //               Items are DISTRIBUTED (filter by page_id)
+    //               Items can be filtered by page_id OR wheel_id
 
     // Subscribe to wheel_rings changes (wheel-scoped - shared across pages)
     channel.on(
@@ -107,14 +110,18 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
       handleChange('labels')
     );
 
-    // Subscribe to items changes (page-scoped - distributed by year)
+    // Subscribe to items changes (wheel-scoped OR page-scoped)
+    const itemsFilter = pageId 
+      ? `page_id=eq.${pageId}` // Filter by specific page
+      : `wheel_id=eq.${wheelId}`; // All items for the wheel
+    
     channel.on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'items',
-        filter: `page_id=eq.${pageId}`, // ✅ Distributed - use page_id
+        filter: itemsFilter,
       },
       handleChange('items')
     );
@@ -139,7 +146,7 @@ export function useRealtimeWheel(wheelId, pageId, onDataChange) {
         channelRef.current = null;
       }
     };
-  }, [wheelId, pageId, handleChange]); // Only re-subscribe when wheelId or pageId changes
+  }, [wheelId, pageId, handleChange]); // Re-subscribe when wheelId or pageId changes (pageId optional)
 
   // Return channel status for debugging
   return {

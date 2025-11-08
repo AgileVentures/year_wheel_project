@@ -313,7 +313,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [downloadFormat, setDownloadFormat] = useState(isPremium ? "png" : "png-white");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false); // DISABLED: All saves are direct to DB
   const [isPublic, setIsPublic] = useState(false); // Public sharing toggle
   const [isTemplate, setIsTemplate] = useState(false); // Template status (admin only)
   const [isAdmin, setIsAdmin] = useState(false); // Admin status
@@ -339,12 +339,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showAIOnboarding, setShowAIOnboarding] = useState(false);
   
   // Disable autosave when guides are running
+  // NOTE: Auto-save is disabled by default now (all saves are direct to DB)
+  // Keeping this for backward compatibility if auto-save is re-enabled
   useEffect(() => {
     if (showOnboarding || showAIOnboarding) {
       setAutoSaveEnabled(false);
-    } else {
-      setAutoSaveEnabled(true);
     }
+    // Do NOT re-enable auto-save after guides - it stays disabled
   }, [showOnboarding, showAIOnboarding]);
   
   // Handler to enforce free user restrictions on export formats
@@ -379,6 +380,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const isSavingRef = useRef(false);
   // Track if we're currently dragging an item (for batch undo/redo)
   const isDraggingRef = useRef(false);
+  // Track if we're navigating between pages (blocks ALL database operations)
+  const isNavigatingPagesRef = useRef(false);
   // Track unsaved changes for safe reload decisions
   const hasUnsavedChangesRef = useRef(false);
   // Remember deferred reload requests when local edits are pending
@@ -487,9 +490,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           // IMPORTANT: Year will be set via setUndoableStates() to avoid creating history entry
           yearToLoad = String(pageToLoad.year || new Date().getFullYear());
           
-          // Fetch items for this specific page AND multi-year items that overlap
-          const pageItems = await fetchPageData(pageToLoad.id, pageToLoad.year, wheelId);
-          console.log(`[loadWheelData] Fetched ${pageItems.length} items for page ${pageToLoad.id} (year: ${pageToLoad.year})`);
+          // SIMPLIFIED: Fetch ALL items for the entire wheel (not just this page)
+          // Page navigation will filter by year in the frontend
+          const { data: allItems, error: itemsError } = await supabase
+            .from('items')
+            .select('*')
+            .eq('wheel_id', wheelId);
+          
+          if (itemsError) throw itemsError;
+          
+          console.log(`[loadWheelData] Fetched ${allItems?.length || 0} total items for wheel`);
           
           // Fetch rings, activity groups, and labels from database tables
           // CRITICAL: Use wheel_id - rings are SHARED across all pages!
@@ -516,7 +526,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             rings: [],
             activityGroups: [],
             labels: [],
-            items: pageItems // Items ALWAYS come from database
+            items: allItems || [] // ALL items for the wheel (filtering happens during page navigation)
           };
           
           // Rings from database (shared across all pages)
@@ -577,11 +587,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             });
           }
           
-          // Filter items to only include current year
+          // Filter items to only include current year (for display)
           const beforeFilter = orgData.items.length;
           orgData.items = filterItemsByYear(orgData.items, parseInt(yearToLoad));
           const afterFilter = orgData.items.length;
-          console.log(`[loadWheelData] Year filter: ${beforeFilter} items → ${afterFilter} items for year ${yearToLoad}`);
+          console.log(`[loadWheelData] Displaying ${afterFilter} of ${beforeFilter} items for year ${yearToLoad}`);
           
           orgDataToSet = orgData;
         } else {
@@ -729,6 +739,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle realtime data changes from other users
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
+    // CRITICAL: Block ALL realtime updates during page navigation
+    if (isNavigatingPagesRef.current) {
+      console.log('[Realtime] Ignoring update - page navigation in progress');
+      return;
+    }
+    
     // CRITICAL: Block ALL realtime updates during version restore
     if (isRestoringVersion.current) {
       console.log('[Realtime] Ignoring update during version restore');
@@ -778,9 +794,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     throttledReload();
   }, [throttledReload]);
 
-  // Enable realtime sync for this page (not wheel!)
-  // CRITICAL: Pass currentPageId to filter by page, not wheel
-  useRealtimeWheel(wheelId, currentPageId, handleRealtimeChange);
+  // Enable realtime sync for this wheel (ALL pages)
+  // Page navigation is frontend-only, so we subscribe to the entire wheel
+  useRealtimeWheel(wheelId, null, handleRealtimeChange); // Pass null for pageId - subscribe to entire wheel
 
   // Handle realtime page changes
   const handlePageRealtimeChange = useCallback((eventType, payload) => {
@@ -1129,6 +1145,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return null;
     }
 
+    // CRITICAL: Block ALL saves during page navigation
+    if (isNavigatingPagesRef.current) {
+      console.warn('[FullSave] ❌ BLOCKED - page navigation in progress');
+      return null;
+    }
+
+    // CRITICAL: Block saves during data loading
+    if (isLoadingData.current) {
+      console.warn('[FullSave] ❌ BLOCKED - data loading in progress');
+      return null;
+    }
+
+    console.log(`[FullSave] ✅ STARTING save (reason: ${reason || 'auto'})`);
+    
     isSavingRef.current = true;
     setIsSaving(true);
 
@@ -1302,6 +1332,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     scheduleFullSave(reason);
   }, [wheelId, autoSaveEnabled, scheduleFullSave]);
 
+  // AUTO-SAVE DISABLED: All operations save directly to database
+  // Keeping this code commented for reference in case we need to re-enable
+  /*
   useEffect(() => {
     if (!wheelId) {
       return;
@@ -1325,6 +1358,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     queueFullSave('organization-change');
   }, [wheelId, organizationData, queueFullSave, autoSaveEnabled]);
+  */
 
   // Check admin status on mount
   useEffect(() => {
@@ -1448,6 +1482,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
   // DO NOT automatically apply colors here - it causes unwanted data overwrites and save loops
 
+  // ========== SAVE ARCHITECTURE ==========
+  // All user actions save DIRECTLY to the database (no auto-save needed):
+  // - Adding/editing/deleting items → updates `items` table immediately
+  // - Modifying rings/groups/labels → updates respective tables immediately
+  // - Drag & drop → persists to database on drop
+  // - Manual "Save" button → triggers enqueueFullSave for version history
+  // 
+  // Auto-save is DISABLED to prevent:
+  // - Save loops (state change → auto-save → state change → ...)
+  // - Redundant saves (every action already saves to DB)
+  // - Race conditions during page navigation
+  // ========================================
+
   const handleTogglePublic = async () => {
     if (!wheelId) return;
     
@@ -1481,9 +1528,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const { silent = false, reason = 'manual' } = options;
 
     if (wheelId) {
-      const wasAutoSaveEnabled = autoSaveEnabled;
-      setAutoSaveEnabled(false);
-
       try {
         await enqueueFullSave(reason === 'manual' ? 'manual' : reason);
 
@@ -1493,8 +1537,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       } catch (error) {
         console.error('[ManualSave] Error saving wheel:', error);
         showToast('Kunde inte spara', 'error');
-      } finally {
-        setAutoSaveEnabled(wasAutoSaveEnabled);
       }
 
       return;
@@ -1618,89 +1660,28 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wheelId, currentPageId]);
 
-  // Switch to a different page
-  const handlePageChange = async (pageId) => {
+  // Switch to a different page (PURE FRONTEND - no database calls)
+  const handlePageChange = (pageId) => {
     if (pageId === currentPageId) return;
     
-    try {
-      // NOTE: We DO NOT save organization_data.items here anymore!
-      // Items are stored in the `items` table only.
-      // JSONB organization_data only contains rings, activityGroups, labels (wheel-level data)
-      
-      // Load new page data
-      const newPage = pages.find(p => p.id === pageId);
-      if (newPage) {
-        // CRITICAL: Clear ALL data immediately to prevent any data leakage
-        setOrganizationData({
-          rings: [],
-          activityGroups: [],
-          labels: [],
-          items: []
-        });
-        
-        setCurrentPageId(pageId);
-        
-        // Fetch fresh data for the new page AND multi-year items that overlap
-        const newPageYear = newPage.year || new Date().getFullYear();
-        const pageItems = await fetchPageData(pageId, newPageYear, wheelId);
-        
-        // Fetch rings, activity groups, and labels from database (wheel-level, shared)
-        const { data: dbRings } = await supabase
-          .from('wheel_rings')
-          .select('*')
-          .eq('wheel_id', wheelId)
-          .order('ring_order');
-        
-        const { data: dbActivityGroups } = await supabase
-          .from('activity_groups')
-          .select('*')
-          .eq('wheel_id', wheelId);
-        
-        const { data: dbLabels } = await supabase
-          .from('labels')
-          .select('*')
-          .eq('wheel_id', wheelId);
-        
-        // Build fresh organization data from database
-        setOrganizationData({
-          rings: (dbRings || []).map(r => ({
-            id: r.id,
-            name: r.name,
-            type: r.type,
-            visible: r.visible,
-            orientation: r.orientation || 'vertical',
-            color: r.color || '#408cfb',
-            data: r.data || [[""]]
-          })),
-          activityGroups: (dbActivityGroups || []).map(g => ({
-            id: g.id,
-            name: g.name,
-            color: g.color || '#8B5CF6',
-            visible: g.visible
-          })),
-          labels: (dbLabels || []).map(l => ({
-            id: l.id,
-            name: l.name,
-            color: l.color,
-            visible: l.visible
-          })),
-          items: pageItems
-        });
-        
-        if (newPage.year) {
-          setYear(String(newPage.year));
-        }
-        
-        // Clear undo history when switching pages
-        clearHistory();
-      }
-    } catch (error) {
-      console.error('Error changing page:', error);
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte byta sida', type: 'error' }
-      });
-      window.dispatchEvent(event);
+    const newPage = pages.find(p => p.id === pageId);
+    if (!newPage) {
+      console.error('Page not found:', pageId);
+      return;
     }
+    
+    // Simply switch to the new page's data (already loaded)
+    const pageYear = newPage.year || new Date().getFullYear();
+    const pageItems = filterItemsByYear(organizationData.items, pageYear);
+    
+    setOrganizationData(prev => ({
+      ...prev,
+      items: pageItems
+    }));
+    
+    setYear(String(pageYear));
+    setCurrentPageId(pageId);
+    clearHistory();
   };
 
   // Show add page modal
