@@ -1448,12 +1448,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
   // DO NOT automatically apply colors here - it causes unwanted data overwrites and save loops
 
-  
-
-  useEffect(() => {
-    handleSaveRef.current = handleSave;
-  }, [handleSave]);
-
   const handleTogglePublic = async () => {
     if (!wheelId) return;
     
@@ -1515,9 +1509,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       showWeekRing,
       showMonthRing,
       showRingNames,
-      showWeekNumbers,
       showLabels,
-      showQuarterHighlights,
+      weekRingDisplayMode,
     };
 
     localStorage.setItem('yearWheelData', JSON.stringify(dataToSave));
@@ -1526,7 +1519,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!silent) {
       showToast('Data har sparats lokalt!', 'success');
     }
-  }, [wheelId, autoSaveEnabled, enqueueFullSave, showToast, title, year, colors, ringsData, organizationData, showWeekRing, showMonthRing, showRingNames, showWeekNumbers, showLabels, showQuarterHighlights, markSaved]);
+  }, [wheelId, autoSaveEnabled, enqueueFullSave, showToast, title, year, colors, ringsData, organizationData, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, markSaved]);
+
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  }, [handleSave]);
 
   const handleToggleTemplate = async () => {
     if (!wheelId || !isAdmin) return;
