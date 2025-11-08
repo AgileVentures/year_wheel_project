@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import EditItemModal from './EditItemModal';
 
-function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizationChange, onClose, onZoomToMonth }) {
+function CalendarSidebar({ year, wheelStructure, currentWheelId, onOrganizationChange, onClose, onZoomToMonth }) {
   const { t } = useTranslation(['editor']);
   const [currentMonth, setCurrentMonth] = useState(9); // October (0-indexed)
   const [selectedYear, setSelectedYear] = useState(parseInt(year));
@@ -65,12 +65,12 @@ function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizatio
 
   // Get events for the current month
   const getEventsForMonth = () => {
-    if (!organizationData?.items) return [];
+    if (!wheelStructure?.items) return [];
     
     const monthStart = new Date(selectedYear, currentMonth, 1);
     const monthEnd = new Date(selectedYear, currentMonth + 1, 0, 23, 59, 59);
     
-    return organizationData.items.filter(item => {
+    return wheelStructure.items.filter(item => {
       const itemStart = new Date(item.startDate);
       const itemEnd = new Date(item.endDate);
       return itemEnd >= monthStart && itemStart <= monthEnd;
@@ -79,12 +79,12 @@ function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizatio
 
   // Get events for a specific day
   const getEventsForDay = (day) => {
-    if (!organizationData?.items || !day) return [];
+    if (!wheelStructure?.items || !day) return [];
     
     const dayStart = new Date(selectedYear, currentMonth, day, 0, 0, 0);
     const dayEnd = new Date(selectedYear, currentMonth, day, 23, 59, 59);
     
-    return organizationData.items.filter(item => {
+    return wheelStructure.items.filter(item => {
       const itemStart = new Date(item.startDate);
       const itemEnd = new Date(item.endDate);
       return itemEnd >= dayStart && itemStart <= dayEnd;
@@ -124,22 +124,22 @@ function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizatio
 
   // Get activity color
   const getActivityColor = (activityId) => {
-    const activity = organizationData?.activityGroups?.find(a => a.id === activityId);
+    const activity = wheelStructure?.activityGroups?.find(a => a.id === activityId);
     return activity?.color || '#D1D5DB';
   };
 
   // Handle update aktivitet
   const handleUpdateAktivitet = (updatedAktivitet) => {
-    const updatedItems = organizationData.items.map(item =>
+    const updatedItems = wheelStructure.items.map(item =>
       item.id === updatedAktivitet.id ? updatedAktivitet : item
     );
-    onOrganizationChange({ ...organizationData, items: updatedItems });
+    onOrganizationChange({ ...wheelStructure, items: updatedItems });
   };
 
   // Handle delete aktivitet
   const handleDeleteAktivitet = (aktivitetId) => {
-    const updatedItems = organizationData.items.filter(item => item.id !== aktivitetId);
-    onOrganizationChange({ ...organizationData, items: updatedItems });
+    const updatedItems = wheelStructure.items.filter(item => item.id !== aktivitetId);
+    onOrganizationChange({ ...wheelStructure, items: updatedItems });
   };
 
   return (
@@ -320,7 +320,7 @@ function CalendarSidebar({ year, organizationData, currentWheelId, onOrganizatio
       {editingAktivitet && (
         <EditItemModal
           item={editingAktivitet}
-          organizationData={organizationData}
+          wheelStructure={wheelStructure}
           currentWheelId={currentWheelId}
           onUpdateItem={handleUpdateAktivitet}
           onDeleteItem={handleDeleteAktivitet}

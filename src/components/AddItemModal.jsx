@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
 import ErrorDisplay from './ErrorDisplay';
 
-function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) {
+function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId }) {
   const { t } = useTranslation(['editor']);
   const [formData, setFormData] = useState({
     name: '',
-    ringId: organizationData.rings[0]?.id || '',
-    activityId: organizationData.activityGroups[0]?.id || '',
-    labelId: organizationData.labels[0]?.id || '',
+    ringId: wheelStructure.rings[0]?.id || '',
+    activityId: wheelStructure.activityGroups[0]?.id || '',
+    labelId: wheelStructure.labels[0]?.id || '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     time: '',
@@ -373,7 +373,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                     onChange={(e) => handleChange('ringId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {organizationData.rings.map((ring) => (
+                    {wheelStructure.rings.map((ring) => (
                       <option key={ring.id} value={ring.id}>
                         {ring.name}
                       </option>
@@ -391,7 +391,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                     onChange={(e) => handleChange('activityId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {organizationData.activityGroups.map((activity) => (
+                    {wheelStructure.activityGroups.map((activity) => (
                       <option key={activity.id} value={activity.id}>
                         {activity.name}
                       </option>
@@ -409,7 +409,7 @@ function AddItemModal({ organizationData, onAddItem, onClose, currentWheelId }) 
                     onChange={(e) => handleChange('labelId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {organizationData.labels.map((label) => (
+                    {wheelStructure.labels.map((label) => (
                       <option key={label.id} value={label.id}>
                         {label.name}
                       </option>

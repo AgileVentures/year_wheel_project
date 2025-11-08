@@ -341,8 +341,8 @@ export function useUndoRedo(initialState, options = {}) {
       const finalState = batchModeState.current !== null ? batchModeState.current : state;
       // Debug: Log specific fields to see what changed
       if (finalState && batchModeInitialState.current) {
-        const initialItems = batchModeInitialState.current.organizationData?.items || [];
-        const finalItems = finalState.organizationData?.items || [];
+        const initialItems = batchModeInitialState.current.wheelStructure?.items || [];
+        const finalItems = finalState.wheelStructure?.items || [];
         if (initialItems.length > 0 && finalItems.length > 0) {
           const firstInitialItem = initialItems[0];
           const firstFinalItem = finalItems[0];

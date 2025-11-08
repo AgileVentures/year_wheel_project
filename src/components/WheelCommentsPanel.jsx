@@ -56,7 +56,7 @@ function renderCommentContent(content) {
  * WheelCommentsPanel - Unified view of all comments on a wheel
  * Shows general wheel comments + item comments grouped by activity
  */
-export default function WheelCommentsPanel({ wheel, organizationData, onClose, onNavigateToItem }) {
+export default function WheelCommentsPanel({ wheel, wheelStructure, onClose, onNavigateToItem }) {
   const { t } = useTranslation('notifications');
   const [wheelComments, setWheelComments] = useState([]);
   const [itemComments, setItemComments] = useState([]);
@@ -189,10 +189,10 @@ export default function WheelCommentsPanel({ wheel, organizationData, onClose, o
     itemComments.forEach(comment => {
       if (!comment.item) return;
       
-      const item = organizationData?.items?.find(i => i.id === comment.item_id);
+      const item = wheelStructure?.items?.find(i => i.id === comment.item_id);
       if (!item) return;
 
-      const activityGroup = organizationData?.activityGroups?.find(a => a.id === item.activityId);
+      const activityGroup = wheelStructure?.activityGroups?.find(a => a.id === item.activityId);
       if (!activityGroup) return;
 
       if (!grouped[activityGroup.id]) {
@@ -214,7 +214,7 @@ export default function WheelCommentsPanel({ wheel, organizationData, onClose, o
     });
 
     return grouped;
-  }, [itemComments, organizationData]);
+  }, [itemComments, wheelStructure]);
 
   // Filter and sort comments
   const filteredWheelComments = useMemo(() => {
@@ -300,7 +300,7 @@ export default function WheelCommentsPanel({ wheel, organizationData, onClose, o
                 className="border border-gray-300 rounded px-2 py-1 text-sm"
               >
                 <option value="">{t('wheelComments.allActivities')}</option>
-                {organizationData?.activityGroups?.map(activity => (
+                {wheelStructure?.activityGroups?.map(activity => (
                   <option key={activity.id} value={activity.id}>
                     {activity.name}
                   </option>

@@ -6,7 +6,7 @@ import { fetchLinkedWheelInfo } from '../services/wheelService';
 import ItemCommentsPanel from './ItemCommentsPanel';
 import { getCommentCount } from '../services/commentService';
 
-function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClose, readonly = false, wheel = null }) {
+function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose, readonly = false, wheel = null }) {
   const { t, i18n } = useTranslation(['editor']);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -17,9 +17,9 @@ function ItemTooltip({ item, organizationData, position, onEdit, onDelete, onClo
   const [commentCount, setCommentCount] = useState(0);
   const tooltipRef = useRef(null);
 
-  const ring = item ? organizationData.rings.find(r => r.id === item.ringId) : null;
-  const activity = item ? organizationData.activityGroups.find(a => a.id === item.activityId) : null;
-  const label = item ? organizationData.labels.find(l => l.id === item.labelId) : null;
+  const ring = item ? wheelStructure.rings.find(r => r.id === item.ringId) : null;
+  const activity = item ? wheelStructure.activityGroups.find(a => a.id === item.activityId) : null;
+  const label = item ? wheelStructure.labels.find(l => l.id === item.labelId) : null;
   const startDate = item ? new Date(item.startDate) : null;
   const endDate = item ? new Date(item.endDate) : null;
 

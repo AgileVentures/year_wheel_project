@@ -33,12 +33,12 @@ function getMonthName(date, language = 'sv') {
 }
 
 /**
- * Transform organizationData into a flat array suitable for spreadsheet export
- * @param {Object} organizationData - The wheel's organization data
+ * Transform wheelStructure into a flat array suitable for spreadsheet export
+ * @param {Object} wheelStructure - The wheel's organization data
  * @param {Object} options - Export options
  * @returns {Array} Array of row objects
  */
-export function transformDataForExport(organizationData, options = {}) {
+export function transformDataForExport(wheelStructure, options = {}) {
   const { 
     year, 
     title, 
@@ -55,7 +55,7 @@ export function transformDataForExport(organizationData, options = {}) {
     language = 'sv'
   } = options;
   
-  if (!organizationData || !organizationData.items) {
+  if (!wheelStructure || !wheelStructure.items) {
     return [];
   }
 
@@ -78,12 +78,12 @@ export function transformDataForExport(organizationData, options = {}) {
   const cols = { ...defaultColumnNames, ...columnNames };
 
   // Create lookup maps for better performance
-  const ringsMap = new Map((organizationData.rings || []).map(r => [r.id, r]));
-  const activityGroupsMap = new Map((organizationData.activityGroups || []).map(a => [a.id, a]));
-  const labelsMap = new Map((organizationData.labels || []).map(l => [l.id, l]));
+  const ringsMap = new Map((wheelStructure.rings || []).map(r => [r.id, r]));
+  const activityGroupsMap = new Map((wheelStructure.activityGroups || []).map(a => [a.id, a]));
+  const labelsMap = new Map((wheelStructure.labels || []).map(l => [l.id, l]));
 
   // Transform items into flat rows
-  const rows = organizationData.items.map(item => {
+  const rows = wheelStructure.items.map(item => {
     const row = {
       [cols.name]: item.name || '',
       [cols.startDate]: item.startDate || '',
@@ -153,15 +153,15 @@ export function transformDataForExport(organizationData, options = {}) {
 
 /**
  * Export data to Excel (.xlsx) file
- * @param {Object} organizationData - The wheel's organization data
+ * @param {Object} wheelStructure - The wheel's organization data
  * @param {Object} options - Export options
  * @returns {void} Downloads the file
  */
-export function exportToExcel(organizationData, options = {}) {
+export function exportToExcel(wheelStructure, options = {}) {
   const { year = '2025', title = 'Årshjul', filename } = options;
   
   // Transform data
-  const rows = transformDataForExport(organizationData, options);
+  const rows = transformDataForExport(wheelStructure, options);
 
   if (rows.length === 0) {
     throw new Error('Inga aktiviteter att exportera');
@@ -200,15 +200,15 @@ export function exportToExcel(organizationData, options = {}) {
 
 /**
  * Export data to CSV file
- * @param {Object} organizationData - The wheel's organization data
+ * @param {Object} wheelStructure - The wheel's organization data
  * @param {Object} options - Export options
  * @returns {void} Downloads the file
  */
-export function exportToCSV(organizationData, options = {}) {
+export function exportToCSV(wheelStructure, options = {}) {
   const { year = '2025', title = 'Årshjul', filename } = options;
   
   // Transform data
-  const rows = transformDataForExport(organizationData, options);
+  const rows = transformDataForExport(wheelStructure, options);
 
   if (rows.length === 0) {
     throw new Error('Inga aktiviteter att exportera');
@@ -232,11 +232,11 @@ export function exportToCSV(organizationData, options = {}) {
 /**
  * Create or update a Google Sheet with the wheel data
  * Requires existing Google Sheets integration
- * @param {Object} organizationData - The wheel's organization data
+ * @param {Object} wheelStructure - The wheel's organization data
  * @param {Object} options - Export options
  * @returns {Promise<Object>} Result with spreadsheet URL
  */
-export async function exportToGoogleSheets(organizationData, options = {}) {
+export async function exportToGoogleSheets(wheelStructure, options = {}) {
   const { 
     year = '2025', 
     title = 'Årshjul',
@@ -252,7 +252,7 @@ export async function exportToGoogleSheets(organizationData, options = {}) {
   }
 
   // Transform data to rows
-  const rows = transformDataForExport(organizationData, {
+  const rows = transformDataForExport(wheelStructure, {
     ...options,
     includeRingNames: true,
     includeActivityGroups: true,
@@ -294,14 +294,14 @@ export async function exportToGoogleSheets(organizationData, options = {}) {
 
 /**
  * Generate a preview of export data (for UI display)
- * @param {Object} organizationData - The wheel's organization data
+ * @param {Object} wheelStructure - The wheel's organization data
  * @param {Object} options - Export options including maxRows
  * @returns {Object} Preview data with headers and sample rows
  */
-export function getExportPreview(organizationData, options = {}) {
+export function getExportPreview(wheelStructure, options = {}) {
   const { maxRows = 5, ...exportOptions } = options;
   
-  const rows = transformDataForExport(organizationData, exportOptions);
+  const rows = transformDataForExport(wheelStructure, exportOptions);
 
   if (rows.length === 0) {
     return { headers: [], rows: [], totalRows: 0 };

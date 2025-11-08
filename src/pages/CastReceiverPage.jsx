@@ -210,10 +210,10 @@ export default function CastReceiverPage() {
         break;
 
       case CAST_MESSAGE_TYPES.UPDATE:
-        if (message.data.organizationData) {
+        if (message.data.wheelStructure) {
           setWheelData(prev => ({
             ...prev,
-            organizationData: message.data.organizationData
+            wheelStructure: message.data.wheelStructure
           }));
         }
         break;
@@ -292,7 +292,7 @@ export default function CastReceiverPage() {
           // Update organization data
           setWheelData(prev => ({
             ...prev,
-            organizationData: message.payload.organizationData
+            wheelStructure: message.payload.wheelStructure
           }));
           break;
 
@@ -367,7 +367,7 @@ export default function CastReceiverPage() {
         if (page) {
           setWheelData(prev => ({
             ...prev,
-            organizationData: page.organization_data
+            wheelStructure: page.organization_data
           }));
         }
       } catch (error) {
@@ -543,7 +543,7 @@ export default function CastReceiverPage() {
             title={wheelData.title}
             year={wheelData.year}
             colors={wheelData.colors}
-            organizationData={wheelData.organizationData}
+            wheelStructure={wheelData.wheelStructure}
             showWeekRing={wheelData.showWeekRing}
             showMonthRing={wheelData.showMonthRing}
             showRingNames={wheelData.showRingNames}
@@ -642,11 +642,11 @@ export default function CastReceiverPage() {
         <div className="absolute bottom-8 left-8 z-50 bg-white rounded-sm shadow-2xl border-2 border-gray-300 overflow-hidden transition-all duration-300 ease-out">
           <div className="p-6 space-y-4" style={{ maxWidth: '400px' }}>
             {/* Item Color Bar */}
-            {wheelData?.organizationData?.activityGroups?.find(g => g.id === displayedItem.activityId) && (
+            {wheelData?.wheelStructure?.activityGroups?.find(g => g.id === displayedItem.activityId) && (
               <div 
                 className="h-2 rounded-sm -mt-6 -mx-6 mb-4"
                 style={{ 
-                  backgroundColor: wheelData.organizationData.activityGroups.find(g => g.id === displayedItem.activityId).color 
+                  backgroundColor: wheelData.wheelStructure.activityGroups.find(g => g.id === displayedItem.activityId).color 
                 }}
               />
             )}
@@ -659,46 +659,46 @@ export default function CastReceiverPage() {
             {/* Item Details */}
             <div className="space-y-2 text-base">
               {/* Ring */}
-              {wheelData?.organizationData?.rings?.find(r => r.id === displayedItem.ringId) && (
+              {wheelData?.wheelStructure?.rings?.find(r => r.id === displayedItem.ringId) && (
                 <div className="flex items-start gap-2">
                   <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.ring')}:</span>
                   <span className="text-gray-900">
-                    {wheelData.organizationData.rings.find(r => r.id === displayedItem.ringId).name}
+                    {wheelData.wheelStructure.rings.find(r => r.id === displayedItem.ringId).name}
                   </span>
                 </div>
               )}
 
               {/* Activity Group */}
-              {wheelData?.organizationData?.activityGroups?.find(g => g.id === displayedItem.activityId) && (
+              {wheelData?.wheelStructure?.activityGroups?.find(g => g.id === displayedItem.activityId) && (
                 <div className="flex items-start gap-2">
                   <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.category')}:</span>
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-4 h-4 rounded-sm flex-shrink-0"
                       style={{ 
-                        backgroundColor: wheelData.organizationData.activityGroups.find(g => g.id === displayedItem.activityId).color 
+                        backgroundColor: wheelData.wheelStructure.activityGroups.find(g => g.id === displayedItem.activityId).color 
                       }}
                     />
                     <span className="text-gray-900">
-                      {wheelData.organizationData.activityGroups.find(g => g.id === displayedItem.activityId).name}
+                      {wheelData.wheelStructure.activityGroups.find(g => g.id === displayedItem.activityId).name}
                     </span>
                   </div>
                 </div>
               )}
 
               {/* Label (optional) */}
-              {displayedItem.labelId && wheelData?.organizationData?.labels?.find(l => l.id === displayedItem.labelId) && (
+              {displayedItem.labelId && wheelData?.wheelStructure?.labels?.find(l => l.id === displayedItem.labelId) && (
                 <div className="flex items-start gap-2">
                   <span className="font-semibold text-gray-600 min-w-[100px]">{t('common:cast.label')}:</span>
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-4 h-4 rounded-sm flex-shrink-0"
                       style={{ 
-                        backgroundColor: wheelData.organizationData.labels.find(l => l.id === displayedItem.labelId).color 
+                        backgroundColor: wheelData.wheelStructure.labels.find(l => l.id === displayedItem.labelId).color 
                       }}
                     />
                     <span className="text-gray-900">
-                      {wheelData.organizationData.labels.find(l => l.id === displayedItem.labelId).name}
+                      {wheelData.wheelStructure.labels.find(l => l.id === displayedItem.labelId).name}
                     </span>
                   </div>
                 </div>

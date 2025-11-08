@@ -19,8 +19,8 @@ class YearWheel {
     this.events = events;
     this.options = options;
     
-    // Validate and normalize organizationData using ConfigValidator
-    const rawData = options.organizationData || {
+    // Validate and normalize wheelStructure using ConfigValidator
+    const rawData = options.wheelStructure || {
       items: [],
       rings: [],
       activityGroups: [],
@@ -29,18 +29,18 @@ class YearWheel {
     
     // Migrate and validate data
     const migratedData = ConfigValidator.migrate(rawData);
-    this.organizationData = ConfigValidator.validate(migratedData);
+    this.wheelStructure = ConfigValidator.validate(migratedData);
     
     // Log validation errors if any (for debugging)
-    const errors = ConfigValidator.getErrors(this.organizationData);
+    const errors = ConfigValidator.getErrors(this.wheelStructure);
     if (errors.length > 0) {
-      console.warn('YearWheel organizationData validation warnings:', errors);
+      console.warn('YearWheel wheelStructure validation warnings:', errors);
     }
-    // For backward compatibility: merge old ringsData into organizationData.rings if needed
+    // For backward compatibility: merge old ringsData into wheelStructure.rings if needed
     if (
       options.ringsData &&
       options.ringsData.length > 0 &&
-      !this.organizationData.rings.some((r) => r.type === "inner")
+      !this.wheelStructure.rings.some((r) => r.type === "inner")
     ) {
       // Convert old ringsData format to new ring structure
       const innerRingsFromOldData = options.ringsData.map((ring, index) => ({
@@ -51,9 +51,9 @@ class YearWheel {
         data: ring.data,
         orientation: ring.orientation || "vertical",
       }));
-      this.organizationData.rings = [
+      this.wheelStructure.rings = [
         ...innerRingsFromOldData,
-        ...this.organizationData.rings,
+        ...this.wheelStructure.rings,
       ];
     }
     this.showWeekRing =
@@ -173,7 +173,7 @@ class YearWheel {
   calculateMaxRadius() {
     this.maxRadius = LayoutCalculator.calculateMaxRadius(
       this.size, 
-      this.organizationData.rings
+      this.wheelStructure.rings
     );
   }
 
@@ -235,7 +235,7 @@ class YearWheel {
 
   // Generate cache key to detect when background needs redrawing
   getCacheKey() {
-    const ringCount = this.organizationData.rings.filter(
+    const ringCount = this.wheelStructure.rings.filter(
       (r) => r.visible
     ).length;
     const visibilityState = `m${this.showMonthRing}w${this.showWeekRing}r${this.showRingNames}`;
@@ -254,8 +254,8 @@ class YearWheel {
   }
 
   // Update organization data without recreating the wheel
-  updateOrganizationData(newOrganizationData) {
-    this.organizationData = newOrganizationData;
+  updateWheelStructure(newWheelStructure) {
+    this.wheelStructure = newWheelStructure;
 
     // Recalculate maxRadius in case outer rings were added/removed/toggled
     this.calculateMaxRadius();
@@ -612,13 +612,13 @@ class YearWheel {
   checkDragCollision(startDate, endDate, targetRingId, excludeItemId) {
     if (!targetRingId) return { hasCollision: false, collidingItems: [] };
 
-    const visibleActivityGroups = this.organizationData.activityGroups.filter(
+    const visibleActivityGroups = this.wheelStructure.activityGroups.filter(
       (a) => a.visible
     );
-    const visibleLabels = this.organizationData.labels.filter((l) => l.visible);
+    const visibleLabels = this.wheelStructure.labels.filter((l) => l.visible);
 
     // Get all items in the target ring (excluding the dragged item)
-    const ringItems = this.organizationData.items.filter((item) => {
+    const ringItems = this.wheelStructure.items.filter((item) => {
       if (item.id === excludeItemId) return false;
       if (item.ringId !== targetRingId) return false;
 
@@ -3575,7 +3575,7 @@ class YearWheel {
     }
 
     // Get activity group color
-    const activityGroup = this.organizationData.activityGroups.find(
+    const activityGroup = this.wheelStructure.activityGroups.find(
       (a) => a.id === item.activityId
     );
     const itemColor = activityGroup ? activityGroup.color : "#B8D4E8";
@@ -3689,7 +3689,7 @@ class YearWheel {
 
     if (this.hoveredItem) {
       // Show hovered activity info - all text must fit inside circle
-      const ring = this.organizationData.rings.find(
+      const ring = this.wheelStructure.rings.find(
         (r) => r.id === this.hoveredItem.ringId
       );
 
@@ -3797,7 +3797,7 @@ class YearWheel {
   drawLabelIndicator(item, startRadius, width, startAngle, endAngle) {
     if (!item.labelId) return; // No label, skip
 
-    const label = this.organizationData.labels.find(
+    const label = this.wheelStructure.labels.find(
       (l) => l.id === item.labelId
     );
     if (!label || !label.visible) return; // Label not found or not visible
@@ -4289,16 +4289,16 @@ class YearWheel {
     const maxDate = zoomEndDate;
 
     // Define visibility filters at higher scope for use in both outer and inner ring drawing
-    const visibleRings = this.organizationData.rings.filter(
+    const visibleRings = this.wheelStructure.rings.filter(
       (r) => r.visible && r.type === "outer"
     );
-    const visibleInnerRings = this.organizationData.rings.filter(
+    const visibleInnerRings = this.wheelStructure.rings.filter(
       (r) => r.visible && r.type === "inner"
     );
-    const visibleActivityGroups = this.organizationData.activityGroups.filter(
+    const visibleActivityGroups = this.wheelStructure.activityGroups.filter(
       (a) => a.visible
     );
-    const visibleLabels = this.organizationData.labels.filter((l) => l.visible);
+    const visibleLabels = this.wheelStructure.labels.filter((l) => l.visible);
 
     // PERFORMANCE: Create lookup maps to avoid repeated array.find() calls
     const activityGroupMap = new Map(
@@ -4308,9 +4308,9 @@ class YearWheel {
 
     // Draw organization data items (from sidebar) if available
     if (
-      this.organizationData &&
-      this.organizationData.items &&
-      this.organizationData.items.length > 0
+      this.wheelStructure &&
+      this.wheelStructure.items &&
+      this.wheelStructure.items.length > 0
     ) {
       if (visibleRings.length > 0) {
         const ringNameBandWidth = this.size / 70; // CONSISTENT ring name band width
@@ -4351,7 +4351,7 @@ class YearWheel {
           });
 
           // Filter items for this ring that also have visible activity group (label is optional)
-          let ringItems = this.organizationData.items.filter((item) => {
+          let ringItems = this.wheelStructure.items.filter((item) => {
             const hasVisibleActivityGroup = visibleActivityGroups.some(
               (a) => a.id === item.activityId
             );
@@ -4489,13 +4489,13 @@ class YearWheel {
                 console.log('[OUTER RING] TIMEOUT - clearing stale update (age:', age, 'ms) for:', item.id);
                 this.pendingItemUpdates.delete(item.id);
               } else {
-                // 300ms-5000ms: check if organizationData has caught up
+                // 300ms-5000ms: check if wheelStructure has caught up
                 const datesMatch = item.startDate === pendingData.item.startDate && 
                                   item.endDate === pendingData.item.endDate;
                 const ringMatches = item.ringId === pendingData.item.ringId;
                 
                 if (datesMatch && ringMatches) {
-                  // organizationData now has our changes - safe to clear
+                  // wheelStructure now has our changes - safe to clear
                   console.log('[OUTER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
                   this.pendingItemUpdates.delete(item.id);
                 }
@@ -4630,8 +4630,8 @@ class YearWheel {
             }
 
             // Store clickable region for this item
-            // CRITICAL: Only store if this is fresh data (from pending update OR from organizationData with no pending update)
-            // Skip storing if we're rendering stale organizationData while a pending update exists
+            // CRITICAL: Only store if this is fresh data (from pending update OR from wheelStructure with no pending update)
+            // Skip storing if we're rendering stale wheelStructure while a pending update exists
             const isStaleData = !pendingData && this.pendingItemUpdates.has(item.id);
             if (!isStaleData) {
               this.clickableItems.push({
@@ -4738,7 +4738,7 @@ class YearWheel {
     // Draw monthly events (inner sections) - they expand to fill available space
 
     // Show ALL visible inner rings, even if empty (no items)
-    const innerRings = this.organizationData.rings.filter((r) => {
+    const innerRings = this.wheelStructure.rings.filter((r) => {
       return r.type === "inner" && r.visible;
     });
     const numberOfEvents = innerRings.length;
@@ -4780,7 +4780,7 @@ class YearWheel {
       });
 
       // Get items for this ring
-      let ringItems = this.organizationData.items.filter((item) => {
+      let ringItems = this.wheelStructure.items.filter((item) => {
         const hasVisibleActivityGroup = visibleActivityGroups.some(
           (a) => a.id === item.activityId
         );
@@ -4894,13 +4894,13 @@ class YearWheel {
               console.log('[INNER RING] TIMEOUT - clearing stale update (age:', age, 'ms) for:', item.id);
               this.pendingItemUpdates.delete(item.id);
             } else {
-              // 300ms-5000ms: check if organizationData has caught up
+              // 300ms-5000ms: check if wheelStructure has caught up
               const datesMatch = item.startDate === pendingData.item.startDate && 
                                 item.endDate === pendingData.item.endDate;
               const ringMatches = item.ringId === pendingData.item.ringId;
               
               if (datesMatch && ringMatches) {
-                // organizationData now has our changes - safe to clear
+                // wheelStructure now has our changes - safe to clear
                 console.log('[INNER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
                 this.pendingItemUpdates.delete(item.id);
               }
@@ -5033,8 +5033,8 @@ class YearWheel {
           }
 
           // Store clickable region for this item
-          // CRITICAL: Only store if this is fresh data (from pending update OR from organizationData with no pending update)
-          // Skip storing if we're rendering stale organizationData while a pending update exists
+          // CRITICAL: Only store if this is fresh data (from pending update OR from wheelStructure with no pending update)
+          // Skip storing if we're rendering stale wheelStructure while a pending update exists
           const isStaleData = !pendingData && this.pendingItemUpdates.has(item.id);
           if (!isStaleData) {
             this.clickableItems.push({

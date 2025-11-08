@@ -6,7 +6,7 @@ import { updateWheel, saveWheelData, updatePage, createVersion, fetchPages, crea
  * 
  * Replaces the 3 conflicting save mechanisms:
  * - autoSave (10s debounce for metadata)
- * - autoSaveOrganizationData (3s debounce for org data)
+ * - autoSaveWheelStructure (3s debounce for org data)
  * - handleSave (manual save button)
  * 
  * Also eliminates 5 flags:
@@ -60,7 +60,7 @@ interface SaveManagerReturn {
   }) => void;
   
   // Organization data setter (will auto-queue save)
-  setOrganizationData: (data: any) => void;
+  setWheelStructure: (data: any) => void;
   
   // Version control
   createVersionSnapshot: (description?: string) => Promise<void>;
@@ -73,7 +73,7 @@ interface SaveManagerReturn {
   // Update refs (called from parent component)
   updateRefs: (refs: {
     metadata?: any;
-    organizationData?: any;
+    wheelStructure?: any;
     currentPageId?: string | null;
     currentYear?: string;
     pages?: any[];
@@ -106,7 +106,7 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
   
   // Data refs (latest values)
   const metadataRef = useRef<any>(null);
-  const organizationDataRef = useRef<any>(null);
+  const wheelStructureRef = useRef<any>(null);
   const currentPageIdRef = useRef<string | null>(null);
   const currentYearRef = useRef<string>('2025');
   const pagesRef = useRef<any[]>([]);
@@ -233,9 +233,9 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
    * Execute organization data save (frequent)
    */
   const executeOrganizationSave = useCallback(async (operation: SaveOperation) => {
-    if (!wheelId || !organizationDataRef.current) return;
+    if (!wheelId || !wheelStructureRef.current) return;
     
-    const orgData = organizationDataRef.current;
+    const orgData = wheelStructureRef.current;
     let pageId = currentPageIdRef.current;
     const year = currentYearRef.current;
     
@@ -251,7 +251,7 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
         const newPage = await createPage(wheelId, {
           year: parseInt(year),
           title: year,
-          organizationData: orgData
+          wheelStructure: orgData
         });
         pageId = newPage.id;
         currentPageIdRef.current = pageId;
@@ -326,10 +326,10 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
    * Execute version snapshot
    */
   const executeVersionSave = useCallback(async (operation: SaveOperation) => {
-    if (!wheelId || !metadataRef.current || !organizationDataRef.current) return;
+    if (!wheelId || !metadataRef.current || !wheelStructureRef.current) return;
     
     const metadata = metadataRef.current;
-    const orgData = organizationDataRef.current;
+    const orgData = wheelStructureRef.current;
     const { description, isAutoSave } = operation.data || {};
     
     try {
@@ -344,7 +344,7 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
           showRingNames: metadata.showRingNames,
           showLabels: metadata.showLabels,
           weekRingDisplayMode: metadata.weekRingDisplayMode,
-          organizationData: orgData
+          wheelStructure: orgData
         },
         description,
         isAutoSave
@@ -390,8 +390,8 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
   /**
    * Update organization data (will auto-queue save)
    */
-  const setOrganizationData = useCallback((data: any) => {
-    organizationDataRef.current = data;
+  const setWheelStructure = useCallback((data: any) => {
+    wheelStructureRef.current = data;
     
     if (!autoSaveEnabled || saveState === 'loading') return;
     
@@ -462,7 +462,7 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
     enqueueSave,
     saveNow,
     setMetadata,
-    setOrganizationData,
+    setWheelStructure,
     createVersionSnapshot,
     
     // State management
@@ -476,13 +476,13 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
     // Update refs (called from parent component)
     updateRefs: useCallback((refs: {
       metadata?: any;
-      organizationData?: any;
+      wheelStructure?: any;
       currentPageId?: string | null;
       currentYear?: string;
       pages?: any[];
     }) => {
       if (refs.metadata) metadataRef.current = refs.metadata;
-      if (refs.organizationData) organizationDataRef.current = refs.organizationData;
+      if (refs.wheelStructure) wheelStructureRef.current = refs.wheelStructure;
       if (refs.currentPageId !== undefined) currentPageIdRef.current = refs.currentPageId;
       if (refs.currentYear) currentYearRef.current = refs.currentYear;
       if (refs.pages) pagesRef.current = refs.pages;

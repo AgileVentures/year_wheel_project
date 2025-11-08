@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
 
-function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onClose, currentWheelId }) {
+function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClose, currentWheelId }) {
   const { t } = useTranslation(['editor']);
   const [formData, setFormData] = useState({
     name: item.name,
@@ -273,7 +273,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                     onChange={(e) => handleChange('ringId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {organizationData.rings.map((ring) => (
+                    {wheelStructure.rings.map((ring) => (
                       <option key={ring.id} value={ring.id}>
                         {ring.name}
                       </option>
@@ -291,7 +291,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                     onChange={(e) => handleChange('activityId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {organizationData.activityGroups.map((activity) => (
+                    {wheelStructure.activityGroups.map((activity) => (
                       <option key={activity.id} value={activity.id}>
                         {activity.name}
                       </option>
@@ -309,7 +309,7 @@ function EditItemModal({ item, organizationData, onUpdateItem, onDeleteItem, onC
                     onChange={(e) => handleChange('labelId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {organizationData.labels.map((label) => (
+                    {wheelStructure.labels.map((label) => (
                       <option key={label.id} value={label.id}>
                         {label.name}
                       </option>

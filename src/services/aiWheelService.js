@@ -67,17 +67,17 @@ export const getWheelContext = async (wheelId, currentPageId) => {
       title: wheelData.title,
       year: wheelData.year,
       colors: wheelData.colors,
-      organizationData: {
-        ...wheelData.organizationData,
+      wheelStructure: {
+        ...wheelData.wheelStructure,
         items: pageItems // Only current page's items
       },
       pages: pages || [],
       stats: {
-        rings: wheelData.organizationData.rings?.length || 0,
-        innerRings: wheelData.organizationData.rings?.filter(r => r.type === 'inner')?.length || 0,
-        outerRings: wheelData.organizationData.rings?.filter(r => r.type === 'outer')?.length || 0,
-        activityGroups: wheelData.organizationData.activityGroups?.length || 0,
-        labels: wheelData.organizationData.labels?.length || 0,
+        rings: wheelData.wheelStructure.rings?.length || 0,
+        innerRings: wheelData.wheelStructure.rings?.filter(r => r.type === 'inner')?.length || 0,
+        outerRings: wheelData.wheelStructure.rings?.filter(r => r.type === 'outer')?.length || 0,
+        activityGroups: wheelData.wheelStructure.activityGroups?.length || 0,
+        labels: wheelData.wheelStructure.labels?.length || 0,
         items: pageItems?.length || 0,
       }
     };
@@ -93,7 +93,7 @@ export const getWheelContext = async (wheelId, currentPageId) => {
 export const aiCreateRing = async (wheelId, pageId, { name, type, color, orientation }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     // Generate ID
     const ringId = `ring-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -143,7 +143,7 @@ export const aiCreateRing = async (wheelId, pageId, { name, type, color, orienta
 export const aiCreateActivityGroup = async (wheelId, pageId, { name, color, visible = true }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
@@ -181,7 +181,7 @@ export const aiCreateActivityGroup = async (wheelId, pageId, { name, color, visi
 export const aiCreateLabel = async (wheelId, pageId, { name, color, visible = true }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     const labelId = `label-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
@@ -406,18 +406,18 @@ export const aiCreatePage = async (wheelId, { year, copyStructure = false }) => 
   try {
     const wheelData = await fetchWheel(wheelId);
     
-    let organizationData;
+    let wheelStructure;
     if (copyStructure) {
       // Copy rings and activity groups, but not items
-      organizationData = {
-        rings: wheelData.organizationData.rings || [],
-        activityGroups: wheelData.organizationData.activityGroups || [],
-        labels: wheelData.organizationData.labels || [],
+      wheelStructure = {
+        rings: wheelData.wheelStructure.rings || [],
+        activityGroups: wheelData.wheelStructure.activityGroups || [],
+        labels: wheelData.wheelStructure.labels || [],
         items: [] // Empty items
       };
     } else {
       // Blank page
-      organizationData = {
+      wheelStructure = {
         rings: [],
         activityGroups: [{
           id: `group-${Date.now()}`,
@@ -433,7 +433,7 @@ export const aiCreatePage = async (wheelId, { year, copyStructure = false }) => 
     const newPage = await createPageService(wheelId, {
       year,
       title: `${year}`,
-      organizationData
+      wheelStructure
     });
     
     return {
@@ -528,7 +528,7 @@ export const aiGetAvailablePages = async (wheelId) => {
 export const aiDeleteRing = async (wheelId, pageId, { ringId }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     const ring = orgData.rings.find(r => r.id === ringId);
     if (!ring) {
@@ -569,7 +569,7 @@ export const aiDeleteRing = async (wheelId, pageId, { ringId }) => {
 export const aiDeleteItems = async (wheelId, pageId, { itemName, itemIds }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     let itemsToDelete = [];
     
@@ -632,7 +632,7 @@ export const aiDeleteItems = async (wheelId, pageId, { itemName, itemIds }) => {
 export const aiDeleteItemsByRing = async (wheelId, pageId, { ringName, ringId }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     let ring;
     
@@ -696,7 +696,7 @@ export const aiDeleteItemsByRing = async (wheelId, pageId, { ringName, ringId })
 export const aiDeleteActivityGroup = async (wheelId, pageId, { activityGroupId }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     const group = orgData.activityGroups.find(ag => ag.id === activityGroupId);
     if (!group) {
@@ -737,7 +737,7 @@ export const aiDeleteActivityGroup = async (wheelId, pageId, { activityGroupId }
 export const aiSearchWheel = async (wheelId, { query, type }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     const searchQuery = query.toLowerCase();
     const results = {
@@ -860,7 +860,7 @@ export const aiSearchWheel = async (wheelId, { query, type }) => {
 export const aiGetItemsByRing = async (wheelId, { ringName, ringId }) => {
   try {
     const wheelData = await fetchWheel(wheelId);
-    const orgData = wheelData.organizationData;
+    const orgData = wheelData.wheelStructure;
     
     let ring;
     

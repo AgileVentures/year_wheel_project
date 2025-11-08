@@ -9,7 +9,7 @@ import QuarterNavigator from './QuarterNavigator';
  * Allows toggling rings, activity groups, and labels while embedded in presentations
  */
 function PresentationControlDialog({ 
-  organizationData,
+  wheelStructure,
   onOrganizationChange,
   onClose,
   // View control props
@@ -111,71 +111,71 @@ function PresentationControlDialog({
   };
 
   const toggleRing = (ringId) => {
-    const updatedRings = organizationData.rings.map(ring =>
+    const updatedRings = wheelStructure.rings.map(ring =>
       ring.id === ringId ? { ...ring, visible: !ring.visible } : ring
     );
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
   };
 
   const toggleActivityGroup = (groupId) => {
-    const updatedGroups = (organizationData.activityGroups || []).map(group =>
+    const updatedGroups = (wheelStructure.activityGroups || []).map(group =>
       group.id === groupId ? { ...group, visible: !group.visible } : group
     );
-    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+    onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
   };
 
   const toggleLabel = (labelId) => {
-    const updatedLabels = organizationData.labels.map(label =>
+    const updatedLabels = wheelStructure.labels.map(label =>
       label.id === labelId ? { ...label, visible: !label.visible } : label
     );
-    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+    onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
   };
 
   const toggleAllInSection = (type, show) => {
     if (type === 'innerRings') {
-      const updatedRings = organizationData.rings.map(ring => 
+      const updatedRings = wheelStructure.rings.map(ring => 
         ring.type === 'inner' ? { ...ring, visible: show } : ring
       );
-      onOrganizationChange({ ...organizationData, rings: updatedRings });
+      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
     } else if (type === 'outerRings') {
-      const updatedRings = organizationData.rings.map(ring => 
+      const updatedRings = wheelStructure.rings.map(ring => 
         ring.type === 'outer' ? { ...ring, visible: show } : ring
       );
-      onOrganizationChange({ ...organizationData, rings: updatedRings });
+      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
     } else if (type === 'rings') {
-      const updatedRings = organizationData.rings.map(ring => ({
+      const updatedRings = wheelStructure.rings.map(ring => ({
         ...ring,
         visible: show
       }));
-      onOrganizationChange({ ...organizationData, rings: updatedRings });
+      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
     } else if (type === 'activityGroups') {
-      const updatedGroups = (organizationData.activityGroups || []).map(group => ({
+      const updatedGroups = (wheelStructure.activityGroups || []).map(group => ({
         ...group,
         visible: show
       }));
-      onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+      onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
     } else if (type === 'labels') {
-      const updatedLabels = organizationData.labels.map(label => ({
+      const updatedLabels = wheelStructure.labels.map(label => ({
         ...label,
         visible: show
       }));
-      onOrganizationChange({ ...organizationData, labels: updatedLabels });
+      onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
     }
   };
 
-  const innerRings = organizationData.rings.filter(ring => ring.type === 'inner');
-  const outerRings = organizationData.rings.filter(ring => ring.type === 'outer');
+  const innerRings = wheelStructure.rings.filter(ring => ring.type === 'inner');
+  const outerRings = wheelStructure.rings.filter(ring => ring.type === 'outer');
 
   const countRingItems = (ringId) => {
-    return organizationData.items?.filter(item => item.ringId === ringId).length || 0;
+    return wheelStructure.items?.filter(item => item.ringId === ringId).length || 0;
   };
 
   const countActivityGroupItems = (groupId) => {
-    return organizationData.items?.filter(item => item.activityId === groupId).length || 0;
+    return wheelStructure.items?.filter(item => item.activityId === groupId).length || 0;
   };
 
   const countLabelItems = (labelId) => {
-    return organizationData.items?.filter(item => item.labelId === labelId).length || 0;
+    return wheelStructure.items?.filter(item => item.labelId === labelId).length || 0;
   };
 
   // Handle drag start for reordering
@@ -205,7 +205,7 @@ function PresentationControlDialog({
       if ((draggedType === 'innerRing' || draggedType === 'outerRing') && 
           (targetType === 'innerRing' || targetType === 'outerRing')) {
         
-        const rings = [...organizationData.rings];
+        const rings = [...wheelStructure.rings];
         const draggedRing = rings.find(r => r.id === draggedItem.item.id);
         const targetRing = rings.find(r => r.id === dragOverItem.item.id);
         
@@ -223,7 +223,7 @@ function PresentationControlDialog({
           if (draggedIndex !== -1 && targetIndex !== -1) {
             const [removed] = rings.splice(draggedIndex, 1);
             rings.splice(targetIndex, 0, removed);
-            onOrganizationChange({ ...organizationData, rings });
+            onOrganizationChange({ ...wheelStructure, rings });
           }
         }
       }
@@ -246,7 +246,7 @@ function PresentationControlDialog({
       return;
     }
 
-    const rings = [...organizationData.rings];
+    const rings = [...wheelStructure.rings];
     const draggedRing = rings.find(r => r.id === draggedItem.item.id);
     
     if (draggedRing) {
@@ -268,7 +268,7 @@ function PresentationControlDialog({
         }
       }
       
-      onOrganizationChange({ ...organizationData, rings });
+      onOrganizationChange({ ...wheelStructure, rings });
     }
     
     setDraggedItem(null);
@@ -453,7 +453,7 @@ function PresentationControlDialog({
             )}
             
             {/* Items Display on TV - For Casting */}
-            {sendMessage && onShowItemOnTV && onHideItemOnTV && organizationData.items && organizationData.items.length > 0 && (
+            {sendMessage && onShowItemOnTV && onHideItemOnTV && wheelStructure.items && wheelStructure.items.length > 0 && (
               <div className="border border-gray-200 rounded-sm overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100">
                 <button
                   onClick={() => toggleSection('tvItems')}
@@ -464,22 +464,22 @@ function PresentationControlDialog({
                     <span className="font-semibold text-base text-gray-900">
                       {t('common:cast.showItemsOnTV')}
                     </span>
-                    <span className="text-sm text-gray-500">({organizationData.items.length})</span>
+                    <span className="text-sm text-gray-500">({wheelStructure.items.length})</span>
                   </div>
                 </button>
                 
                 {expandedSections.tvItems && (
                   <div className="border-t border-gray-200 bg-white p-3 space-y-2 max-h-64 overflow-y-auto">
-                    {organizationData.items
+                    {wheelStructure.items
                       .filter(item => {
                         // Only show items that are visible (ring and activity group are visible)
-                        const ring = organizationData.rings.find(r => r.id === item.ringId);
-                        const activityGroup = organizationData.activityGroups?.find(g => g.id === item.activityId);
+                        const ring = wheelStructure.rings.find(r => r.id === item.ringId);
+                        const activityGroup = wheelStructure.activityGroups?.find(g => g.id === item.activityId);
                         return ring?.visible && activityGroup?.visible;
                       })
                       .map(item => {
-                        const activityGroup = organizationData.activityGroups?.find(g => g.id === item.activityId);
-                        const ring = organizationData.rings.find(r => r.id === item.ringId);
+                        const activityGroup = wheelStructure.activityGroups?.find(g => g.id === item.activityId);
+                        const ring = wheelStructure.rings.find(r => r.id === item.ringId);
                         
                         const isShown = shownItemId === item.id;
                         
@@ -531,9 +531,9 @@ function PresentationControlDialog({
                           </div>
                         );
                       })}
-                    {organizationData.items.filter(item => {
-                      const ring = organizationData.rings.find(r => r.id === item.ringId);
-                      const activityGroup = organizationData.activityGroups?.find(g => g.id === item.activityId);
+                    {wheelStructure.items.filter(item => {
+                      const ring = wheelStructure.rings.find(r => r.id === item.ringId);
+                      const activityGroup = wheelStructure.activityGroups?.find(g => g.id === item.activityId);
                       return ring?.visible && activityGroup?.visible;
                     }).length === 0 && (
                       <div className="p-6 text-center text-gray-500 text-sm">
@@ -658,7 +658,7 @@ function PresentationControlDialog({
             </div>
 
             {/* Activity Groups Section */}
-            {organizationData.activityGroups && organizationData.activityGroups.length > 0 && (
+            {wheelStructure.activityGroups && wheelStructure.activityGroups.length > 0 && (
               <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <button
                   onClick={() => toggleSection('activityGroups')}
@@ -667,7 +667,7 @@ function PresentationControlDialog({
                   <div className="flex items-center gap-3">
                     {expandedSections.activityGroups ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                     <span className="font-semibold text-base">{t('editor:organizationPanel.activityGroups')}</span>
-                    <span className="text-sm text-gray-500">({organizationData.activityGroups.length})</span>
+                    <span className="text-sm text-gray-500">({wheelStructure.activityGroups.length})</span>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -689,7 +689,7 @@ function PresentationControlDialog({
                 
                 {expandedSections.activityGroups && (
                   <div className="border-t border-gray-200 bg-white p-3 space-y-2">
-                    {organizationData.activityGroups.map(group => (
+                    {wheelStructure.activityGroups.map(group => (
                       <label
                         key={group.id}
                         className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-sm transition-colors"
@@ -714,7 +714,7 @@ function PresentationControlDialog({
             )}
 
             {/* Labels Section */}
-            {organizationData.labels && organizationData.labels.length > 0 && (
+            {wheelStructure.labels && wheelStructure.labels.length > 0 && (
               <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <button
                   onClick={() => toggleSection('labels')}
@@ -723,7 +723,7 @@ function PresentationControlDialog({
                   <div className="flex items-center gap-3">
                     {expandedSections.labels ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
                     <span className="font-semibold text-base">{t('editor:organizationPanel.labels')}</span>
-                    <span className="text-sm text-gray-500">({organizationData.labels.length})</span>
+                    <span className="text-sm text-gray-500">({wheelStructure.labels.length})</span>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -745,7 +745,7 @@ function PresentationControlDialog({
                 
                 {expandedSections.outerRings && (
                   <div className="border-t border-gray-200 bg-white p-3 space-y-2">
-                    {organizationData.labels.map(label => (
+                    {wheelStructure.labels.map(label => (
                       <label
                         key={label.id}
                         className="no-drag flex items-center gap-3 p-3 hover:bg-gray-50 rounded-sm transition-colors"
@@ -787,7 +787,7 @@ function PresentationControlDialog({
                     year={year}
                     currentMonth={zoomedMonth}
                     currentQuarter={zoomedQuarter}
-                    organizationData={organizationData}
+                    wheelStructure={wheelStructure}
                     onMonthSelect={onZoomedMonthChange}
                     onQuarterSelect={onZoomedQuarterChange}
                     onResetZoom={() => {
@@ -817,7 +817,7 @@ function PresentationControlDialog({
                     year={year}
                     currentQuarter={zoomedQuarter}
                     currentMonth={zoomedMonth}
-                    organizationData={organizationData}
+                    wheelStructure={wheelStructure}
                     onQuarterSelect={onZoomedQuarterChange}
                     onMonthSelect={onZoomedMonthChange}
                     onResetZoom={() => {
@@ -1132,7 +1132,7 @@ function PresentationControlDialog({
           </div>
 
           {/* Activity Groups Section */}
-          {organizationData.activityGroups && organizationData.activityGroups.length > 0 && (
+          {wheelStructure.activityGroups && wheelStructure.activityGroups.length > 0 && (
             <div className="border border-gray-200 rounded">
               <button
                 onClick={() => toggleSection('activityGroups')}
@@ -1141,7 +1141,7 @@ function PresentationControlDialog({
                 <div className="flex items-center gap-1.5">
                   {expandedSections.activityGroups ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                   <span className="font-medium text-xs">{t('editor:organizationPanel.activityGroups')}</span>
-                  <span className="text-xs text-gray-500">({organizationData.activityGroups.length})</span>
+                  <span className="text-xs text-gray-500">({wheelStructure.activityGroups.length})</span>
                 </div>
                 <div className="flex gap-0.5">
                   <button
@@ -1163,7 +1163,7 @@ function PresentationControlDialog({
               
               {expandedSections.activityGroups && (
                 <div className="border-t border-gray-200 p-1 space-y-0.5">
-                  {organizationData.activityGroups.map(group => (
+                  {wheelStructure.activityGroups.map(group => (
                     <div
                       key={group.id}
                       className="no-drag flex items-center justify-between p-1.5 hover:bg-gray-50 rounded transition-colors"
@@ -1191,7 +1191,7 @@ function PresentationControlDialog({
           )}
 
           {/* Labels Section */}
-          {organizationData.labels && organizationData.labels.length > 0 && (
+          {wheelStructure.labels && wheelStructure.labels.length > 0 && (
             <div className="border border-gray-200 rounded">
               <button
                 onClick={() => toggleSection('labels')}
@@ -1200,7 +1200,7 @@ function PresentationControlDialog({
                 <div className="flex items-center gap-1.5">
                   {expandedSections.labels ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                   <span className="font-medium text-xs">{t('editor:organizationPanel.labels')}</span>
-                  <span className="text-xs text-gray-500">({organizationData.labels.length})</span>
+                  <span className="text-xs text-gray-500">({wheelStructure.labels.length})</span>
                 </div>
                 <div className="flex gap-0.5">
                   <button
@@ -1222,7 +1222,7 @@ function PresentationControlDialog({
               
               {expandedSections.labels && (
                 <div className="border-t border-gray-200 p-1 space-y-0.5">
-                  {organizationData.labels.map(label => (
+                  {wheelStructure.labels.map(label => (
                     <div
                       key={label.id}
                       className="no-drag flex items-center justify-between p-1.5 hover:bg-gray-50 rounded transition-colors"

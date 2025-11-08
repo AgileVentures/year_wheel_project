@@ -140,6 +140,54 @@ export const fetchWheel = async (wheelId) => {
   // Transform to match current app structure
   const wheelColors = wheel.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8']; // Default to Pastell palette
   
+  const normalizedRings = rings.map((ring, index) => {
+    if (ring.type === 'inner') {
+      const monthData = ringData
+        .filter(rd => rd.ring_id === ring.id)
+        .sort((a, b) => a.month_index - b.month_index);
+
+      return {
+        id: ring.id,
+        name: ring.name,
+        type: ring.type,
+        visible: ring.visible,
+        orientation: ring.orientation || 'vertical',
+        data: monthData.length > 0
+          ? monthData.map(md => md.content)
+          : Array.from({ length: 12 }, () => ['']),
+      };
+    }
+
+    const outerRingIndex = rings.filter((r, i) => i < index && r.type === 'outer').length;
+    return {
+      id: ring.id,
+      name: ring.name,
+      type: ring.type,
+      color: ring.color || wheelColors[outerRingIndex % wheelColors.length],
+      visible: ring.visible,
+    };
+  });
+
+  const normalizedActivityGroups = activityGroups.map((ag, index) => ({
+    id: ag.id,
+    name: ag.name,
+    color: ag.color || wheelColors[index % wheelColors.length],
+    visible: ag.visible,
+  }));
+
+  const normalizedLabels = labels.map((l, index) => ({
+    id: l.id,
+    name: l.name,
+    color: l.color || wheelColors[index % wheelColors.length],
+    visible: l.visible,
+  }));
+
+  const structure = {
+    rings: normalizedRings,
+    activityGroups: normalizedActivityGroups,
+    labels: normalizedLabels,
+  };
+
   return {
     id: wheel.id,
     user_id: wheel.user_id,
@@ -155,49 +203,11 @@ export const fetchWheel = async (wheelId) => {
     showRingNames: wheel.show_ring_names,
     showLabels: wheel.show_labels !== undefined ? wheel.show_labels : false,
     weekRingDisplayMode: wheel.week_ring_display_mode || 'week-numbers',
-    organizationData: {
-      rings: rings.map((ring, index) => {
-        // For inner rings, attach the month data
-        if (ring.type === 'inner') {
-          const monthData = ringData
-            .filter(rd => rd.ring_id === ring.id)
-            .sort((a, b) => a.month_index - b.month_index);
-          
-          return {
-            id: ring.id,
-            name: ring.name,
-            type: ring.type,
-            visible: ring.visible,
-            orientation: ring.orientation || 'vertical',
-            data: monthData.length > 0 
-              ? monthData.map(md => md.content)
-              : Array.from({ length: 12 }, () => ['']),
-          };
-        }
-        
-        // Outer rings - always derive color from current palette (colors saved as null in DB)
-        const outerRingIndex = rings.filter((r, i) => i < index && r.type === 'outer').length;
-        return {
-          id: ring.id,
-          name: ring.name,
-          type: ring.type,
-          color: ring.color || wheelColors[outerRingIndex % wheelColors.length],
-          visible: ring.visible,
-        };
-      }),
-      activityGroups: activityGroups.map((ag, index) => ({
-        id: ag.id,
-        name: ag.name,
-        color: ag.color || wheelColors[index % wheelColors.length], // Always derive from current palette (colors saved as null in DB)
-        visible: ag.visible,
-      })),
-      labels: labels.map((l, index) => ({
-        id: l.id,
-        name: l.name,
-        color: l.color || wheelColors[index % wheelColors.length], // Always derive from current palette (colors saved as null in DB)
-        visible: l.visible,
-      })),
-      items: [], // Items must be fetched separately using fetchPageData(pageId)
+    structure,
+    // TODO: Remove wheelStructure once frontend fully migrated to structure/items model
+    wheelStructure: {
+      ...structure,
+      items: [],
     },
   };
 };
@@ -349,8 +359,8 @@ export const createWheel = async (wheelData) => {
   if (wheelError) throw wheelError;
 
   // Ensure the wheel has a persisted default page + structure so items can be saved immediately
-  const baseOrganizationData = wheelData.organizationData
-    ? JSON.parse(JSON.stringify(wheelData.organizationData))
+  const baseWheelStructure = wheelData.wheelStructure
+    ? JSON.parse(JSON.stringify(wheelData.wheelStructure))
     : {
         rings: [
           {
@@ -374,16 +384,16 @@ export const createWheel = async (wheelData) => {
         items: [],
       };
 
-  if (!Array.isArray(baseOrganizationData.rings)) baseOrganizationData.rings = [];
-  if (!Array.isArray(baseOrganizationData.activityGroups)) baseOrganizationData.activityGroups = [];
-  if (!Array.isArray(baseOrganizationData.labels)) baseOrganizationData.labels = [];
-  if (!Array.isArray(baseOrganizationData.items)) baseOrganizationData.items = [];
+  if (!Array.isArray(baseWheelStructure.rings)) baseWheelStructure.rings = [];
+  if (!Array.isArray(baseWheelStructure.activityGroups)) baseWheelStructure.activityGroups = [];
+  if (!Array.isArray(baseWheelStructure.labels)) baseWheelStructure.labels = [];
+  if (!Array.isArray(baseWheelStructure.items)) baseWheelStructure.items = [];
 
   const cloneArray = (arr) => (Array.isArray(arr) ? JSON.parse(JSON.stringify(arr)) : []);
-  const globalRings = cloneArray(baseOrganizationData.rings);
-  const globalActivityGroups = cloneArray(baseOrganizationData.activityGroups);
-  const globalLabels = cloneArray(baseOrganizationData.labels);
-  const baseItems = cloneArray(baseOrganizationData.items);
+  const globalRings = cloneArray(baseWheelStructure.rings);
+  const globalActivityGroups = cloneArray(baseWheelStructure.activityGroups);
+  const globalLabels = cloneArray(baseWheelStructure.labels);
+  const baseItems = cloneArray(baseWheelStructure.items);
 
   const buildOrganizationPayload = () => ({
     rings: cloneArray(globalRings),
@@ -397,7 +407,7 @@ export const createWheel = async (wheelData) => {
     initialPage = await createPage(wheel.id, {
       year: baseYear,
       title: `${baseYear}`,
-      organizationData: buildOrganizationPayload(),
+      wheelStructure: buildOrganizationPayload(),
       overrideColors: null,
       overrideShowWeekRing: null,
       overrideShowMonthRing: null,
@@ -415,7 +425,7 @@ export const createWheel = async (wheelData) => {
         weekRingDisplayMode: wheel.week_ring_display_mode || 'week-numbers',
         year: baseYear,
       },
-      globalOrganizationData: {
+      globalWheelStructure: {
         rings: cloneArray(globalRings),
         activityGroups: cloneArray(globalActivityGroups),
         labels: cloneArray(globalLabels),
@@ -424,7 +434,7 @@ export const createWheel = async (wheelData) => {
         {
           id: initialPage.id,
           year: baseYear,
-          organizationData: buildOrganizationPayload(),
+          wheelStructure: buildOrganizationPayload(),
         },
       ],
     });
@@ -493,23 +503,23 @@ export const updateWheel = async (wheelId, updates) => {
  * Use savePageData() instead which properly handles page_id scoping.
  * This is kept for backwards compatibility only.
  */
-export const saveWheelData = async (wheelId, organizationData, pageId = null) => {
+export const saveWheelData = async (wheelId, wheelStructure, pageId = null) => {
   if (!pageId) {
     console.error('[saveWheelData] pageId is required!');
     throw new Error('pageId is required for saveWheelData');
   }
   
   // 1. Sync rings and get ID mappings (old ID -> new UUID)
-  const ringIdMap = await syncRings(wheelId, pageId, organizationData.rings || []);
+  const ringIdMap = await syncRings(wheelId, pageId, wheelStructure.rings || []);
   
   // 2. Sync activity groups and get ID mappings
-  const activityIdMap = await syncActivityGroups(wheelId, pageId, organizationData.activityGroups || []);
+  const activityIdMap = await syncActivityGroups(wheelId, pageId, wheelStructure.activityGroups || []);
   
   // 3. Sync labels and get ID mappings
-  const labelIdMap = await syncLabels(wheelId, pageId, organizationData.labels || []);
+  const labelIdMap = await syncLabels(wheelId, pageId, wheelStructure.labels || []);
   
   // 4. Sync items with ID mappings (scoped to pageId)
-  await syncItems(wheelId, organizationData.items || [], ringIdMap, activityIdMap, labelIdMap, pageId);
+  await syncItems(wheelId, wheelStructure.items || [], ringIdMap, activityIdMap, labelIdMap, pageId);
   
   // Return ID maps so caller can update local state with new UUIDs
   return { ringIdMap, activityIdMap, labelIdMap };
@@ -856,7 +866,7 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   const existingIds = new Set(existing?.map(i => i.id) || []);
   const currentIds = new Set(items.map(i => i.id).filter(id => id && !id.startsWith('item-')));
 
-  console.log(`[syncItems] Items to sync (from organizationData):`);
+  console.log(`[syncItems] Items to sync (from wheelStructure):`);
   items.forEach((i, idx) => {
     console.log(`[syncItems]   Item ${idx + 1}: id=${i.id ? i.id.substring(0, 8) : 'NEW'}, name="${i.name}", pageId=${i.pageId ? i.pageId.substring(0, 8) : 'NONE'}, dates=${i.startDate} to ${i.endDate}`);
   });
@@ -868,7 +878,7 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   const existingPageIds = new Set(existingPageItems.map(i => i.id));
   
   // CRITICAL SAFETY: Never delete items created in the last 10 seconds
-  // (they might be continuation items not yet in organizationData)
+  // (they might be continuation items not yet in wheelStructure)
   const now = new Date();
   const recentlyCreated = new Set(
     existing
@@ -1050,9 +1060,12 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
 
   const {
     metadata = {},
-    globalOrganizationData = {},
+    structure: snapshotStructure,
+    globalWheelStructure = {},
     pages = [],
   } = snapshot;
+
+  const structure = snapshotStructure || globalWheelStructure || {};
 
   const sanitizedMetadata = metadata && typeof metadata === 'object' ? metadata : {};
 
@@ -1060,14 +1073,14 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     await updateWheel(wheelId, sanitizedMetadata);
   }
 
-  const baseRings = Array.isArray(globalOrganizationData.rings)
-    ? globalOrganizationData.rings.map((ring) => ({ ...ring }))
+  const baseRings = Array.isArray(structure.rings)
+    ? structure.rings.map((ring) => ({ ...ring }))
     : [];
-  const baseActivityGroups = Array.isArray(globalOrganizationData.activityGroups)
-    ? globalOrganizationData.activityGroups.map((group) => ({ ...group }))
+  const baseActivityGroups = Array.isArray(structure.activityGroups)
+    ? structure.activityGroups.map((group) => ({ ...group }))
     : [];
-  const baseLabels = Array.isArray(globalOrganizationData.labels)
-    ? globalOrganizationData.labels.map((label) => ({ ...label }))
+  const baseLabels = Array.isArray(structure.labels)
+    ? structure.labels.map((label) => ({ ...label }))
     : [];
 
   const ringIdMap = await syncRings(wheelId, null, baseRings);
@@ -1084,13 +1097,15 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   };
 
   for (const page of normalizedPages) {
-    if (!page || !page.id || !page.organizationData) {
+    if (!page || !page.id) {
       continue;
     }
 
-    const rawItems = Array.isArray(page.organizationData.items)
-      ? page.organizationData.items
-      : [];
+    const rawItems = Array.isArray(page.items)
+      ? page.items
+      : Array.isArray(page.wheelStructure?.items)
+        ? page.wheelStructure.items
+        : [];
 
     const sanitizedItems = rawItems
       .filter(Boolean)
@@ -1159,7 +1174,7 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   }));
 
   for (const page of normalizedPages) {
-    if (!page || !page.id || !page.organizationData) {
+    if (!page || !page.id) {
       continue;
     }
 
@@ -1575,12 +1590,19 @@ export const createPage = async (wheelId, pageData) => {
         page_order: nextOrder,
         year: pageData.year || new Date().getFullYear(),
         title: pageData.title || `Sida ${nextOrder}`,
-        organization_data: pageData.organizationData || {
-          rings: [],
-          activityGroups: [],
-          labels: [],
-          items: []
-        },
+        organization_data: (() => {
+          const baseStructure = pageData.structure || pageData.wheelStructure || {};
+          return {
+            rings: Array.isArray(baseStructure.rings) ? baseStructure.rings : [],
+            activityGroups: Array.isArray(baseStructure.activityGroups) ? baseStructure.activityGroups : [],
+            labels: Array.isArray(baseStructure.labels) ? baseStructure.labels : [],
+            items: Array.isArray(pageData.items)
+              ? pageData.items
+              : Array.isArray(baseStructure.items)
+                ? baseStructure.items
+                : [],
+          };
+        })(),
         override_colors: pageData.overrideColors || null,
         override_show_week_ring: pageData.overrideShowWeekRing || null,
         override_show_month_ring: pageData.overrideShowMonthRing || null,

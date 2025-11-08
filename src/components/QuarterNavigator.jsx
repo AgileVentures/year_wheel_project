@@ -18,7 +18,7 @@ function QuarterNavigator({
   year, 
   currentQuarter = null, // 0-3 or null for full year view
   currentMonth = null, // 0-11 or null - needed to detect month zoom
-  organizationData,
+  wheelStructure,
   onQuarterSelect,
   onMonthSelect, // Needed to clear month when selecting quarter
   onResetZoom,
@@ -28,13 +28,13 @@ function QuarterNavigator({
 
   // Calculate activity count for each quarter
   const getQuarterActivityCount = (quarterIndex) => {
-    if (!organizationData?.items) return 0;
+    if (!wheelStructure?.items) return 0;
 
     const quarterStartMonth = quarterIndex * 3;
     const quarterStart = new Date(year, quarterStartMonth, 1);
     const quarterEnd = new Date(year, quarterStartMonth + 3, 0, 23, 59, 59);
 
-    return organizationData.items.filter(item => {
+    return wheelStructure.items.filter(item => {
       const itemStart = new Date(item.startDate);
       const itemEnd = new Date(item.endDate);
       return (itemStart <= quarterEnd && itemEnd >= quarterStart);

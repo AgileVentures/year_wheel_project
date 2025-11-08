@@ -18,7 +18,7 @@ import {
 import { getUserIntegrationByProvider } from '../services/integrationService';
 
 function ExportDataModal({ 
-  organizationData, 
+  wheelStructure, 
   year, 
   title, 
   onClose,
@@ -105,7 +105,7 @@ function ExportDataModal({
 
   const loadPreview = () => {
     try {
-      const previewData = getExportPreview(organizationData, {
+      const previewData = getExportPreview(wheelStructure, {
         maxRows: 5,
         includeRingNames,
         includeActivityGroups,
@@ -156,12 +156,12 @@ function ExportDataModal({
       
       switch (selectedFormat) {
         case 'excel':
-          const excelFilename = exportToExcel(organizationData, exportOptions);
+          const excelFilename = exportToExcel(wheelStructure, exportOptions);
           setSuccess(t('export:success.excel', { filename: excelFilename }));
           break;
           
         case 'csv':
-          const csvFilename = exportToCSV(organizationData, exportOptions);
+          const csvFilename = exportToCSV(wheelStructure, exportOptions);
           setSuccess(t('export:success.csv', { filename: csvFilename }));
           break;
           
@@ -173,7 +173,7 @@ function ExportDataModal({
             throw new Error(t('export:errors.premiumRequired'));
           }
           
-          result = await exportToGoogleSheets(organizationData, {
+          result = await exportToGoogleSheets(wheelStructure, {
             ...exportOptions,
             sheetName: googleSheetName,
             spreadsheetId: createNewSheet ? null : undefined

@@ -64,7 +64,7 @@ function Header({
   isPremium = false,
   // Wheel comments props
   wheelData = null,
-  organizationData = null,
+  wheelStructure = null,
   onNavigateToItem = null
 }) {
   const { t } = useTranslation(['common', 'subscription']);
@@ -1099,7 +1099,7 @@ function Header({
       {showCommentsPanel && wheelData && (
         <WheelCommentsPanel
           wheel={wheelData}
-          organizationData={organizationData}
+          wheelStructure={wheelStructure}
           onClose={() => setShowCommentsPanel(false)}
           onNavigateToItem={onNavigateToItem}
         />

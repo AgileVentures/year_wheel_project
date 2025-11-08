@@ -31,11 +31,13 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
   const { user } = useAuth();
   const channelRef = useRef(null);
   const onOperationRef = useRef(onOperation);
+  const currentPageIdRef = useRef(pageId);
   
-  // Keep callback ref updated
+  // Keep refs updated
   useEffect(() => {
     onOperationRef.current = onOperation;
-  }, [onOperation]);
+    currentPageIdRef.current = pageId;
+  }, [onOperation, pageId]);
 
   // Broadcast an operation to other users
   const broadcastOperation = useCallback(async (type, itemId, data = {}) => {
@@ -50,6 +52,7 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
       userId: user.id,
       userEmail: user.email,
       timestamp: new Date().toISOString(),
+      pageId: currentPageIdRef.current, // Include pageId in operation
     };
 
     try {
@@ -65,12 +68,13 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
   }, [user]);
 
   useEffect(() => {
-    if (!wheelId || !pageId || !user) {
+    if (!wheelId || !user) {
       return;
     }
 
-    // Create a broadcast channel for this page
-    const channel = supabase.channel(`operations:page:${pageId}`, {
+    // CRITICAL: Subscribe to WHEEL-LEVEL channel (not page-specific)
+    // This prevents re-subscription loops during page navigation
+    const channel = supabase.channel(`operations:wheel:${wheelId}`, {
       config: {
         broadcast: { self: false }, // Don't receive our own broadcasts
       },
@@ -79,9 +83,11 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
     // Listen for operations from other users
     channel
       .on('broadcast', { event: 'operation' }, (payload) => {
-        // Call the callback with the operation
-        if (onOperationRef.current && payload.payload) {
-          onOperationRef.current(payload.payload);
+        // Only process operations for the current page
+        if (payload.payload && payload.payload.pageId === currentPageIdRef.current) {
+          if (onOperationRef.current) {
+            onOperationRef.current(payload.payload);
+          }
         }
       })
       .subscribe((status) => {
@@ -98,7 +104,7 @@ export function useWheelOperations(wheelId, pageId, onOperation) {
         channelRef.current = null;
       }
     };
-  }, [wheelId, pageId, user]);
+  }, [wheelId, user]); // Removed pageId from dependencies - use ref instead
 
   return {
     broadcastOperation,

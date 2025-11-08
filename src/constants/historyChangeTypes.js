@@ -111,7 +111,7 @@ export const getHistoryLabel = (t, changeTypeOrLabel, params = {}) => {
  * @returns {string} Change type constant
  */
 export const detectOrganizationChange = (oldData, newData) => {
-  if (!oldData) return CHANGE_TYPES.CHANGE;
+  if (!oldData) return CHANGE_TYPES.CHANGE_ORGANIZATION;
   
   // Check length changes first (add/remove)
   if (newData.rings?.length !== oldData.rings?.length) {

@@ -232,10 +232,10 @@ class InteractionHandler {
     const dy = y - this.wheel.center.y;
     const radius = Math.sqrt(dx * dx + dy * dy);
 
-    const visibleOuterRings = this.wheel.organizationData.rings.filter(
+    const visibleOuterRings = this.wheel.wheelStructure.rings.filter(
       r => r.visible && r.type === 'outer'
     );
-    const visibleInnerRings = this.wheel.organizationData.rings.filter(
+    const visibleInnerRings = this.wheel.wheelStructure.rings.filter(
       r => r.visible && r.type === 'inner'
     );
 
@@ -345,12 +345,12 @@ class InteractionHandler {
     const { x, y } = this.getCanvasCoordinates(event);
     const dragMode = this.detectDragZone(x, y, itemRegion);
     
-    // CRITICAL: Look up fresh item data from organizationData (single source of truth)
-    const freshItem = this.wheel.organizationData.items.find(
+    // CRITICAL: Look up fresh item data from wheelStructure (single source of truth)
+    const freshItem = this.wheel.wheelStructure.items.find(
       i => i.id === itemRegion.itemId
     );
     
-    // If item not found in current organizationData, skip (year filtered out)
+    // If item not found in current wheelStructure, skip (year filtered out)
     if (!freshItem) {
       return;
     }
@@ -887,7 +887,7 @@ class InteractionHandler {
     for (const itemRegion of clickableItems) {
       if (this.isPointInItemRegion(x, y, itemRegion)) {
         const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
-        const itemFromData = this.wheel.organizationData.items.find(
+        const itemFromData = this.wheel.wheelStructure.items.find(
           (i) => i.id === itemRegion.itemId
         );
         const resolvedItem = pendingEntry ? pendingEntry.item : itemFromData;
@@ -997,14 +997,14 @@ class InteractionHandler {
       if (this.wheel.clickableItems) {
         for (const itemRegion of this.wheel.clickableItems) {
           if (this.isPointInItemRegion(x, y, itemRegion)) {
-            // CRITICAL: Look up fresh item data from organizationData (single source of truth)
+            // CRITICAL: Look up fresh item data from wheelStructure (single source of truth)
             const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
-            const freshItemFromData = this.wheel.organizationData.items.find(
+            const freshItemFromData = this.wheel.wheelStructure.items.find(
               (i) => i.id === itemRegion.itemId
             );
             const freshItem = pendingEntry ? pendingEntry.item : freshItemFromData;
             
-            // If item not found in current organizationData, skip (year filtered out)
+            // If item not found in current wheelStructure, skip (year filtered out)
             if (freshItem) {
               // Pass item, position, and original event (for modifier keys)
               this.options.onItemClick(freshItem, {

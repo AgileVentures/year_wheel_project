@@ -11,7 +11,7 @@ import { getRingIntegrations } from '../services/integrationService';
 import { showConfirmDialog } from '../utils/dialogs';
 
 function OrganizationPanel({ 
-  organizationData,
+  wheelStructure,
   onOrganizationChange,
   title,
   onTitleChange,
@@ -97,10 +97,10 @@ function OrganizationPanel({
     setLocalTitle(title || '');
   }, [title]);
   
-  // Sync local ring names when organizationData changes (but not while editing)
+  // Sync local ring names when wheelStructure changes (but not while editing)
   useEffect(() => {
     const ringNamesMap = {};
-    organizationData.rings.forEach(ring => {
+    wheelStructure.rings.forEach(ring => {
       // Only update if we're not currently editing this specific ring
       if (editingFieldRef.current.type === 'ring' && editingFieldRef.current.id === ring.id) {
         // Preserve the current local value (even if empty) while editing
@@ -110,12 +110,12 @@ function OrganizationPanel({
       }
     });
     setLocalRingNames(ringNamesMap);
-  }, [organizationData.rings]);
+  }, [wheelStructure.rings]);
   
-  // Sync local activity group names when organizationData changes (but not while editing)
+  // Sync local activity group names when wheelStructure changes (but not while editing)
   useEffect(() => {
     const groupNamesMap = {};
-    (organizationData.activityGroups || []).forEach(group => {
+    (wheelStructure.activityGroups || []).forEach(group => {
       // Only update if we're not currently editing this specific group
       if (editingFieldRef.current.type === 'activityGroup' && editingFieldRef.current.id === group.id) {
         // Preserve the current local value (even if empty) while editing
@@ -125,12 +125,12 @@ function OrganizationPanel({
       }
     });
     setLocalActivityGroupNames(groupNamesMap);
-  }, [organizationData.activityGroups]);
+  }, [wheelStructure.activityGroups]);
   
-  // Sync local label names when organizationData changes (but not while editing)
+  // Sync local label names when wheelStructure changes (but not while editing)
   useEffect(() => {
     const labelNamesMap = {};
-    organizationData.labels.forEach(label => {
+    wheelStructure.labels.forEach(label => {
       // Only update if we're not currently editing this specific label
       if (editingFieldRef.current.type === 'label' && editingFieldRef.current.id === label.id) {
         labelNamesMap[label.id] = localLabelNames[label.id] || label.name;
@@ -139,7 +139,7 @@ function OrganizationPanel({
       }
     });
     setLocalLabelNames(labelNamesMap);
-  }, [organizationData.labels]);
+  }, [wheelStructure.labels]);
   
   // Broadcast editing activity when item modal opens/closes
   useEffect(() => {
@@ -178,7 +178,7 @@ function OrganizationPanel({
       const statusMap = {};
       
       // Use Promise.all for parallel requests instead of sequential loop
-      const integrationPromises = organizationData.rings.map(async (ring) => {
+      const integrationPromises = wheelStructure.rings.map(async (ring) => {
         // Skip temporary IDs
         if (!ring.id || ring.id.startsWith('ring-') || ring.id.startsWith('inner-ring-') || ring.id.startsWith('outer-ring-')) {
           return { ringId: ring.id, hasIntegration: false };
@@ -201,10 +201,10 @@ function OrganizationPanel({
       loadingIntegrationsRef.current = false;
     };
     
-    if (organizationData.rings.length > 0) {
+    if (wheelStructure.rings.length > 0) {
       loadIntegrationStatus();
     }
-  }, [organizationData.rings.length]); // Only re-check when NUMBER of rings changes
+  }, [wheelStructure.rings.length]); // Only re-check when NUMBER of rings changes
   
   const [sortBy, setSortBy] = useState('startDate'); // startDate, name, ring
   const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
@@ -267,27 +267,27 @@ function OrganizationPanel({
 
   // Search filter - must be defined before calendar days
   const searchLower = searchQuery.toLowerCase();
-  const innerRings = organizationData.rings.filter(ring => ring.type === 'inner');
-  const outerRings = organizationData.rings.filter(ring => ring.type === 'outer');
+  const innerRings = wheelStructure.rings.filter(ring => ring.type === 'inner');
+  const outerRings = wheelStructure.rings.filter(ring => ring.type === 'outer');
   const filteredInnerRings = innerRings.filter(ring =>
     ring.name.toLowerCase().includes(searchLower)
   );
   const filteredOuterRings = outerRings.filter(ring =>
     ring.name.toLowerCase().includes(searchLower)
   );
-  const filteredActivityGroups = (organizationData.activityGroups || []).filter(group =>
+  const filteredActivityGroups = (wheelStructure.activityGroups || []).filter(group =>
     group.name.toLowerCase().includes(searchLower)
   );
-  const filteredLabels = organizationData.labels.filter(label =>
+  const filteredLabels = wheelStructure.labels.filter(label =>
     label.name.toLowerCase().includes(searchLower)
   );
   
   // Fuzzy search for activities (only in Liste view)
   const filteredAktiviteter = useMemo(() => {
-    if (!organizationData.items) return [];
+    if (!wheelStructure.items) return [];
     
     // CRITICAL: Filter items by current year first to prevent cross-page pollution
-    const itemsForYear = organizationData.items.filter(item => {
+    const itemsForYear = wheelStructure.items.filter(item => {
       const startYear = new Date(item.startDate).getFullYear();
       const endYear = new Date(item.endDate).getFullYear();
       return year >= startYear && year <= endYear;
@@ -312,7 +312,7 @@ function OrganizationPanel({
     // Perform fuzzy search
     const results = fuse.search(searchQuery);
     return results.map(result => result.item);
-  }, [organizationData.items, searchQuery, activeView, year]);
+  }, [wheelStructure.items, searchQuery, activeView, year]);
 
   // Generate calendar days
   const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
@@ -344,49 +344,49 @@ function OrganizationPanel({
 
   // Filter visibility toggles
   const handleShowRings = (show) => {
-    const updatedRings = organizationData.rings.map(ring => ({
+    const updatedRings = wheelStructure.rings.map(ring => ({
       ...ring,
       visible: show
     }));
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
   };
 
   const handleShowActivityGroups = (show) => {
-    const updatedGroups = (organizationData.activityGroups || []).map(group => ({
+    const updatedGroups = (wheelStructure.activityGroups || []).map(group => ({
       ...group,
       visible: show
     }));
-    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+    onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
   };
 
   const handleShowLabels = (show) => {
-    const updatedLabels = organizationData.labels.map(label => ({
+    const updatedLabels = wheelStructure.labels.map(label => ({
       ...label,
       visible: show
     }));
-    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+    onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
   };
 
   // Toggle individual items
   const toggleRing = (ringId) => {
-    const updatedRings = organizationData.rings.map(ring =>
+    const updatedRings = wheelStructure.rings.map(ring =>
       ring.id === ringId ? { ...ring, visible: !ring.visible } : ring
     );
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
   };
 
   const toggleActivityGroup = (groupId) => {
-    const updatedGroups = (organizationData.activityGroups || []).map(group =>
+    const updatedGroups = (wheelStructure.activityGroups || []).map(group =>
       group.id === groupId ? { ...group, visible: !group.visible } : group
     );
-    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+    onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
   };
 
   const toggleLabel = (labelId) => {
-    const updatedLabels = organizationData.labels.map(label =>
+    const updatedLabels = wheelStructure.labels.map(label =>
       label.id === labelId ? { ...label, visible: !label.visible } : label
     );
-    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+    onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
   };
 
   // Count items (year-filtered to show only current page's items)
@@ -406,8 +406,8 @@ function OrganizationPanel({
   const handleAddAktivitet = (newAktivitet) => {
     // Handle both single item and batch array of items
     const itemsToAdd = Array.isArray(newAktivitet) ? newAktivitet : [newAktivitet];
-    const updatedItems = [...(organizationData.items || []), ...itemsToAdd];
-    onOrganizationChange({ ...organizationData, items: updatedItems });
+    const updatedItems = [...(wheelStructure.items || []), ...itemsToAdd];
+    onOrganizationChange({ ...wheelStructure, items: updatedItems });
 
     Promise.resolve(onPersistItems(itemsToAdd)).catch((error) => {
       console.error('[OrganizationPanel] Failed to persist added items:', error);
@@ -416,10 +416,10 @@ function OrganizationPanel({
 
   // Update aktivitet
   const handleUpdateAktivitet = (updatedAktivitet) => {
-    const updatedItems = organizationData.items.map(item =>
+    const updatedItems = wheelStructure.items.map(item =>
       item.id === updatedAktivitet.id ? updatedAktivitet : item
     );
-    onOrganizationChange({ ...organizationData, items: updatedItems });
+    onOrganizationChange({ ...wheelStructure, items: updatedItems });
 
     Promise.resolve(onPersistItem(updatedAktivitet)).catch((error) => {
       console.error('[OrganizationPanel] Failed to persist updated item:', error);
@@ -428,8 +428,8 @@ function OrganizationPanel({
 
   // Delete aktivitet
   const handleDeleteAktivitet = (aktivitetId) => {
-    const updatedItems = organizationData.items.filter(item => item.id !== aktivitetId);
-    onOrganizationChange({ ...organizationData, items: updatedItems });
+    const updatedItems = wheelStructure.items.filter(item => item.id !== aktivitetId);
+    onOrganizationChange({ ...wheelStructure, items: updatedItems });
 
     Promise.resolve(onPersistItemDelete(aktivitetId)).catch((error) => {
       console.error('[OrganizationPanel] Failed to delete item from database:', error);
@@ -448,8 +448,8 @@ function OrganizationPanel({
           compareB = b.name.toLowerCase();
           break;
         case 'ring':
-          const ringA = organizationData.rings.find(r => r.id === a.ringId);
-          const ringB = organizationData.rings.find(r => r.id === b.ringId);
+          const ringA = wheelStructure.rings.find(r => r.id === a.ringId);
+          const ringB = wheelStructure.rings.find(r => r.id === b.ringId);
           compareA = ringA?.name.toLowerCase() || '';
           compareB = ringB?.name.toLowerCase() || '';
           break;
@@ -486,8 +486,8 @@ function OrganizationPanel({
     if (storedData) {
       try {
         const data = JSON.parse(storedData);
-        if (data.organizationData) {
-          onOrganizationChange(data.organizationData);
+        if (data.wheelStructure) {
+          onOrganizationChange(data.wheelStructure);
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -514,7 +514,7 @@ function OrganizationPanel({
       data: Array.from({ length: 12 }, () => [""]),
       orientation: 'vertical'
     };
-    const updatedOrgData = { ...organizationData, rings: [...organizationData.rings, newRing] };
+    const updatedOrgData = { ...wheelStructure, rings: [...wheelStructure.rings, newRing] };
     
     // Update state - this will trigger auto-save after 2 seconds
     onOrganizationChange(updatedOrgData);
@@ -529,7 +529,7 @@ function OrganizationPanel({
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       visible: true
     };
-    const updatedOrgData = { ...organizationData, rings: [...organizationData.rings, newRing] };
+    const updatedOrgData = { ...wheelStructure, rings: [...wheelStructure.rings, newRing] };
     
     // Update state - this will trigger auto-save after 2 seconds
     onOrganizationChange(updatedOrgData);
@@ -537,18 +537,18 @@ function OrganizationPanel({
   };
 
   const handleRemoveRing = (ringId) => {
-    if (organizationData.rings.length <= 1) return;
+    if (wheelStructure.rings.length <= 1) return;
     
     // Remove the ring
-    const updatedRings = organizationData.rings.filter(r => r.id !== ringId);
+    const updatedRings = wheelStructure.rings.filter(r => r.id !== ringId);
     
     // CRITICAL: Also remove all items on this ring to prevent orphaned items
-    const updatedItems = organizationData.items.filter(item => item.ringId !== ringId);
+    const updatedItems = wheelStructure.items.filter(item => item.ringId !== ringId);
     
-    console.log(`[handleRemoveRing] Removing ring ${ringId} and ${organizationData.items.length - updatedItems.length} items`);
+    console.log(`[handleRemoveRing] Removing ring ${ringId} and ${wheelStructure.items.length - updatedItems.length} items`);
     
     onOrganizationChange({ 
-      ...organizationData, 
+      ...wheelStructure, 
       rings: updatedRings,
       items: updatedItems
     });
@@ -571,21 +571,21 @@ function OrganizationPanel({
     
     // Commit to global state on blur
     const newName = localRingNames[ringId];
-    const updatedRings = organizationData.rings.map(ring =>
+    const updatedRings = wheelStructure.rings.map(ring =>
       ring.id === ringId ? { ...ring, name: newName } : ring
     );
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
   };
 
   const handleRingColorChange = (ringId, newColor) => {
-    const updatedRings = organizationData.rings.map(ring =>
+    const updatedRings = wheelStructure.rings.map(ring =>
       ring.id === ringId ? { ...ring, color: newColor } : ring
     );
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
   };
 
   const handleInnerRingTextChange = (ringId, monthIndex, text) => {
-    const updatedRings = organizationData.rings.map(ring => {
+    const updatedRings = wheelStructure.rings.map(ring => {
       if (ring.id === ringId && ring.type === 'inner') {
         const newData = [...ring.data];
         newData[monthIndex] = [text];
@@ -593,14 +593,14 @@ function OrganizationPanel({
       }
       return ring;
     });
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
   };
 
   const handleInnerRingOrientationChange = (ringId, orientation) => {
-    const updatedRings = organizationData.rings.map(ring =>
+    const updatedRings = wheelStructure.rings.map(ring =>
       ring.id === ringId ? { ...ring, orientation } : ring
     );
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
   };
 
   const toggleInnerRingExpanded = (ringId) => {
@@ -648,7 +648,7 @@ function OrganizationPanel({
       return;
     }
 
-    const rings = [...organizationData.rings];
+    const rings = [...wheelStructure.rings];
     const draggedIndex = rings.findIndex(r => r.id === draggedRing.id);
     const targetIndex = rings.findIndex(r => r.id === targetRing.id);
 
@@ -659,7 +659,7 @@ function OrganizationPanel({
       // Insert at target position
       rings.splice(targetIndex, 0, removed);
       
-      onOrganizationChange({ ...organizationData, rings });
+      onOrganizationChange({ ...wheelStructure, rings });
       setDraggedRing(null);
       queueSilentRingSave('ring-reorder');
       return;
@@ -688,7 +688,7 @@ function OrganizationPanel({
     // Insert at target position
     rings.splice(targetIndex, 0, updatedRing);
 
-    onOrganizationChange({ ...organizationData, rings });
+    onOrganizationChange({ ...wheelStructure, rings });
     setDraggedRing(null);
     queueSilentRingSave('ring-type-swap');
   };
@@ -708,7 +708,7 @@ function OrganizationPanel({
     }
 
     // Update ring type (dropping on empty space in different section)
-    const updatedRings = organizationData.rings.map(ring => {
+    const updatedRings = wheelStructure.rings.map(ring => {
       if (ring.id === draggedRing.id) {
         const updatedRing = { ...ring, type: targetType };
         
@@ -732,7 +732,7 @@ function OrganizationPanel({
       return ring;
     });
 
-    onOrganizationChange({ ...organizationData, rings: updatedRings });
+    onOrganizationChange({ ...wheelStructure, rings: updatedRings });
     setDraggedRing(null);
     queueSilentRingSave('ring-type-move');
   };
@@ -741,18 +741,18 @@ function OrganizationPanel({
   const handleAddActivityGroup = () => {
     const newGroup = {
       id: `group-${Date.now()}`,
-      name: `Aktivitetsgrupp ${(organizationData.activityGroups || []).length + 1}`,
+      name: `Aktivitetsgrupp ${(wheelStructure.activityGroups || []).length + 1}`,
       color: '#3B82F6', // Default blue - user can change with color picker
       visible: true
     };
-    const updatedGroups = [...(organizationData.activityGroups || []), newGroup];
-    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+    const updatedGroups = [...(wheelStructure.activityGroups || []), newGroup];
+    onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
   };
 
   const handleRemoveActivityGroup = (groupId) => {
-    if ((organizationData.activityGroups || []).length <= 1) return;
-    const updatedGroups = (organizationData.activityGroups || []).filter(g => g.id !== groupId);
-    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+    if ((wheelStructure.activityGroups || []).length <= 1) return;
+    const updatedGroups = (wheelStructure.activityGroups || []).filter(g => g.id !== groupId);
+    onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
   };
 
   const handleActivityGroupNameChange = (groupId, newName) => {
@@ -771,35 +771,35 @@ function OrganizationPanel({
     
     // Commit to global state on blur
     const newName = localActivityGroupNames[groupId];
-    const updatedGroups = (organizationData.activityGroups || []).map(group =>
+    const updatedGroups = (wheelStructure.activityGroups || []).map(group =>
       group.id === groupId ? { ...group, name: newName } : group
     );
-    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+    onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
   };
 
   const handleActivityGroupColorChange = (groupId, newColor) => {
-    const updatedGroups = (organizationData.activityGroups || []).map(group =>
+    const updatedGroups = (wheelStructure.activityGroups || []).map(group =>
       group.id === groupId ? { ...group, color: newColor } : group
     );
-    onOrganizationChange({ ...organizationData, activityGroups: updatedGroups });
+    onOrganizationChange({ ...wheelStructure, activityGroups: updatedGroups });
   };
 
   // Label management
   const handleAddLabel = () => {
     const newLabel = {
       id: `label-${Date.now()}`,
-      name: `Etikett ${organizationData.labels.length + 1}`,
+      name: `Etikett ${wheelStructure.labels.length + 1}`,
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       visible: true
     };
-    const updatedLabels = [...organizationData.labels, newLabel];
-    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+    const updatedLabels = [...wheelStructure.labels, newLabel];
+    onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
   };
 
   const handleRemoveLabel = (labelId) => {
-    if (organizationData.labels.length <= 1) return;
-    const updatedLabels = organizationData.labels.filter(l => l.id !== labelId);
-    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+    if (wheelStructure.labels.length <= 1) return;
+    const updatedLabels = wheelStructure.labels.filter(l => l.id !== labelId);
+    onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
   };
 
   const handleLabelNameChange = (labelId, newName) => {
@@ -818,17 +818,17 @@ function OrganizationPanel({
     
     // Commit to global state on blur
     const newName = localLabelNames[labelId];
-    const updatedLabels = organizationData.labels.map(label =>
+    const updatedLabels = wheelStructure.labels.map(label =>
       label.id === labelId ? { ...label, name: newName } : label
     );
-    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+    onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
   };
 
   const handleLabelColorChange = (labelId, newColor) => {
-    const updatedLabels = organizationData.labels.map(label =>
+    const updatedLabels = wheelStructure.labels.map(label =>
       label.id === labelId ? { ...label, color: newColor } : label
     );
-    onOrganizationChange({ ...organizationData, labels: updatedLabels });
+    onOrganizationChange({ ...wheelStructure, labels: updatedLabels });
   };
 
   return (
@@ -1011,9 +1011,9 @@ function OrganizationPanel({
             {filteredAktiviteter.length > 0 ? (
               <div className="space-y-1">
                 {getSortedAktiviteter().map((item) => {
-                  const ring = organizationData.rings.find(r => r.id === item.ringId);
-                  const activityGroup = (organizationData.activityGroups || []).find(a => a.id === item.activityId);
-                  const label = organizationData.labels.find(l => l.id === item.labelId);
+                  const ring = wheelStructure.rings.find(r => r.id === item.ringId);
+                  const activityGroup = (wheelStructure.activityGroups || []).find(a => a.id === item.activityId);
+                  const label = wheelStructure.labels.find(l => l.id === item.labelId);
                   const startDate = new Date(item.startDate);
                   const endDate = new Date(item.endDate);
                   
@@ -1178,8 +1178,8 @@ function OrganizationPanel({
                         {/* Activities for this date */}
                         <div className="space-y-1 pl-4 border-l-2 border-gray-200">
                           {activities.map(event => {
-                            const activityGroup = (organizationData.activityGroups || []).find(a => a.id === event.activityId);
-                            const ring = organizationData.rings.find(r => r.id === event.ringId);
+                            const activityGroup = (wheelStructure.activityGroups || []).find(a => a.id === event.activityId);
+                            const ring = wheelStructure.rings.find(r => r.id === event.ringId);
                             const endDate = new Date(event.endDate);
                             const isSameDay = date.toDateString() === endDate.toDateString();
                             
@@ -1257,7 +1257,7 @@ function OrganizationPanel({
                 year={year}
                 currentMonth={zoomedMonth}
                 currentQuarter={zoomedQuarter}
-                organizationData={organizationData}
+                wheelStructure={wheelStructure}
                 onMonthSelect={onZoomToMonth}
                 onQuarterSelect={onZoomToQuarter}
                 onResetZoom={() => {
@@ -1282,7 +1282,7 @@ function OrganizationPanel({
                 year={year}
                 currentQuarter={zoomedQuarter}
                 currentMonth={zoomedMonth}
-                organizationData={organizationData}
+                wheelStructure={wheelStructure}
                 onQuarterSelect={onZoomToQuarter}
                 onMonthSelect={onZoomToMonth}
                 onResetZoom={() => {
@@ -1411,10 +1411,10 @@ function OrganizationPanel({
                   <span className="text-gray-500">Visa:</span>
                   <button
                     onClick={() => {
-                      const updatedRings = organizationData.rings.map(ring =>
+                      const updatedRings = wheelStructure.rings.map(ring =>
                         ring.type === 'inner' ? { ...ring, visible: true } : ring
                       );
-                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
                     }}
                     className="text-blue-600 hover:text-blue-700"
                   >
@@ -1423,10 +1423,10 @@ function OrganizationPanel({
                   <span className="text-gray-400">|</span>
                   <button
                     onClick={() => {
-                      const updatedRings = organizationData.rings.map(ring =>
+                      const updatedRings = wheelStructure.rings.map(ring =>
                         ring.type === 'inner' ? { ...ring, visible: false } : ring
                       );
-                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
                     }}
                     className="text-blue-600 hover:text-blue-700"
                   >
@@ -1566,10 +1566,10 @@ function OrganizationPanel({
                   <span className="text-gray-500">Visa:</span>
                   <button
                     onClick={() => {
-                      const updatedRings = organizationData.rings.map(ring =>
+                      const updatedRings = wheelStructure.rings.map(ring =>
                         ring.type === 'outer' ? { ...ring, visible: true } : ring
                       );
-                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
                     }}
                     className="text-blue-600 hover:text-blue-700"
                   >
@@ -1578,10 +1578,10 @@ function OrganizationPanel({
                   <span className="text-gray-400">|</span>
                   <button
                     onClick={() => {
-                      const updatedRings = organizationData.rings.map(ring =>
+                      const updatedRings = wheelStructure.rings.map(ring =>
                         ring.type === 'outer' ? { ...ring, visible: false } : ring
                       );
-                      onOrganizationChange({ ...organizationData, rings: updatedRings });
+                      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
                     }}
                     className="text-blue-600 hover:text-blue-700"
                   >
@@ -1659,7 +1659,7 @@ function OrganizationPanel({
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                       {countActivityGroupItems(group.id)}
                     </span>
-                    {(organizationData.activityGroups || []).length > 1 && (
+                    {(wheelStructure.activityGroups || []).length > 1 && (
                       <button
                         onClick={() => handleRemoveActivityGroup(group.id)}
                         className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
@@ -1757,7 +1757,7 @@ function OrganizationPanel({
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                       {countLabelItems(label.id)}
                     </span>
-                    {organizationData.labels.length > 1 && (
+                    {wheelStructure.labels.length > 1 && (
                       <button
                         onClick={() => handleRemoveLabel(label.id)}
                         className="opacity-0 group-hover:opacity-100 p-0.5 text-red-600 hover:bg-red-50 rounded transition-opacity"
@@ -1813,7 +1813,7 @@ function OrganizationPanel({
       {/* Add Item Modal */}
       {isAddModalOpen && (
         <AddItemModal
-          organizationData={organizationData}
+          wheelStructure={wheelStructure}
           onAddItem={handleAddAktivitet}
           onClose={() => setIsAddModalOpen(false)}
           currentWheelId={currentWheelId}
@@ -1824,7 +1824,7 @@ function OrganizationPanel({
       {editingAktivitet && (
         <EditItemModal
           item={editingAktivitet}
-          organizationData={organizationData}
+          wheelStructure={wheelStructure}
           currentWheelId={currentWheelId}
           onUpdateItem={handleUpdateAktivitet}
           onDeleteItem={handleDeleteAktivitet}
@@ -1854,13 +1854,13 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
                       
-                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
+                      const updatedActivities = (wheelStructure.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
                       
-                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
-                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                      const outerRings = (wheelStructure.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (wheelStructure.rings || []).map((ring) => {
                         if (ring.type === 'outer') {
                           const ringIndex = outerRings.indexOf(ring);
                           const newColor = newColors[ringIndex % newColors.length];
@@ -1869,13 +1869,13 @@ function OrganizationPanel({
                         return ring;
                       });
                       
-                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      const newWheelStructure = { ...wheelStructure, activityGroups: updatedActivities, rings: updatedRings };
                       
                       if (onPaletteChange) {
-                        onPaletteChange(newColors, newOrganizationData);
+                        onPaletteChange(newColors, newWheelStructure);
                       } else {
                         if (onColorsChange) onColorsChange(newColors);
-                        onOrganizationChange(newOrganizationData);
+                        onOrganizationChange(newWheelStructure);
                       }
                     }}
                     className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
@@ -1893,14 +1893,14 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B"];
                       
-                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
+                      const updatedActivities = (wheelStructure.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
                       
                       // Update outer ring colors to match palette
-                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
-                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                      const outerRings = (wheelStructure.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (wheelStructure.rings || []).map((ring) => {
                         if (ring.type === 'outer') {
                           const ringIndex = outerRings.indexOf(ring);
                           const newColor = newColors[ringIndex % newColors.length];
@@ -1909,13 +1909,13 @@ function OrganizationPanel({
                         return ring;
                       });
                       
-                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      const newWheelStructure = { ...wheelStructure, activityGroups: updatedActivities, rings: updatedRings };
                       
                       if (onPaletteChange) {
-                        onPaletteChange(newColors, newOrganizationData);
+                        onPaletteChange(newColors, newWheelStructure);
                       } else {
                         if (onColorsChange) onColorsChange(newColors);
-                        onOrganizationChange(newOrganizationData);
+                        onOrganizationChange(newWheelStructure);
                       }
                     }}
                     className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
@@ -1933,13 +1933,13 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#8B5CF6", "#EC4899", "#06B6D4", "#84CC16"];
                       
-                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
+                      const updatedActivities = (wheelStructure.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
                       
-                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
-                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                      const outerRings = (wheelStructure.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (wheelStructure.rings || []).map((ring) => {
                         if (ring.type === 'outer') {
                           const ringIndex = outerRings.indexOf(ring);
                           const newColor = newColors[ringIndex % newColors.length];
@@ -1948,13 +1948,13 @@ function OrganizationPanel({
                         return ring;
                       });
                       
-                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      const newWheelStructure = { ...wheelStructure, activityGroups: updatedActivities, rings: updatedRings };
                       
                       if (onPaletteChange) {
-                        onPaletteChange(newColors, newOrganizationData);
+                        onPaletteChange(newColors, newWheelStructure);
                       } else {
                         if (onColorsChange) onColorsChange(newColors);
-                        onOrganizationChange(newOrganizationData);
+                        onOrganizationChange(newWheelStructure);
                       }
                     }}
                     className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
@@ -1972,13 +1972,13 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#1E3A8A", "#7C2D12", "#065F46", "#78350F"];
                       
-                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
+                      const updatedActivities = (wheelStructure.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
                       
-                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
-                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                      const outerRings = (wheelStructure.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (wheelStructure.rings || []).map((ring) => {
                         if (ring.type === 'outer') {
                           const ringIndex = outerRings.indexOf(ring);
                           const newColor = newColors[ringIndex % newColors.length];
@@ -1987,13 +1987,13 @@ function OrganizationPanel({
                         return ring;
                       });
                       
-                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      const newWheelStructure = { ...wheelStructure, activityGroups: updatedActivities, rings: updatedRings };
                       
                       if (onPaletteChange) {
-                        onPaletteChange(newColors, newOrganizationData);
+                        onPaletteChange(newColors, newWheelStructure);
                       } else {
                         if (onColorsChange) onColorsChange(newColors);
-                        onOrganizationChange(newOrganizationData);
+                        onOrganizationChange(newWheelStructure);
                       }
                     }}
                     className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"
@@ -2011,13 +2011,13 @@ function OrganizationPanel({
                     onClick={() => {
                       const newColors = ["#4B5563", "#6B7280", "#9CA3AF", "#D1D5DB"];
                       
-                      const updatedActivities = (organizationData.activityGroups || []).map((act, index) => ({
+                      const updatedActivities = (wheelStructure.activityGroups || []).map((act, index) => ({
                         ...act,
                         color: newColors[index % newColors.length]
                       }));
                       
-                      const outerRings = (organizationData.rings || []).filter(r => r.type === 'outer');
-                      const updatedRings = (organizationData.rings || []).map((ring) => {
+                      const outerRings = (wheelStructure.rings || []).filter(r => r.type === 'outer');
+                      const updatedRings = (wheelStructure.rings || []).map((ring) => {
                         if (ring.type === 'outer') {
                           const ringIndex = outerRings.indexOf(ring);
                           const newColor = newColors[ringIndex % newColors.length];
@@ -2026,13 +2026,13 @@ function OrganizationPanel({
                         return ring;
                       });
                       
-                      const newOrganizationData = { ...organizationData, activityGroups: updatedActivities, rings: updatedRings };
+                      const newWheelStructure = { ...wheelStructure, activityGroups: updatedActivities, rings: updatedRings };
                       
                       if (onPaletteChange) {
-                        onPaletteChange(newColors, newOrganizationData);
+                        onPaletteChange(newColors, newWheelStructure);
                       } else {
                         if (onColorsChange) onColorsChange(newColors);
-                        onOrganizationChange(newOrganizationData);
+                        onOrganizationChange(newWheelStructure);
                       }
                     }}
                     className="cursor-pointer p-3 border-2 border-gray-200 hover:border-blue-500 rounded-sm transition-colors"

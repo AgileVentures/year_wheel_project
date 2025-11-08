@@ -349,7 +349,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
             <div className="flex-1 overflow-auto p-6 bg-gray-50 flex items-center justify-center">
               <div className="bg-white rounded-sm p-4 border border-gray-200 shadow-lg">
                 <YearWheel
-                  organizationData={previewVersion.snapshot_data?.organizationData || previewVersion.snapshot_data}
+                  wheelStructure={previewVersion.snapshot_data?.wheelStructure || previewVersion.snapshot_data}
                   year={previewVersion.snapshot_data?.year || new Date().getFullYear()}
                   colors={previewVersion.snapshot_data?.colors || ['#FE6D73', '#17C3B2', '#227C9D', '#FFCB77', '#FEF9EF']}
                   showWeekRing={previewVersion.snapshot_data?.showWeekRing ?? true}

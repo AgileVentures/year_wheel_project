@@ -30,7 +30,7 @@ function YearWheel({
   title,
   year,
   colors,
-  organizationData,
+  wheelStructure,
   showYearEvents,
   showSeasonRing,
   yearEventsCollection,
@@ -97,13 +97,13 @@ function YearWheel({
     }
   }, [editingItem, broadcastActivity]);
   
-  // CRITICAL: Filter organizationData to only include items for the current year
+  // CRITICAL: Filter wheelStructure to only include items for the current year
   // This prevents cross-page pollution in the canvas rendering
   const yearFilteredOrgData = useMemo(() => {
-    if (!organizationData || !organizationData.items) return organizationData;
+    if (!wheelStructure || !wheelStructure.items) return wheelStructure;
     
     const currentYear = parseInt(year);
-    const filteredItems = organizationData.items.filter(item => {
+    const filteredItems = wheelStructure.items.filter(item => {
       const startYear = new Date(item.startDate).getFullYear();
       const endYear = new Date(item.endDate).getFullYear();
       // Include item if it overlaps with the year
@@ -111,10 +111,10 @@ function YearWheel({
     });
     
     return {
-      ...organizationData,
+      ...wheelStructure,
       items: filteredItems
     };
-  }, [organizationData, year]);
+  }, [wheelStructure, year]);
   
   const monthNames = useMemo(() => [
     t('common:monthsFull.january'),
@@ -271,26 +271,26 @@ function YearWheel({
   const handleBulkMoveToRing = useCallback((ringId) => {
     if (onUpdateAktivitetRef.current && selectedItems.size > 0) {
       selectedItems.forEach(itemId => {
-        const item = organizationData.items.find(i => i.id === itemId);
+        const item = wheelStructure.items.find(i => i.id === itemId);
         if (item) {
           onUpdateAktivitetRef.current({ ...item, ringId });
         }
       });
       clearSelections();
     }
-  }, [selectedItems, organizationData, clearSelections]);
+  }, [selectedItems, wheelStructure, clearSelections]);
 
   const handleBulkChangeActivityGroup = useCallback((activityId) => {
     if (onUpdateAktivitetRef.current && selectedItems.size > 0) {
       selectedItems.forEach(itemId => {
-        const item = organizationData.items.find(i => i.id === itemId);
+        const item = wheelStructure.items.find(i => i.id === itemId);
         if (item) {
           onUpdateAktivitetRef.current({ ...item, activityId });
         }
       });
       clearSelections();
     }
-  }, [selectedItems, organizationData, clearSelections]);
+  }, [selectedItems, wheelStructure, clearSelections]);
 
   const handleBulkDelete = useCallback(async () => {
     if (onDeleteAktivitetRef.current && selectedItems.size > 0) {
@@ -324,7 +324,7 @@ function YearWheel({
       return;
     }
     
-    // CRITICAL: Validate that the item exists in current organizationData
+    // CRITICAL: Validate that the item exists in current wheelStructure
     // This prevents showing stale data when canvas clickableItems array is out of sync
     const currentItem = yearFilteredOrgData?.items?.find(i => i.id === item.id);
     if (!currentItem) {
@@ -469,7 +469,7 @@ function YearWheel({
         showYearEvents,
         showSeasonRing,
         ringsData,
-        organizationData: yearFilteredOrgData, // CRITICAL: Pass year-filtered data to canvas
+        wheelStructure: yearFilteredOrgData, // CRITICAL: Pass year-filtered data to canvas
         showWeekRing,
         showMonthRing,
         showRingNames,
@@ -518,14 +518,14 @@ function YearWheel({
     showLabels,
     weekRingDisplayMode,
     renderSize, // Include renderSize to recreate wheel when resolution changes
-    // yearFilteredOrgData EXCLUDED - updated via updateOrganizationData to prevent wheel recreation during drag
+    // yearFilteredOrgData EXCLUDED - updated via updateWheelStructure to prevent wheel recreation during drag
     // zoomedMonth and zoomedQuarter excluded - updated via updateZoomState to prevent wheel recreation
     monthNames,
     handleItemClick,
     handleDragStart,
     handleUpdateAktivitet,
     onExtendActivityBeyondYear,
-    // organizationData excluded - updated via updateOrganizationData to prevent wheel recreation during drag
+    // wheelStructure excluded - updated via updateWheelStructure to prevent wheel recreation during drag
   ]);
 
   // Update organization data without recreating the wheel instance
@@ -533,7 +533,7 @@ function YearWheel({
   // CRITICAL: Use useLayoutEffect for synchronous update before paint to prevent flicker
   useLayoutEffect(() => {
     if (yearWheel && yearFilteredOrgData) {
-      yearWheel.updateOrganizationData(yearFilteredOrgData);
+      yearWheel.updateWheelStructure(yearFilteredOrgData);
     }
   }, [yearFilteredOrgData, yearWheel]);
 
@@ -580,7 +580,7 @@ function YearWheel({
       if (onWheelReady) {
         // Attach custom methods to yearWheel instance
         yearWheel.openItemTooltip = (itemId) => {
-          const item = organizationData?.items?.find(i => i.id === itemId);
+          const item = wheelStructure?.items?.find(i => i.id === itemId);
           if (item) {
             // Calculate center position for tooltip
             const tooltipPos = {
@@ -595,7 +595,7 @@ function YearWheel({
         onWheelReady(yearWheel);
       }
     }
-  }, [yearWheel, onWheelReady, organizationData]);
+  }, [yearWheel, onWheelReady, wheelStructure]);
 
   const toggleSpinning = () => {
     if (!yearWheel) return; // Safety check
@@ -874,8 +874,8 @@ function YearWheel({
       {selectionMode && selectedItems.size > 0 && (
         <BulkActionsToolbar
           selectedCount={selectedItems.size}
-          rings={organizationData.rings || []}
-          activityGroups={organizationData.activityGroups || []}
+          rings={wheelStructure.rings || []}
+          activityGroups={wheelStructure.activityGroups || []}
           onMoveToRing={handleBulkMoveToRing}
           onChangeActivityGroup={handleBulkChangeActivityGroup}
           onDelete={handleBulkDelete}
@@ -887,7 +887,7 @@ function YearWheel({
       {!selectionMode && selectedItem && tooltipPosition && (
         <ItemTooltip
           item={selectedItem}
-          organizationData={yearFilteredOrgData}
+          wheelStructure={yearFilteredOrgData}
           position={tooltipPosition}
           onEdit={setEditingItem}
           onDelete={handleDeleteAktivitet}
@@ -904,7 +904,7 @@ function YearWheel({
       {editingItem && !readonly && (
         <EditItemModal
           item={editingItem}
-          organizationData={organizationData}
+          wheelStructure={wheelStructure}
           currentWheelId={wheelId}
           onUpdateItem={handleUpdateAktivitet}
           onDeleteItem={handleDeleteAktivitet}

@@ -116,7 +116,7 @@ export default function EmbedWheel() {
           title={wheelData.title}
           colors={selectedPage.override_colors || wheelData.colors}
           size={canvasSize * 2} // High resolution for sharp rendering
-          organizationData={selectedPage.organization_data}
+          wheelStructure={selectedPage.organization_data}
           options={{
             showWeekRing: selectedPage.override_show_week_ring ?? wheelData.show_week_ring,
             showMonthRing: selectedPage.override_show_month_ring ?? wheelData.show_month_ring,

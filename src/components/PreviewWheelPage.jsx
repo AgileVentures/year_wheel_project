@@ -49,7 +49,7 @@ function PreviewWheelPage() {
   const [autoRotateSpeed, setAutoRotateSpeed] = useState(1); // degrees per frame
   const [displayZoom, setDisplayZoom] = useState(100); // TV display zoom (50-200%)
   
-  // Local state for organizationData to allow toggling visibility
+  // Local state for wheelStructure to allow toggling visibility
   const [localOrgData, setLocalOrgData] = useState(null);
   
   // Auto-rotation effect
@@ -130,12 +130,12 @@ function PreviewWheelPage() {
           id: data.id, 
           title: data.title, 
           is_public: data.is_public,
-          rings: data.organizationData.rings.length,
-          activityGroups: data.organizationData.activityGroups.length,
-          items: data.organizationData.items.length 
+          rings: data.wheelStructure.rings.length,
+          activityGroups: data.wheelStructure.activityGroups.length,
+          items: data.wheelStructure.items.length 
         });
         setWheelData(data);
-        setLocalOrgData(data.organizationData); // Initialize local org data
+        setLocalOrgData(data.wheelStructure); // Initialize local org data
         
         // Fetch all pages for this wheel
         try {
@@ -268,7 +268,7 @@ function PreviewWheelPage() {
         showRingNames: wheelData.showRingNames,
         showLabels: wheelData.showLabels,
         weekRingDisplayMode: wheelData.weekRingDisplayMode
-        // Note: NOT passing organizationData here - will be set via pages
+        // Note: NOT passing wheelStructure here - will be set via pages
       });
 
       console.log('[PreviewWheelPage] New wheel created:', newWheelId, 'Year:', templateYear);
@@ -282,7 +282,7 @@ function PreviewWheelPage() {
       };
 
       // Regenerate ring IDs and create mapping
-      const newRings = wheelData.organizationData.rings.map(ring => {
+      const newRings = wheelData.wheelStructure.rings.map(ring => {
         const oldId = ring.id;
         const newId = crypto.randomUUID();
         idMapping.rings[oldId] = newId;
@@ -290,7 +290,7 @@ function PreviewWheelPage() {
       });
 
       // Regenerate activity group IDs and create mapping
-      const newActivityGroups = wheelData.organizationData.activityGroups.map(group => {
+      const newActivityGroups = wheelData.wheelStructure.activityGroups.map(group => {
         const oldId = group.id;
         const newId = crypto.randomUUID();
         idMapping.activityGroups[oldId] = newId;
@@ -298,7 +298,7 @@ function PreviewWheelPage() {
       });
 
       // Regenerate label IDs and create mapping
-      const newLabels = wheelData.organizationData.labels.map(label => {
+      const newLabels = wheelData.wheelStructure.labels.map(label => {
         const oldId = label.id;
         const newId = crypto.randomUUID();
         idMapping.labels[oldId] = newId;
@@ -323,7 +323,7 @@ function PreviewWheelPage() {
         const newPage = await createPage(newWheelId, {
           year: page.year, // Keep template's page year!
           title: page.title,
-          organizationData: {
+          wheelStructure: {
             rings: newRings, // Use rings with new IDs
             activityGroups: newActivityGroups, // Use groups with new IDs
             labels: newLabels, // Use labels with new IDs
@@ -500,7 +500,7 @@ function PreviewWheelPage() {
     };
     
     activeSendMessage(CAST_MESSAGE_TYPES.UPDATE, {
-      organizationData: dataToSync
+      wheelStructure: dataToSync
     });
   }, [localOrgData, currentPageItems, isActivelyCasting, activeSendMessage]);
   
@@ -559,9 +559,9 @@ function PreviewWheelPage() {
     ...localOrgData,
     items: currentPageItems, // Use items fetched separately
   } : {
-    rings: wheelData.organizationData.rings,
-    activityGroups: wheelData.organizationData.activityGroups,
-    labels: wheelData.organizationData.labels,
+    rings: wheelData.wheelStructure.rings,
+    activityGroups: wheelData.wheelStructure.activityGroups,
+    labels: wheelData.wheelStructure.labels,
     items: currentPageItems,
   };
   
@@ -741,7 +741,7 @@ function PreviewWheelPage() {
             showRingNames={wheelData.showRingNames}
             showLabels={wheelData.showLabels !== undefined ? wheelData.showLabels : false}
             weekRingDisplayMode={wheelData.weekRingDisplayMode || 'week-numbers'}
-            organizationData={displayOrgData}
+            wheelStructure={displayOrgData}
             zoomedMonth={zoomedMonth}
             zoomedQuarter={zoomedQuarter}
             onSetZoomedMonth={setZoomedMonth}
@@ -769,7 +769,7 @@ function PreviewWheelPage() {
       {/* Presentation Control Dialog */}
       {isPresentationMode && showControlDialog && localOrgData && (
         <PresentationControlDialog
-          organizationData={displayOrgData}
+          wheelStructure={displayOrgData}
           onOrganizationChange={handleOrgDataChange}
           onClose={() => setShowControlDialog(false)}
           year={displayYear}
@@ -800,7 +800,7 @@ function PreviewWheelPage() {
               title: wheelData.title,
               year: displayYear,
               colors: wheelData.colors,
-              organizationData: displayOrgData,
+              wheelStructure: displayOrgData,
               showWeekRing: wheelData.showWeekRing,
               showMonthRing: wheelData.showMonthRing,
               showRingNames: wheelData.showRingNames,

@@ -1,7 +1,7 @@
 /**
  * ConfigValidator.js
  * 
- * Validates and normalizes organizationData structure for YearWheel.
+ * Validates and normalizes wheelStructure structure for YearWheel.
  * Ensures data integrity and provides sensible defaults.
  * 
  * Expected Structure:
@@ -17,8 +17,8 @@
 
 class ConfigValidator {
   /**
-   * Validate and normalize organizationData
-   * @param {Object} data - Raw organizationData from database or file
+   * Validate and normalize wheelStructure
+   * @param {Object} data - Raw wheelStructure from database or file
    * @returns {Object} Validated and normalized data
    */
   static validate(data) {
@@ -38,7 +38,7 @@ class ConfigValidator {
 
   /**
    * Get default empty structure
-   * @returns {Object} Default organizationData
+   * @returns {Object} Default wheelStructure
    */
   static getDefaults() {
     return {
@@ -241,7 +241,7 @@ class ConfigValidator {
   }
 
   /**
-   * Check if organizationData is valid (has all required fields)
+   * Check if wheelStructure is valid (has all required fields)
    * @param {Object} data - Data to check
    * @returns {boolean} True if valid
    */
@@ -259,7 +259,7 @@ class ConfigValidator {
   }
 
   /**
-   * Get validation errors for organizationData
+   * Get validation errors for wheelStructure
    * @param {Object} data - Data to check
    * @returns {Array<string>} Array of error messages
    */
@@ -267,7 +267,7 @@ class ConfigValidator {
     const errors = [];
 
     if (!data || typeof data !== 'object') {
-      errors.push('organizationData must be an object');
+      errors.push('wheelStructure must be an object');
       return errors;
     }
 
