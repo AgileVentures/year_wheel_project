@@ -173,7 +173,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
       style={{ zIndex: 9999 }}
     >
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-sm shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -334,7 +334,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       {/* Preview Modal */}
       {previewVersion && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70" style={{ zIndex: 10000 }}>
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl max-h-[95vh] flex flex-col">
+          <div className="bg-white rounded-sm shadow-2xl w-full max-w-6xl max-h-[95vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
                 {t('editor:versionHistory.previewTitle', { number: previewVersion.version_number })}
@@ -347,7 +347,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
               </button>
             </div>
             <div className="flex-1 overflow-auto p-6 bg-gray-50 flex items-center justify-center">
-              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-lg">
+              <div className="bg-white rounded-sm p-4 border border-gray-200 shadow-lg">
                 <YearWheel
                   organizationData={previewVersion.snapshot_data?.organizationData || previewVersion.snapshot_data}
                   year={previewVersion.snapshot_data?.year || new Date().getFullYear()}

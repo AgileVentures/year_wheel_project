@@ -6,7 +6,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { isSSLError, getNetworkErrorMessage } from '../utils/networkErrors';
+import { isSSLError } from '../utils/networkErrors';
 
 // Get environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

@@ -197,7 +197,101 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     JSON.stringify(undoableStates?.organizationData)
   ]);
+  const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
+  const latestValuesRef = useRef({});
+
+  const setTitle = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_TITLE }) => {
+    const currentTitle = undoableStates?.title || "Nytt hjul";
+    const nextTitle = typeof value === 'function' ? value(currentTitle) : value;
+
+    if (nextTitle === currentTitle) {
+      return;
+    }
+
+    setUndoableStates((prevStates) => ({
+      ...prevStates,
+      title: nextTitle,
+    }), historyLabel);
+
+    latestValuesRef.current = {
+      ...latestValuesRef.current,
+      title: nextTitle,
+    };
+  }, [setUndoableStates, undoableStates]);
+
+  const setYear = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_YEAR }) => {
+    const currentYear = undoableStates?.year || "2025";
+    const resolved = typeof value === 'function' ? value(currentYear) : value;
+    const nextYear = resolved != null ? String(resolved) : currentYear;
+
+    if (nextYear === currentYear) {
+      return;
+    }
+
+    setUndoableStates((prevStates) => ({
+      ...prevStates,
+      year: nextYear,
+    }), historyLabel);
+
+    latestValuesRef.current = {
+      ...latestValuesRef.current,
+      year: nextYear,
+    };
+  }, [setUndoableStates, undoableStates]);
+
+  const setColors = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_COLORS }) => {
+    const currentColors = undoableStates?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+    const nextColors = typeof value === 'function' ? value(currentColors) : value;
+
+    if (!Array.isArray(nextColors) || (nextColors.length === currentColors.length && nextColors.every((color, index) => color === currentColors[index]))) {
+      return;
+    }
+
+    setUndoableStates((prevStates) => ({
+      ...prevStates,
+      colors: nextColors,
+    }), historyLabel);
+
+    latestValuesRef.current = {
+      ...latestValuesRef.current,
+      colors: nextColors,
+    };
+  }, [setUndoableStates, undoableStates]);
+
+  const setOrganizationData = useCallback((value, historyLabel) => {
+    const currentOrg = undoableStates?.organizationData || {
+      rings: [],
+      activityGroups: [],
+      labels: [],
+      items: [],
+    };
+
+    const nextOrgRaw = typeof value === 'function' ? value(currentOrg) : value;
+    const safeOrg = nextOrgRaw || {
+      rings: [],
+      activityGroups: [],
+      labels: [],
+      items: [],
+    };
+
+    if (safeOrg === currentOrg && !historyLabel) {
+      return;
+    }
+
+    const changeType = detectOrganizationChange(currentOrg, safeOrg);
+    const finalLabel = historyLabel || { type: changeType };
+
+    setUndoableStates((prevStates) => ({
+      ...prevStates,
+      organizationData: safeOrg,
+    }), finalLabel);
+
+    latestValuesRef.current = {
+      ...latestValuesRef.current,
+      organizationData: safeOrg,
+    };
+  }, [setUndoableStates, undoableStates]);
   
   // Keep ringsData for backward compatibility when loading old files
   const [ringsData, setRingsData] = useState([
@@ -886,7 +980,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   ];
 
   // Store latest values in refs so autoSave always reads current state
-  const latestValuesRef = useRef({});
   latestValuesRef.current = {
     title,
     colors,
