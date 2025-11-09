@@ -272,6 +272,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     markSaved,
     undoToSave,
     hasUnsavedChanges,
+  // ==========================================
+  // SINGLE SOURCE OF TRUTH: wheelState
+  // ==========================================
+  const {
+    state: wheelState,
+    setState: setWheelState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    isSaved,
+    markSaved,
     unsavedChangesCount,
     startBatch,
     endBatch,
@@ -280,16 +292,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     currentIndex,
     jumpToIndex
   } = useMultiStateUndoRedo({
-    title: "Nytt hjul",
-    year: "2025",
-    colors: ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"], // Pastell palette
+    metadata: {
+      wheelId: null,
+      title: "Nytt hjul",
+      year: "2025",
+      colors: ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"],
+      showWeekRing: true,
+      showMonthRing: true,
+      showRingNames: true,
+      showLabels: false,
+      weekRingDisplayMode: 'week-numbers'
+    },
     structure: {
       rings: [
         {
           id: "ring-1",
           name: "Ring 1",
           type: "inner",
-          visible: true
+          visible: true,
+          orientation: "vertical",
+          color: "#408cfb"
         }
       ],
       activityGroups: [
@@ -302,102 +324,55 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       ],
       labels: []
     },
-    pageItemsById: {} // CRITICAL: Include items in undo state to prevent disappearance
+    pages: [],
+    currentPageId: null
   }, {
-    limit: 10, // Keep last 10 undo steps
+    limit: 10,
     enableKeyboard: true,
-    shouldSkipHistory: isLoadingData, // Skip history during data load
+    shouldSkipHistory: isLoadingData,
     onStateRestored: handleUndoRedoStateRestored
   });
 
-  // Extract states from undo-managed object
-  const title = undoableStates?.title || "Nytt hjul";
-  const year = undoableStates?.year || "2025";
-  const colors = undoableStates?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
-  // Memoize wheelStructure to prevent unnecessary re-renders of YearWheel
-  // Only create new object reference when actual data changes (using JSON comparison)
-  const structure = useMemo(() => {
-    const data = undoableStates?.structure || {
-      rings: [],
-      activityGroups: [],
-      labels: []
-    };
-    return data;
-  }, [
-    // Use JSON.stringify to create stable dependency for deep comparison
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    JSON.stringify(undoableStates?.structure)
-  ]);
-  const [zoomedMonth, setZoomedMonth] = useState(null);
-  const [zoomedQuarter, setZoomedQuarter] = useState(null);
-  const latestValuesRef = useRef({});
-  const [allItems, setAllItems] = useState([]);
-  const allItemsRef = useRef(allItems);
-  useEffect(() => {
-    allItemsRef.current = allItems;
-  }, [allItems]);
-
-  const [pageItemsById, setPageItemsById] = useState({});
-  const pageItemsRef = useRef(pageItemsById);
-  useEffect(() => {
-    pageItemsRef.current = pageItemsById;
-  }, [pageItemsById]);
-
-  const computePageItems = useCallback((items, pagesList) => {
-    if (!Array.isArray(pagesList) || pagesList.length === 0) {
-      return {};
-    }
-
-    const result = {};
-    pagesList.forEach((page) => {
-      if (!page?.id) {
-        return;
-      }
-      const pageYear = toYearNumber(page.year) ?? new Date().getFullYear();
-      result[page.id] = filterItemsByYear(items, pageYear);
-    });
-
-    return result;
-  }, [filterItemsByYear]);
-
-  // Multi-page state
-  const [pages, setPages] = useState([]);
-  const pagesRef = useRef(pages);
-  const [currentPageId, setCurrentPageId] = useState(null);
-  const [showAddPageModal, setShowAddPageModal] = useState(false);
-  const [wheelData, setWheelData] = useState(null); // Store full wheel object including team_id
-
-  const currentPageItems = useMemo(() => {
-    if (!currentPageId) {
-      return [];
-    }
-
-    const items = pageItemsById[currentPageId];
-    return Array.isArray(items) ? items : [];
-  }, [currentPageId, pageItemsById]);
-
+  // Computed values from wheelState
+  const title = wheelState?.metadata?.title || "Nytt hjul";
+  const year = wheelState?.metadata?.year || "2025";
+  const colors = wheelState?.metadata?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+  const showWeekRing = wheelState?.metadata?.showWeekRing ?? true;
+  const showMonthRing = wheelState?.metadata?.showMonthRing ?? true;
+  const showRingNames = wheelState?.metadata?.showRingNames ?? true;
+  const showLabels = wheelState?.metadata?.showLabels ?? false;
+  const weekRingDisplayMode = wheelState?.metadata?.weekRingDisplayMode || 'week-numbers';
+  
+  const structure = wheelState?.structure || { rings: [], activityGroups: [], labels: [] };
+  const pages = wheelState?.pages || [];
+  const currentPageId = wheelState?.currentPageId || null;
+  
+  const currentPage = useMemo(() => 
+    pages.find(p => p.id === currentPageId),
+    [pages, currentPageId]
+  );
+  
+  const currentPageItems = useMemo(() => 
+    currentPage?.items || [],
+    [currentPage]
+  );
+  
   const wheelStructure = useMemo(() => ({
     ...structure,
-    items: currentPageItems,
+    items: currentPageItems
   }), [structure, currentPageItems]);
 
+  // UI-only state (not part of wheelState)
+  const [zoomedMonth, setZoomedMonth] = useState(null);
+  const [zoomedQuarter, setZoomedQuarter] = useState(null);
+  const [showAddPageModal, setShowAddPageModal] = useState(false);
+  const [wheelData, setWheelData] = useState(null);
+
+  // Legacy refs for compatibility (will be removed later)
+  const latestValuesRef = useRef({});
+  const pagesRef = useRef(pages);
   useEffect(() => {
     pagesRef.current = pages;
-  }, [pages]);
-
-  // Sync pageItemsById from pages (source of truth)
-  useEffect(() => {
-    if (!Array.isArray(pages) || pages.length === 0) {
-      return;
-    }
-
-    const itemsByPage = {};
-    pages.forEach((page) => {
-      const structure = normalizePageStructure(page);
-      itemsByPage[page.id] = Array.isArray(structure.items) ? structure.items : [];
-    });
-
-    setPageItemsById(itemsByPage);
   }, [pages]);
 
   const setTitle = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_TITLE }) => {
@@ -750,11 +725,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [yearEventsCollection, setYearEventsCollection] = useState([]);
   // Start with sidebar closed on mobile, open on desktop
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
-  const [showWeekRing, setShowWeekRing] = useState(true);
-  const [showMonthRing, setShowMonthRing] = useState(true);
-  const [showRingNames, setShowRingNames] = useState(true);
-  const [showLabels, setShowLabels] = useState(false); // Default to false - labels shown on hover
-  const [weekRingDisplayMode, setWeekRingDisplayMode] = useState('week-numbers'); // 'week-numbers' or 'dates'
+  // showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode now come from wheelState.metadata
   const [downloadFormat, setDownloadFormat] = useState(isPremium ? "png" : "png-white");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header

@@ -1,10 +1,24 @@
 # Year Wheel POC - AI Coding Agent Instructions
 
 ## Project Overview
-YearWheel Planner is a modern, AI-powered annual planning SaaS application built with React, Supabase, and OpenAI. Users can visualize entire years in an interactive circular calendar with team collaboration, Google integrations, and natural language AI planning. The application supports multi-year projects, real-time collaboration, version control, and premium subscription features via Stripe.
+YearWheel Planner annual planning SaaS application built with React, Supabase, and OpenAI. Users can visualize entire years in an interactive circular calendar with team collaboration, The application supports multi-year projects, real-time collaboration, version control, and premium subscription features via Stripe.
+
+## wheel structure
+
+{
+  metadata: { wheelId, title, year, colors, showWeekRing, etc },
+  structure: { rings, activityGroups, labels },
+  pages: [
+    { id, year, pageOrder, title, items: [...] }
+  ]
+}
 
 ## Documentation
 We do NOT need summary documents. We do NOT need partial implementation guides. We do NOT need debugging checklists. We do NOT need quick reference guides. 
+
+## Version control
+The project uses Git with feature branches. 
+Use one or two-line messages for commits
 
 ## Core Architecture
 
@@ -134,31 +148,7 @@ Google Integrations:
 - Google integrations add source, external_id, sync_metadata to items table
 - Premium features enforced via RLS policies + helper functions
 
-### Application Structure
-```
-App.jsx (main container with routing, auth, undo/redo state)
-├── Routes (React Router 7.9)
-│   ├── LandingPage.jsx (public marketing site)
-│   ├── AuthPage.jsx (login/signup)
-│   ├── Dashboard.jsx (wheel cards, team management)
-│   ├── WheelEditor (main editor - loaded in App.jsx)
-│   ├── PricingPage.jsx (subscription plans)
-│   ├── AdminPanel.jsx (admin controls)
-│   └── PreviewWheelPage.jsx (public sharing)
-└── WheelEditor Component Tree
-    ├── Header.jsx (save/version/export controls)
-    ├── PageNavigator.jsx (multi-year navigation)
-    ├── OrganizationPanel.jsx (sidebar: disc/liste/kalender views)
-    │   ├── AddAktivitetModal.jsx / EditAktivitetModal.jsx
-    │   ├── AddItemModal.jsx / EditItemModal.jsx
-    │   └── RingIntegrationModal.jsx
-    ├── YearWheel.jsx (canvas wrapper + zoom controls)
-    │   ├── YearWheelClass.js (rendering engine)
-    │   └── ItemTooltip.jsx (hover/click details)
-    ├── AIAssistant.jsx (natural language planning)
-    ├── VersionHistoryModal.jsx (version control)
-    ├── ExportDataModal.jsx (PNG/SVG/PDF/JPG export)
-    └── EditorOnboarding.jsx (user onboarding flow)
+
 ```
 
 ## Critical Patterns
@@ -333,5 +323,4 @@ When implementing new features, reference these documents for PostgreSQL schema,
 - Month indices: 0=January, 11=December (JavaScript Date convention)
 
 
-## Workflow
-We do NOT need summary documents. We do NOT need partial implementation guides. We do NOT need debugging checklists. We do NOT need quick reference guides. We do NOT need piecemeal architecture notes. 
+
