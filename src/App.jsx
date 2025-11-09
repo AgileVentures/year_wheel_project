@@ -3472,8 +3472,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     });
 
     const wasDragging = isDraggingRef.current;
-    let actuallyChanged = false;
-    let itemFound = false;
+    
+    // Use ref to capture result from inside setPages callback
+    const changeResultRef = { actuallyChanged: false, itemFound: false };
 
     // Update pages state directly (source of truth)
     setPages((prevPages) => {
@@ -3491,7 +3492,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           return page;
         }
 
-        itemFound = true;
+        changeResultRef.itemFound = true;
 
         // Check what changed
         const ringChanged = oldItem.ringId !== updatedItem.ringId;
@@ -3505,21 +3506,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           (oldItem.linkType || null) !== (updatedItem.linkType || null) ||
           (oldItem.linkedWheelId || null) !== (updatedItem.linkedWheelId || null);
 
-        // CRITICAL: Assign to outer scope variable so it's available after setPages
-        actuallyChanged =
+        // CRITICAL: Assign to ref so it's available after setPages completes
+        changeResultRef.actuallyChanged =
           ringChanged || datesChanged || activityChanged || labelChanged ||
           nameChanged || timeChanged || descriptionChanged || linkChanged;
 
         console.log('[handleUpdateAktivitet] Changes detected:', {
-          itemFound,
-          actuallyChanged,
+          itemFound: changeResultRef.itemFound,
+          actuallyChanged: changeResultRef.actuallyChanged,
           ringChanged,
           datesChanged,
           oldDates: `${oldItem.startDate} → ${oldItem.endDate}`,
           newDates: `${updatedItem.startDate} → ${updatedItem.endDate}`
         });
 
-        if (!actuallyChanged) return page;
+        if (!changeResultRef.actuallyChanged) return page;
 
         // Update item in page structure
         const nextItems = currentItems.map((item) =>
@@ -3537,20 +3538,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         };
       });
 
-      if (!itemFound) {
-        actuallyChanged = false;
+      if (!changeResultRef.itemFound) {
+        changeResultRef.actuallyChanged = false;
         console.warn('[handleUpdateAktivitet] Item not found in any page!', updatedItem.id);
       }
 
       return nextPages;
     });
 
-    console.log('[handleUpdateAktivitet] After setPages:', { actuallyChanged, itemFound, wasDragging });
+    console.log('[handleUpdateAktivitet] After setPages:', { 
+      actuallyChanged: changeResultRef.actuallyChanged, 
+      itemFound: changeResultRef.itemFound, 
+      wasDragging 
+    });
 
-    // Handle drag mode cleanup (actuallyChanged is now correctly set)
+    // Handle drag mode cleanup (use ref values)
     if (wasDragging) {
       isDraggingRef.current = false;
-      if (actuallyChanged) {
+      if (changeResultRef.actuallyChanged) {
         console.log('[handleUpdateAktivitet] Calling endBatch()');
         const newHistoryIndex = endBatch();
         if (newHistoryIndex !== null) {
@@ -3562,8 +3567,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     }
 
-    // Persist to database (actuallyChanged is now correctly set)
-    if (actuallyChanged) {
+    // Persist to database (use ref values)
+    if (changeResultRef.actuallyChanged) {
       console.log('[handleUpdateAktivitet] Persisting to database');
       persistItemToDatabase(updatedItem, {
         reason: wasDragging ? 'drag-update' : 'edit-update',
