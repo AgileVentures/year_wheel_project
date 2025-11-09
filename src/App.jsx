@@ -379,6 +379,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   useEffect(() => {
     pagesRef.current = pages;
   }, [pages]);
+
+  // Sync pageItemsById from pages (source of truth)
+  useEffect(() => {
+    if (!Array.isArray(pages) || pages.length === 0) {
+      return;
+    }
+
+    const itemsByPage = {};
+    pages.forEach((page) => {
+      const structure = normalizePageStructure(page);
+      itemsByPage[page.id] = Array.isArray(structure.items) ? structure.items : [];
+    });
+
+    setPageItemsById(itemsByPage);
+  }, [pages]);
+
   const setTitle = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_TITLE }) => {
     const currentTitle = undoableStates?.title || "Nytt hjul";
     const nextTitle = typeof value === 'function' ? value(currentTitle) : value;
@@ -3436,32 +3452,35 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    const wasDragging = isDraggingRef.current;
-
-    console.log('[Debug][handleUpdateAktivitet] Called', {
-      wasDragging,
-      itemName: updatedItem?.name,
-      isDraggingRefValue: isDraggingRef.current
-    });
-
-    let calculatedLabel = wasDragging ? undefined : { type: 'changeActivity' };
-    let actuallyChanged = false;
-
-    if (updatedItem) {
-      console.log('[Debug][handleUpdateAktivitet] Incoming update', {
-        id: updatedItem.id,
-        pageId: updatedItem.pageId,
-        startDate: updatedItem.startDate,
-        endDate: updatedItem.endDate,
-        ringId: updatedItem.ringId,
-        activityId: updatedItem.activityId,
-      });
+    if (!updatedItem?.id || !updatedItem?.pageId) {
+      console.warn('[handleUpdateAktivitet] Missing id or pageId', updatedItem);
+      return;
     }
 
-    setWheelStructure((prevData) => {
-      const oldItem = prevData.items.find((item) => item.id === updatedItem.id);
+    const wasDragging = isDraggingRef.current;
+    let actuallyChanged = false;
 
-      if (oldItem) {
+    // Update pages state directly (source of truth)
+    setPages((prevPages) => {
+      if (!Array.isArray(prevPages)) return prevPages;
+
+      let itemFound = false;
+
+      const nextPages = prevPages.map((page) => {
+        if (page.id !== updatedItem.pageId) return page;
+
+        const currentStructure = normalizePageStructure(page);
+        const currentItems = Array.isArray(currentStructure.items) ? currentStructure.items : [];
+        const oldItem = currentItems.find((item) => item.id === updatedItem.id);
+
+        if (!oldItem) {
+          console.warn('[handleUpdateAktivitet] Item not found on page', updatedItem.id);
+          return page;
+        }
+
+        itemFound = true;
+
+        // Check what changed
         const ringChanged = oldItem.ringId !== updatedItem.ringId;
         const datesChanged = oldItem.startDate !== updatedItem.startDate || oldItem.endDate !== updatedItem.endDate;
         const activityChanged = oldItem.activityId !== updatedItem.activityId;
@@ -3474,94 +3493,86 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           (oldItem.linkedWheelId || null) !== (updatedItem.linkedWheelId || null);
 
         actuallyChanged =
-          ringChanged ||
-          datesChanged ||
-          activityChanged ||
-          labelChanged ||
-          nameChanged ||
-          timeChanged ||
-          descriptionChanged ||
-          linkChanged;
+          ringChanged || datesChanged || activityChanged || labelChanged ||
+          nameChanged || timeChanged || descriptionChanged || linkChanged;
 
-        if (!wasDragging) {
-          if (ringChanged && datesChanged) {
-            calculatedLabel = { type: 'moveAndChange', params: { name: updatedItem.name } };
-          } else if (ringChanged) {
-            const newRing = prevData.rings.find((r) => r.id === updatedItem.ringId);
-            if (newRing) {
-              calculatedLabel = {
-                type: 'moveToRing',
-                params: { name: updatedItem.name, ring: newRing.name },
-              };
-            } else {
-              calculatedLabel = { type: 'moveItem', params: { name: updatedItem.name } };
-            }
-          } else if (datesChanged) {
-            calculatedLabel = { type: 'changeDates', params: { name: updatedItem.name } };
-          } else {
-            calculatedLabel = { type: 'editItem', params: { name: updatedItem.name } };
-          }
-        }
-      } else {
-        actuallyChanged = true;
-      }
+        if (!actuallyChanged) return page;
 
-      const nextItems = prevData.items.map((item) =>
-        item.id === updatedItem.id ? updatedItem : item
-      );
+        // Update item in page structure
+        const nextItems = currentItems.map((item) =>
+          item.id === updatedItem.id ? updatedItem : item
+        );
 
-      console.log('[Debug][handleUpdateAktivitet] Current page items snapshot', {
-        count: nextItems.length,
-        containsUpdated: nextItems.some((item) => item.id === updatedItem.id),
+        return {
+          ...page,
+          structure: {
+            ...currentStructure,
+            items: nextItems,
+          },
+        };
       });
 
-      return {
-        ...prevData,
-        items: nextItems,
-      };
-    }, calculatedLabel);
+      if (!itemFound) {
+        actuallyChanged = false;
+      }
 
+      return nextPages;
+    });
+
+    // Handle drag mode cleanup
     if (wasDragging) {
       isDraggingRef.current = false;
-      console.log('[Debug][handleUpdateAktivitet] Ending drag, actuallyChanged:', actuallyChanged);
       if (actuallyChanged) {
-        console.log('[Debug][handleUpdateAktivitet] Calling endBatch()');
         const newHistoryIndex = endBatch();
         if (newHistoryIndex !== null) {
           markSaved(newHistoryIndex);
-          console.log('[Debug][handleUpdateAktivitet] Called markSaved with index:', newHistoryIndex);
         }
       } else {
-        console.log('[Debug][handleUpdateAktivitet] Calling cancelBatch()');
         cancelBatch();
       }
     }
 
+    // Persist to database
     if (actuallyChanged) {
       persistItemToDatabase(updatedItem, {
         reason: wasDragging ? 'drag-update' : 'edit-update',
         delay: wasDragging ? 120 : 0,
       }).catch(() => {});
     }
-  }, [setWheelStructure, endBatch, cancelBatch, persistItemToDatabase]);
+  }, [setPages, endBatch, cancelBatch, markSaved, persistItemToDatabase]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
-    let calculatedLabel = { type: 'removeActivity' };
+    if (!itemId || !currentPageId) return;
 
-    setWheelStructure((prevData) => {
-      const itemToDelete = prevData.items.find((item) => item.id === itemId);
-      if (itemToDelete) {
-        calculatedLabel = { type: 'removeItem', params: { name: itemToDelete.name } };
-      }
+    let itemName = '';
 
-      return {
-        ...prevData,
-        items: prevData.items.filter((item) => item.id !== itemId),
-      };
-    }, calculatedLabel);
+    // Update pages state directly
+    setPages((prevPages) => {
+      if (!Array.isArray(prevPages)) return prevPages;
+
+      return prevPages.map((page) => {
+        if (page.id !== currentPageId) return page;
+
+        const currentStructure = normalizePageStructure(page);
+        const currentItems = Array.isArray(currentStructure.items) ? currentStructure.items : [];
+        const itemToDelete = currentItems.find((item) => item.id === itemId);
+
+        if (itemToDelete) {
+          itemName = itemToDelete.name;
+        }
+
+        return {
+          ...page,
+          structure: {
+            ...currentStructure,
+            items: currentItems.filter((item) => item.id !== itemId),
+          },
+        };
+      });
+    });
 
     persistItemDeletion(itemId, { reason: 'delete-item' }).catch(() => {});
-  }, [setWheelStructure, persistItemDeletion]);
+  }, [currentPageId, setPages, persistItemDeletion]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
