@@ -180,9 +180,12 @@ export function useUndoRedo(initialState, options = {}) {
    * Undo to previous state
    */
   const undo = useCallback(() => {
+    console.log('[UndoRedo] undo() called');
     // CRITICAL: Use refs to access current values, not stale closures
     const currentIdx = currentIndexRef.current;
     const currentHist = historyRef.current;
+    
+    console.log('[UndoRedo] undo: currentIdx =', currentIdx, ', history length =', currentHist.length);
     
     if (currentIdx > 0 && currentHist.length > 0) {
       const newIndex = currentIdx - 1;
@@ -199,6 +202,8 @@ export function useUndoRedo(initialState, options = {}) {
         return false;
       }
       
+      console.log('[UndoRedo] undo: Restoring state at index', newIndex, 'with label:', historyEntry.label);
+      
       // Set flag IMMEDIATELY before any state updates
       isUndoRedoAction.current = true;
       
@@ -207,6 +212,7 @@ export function useUndoRedo(initialState, options = {}) {
       setStateInternal(historyEntry.state);
 
       if (onStateRestoredRef.current) {
+        console.log('[UndoRedo] undo: Calling onStateRestored callback');
         onStateRestoredRef.current(historyEntry.state, historyEntry.label || null, 'undo');
       }
       
@@ -219,6 +225,7 @@ export function useUndoRedo(initialState, options = {}) {
       
       return historyEntry.label || 'Ändring';
     }
+    console.log('[UndoRedo] undo: Cannot undo - already at beginning or empty history');
     return false;
   }, []); // No dependencies - use refs instead
 

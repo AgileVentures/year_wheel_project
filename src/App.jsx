@@ -218,6 +218,30 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [yearWheelRef, setYearWheelRef] = useState(null);
 
   const handleUndoRedoStateRestored = useCallback((restoredState) => {
+    console.log('[Debug][UndoRestore] State restored:', {
+      hasStructure: !!restoredState?.structure,
+      hasPageItemsById: !!restoredState?.pageItemsById,
+      pageItemsByIdKeys: Object.keys(restoredState?.pageItemsById || {})
+    });
+    
+    // Restore items from undo state
+    if (restoredState?.pageItemsById) {
+      setPageItemsById(restoredState.pageItemsById);
+      
+      // Also update allItems
+      const allRestoredItems = Object.values(restoredState.pageItemsById)
+        .flat()
+        .filter(Boolean);
+      setAllItems(allRestoredItems);
+      
+      console.log('[Debug][UndoRestore] Restored items:', {
+        totalItems: allRestoredItems.length,
+        itemsByPage: Object.entries(restoredState.pageItemsById).map(([pageId, items]) => 
+          `${pageId.substring(0, 8)}: ${items?.length || 0} items`
+        )
+      });
+    }
+    
     if (yearWheelRef && typeof yearWheelRef.clearPendingItemUpdates === 'function') {
       yearWheelRef.clearPendingItemUpdates();
     }
@@ -272,7 +296,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       ],
       labels: []
-    }
+    },
+    pageItemsById: {} // CRITICAL: Include items in undo state to prevent disappearance
   }, {
     limit: 10, // Keep last 10 undo steps
     enableKeyboard: true,
@@ -438,6 +463,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const nextItems = Array.isArray(nextRaw?.items) ? nextRaw.items : currentItems;
 
+    console.log('[Debug][setWheelStructure] Items decision:', {
+      hasNextRawItems: Array.isArray(nextRaw?.items),
+      nextRawItemsLength: nextRaw?.items?.length,
+      currentItemsLength: currentItems?.length,
+      finalItemsLength: nextItems?.length,
+      historyLabel: historyLabel?.type || historyLabel
+    });
+
     const nextCombined = {
       ...nextStructure,
       items: nextItems,
@@ -471,9 +504,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const finalLabel = historyLabel || { type: changeType };
 
+    // Update both structure and pageItemsById in undo state
     setUndoableStates((prevStates) => ({
       ...prevStates,
       structure: nextStructure,
+      pageItemsById: {
+        ...prevStates.pageItemsById,
+        [currentPageId]: nextItems
+      }
     }), finalLabel);
 
     latestValuesRef.current = {
