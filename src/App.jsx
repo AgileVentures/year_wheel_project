@@ -768,6 +768,35 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const handleSaveRef = useRef(null);
   // Queue item persistence operations to avoid race conditions
 
+  // Complete wheel snapshot in the format: { metadata, structure, pages }
+  // This is what YearWheel.jsx should receive for full visibility
+  const completeWheelSnapshot = useMemo(() => ({
+    metadata: {
+      wheelId,
+      title,
+      year,
+      colors,
+      showWeekRing,
+      showMonthRing,
+      showRingNames,
+      showLabels,
+      weekRingDisplayMode,
+    },
+    structure: {
+      rings: structure.rings || [],
+      activityGroups: structure.activityGroups || [],
+      labels: structure.labels || [],
+    },
+    pages: pages.map(page => ({
+      id: page.id,
+      year: page.year,
+      pageOrder: page.page_order,
+      title: page.title,
+      items: pageItemsById[page.id] || [],
+      isActive: page.id === currentPageId,
+    })),
+  }), [wheelId, title, year, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, structure, pages, pageItemsById, currentPageId]);
+
   // Load wheel data function (memoized to avoid recreating)
   const loadWheelData = useCallback(async (rawOptions) => {
     const options = rawOptions && typeof rawOptions === 'object' && !Array.isArray(rawOptions)
@@ -4040,6 +4069,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               colors={colors}
               ringsData={ringsData}
               wheelStructure={wheelStructure}
+              completeWheelSnapshot={completeWheelSnapshot}
               showYearEvents={showYearEvents}
               showSeasonRing={showSeasonRing}
               yearEventsCollection={yearEventsCollection}

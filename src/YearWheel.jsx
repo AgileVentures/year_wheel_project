@@ -31,6 +31,7 @@ function YearWheel({
   year,
   colors,
   wheelStructure,
+  completeWheelSnapshot, // NEW: Complete snapshot with { metadata, structure, pages }
   showYearEvents,
   showSeasonRing,
   yearEventsCollection,
@@ -81,58 +82,67 @@ function YearWheel({
   
   const { t, i18n } = useTranslation(['common']);
   
-  // DEBUG: Log complete wheel structure for inspection
+  // DEBUG: Log complete wheel snapshot with pages structure
   useEffect(() => {
-    const snapshot = {
-      metadata: {
-        wheelId,
-        title,
-        year,
-        colors,
-        showWeekRing,
-        showMonthRing,
-        showRingNames,
-        showLabels,
-        weekRingDisplayMode
-      },
-      structure: {
-        rings: wheelStructure?.rings?.map(ring => ({
-          id: ring.id,
-          name: ring.name,
-          type: ring.type,
-          visible: ring.visible
-        })),
-        activityGroups: wheelStructure?.activityGroups?.map(group => ({
-          id: group.id,
-          name: group.name,
-          color: group.color,
-          visible: group.visible
-        })),
-        labels: wheelStructure?.labels?.map(label => ({
-          id: label.id,
-          name: label.name,
-          color: label.color,
-          visible: label.visible
+    if (completeWheelSnapshot) {
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('🎡 COMPLETE WHEEL SNAPSHOT (YearWheel.jsx):');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log(JSON.stringify(completeWheelSnapshot, null, 2));
+      console.log('═══════════════════════════════════════════════════════');
+    } else {
+      // Fallback: construct from wheelStructure (backward compatibility)
+      const snapshot = {
+        metadata: {
+          wheelId,
+          title,
+          year,
+          colors,
+          showWeekRing,
+          showMonthRing,
+          showRingNames,
+          showLabels,
+          weekRingDisplayMode
+        },
+        structure: {
+          rings: wheelStructure?.rings?.map(ring => ({
+            id: ring.id,
+            name: ring.name,
+            type: ring.type,
+            visible: ring.visible
+          })),
+          activityGroups: wheelStructure?.activityGroups?.map(group => ({
+            id: group.id,
+            name: group.name,
+            color: group.color,
+            visible: group.visible
+          })),
+          labels: wheelStructure?.labels?.map(label => ({
+            id: label.id,
+            name: label.name,
+            color: label.color,
+            visible: label.visible
+          }))
+        },
+        items: wheelStructure?.items?.map(item => ({
+          id: item.id,
+          name: item.name,
+          pageId: item.pageId,
+          ringId: item.ringId,
+          activityId: item.activityId,
+          labelId: item.labelId || null,
+          startDate: item.startDate,
+          endDate: item.endDate
         }))
-      },
-      items: wheelStructure?.items?.map(item => ({
-        id: item.id,
-        name: item.name,
-        pageId: item.pageId,
-        ringId: item.ringId,
-        activityId: item.activityId,
-        labelId: item.labelId || null,
-        startDate: item.startDate,
-        endDate: item.endDate
-      }))
-    };
-    
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('🎡 COMPLETE WHEEL SNAPSHOT (YearWheel.jsx):');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(JSON.stringify(snapshot, null, 2));
-    console.log('═══════════════════════════════════════════════════════');
-  }, [wheelStructure, wheelId, title, year, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode]);
+      };
+      
+      console.log('═══════════════════════════════════════════════════════');
+      console.log('🎡 FALLBACK WHEEL SNAPSHOT (YearWheel.jsx):');
+      console.log('═══════════════════════════════════════════════════════');
+      console.log(JSON.stringify(snapshot, null, 2));
+      console.log('═══════════════════════════════════════════════════════');
+    }
+  }, [completeWheelSnapshot, wheelStructure, wheelId, title, year, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode]);
   
   // Broadcast editing activity when item modal opens/closes from canvas
   useEffect(() => {
