@@ -9,7 +9,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
   
   // Use page year for default dates (fall back to current year if not provided)
   const defaultYear = year ? parseInt(year) : new Date().getFullYear();
-  const defaultDate = new Date(defaultYear, 0, 1).toISOString().split('T')[0]; // Jan 1st of page year
+  const defaultDate = `${defaultYear}-01-01`; // Jan 1st of page year
   
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +34,17 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
   const [selectedWheelPreview, setSelectedWheelPreview] = useState(null);
   const [showDescription, setShowDescription] = useState(false);
   const [recurringPreview, setRecurringPreview] = useState([]);
+
+  // Update dates when year prop changes
+  useEffect(() => {
+    const pageYear = year ? parseInt(year) : new Date().getFullYear();
+    const newDefaultDate = `${pageYear}-01-01`; // Jan 1st using direct string format
+    setFormData(prev => ({
+      ...prev,
+      startDate: newDefaultDate,
+      endDate: newDefaultDate
+    }));
+  }, [year]);
 
   // Fetch accessible wheels on mount
   useEffect(() => {

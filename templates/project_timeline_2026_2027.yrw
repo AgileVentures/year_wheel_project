@@ -1,0 +1,252 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-11-09T12:30:00.000Z",
+  "title": "Multi-Year Project Timeline",
+  "year": "2026",
+  "colors": [
+    "#3498DB",
+    "#2ECC71",
+    "#E74C3C",
+    "#F39C12"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        ["Phase 1"],
+        [""],
+        ["Phase 2"],
+        [""],
+        ["Phase 3"],
+        [""],
+        ["Phase 4"],
+        [""],
+        ["Phase 5"],
+        [""],
+        ["Phase 6"],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "rings": [
+      {
+        "id": "ring-development",
+        "name": "Development",
+        "type": "outer",
+        "visible": true,
+        "color": "#3498DB"
+      },
+      {
+        "id": "ring-testing",
+        "name": "Testing & QA",
+        "type": "outer",
+        "visible": true,
+        "color": "#2ECC71"
+      },
+      {
+        "id": "ring-deployment",
+        "name": "Deployment",
+        "type": "outer",
+        "visible": true,
+        "color": "#E74C3C"
+      },
+      {
+        "id": "ring-planning",
+        "name": "Project Management",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical"
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "group-backend",
+        "name": "Backend",
+        "color": "#3498DB",
+        "visible": true
+      },
+      {
+        "id": "group-frontend",
+        "name": "Frontend",
+        "color": "#9B59B6",
+        "visible": true
+      },
+      {
+        "id": "group-mobile",
+        "name": "Mobile App",
+        "color": "#1ABC9C",
+        "visible": true
+      },
+      {
+        "id": "group-qa",
+        "name": "Quality Assurance",
+        "color": "#2ECC71",
+        "visible": true
+      },
+      {
+        "id": "group-release",
+        "name": "Release",
+        "color": "#E74C3C",
+        "visible": true
+      },
+      {
+        "id": "group-milestone",
+        "name": "Milestone",
+        "color": "#F39C12",
+        "visible": true
+      }
+    ],
+    "labels": [
+      {
+        "id": "label-critical",
+        "name": "Critical Path",
+        "color": "#E74C3C",
+        "visible": true
+      },
+      {
+        "id": "label-external",
+        "name": "External Dependency",
+        "color": "#F39C12",
+        "visible": true
+      }
+    ],
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-development",
+        "activityId": "group-backend",
+        "labelId": "label-critical",
+        "name": "API Development Phase 1",
+        "startDate": "2026-01-15",
+        "endDate": "2026-04-30",
+        "time": null,
+        "description": "Core API endpoints and database schema"
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-development",
+        "activityId": "group-backend",
+        "labelId": "label-critical",
+        "name": "API Development Phase 2",
+        "startDate": "2026-05-01",
+        "endDate": "2026-08-15",
+        "time": null,
+        "description": "Advanced features and integrations"
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-development",
+        "activityId": "group-frontend",
+        "labelId": "label-critical",
+        "name": "Web Interface Development",
+        "startDate": "2026-03-01",
+        "endDate": "2026-09-30",
+        "time": null,
+        "description": "React-based web application"
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-development",
+        "activityId": "group-mobile",
+        "labelId": null,
+        "name": "iOS App Development",
+        "startDate": "2026-06-01",
+        "endDate": "2027-02-28",
+        "time": null,
+        "description": "Native iOS application - spans multiple years"
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-development",
+        "activityId": "group-mobile",
+        "labelId": null,
+        "name": "Android App Development",
+        "startDate": "2026-06-15",
+        "endDate": "2027-03-15",
+        "time": null,
+        "description": "Native Android application - spans multiple years"
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-testing",
+        "activityId": "group-qa",
+        "labelId": "label-critical",
+        "name": "Integration Testing",
+        "startDate": "2026-09-01",
+        "endDate": "2026-11-30",
+        "time": null,
+        "description": "Full system integration tests"
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-testing",
+        "activityId": "group-qa",
+        "labelId": "label-critical",
+        "name": "User Acceptance Testing",
+        "startDate": "2026-12-01",
+        "endDate": "2027-01-31",
+        "time": null,
+        "description": "UAT with beta users - spans year boundary"
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-deployment",
+        "activityId": "group-release",
+        "labelId": "label-critical",
+        "name": "Beta Release",
+        "startDate": "2026-10-15",
+        "endDate": "2026-10-15",
+        "time": "10:00",
+        "description": "Limited beta release to selected users"
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-deployment",
+        "activityId": "group-release",
+        "labelId": "label-critical",
+        "name": "Production Release v1.0",
+        "startDate": "2027-02-15",
+        "endDate": "2027-02-15",
+        "time": "09:00",
+        "description": "Full production release"
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-planning",
+        "activityId": "group-milestone",
+        "labelId": null,
+        "name": "Project Kickoff",
+        "startDate": "2026-01-01",
+        "endDate": "2026-01-15",
+        "time": null
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-planning",
+        "activityId": "group-milestone",
+        "labelId": null,
+        "name": "Mid-Project Review",
+        "startDate": "2026-07-01",
+        "endDate": "2026-07-15",
+        "time": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-planning",
+        "activityId": "group-milestone",
+        "labelId": null,
+        "name": "Pre-Launch Preparation",
+        "startDate": "2027-01-15",
+        "endDate": "2027-02-14",
+        "time": null,
+        "description": "Final preparations spanning into 2027"
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": true,
+  "weekRingDisplayMode": "week-numbers"
+}

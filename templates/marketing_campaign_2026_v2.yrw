@@ -1,0 +1,280 @@
+{
+  "version": "1.0",
+  "createdAt": "2025-11-09T12:00:00.000Z",
+  "title": "Marketing Campaign 2026",
+  "year": "2026",
+  "colors": [
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#FFA07A"
+  ],
+  "ringsData": [
+    {
+      "data": [
+        ["Q1 Goals"],
+        [""],
+        [""],
+        ["Q2 Strategy"],
+        [""],
+        [""],
+        ["Q3 Launch"],
+        [""],
+        [""],
+        ["Q4 Review"],
+        [""],
+        [""]
+      ],
+      "orientation": "vertical"
+    }
+  ],
+  "organizationData": {
+    "rings": [
+      {
+        "id": "ring-digital",
+        "name": "Digital Marketing",
+        "type": "outer",
+        "visible": true,
+        "color": "#FF6B6B"
+      },
+      {
+        "id": "ring-content",
+        "name": "Content Creation",
+        "type": "outer",
+        "visible": true,
+        "color": "#4ECDC4"
+      },
+      {
+        "id": "ring-events",
+        "name": "Events & Webinars",
+        "type": "outer",
+        "visible": true,
+        "color": "#45B7D1"
+      },
+      {
+        "id": "ring-strategy",
+        "name": "Strategic Planning",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical"
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "group-social",
+        "name": "Social Media",
+        "color": "#FF6B6B",
+        "visible": true
+      },
+      {
+        "id": "group-email",
+        "name": "Email Campaigns",
+        "color": "#4ECDC4",
+        "visible": true
+      },
+      {
+        "id": "group-blog",
+        "name": "Blog Posts",
+        "color": "#45B7D1",
+        "visible": true
+      },
+      {
+        "id": "group-video",
+        "name": "Video Content",
+        "color": "#FFA07A",
+        "visible": true
+      },
+      {
+        "id": "group-webinar",
+        "name": "Webinars",
+        "color": "#9B59B6",
+        "visible": true
+      },
+      {
+        "id": "group-planning",
+        "name": "Planning",
+        "color": "#95A5A6",
+        "visible": true
+      }
+    ],
+    "labels": [
+      {
+        "id": "label-priority",
+        "name": "High Priority",
+        "color": "#E74C3C",
+        "visible": true
+      },
+      {
+        "id": "label-recurring",
+        "name": "Recurring",
+        "color": "#3498DB",
+        "visible": true
+      }
+    ],
+    "items": [
+      {
+        "id": "item-001",
+        "ringId": "ring-digital",
+        "activityId": "group-social",
+        "labelId": "label-priority",
+        "name": "New Year Social Campaign",
+        "startDate": "2026-01-05",
+        "endDate": "2026-01-31",
+        "time": null,
+        "description": "Launch new year campaign across all social platforms"
+      },
+      {
+        "id": "item-002",
+        "ringId": "ring-digital",
+        "activityId": "group-social",
+        "labelId": "label-recurring",
+        "name": "Monthly Social Media Posts",
+        "startDate": "2026-02-01",
+        "endDate": "2026-02-28",
+        "time": null
+      },
+      {
+        "id": "item-003",
+        "ringId": "ring-digital",
+        "activityId": "group-email",
+        "labelId": "label-priority",
+        "name": "Spring Newsletter Series",
+        "startDate": "2026-03-01",
+        "endDate": "2026-05-31",
+        "time": null,
+        "description": "Weekly newsletter campaign for spring season"
+      },
+      {
+        "id": "item-004",
+        "ringId": "ring-content",
+        "activityId": "group-blog",
+        "labelId": null,
+        "name": "SEO Blog Content",
+        "startDate": "2026-01-15",
+        "endDate": "2026-03-15",
+        "time": null,
+        "description": "15 blog posts targeting high-value keywords"
+      },
+      {
+        "id": "item-005",
+        "ringId": "ring-content",
+        "activityId": "group-video",
+        "labelId": "label-priority",
+        "name": "Product Demo Videos",
+        "startDate": "2026-02-10",
+        "endDate": "2026-04-10",
+        "time": null,
+        "description": "Create 5 professional product demo videos"
+      },
+      {
+        "id": "item-006",
+        "ringId": "ring-content",
+        "activityId": "group-blog",
+        "labelId": "label-recurring",
+        "name": "Weekly Blog Posts",
+        "startDate": "2026-04-01",
+        "endDate": "2026-06-30",
+        "time": null
+      },
+      {
+        "id": "item-007",
+        "ringId": "ring-events",
+        "activityId": "group-webinar",
+        "labelId": "label-priority",
+        "name": "Q1 Webinar Series",
+        "startDate": "2026-01-20",
+        "endDate": "2026-03-20",
+        "time": null,
+        "description": "Monthly webinars on industry trends"
+      },
+      {
+        "id": "item-008",
+        "ringId": "ring-events",
+        "activityId": "group-webinar",
+        "labelId": null,
+        "name": "Summer Product Launch Webinar",
+        "startDate": "2026-06-15",
+        "endDate": "2026-06-15",
+        "time": "14:00"
+      },
+      {
+        "id": "item-009",
+        "ringId": "ring-digital",
+        "activityId": "group-email",
+        "labelId": "label-priority",
+        "name": "Back to School Campaign",
+        "startDate": "2026-08-01",
+        "endDate": "2026-09-15",
+        "time": null,
+        "description": "Email campaign targeting educational sector"
+      },
+      {
+        "id": "item-010",
+        "ringId": "ring-digital",
+        "activityId": "group-social",
+        "labelId": "label-priority",
+        "name": "Holiday Season Campaign",
+        "startDate": "2026-11-01",
+        "endDate": "2026-12-31",
+        "time": null,
+        "description": "Major holiday marketing push across all channels"
+      },
+      {
+        "id": "item-011",
+        "ringId": "ring-strategy",
+        "activityId": "group-planning",
+        "labelId": null,
+        "name": "Q1 Planning & Budget",
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-31",
+        "time": null
+      },
+      {
+        "id": "item-012",
+        "ringId": "ring-strategy",
+        "activityId": "group-planning",
+        "labelId": null,
+        "name": "Q2 Strategy Review",
+        "startDate": "2026-04-01",
+        "endDate": "2026-06-30",
+        "time": null
+      },
+      {
+        "id": "item-013",
+        "ringId": "ring-strategy",
+        "activityId": "group-planning",
+        "labelId": null,
+        "name": "Q3 Campaign Analysis",
+        "startDate": "2026-07-01",
+        "endDate": "2026-09-30",
+        "time": null
+      },
+      {
+        "id": "item-014",
+        "ringId": "ring-strategy",
+        "activityId": "group-planning",
+        "labelId": null,
+        "name": "Q4 Year-End Review",
+        "startDate": "2026-10-01",
+        "endDate": "2026-12-31",
+        "time": null
+      },
+      {
+        "id": "item-015",
+        "ringId": "ring-content",
+        "activityId": "group-video",
+        "labelId": "label-priority",
+        "name": "Customer Testimonial Videos",
+        "startDate": "2026-09-01",
+        "endDate": "2026-10-31",
+        "time": null,
+        "description": "Record and edit 10 customer success stories"
+      }
+    ]
+  },
+  "showWeekRing": true,
+  "showMonthRing": true,
+  "showRingNames": true,
+  "showLabels": true,
+  "weekRingDisplayMode": "week-numbers"
+}

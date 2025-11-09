@@ -3056,17 +3056,32 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   };
 
   const handleSaveToFile = () => {
+    // Use wheelState structure for export
+    const currentPage = pages.find(p => p.id === currentPageId) || pages[0];
+    
+    // Build organizationData with current page items
+    const organizationData = {
+      rings: structure.rings || [],
+      activityGroups: structure.activityGroups || [],
+      labels: structure.labels || [],
+      items: currentPage?.items || []
+    };
+    
     const dataToSave = {
       version: "1.0",
       createdAt: new Date().toISOString(),
       title,
       year,
       colors,
+      // Include ringsData for backward compatibility with old versions
       ringsData,
-      wheelStructure,
+      // Use organizationData (matches template format and database)
+      organizationData,
       showWeekRing,
       showMonthRing,
       showRingNames,
+      showLabels,
+      weekRingDisplayMode,
     };
 
     const jsonString = JSON.stringify(dataToSave, null, 2);
@@ -3710,8 +3725,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           const data = JSON.parse(readerEvent.target.result);
           
           // Validate the data structure (allow empty title)
-          // Support both old format (ringsData) and new format (wheelStructure)
-          if (data.title === undefined || !data.year || (!data.ringsData && !data.wheelStructure)) {
+          // Support both old format (wheelStructure) and new format (organizationData)
+          const hasOrgData = data.organizationData || data.wheelStructure;
+          if (data.title === undefined || !data.year || (!data.ringsData && !hasOrgData)) {
             throw new Error('Invalid file format');
           }
 
@@ -3722,9 +3738,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           isRealtimeUpdate.current = true;
 
           // Process organization data BEFORE setting state
+          // Support both organizationData (new) and wheelStructure (old) naming
           let processedOrgData;
-          if (data.wheelStructure) {
-            processedOrgData = { ...data.wheelStructure };
+          const sourceOrgData = data.organizationData || data.wheelStructure;
+          
+          if (sourceOrgData) {
+            processedOrgData = { ...sourceOrgData };
             
             // Backward compatibility: convert old 'activities' to 'activityGroups'
             if (processedOrgData.activities && !processedOrgData.activityGroups) {
@@ -4194,7 +4213,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             colors={colors}
             onColorsChange={handleColorsChange}
             onPaletteChange={handlePaletteChange}
-            year={year}
+            year={currentPage?.year || year}
             zoomedMonth={zoomedMonth}
             zoomedQuarter={zoomedQuarter}
             onZoomToMonth={setZoomedMonth}
