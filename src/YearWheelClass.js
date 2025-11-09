@@ -4099,9 +4099,33 @@ class YearWheel {
       return items;
     }
 
-    const weekGroups = new Map(); // Key: "YYYY-WW-ringId", Value: { items[], weekStart, weekEnd, ringId, activityId }
+    // ONLY cluster items that are 1 week or shorter in duration
+    // Longer items should be stacked, not clustered
+    const shortItems = [];
+    const longItems = [];
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
     items.forEach((item) => {
+      const startDate = new Date(item.startDate);
+      const endDate = new Date(item.endDate);
+      const duration = endDate - startDate;
+
+      if (duration <= ONE_WEEK_MS) {
+        shortItems.push(item);
+      } else {
+        longItems.push(item);
+      }
+    });
+
+    // If no short items, return all items unchanged (no clustering needed)
+    if (shortItems.length === 0) {
+      return items;
+    }
+
+    const weekGroups = new Map(); // Key: "YYYY-WW-ringId", Value: { items[], weekStart, weekEnd, ringId, activityId }
+
+    // Only cluster the short items
+    shortItems.forEach((item) => {
       const startDate = new Date(item.startDate);
       const { year, week } = this.getISOWeek(startDate);
       // Include ringId in key to cluster per ring
@@ -4133,7 +4157,7 @@ class YearWheel {
     const lang = document.documentElement.lang || "sv";
     const moreText = lang === "en" ? "more" : "mer";
 
-    return Array.from(weekGroups.values()).map((cluster) => {
+    const clusteredShortItems = Array.from(weekGroups.values()).map((cluster) => {
       // If only one item in cluster, return the original item instead
       if (cluster.items.length === 1) {
         return cluster.items[0];
@@ -4150,6 +4174,9 @@ class YearWheel {
         name: displayName,
       };
     });
+
+    // Combine long items (unchanged) with clustered short items
+    return [...longItems, ...clusteredShortItems];
   }
 
   // Function to draw rotating elements
