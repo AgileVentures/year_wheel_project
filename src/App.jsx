@@ -220,35 +220,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const handleUndoRedoStateRestored = useCallback((restoredState) => {
     console.log('[Debug][UndoRestore] State restored:', {
       hasStructure: !!restoredState?.structure,
-      hasPageItemsById: !!restoredState?.pageItemsById,
-      pageItemsByIdKeys: Object.keys(restoredState?.pageItemsById || {})
+      hasPages: !!restoredState?.pages,
+      pageCount: restoredState?.pages?.length || 0
     });
     
-    // CRITICAL: Restore items to pages from undo state
-    // Note: setPages is not in dependencies to avoid initialization order issues
-    if (restoredState?.pageItemsById) {
-      setPages((prevPages) => {
-        return prevPages.map(page => {
-          const itemsForPage = restoredState.pageItemsById[page.id];
-          if (!itemsForPage) return page;
-          
-          const currentStructure = normalizePageStructure(page);
-          return {
-            ...page,
-            structure: {
-              ...currentStructure,
-              items: itemsForPage
-            }
-          };
-        });
-      });
-
-      console.log('[Debug][UndoRestore] Restored items to pages from undo state');
-    }
+    // With wheelState architecture, pages contain items directly
+    // No need for separate pageItemsById restoration
     
+    // Clear pending item updates in YearWheel
     if (yearWheelRef && typeof yearWheelRef.clearPendingItemUpdates === 'function') {
       yearWheelRef.clearPendingItemUpdates();
     }
+    
+    // Broadcast restore operation to collaboration system
     const broadcastFn = broadcastOperationRef.current;
     if (broadcastFn && restoredState?.structure) {
       broadcastFn('restore', null, {
@@ -1661,9 +1645,21 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
 
           if (createdPage) {
+            // Add emergency page to wheelState
+            setWheelState((prev) => ({
+              ...prev,
+              pages: [...prev.pages, {
+                id: createdPage.id,
+                year: createdPage.year,
+                pageOrder: createdPage.page_order,
+                title: createdPage.title,
+                items: [] // Items will be synced by saveWheelSnapshot
+              }].sort((a, b) => a.year - b.year),
+              currentPageId: prev.currentPageId || createdPage.id
+            }));
+
+            // Update refs for save operation
             pagesRef.current = [...(pagesRef.current || []), createdPage];
-            setPages(pagesRef.current);
-            setCurrentPageId((prev) => prev || createdPage.id);
 
             latestValuesRef.current = {
               ...latestValuesRef.current,
@@ -2186,13 +2182,27 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       });
       
-      // Sort pages by year after adding
-      const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
-      setPages(updatedPages);
-      setPageItemsById((prev) => ({
-        ...(prev || {}),
-        [newPage.id]: [],
-      }));
+      // Add new page to wheelState
+      setWheelState((prev) => {
+        const updatedPages = [...prev.pages, {
+          id: newPage.id,
+          year: newPage.year,
+          pageOrder: newPage.page_order,
+          title: newPage.title,
+          items: []
+        }].sort((a, b) => a.year - b.year);
+        
+        return {
+          ...prev,
+          pages: updatedPages,
+          currentPageId: newPage.id, // Switch to new page
+          metadata: {
+            ...prev.metadata,
+            year: String(newYear)
+          }
+        };
+      });
+      
       setShowAddPageModal(false);
       
       const event = new CustomEvent('showToast', {
@@ -2235,13 +2245,27 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       });
       
-      // Sort pages by year after adding
-      const updatedPages = [...pages, newPage].sort((a, b) => a.year - b.year);
-      setPages(updatedPages);
-      setPageItemsById((prev) => ({
-        ...(prev || {}),
-        [newPage.id]: [],
-      }));
+      // Add new page to wheelState
+      setWheelState((prev) => {
+        const updatedPages = [...prev.pages, {
+          id: newPage.id,
+          year: newPage.year,
+          pageOrder: newPage.page_order,
+          title: newPage.title,
+          items: []
+        }].sort((a, b) => a.year - b.year);
+        
+        return {
+          ...prev,
+          pages: updatedPages,
+          currentPageId: newPage.id, // Switch to new page
+          metadata: {
+            ...prev.metadata,
+            year: String(nextYear)
+          }
+        };
+      });
+      
       setShowAddPageModal(false);
       
       const event = new CustomEvent('showToast', {
@@ -2309,33 +2333,28 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         pageId: newPage.id
       }));
 
-      const hydratedPage = {
-        ...newPage,
-        structure: {
-          rings: [...(wheelStructure.rings || [])],
-          activityGroups: [...(wheelStructure.activityGroups || [])],
-          labels: [...(wheelStructure.labels || [])],
-          items: itemsToSave, // Only in memory, not saved to structure JSONB
-        },
-      };
-
-      setPages(prevPages => {
-        const nextPages = Array.isArray(prevPages) ? [...prevPages, hydratedPage] : [hydratedPage];
-        return nextPages.sort((a, b) => a.year - b.year);
+      // Add new page with copied items to wheelState
+      setWheelState((prev) => {
+        const updatedPages = [...prev.pages, {
+          id: newPage.id,
+          year: newPage.year,
+          pageOrder: newPage.page_order,
+          title: newPage.title,
+          items: itemsToSave
+        }].sort((a, b) => a.year - b.year);
+        
+        return {
+          ...prev,
+          pages: updatedPages,
+          currentPageId: newPage.id, // Switch to new page
+          metadata: {
+            ...prev.metadata,
+            year: String(nextYear)
+          }
+        };
       });
-      setPageItemsById((prev) => ({
-        ...(prev || {}),
-        [hydratedPage.id]: itemsToSave,
-      }));
+      
       setShowAddPageModal(false);
-
-      setCurrentPageId(hydratedPage.id);
-      setYear(String(nextYear));
-
-      setWheelStructure(prevData => ({
-        ...prevData,
-        items: itemsToSave,
-      }), { type: 'smartCopy', params: { year: nextYear } });
 
       await enqueueFullSave('smart-copy');
 
@@ -2393,20 +2412,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           structure: remoteStructure,
         };
 
-        setPages((prevPages) => {
-          if (prevPages.some((page) => page.id === hydratedRemote.id)) {
-            return prevPages;
+        // Add existing page to wheelState if not already there
+        setWheelState((prev) => {
+          if (prev.pages.some((page) => page.id === hydratedRemote.id)) {
+            return prev;
           }
 
-          const merged = [...prevPages, hydratedRemote];
-          merged.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
-          return merged;
+          const updatedPages = [...prev.pages, {
+            id: hydratedRemote.id,
+            year: hydratedRemote.year,
+            pageOrder: hydratedRemote.page_order,
+            title: hydratedRemote.title,
+            items: remoteStructure.items || []
+          }];
+          updatedPages.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
+          
+          return {
+            ...prev,
+            pages: updatedPages
+          };
         });
-
-        setPageItemsById((prev) => ({
-          ...(prev || {}),
-          [hydratedRemote.id]: remoteStructure.items || [],
-        }));
 
         return { page: hydratedRemote, created: false };
       }
@@ -2434,16 +2459,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           structure: normalizePageStructure(newPage),
         };
 
-        setPages((prevPages) => {
-          const merged = [...prevPages, hydratedNewPage];
-          merged.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
-          return merged;
+        // Add new page to wheelState
+        setWheelState((prev) => {
+          const updatedPages = [...prev.pages, {
+            id: hydratedNewPage.id,
+            year: hydratedNewPage.year,
+            pageOrder: hydratedNewPage.page_order,
+            title: hydratedNewPage.title,
+            items: templateWheelStructure.items || []
+          }];
+          updatedPages.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
+          
+          return {
+            ...prev,
+            pages: updatedPages
+          };
         });
-
-        setPageItemsById((prev) => ({
-          ...(prev || {}),
-          [hydratedNewPage.id]: templateWheelStructure.items || [],
-        }));
 
         return { page: hydratedNewPage, created: true };
       } catch (error) {
@@ -2451,23 +2482,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (error?.code === '23505') {
           try {
             const refreshedPages = await fetchPages(wheelId);
-            const normalizedPages = (refreshedPages || []).map((page) => ({
-              ...page,
-              structure: normalizePageStructure(page),
+            const pagesWithItems = refreshedPages.map((page) => ({
+              id: page.id,
+              year: page.year,
+              pageOrder: page.page_order,
+              title: page.title,
+              items: normalizePageStructure(page).items || []
+            })).sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
+            
+            setWheelState((prev) => ({
+              ...prev,
+              pages: pagesWithItems
             }));
-            const sortedPages = normalizedPages.sort(
-              (a, b) => toYearNumber(a.year) - toYearNumber(b.year)
-            );
-            setPages(sortedPages);
-            const match = sortedPages.find(
+            
+            const match = pagesWithItems.find(
               (p) => toYearNumber(p.year) === normalizedTargetYear
             );
 
             if (match) {
-              setPageItemsById((prev) => ({
-                ...(prev || {}),
-                [match.id]: match.structure?.items || [],
-              }));
               return { page: match, created: false };
             }
           } catch (fetchError) {
@@ -2492,9 +2524,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     try {
       const duplicatedPage = await duplicatePage(pageId);
-      // Sort pages by year after adding
-      const updatedPages = [...pages, duplicatedPage].sort((a, b) => a.year - b.year);
-      setPages(updatedPages);
+      
+      // Add duplicated page to wheelState
+      setWheelState((prev) => {
+        const updatedPages = [...prev.pages, {
+          id: duplicatedPage.id,
+          year: duplicatedPage.year,
+          pageOrder: duplicatedPage.page_order,
+          title: duplicatedPage.title,
+          items: [] // Will be populated by database load
+        }].sort((a, b) => a.year - b.year);
+        
+        return {
+          ...prev,
+          pages: updatedPages
+        };
+      });
       
       const event = new CustomEvent('showToast', {
         detail: { message: 'Sida duplicerad!', type: 'success' }
@@ -2528,20 +2573,34 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     try {
       await deletePage(pageId);
-      const updatedPages = pages.filter(p => p.id !== pageId);
-      setPages(updatedPages);
       
-      // If deleted current page, switch to another
-      if (pageId === currentPageId && updatedPages.length > 0) {
-        const newCurrentPage = updatedPages[0];
-        setCurrentPageId(newCurrentPage.id);
-        const normalizedStructure = normalizePageStructure(newCurrentPage);
-        setWheelStructure(normalizedStructure);
-        if (newCurrentPage.year) {
-          setYear(String(newCurrentPage.year));
+      // Remove page from wheelState
+      setWheelState((prev) => {
+        const updatedPages = prev.pages.filter(p => p.id !== pageId);
+        
+        // If deleted current page, switch to another
+        let newCurrentPageId = prev.currentPageId;
+        let newYear = prev.metadata.year;
+        
+        if (pageId === prev.currentPageId && updatedPages.length > 0) {
+          const newCurrentPage = updatedPages[0];
+          newCurrentPageId = newCurrentPage.id;
+          newYear = String(newCurrentPage.year);
         }
         
-        // Clear undo history when switching pages
+        return {
+          ...prev,
+          pages: updatedPages,
+          currentPageId: newCurrentPageId,
+          metadata: {
+            ...prev.metadata,
+            year: newYear
+          }
+        };
+      });
+      
+      // Clear undo history when switching pages
+      if (pageId === currentPageId) {
         clearHistory();
       }
       
@@ -2604,55 +2663,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       const restoredOrgData = cloneOrgData(versionData.wheelStructure);
 
       if (currentPageId && restoredOrgData) {
-        setPages((prevPages) => {
-          if (!Array.isArray(prevPages)) {
-            return prevPages;
-          }
-
-          return prevPages.map((page) => {
+        // Update current page items in wheelState
+        setWheelState((prev) => ({
+          ...prev,
+          pages: prev.pages.map((page) => {
             if (page.id !== currentPageId) {
               return page;
             }
 
-            const currentStructure = normalizePageStructure(page);
-            const nextStructure = {
-              ...currentStructure,
-              ...restoredOrgData,
-            };
-
             return {
               ...page,
-              structure: nextStructure,
+              items: restoredOrgData.items || []
             };
-          });
-        });
-
-        setPageItemsById((prev) => ({
-          ...(prev || {}),
-          [currentPageId]: restoredOrgData.items || [],
+          })
         }));
-
-        setAllItems((prev) => {
-          const nextItems = restoredOrgData.items || [];
-          if (!Array.isArray(nextItems)) {
-            return prev;
-          }
-
-          const map = new Map();
-          nextItems.forEach((item) => {
-            if (item?.id) {
-              map.set(item.id, item);
-            }
-          });
-
-          (Array.isArray(prev) ? prev : []).forEach((item) => {
-            if (item?.id && !map.has(item.id)) {
-              map.set(item.id, item);
-            }
-          });
-
-          return Array.from(map.values());
-        });
       }
 
       const versionUpdates = {};
@@ -2883,19 +2907,40 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const firstPage = templatePages[0];
         const orgData = convertTemplateData(firstPage.structure);
         
-        setWheelStructure(orgData);
-        setCurrentPageId(null); // Will create new pages when saved
-        
-        // Store template pages for reference but clear current page ID
-        setPages(templatePages);
+        // Load template pages into wheelState
+        const pagesForState = templatePages.map((page, index) => ({
+          id: `template-page-${index + 1}`, // Temporary client-side IDs
+          year: page.year || (new Date().getFullYear() + index),
+          pageOrder: index,
+          title: page.title || `Sida ${index + 1}`,
+          items: orgData.items || [] // Items from converted structure
+        }));
+
+        setWheelState((prev) => ({
+          ...prev,
+          structure: {
+            rings: orgData.rings || [],
+            activityGroups: orgData.activityGroups || [],
+            labels: orgData.labels || []
+          },
+          pages: pagesForState,
+          currentPageId: null // Will be set when saved
+        }));
       } else {
         // Single page template - load organization data from first page
         const templateStructure = templatePages[0].structure;
         const orgData = convertTemplateData(templateStructure);
         
-        setWheelStructure(orgData);
-        setPages([]);
-        setCurrentPageId(null);
+        setWheelState((prev) => ({
+          ...prev,
+          structure: {
+            rings: orgData.rings || [],
+            activityGroups: orgData.activityGroups || [],
+            labels: orgData.labels || []
+          },
+          pages: [], // No pages yet
+          currentPageId: null
+        }));
       }
 
       // Update rings data for backward compatibility
@@ -3564,30 +3609,40 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               }
               const sortedPreparedPages = [...preparedPages].sort((a, b) => a.year - b.year);
 
-              setPages(sortedPreparedPages);
-              pagesRef.current = sortedPreparedPages;
-              setPageItemsById(itemsByPageId);
-              pageItemsRef.current = itemsByPageId;
-
               const fileYear = Number.parseInt(data.year, 10);
               const pageForFileYear = sortedPreparedPages.find((page) => page.year === fileYear) || sortedPreparedPages[0];
 
               if (pageForFileYear) {
-                setCurrentPageId(pageForFileYear.id);
-                setYear(String(pageForFileYear.year || fileYear));
+                // Update wheelState with imported data
+                setWheelState((prev) => ({
+                  ...prev,
+                  metadata: {
+                    ...prev.metadata,
+                    title: data.title,
+                    year: String(pageForFileYear.year || fileYear),
+                    colors: data.colors || prev.metadata.colors,
+                    showWeekRing: data.showWeekRing ?? prev.metadata.showWeekRing,
+                    showMonthRing: data.showMonthRing ?? prev.metadata.showMonthRing,
+                    showRingNames: data.showRingNames ?? prev.metadata.showRingNames,
+                    showLabels: data.showLabels ?? prev.metadata.showLabels,
+                    weekRingDisplayMode: data.weekRingDisplayMode ?? prev.metadata.weekRingDisplayMode
+                  },
+                  structure: {
+                    rings: [...processedOrgData.rings],
+                    activityGroups: [...processedOrgData.activityGroups],
+                    labels: [...processedOrgData.labels]
+                  },
+                  pages: sortedPreparedPages.map(page => ({
+                    id: page.id,
+                    year: page.year,
+                    pageOrder: page.pageOrder,
+                    title: page.title,
+                    items: itemsByPageId[page.id] || []
+                  })),
+                  currentPageId: pageForFileYear.id
+                }));
 
-                const normalizedStructure = normalizePageStructure(pageForFileYear);
-                const pageItems = Array.isArray(itemsByPageId[pageForFileYear.id])
-                  ? itemsByPageId[pageForFileYear.id]
-                  : [];
-
-                setWheelStructure(() => ({
-                  rings: [...normalizedStructure.rings],
-                  activityGroups: [...normalizedStructure.activityGroups],
-                  labels: [...normalizedStructure.labels],
-                  items: [...pageItems],
-                }), { type: 'importFile', params: { year: pageForFileYear.year } });
-
+                // Update latestValuesRef for save operations
                 latestValuesRef.current = {
                   ...latestValuesRef.current,
                   title: data.title,
@@ -3599,11 +3654,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                   weekRingDisplayMode: data.weekRingDisplayMode ?? weekRingDisplayMode,
                   currentPageId: pageForFileYear.id,
                   structure: {
-                    rings: [...normalizedStructure.rings],
-                    activityGroups: [...normalizedStructure.activityGroups],
-                    labels: [...normalizedStructure.labels],
+                    rings: [...processedOrgData.rings],
+                    activityGroups: [...processedOrgData.activityGroups],
+                    labels: [...processedOrgData.labels],
                   },
-                  pages: sortedPreparedPages,
+                  pages: sortedPreparedPages.map(page => ({
+                    ...page,
+                    items: itemsByPageId[page.id] || []
+                  })),
                   year: String(pageForFileYear.year || fileYear),
                 };
               }
