@@ -546,8 +546,14 @@ class InteractionHandler {
     let forwardWrapCount = 0;
     if (this.dragState.dragMode === 'resize-end') {
       const candidate = unwrappedEndDegrees;
+      console.log('[InteractionHandler] Wrap check:', {
+        unwrappedEndDegrees: candidate.toFixed(2),
+        threshold: 360 + CROSS_EPSILON,
+        willWrap: candidate > 360 + CROSS_EPSILON
+      });
       if (candidate > 360 + CROSS_EPSILON) {
         forwardWrapCount = Math.floor((candidate + CROSS_EPSILON) / 360);
+        console.log('[InteractionHandler] forwardWrapCount calculated:', forwardWrapCount);
       }
     }
 
@@ -571,6 +577,16 @@ class InteractionHandler {
       this.dragState.dragMode === 'resize-end' &&
       (forwardWrapCount > 0 || (angleDelta > 0 && normalizedEndAngle < normalizedStartAngle));
 
+    console.log('[InteractionHandler] wrappedForward calculation:', {
+      dragMode: this.dragState.dragMode,
+      forwardWrapCount,
+      angleDelta: angleDelta.toFixed(4),
+      normalizedStartAngle: normalizedStartAngle.toFixed(4),
+      normalizedEndAngle: normalizedEndAngle.toFixed(4),
+      angleCondition: angleDelta > 0 && normalizedEndAngle < normalizedStartAngle,
+      wrappedForward
+    });
+
     if (wrappedForward) {
       const wrappedEnd = new Date(newEndDate.getTime());
       if (forwardWrapCount > 0) {
@@ -584,6 +600,15 @@ class InteractionHandler {
     if (newEndDate < yearStart) newEndDate = yearStart;
 
     let overflowEndDate = null;
+
+    console.log('[InteractionHandler] Year boundary check:', {
+      itemName: originalItem?.name,
+      itemStartDate: originalItem?.startDate,
+      itemEndDate: originalItem?.endDate,
+      newEndDate: newEndDate.toISOString().split('T')[0],
+      yearEnd: yearEnd.toISOString().split('T')[0],
+      extendsPass: newEndDate > yearEnd
+    });
 
     if (newEndDate > yearEnd) {
       overflowEndDate = new Date(newEndDate.getTime());
