@@ -850,7 +850,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const pagesData = await fetchPages(wheelId);
         
         // Prepare data to update
-        let orgDataToSet = null;
+        let structureToSet = null;
         let yearToLoad = null; // Will be set from page data or wheel data
         
         // If we have pages, load data from first page (or current page if set)
@@ -930,9 +930,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           const dbLabels = wheelLabelsData || [];
 
           
-          // CRITICAL: Build organization data from DATABASE, not JSONB
+          // CRITICAL: Build structure from DATABASE, not JSONB
           // JSONB is just a backup - database tables are the source of truth
-          const orgData = {
+          const structureData = {
             rings: [],
             activityGroups: [],
             labels: [],
@@ -940,7 +940,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           };
           
           // Rings from database (shared across all pages)
-          orgData.rings = (dbRings || []).map(r => ({
+          structureData.rings = (dbRings || []).map(r => ({
             id: r.id,
             name: r.name,
             type: r.type,
@@ -951,7 +951,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }));
           
           // Activity groups from database (shared across all pages)
-          orgData.activityGroups = (dbActivityGroups || []).map(g => ({
+          structureData.activityGroups = (dbActivityGroups || []).map(g => ({
             id: g.id,
             name: g.name,
             color: g.color || '#8B5CF6',
@@ -959,7 +959,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }));
           
           // Labels from database (shared across all pages)
-          orgData.labels = (dbLabels || []).map(l => ({
+          structureData.labels = (dbLabels || []).map(l => ({
             id: l.id,
             name: l.name,
             color: l.color,
@@ -967,14 +967,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }));
           
           // Backward compatibility: convert old 'activities' to 'activityGroups'
-          if (orgData.activities && !orgData.activityGroups) {
-            orgData.activityGroups = orgData.activities;
-            delete orgData.activities;
+          if (structureData.activities && !structureData.activityGroups) {
+            structureData.activityGroups = structureData.activities;
+            delete structureData.activities;
           }
           
           // Ensure at least one activity group exists
-          if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
-            orgData.activityGroups = [{
+          if (!structureData.activityGroups || structureData.activityGroups.length === 0) {
+            structureData.activityGroups = [{
               id: "group-1",
               name: "Aktivitetsgrupp 1",
               color: wheelData.colors?.[0] || "#F5E6D3",
@@ -983,10 +983,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
           
           // Apply color fallback for outer rings (use wheel colors if ring has no color)
-          if (orgData.rings && orgData.rings.length > 0) {
-            orgData.rings = orgData.rings.map((ring, index) => {
+          if (structureData.rings && structureData.rings.length > 0) {
+            structureData.rings = structureData.rings.map((ring, index) => {
               if (ring.type === 'outer' && !ring.color) {
-                const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
+                const outerRingIndex = structureData.rings.filter((r, i) => i < index && r.type === 'outer').length;
                 const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
                 return {
                   ...ring,
@@ -997,16 +997,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             });
           }
           
-          orgDataToSet = orgData;
+          structureToSet = structureData;
 
           // Update pages with latest per-page data and shared structures
           const enrichedPages = pagesData.map((page) => {
             const baseStructure = page.structure || {};
             const nextStructureForPage = {
               ...baseStructure,
-              rings: orgData.rings,
-              activityGroups: orgData.activityGroups,
-              labels: orgData.labels,
+              rings: structureData.rings,
+              activityGroups: structureData.activityGroups,
+              labels: structureData.labels,
               items: itemsByPage?.[page.id] || [],
             };
 
@@ -1029,10 +1029,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           setAllItems(legacyItems);
           yearToLoad = String(wheelData.year || new Date().getFullYear());
           
-          // Load organization data
+          // Load structure data (legacy support)
           const baseStructure = wheelData.structure || wheelData.wheelStructure;
           if (baseStructure) {
-            const orgData = {
+            const structureData = {
               ...baseStructure,
               items: Array.isArray(wheelData.wheelStructure?.items)
                 ? wheelData.wheelStructure.items
@@ -1042,14 +1042,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             };
             
             // Backward compatibility: convert old 'activities' to 'activityGroups'
-            if (orgData.activities && !orgData.activityGroups) {
-              orgData.activityGroups = orgData.activities;
-              delete orgData.activities;
+            if (structureData.activities && !structureData.activityGroups) {
+              structureData.activityGroups = structureData.activities;
+              delete structureData.activities;
             }
             
             // Ensure at least one activity group exists
-            if (!orgData.activityGroups || orgData.activityGroups.length === 0) {
-              orgData.activityGroups = [{
+            if (!structureData.activityGroups || structureData.activityGroups.length === 0) {
+              structureData.activityGroups = [{
                 id: "group-1",
                 name: "Aktivitetsgrupp 1",
                 color: wheelData.colors?.[0] || "#F5E6D3",
@@ -1058,10 +1058,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             }
             
             // Apply color fallback for outer rings (use wheel colors if ring has no color)
-            if (orgData.rings && orgData.rings.length > 0) {
-              orgData.rings = orgData.rings.map((ring, index) => {
+            if (structureData.rings && structureData.rings.length > 0) {
+              structureData.rings = structureData.rings.map((ring, index) => {
                 if (ring.type === 'outer' && !ring.color) {
-                  const outerRingIndex = orgData.rings.filter((r, i) => i < index && r.type === 'outer').length;
+                  const outerRingIndex = structureData.rings.filter((r, i) => i < index && r.type === 'outer').length;
                   const fallbackColor = wheelData.colors[outerRingIndex % wheelData.colors.length];
                   return {
                     ...ring,
@@ -1073,13 +1073,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             }
             
             // Filter items to only include current year (legacy path)
-            orgData.items = filterItemsByYear(orgData.items, parseInt(yearToLoad));
+            structureData.items = filterItemsByYear(structureData.items, parseInt(yearToLoad));
             
-            orgDataToSet = orgData;
+            structureToSet = structureData;
           }
         }
         
-        // CRITICAL: Update title, colors, year AND wheelStructure together in ONE call to prevent race condition
+        // CRITICAL: Update title, colors, year AND structure together in ONE call to prevent race condition
         const updates = {};
         if (wheelData.title !== undefined) {
           updates.title = wheelData.title || 'Nytt hjul';
@@ -1090,8 +1090,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (yearToLoad) {
           updates.year = yearToLoad;
         }
-        if (orgDataToSet) {
-          updates.wheelStructure = orgDataToSet;
+        if (structureToSet) {
+          updates.structure = structureToSet;
         }
         
         if (Object.keys(updates).length > 0) {
@@ -1507,6 +1507,58 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   };
   hasUnsavedChangesRef.current = hasUnsavedChanges;
   
+  // DEBUG: Log complete pages structure for inspection
+  useEffect(() => {
+    const pagesSnapshot = {
+      currentPageId,
+      totalPages: pages?.length || 0,
+      totalItems: allItems?.length || 0,
+      pages: pages?.map(page => ({
+        id: page.id,
+        year: page.year,
+        pageOrder: page.page_order,
+        structure: {
+          rings: page.structure?.rings?.map(r => ({ id: r.id, name: r.name })),
+          activityGroups: page.structure?.activityGroups?.map(g => ({ id: g.id, name: g.name })),
+          labels: page.structure?.labels?.map(l => ({ id: l.id, name: l.name })),
+          items: page.structure?.items?.map(item => ({
+            id: item.id,
+            name: item.name,
+            pageId: item.pageId,
+            ringId: item.ringId,
+            activityId: item.activityId,
+            startDate: item.startDate,
+            endDate: item.endDate
+          }))
+        }
+      })),
+      pageItemsById: Object.entries(pageItemsById || {}).map(([pageId, items]) => ({
+        pageId,
+        count: items?.length || 0,
+        items: items?.map(item => ({
+          id: item.id,
+          name: item.name,
+          ringId: item.ringId,
+          activityId: item.activityId
+        }))
+      })),
+      allItems: allItems?.map(item => ({
+        id: item.id,
+        name: item.name,
+        pageId: item.pageId,
+        ringId: item.ringId,
+        activityId: item.activityId,
+        startDate: item.startDate,
+        endDate: item.endDate
+      }))
+    };
+    
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📄 COMPLETE PAGES SNAPSHOT (App.jsx):');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log(JSON.stringify(pagesSnapshot, null, 2));
+    console.log('═══════════════════════════════════════════════════════');
+  }, [pages, currentPageId, allItems, pageItemsById]);
 
 
   const fullSaveQueueRef = useRef(Promise.resolve());

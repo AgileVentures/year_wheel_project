@@ -83,35 +83,54 @@ function YearWheel({
   
   // DEBUG: Log complete wheel structure for inspection
   useEffect(() => {
+    const snapshot = {
+      metadata: {
+        wheelId,
+        title,
+        year,
+        colors,
+        showWeekRing,
+        showMonthRing,
+        showRingNames,
+        showLabels,
+        weekRingDisplayMode
+      },
+      structure: {
+        rings: wheelStructure?.rings?.map(ring => ({
+          id: ring.id,
+          name: ring.name,
+          type: ring.type,
+          visible: ring.visible
+        })),
+        activityGroups: wheelStructure?.activityGroups?.map(group => ({
+          id: group.id,
+          name: group.name,
+          color: group.color,
+          visible: group.visible
+        })),
+        labels: wheelStructure?.labels?.map(label => ({
+          id: label.id,
+          name: label.name,
+          color: label.color,
+          visible: label.visible
+        }))
+      },
+      items: wheelStructure?.items?.map(item => ({
+        id: item.id,
+        name: item.name,
+        pageId: item.pageId,
+        ringId: item.ringId,
+        activityId: item.activityId,
+        labelId: item.labelId || null,
+        startDate: item.startDate,
+        endDate: item.endDate
+      }))
+    };
+    
     console.log('═══════════════════════════════════════════════════════');
-    console.log('🎡 FULL WHEEL OBJECT STRUCTURE (at render time):');
+    console.log('🎡 COMPLETE WHEEL SNAPSHOT (YearWheel.jsx):');
     console.log('═══════════════════════════════════════════════════════');
-    console.log('wheelStructure:', {
-      rings: wheelStructure?.rings?.length || 0,
-      activityGroups: wheelStructure?.activityGroups?.length || 0,
-      labels: wheelStructure?.labels?.length || 0,
-      items: wheelStructure?.items?.length || 0,
-      fullStructure: wheelStructure
-    });
-    console.log('Metadata:', {
-      wheelId,
-      title,
-      year,
-      colors,
-      showWeekRing,
-      showMonthRing,
-      showRingNames,
-      showLabels,
-      weekRingDisplayMode
-    });
-    console.log('Items detail:', wheelStructure?.items?.map(item => ({
-      id: item.id?.substring(0, 8),
-      name: item.name,
-      pageId: item.pageId?.substring(0, 8),
-      ringId: item.ringId?.substring(0, 8),
-      activityId: item.activityId?.substring(0, 8),
-      dates: `${item.startDate} to ${item.endDate}`
-    })));
+    console.log(JSON.stringify(snapshot, null, 2));
     console.log('═══════════════════════════════════════════════════════');
   }, [wheelStructure, wheelId, title, year, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode]);
   
