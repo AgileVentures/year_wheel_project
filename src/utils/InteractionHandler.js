@@ -400,8 +400,8 @@ class InteractionHandler {
 
     // Notify parent
     console.log('[InteractionHandler] About to call onDragStart with item:', this.dragState.draggedItem?.name);
-    if (this.wheel.onDragStart) {
-      this.wheel.onDragStart(this.dragState.draggedItem);
+    if (this.wheel.options?.onDragStart) {
+      this.wheel.options.onDragStart(this.dragState.draggedItem);
       console.log('[InteractionHandler] onDragStart called successfully');
     } else {
       console.warn('[InteractionHandler] onDragStart callback not found!');

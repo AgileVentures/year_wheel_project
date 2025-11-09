@@ -1841,6 +1841,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       const normalizedActivityGroups = remapCollection(snapshot.structure?.activityGroups, activityIdMap);
       const normalizedLabels = remapCollection(snapshot.structure?.labels, labelIdMap);
 
+      // CRITICAL: Skip history for DB sync operation to avoid creating extra undo entry
+      const wasSkippingHistory = isLoadingData.current;
+      isLoadingData.current = true;
+
       setWheelStructure((prev) => {
         const currentPageItems =
           (itemsByPage && latest.currentPageId && itemsByPage[latest.currentPageId]) || prev.items || [];
@@ -1864,6 +1868,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         return next;
       }, { type: 'syncFromSnapshot' });
+
+      // Restore previous skip history state
+      isLoadingData.current = wasSkippingHistory;
 
       if (itemsByPage) {
         console.log('[FullSave] ✅ Updating state with database UUIDs from itemsByPage:', Object.keys(itemsByPage).map(pageId => `${pageId.substring(0,8)}: ${itemsByPage[pageId].length} items`));
