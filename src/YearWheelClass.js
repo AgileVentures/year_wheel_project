@@ -160,7 +160,8 @@ class YearWheel {
       readonly: this.readonly,
       selectionMode: this.selectionMode,
       onItemClick: options.onItemClick,
-      onExtendActivityToNextYear: options.onExtendActivityToNextYear
+      onExtendActivityToNextYear: options.onExtendActivityToNextYear,
+      onExtendActivityToPreviousYear: options.onExtendActivityToPreviousYear
     });
     
     this.exportManager = new ExportManager(this);

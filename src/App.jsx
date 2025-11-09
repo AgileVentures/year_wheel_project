@@ -224,7 +224,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
   // Keep yearWheelRef in sync with ref
   useEffect(() => {
-    console.log("New code!")
+    console.log("New code!!!")
     yearWheelRefRef.current = yearWheelRef;
   }, [yearWheelRef]);
   

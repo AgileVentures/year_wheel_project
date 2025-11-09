@@ -546,14 +546,8 @@ class InteractionHandler {
     let forwardWrapCount = 0;
     if (this.dragState.dragMode === 'resize-end') {
       const candidate = unwrappedEndDegrees;
-      console.log('[InteractionHandler] Wrap check:', {
-        unwrappedEndDegrees: candidate.toFixed(2),
-        threshold: 360 + CROSS_EPSILON,
-        willWrap: candidate > 360 + CROSS_EPSILON
-      });
       if (candidate > 360 + CROSS_EPSILON) {
         forwardWrapCount = Math.floor((candidate + CROSS_EPSILON) / 360);
-        console.log('[InteractionHandler] forwardWrapCount calculated:', forwardWrapCount);
       }
     }
 
@@ -565,14 +559,38 @@ class InteractionHandler {
     let newStartDate = this.wheel.angleToDate(startDegrees);
     let newEndDate = this.wheel.angleToDate(endDegrees);
 
-    const yearStart = new Date(this.wheel.year, 0, 1);
-    const yearEnd = new Date(this.wheel.year, 11, 31);
+    // CRITICAL FIX: In move mode, check if BOTH angles wrapped backward
+    // This happens when moving the entire activity backward past Jan 1
+    if (this.dragState.dragMode === 'move' && rawStartAngle < 0 && rawEndAngle < 0) {
+      newStartDate.setFullYear(newStartDate.getFullYear() - 1);
+      newEndDate.setFullYear(newEndDate.getFullYear() - 1);
+    }
+
+    // CRITICAL FIX: In resize-start mode, preserve the original end date
+    // Only the start should change, end stays the same
+    if (this.dragState.dragMode === 'resize-start' && originalItem) {
+      newEndDate = new Date(originalItem.endDate);
+      
+      // Check if start wrapped around incorrectly (appears after end when dragging backward)
+      // This happens when dragging start backward past Jan 1 - angle wraps to December
+      if (newStartDate > newEndDate) {
+        newStartDate.setFullYear(newStartDate.getFullYear() - 1);
+      }
+    }
+
+    // CRITICAL FIX: In resize-end mode, preserve the original start date
+    // Only the end should change, start stays the same
+    if (this.dragState.dragMode === 'resize-end' && originalItem) {
+      newStartDate = new Date(originalItem.startDate);
+    }
+
+    const yearStart = new Date(Number(this.wheel.year), 0, 1);
+    const yearEnd = new Date(Number(this.wheel.year), 11, 31);
 
     // Check for backward overflow BEFORE clamping
     let overflowStartDate = null;
     if (newStartDate < yearStart) {
       overflowStartDate = new Date(newStartDate.getTime());
-      console.log(`[InteractionHandler] Item extends before year start: ${newStartDate.toISOString().split('T')[0]} < ${yearStart.toISOString().split('T')[0]}`);
     }
 
     if (newStartDate < yearStart) newStartDate = yearStart;
@@ -585,13 +603,6 @@ class InteractionHandler {
     const wrappedForward =
       this.dragState.dragMode === 'resize-end' &&
       forwardWrapCount > 0;
-
-    console.log('[InteractionHandler] wrappedForward calculation:', {
-      dragMode: this.dragState.dragMode,
-      forwardWrapCount,
-      unwrappedEndDegrees: unwrappedEndDegrees.toFixed(2),
-      wrappedForward
-    });
 
     if (wrappedForward) {
       const wrappedEnd = new Date(newEndDate.getTime());
@@ -607,19 +618,8 @@ class InteractionHandler {
 
     let overflowEndDate = null;
 
-    console.log('[InteractionHandler] Year boundary check:', {
-      itemName: originalItem?.name,
-      itemStartDate: originalItem?.startDate,
-      itemEndDate: originalItem?.endDate,
-      newEndDate: newEndDate.toISOString().split('T')[0],
-      yearEnd: yearEnd.toISOString().split('T')[0],
-      extendsPass: newEndDate > yearEnd
-    });
-
     if (newEndDate > yearEnd) {
       overflowEndDate = new Date(newEndDate.getTime());
-      
-      console.log(`[InteractionHandler] Item extends past year end: ${newEndDate.toISOString().split('T')[0]} > ${yearEnd.toISOString().split('T')[0]}`);
 
       if (
         originalItem &&
@@ -627,54 +627,48 @@ class InteractionHandler {
         this.options.onExtendActivityToNextYear
       ) {
         try {
-          console.log(`[InteractionHandler] Calling onExtendActivityToNextYear for "${originalItem.name}"`);
           await this.options.onExtendActivityToNextYear({
             item: originalItem,
             overflowEndDate,
             currentYearEnd: yearEnd,
             dragMode: this.dragState.dragMode,
           });
-          console.log(`[InteractionHandler] onExtendActivityToNextYear completed`);
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
         }
       }
 
-      // Always clamp current year's item to December 31
-      console.log(`[InteractionHandler] Clamping "${originalItem?.name}" endDate from ${newEndDate.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
       newEndDate = yearEnd;
     }
 
     // Handle backward overflow (before January 1)
     if (overflowStartDate) {
-      console.log(`[InteractionHandler] Item extends before year start: ${overflowStartDate.toISOString().split('T')[0]} < ${yearStart.toISOString().split('T')[0]}`);
-
       if (
         originalItem &&
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
         try {
-          console.log(`[InteractionHandler] Calling onExtendActivityToPreviousYear for "${originalItem.name}"`);
           await this.options.onExtendActivityToPreviousYear({
             item: originalItem,
             overflowStartDate,
             currentYearStart: yearStart,
             dragMode: this.dragState.dragMode,
           });
-          console.log(`[InteractionHandler] onExtendActivityToPreviousYear completed`);
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity to previous year:', extensionError);
         }
       }
 
-      // Always clamp current year's item to January 1
-      console.log(`[InteractionHandler] Clamping "${originalItem?.name}" startDate from ${overflowStartDate.toISOString().split('T')[0]} to ${yearStart.toISOString().split('T')[0]}`);
       newStartDate = yearStart;
     }
 
-    // Ensure end is after start when not intentionally wrapping forward
-    if (newEndDate < newStartDate && !wrappedForward) {
+    // Ensure end is after start when not intentionally wrapping forward or backward
+    // Skip swap if we've handled overflow (forward or backward extension)
+    const hasBackwardOverflow = overflowStartDate !== null;
+    const hasForwardOverflow = overflowEndDate !== null;
+    
+    if (newEndDate < newStartDate && !wrappedForward && !hasBackwardOverflow && !hasForwardOverflow) {
       const temp = newStartDate;
       newStartDate = newEndDate;
       newEndDate = temp;
