@@ -217,15 +217,37 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   const [yearWheelRef, setYearWheelRef] = useState(null);
 
-  const handleUndoRedoStateRestored = useCallback((restoredState) => {
+  const handleUndoRedoStateRestored = useCallback((restoredState, label, operation) => {
     console.log('[Debug][UndoRestore] State restored:', {
       hasStructure: !!restoredState?.structure,
       hasPages: !!restoredState?.pages,
-      pageCount: restoredState?.pages?.length || 0
+      pageCount: restoredState?.pages?.length || 0,
+      currentPageId: restoredState?.currentPageId,
+      metadata: restoredState?.metadata
     });
     
-    // With wheelState architecture, pages contain items directly
-    // No need for separate pageItemsById restoration
+    // DEBUG: Log restored items
+    if (restoredState?.pages) {
+      restoredState.pages.forEach((page, idx) => {
+        console.log(`[Debug][UndoRestore] Page ${idx}: id=${page.id}, year=${page.year}, items=${page.items?.length || 0}`);
+        if (page.items?.length > 0) {
+          console.log('[Debug][UndoRestore] First item:', {
+            id: page.items[0].id,
+            name: page.items[0].name,
+            startDate: page.items[0].startDate,
+            endDate: page.items[0].endDate
+          });
+        }
+      });
+    }
+    
+    // Increment undo/redo counter to trigger canvas redraw effect
+    undoRedoCounterRef.current += 1;
+    const newCounter = undoRedoCounterRef.current;
+    console.log('[Debug][UndoRestore] Incremented undoRedoCounter to', newCounter);
+    
+    // Trigger state update to force useEffect re-run
+    setUndoRedoTrigger(newCounter);
     
     // Clear pending item updates in YearWheel
     if (yearWheelRef && typeof yearWheelRef.clearPendingItemUpdates === 'function') {
@@ -348,6 +370,60 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   useEffect(() => {
     pagesRef.current = pages;
   }, [pages]);
+
+  // Force canvas redraw when wheelStructure changes (for undo/redo)
+  const wheelStructureRef = useRef(wheelStructure);
+  const [undoRedoTrigger, setUndoRedoTrigger] = useState(0);
+  
+  // Redraw canvas when wheelStructure changes OR after undo/redo
+  useEffect(() => {
+    // Skip initial mount
+    if (!wheelStructureRef.current) {
+      wheelStructureRef.current = wheelStructure;
+      return;
+    }
+    
+    // If wheelStructure items changed, trigger redraw
+    const prevItems = wheelStructureRef.current?.items || [];
+    const currentItems = wheelStructure?.items || [];
+    
+    const itemsChanged = prevItems.length !== currentItems.length || 
+        JSON.stringify(prevItems) !== JSON.stringify(currentItems);
+    
+    // Also trigger if undo/redo just happened
+    const undoRedoHappened = undoRedoTrigger > 0;
+    
+    if (itemsChanged || undoRedoHappened) {
+      console.log('[App] Canvas redraw trigger:', {
+        itemsChanged,
+        undoRedoHappened,
+        undoRedoTrigger,
+        prevCount: prevItems.length,
+        currentCount: currentItems.length,
+        prevSample: prevItems[0] ? { id: prevItems[0].id, name: prevItems[0].name, startDate: prevItems[0].startDate } : null,
+        currentSample: currentItems[0] ? { id: currentItems[0].id, name: currentItems[0].name, startDate: currentItems[0].startDate } : null,
+        hasYearWheelRef: !!yearWheelRef,
+        hasCreateMethod: !!(yearWheelRef && typeof yearWheelRef.create === 'function')
+      });
+      
+      if (yearWheelRef && typeof yearWheelRef.create === 'function') {
+        // Use requestAnimationFrame to ensure props have updated
+        requestAnimationFrame(() => {
+          console.log('[App] Executing canvas redraw via yearWheelRef.create()');
+          if (yearWheelRef && typeof yearWheelRef.create === 'function') {
+            yearWheelRef.create();
+            console.log('[App] Canvas redraw completed');
+          } else {
+            console.warn('[App] yearWheelRef or create() no longer available');
+          }
+        });
+      } else {
+        console.warn('[App] Cannot redraw: yearWheelRef or create() not available');
+      }
+    }
+    
+    wheelStructureRef.current = wheelStructure;
+  }, [wheelStructure, yearWheelRef, undoRedoTrigger]);
 
   const setTitle = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_TITLE }) => {
     const currentTitle = wheelState?.metadata?.title || "Nytt hjul";
@@ -626,6 +702,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const isSavingRef = useRef(false);
   // Track if we're currently dragging an item (for batch undo/redo)
   const isDraggingRef = useRef(false);
+  // Track undo/redo operations to trigger canvas redraw
+  const undoRedoCounterRef = useRef(0);
   // Track if we're navigating between pages (blocks ALL database operations)
   const isNavigatingPagesRef = useRef(false);
   // Track unsaved changes for safe reload decisions
@@ -3346,7 +3424,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         console.warn('[handleUpdateAktivitet] Item not found in any page!', updatedItem.id);
       }
 
-      return { ...prev, pages: nextPages };
+      // CRITICAL: Preserve all wheelState properties, only update pages
+      return { 
+        ...prev, 
+        pages: nextPages 
+      };
     }, wasDragging ? { type: 'dragItem', params: { itemId: updatedItem.id } } : { type: 'updateItem' });
 
     console.log('[handleUpdateAktivitet] After setWheelState:', { 

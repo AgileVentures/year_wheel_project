@@ -169,14 +169,22 @@ export default function UndoHistoryMenu({
           {recentHistory.length > 0 && (
             <div className="p-2 border-t border-gray-200 bg-gray-50 flex gap-2">
               <button
-                onClick={() => { undo(); setIsOpen(false); }}
+                onClick={() => { 
+                  console.log('[UndoHistoryMenu] Undo button clicked, canUndo:', canUndo);
+                  undo(); 
+                  setIsOpen(false); 
+                }}
                 disabled={!canUndo}
                 className="flex-1 px-2 py-1.5 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 ← {t('common:actions.undo', { defaultValue: 'Ångra' })}
               </button>
               <button
-                onClick={() => { redo(); setIsOpen(false); }}
+                onClick={() => { 
+                  console.log('[UndoHistoryMenu] Redo button clicked, canRedo:', canRedo);
+                  redo(); 
+                  setIsOpen(false); 
+                }}
                 disabled={!canRedo}
                 className="flex-1 px-2 py-1.5 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
