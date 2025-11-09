@@ -467,7 +467,10 @@ export const createWheel = async (wheelData) => {
       overrideShowRingNames: null,
     });
 
-    await saveWheelSnapshot(wheel.id, {
+    console.log('[createWheel] Initial page created, ID:', initialPage.id);
+    console.log('[createWheel] Saving default structure to database...');
+
+    const snapshotResult = await saveWheelSnapshot(wheel.id, {
       metadata: {
         title: wheel.title,
         colors: defaultColors,
@@ -475,7 +478,7 @@ export const createWheel = async (wheelData) => {
         showMonthRing: wheel.show_month_ring,
         showRingNames: wheel.show_ring_names,
         showLabels: wheel.show_labels ?? false,
-        weekRingDisplayMode: wheel.week_ring_display_mode || 'week-numbers',
+        weekRingDisplayMode: wheel.wheel_ring_display_mode || 'week-numbers',
         year: baseYear,
       },
       globalWheelStructure: {
@@ -491,8 +494,33 @@ export const createWheel = async (wheelData) => {
         },
       ],
     });
+
+    console.log('[createWheel] ✅ Default structure saved successfully');
+
+    // Verify that rings and activity groups were created
+    const { data: verifyRings } = await supabase
+      .from('wheel_rings')
+      .select('id, name, type')
+      .eq('wheel_id', wheel.id);
+
+    const { data: verifyGroups } = await supabase
+      .from('activity_groups')
+      .select('id, name')
+      .eq('wheel_id', wheel.id);
+
+    console.log('[createWheel] Verification - Rings in database:', verifyRings?.length || 0, verifyRings);
+    console.log('[createWheel] Verification - Activity groups in database:', verifyGroups?.length || 0, verifyGroups);
+
+    if (!verifyRings || verifyRings.length === 0) {
+      throw new Error('Failed to create default ring in database');
+    }
+
+    if (!verifyGroups || verifyGroups.length === 0) {
+      throw new Error('Failed to create default activity group in database');
+    }
+
   } catch (structureError) {
-    console.error('[wheelService] Failed to initialize default wheel structure:', structureError);
+    console.error('[createWheel] ❌ Failed to initialize default wheel structure:', structureError);
     try {
       if (initialPage?.id) {
         await supabase.from('wheel_pages').delete().eq('id', initialPage.id);
@@ -662,13 +690,17 @@ const syncRings = async (wheelId, pageId, rings) => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('[syncRings] INSERT FAILED for ring', { inputId: ring.id, name: ring.name, error });
+          throw error;
+        }
 
-        console.log('[syncRings] inserted new ring', {
+        console.log('[syncRings] ✅ INSERTED new ring to database', {
           inputId: ring.id,
           dbId: newRing.id,
           name: ring.name,
           type: ring.type,
+          wheel_id: wheelId,
         });
 
         idMap.set(ring.id, newRing.id);
@@ -844,11 +876,17 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
           .select()
           .single();
 
-        if (error) throw error;
-        console.log('[syncActivityGroups] inserted new group', {
+        if (error) {
+          console.error('[syncActivityGroups] INSERT FAILED for activity group', { inputId: group.id, name: group.name, error });
+          throw error;
+        }
+
+        console.log('[syncActivityGroups] ✅ INSERTED new activity group to database', {
           inputId: group.id,
           dbId: newGroup.id,
           name: group.name,
+          wheel_id: wheelId,
+          page_id: applyPageScope ? pageId : 'N/A',
         });
         idMap.set(group.id, newGroup.id);
         retainedIds.add(newGroup.id);
@@ -1284,15 +1322,23 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   if (!wheelId) throw new Error('wheelId is required for saveWheelSnapshot');
   if (!snapshot) throw new Error('snapshot is required for saveWheelSnapshot');
 
+  console.log('[saveWheelSnapshot] Received snapshot structure:', {
+    hasMetadata: !!snapshot.metadata,
+    hasStructure: !!snapshot.structure,
+    hasPages: !!snapshot.pages,
+    pageCount: snapshot.pages?.length || 0,
+    // Legacy fields (should not exist in new clean structure):
+    hasGlobalWheelStructure: !!snapshot.globalWheelStructure,
+    hasPageStructures: snapshot.pages?.[0]?.structure ? 'YES - LEGACY!' : 'NO',
+    hasPageWheelStructures: snapshot.pages?.[0]?.wheelStructure ? 'YES - LEGACY!' : 'NO',
+  });
+
   const {
     metadata = {},
-    structure: snapshotStructure,
-    globalWheelStructure = {},
+    structure = {},
     pages = [],
     activePageId = null,
   } = snapshot;
-
-  const structure = snapshotStructure || globalWheelStructure || {};
 
   const sanitizedMetadata = metadata && typeof metadata === 'object' ? metadata : {};
 
@@ -1300,6 +1346,7 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     await updateWheel(wheelId, sanitizedMetadata);
   }
 
+  // CLEAN STRUCTURE: Extract shared rings, activityGroups, labels from structure field
   const baseRings = Array.isArray(structure.rings)
     ? structure.rings.map((ring) => ({ ...ring }))
     : [];
@@ -1352,11 +1399,14 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
       continue;
     }
 
-    const rawItems = Array.isArray(page.items)
-      ? page.items
-      : Array.isArray(page.wheelStructure?.items)
-        ? page.wheelStructure.items
-        : [];
+    // CLEAN STRUCTURE: Items are directly in page.items (not nested in wheelStructure)
+    const rawItems = Array.isArray(page.items) ? page.items : [];
+    
+    if (rawItems.length === 0) {
+      console.log(`[saveWheelSnapshot] Page ${page.id?.substring(0,8)} has no items to save`);
+    } else {
+      console.log(`[saveWheelSnapshot] Page ${page.id?.substring(0,8)} has ${rawItems.length} items to save`);
+    }
 
     const sanitizedItems = rawItems
       .filter(Boolean)

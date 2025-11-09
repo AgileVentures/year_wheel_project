@@ -4,15 +4,20 @@ import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
 import ErrorDisplay from './ErrorDisplay';
 
-function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId }) {
+function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, currentPageId, year }) {
   const { t } = useTranslation(['editor']);
+  
+  // Use page year for default dates (fall back to current year if not provided)
+  const defaultYear = year ? parseInt(year) : new Date().getFullYear();
+  const defaultDate = new Date(defaultYear, 0, 1).toISOString().split('T')[0]; // Jan 1st of page year
+  
   const [formData, setFormData] = useState({
     name: '',
     ringId: wheelStructure.rings[0]?.id || '',
     activityId: wheelStructure.activityGroups[0]?.id || '',
     labelId: wheelStructure.labels[0]?.id || '',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: defaultDate,
+    endDate: defaultDate,
     time: '',
     description: '',
     linkedWheelId: '',
@@ -153,6 +158,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId }) {
       const recurringGroupId = `recurring-${Date.now()}`;
       const newItems = recurringDates.map((dates, index) => ({
         id: `item-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+        pageId: currentPageId, // CRITICAL: Assign current page ID
         name: formData.name,
         ringId: formData.ringId,
         activityId: formData.activityId,
@@ -170,11 +176,13 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId }) {
       }));
       
       // Add all items at once
+      console.log(`[AddItemModal] Creating ${newItems.length} recurring items with pageId=${currentPageId?.substring(0, 8)}`);
       onAddItem(newItems);
     } else {
       // Create single item
       const newItem = {
         id: `item-${Date.now()}`,
+        pageId: currentPageId, // CRITICAL: Assign current page ID
         name: formData.name,
         ringId: formData.ringId,
         activityId: formData.activityId,
@@ -188,6 +196,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId }) {
           linkType: formData.linkType 
         })
       };
+      console.log(`[AddItemModal] Creating single item with pageId=${currentPageId?.substring(0, 8)}:`, newItem);
       onAddItem(newItem);
     }
     

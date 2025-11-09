@@ -1535,7 +1535,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       labels: [],
     };
 
-    const normalizedGlobal = {
+    // CLEAN STRUCTURE: Shared rings, activityGroups, labels at wheel level
+    const sharedStructure = {
       rings: (baseStructure.rings || []).map(stripRemoteFields),
       activityGroups: (baseStructure.activityGroups || []).map(stripRemoteFields),
       labels: (baseStructure.labels || []).map(stripRemoteFields),
@@ -1543,6 +1544,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const allPages = pagesRef.current || [];
 
+    // CLEAN STRUCTURE: Pages only contain id, year, and items
     const pagesSnapshot = allPages
       .map((page) => {
         if (!page) {
@@ -1564,14 +1566,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 : [];
 
         console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} year=${pageYear}: mappedItems=${Array.isArray(mappedItems) ? mappedItems.length : 'N/A'}, currentItems=${page.id === latest.currentPageId ? (Array.isArray(latest.currentItems) ? latest.currentItems.length : 'N/A') : 'skip'}, page.structure.items=${Array.isArray(page.structure?.items) ? page.structure.items.length : 'N/A'}, allItems=${Array.isArray(latest.allItems) ? latest.allItems.length : 'N/A'} → rawItems=${rawItems.length}`);
+        
+        if (rawItems.length > 0) {
+          console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} rawItems sample:`, rawItems.slice(0, 2).map(i => ({
+            id: i.id?.substring(0, 8),
+            name: i.name,
+            pageId: i.pageId?.substring(0, 8) || 'UNDEFINED',
+            startDate: i.startDate,
+            endDate: i.endDate
+          })));
+        }
 
         const pageItems = rawItems
           .filter((item) => {
             if (!item) {
+              console.log(`[buildWheelSnapshot] Filtering out null/undefined item`);
               return false;
             }
 
             if (item.pageId && item.pageId !== page.id) {
+              console.log(`[buildWheelSnapshot] Filtering out item ${item.id?.substring(0,8)} - pageId mismatch: ${item.pageId?.substring(0,8)} !== ${page.id?.substring(0,8)}`);
               return false;
             }
 
@@ -1583,10 +1597,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             const endYear = item.endDate ? new Date(item.endDate).getFullYear() : startYear;
 
             if (startYear == null || endYear == null) {
+              console.log(`[buildWheelSnapshot] Filtering out item ${item.id?.substring(0,8)} - invalid dates: ${item.startDate} to ${item.endDate}`);
               return false;
             }
 
-            return startYear <= pageYear && endYear >= pageYear;
+            const yearMatch = startYear <= pageYear && endYear >= pageYear;
+            if (!yearMatch) {
+              console.log(`[buildWheelSnapshot] Filtering out item ${item.id?.substring(0,8)} - year mismatch: ${startYear}-${endYear} vs page year ${pageYear}`);
+            }
+            return yearMatch;
           })
           .map((item) => {
             const cleanItem = stripRemoteFields(item);
@@ -1605,21 +1624,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} FINAL: ${pageItems.length} items → ${pageItems.map(i => `${i.name}(${i.id?.substring(0,8)})`).join(', ')}`);
 
+        // CLEAN STRUCTURE: Only id, year, items (no duplicate structure or wheelStructure)
         return {
           id: page.id,
           year: pageYear,
-          structure: normalizedGlobal,
           items: pageItems,
-          wheelStructure: {
-            rings: normalizedGlobal.rings,
-            activityGroups: normalizedGlobal.activityGroups,
-            labels: normalizedGlobal.labels,
-            items: pageItems,
-          },
         };
       })
       .filter(Boolean);
 
+    // CLEAN STRUCTURE: metadata + structure (shared) + pages (with items only)
     return {
       metadata: {
         title: latest.title,
@@ -1631,8 +1645,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         weekRingDisplayMode: latest.weekRingDisplayMode,
         year: latest.year,
       },
-      structure: normalizedGlobal,
-      globalWheelStructure: normalizedGlobal,
+      structure: sharedStructure,
       pages: pagesSnapshot,
       activePageId: latest.currentPageId || null,
     };
@@ -1785,9 +1798,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           id: mapRef?.get(entry.id) || entry.id,
         }));
 
-      const normalizedRings = remapCollection(snapshot.globalWheelStructure.rings, ringIdMap);
-      const normalizedActivityGroups = remapCollection(snapshot.globalWheelStructure.activityGroups, activityIdMap);
-      const normalizedLabels = remapCollection(snapshot.globalWheelStructure.labels, labelIdMap);
+      // FIXED: Use snapshot.structure instead of snapshot.globalWheelStructure (clean structure format)
+      const normalizedRings = remapCollection(snapshot.structure?.rings, ringIdMap);
+      const normalizedActivityGroups = remapCollection(snapshot.structure?.activityGroups, activityIdMap);
+      const normalizedLabels = remapCollection(snapshot.structure?.labels, labelIdMap);
 
       setWheelStructure((prev) => {
         const currentPageItems =
@@ -1814,6 +1828,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }, { type: 'syncFromSnapshot' });
 
       if (itemsByPage) {
+        console.log('[FullSave] ✅ Updating state with database UUIDs from itemsByPage:', Object.keys(itemsByPage).map(pageId => `${pageId.substring(0,8)}: ${itemsByPage[pageId].length} items`));
+        
+        // Log sample of ID mappings
+        const sampleItems = Object.values(itemsByPage).flat().slice(0, 3);
+        if (sampleItems.length > 0) {
+          console.log('[FullSave] Sample items with database IDs:', sampleItems.map(i => ({
+            id: i.id?.substring(0, 8),
+            name: i.name,
+            pageId: i.pageId?.substring(0, 8)
+          })));
+        }
+        
         setPageItemsById({ ...itemsByPage });
         setAllItems(
           Object.values(itemsByPage).reduce((acc, list) => {
@@ -1881,18 +1907,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       if (reason === 'manual') {
         try {
+          // Version snapshot using CLEAN structure format
           await createVersion(
             wheelId,
             {
-              ...snapshot.metadata,
-              wheelStructure: {
+              metadata: snapshot.metadata,
+              structure: {
                 rings: normalizedRings,
                 activityGroups: normalizedActivityGroups,
                 labels: normalizedLabels,
-                items:
-                  (itemsByPage && latest.currentPageId && itemsByPage[latest.currentPageId]) ||
-                  [],
               },
+              pages: snapshot.pages || [],
+              activePageId: latest.currentPageId,
             },
             null,
             false
@@ -2264,19 +2290,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         : parseInt(year);
       const newYear = maxYear + 1;
       
+      // CLEAN STRUCTURE: Don't pass items in structure - they're stored in items table
       const newPage = await createPage(wheelId, {
         year: newYear,
         title: `${newYear}`,
         structure: {
-          rings: [],
-          activityGroups: [{
-            id: "group-1",
-            name: "Aktivitetsgrupp 1",
-            color: colors[0] || "#F5E6D3",
-            visible: true
-          }],
-          labels: [],
-          items: []
+          rings: [], // Rings shared at wheel level
+          activityGroups: [], // Groups shared at wheel level
+          labels: [] // Labels shared at wheel level
+          // No items - they're in the items table!
         }
       });
       
@@ -2307,25 +2329,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!wheelId) return;
     
     try {
-      // First, save the current page to ensure we have the latest data
-      if (currentPageId) {
-        // CRITICAL: Filter items to only those belonging to this page's year
-        const currentYearNum = parseInt(year);
-        const pageSpecificItems = (wheelStructure.items || []).filter(item => {
-          const itemStartYear = new Date(item.startDate).getFullYear();
-          const itemEndYear = new Date(item.endDate).getFullYear();
-          // Include item if it overlaps with current year
-          return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
-        });
-        
-        await updatePage(currentPageId, {
-          structure: {
-            ...wheelStructure,
-            items: pageSpecificItems
-          },
-          year: currentYearNum
-        });
-      }
+      // Save current state before creating new page
+      await enqueueFullSave('pre-create-page');
       
       // Find highest year from existing pages and add 1
       const maxYear = pages.length > 0 
@@ -2333,16 +2338,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         : parseInt(year);
       const nextYear = maxYear + 1;
       
-      // Create blank page for next year
-      // NOTE: Rings/groups are shared across wheel, so they'll automatically appear!
+      // CLEAN STRUCTURE: Create blank page for next year
+      // Rings/groups/labels are shared across wheel at database level
       const newPage = await createPage(wheelId, {
         year: nextYear,
         title: `${nextYear}`,
-        wheelStructure: {  // NOTE: camelCase for service function!
-          rings: [], // Don't copy - rings are shared at wheel level
-          activityGroups: [], // Don't copy - groups are shared at wheel level
-          labels: [], // Don't copy - labels are shared at wheel level
-          items: [] // Empty items - start fresh
+        structure: {
+          rings: [], // Shared at wheel level
+          activityGroups: [], // Shared at wheel level
+          labels: [] // Shared at wheel level
+          // No items - they're in the items table!
         }
       });
       
@@ -2373,25 +2378,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!wheelId) return;
     
     try {
-      // First, save the current page to ensure we have the latest data
-      if (currentPageId) {
-        // CRITICAL: Filter items to only those belonging to this page's year
-        const currentYearNum = parseInt(year);
-        const pageSpecificItems = (wheelStructure.items || []).filter(item => {
-          const itemStartYear = new Date(item.startDate).getFullYear();
-          const itemEndYear = new Date(item.endDate).getFullYear();
-          // Include item if it overlaps with current year
-          return itemStartYear <= currentYearNum && itemEndYear >= currentYearNum;
-        });
-        
-        await updatePage(currentPageId, {
-          structure: {
-            ...wheelStructure,
-            items: pageSpecificItems
-          },
-          year: currentYearNum
-        });
-      }
+      // Save current state before creating new page
+      await enqueueFullSave('pre-smart-copy');
       
       // Find highest year from existing pages and add 1
       const maxYear = pages.length > 0 
@@ -2419,15 +2407,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }));
       
       
-      // Create new page (empty structure initially)
+      // CLEAN STRUCTURE: Create new page without items in structure
       const newPage = await createPage(wheelId, {
         year: nextYear,
         title: `${nextYear}`,
         structure: {
-          rings: [],
-          activityGroups: [],
-          labels: [],
-          items: []
+          rings: [], // Shared at wheel level
+          activityGroups: [], // Shared at wheel level
+          labels: [] // Shared at wheel level
+          // No items - they're in the items table!
         }
       });
       
@@ -2443,7 +2431,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           rings: [...(wheelStructure.rings || [])],
           activityGroups: [...(wheelStructure.activityGroups || [])],
           labels: [...(wheelStructure.labels || [])],
-          items: itemsToSave,
+          items: itemsToSave, // Only in memory, not saved to structure JSONB
         },
       };
 
@@ -3967,6 +3955,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onSaveToDatabase={handleSave}
             onReloadData={loadWheelData}
             currentWheelId={wheelId}
+            currentPageId={currentPageId}
             broadcastActivity={broadcastActivity}
             activeEditors={combinedActiveEditors}
             broadcastOperation={broadcastOperation}

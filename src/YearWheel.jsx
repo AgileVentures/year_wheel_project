@@ -81,6 +81,40 @@ function YearWheel({
   
   const { t, i18n } = useTranslation(['common']);
   
+  // DEBUG: Log complete wheel structure for inspection
+  useEffect(() => {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🎡 FULL WHEEL OBJECT STRUCTURE (at render time):');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('wheelStructure:', {
+      rings: wheelStructure?.rings?.length || 0,
+      activityGroups: wheelStructure?.activityGroups?.length || 0,
+      labels: wheelStructure?.labels?.length || 0,
+      items: wheelStructure?.items?.length || 0,
+      fullStructure: wheelStructure
+    });
+    console.log('Metadata:', {
+      wheelId,
+      title,
+      year,
+      colors,
+      showWeekRing,
+      showMonthRing,
+      showRingNames,
+      showLabels,
+      weekRingDisplayMode
+    });
+    console.log('Items detail:', wheelStructure?.items?.map(item => ({
+      id: item.id?.substring(0, 8),
+      name: item.name,
+      pageId: item.pageId?.substring(0, 8),
+      ringId: item.ringId?.substring(0, 8),
+      activityId: item.activityId?.substring(0, 8),
+      dates: `${item.startDate} to ${item.endDate}`
+    })));
+    console.log('═══════════════════════════════════════════════════════');
+  }, [wheelStructure, wheelId, title, year, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode]);
+  
   // Broadcast editing activity when item modal opens/closes from canvas
   useEffect(() => {
     if (!broadcastActivity) return;

@@ -32,6 +32,7 @@ function OrganizationPanel({
   onSaveToDatabase, // Trigger immediate save
   onReloadData, // Reload wheel data from database
   currentWheelId, // For wheel linking
+  currentPageId, // Current page ID for item assignment
   broadcastActivity, // Broadcast editing activity
   activeEditors, // Other users' editing activity
   onPersistItems = () => Promise.resolve(),
@@ -406,6 +407,14 @@ function OrganizationPanel({
   const handleAddAktivitet = (newAktivitet) => {
     // Handle both single item and batch array of items
     const itemsToAdd = Array.isArray(newAktivitet) ? newAktivitet : [newAktivitet];
+    console.log(`[handleAddAktivitet] Adding ${itemsToAdd.length} items:`, itemsToAdd.map(i => ({
+      id: i.id?.substring(0, 8),
+      name: i.name,
+      pageId: i.pageId?.substring(0, 8) || 'UNDEFINED',
+      ringId: i.ringId?.substring(0, 8),
+      activityId: i.activityId?.substring(0, 8)
+    })));
+    
     const updatedItems = [...(wheelStructure.items || []), ...itemsToAdd];
     onOrganizationChange({ ...wheelStructure, items: updatedItems });
 
@@ -1817,6 +1826,8 @@ function OrganizationPanel({
           onAddItem={handleAddAktivitet}
           onClose={() => setIsAddModalOpen(false)}
           currentWheelId={currentWheelId}
+          currentPageId={currentPageId}
+          year={year}
         />
       )}
 
