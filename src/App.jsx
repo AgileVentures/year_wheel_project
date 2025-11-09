@@ -3380,16 +3380,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
+    console.log('[Debug][handleDragStart] Starting drag', item?.name);
     isDraggingRef.current = true;
     const label = item 
       ? { type: 'dragItem', params: { name: item.name } }
       : { type: 'dragActivity' };
     startBatch(label);
+    console.log('[Debug][handleDragStart] Batch started');
   }, [startBatch]);
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
     const wasDragging = isDraggingRef.current;
+
+    console.log('[Debug][handleUpdateAktivitet] Called', {
+      wasDragging,
+      itemName: updatedItem?.name,
+      isDraggingRefValue: isDraggingRef.current
+    });
 
     let calculatedLabel = wasDragging ? undefined : { type: 'changeActivity' };
     let actuallyChanged = false;
@@ -3470,9 +3478,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     if (wasDragging) {
       isDraggingRef.current = false;
+      console.log('[Debug][handleUpdateAktivitet] Ending drag, actuallyChanged:', actuallyChanged);
       if (actuallyChanged) {
-        endBatch();
+        console.log('[Debug][handleUpdateAktivitet] Calling endBatch()');
+        const newHistoryIndex = endBatch();
+        if (newHistoryIndex !== null) {
+          markSaved(newHistoryIndex);
+          console.log('[Debug][handleUpdateAktivitet] Called markSaved with index:', newHistoryIndex);
+        }
       } else {
+        console.log('[Debug][handleUpdateAktivitet] Calling cancelBatch()');
         cancelBatch();
       }
     }
