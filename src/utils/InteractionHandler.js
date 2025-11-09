@@ -573,17 +573,16 @@ class InteractionHandler {
 
     const angleDelta = this.dragState.currentAngleDelta ?? 0;
 
+    // FIXED: Use unwrapped angles to determine if we're actually wrapping forward
+    // Don't use normalized angles as they can give false positives
     const wrappedForward =
       this.dragState.dragMode === 'resize-end' &&
-      (forwardWrapCount > 0 || (angleDelta > 0 && normalizedEndAngle < normalizedStartAngle));
+      forwardWrapCount > 0;
 
     console.log('[InteractionHandler] wrappedForward calculation:', {
       dragMode: this.dragState.dragMode,
       forwardWrapCount,
-      angleDelta: angleDelta.toFixed(4),
-      normalizedStartAngle: normalizedStartAngle.toFixed(4),
-      normalizedEndAngle: normalizedEndAngle.toFixed(4),
-      angleCondition: angleDelta > 0 && normalizedEndAngle < normalizedStartAngle,
+      unwrappedEndDegrees: unwrappedEndDegrees.toFixed(2),
       wrappedForward
     });
 
