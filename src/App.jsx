@@ -3462,6 +3462,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
 
+    console.log('[handleUpdateAktivitet] Called with:', {
+      id: updatedItem.id,
+      name: updatedItem.name,
+      pageId: updatedItem.pageId,
+      startDate: updatedItem.startDate,
+      endDate: updatedItem.endDate,
+      wasDragging: isDraggingRef.current
+    });
+
     const wasDragging = isDraggingRef.current;
     let actuallyChanged = false;
     let itemFound = false;
@@ -3478,7 +3487,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const oldItem = currentItems.find((item) => item.id === updatedItem.id);
 
         if (!oldItem) {
-          console.warn('[handleUpdateAktivitet] Item not found on page', updatedItem.id);
+          console.warn('[handleUpdateAktivitet] Item not found on page', updatedItem.id, 'page:', page.id);
           return page;
         }
 
@@ -3501,12 +3510,23 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           ringChanged || datesChanged || activityChanged || labelChanged ||
           nameChanged || timeChanged || descriptionChanged || linkChanged;
 
+        console.log('[handleUpdateAktivitet] Changes detected:', {
+          itemFound,
+          actuallyChanged,
+          ringChanged,
+          datesChanged,
+          oldDates: `${oldItem.startDate} → ${oldItem.endDate}`,
+          newDates: `${updatedItem.startDate} → ${updatedItem.endDate}`
+        });
+
         if (!actuallyChanged) return page;
 
         // Update item in page structure
         const nextItems = currentItems.map((item) =>
           item.id === updatedItem.id ? updatedItem : item
         );
+
+        console.log('[handleUpdateAktivitet] Updated items for page', page.id, 'count:', nextItems.length);
 
         return {
           ...page,
@@ -3519,26 +3539,32 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       if (!itemFound) {
         actuallyChanged = false;
+        console.warn('[handleUpdateAktivitet] Item not found in any page!', updatedItem.id);
       }
 
       return nextPages;
     });
 
+    console.log('[handleUpdateAktivitet] After setPages:', { actuallyChanged, itemFound, wasDragging });
+
     // Handle drag mode cleanup (actuallyChanged is now correctly set)
     if (wasDragging) {
       isDraggingRef.current = false;
       if (actuallyChanged) {
+        console.log('[handleUpdateAktivitet] Calling endBatch()');
         const newHistoryIndex = endBatch();
         if (newHistoryIndex !== null) {
           markSaved(newHistoryIndex);
         }
       } else {
+        console.log('[handleUpdateAktivitet] Calling cancelBatch()');
         cancelBatch();
       }
     }
 
     // Persist to database (actuallyChanged is now correctly set)
     if (actuallyChanged) {
+      console.log('[handleUpdateAktivitet] Persisting to database');
       persistItemToDatabase(updatedItem, {
         reason: wasDragging ? 'drag-update' : 'edit-update',
         delay: wasDragging ? 120 : 0,
