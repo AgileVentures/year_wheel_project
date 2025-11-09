@@ -224,22 +224,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       pageItemsByIdKeys: Object.keys(restoredState?.pageItemsById || {})
     });
     
-    // Restore items from undo state
+    // CRITICAL: Restore items to pages from undo state
     if (restoredState?.pageItemsById) {
-      setPageItemsById(restoredState.pageItemsById);
-      
-      // Also update allItems
-      const allRestoredItems = Object.values(restoredState.pageItemsById)
-        .flat()
-        .filter(Boolean);
-      setAllItems(allRestoredItems);
-      
-      console.log('[Debug][UndoRestore] Restored items:', {
-        totalItems: allRestoredItems.length,
-        itemsByPage: Object.entries(restoredState.pageItemsById).map(([pageId, items]) => 
-          `${pageId.substring(0, 8)}: ${items?.length || 0} items`
-        )
+      setPages((prevPages) => {
+        return prevPages.map(page => {
+          const itemsForPage = restoredState.pageItemsById[page.id];
+          if (!itemsForPage) return page;
+          
+          const currentStructure = normalizePageStructure(page);
+          return {
+            ...page,
+            structure: {
+              ...currentStructure,
+              items: itemsForPage
+            }
+          };
+        });
       });
+
+      console.log('[Debug][UndoRestore] Restored items to pages from undo state');
     }
     
     if (yearWheelRef && typeof yearWheelRef.clearPendingItemUpdates === 'function') {
@@ -251,7 +254,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         structure: restoredState.structure,
       });
     }
-  }, [yearWheelRef]);
+  }, [yearWheelRef, setPages]);
   
   // Undo/Redo for main editable states
   const {
@@ -3459,12 +3462,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const wasDragging = isDraggingRef.current;
     let actuallyChanged = false;
+    let itemFound = false;
 
     // Update pages state directly (source of truth)
     setPages((prevPages) => {
       if (!Array.isArray(prevPages)) return prevPages;
-
-      let itemFound = false;
 
       const nextPages = prevPages.map((page) => {
         if (page.id !== updatedItem.pageId) return page;
@@ -3492,6 +3494,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           (oldItem.linkType || null) !== (updatedItem.linkType || null) ||
           (oldItem.linkedWheelId || null) !== (updatedItem.linkedWheelId || null);
 
+        // CRITICAL: Assign to outer scope variable so it's available after setPages
         actuallyChanged =
           ringChanged || datesChanged || activityChanged || labelChanged ||
           nameChanged || timeChanged || descriptionChanged || linkChanged;
@@ -3519,7 +3522,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return nextPages;
     });
 
-    // Handle drag mode cleanup
+    // Handle drag mode cleanup (actuallyChanged is now correctly set)
     if (wasDragging) {
       isDraggingRef.current = false;
       if (actuallyChanged) {
@@ -3532,7 +3535,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     }
 
-    // Persist to database
+    // Persist to database (actuallyChanged is now correctly set)
     if (actuallyChanged) {
       persistItemToDatabase(updatedItem, {
         reason: wasDragging ? 'drag-update' : 'edit-update',
