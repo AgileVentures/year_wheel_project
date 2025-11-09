@@ -2020,6 +2020,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       }
 
+      // Mark as saved in undo/redo stack
+      markSaved();
+
       return {
         ...result,
         validation,
