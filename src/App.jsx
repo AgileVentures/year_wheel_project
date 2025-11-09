@@ -1932,7 +1932,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isLoadingData.current = wasSkippingHistory;
 
       if (itemsByPage) {
-        console.log('[FullSave] ✅ Updating state with database UUIDs from itemsByPage:', Object.keys(itemsByPage).map(pageId => `${pageId.substring(0,8)}: ${itemsByPage[pageId].length} items`));
+        console.log('[FullSave] ✅ Updating pages with database UUIDs from itemsByPage:', Object.keys(itemsByPage).map(pageId => `${pageId.substring(0,8)}: ${itemsByPage[pageId].length} items`));
         
         // Log sample of ID mappings
         const sampleItems = Object.values(itemsByPage).flat().slice(0, 3);
@@ -1944,15 +1944,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           })));
         }
         
-        setPageItemsById({ ...itemsByPage });
-        setAllItems(
-          Object.values(itemsByPage).reduce((acc, list) => {
-            if (Array.isArray(list)) {
-              acc.push(...list);
-            }
-            return acc;
-          }, [])
-        );
+        // Update pages state with items from database
+        // DON'T call setPageItemsById/setAllItems - let the useEffect sync them from pages
         setPages((prevPages) => {
           if (!Array.isArray(prevPages)) {
             return prevPages;
