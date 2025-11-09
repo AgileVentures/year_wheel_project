@@ -457,10 +457,12 @@ export const createWheel = async (wheelData) => {
 
   let initialPage;
   try {
+    // FIXED: Use clean structure format (structure:, not wheelStructure:)
+    // Items are NOT saved in structure - they go to items table separately
     initialPage = await createPage(wheel.id, {
       year: baseYear,
       title: `${baseYear}`,
-      wheelStructure: buildOrganizationPayload(),
+      structure: buildOrganizationPayload(),
       overrideColors: null,
       overrideShowWeekRing: null,
       overrideShowMonthRing: null,
@@ -470,6 +472,7 @@ export const createWheel = async (wheelData) => {
     console.log('[createWheel] Initial page created, ID:', initialPage.id);
     console.log('[createWheel] Saving default structure to database...');
 
+    // FIXED: Use clean structure format (structure at wheel level, items in pages)
     const snapshotResult = await saveWheelSnapshot(wheel.id, {
       metadata: {
         title: wheel.title,
@@ -481,7 +484,7 @@ export const createWheel = async (wheelData) => {
         weekRingDisplayMode: wheel.wheel_ring_display_mode || 'week-numbers',
         year: baseYear,
       },
-      globalWheelStructure: {
+      structure: {
         rings: cloneArray(globalRings),
         activityGroups: cloneArray(globalActivityGroups),
         labels: cloneArray(globalLabels),
@@ -490,7 +493,7 @@ export const createWheel = async (wheelData) => {
         {
           id: initialPage.id,
           year: baseYear,
-          wheelStructure: buildOrganizationPayload(),
+          items: cloneArray(baseItems), // Items go in pages, not structure
         },
       ],
     });
@@ -1893,7 +1896,8 @@ export const createPage = async (wheelId, pageData) => {
 
     if (orderError) throw orderError;
 
-    const baseStructure = pageData.structure || pageData.wheelStructure || {};
+    // FIXED: Only accept clean structure format (no legacy wheelStructure fallback)
+    const baseStructure = pageData.structure || {};
     const structurePayload = {
       rings: Array.isArray(baseStructure.rings) ? baseStructure.rings : [],
       activityGroups: Array.isArray(baseStructure.activityGroups) ? baseStructure.activityGroups : [],

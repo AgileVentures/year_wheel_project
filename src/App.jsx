@@ -1736,20 +1736,31 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const fallbackYear = toYearNumber(latest?.year) ?? new Date().getFullYear();
 
         try {
+          // FIXED: Use clean structure format (structure:, not wheelStructure:)
+          // Items are NOT saved in structure - they go to items table separately
           const newPagePayload = {
             year: fallbackYear,
             title: latest?.title || String(fallbackYear),
-            wheelStructure: {
-              rings: snapshot.globalWheelStructure?.rings || [],
-              activityGroups: snapshot.globalWheelStructure?.activityGroups || [],
-              labels: snapshot.globalWheelStructure?.labels || [],
-              items: (latest?.pageItemsById?.[latest?.currentPageId] && latest.currentPageId)
-                ? filterItemsByYear(latest.pageItemsById[latest.currentPageId], fallbackYear)
-                : filterItemsByYear(latest?.allItems || [], fallbackYear),
+            structure: {
+              rings: snapshot.structure?.rings || [],
+              activityGroups: snapshot.structure?.activityGroups || [],
+              labels: snapshot.structure?.labels || [],
             },
           };
 
           const createdPage = await createPage(wheelId, newPagePayload);
+          
+          // CRITICAL: Save items separately after page creation
+          if (createdPage) {
+            const pageItems = (latest?.pageItemsById?.[latest?.currentPageId] && latest.currentPageId)
+              ? filterItemsByYear(latest.pageItemsById[latest.currentPageId], fallbackYear)
+              : filterItemsByYear(latest?.allItems || [], fallbackYear);
+            
+            if (pageItems.length > 0) {
+              // Items will be saved via syncItems in saveWheelSnapshot below
+              console.log(`[FullSave] Created emergency page with ${pageItems.length} items to sync`);
+            }
+          }
 
           if (createdPage) {
             pagesRef.current = [...(pagesRef.current || []), createdPage];
