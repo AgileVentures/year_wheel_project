@@ -1535,60 +1535,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     pageItemsById,
   };
   hasUnsavedChangesRef.current = hasUnsavedChanges;
-  
-  // DEBUG: Log complete pages structure for inspection
-  useEffect(() => {
-    const pagesSnapshot = {
-      currentPageId,
-      totalPages: pages?.length || 0,
-      totalItems: allItems?.length || 0,
-      pages: pages?.map(page => ({
-        id: page.id,
-        year: page.year,
-        pageOrder: page.page_order,
-        structure: {
-          rings: page.structure?.rings?.map(r => ({ id: r.id, name: r.name })),
-          activityGroups: page.structure?.activityGroups?.map(g => ({ id: g.id, name: g.name })),
-          labels: page.structure?.labels?.map(l => ({ id: l.id, name: l.name })),
-          items: page.structure?.items?.map(item => ({
-            id: item.id,
-            name: item.name,
-            pageId: item.pageId,
-            ringId: item.ringId,
-            activityId: item.activityId,
-            startDate: item.startDate,
-            endDate: item.endDate
-          }))
-        }
-      })),
-      pageItemsById: Object.entries(pageItemsById || {}).map(([pageId, items]) => ({
-        pageId,
-        count: items?.length || 0,
-        items: items?.map(item => ({
-          id: item.id,
-          name: item.name,
-          ringId: item.ringId,
-          activityId: item.activityId
-        }))
-      })),
-      allItems: allItems?.map(item => ({
-        id: item.id,
-        name: item.name,
-        pageId: item.pageId,
-        ringId: item.ringId,
-        activityId: item.activityId,
-        startDate: item.startDate,
-        endDate: item.endDate
-      }))
-    };
-    
-    console.log('═══════════════════════════════════════════════════════');
-    console.log('📄 COMPLETE PAGES SNAPSHOT (App.jsx):');
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(JSON.stringify(pagesSnapshot, null, 2));
-    console.log('═══════════════════════════════════════════════════════');
-  }, [pages, currentPageId, allItems, pageItemsById]);
-
 
   const fullSaveQueueRef = useRef(Promise.resolve());
 

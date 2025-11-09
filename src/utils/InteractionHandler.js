@@ -400,7 +400,7 @@ class InteractionHandler {
 
     // Notify parent
     if (this.wheel.onDragStart) {
-      this.wheel.onDragStart();
+      this.wheel.onDragStart(this.dragState.draggedItem);
     }
 
     // Set cursor
