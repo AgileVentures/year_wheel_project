@@ -3336,6 +3336,181 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   }, [wheelId, ensurePageForYear, currentPageId, setWheelState, broadcastOperation, showToast, showConfirmDialog, wheelState, latestValuesRef, structure]);
 
+  // Handle extending activity to PREVIOUS year(s) when dragging/resizing before January 1
+  const handleExtendActivityToPreviousYear = useCallback(async ({ item, overflowStartDate, currentYearStart }) => {
+    if (!wheelId || !item || !overflowStartDate || !currentYearStart) {
+      return;
+    }
+
+    const overflowDate = new Date(overflowStartDate);
+    const currentYearStartDate = new Date(currentYearStart);
+
+    if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
+      return;
+    }
+
+    if (overflowDate >= currentYearStartDate) {
+      return;
+    }
+
+    const segments = [];
+    const prevDay = new Date(currentYearStartDate);
+    prevDay.setDate(prevDay.getDate() - 1);
+
+    let segmentEnd = prevDay;
+
+    while (segmentEnd >= overflowDate) {
+      const segmentYear = segmentEnd.getFullYear();
+      const segmentYearStart = new Date(segmentYear, 0, 1);
+      const segmentStart = overflowDate >= segmentYearStart ? overflowDate : segmentYearStart;
+
+      segments.push({
+        year: segmentYear,
+        startDate: formatDateOnly(segmentStart),
+        endDate: formatDateOnly(segmentEnd),
+      });
+
+      if (segmentStart <= overflowDate) {
+        break;
+      }
+
+      segmentEnd = new Date(segmentYear - 1, 11, 31);
+    }
+
+    if (segments.length === 0) {
+      return;
+    }
+
+    // Reverse segments so they go from earliest to latest year
+    segments.reverse();
+
+    const firstContinuationYear = segments[0].year;
+    const lastContinuationYear = segments[segments.length - 1].year;
+
+    const confirmed = await showConfirmDialog({
+      title: 'Fortsätt bakåt över årsskiftet?',
+      message: segments.length === 1
+        ? `Aktiviteten "${item.name}" börjar i ${firstContinuationYear}. Vill du skapa en fortsättning på föregående års sida?`
+        : `Aktiviteten "${item.name}" sträcker sig tillbaka till ${firstContinuationYear}. Vill du skapa fortsättningar för varje år?`,
+      confirmText: 'Skapa fortsättning',
+      cancelText: 'Endast detta år',
+      confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
+    });
+
+    if (!confirmed) {
+      return;
+    }
+
+    const createdSegments = [];
+
+    const ensureArray = (value) => (Array.isArray(value) ? value : []);
+
+    const generateItemId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return `item-${crypto.randomUUID()}`;
+      }
+      return `item-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    };
+
+    const isMatchingContinuation = (candidate, startDate, endDate) =>
+      candidate &&
+      candidate.name === item.name &&
+      candidate.ringId === item.ringId &&
+      candidate.activityId === item.activityId &&
+      (candidate.labelId || null) === (item.labelId || null) &&
+      candidate.startDate === startDate &&
+      candidate.endDate === endDate;
+
+    for (const segment of segments) {
+      try {
+        // Pass current page's structure (rings, activityGroups, labels) to new page
+        const currentStructure = {
+          rings: structure.rings || [],
+          activityGroups: structure.activityGroups || [],
+          labels: structure.labels || [],
+          items: [], // New page starts with no items
+        };
+        
+        const ensured = await ensurePageForYear(segment.year, {
+          templateWheelStructure: currentStructure,
+        });
+        const targetPage = ensured?.page;
+        if (!targetPage) {
+          continue;
+        }
+
+        const pageId = targetPage.id;
+
+        // Get the latest pages from wheelState
+        const latestPages = latestValuesRef.current?.pages || wheelState?.pages || [];
+        const pageEntry = latestPages.find((page) => page.id === pageId);
+        const existingItems = ensureArray(pageEntry?.items);
+        const existingMatch = existingItems.find((candidate) =>
+          isMatchingContinuation(candidate, segment.startDate, segment.endDate)
+        );
+
+        if (existingMatch) {
+          createdSegments.push({ year: segment.year, item: existingMatch, alreadyExisted: true });
+          continue;
+        }
+
+        const newItem = {
+          id: generateItemId(),
+          ringId: item.ringId,
+          activityId: item.activityId,
+          labelId: item.labelId || null,
+          name: item.name,
+          startDate: segment.startDate,
+          endDate: segment.endDate,
+          time: item.time || null,
+          description: item.description || null,
+          pageId,
+          linkedWheelId: item.linkedWheelId || null,
+          linkType: item.linkType || null,
+        };
+
+        // Update wheelState to add the new item to the target page
+        setWheelState((prev) => ({
+          ...prev,
+          pages: prev.pages.map((page) => {
+            if (page.id !== pageId) {
+              return page;
+            }
+
+            const currentItems = Array.isArray(page.items) ? page.items : [];
+
+            return {
+              ...page,
+              items: [...currentItems, newItem],
+            };
+          })
+        }), { type: 'appendContinuation' });
+
+        createdSegments.push({ year: segment.year, item: newItem, alreadyExisted: false });
+
+        if (broadcastOperation) {
+          broadcastOperation('create', newItem.id, newItem);
+        }
+      } catch (segmentError) {
+        console.error('[MultiYear] Failed to queue continuation segment (backward):', segmentError);
+        showToast('Kunde inte skapa fortsättning för aktiviteten.', 'error');
+        break;
+      }
+    }
+
+    if (createdSegments.length > 0) {
+      const continuationYears = createdSegments.map((segment) => segment.year);
+      const minYear = Math.min(...continuationYears);
+      const maxYear = Math.max(...continuationYears);
+
+      const successMessage = minYear === maxYear
+        ? `Aktiviteten börjar nu i ${minYear}.`
+        : `Aktiviteten sträcker sig tillbaka till ${minYear}.`;
+
+      showToast(successMessage, 'success');
+    }
+  }, [wheelId, ensurePageForYear, currentPageId, setWheelState, broadcastOperation, showToast, showConfirmDialog, wheelState, latestValuesRef, structure]);
+
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
     console.log('[Debug][handleDragStart] Starting drag', item?.name);
@@ -4076,6 +4251,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               onUpdateAktivitet={handleUpdateAktivitet}
               onDeleteAktivitet={handleDeleteAktivitet}
               onExtendActivityBeyondYear={handleExtendActivityBeyondYear}
+              onExtendActivityToPreviousYear={handleExtendActivityToPreviousYear}
               broadcastActivity={broadcastActivity}
               activeEditors={combinedActiveEditors}
               broadcastOperation={broadcastOperation}

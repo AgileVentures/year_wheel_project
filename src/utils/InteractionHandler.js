@@ -568,6 +568,13 @@ class InteractionHandler {
     const yearStart = new Date(this.wheel.year, 0, 1);
     const yearEnd = new Date(this.wheel.year, 11, 31);
 
+    // Check for backward overflow BEFORE clamping
+    let overflowStartDate = null;
+    if (newStartDate < yearStart) {
+      overflowStartDate = new Date(newStartDate.getTime());
+      console.log(`[InteractionHandler] Item extends before year start: ${newStartDate.toISOString().split('T')[0]} < ${yearStart.toISOString().split('T')[0]}`);
+    }
+
     if (newStartDate < yearStart) newStartDate = yearStart;
     if (newStartDate > yearEnd) newStartDate = yearEnd;
 
@@ -636,6 +643,34 @@ class InteractionHandler {
       // Always clamp current year's item to December 31
       console.log(`[InteractionHandler] Clamping "${originalItem?.name}" endDate from ${newEndDate.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
       newEndDate = yearEnd;
+    }
+
+    // Handle backward overflow (before January 1)
+    if (overflowStartDate) {
+      console.log(`[InteractionHandler] Item extends before year start: ${overflowStartDate.toISOString().split('T')[0]} < ${yearStart.toISOString().split('T')[0]}`);
+
+      if (
+        originalItem &&
+        (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
+        this.options.onExtendActivityToPreviousYear
+      ) {
+        try {
+          console.log(`[InteractionHandler] Calling onExtendActivityToPreviousYear for "${originalItem.name}"`);
+          await this.options.onExtendActivityToPreviousYear({
+            item: originalItem,
+            overflowStartDate,
+            currentYearStart: yearStart,
+            dragMode: this.dragState.dragMode,
+          });
+          console.log(`[InteractionHandler] onExtendActivityToPreviousYear completed`);
+        } catch (extensionError) {
+          console.error('[InteractionHandler] Failed to extend activity to previous year:', extensionError);
+        }
+      }
+
+      // Always clamp current year's item to January 1
+      console.log(`[InteractionHandler] Clamping "${originalItem?.name}" startDate from ${overflowStartDate.toISOString().split('T')[0]} to ${yearStart.toISOString().split('T')[0]}`);
+      newStartDate = yearStart;
     }
 
     // Ensure end is after start when not intentionally wrapping forward

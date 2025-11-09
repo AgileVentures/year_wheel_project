@@ -51,6 +51,7 @@ function YearWheel({
   onUpdateAktivitet,
   onDeleteAktivitet,
   onExtendActivityBeyondYear,
+  onExtendActivityToPreviousYear,
   onItemClick, // External callback for item clicks (e.g., cast to TV)
   readonly = false,
   hideControls = false,
@@ -546,6 +547,7 @@ function YearWheel({
     onDragStart: handleDragStart,
     onUpdateAktivitet: handleUpdateAktivitet,
     onExtendActivityToNextYear: onExtendActivityBeyondYear,
+    onExtendActivityToPreviousYear: onExtendActivityToPreviousYear,
         onRotationChange, // Pass rotation callback for casting sync
         selectionMode,
         selectedItems: Array.from(selectedItems),
@@ -588,6 +590,7 @@ function YearWheel({
     handleDragStart,
     handleUpdateAktivitet,
     onExtendActivityBeyondYear,
+    onExtendActivityToPreviousYear,
     // wheelStructure excluded - updated via updateWheelStructure to prevent wheel recreation during drag
   ]);
 
