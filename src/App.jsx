@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import YearWheel from "./YearWheel";
-import OrganizationPanel from "./components/OrganizationPanel";
+import SidePanel from "./components/SidePanel";
 import Header from "./components/Header";
 import PageNavigator from "./components/PageNavigator";
 import Toast from "./components/Toast";
@@ -2220,7 +2220,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   }, [wheelId]);
 
-  // NOTE: Color template application is handled by OrganizationPanel when user clicks a palette
+  // NOTE: Color template application is handled by SidePanel when user clicks a palette
   // DO NOT automatically apply colors here - it causes unwanted data overwrites and save loops
 
   // ========== SAVE ARCHITECTURE ==========
@@ -3577,6 +3577,36 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   }, [setPages, endBatch, cancelBatch, markSaved, persistItemToDatabase]);
 
+  const handleAddItems = useCallback((newItems) => {
+    if (!currentPageId) return;
+    
+    const itemsToAdd = Array.isArray(newItems) ? newItems : [newItems];
+    console.log('[handleAddItems] Adding items to page', currentPageId, ':', itemsToAdd.map(i => i.name));
+
+    // Update pages state directly (source of truth)
+    setPages((prevPages) => {
+      if (!Array.isArray(prevPages)) return prevPages;
+
+      return prevPages.map((page) => {
+        if (page.id !== currentPageId) return page;
+
+        const currentStructure = normalizePageStructure(page);
+        const currentItems = Array.isArray(currentStructure.items) ? currentStructure.items : [];
+
+        return {
+          ...page,
+          structure: {
+            ...currentStructure,
+            items: [...currentItems, ...itemsToAdd],
+          },
+        };
+      });
+    });
+
+    // Persist to database
+    persistMultipleItems(itemsToAdd, { reason: 'item-create' }).catch(() => {});
+  }, [currentPageId, setPages, persistMultipleItems]);
+
   const handleDeleteAktivitet = useCallback((itemId) => {
     if (!itemId || !currentPageId) return;
 
@@ -4081,7 +4111,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           transition-all duration-300 ease-in-out
           border-r border-gray-200 overflow-hidden
         `}>
-          <OrganizationPanel
+          <SidePanel
             wheelStructure={wheelStructure}
             onOrganizationChange={setWheelStructure}
             title={title}
@@ -4107,6 +4137,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             broadcastActivity={broadcastActivity}
             activeEditors={combinedActiveEditors}
             broadcastOperation={broadcastOperation}
+            onAddItems={handleAddItems}
+            onUpdateItem={handleUpdateAktivitet}
+            onDeleteItem={handleDeleteAktivitet}
             onPersistItems={handlePersistNewItems}
             onPersistItem={handlePersistItemUpdate}
             onPersistItemDelete={handlePersistItemRemove}

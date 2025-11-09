@@ -10,7 +10,7 @@ import QuarterNavigator from './QuarterNavigator';
 import { getRingIntegrations } from '../services/integrationService';
 import { showConfirmDialog } from '../utils/dialogs';
 
-function OrganizationPanel({ 
+function SidePanel({ 
   wheelStructure,
   onOrganizationChange,
   title,
@@ -35,6 +35,9 @@ function OrganizationPanel({
   currentPageId, // Current page ID for item assignment
   broadcastActivity, // Broadcast editing activity
   activeEditors, // Other users' editing activity
+  onAddItems, // Add items to pages state (NEW)
+  onUpdateItem, // Update item in pages state (NEW)
+  onDeleteItem, // Delete item from pages state (NEW)
   onPersistItems = () => Promise.resolve(),
   onPersistItem = () => Promise.resolve(),
   onPersistItemDelete = () => Promise.resolve()
@@ -85,7 +88,7 @@ function OrganizationPanel({
     ringSaveTimeoutRef.current = setTimeout(() => {
       Promise.resolve(onSaveToDatabase({ silent: true, reason }))
         .catch((err) => {
-          console.error(`[OrganizationPanel] Silent save failed (${reason})`, err);
+          console.error(`[SidePanel] Silent save failed (${reason})`, err);
         })
         .finally(() => {
           ringSaveTimeoutRef.current = null;
@@ -415,34 +418,52 @@ function OrganizationPanel({
       activityId: i.activityId?.substring(0, 8)
     })));
     
-    const updatedItems = [...(wheelStructure.items || []), ...itemsToAdd];
-    onOrganizationChange({ ...wheelStructure, items: updatedItems });
-
-    Promise.resolve(onPersistItems(itemsToAdd)).catch((error) => {
-      console.error('[OrganizationPanel] Failed to persist added items:', error);
-    });
+    // Use new handler that updates pages state
+    if (onAddItems) {
+      onAddItems(itemsToAdd);
+    } else {
+      // Fallback to old approach (temporary wheelStructure update)
+      const updatedItems = [...(wheelStructure.items || []), ...itemsToAdd];
+      onOrganizationChange({ ...wheelStructure, items: updatedItems });
+      
+      Promise.resolve(onPersistItems(itemsToAdd)).catch((error) => {
+        console.error('[SidePanel] Failed to persist added items:', error);
+      });
+    }
   };
 
   // Update aktivitet
   const handleUpdateAktivitet = (updatedAktivitet) => {
-    const updatedItems = wheelStructure.items.map(item =>
-      item.id === updatedAktivitet.id ? updatedAktivitet : item
-    );
-    onOrganizationChange({ ...wheelStructure, items: updatedItems });
+    // Use new handler that updates pages state
+    if (onUpdateItem) {
+      onUpdateItem(updatedAktivitet);
+    } else {
+      // Fallback to old approach
+      const updatedItems = wheelStructure.items.map(item =>
+        item.id === updatedAktivitet.id ? updatedAktivitet : item
+      );
+      onOrganizationChange({ ...wheelStructure, items: updatedItems });
 
-    Promise.resolve(onPersistItem(updatedAktivitet)).catch((error) => {
-      console.error('[OrganizationPanel] Failed to persist updated item:', error);
-    });
+      Promise.resolve(onPersistItem(updatedAktivitet)).catch((error) => {
+        console.error('[SidePanel] Failed to persist updated item:', error);
+      });
+    }
   };
 
   // Delete aktivitet
   const handleDeleteAktivitet = (aktivitetId) => {
-    const updatedItems = wheelStructure.items.filter(item => item.id !== aktivitetId);
-    onOrganizationChange({ ...wheelStructure, items: updatedItems });
+    // Use new handler that updates pages state
+    if (onDeleteItem) {
+      onDeleteItem(aktivitetId);
+    } else {
+      // Fallback to old approach
+      const updatedItems = wheelStructure.items.filter(item => item.id !== aktivitetId);
+      onOrganizationChange({ ...wheelStructure, items: updatedItems });
 
-    Promise.resolve(onPersistItemDelete(aktivitetId)).catch((error) => {
-      console.error('[OrganizationPanel] Failed to delete item from database:', error);
-    });
+      Promise.resolve(onPersistItemDelete(aktivitetId)).catch((error) => {
+        console.error('[SidePanel] Failed to delete item from database:', error);
+      });
+    }
   };
 
   // Sort aktiviteter for list view
@@ -2151,4 +2172,4 @@ function OrganizationPanel({
   );
 }
 
-export default OrganizationPanel;
+export default SidePanel;
