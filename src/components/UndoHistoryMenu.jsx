@@ -170,8 +170,9 @@ export default function UndoHistoryMenu({
             <div className="p-2 border-t border-gray-200 bg-gray-50 flex gap-2">
               <button
                 onClick={() => { 
-                  console.log('[UndoHistoryMenu] Undo button clicked, canUndo:', canUndo);
-                  undo(); 
+                  console.log('[UndoHistoryMenu] Undo button clicked, canUndo:', canUndo, 'undo function:', typeof undo);
+                  const result = undo(); 
+                  console.log('[UndoHistoryMenu] Undo result:', result);
                   setIsOpen(false); 
                 }}
                 disabled={!canUndo}
@@ -181,8 +182,9 @@ export default function UndoHistoryMenu({
               </button>
               <button
                 onClick={() => { 
-                  console.log('[UndoHistoryMenu] Redo button clicked, canRedo:', canRedo);
-                  redo(); 
+                  console.log('[UndoHistoryMenu] Redo button clicked, canRedo:', canRedo, 'redo function:', typeof redo);
+                  const result = redo(); 
+                  console.log('[UndoHistoryMenu] Redo result:', result);
                   setIsOpen(false); 
                 }}
                 disabled={!canRedo}

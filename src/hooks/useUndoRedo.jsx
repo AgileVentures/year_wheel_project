@@ -209,6 +209,8 @@ export function useUndoRedo(initialState, options = {}) {
       
       // Update both index and state
       setCurrentIndex(newIndex);
+      // CRITICAL: Update ref immediately to prevent double undo from keyboard + button
+      currentIndexRef.current = newIndex;
       setStateInternal(historyEntry.state);
 
       if (onStateRestoredRef.current) {
@@ -263,6 +265,8 @@ export function useUndoRedo(initialState, options = {}) {
       
       // Update both index and state
       setCurrentIndex(newIndex);
+      // CRITICAL: Update ref immediately to prevent double redo from keyboard + button
+      currentIndexRef.current = newIndex;
       setStateInternal(historyEntry.state);
 
       if (onStateRestoredRef.current) {
@@ -452,10 +456,17 @@ export function useUndoRedo(initialState, options = {}) {
    * Uses Immer freeze to ensure immutability
    */
   const clear = useCallback(() => {
-    setHistory([{ state: freeze(state, true), label: 'Start' }]);
-    setCurrentIndex(0);
-    lastSaveIndex.current = 0;
-  }, [state]);
+    // CRITICAL: Use setState callback to get CURRENT state, not stale closure
+    setStateInternal(currentState => {
+      // Reset history with the CURRENT state, not initial state
+      setHistory([{ state: freeze(currentState, true), label: 'Start' }]);
+      setCurrentIndex(0);
+      lastSaveIndex.current = 0;
+      
+      // Return unchanged state (we're only clearing history)
+      return currentState;
+    });
+  }, []); // No dependencies - use setState callback instead
 
   /**
    * Can undo/redo flags and labels
