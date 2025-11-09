@@ -78,6 +78,7 @@ export function useUndoRedo(initialState, options = {}) {
 
     // Check if caller wants to skip history (e.g., during data load)
     if (shouldSkipHistory?.current) {
+      console.log('[UndoRedo] addToHistory: Skipping due to shouldSkipHistory flag');
       return;
     }
 
@@ -94,6 +95,7 @@ export function useUndoRedo(initialState, options = {}) {
       ? { type: 'legacyString', text: label } // Legacy support for old string labels
       : label;
 
+    console.log('[UndoRedo] addToHistory called with label:', normalizedLabel?.type || normalizedLabel);
 
     // CRITICAL: Update both history and currentIndex atomically
     // Use ref to get current index to avoid stale closure
@@ -370,9 +372,21 @@ export function useUndoRedo(initialState, options = {}) {
         const initialJSON = JSON.stringify(initialState);
         const finalJSON = JSON.stringify(finalState);
         
-        console.log('[UndoRedo] endBatch: State changed?', initialJSON !== finalJSON);
+        const stateChanged = initialJSON !== finalJSON;
+        console.log('[UndoRedo] endBatch: State changed?', stateChanged);
         
-        if (initialJSON !== finalJSON) {
+        if (!stateChanged) {
+          console.log('[UndoRedo] endBatch: Initial state sample:', {
+            itemCount: initialState.structure?.items?.length,
+            firstItem: initialState.structure?.items?.[0]
+          });
+          console.log('[UndoRedo] endBatch: Final state sample:', {
+            itemCount: finalState.structure?.items?.length,
+            firstItem: finalState.structure?.items?.[0]
+          });
+        }
+        
+        if (stateChanged) {
           
           // CRITICAL: Reset batch mode BEFORE calling addToHistory
           // Otherwise addToHistory will see isBatchMode=true and store to batchModeState instead!
