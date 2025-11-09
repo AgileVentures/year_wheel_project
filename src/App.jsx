@@ -225,6 +225,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     });
     
     // CRITICAL: Restore items to pages from undo state
+    // Note: setPages is not in dependencies to avoid initialization order issues
     if (restoredState?.pageItemsById) {
       setPages((prevPages) => {
         return prevPages.map(page => {
@@ -254,7 +255,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         structure: restoredState.structure,
       });
     }
-  }, [yearWheelRef, setPages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yearWheelRef]);
   
   // Undo/Redo for main editable states
   const {
