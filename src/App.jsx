@@ -258,10 +258,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yearWheelRef]);
   
-  // Undo/Redo for main editable states
+  // ==========================================
+  // SINGLE SOURCE OF TRUTH: wheelState
+  // ==========================================
   const {
-    states: undoableStates,
-    setStates: setUndoableStates,
+    states: wheelState,
+    setStates: setWheelState,
     undo,
     redo,
     canUndo,
@@ -272,18 +274,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     markSaved,
     undoToSave,
     hasUnsavedChanges,
-  // ==========================================
-  // SINGLE SOURCE OF TRUTH: wheelState
-  // ==========================================
-  const {
-    state: wheelState,
-    setState: setWheelState,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    isSaved,
-    markSaved,
     unsavedChangesCount,
     startBatch,
     endBatch,
@@ -376,26 +366,29 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   }, [pages]);
 
   const setTitle = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_TITLE }) => {
-    const currentTitle = undoableStates?.title || "Nytt hjul";
+    const currentTitle = wheelState?.metadata?.title || "Nytt hjul";
     const nextTitle = typeof value === 'function' ? value(currentTitle) : value;
 
     if (nextTitle === currentTitle) {
       return;
     }
 
-    setUndoableStates((prevStates) => ({
-      ...prevStates,
-      title: nextTitle,
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: {
+        ...prev.metadata,
+        title: nextTitle
+      }
     }), historyLabel);
 
     latestValuesRef.current = {
       ...latestValuesRef.current,
       title: nextTitle,
     };
-  }, [setUndoableStates, undoableStates]);
+  }, [setWheelState, wheelState]);
 
   const setYear = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_YEAR }) => {
-    const currentYear = undoableStates?.year || "2025";
+    const currentYear = wheelState?.metadata?.year || "2025";
     const resolved = typeof value === 'function' ? value(currentYear) : value;
     const nextYear = resolved != null ? String(resolved) : currentYear;
 
@@ -403,35 +396,96 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
 
-    setUndoableStates((prevStates) => ({
-      ...prevStates,
-      year: nextYear,
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: {
+        ...prev.metadata,
+        year: nextYear
+      }
     }), historyLabel);
 
     latestValuesRef.current = {
       ...latestValuesRef.current,
       year: nextYear,
     };
-  }, [setUndoableStates, undoableStates]);
+  }, [setWheelState, wheelState]);
 
   const setColors = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_COLORS }) => {
-    const currentColors = undoableStates?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
+    const currentColors = wheelState?.metadata?.colors || ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"];
     const nextColors = typeof value === 'function' ? value(currentColors) : value;
 
     if (!Array.isArray(nextColors) || (nextColors.length === currentColors.length && nextColors.every((color, index) => color === currentColors[index]))) {
       return;
     }
 
-    setUndoableStates((prevStates) => ({
-      ...prevStates,
-      colors: nextColors,
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: {
+        ...prev.metadata,
+        colors: nextColors
+      }
     }), historyLabel);
 
     latestValuesRef.current = {
       ...latestValuesRef.current,
       colors: nextColors,
     };
-  }, [setUndoableStates, undoableStates]);
+  }, [setWheelState, wheelState]);
+
+  const setCurrentPageId = useCallback((value, historyLabel) => {
+    const currentId = wheelState?.currentPageId || null;
+    const nextId = typeof value === 'function' ? value(currentId) : value;
+
+    if (nextId === currentId) {
+      return;
+    }
+
+    setWheelState((prev) => ({
+      ...prev,
+      currentPageId: nextId
+    }), historyLabel);
+
+    latestValuesRef.current = {
+      ...latestValuesRef.current,
+      currentPageId: nextId,
+    };
+  }, [setWheelState, wheelState]);
+
+  // Metadata setters for display preferences
+  const setShowWeekRing = useCallback((value) => {
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: { ...prev.metadata, showWeekRing: value }
+    }));
+  }, [setWheelState]);
+
+  const setShowMonthRing = useCallback((value) => {
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: { ...prev.metadata, showMonthRing: value }
+    }));
+  }, [setWheelState]);
+
+  const setShowRingNames = useCallback((value) => {
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: { ...prev.metadata, showRingNames: value }
+    }));
+  }, [setWheelState]);
+
+  const setShowLabels = useCallback((value) => {
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: { ...prev.metadata, showLabels: value }
+    }));
+  }, [setWheelState]);
+
+  const setWeekRingDisplayMode = useCallback((value) => {
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: { ...prev.metadata, weekRingDisplayMode: value }
+    }));
+  }, [setWheelState]);
 
   const setWheelStructure = useCallback((value, historyLabel) => {
     const defaultStructure = {
@@ -440,10 +494,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       labels: [],
     };
 
-    const currentStructure = undoableStates?.structure || defaultStructure;
-    const currentItems = currentPageId && Array.isArray(pageItemsRef.current?.[currentPageId])
-      ? pageItemsRef.current[currentPageId]
-      : [];
+    const currentStructure = wheelState?.structure || defaultStructure;
+    const currentItems = currentPageItems || [];
 
     const currentCombined = {
       ...currentStructure,
@@ -500,218 +552,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const finalLabel = historyLabel || { type: changeType };
 
-    // Update both structure and pageItemsById in undo state
-    setUndoableStates((prevStates) => ({
-      ...prevStates,
+    // Update both structure and current page items in wheelState
+    setWheelState((prev) => ({
+      ...prev,
       structure: nextStructure,
-      pageItemsById: {
-        ...prevStates.pageItemsById,
-        [currentPageId]: nextItems
-      }
+      pages: prev.pages.map(page =>
+        page.id === currentPageId
+          ? { ...page, items: nextItems }
+          : page
+      )
     }), finalLabel);
 
     latestValuesRef.current = {
       ...latestValuesRef.current,
       structure: nextStructure,
     };
-
-    const prevItems = Array.isArray(currentItems) ? currentItems : [];
-  const prevItemIds = new Set(prevItems.map((item) => item?.id).filter(Boolean));
-  const nextItemIds = new Set(nextItems.map((item) => item?.id).filter(Boolean));
-    const removedIds = [];
-    prevItemIds.forEach((id) => {
-      if (!nextItemIds.has(id)) {
-        removedIds.push(id);
-      }
-    });
-
-    if (removedIds.length > 0 || nextItems.length > 0) {
-      setAllItems((prevAll) => {
-        if (!Array.isArray(prevAll)) {
-          return prevAll;
-        }
-
-        const map = new Map(prevAll.map((item) => [item.id, item]));
-        let changed = false;
-
-        removedIds.forEach((id) => {
-          if (id && map.has(id)) {
-            map.delete(id);
-            changed = true;
-          }
-        });
-
-        nextItems.forEach((item) => {
-          if (!item) {
-            return;
-          }
-
-          const itemId = item.id;
-          if (!itemId) {
-            return;
-          }
-
-          const existing = map.get(itemId);
-          const merged = existing ? { ...existing, ...item } : { ...item };
-
-          // Only mark changed if data actually differs
-          if (!existing || existing !== merged) {
-            changed = true;
-          }
-
-          map.set(itemId, merged);
-        });
-
-        if (!changed) {
-          return prevAll;
-        }
-
-        if (updatedItemIds.size > 0) {
-          console.log('[Debug][setWheelStructure] setAllItems applied', {
-            total: map.size,
-            containsTracked: Array.from(updatedItemIds).every((id) => map.has(id)),
-          });
-        }
-
-        return Array.from(map.values());
-      });
-    }
-
-    if (currentPageId) {
-      let updatedItemsMap = null;
-
-      setPageItemsById((prev) => {
-        const nextMap = { ...(prev || {}) };
-        nextMap[currentPageId] = nextItems;
-
-        nextItems.forEach((item) => {
-          if (!item || !item.id || !item.pageId) {
-            return;
-          }
-
-          const targetPageId = item.pageId;
-          if (!nextMap[targetPageId]) {
-            const fallback = Array.isArray(prev?.[targetPageId]) ? prev[targetPageId] : [];
-            nextMap[targetPageId] = [...fallback];
-          }
-
-          const list = nextMap[targetPageId];
-          if (!Array.isArray(list)) {
-            return;
-          }
-
-          const index = list.findIndex((entry) => entry?.id === item.id);
-          if (index >= 0) {
-            const clone = [...list];
-            clone[index] = item;
-            nextMap[targetPageId] = clone;
-          } else {
-            nextMap[targetPageId] = [...list, item];
-          }
-        });
-
-        if (removedIds.length > 0) {
-          Object.keys(nextMap).forEach((pageKey) => {
-            const list = nextMap[pageKey];
-            if (!Array.isArray(list) || list.length === 0) {
-              return;
-            }
-
-            const filtered = list.filter((entry) => !removedIds.includes(entry?.id));
-            if (filtered.length !== list.length) {
-              nextMap[pageKey] = filtered;
-            }
-          });
-        }
-
-        updatedItemsMap = nextMap;
-
-        if (updatedItemIds.size > 0) {
-          const trackedPages = {};
-          nextItems.forEach((item) => {
-            if (item?.pageId && Array.isArray(nextMap[item.pageId])) {
-              const ids = nextMap[item.pageId].map((entry) => entry?.id).filter(Boolean);
-              trackedPages[item.pageId] = {
-                count: ids.length,
-                containsUpdated: ids.includes(item.id),
-              };
-            }
-          });
-
-          const currentPageSnapshot = Array.isArray(nextMap[currentPageId])
-            ? nextMap[currentPageId]
-                .filter((entry) => updatedItemIds.has(entry?.id))
-                .map((entry) => ({
-                  id: entry?.id,
-                  pageId: entry?.pageId,
-                  startDate: entry?.startDate,
-                  endDate: entry?.endDate,
-                }))
-            : [];
-
-          console.log('[Debug][setWheelStructure] pageItemsById update', {
-            currentPageId,
-            currentPageTracked: currentPageSnapshot,
-            trackedPages,
-          });
-        }
-
-        return nextMap;
-      });
-
-      setPages((prevPages) => {
-        if (!Array.isArray(prevPages) || prevPages.length === 0) {
-          return prevPages;
-        }
-
-        const mapRef = updatedItemsMap || pageItemsRef.current || {};
-        let changed = false;
-
-        const nextPages = prevPages.map((page) => {
-          const prevStructure = page.structure || {};
-          const { items: prevItems = [] } = prevStructure;
-          const mappedItems = mapRef[page.id];
-          const shouldUpdateItems = Array.isArray(mappedItems);
-
-          const nextStructureForPage = {
-            ...prevStructure,
-            rings: nextStructure.rings || prevStructure.rings || [],
-            activityGroups: nextStructure.activityGroups || prevStructure.activityGroups || [],
-            labels: nextStructure.labels || prevStructure.labels || [],
-            items: shouldUpdateItems
-              ? mappedItems
-              : page.id === currentPageId
-                ? nextItems
-                : prevItems,
-          };
-
-          const itemsReference = shouldUpdateItems
-            ? mappedItems
-            : page.id === currentPageId
-              ? nextItems
-              : prevItems;
-
-          const isSame =
-            prevStructure.items === itemsReference &&
-            prevStructure.rings === nextStructureForPage.rings &&
-            prevStructure.activityGroups === nextStructureForPage.activityGroups &&
-            prevStructure.labels === nextStructureForPage.labels;
-
-          if (isSame) {
-            return page;
-          }
-
-          changed = true;
-          return {
-            ...page,
-            structure: nextStructureForPage,
-          };
-        });
-
-        return changed ? nextPages : prevPages;
-      });
-    }
-  }, [setUndoableStates, undoableStates, currentPageId, setAllItems, setPageItemsById, setPages]);
+  }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange]);
   
   // Keep ringsData for backward compatibility when loading old files
   const [ringsData, setRingsData] = useState([
@@ -800,32 +656,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Complete wheel snapshot in the format: { metadata, structure, pages }
   // This is what YearWheel.jsx should receive for full visibility
-  const completeWheelSnapshot = useMemo(() => ({
-    metadata: {
-      wheelId,
-      title,
-      year,
-      colors,
-      showWeekRing,
-      showMonthRing,
-      showRingNames,
-      showLabels,
-      weekRingDisplayMode,
-    },
-    structure: {
-      rings: structure.rings || [],
-      activityGroups: structure.activityGroups || [],
-      labels: structure.labels || [],
-    },
-    pages: pages.map(page => ({
-      id: page.id,
-      year: page.year,
-      pageOrder: page.page_order,
-      title: page.title,
-      items: pageItemsById[page.id] || [],
-      isActive: page.id === currentPageId,
-    })),
-  }), [wheelId, title, year, colors, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, structure, pages, pageItemsById, currentPageId]);
+  // completeWheelSnapshot now just references wheelState (single source of truth)
+  const completeWheelSnapshot = useMemo(() => {
+    if (!wheelState) return null;
+    return {
+      metadata: wheelState.metadata,
+      structure: wheelState.structure,
+      pages: wheelState.pages.map(page => ({
+        ...page,
+        isActive: page.id === wheelState.currentPageId,
+      })),
+    };
+  }, [wheelState]);
 
   // Load wheel data function (memoized to avoid recreating)
   const loadWheelData = useCallback(async (rawOptions) => {
@@ -911,6 +753,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Prepare data to update
         let structureToSet = null;
         let yearToLoad = null; // Will be set from page data or wheel data
+        let pagesToSet = null; // Will contain pages with items
         
         // If we have pages, load data from first page (or current page if set)
         if (pagesData.length > 0) {
@@ -951,11 +794,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             syncMetadata: dbItem.sync_metadata,
           }));
           
-          setAllItems(normalizedItems);
-          const itemsByPage = computePageItems(normalizedItems, pagesData);
-          setPageItemsById(itemsByPage);
+          // Instead of setAllItems/setPageItemsById/setPages, we'll update wheelState.pages with items
+          // Build pages array with items attached
+          const pagesWithItems = pagesData.map((page) => ({
+            id: page.id,
+            year: page.year,
+            pageOrder: page.page_order,
+            title: page.title,
+            items: normalizedItems.filter(item => item.pageId === page.id)
+          }));
 
-          const pageItems = itemsByPage?.[pageToLoad.id] || [];
+          const pageItems = normalizedItems.filter(item => item.pageId === pageToLoad.id);
           console.log(`[loadWheelData] Prepared ${pageItems.length} items for page ${pageToLoad.id}`);
           
           const pageStructure = normalizePageStructure(pageToLoad);
@@ -1058,34 +907,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           
           structureToSet = structureData;
 
-          // Update pages with latest per-page data and shared structures
-          const enrichedPages = pagesData.map((page) => {
-            const baseStructure = page.structure || {};
-            const nextStructureForPage = {
-              ...baseStructure,
-              rings: structureData.rings,
-              activityGroups: structureData.activityGroups,
-              labels: structureData.labels,
-              items: itemsByPage?.[page.id] || [],
-            };
-
-            return {
-              ...page,
-              structure: nextStructureForPage,
-            };
-          });
-
-          setPages(enrichedPages);
+          // Pages with items are already prepared in pagesWithItems above
+          pagesToSet = pagesWithItems;
         } else {
           // Fallback: Load from wheel's organization data (legacy support)
-          setPages([]);
-          setPageItemsById({});
+          pagesToSet = [];
           const legacyItems = Array.isArray(wheelData.wheelStructure?.items)
             ? wheelData.wheelStructure.items
             : Array.isArray(wheelData.structure?.items)
               ? wheelData.structure.items
               : [];
-          setAllItems(legacyItems);
+          // In legacy mode, create a single page with all items
+          if (legacyItems.length > 0) {
+            pagesToSet = [{
+              id: 'legacy-page',
+              year: String(wheelData.year || new Date().getFullYear()),
+              pageOrder: 0,
+              title: wheelData.title || 'Nytt hjul',
+              items: legacyItems
+            }];
+          }
           yearToLoad = String(wheelData.year || new Date().getFullYear());
           
           // Load structure data (legacy support)
@@ -1138,7 +979,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
         }
         
-        // CRITICAL: Update title, colors, year AND structure together in ONE call to prevent race condition
+        // CRITICAL: Update complete wheelState in ONE call to prevent race conditions
         const updates = {};
         if (wheelData.title !== undefined) {
           updates.title = wheelData.title || 'Nytt hjul';
@@ -1149,11 +990,23 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (yearToLoad) {
           updates.year = yearToLoad;
         }
-        if (structureToSet) {
-          updates.structure = structureToSet;
+        if (wheelData.settings?.showWeekRing !== undefined) {
+          updates.showWeekRing = wheelData.settings.showWeekRing;
+        }
+        if (wheelData.settings?.showMonthRing !== undefined) {
+          updates.showMonthRing = wheelData.settings.showMonthRing;
+        }
+        if (wheelData.settings?.showRingNames !== undefined) {
+          updates.showRingNames = wheelData.settings.showRingNames;
+        }
+        if (wheelData.showLabels !== undefined) {
+          updates.showLabels = wheelData.showLabels;
+        }
+        if (wheelData.weekRingDisplayMode !== undefined) {
+          updates.weekRingDisplayMode = wheelData.weekRingDisplayMode;
         }
         
-        if (Object.keys(updates).length > 0) {
+        if (Object.keys(updates).length > 0 || structureToSet || pagesToSet) {
           const previousLoadingFlag = isLoadingData.current;
           const shouldResetHistoryAfterLoad = reason === 'manual' && isInitialLoad.current;
           const historyLabel = reason === 'realtime'
@@ -1162,7 +1015,39 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
           // Temporarily allow undo stack to capture the refreshed state
           isLoadingData.current = false;
-          setUndoableStates(updates, historyLabel);
+          
+          setWheelState((prev) => {
+            const nextState = { ...prev };
+            
+            // Update metadata
+            if (Object.keys(updates).length > 0) {
+              nextState.metadata = {
+                ...prev.metadata,
+                ...updates
+              };
+            }
+            
+            // Update structure
+            if (structureToSet) {
+              nextState.structure = {
+                rings: structureToSet.rings || [],
+                activityGroups: structureToSet.activityGroups || [],
+                labels: structureToSet.labels || []
+              };
+            }
+            
+            // Update pages
+            if (pagesToSet) {
+              nextState.pages = pagesToSet;
+              // Set current page if we loaded from pageToLoad
+              if (pagesToSet.length > 0 && !nextState.currentPageId) {
+                nextState.currentPageId = pagesToSet[0].id;
+              }
+            }
+            
+            return nextState;
+          }, historyLabel);
+          
           // Restore loading guard immediately after state update
           isLoadingData.current = previousLoadingFlag;
           
@@ -1174,17 +1059,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
         }
         
-        // Load other settings
-        if (wheelData.settings) {
-          if (wheelData.settings.showWeekRing !== undefined) setShowWeekRing(wheelData.settings.showWeekRing);
-          if (wheelData.settings.showMonthRing !== undefined) setShowMonthRing(wheelData.settings.showMonthRing);
-          if (wheelData.settings.showYearEvents !== undefined) setShowYearEvents(wheelData.settings.showYearEvents);
-          if (wheelData.settings.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
-          if (wheelData.settings.showRingNames !== undefined) setShowRingNames(wheelData.settings.showRingNames);
-        }
-        // Load showLabels and weekRingDisplayMode from wheel data (stored at wheel level, not in settings)
-        if (wheelData.showLabels !== undefined) setShowLabels(wheelData.showLabels);
-        if (wheelData.weekRingDisplayMode !== undefined) setWeekRingDisplayMode(wheelData.weekRingDisplayMode);
+        // Other settings already handled above in metadata updates
+        if (wheelData.settings?.showYearEvents !== undefined) setShowYearEvents(wheelData.settings.showYearEvents);
+        if (wheelData.settings?.showSeasonRing !== undefined) setShowSeasonRing(wheelData.settings.showSeasonRing);
       }
     } catch (error) {
       console.error('Error loading wheel:', error);
@@ -1309,101 +1186,71 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (timeSinceLastSave < 5000) {
       return;
     }
-    
-    const buildPageWithItems = (page, items) => ({
-      ...page,
-      structure: {
-        ...(page?.structure || {}),
-        items: Array.isArray(items) ? items : [],
-      },
-    });
 
     if (eventType === 'INSERT') {
-      const existingItems = Array.isArray(pageItemsRef.current?.[payload.new.id])
-        ? pageItemsRef.current[payload.new.id]
-        : [];
-
-      setPages((prevPages) => {
-        const exists = prevPages.some((p) => p.id === payload.new.id);
+      setWheelState((prev) => {
+        const exists = prev.pages.some((p) => p.id === payload.new.id);
         if (exists) {
-          return prevPages;
-        }
-
-        const nextPages = [...prevPages, buildPageWithItems(payload.new, existingItems)];
-        return nextPages.sort((a, b) => a.page_order - b.page_order);
-      });
-
-      setPageItemsById((prev) => ({
-        ...(prev || {}),
-        [payload.new.id]: existingItems,
-      }));
-    } else if (eventType === 'UPDATE') {
-      const currentItems = Array.isArray(pageItemsRef.current?.[payload.new.id])
-        ? pageItemsRef.current[payload.new.id]
-        : [];
-
-      setPages((prevPages) =>
-        prevPages
-          .map((page) => (page.id === payload.new.id ? buildPageWithItems(payload.new, currentItems) : page))
-          .sort((a, b) => a.page_order - b.page_order)
-      );
-
-      // Items are handled via dedicated realtime subscriptions; no update needed here
-    } else if (eventType === 'DELETE') {
-      // Page deleted by another user
-      setPages(prevPages => {
-        const filtered = prevPages.filter(p => p.id !== payload.old.id);
-        
-        // If deleted current page, switch to first remaining page
-        if (payload.old.id === currentPageId && filtered.length > 0) {
-          const newCurrentPage = filtered[0];
-          setCurrentPageId(newCurrentPage.id);
-          const pageYear = newCurrentPage.year || new Date().getFullYear();
-          const mappedItems = pageItemsRef.current?.[newCurrentPage.id] || filterItemsByYear(allItemsRef.current, pageYear);
-          setPageItemsById((prev) => ({
-            ...(prev || {}),
-            [newCurrentPage.id]: mappedItems,
-          }));
-
-          setWheelStructure((prev) => ({
-            ...prev,
-            rings: newCurrentPage.structure?.rings || prev.rings || [],
-            activityGroups: newCurrentPage.structure?.activityGroups || prev.activityGroups || [],
-            labels: newCurrentPage.structure?.labels || prev.labels || [],
-            items: mappedItems,
-          }));
-          setYear(String(pageYear));
-        }
-        
-        return filtered;
-      });
-
-      setPageItemsById((prev) => {
-        if (!prev || !(payload.old.id in prev)) {
           return prev;
         }
-        const { [payload.old.id]: _removed, ...rest } = prev;
-        return rest;
+
+        const newPage = {
+          id: payload.new.id,
+          year: payload.new.year,
+          pageOrder: payload.new.page_order,
+          title: payload.new.title,
+          items: [] // Will be populated by item realtime updates
+        };
+
+        const nextPages = [...prev.pages, newPage];
+        return {
+          ...prev,
+          pages: nextPages.sort((a, b) => a.pageOrder - b.pageOrder)
+        };
       });
-      const removedItems = Array.isArray(pageItemsRef.current?.[payload.old.id])
-        ? pageItemsRef.current[payload.old.id]
-        : [];
-      if (removedItems.length > 0) {
-        const removedIds = removedItems
-          .map((item) => item?.id)
-          .filter(Boolean);
-        if (removedIds.length > 0) {
-          setAllItems((prev) => {
-            if (!Array.isArray(prev) || prev.length === 0) {
-              return prev;
+    } else if (eventType === 'UPDATE') {
+      setWheelState((prev) => ({
+        ...prev,
+        pages: prev.pages
+          .map((page) => 
+            page.id === payload.new.id 
+              ? { 
+                  ...page,
+                  year: payload.new.year,
+                  pageOrder: payload.new.page_order,
+                  title: payload.new.title,
+                  // Preserve existing items
+                }
+              : page
+          )
+          .sort((a, b) => a.pageOrder - b.pageOrder)
+      }));
+    } else if (eventType === 'DELETE') {
+      // Page deleted by another user
+      setWheelState(prev => {
+        const filtered = prev.pages.filter(p => p.id !== payload.old.id);
+        
+        // If deleted current page, switch to first remaining page
+        if (payload.old.id === prev.currentPageId && filtered.length > 0) {
+          const newCurrentPage = filtered[0];
+          return {
+            ...prev,
+            pages: filtered,
+            currentPageId: newCurrentPage.id,
+            metadata: {
+              ...prev.metadata,
+              year: String(newCurrentPage.year || new Date().getFullYear())
             }
-            const filtered = prev.filter((item) => !removedIds.includes(item?.id));
-            return filtered.length === prev.length ? prev : filtered;
-          });
+          };
         }
-      }
+        
+        return {
+          ...prev,
+          pages: filtered
+        };
+      });
     }
-  }, [currentPageId, lastSaveTimestamp, filterItemsByYear]);
+  }, [setWheelState, lastSaveTimestamp]);
 
   // Subscribe to wheel_pages changes
   useEffect(() => {
@@ -1547,22 +1394,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Store latest values in refs so autoSave always reads current state
   latestValuesRef.current = {
-    title,
-    colors,
-    showWeekRing,
-    showMonthRing,
-    showRingNames,
-    showLabels,
-    weekRingDisplayMode,
-    structure,
+    title: wheelState.metadata.title,
+    colors: wheelState.metadata.colors,
+    showWeekRing: wheelState.metadata.showWeekRing,
+    showMonthRing: wheelState.metadata.showMonthRing,
+    showRingNames: wheelState.metadata.showRingNames,
+    showLabels: wheelState.metadata.showLabels,
+    weekRingDisplayMode: wheelState.metadata.weekRingDisplayMode,
+    structure: wheelState.structure,
     currentItems: currentPageItems,
     wheelStructure,
-    year,
-    currentPageId,
+    year: wheelState.metadata.year,
+    currentPageId: wheelState.currentPageId,
     hasUnsavedChanges,
-    pages,
-    allItems,
-    pageItemsById,
+    pages: wheelState.pages,
+    allItems: currentPageItems, // allItems is now just currentPageItems
+    pageItemsById: wheelState.pages.reduce((acc, page) => {
+      acc[page.id] = page.items;
+      return acc;
+    }, {}),
   };
   hasUnsavedChangesRef.current = hasUnsavedChanges;
 
@@ -1599,7 +1449,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       labels: (baseStructure.labels || []).map(stripRemoteFields),
     };
 
-    const allPages = pagesRef.current || [];
+    const allPages = latest.pages || [];
 
     // CLEAN STRUCTURE: Pages only contain id, year, and items
     const pagesSnapshot = allPages
@@ -1609,20 +1459,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
 
         const pageYear = toYearNumber(page.year);
-        const mappedItems = latest.pageItemsById?.[page.id];
-        const rawItems = Array.isArray(mappedItems)
-          ? mappedItems
-          : page.id === latest.currentPageId
-            ? Array.isArray(latest.currentItems)
-              ? latest.currentItems
-              : []
-            : Array.isArray(page.structure?.items)
-              ? page.structure.items
-              : Array.isArray(latest.allItems) && pageYear != null
-                ? filterItemsByYear(latest.allItems, pageYear)
-                : [];
+        
+        // Get items directly from page.items (single source of truth)
+        const rawItems = Array.isArray(page.items) ? page.items : [];
 
-        console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} year=${pageYear}: mappedItems=${Array.isArray(mappedItems) ? mappedItems.length : 'N/A'}, currentItems=${page.id === latest.currentPageId ? (Array.isArray(latest.currentItems) ? latest.currentItems.length : 'N/A') : 'skip'}, page.structure.items=${Array.isArray(page.structure?.items) ? page.structure.items.length : 'N/A'}, allItems=${Array.isArray(latest.allItems) ? latest.allItems.length : 'N/A'} → rawItems=${rawItems.length}`);
+        console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} year=${pageYear}: mappedItems=${rawItems.length}, currentItems=${page.id === latest.currentPageId ? (Array.isArray(latest.currentItems) ? latest.currentItems.length : 'N/A') : 'skip'}, page.structure.items=N/A, allItems=${Array.isArray(latest.allItems) ? latest.allItems.length : 'N/A'} → rawItems=${rawItems.length}`);
         
         if (rawItems.length > 0) {
           console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} rawItems sample:`, rawItems.slice(0, 2).map(i => ({
@@ -1915,58 +1756,38 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           })));
         }
         
-        // Update pages state with items from database
-        // DON'T call setPageItemsById/setAllItems - let the useEffect sync them from pages
-        setPages((prevPages) => {
-          if (!Array.isArray(prevPages)) {
-            return prevPages;
+        // Update wheelState.pages with items that now have database UUIDs
+        setWheelState((prev) => {
+          if (!Array.isArray(prev.pages)) {
+            return prev;
           }
 
           let changed = false;
 
-          const nextPages = prevPages.map((page) => {
-            const prevStructure = page.structure || {};
-            const prevItems = Array.isArray(page.items)
-              ? page.items
-              : Array.isArray(prevStructure.items)
-                ? prevStructure.items
-                : [];
-
+          const nextPages = prev.pages.map((page) => {
+            const prevItems = Array.isArray(page.items) ? page.items : [];
             const mappedItems = itemsByPage[page.id];
-            const nextItems = Array.isArray(mappedItems)
-              ? mappedItems
-              : prevItems;
-
-            const nextStructureForPage = {
-              rings: normalizedRings,
-              activityGroups: normalizedActivityGroups,
-              labels: normalizedLabels,
-            };
-
-            const structureChanged =
-              prevStructure.rings !== nextStructureForPage.rings ||
-              prevStructure.activityGroups !== nextStructureForPage.activityGroups ||
-              prevStructure.labels !== nextStructureForPage.labels;
+            const nextItems = Array.isArray(mappedItems) ? mappedItems : prevItems;
 
             const itemsChanged = prevItems !== nextItems;
 
-            if (!structureChanged && !itemsChanged) {
+            if (!itemsChanged) {
               return page;
             }
 
             changed = true;
             return {
               ...page,
-              structure: nextStructureForPage,
               items: nextItems,
             };
           });
 
-          return changed ? nextPages : prevPages;
+          return changed ? { ...prev, pages: nextPages } : prev;
         });
 
         latestValuesRef.current = {
           ...latestValuesRef.current,
+          pages: wheelState.pages,
           pageItemsById: { ...itemsByPage },
         };
       }
@@ -2317,31 +2138,23 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const handlePageChange = (pageId) => {
     if (pageId === currentPageId) return;
     
-    const newPage = pages.find(p => p.id === pageId);
+    const newPage = wheelState?.pages?.find(p => p.id === pageId);
     if (!newPage) {
       console.error('Page not found:', pageId);
       return;
     }
     
-    // Simply switch to the new page's data (already loaded)
-    const pageYear = newPage.year || new Date().getFullYear();
-    let pageItems = pageItemsRef.current?.[pageId];
-    if (!pageItems) {
-      const computedItems = filterItemsByYear(allItemsRef.current, pageYear);
-      pageItems = computedItems;
-      setPageItemsById((prev) => ({
-        ...(prev || {}),
-        [pageId]: computedItems,
-      }));
-    }
-
-    setWheelStructure(prev => ({
+    // Switch to the new page by updating currentPageId and year
+    // Items are automatically computed from wheelState via currentPageItems selector
+    setWheelState((prev) => ({
       ...prev,
-      items: pageItems
+      currentPageId: pageId,
+      metadata: {
+        ...prev.metadata,
+        year: String(newPage.year || new Date().getFullYear())
+      }
     }), { type: 'pageChange', params: { pageId } });
     
-    setYear(String(pageYear));
-    setCurrentPageId(pageId);
     clearHistory();
   };
 
@@ -3320,10 +3133,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         const pageId = targetPage.id;
 
-  const latestPages = pagesRef.current || [];
+  // Get the latest pages from wheelState
+  const latestPages = latestValuesRef.current?.pages || wheelState?.pages || [];
   const pageEntry = latestPages.find((page) => page.id === pageId);
-  const pageStructure = normalizePageStructure(pageEntry);
-  const existingItems = ensureArray(pageStructure.items);
+  const existingItems = ensureArray(pageEntry?.items);
         const existingMatch = existingItems.find((candidate) =>
           isMatchingContinuation(candidate, segment.startDate, segment.endDate)
         );
@@ -3348,35 +3161,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           linkType: item.linkType || null,
         };
 
-        setPages((prevPages) => {
-          if (!Array.isArray(prevPages)) {
-            return prevPages;
-          }
-
-          return prevPages.map((page) => {
+        // Update wheelState to add the new item to the target page
+        setWheelState((prev) => ({
+          ...prev,
+          pages: prev.pages.map((page) => {
             if (page.id !== pageId) {
               return page;
             }
 
-            const currentStructure = normalizePageStructure(page);
-            const nextStructure = {
-              ...currentStructure,
-              items: [...ensureArray(currentStructure.items), newItem],
-            };
+            const currentItems = Array.isArray(page.items) ? page.items : [];
 
             return {
               ...page,
-              structure: nextStructure,
+              items: [...currentItems, newItem],
             };
-          });
-        });
-
-        if ((latestValuesRef.current?.currentPageId || currentPageId) === pageId) {
-          setWheelStructure((prev) => ({
-            ...prev,
-            items: [...ensureArray(prev.items), newItem],
-          }), { type: 'appendContinuation' });
-        }
+          })
+        }), { type: 'appendContinuation' });
+        
+        // Note: No need to update wheelStructure separately - it's computed from wheelState
 
         createdSegments.push({ year: segment.year, item: newItem, alreadyExisted: false });
 
@@ -3391,11 +3193,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
 
     if (createdSegments.length > 0) {
-      enqueueFullSave('multi-year-continuation').catch((error) => {
-        console.error('[MultiYear] Snapshot save failed:', error);
-        showToast('Kunde inte spara fortsättningen.', 'error');
-      });
-
+      // Don't save here - let handleUpdateAktivitet save after the current item is clamped
+      // This prevents saving stale data before the current year's item is updated to Dec 31
+      
       const continuationYears = createdSegments.map((segment) => segment.year);
       const minYear = Math.min(...continuationYears);
       const maxYear = Math.max(...continuationYears);
@@ -3406,7 +3206,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       showToast(successMessage, 'success');
     }
-  }, [wheelId, ensurePageForYear, pagesRef, currentPageId, setPages, setWheelStructure, enqueueFullSave, broadcastOperation, showToast, showConfirmDialog]);
+  }, [wheelId, ensurePageForYear, currentPageId, setWheelState, broadcastOperation, showToast, showConfirmDialog, wheelState, latestValuesRef, structure]);
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
@@ -3437,18 +3237,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const wasDragging = isDraggingRef.current;
     
-    // Use ref to capture result from inside setPages callback
+    // Use ref to capture result from inside setWheelState callback
     const changeResultRef = { actuallyChanged: false, itemFound: false };
 
-    // Update pages state directly (source of truth)
-    setPages((prevPages) => {
-      if (!Array.isArray(prevPages)) return prevPages;
-
-      const nextPages = prevPages.map((page) => {
+    // Update wheelState.pages directly (source of truth)
+    setWheelState((prev) => {
+      const nextPages = prev.pages.map((page) => {
         if (page.id !== updatedItem.pageId) return page;
 
-        const currentStructure = normalizePageStructure(page);
-        const currentItems = Array.isArray(currentStructure.items) ? currentStructure.items : [];
+        const currentItems = Array.isArray(page.items) ? page.items : [];
         const oldItem = currentItems.find((item) => item.id === updatedItem.id);
 
         if (!oldItem) {
@@ -3470,7 +3267,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           (oldItem.linkType || null) !== (updatedItem.linkType || null) ||
           (oldItem.linkedWheelId || null) !== (updatedItem.linkedWheelId || null);
 
-        // CRITICAL: Assign to ref so it's available after setPages completes
+        // CRITICAL: Assign to ref so it's available after setWheelState completes
         changeResultRef.actuallyChanged =
           ringChanged || datesChanged || activityChanged || labelChanged ||
           nameChanged || timeChanged || descriptionChanged || linkChanged;
@@ -3486,7 +3283,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         if (!changeResultRef.actuallyChanged) return page;
 
-        // Update item in page structure
+        // Update item in page items
         const nextItems = currentItems.map((item) =>
           item.id === updatedItem.id ? updatedItem : item
         );
@@ -3495,10 +3292,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         return {
           ...page,
-          structure: {
-            ...currentStructure,
-            items: nextItems,
-          },
+          items: nextItems
         };
       });
 
@@ -3507,10 +3301,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         console.warn('[handleUpdateAktivitet] Item not found in any page!', updatedItem.id);
       }
 
-      return nextPages;
-    });
+      return { ...prev, pages: nextPages };
+    }, wasDragging ? { type: 'dragItem', params: { itemId: updatedItem.id } } : { type: 'updateItem' });
 
-    console.log('[handleUpdateAktivitet] After setPages:', { 
+    console.log('[handleUpdateAktivitet] After setWheelState:', { 
       actuallyChanged: changeResultRef.actuallyChanged, 
       itemFound: changeResultRef.itemFound, 
       wasDragging 
@@ -3539,7 +3333,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         delay: wasDragging ? 120 : 0,
       }).catch(() => {});
     }
-  }, [setPages, endBatch, cancelBatch, markSaved, persistItemToDatabase]);
+  }, [setWheelState, endBatch, cancelBatch, markSaved, persistItemToDatabase]);
 
   const handleAddItems = useCallback((newItems) => {
     if (!currentPageId) return;
@@ -3547,44 +3341,37 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const itemsToAdd = Array.isArray(newItems) ? newItems : [newItems];
     console.log('[handleAddItems] Adding items to page', currentPageId, ':', itemsToAdd.map(i => i.name));
 
-    // Update pages state directly (source of truth)
-    setPages((prevPages) => {
-      if (!Array.isArray(prevPages)) return prevPages;
-
-      return prevPages.map((page) => {
+    // Update wheelState.pages directly (source of truth)
+    setWheelState((prev) => ({
+      ...prev,
+      pages: prev.pages.map((page) => {
         if (page.id !== currentPageId) return page;
 
-        const currentStructure = normalizePageStructure(page);
-        const currentItems = Array.isArray(currentStructure.items) ? currentStructure.items : [];
+        const currentItems = Array.isArray(page.items) ? page.items : [];
 
         return {
           ...page,
-          structure: {
-            ...currentStructure,
-            items: [...currentItems, ...itemsToAdd],
-          },
+          items: [...currentItems, ...itemsToAdd],
         };
-      });
-    });
+      })
+    }), { type: 'addItem' });
 
     // Persist to database
     persistMultipleItems(itemsToAdd, { reason: 'item-create' }).catch(() => {});
-  }, [currentPageId, setPages, persistMultipleItems]);
+  }, [currentPageId, setWheelState, persistMultipleItems]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
     if (!itemId || !currentPageId) return;
 
     let itemName = '';
 
-    // Update pages state directly
-    setPages((prevPages) => {
-      if (!Array.isArray(prevPages)) return prevPages;
-
-      return prevPages.map((page) => {
+    // Update wheelState.pages directly
+    setWheelState((prev) => ({
+      ...prev,
+      pages: prev.pages.map((page) => {
         if (page.id !== currentPageId) return page;
 
-        const currentStructure = normalizePageStructure(page);
-        const currentItems = Array.isArray(currentStructure.items) ? currentStructure.items : [];
+        const currentItems = Array.isArray(page.items) ? page.items : [];
         const itemToDelete = currentItems.find((item) => item.id === itemId);
 
         if (itemToDelete) {
@@ -3593,16 +3380,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         return {
           ...page,
-          structure: {
-            ...currentStructure,
-            items: currentItems.filter((item) => item.id !== itemId),
-          },
+          items: currentItems.filter((item) => item.id !== itemId)
         };
-      });
-    });
+      })
+    }), { type: 'deleteItem' });
 
     persistItemDeletion(itemId, { reason: 'delete-item' }).catch(() => {});
-  }, [currentPageId, setPages, persistItemDeletion]);
+  }, [currentPageId, setWheelState, persistItemDeletion]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
@@ -3901,11 +3685,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Combined handler for palette changes - updates BOTH colors AND wheelStructure in ONE state update
   const handlePaletteChange = useCallback(async (newColors, newWheelStructure) => {
-    // Update BOTH colors and wheelStructure in a SINGLE setUndoableStates call
-    setUndoableStates({ 
-      colors: newColors,
-      wheelStructure: newWheelStructure
-    });
+    // Update BOTH colors and structure in a SINGLE setWheelState call
+    setWheelState((prev) => ({
+      ...prev,
+      metadata: {
+        ...prev.metadata,
+        colors: newColors
+      },
+      structure: {
+        ...newWheelStructure,
+        items: newWheelStructure.items // Preserve items if any
+      }
+    }), { type: 'paletteChange' });
     
     // CRITICAL: Update refs IMMEDIATELY before save so handleSave reads the new data
     // Normally refs update on next render, but we need them NOW for immediate save
@@ -3921,7 +3712,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // CRITICAL: Palette changes update activity group colors, which need to be saved to database
     // Auto-save only handles wheel metadata, so we need to explicitly call handleSave here
     await handleSave();
-  }, [setUndoableStates, handleSave]);
+  }, [setWheelState, handleSave]);
 
   // Wrapped color change handler that updates timestamp to prevent realtime overwrites
   const handleColorsChange = useCallback((newColors) => {
@@ -4117,20 +3908,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               key={currentPageId} // Force remount when page changes to clear cached data
               wheelId={wheelId}
               wheelData={wheelData}
-              title={title}
-              year={year}
-              colors={colors}
+              title={wheelState.metadata.title}
+              year={wheelState.metadata.year}
+              colors={wheelState.metadata.colors}
               ringsData={ringsData}
               wheelStructure={wheelStructure}
               completeWheelSnapshot={completeWheelSnapshot}
               showYearEvents={showYearEvents}
               showSeasonRing={showSeasonRing}
               yearEventsCollection={yearEventsCollection}
-              showWeekRing={showWeekRing}
-              showMonthRing={showMonthRing}
-              showRingNames={showRingNames}
-              showLabels={showLabels}
-              weekRingDisplayMode={weekRingDisplayMode}
+              showWeekRing={wheelState.metadata.showWeekRing}
+              showMonthRing={wheelState.metadata.showMonthRing}
+              showRingNames={wheelState.metadata.showRingNames}
+              showLabels={wheelState.metadata.showLabels}
+              weekRingDisplayMode={wheelState.metadata.weekRingDisplayMode}
               zoomedMonth={zoomedMonth}
               zoomedQuarter={zoomedQuarter}
               onSetZoomedMonth={setZoomedMonth}
@@ -4164,7 +3955,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       {showAddPageModal && (
         <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
           <AddPageModal
-            currentPage={pages.find(p => p.id === currentPageId)}
+            currentPage={wheelState.pages.find(p => p.id === currentPageId)}
             onClose={() => setShowAddPageModal(false)}
             onCreateBlank={handleCreateBlankPage}
             onDuplicate={() => handleDuplicatePage(currentPageId)}

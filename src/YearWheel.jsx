@@ -85,11 +85,11 @@ function YearWheel({
   // DEBUG: Log complete wheel snapshot with pages structure
   useEffect(() => {
     if (completeWheelSnapshot) {
-      console.log('═══════════════════════════════════════════════════════');
-      console.log('🎡 COMPLETE WHEEL SNAPSHOT (YearWheel.jsx):');
-      console.log('═══════════════════════════════════════════════════════');
-      console.log(JSON.stringify(completeWheelSnapshot, null, 2));
-      console.log('═══════════════════════════════════════════════════════');
+      // console.log('═══════════════════════════════════════════════════════');
+      // console.log('🎡 COMPLETE WHEEL SNAPSHOT (YearWheel.jsx):');
+      // console.log('═══════════════════════════════════════════════════════');
+      // console.log(JSON.stringify(completeWheelSnapshot, null, 2));
+      // console.log('═══════════════════════════════════════════════════════');
     } else {
       // Fallback: construct from wheelStructure (backward compatibility)
       const snapshot = {
