@@ -52,6 +52,8 @@ class InteractionHandler {
     this.mouseDownPos = null;
     this.mouseDownTime = 0;
     this.mouseDownItem = null;
+    this.mouseDownDragMode = null; // Store drag mode detected on mouseDown
+    this.dragJustCompleted = false; // Flag to prevent click after drag completes
     this.CLICK_THRESHOLD_PX = 5; // Max movement in pixels to count as click
     this.CLICK_TIMEOUT_MS = 300; // Max time for click (prevent slow drags from clicking)
     
@@ -348,13 +350,24 @@ class InteractionHandler {
    * @param {MouseEvent} event - Mouse event
    * @param {Object} itemRegion - Item region that was clicked
    */
-  startActivityDrag(event, itemRegion) {
+  startActivityDrag(event, itemRegion, dragMode = null) {
     const { x, y } = this.getCanvasCoordinates(event);
-    const dragMode = this.detectDragZone(x, y, itemRegion);
+    
+    // Use provided dragMode (from mouseDown) or detect it now (for backward compatibility)
+    if (!dragMode) {
+      dragMode = this.detectDragZone(x, y, itemRegion);
+      console.warn('[InteractionHandler] dragMode not provided, detecting from current position');
+    }
+    
+    console.log('[InteractionHandler] startActivityDrag', {
+      itemId: itemRegion.itemId,
+      dragMode
+    });
     
     // Clear mouseDown state - we're starting a drag, not a click
     this.mouseDownItem = null;
     this.mouseDownPos = null;
+    this.mouseDownDragMode = null;
     
     // CRITICAL: Look up fresh item data from wheelStructure (single source of truth)
     const freshItem = this.wheel.wheelStructure.items.find(
@@ -363,6 +376,7 @@ class InteractionHandler {
     
     // If item not found in current wheelStructure, skip (year filtered out)
     if (!freshItem) {
+      console.warn('[InteractionHandler] Item not found in wheelStructure:', itemRegion.itemId);
       return;
     }
 
@@ -534,7 +548,23 @@ class InteractionHandler {
    * Stop activity drag and commit changes
    */
   async stopActivityDrag() {
-    if (!this.dragState.isDragging) return;
+    if (!this.dragState.isDragging) {
+      console.log('[InteractionHandler] stopActivityDrag called but not dragging - ignoring');
+      return;
+    }
+
+    console.log('[InteractionHandler] stopActivityDrag starting');
+
+    // Set flag to block subsequent click event
+    this.dragJustCompleted = true;
+    setTimeout(() => {
+      this.dragJustCompleted = false;
+    }, 100); // Block clicks for 100ms after drag
+
+    // Clear mouseDown state to prevent click detection after drag
+    this.mouseDownItem = null;
+    this.mouseDownPos = null;
+    this.mouseDownDragMode = null;
 
     const originalItem = this.dragState.draggedItem;
 
@@ -569,24 +599,19 @@ class InteractionHandler {
     // Use wheel's angleToDate method which handles zoom levels and initAngle
     let newStartDate = this.wheel.angleToDate(startDegrees);
     let newEndDate = this.wheel.angleToDate(endDegrees);
-
-    // CRITICAL FIX: In move mode, check if BOTH angles wrapped backward
-    // This happens when moving the entire activity backward past Jan 1
-    if (this.dragState.dragMode === 'move' && rawStartAngle < 0 && rawEndAngle < 0) {
-      newStartDate.setFullYear(newStartDate.getFullYear() - 1);
-      newEndDate.setFullYear(newEndDate.getFullYear() - 1);
-    }
+    
+    console.log('[InteractionHandler] Initial dates from angles:', {
+      startDegrees,
+      endDegrees,
+      newStartDate: newStartDate.toISOString(),
+      newEndDate: newEndDate.toISOString(),
+      dragMode: this.dragState.dragMode
+    });
 
     // CRITICAL FIX: In resize-start mode, preserve the original end date
     // Only the start should change, end stays the same
     if (this.dragState.dragMode === 'resize-start' && originalItem) {
       newEndDate = new Date(originalItem.endDate);
-      
-      // Check if start wrapped around incorrectly (appears after end when dragging backward)
-      // This happens when dragging start backward past Jan 1 - angle wraps to December
-      if (newStartDate > newEndDate) {
-        newStartDate.setFullYear(newStartDate.getFullYear() - 1);
-      }
     }
 
     // CRITICAL FIX: In resize-end mode, preserve the original start date
@@ -595,17 +620,31 @@ class InteractionHandler {
       newStartDate = new Date(originalItem.startDate);
     }
 
-    // CRITICAL FIX: Use the item's year (from page), not the wheel's year
-    // This prevents false multi-year triggers on pages beyond page 1
-    const itemYear = originalItem ? new Date(originalItem.startDate).getFullYear() : Number(this.wheel.year);
-    const yearStart = new Date(itemYear, 0, 1);
-    const yearEnd = new Date(itemYear, 11, 31);
+    // CRITICAL FIX: Use the wheel's current year (from page), not the item's startDate year
+    // The wheel.year represents the current page being viewed/edited
+    const itemYear = Number(this.wheel.year);
+    console.log('[InteractionHandler] Wheel year:', this.wheel.year, 'parsed as:', itemYear);
+    
+    // Create year boundaries using UTC to avoid timezone issues
+    // Use Date.UTC to create timestamps, then convert to Date objects
+    const yearStart = new Date(Date.UTC(itemYear, 0, 1, 0, 0, 0));
+    const yearEnd = new Date(Date.UTC(itemYear, 11, 31, 23, 59, 59));
+    
+    console.log('[InteractionHandler] Calculated bounds:', { 
+      yearStart: yearStart.toISOString(), 
+      yearEnd: yearEnd.toISOString()
+    });
 
     console.log(`[InteractionHandler] Year bounds for item "${originalItem?.name}": ${yearStart.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
 
     // Check for backward overflow BEFORE clamping
     let overflowStartDate = null;
     if (newStartDate < yearStart) {
+      console.log('[InteractionHandler] OVERFLOW BACKWARD detected:', {
+        newStartDate: newStartDate.toISOString(),
+        yearStart: yearStart.toISOString(),
+        comparison: newStartDate < yearStart
+      });
       overflowStartDate = new Date(newStartDate.getTime());
     }
 
@@ -635,6 +674,12 @@ class InteractionHandler {
     let overflowEndDate = null;
 
     if (newEndDate > yearEnd) {
+      console.log('[InteractionHandler] OVERFLOW FORWARD detected:', {
+        newEndDate: newEndDate.toISOString(),
+        yearEnd: yearEnd.toISOString(),
+        comparison: newEndDate > yearEnd,
+        dragMode: this.dragState.dragMode
+      });
       overflowEndDate = new Date(newEndDate.getTime());
 
       if (
@@ -882,6 +927,7 @@ class InteractionHandler {
     this.mouseDownPos = { x: event.clientX, y: event.clientY };
     this.mouseDownTime = Date.now();
     this.mouseDownItem = null;
+    this.mouseDownDragMode = null;
 
     // Don't interact with center circle
     if (distanceFromCenter <= this.wheel.minRadius) {
@@ -892,8 +938,10 @@ class InteractionHandler {
     if (this.wheel.clickableItems && distanceFromCenter > this.wheel.minRadius) {
       for (const itemRegion of this.wheel.clickableItems) {
         if (this.isPointInItemRegion(x, y, itemRegion)) {
-          // Store the item for click detection, but don't start drag yet
+          // Detect drag mode NOW (at mouseDown position) and store it
+          this.mouseDownDragMode = this.detectDragZone(x, y, itemRegion);
           this.mouseDownItem = itemRegion;
+          console.log('[InteractionHandler] mouseDown on item, detected mode:', this.mouseDownDragMode);
           return;
         }
       }
@@ -911,9 +959,11 @@ class InteractionHandler {
       const distance = Math.sqrt(dx * dx + dy * dy);
       
       if (distance > this.CLICK_THRESHOLD_PX) {
-        // Movement exceeded threshold - start drag
-        this.startActivityDrag(event, this.mouseDownItem);
+        // Movement exceeded threshold - start drag with the mode detected on mouseDown
+        console.log('[InteractionHandler] Starting drag after threshold exceeded:', distance, 'mode:', this.mouseDownDragMode);
+        this.startActivityDrag(event, this.mouseDownItem, this.mouseDownDragMode);
         this.mouseDownItem = null; // Clear so we don't start again
+        this.mouseDownDragMode = null;
       }
       return;
     }
@@ -1055,6 +1105,11 @@ class InteractionHandler {
     
     if (this.dragState.isDragging) {
       await this.stopActivityDrag();
+      // Set flag to block the subsequent click event
+      this.dragJustCompleted = true;
+      setTimeout(() => {
+        this.dragJustCompleted = false;
+      }, 50); // Short timeout, just enough to block the click event
       return;
     }
 
@@ -1088,6 +1143,11 @@ class InteractionHandler {
   }
 
   handleClick(event) {
+    // Block click if drag just completed
+    if (this.dragJustCompleted) {
+      return;
+    }
+    
     if (this.wheel.skipNextClick) {
       this.wheel.skipNextClick = false;
       return;
