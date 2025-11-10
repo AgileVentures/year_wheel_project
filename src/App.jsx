@@ -54,7 +54,7 @@ const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
-import { fetchWheel, fetchPageData, saveWheelSnapshot, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
+import { fetchWheel, fetchPageData, saveWheelSnapshot, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, reorderPages, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
 import { useWheelPresence, useWheelActivity } from "./hooks/useWheelPresence";
@@ -2296,7 +2296,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       });
       
-      // Add new page to wheelState
+      // Add new page to wheelState and sort chronologically
       setWheelState((prev) => {
         const updatedPages = [...prev.pages, {
           id: newPage.id,
@@ -2305,6 +2305,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           title: newPage.title,
           items: []
         }].sort((a, b) => a.year - b.year);
+        
+        // Update page_order in database to match chronological order
+        const pageOrders = updatedPages.map((page, index) => ({
+          id: page.id,
+          page_order: index + 1
+        }));
+        reorderPages(wheelId, pageOrders).catch(err => 
+          console.error('Failed to reorder pages:', err)
+        );
         
         return {
           ...prev,
@@ -2359,7 +2368,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       });
       
-      // Add new page to wheelState
+      // Add new page to wheelState and sort chronologically
       setWheelState((prev) => {
         const updatedPages = [...prev.pages, {
           id: newPage.id,
@@ -2368,6 +2377,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           title: newPage.title,
           items: []
         }].sort((a, b) => a.year - b.year);
+        
+        // Update page_order in database to match chronological order
+        const pageOrders = updatedPages.map((page, index) => ({
+          id: page.id,
+          page_order: index + 1
+        }));
+        reorderPages(wheelId, pageOrders).catch(err => 
+          console.error('Failed to reorder pages:', err)
+        );
         
         return {
           ...prev,
@@ -2457,6 +2475,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           items: itemsToSave
         }].sort((a, b) => a.year - b.year);
         
+        // Update page_order in database to match chronological order
+        const pageOrders = updatedPages.map((page, index) => ({
+          id: page.id,
+          page_order: index + 1
+        }));
+        reorderPages(wheelId, pageOrders).catch(err => 
+          console.error('Failed to reorder pages:', err)
+        );
+        
         return {
           ...prev,
           pages: updatedPages,
@@ -2541,6 +2568,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }];
           updatedPages.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
           
+          // Update page_order in database to match chronological order
+          const pageOrders = updatedPages.map((page, index) => ({
+            id: page.id,
+            page_order: index + 1
+          }));
+          reorderPages(wheelId, pageOrders).catch(err => 
+            console.error('Failed to reorder pages:', err)
+          );
+          
           return {
             ...prev,
             pages: updatedPages
@@ -2573,7 +2609,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           structure: normalizePageStructure(newPage),
         };
 
-        // Add new page to wheelState
+        // Add new page to wheelState and sort chronologically
         setWheelState((prev) => {
           const updatedPages = [...prev.pages, {
             id: hydratedNewPage.id,
@@ -2583,6 +2619,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             items: templateWheelStructure.items || []
           }];
           updatedPages.sort((a, b) => toYearNumber(a.year) - toYearNumber(b.year));
+          
+          // Update page_order in database to match chronological order
+          const pageOrders = updatedPages.map((page, index) => ({
+            id: page.id,
+            page_order: index + 1
+          }));
+          reorderPages(wheelId, pageOrders).catch(err => 
+            console.error('Failed to reorder pages:', err)
+          );
           
           return {
             ...prev,
