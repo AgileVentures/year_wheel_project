@@ -131,12 +131,12 @@ export const emailLayout = (content, preheader = '') => `
           
           <!-- Header -->
           <tr>
-            <td style="background: #336B3E; padding: 32px 40px; text-align: center;">
+            <td style="background: linear-gradient(135deg, rgba(54, 194, 198, 0.6) 0%, rgba(0, 164, 166, 0.6) 100%); padding: 32px 40px; text-align: center;">
               <!-- Logo -->
               <div style="margin-bottom: 16px;">
                 <img src="https://yearwheel.se/year_wheel_logo.svg" alt="YearWheel" width="200" style="max-width: 200px; height: auto; display: inline-block;">
               </div>
-              <p style="margin: 8px 0 0 0; color: #FFFFFF; font-size: 14px; font-weight: 400;">
+              <p style="margin: 8px 0 0 0; color: #1B2A63; font-size: 14px; font-weight: 600;">
                 Visualisera och planera ditt år!
               </p>
             </td>
