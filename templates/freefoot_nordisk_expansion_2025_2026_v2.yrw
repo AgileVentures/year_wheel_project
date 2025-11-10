@@ -1,0 +1,638 @@
+{
+  "version": "2.0",
+  "metadata": {
+    "title": "Freefoot Nordisk Expansion 2025-2026",
+    "year": 2025,
+    "createdAt": "2025-11-10",
+    "description": "E-handel Norge/Danmark/Finland Q4 2025, Franchise Q2 2026"
+  },
+  "settings": {
+    "showWeekRing": true,
+    "showMonthRing": true,
+    "showRingNames": true,
+    "weekRingDisplayMode": "week-numbers",
+    "showLabels": true,
+    "colors": {
+      "weekRing": "#94A3B8",
+      "monthRing": "#334155"
+    }
+  },
+  "structure": {
+    "rings": [
+      {
+        "id": "ring-inner-1",
+        "name": "Norge Lanseringsplan",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical"
+      },
+      {
+        "id": "ring-inner-2",
+        "name": "Danmark Lanseringsplan",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical"
+      },
+      {
+        "id": "ring-inner-3",
+        "name": "Finland Lanseringsplan",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical"
+      },
+      {
+        "id": "ring-outer-1",
+        "name": "Plattform & Teknik",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-outer-2",
+        "name": "Franchise & Organisation",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-outer-3",
+        "name": "Innehåll & SEO",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "ag-1",
+        "name": "Soft Launch",
+        "color": "#F59E0B",
+        "visible": true
+      },
+      {
+        "id": "ag-2",
+        "name": "Officiell Lansering",
+        "color": "#10B981",
+        "visible": true
+      },
+      {
+        "id": "ag-3",
+        "name": "Optimering",
+        "color": "#06B6D4",
+        "visible": true
+      },
+      {
+        "id": "ag-4",
+        "name": "Teknisk Setup",
+        "color": "#8B5CF6",
+        "visible": true
+      },
+      {
+        "id": "ag-5",
+        "name": "Franchise",
+        "color": "#EF4444",
+        "visible": true
+      },
+      {
+        "id": "ag-6",
+        "name": "Innehållsproduktion",
+        "color": "#3B82F6",
+        "visible": true
+      },
+      {
+        "id": "ag-7",
+        "name": "Grindar & Trösklar",
+        "color": "#EC4899",
+        "visible": true
+      }
+    ],
+    "labels": [
+      {
+        "id": "label-1",
+        "name": "Kritisk milstolpe",
+        "color": "#DC2626",
+        "visible": true
+      },
+      {
+        "id": "label-2",
+        "name": "Lansering",
+        "color": "#10B981",
+        "visible": true
+      },
+      {
+        "id": "label-3",
+        "name": "G0 - Soft Launch",
+        "color": "#F59E0B",
+        "visible": true
+      },
+      {
+        "id": "label-4",
+        "name": "G1 - Full Lansering",
+        "color": "#10B981",
+        "visible": true
+      },
+      {
+        "id": "label-5",
+        "name": "G2 - Lokalt Lager",
+        "color": "#3B82F6",
+        "visible": true
+      }
+    ]
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "year": 2025,
+      "pageOrder": 1,
+      "title": "2025: E-handel Lanseringar",
+      "items": [
+        {
+          "id": "item-no-1",
+          "name": "Soft launch Norge v.46-47",
+          "startDate": "2025-11-10",
+          "endDate": "2025-11-23",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-1",
+          "labelId": "label-3",
+          "description": "20-50 testorder, verifiera betalningar/moms/frakt/returer"
+        },
+        {
+          "id": "item-no-2",
+          "name": "Vipps & betalningar live",
+          "startDate": "2025-11-10",
+          "endDate": "2025-11-16",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-4",
+          "description": "Vipps + kort, CS-mallar norska"
+        },
+        {
+          "id": "item-no-3",
+          "name": "G0: 20 testorder utan incident",
+          "startDate": "2025-11-17",
+          "endDate": "2025-11-23",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-7",
+          "labelId": "label-3",
+          "description": "Grind 0: Lokala betalningar fungerar, returflöde verifierat"
+        },
+        {
+          "id": "item-no-4",
+          "name": "Lansering Norge v.48",
+          "startDate": "2025-11-24",
+          "endDate": "2025-11-30",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-2",
+          "labelId": "label-2",
+          "description": "Pressnotis, 2-3 creators, paid social, SEO on-page"
+        },
+        {
+          "id": "item-no-5",
+          "name": "G1: CR 1.8% i 4 veckor, NPS 45+",
+          "startDate": "2025-11-24",
+          "endDate": "2025-12-31",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-7",
+          "labelId": "label-4",
+          "description": "Grind 1: Full lansering. Lokal returadress aktiv"
+        },
+        {
+          "id": "item-dk-1",
+          "name": "Soft launch Danmark v.46-47",
+          "startDate": "2025-11-10",
+          "endDate": "2025-11-23",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-1",
+          "labelId": "label-3",
+          "description": "20-50 testorder, verifiera betalningar/moms/frakt/returer"
+        },
+        {
+          "id": "item-dk-2",
+          "name": "MobilePay & betalningar live",
+          "startDate": "2025-11-10",
+          "endDate": "2025-11-16",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-4",
+          "description": "MobilePay + kort, CS-mallar danska"
+        },
+        {
+          "id": "item-dk-3",
+          "name": "G0: 20 testorder utan incident",
+          "startDate": "2025-11-17",
+          "endDate": "2025-11-23",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-7",
+          "labelId": "label-3",
+          "description": "Grind 0: Lokala betalningar fungerar, returflöde verifierat"
+        },
+        {
+          "id": "item-dk-4",
+          "name": "Förhandla snabb returadress DK",
+          "startDate": "2025-11-24",
+          "endDate": "2025-12-07",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-4",
+          "description": "Egen eller via partner, lokal retur i G1"
+        },
+        {
+          "id": "item-dk-5",
+          "name": "Lansering Danmark v.49",
+          "startDate": "2025-12-01",
+          "endDate": "2025-12-07",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-2",
+          "labelId": "label-2",
+          "description": "MobilePay i fokus, 2-3 creators, SEO on-page"
+        },
+        {
+          "id": "item-dk-6",
+          "name": "G1: CR 1.8% i 4 veckor, NPS 45+",
+          "startDate": "2025-12-01",
+          "endDate": "2025-12-31",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-7",
+          "labelId": "label-4",
+          "description": "Grind 1: Full lansering. Lokal returadress aktiv"
+        },
+        {
+          "id": "item-fi-1",
+          "name": "Soft launch Finland v.46-47",
+          "startDate": "2025-11-10",
+          "endDate": "2025-11-23",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-1",
+          "labelId": "label-3",
+          "description": "20-50 testorder, verifiera betalningar/moms/frakt/returer"
+        },
+        {
+          "id": "item-fi-2",
+          "name": "Finska bankbetalningar live",
+          "startDate": "2025-11-10",
+          "endDate": "2025-11-16",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-4",
+          "description": "Finska banker + kort, CS via extern partner"
+        },
+        {
+          "id": "item-fi-3",
+          "name": "G0: 20 testorder utan incident",
+          "startDate": "2025-11-17",
+          "endDate": "2025-11-23",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-7",
+          "labelId": "label-3",
+          "description": "Grind 0: Lokala betalningar fungerar, returflöde verifierat"
+        },
+        {
+          "id": "item-fi-4",
+          "name": "Förhandla returadress FI",
+          "startDate": "2025-12-08",
+          "endDate": "2025-12-21",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-4",
+          "description": "Partnerlösning om egen adress drar ut"
+        },
+        {
+          "id": "item-fi-5",
+          "name": "Lansering Finland v.51",
+          "startDate": "2025-12-15",
+          "endDate": "2025-12-21",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-2",
+          "labelId": "label-2",
+          "description": "Bankbetalningar i fokus, 2 creators, SEO on-page"
+        },
+        {
+          "id": "item-fi-6",
+          "name": "G1: CR 1.8% i 4 veckor, NPS 45+",
+          "startDate": "2025-12-15",
+          "endDate": "2025-12-31",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-7",
+          "labelId": "label-4",
+          "description": "Grind 1: Full lansering. Partnerlösning retur"
+        },
+        {
+          "id": "item-eval-1",
+          "name": "Utvärdering och stabilisering v.52",
+          "startDate": "2025-12-22",
+          "endDate": "2025-12-31",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-3",
+          "description": "CR, AOV, frakt/order, returer, CS-SLA, NPS"
+        },
+        {
+          "id": "item-eval-2",
+          "name": "Utvärdering och stabilisering v.52",
+          "startDate": "2025-12-22",
+          "endDate": "2025-12-31",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-3",
+          "description": "CR, AOV, frakt/order, returer, CS-SLA, NPS"
+        },
+        {
+          "id": "item-eval-3",
+          "name": "Utvärdering och stabilisering v.52",
+          "startDate": "2025-12-22",
+          "endDate": "2025-12-31",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-3",
+          "description": "CR, AOV, frakt/order, returer, CS-SLA, NPS"
+        },
+        {
+          "id": "item-tech-1",
+          "name": "Grundläggande lokalisering live",
+          "startDate": "2025-11-10",
+          "endDate": "2025-11-23",
+          "ringId": "ring-outer-1",
+          "activityId": "ag-4",
+          "description": "Startsida, kategorier, produktblad, storleksguider, returinfo"
+        },
+        {
+          "id": "item-content-1",
+          "name": "SEO on-page Norge",
+          "startDate": "2025-11-17",
+          "endDate": "2025-11-30",
+          "ringId": "ring-outer-3",
+          "activityId": "ag-6",
+          "description": "FAQ om läst/bredd/sula/passform, strukturerade data"
+        },
+        {
+          "id": "item-content-2",
+          "name": "SEO on-page Danmark",
+          "startDate": "2025-11-24",
+          "endDate": "2025-12-07",
+          "ringId": "ring-outer-3",
+          "activityId": "ag-6",
+          "description": "FAQ om läst/bredd/sula/passform, strukturerade data"
+        },
+        {
+          "id": "item-content-3",
+          "name": "SEO on-page Finland",
+          "startDate": "2025-12-08",
+          "endDate": "2025-12-21",
+          "ringId": "ring-outer-3",
+          "activityId": "ag-6",
+          "description": "FAQ om läst/bredd/sula/passform, strukturerade data"
+        },
+        {
+          "id": "item-content-4",
+          "name": "Norska creators & kampanjer",
+          "startDate": "2025-11-24",
+          "endDate": "2025-12-31",
+          "ringId": "ring-outer-3",
+          "activityId": "ag-6",
+          "description": "2-3 creators, paid social, storleks-/returkommunikation"
+        },
+        {
+          "id": "item-content-5",
+          "name": "Danska creators & kampanjer",
+          "startDate": "2025-12-01",
+          "endDate": "2025-12-31",
+          "ringId": "ring-outer-3",
+          "activityId": "ag-6",
+          "description": "2-3 creators, paid social med MobilePay-fokus"
+        },
+        {
+          "id": "item-content-6",
+          "name": "Finska creators & kampanjer",
+          "startDate": "2025-12-15",
+          "endDate": "2025-12-31",
+          "ringId": "ring-outer-3",
+          "activityId": "ag-6",
+          "description": "2 creators, lokalt språk viktigt"
+        }
+      ]
+    },
+    {
+      "id": "page-2",
+      "year": 2026,
+      "pageOrder": 2,
+      "title": "2026: Franchise & Skalning",
+      "items": [
+        {
+          "id": "item-2026-no-1",
+          "name": "Justering sortiment & storlekar NO",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-3",
+          "description": "Optimera utifrån faktisk efterfrågan, förbättrade guider"
+        },
+        {
+          "id": "item-2026-no-2",
+          "name": "KPI-mål Q1: Organisk +25%, CS <24h",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-3",
+          "description": "Returgrad 10-12%, CR 2.0-2.5%, NPS-uppföljning"
+        },
+        {
+          "id": "item-2026-no-3",
+          "name": "G2-tröskel: 1500-2000 order/månad i 6v",
+          "startDate": "2026-01-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-7",
+          "labelId": "label-5",
+          "description": "Grind 2: Aktivera lokalt lager/3PL när tröskel nås"
+        },
+        {
+          "id": "item-2026-no-4",
+          "name": "Click & Collect från Oslo-butik",
+          "startDate": "2026-04-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-inner-1",
+          "activityId": "ag-3",
+          "description": "Mål: 10% av order via C&C i Oslo"
+        },
+        {
+          "id": "item-2026-dk-1",
+          "name": "Justering sortiment & storlekar DK",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-3",
+          "description": "Optimera utifrån faktisk efterfrågan, förbättrade guider"
+        },
+        {
+          "id": "item-2026-dk-2",
+          "name": "KPI-mål Q1: Organisk +25%, CS <24h",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-3",
+          "description": "Returgrad 10-12%, CR 2.0-2.5%, NPS-uppföljning"
+        },
+        {
+          "id": "item-2026-dk-3",
+          "name": "G2-tröskel: 1500-2000 order/månad i 6v",
+          "startDate": "2026-01-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-7",
+          "labelId": "label-5",
+          "description": "Grind 2: Aktivera lokalt lager/3PL när tröskel nås"
+        },
+        {
+          "id": "item-2026-dk-4",
+          "name": "Click & Collect från Köpenhamn-butik",
+          "startDate": "2026-04-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-inner-2",
+          "activityId": "ag-3",
+          "description": "Mål: 10% av order via C&C i Köpenhamn"
+        },
+        {
+          "id": "item-2026-fi-1",
+          "name": "Justering sortiment & storlekar FI",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-3",
+          "description": "Optimera utifrån faktisk efterfrågan, förbättrade guider"
+        },
+        {
+          "id": "item-2026-fi-2",
+          "name": "KPI-mål Q1: Organisk +25%, CS <24h",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-3",
+          "description": "Returgrad 10-12%, CR 2.0-2.5%, NPS-uppföljning"
+        },
+        {
+          "id": "item-2026-fi-3",
+          "name": "G2-tröskel: 1200-1500 order/månad i 6v",
+          "startDate": "2026-01-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-7",
+          "labelId": "label-5",
+          "description": "Grind 2: Aktivera lokalt lager/3PL när tröskel nås"
+        },
+        {
+          "id": "item-2026-fi-4",
+          "name": "Click & Collect från Helsingfors-butik",
+          "startDate": "2026-04-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-inner-3",
+          "activityId": "ag-3",
+          "description": "Mål: 10% av order via C&C i Helsingfors"
+        },
+        {
+          "id": "item-2026-fr-1",
+          "name": "Färdigställ franchisehandbok Q1",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-outer-2",
+          "activityId": "ag-5",
+          "labelId": "label-1",
+          "description": "Avtal, royalty, avgiftsmodell, Store-in-a-box, demo-yta"
+        },
+        {
+          "id": "item-2026-fr-2",
+          "name": "Rekrytering franchisetagare NO/DK/FI",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-outer-2",
+          "activityId": "ag-5",
+          "labelId": "label-1",
+          "description": "Oslo, Köpenhamn, Helsingfors"
+        },
+        {
+          "id": "item-2026-fr-3",
+          "name": "Signera 1-3 franchisetagare Q2",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-outer-2",
+          "activityId": "ag-5",
+          "labelId": "label-2",
+          "description": "Byggnation, utbildning, pre-opening"
+        },
+        {
+          "id": "item-2026-fr-4",
+          "name": "Öppning pilotbutiker Oslo/KBH/HEL",
+          "startDate": "2026-06-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-outer-2",
+          "activityId": "ag-5",
+          "labelId": "label-2",
+          "description": "Första 90 dagar: NPS 55+, CR butik 25%+"
+        },
+        {
+          "id": "item-2026-fr-5",
+          "name": "Skala upp franchise Q3",
+          "startDate": "2026-07-01",
+          "endDate": "2026-09-30",
+          "ringId": "ring-outer-2",
+          "activityId": "ag-5",
+          "description": "Öppna 1-2 nya lägen om piloter når målen"
+        },
+        {
+          "id": "item-2026-fr-6",
+          "name": "B2B-spår: Företagsförsäljning Q3",
+          "startDate": "2026-07-01",
+          "endDate": "2026-09-30",
+          "ringId": "ring-outer-2",
+          "activityId": "ag-5",
+          "description": "Friskvårdspaket per land, KAM-process"
+        },
+        {
+          "id": "item-2026-fr-7",
+          "name": "Konsolidering & Bruttomarginal Q4",
+          "startDate": "2026-10-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-outer-2",
+          "activityId": "ag-3",
+          "description": "Inköpsvolymer, media-mix, plan 2027"
+        },
+        {
+          "id": "item-2026-log-1",
+          "name": "Beslutsunderlag G2 per land Q1",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-outer-1",
+          "activityId": "ag-3",
+          "description": "Om trösklar uppnås, teckna 3PL för Q2"
+        },
+        {
+          "id": "item-2026-log-2",
+          "name": "3PL-etablering NO/DK om tröskel nådd",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-outer-1",
+          "activityId": "ag-4",
+          "description": "Lokalt lager aktiveras per land vid G2"
+        },
+        {
+          "id": "item-2026-log-3",
+          "name": "3PL ytterligare land Q3",
+          "startDate": "2026-07-01",
+          "endDate": "2026-09-30",
+          "ringId": "ring-outer-1",
+          "activityId": "ag-4",
+          "description": "Aktivera om G2-tröskel passeras"
+        },
+        {
+          "id": "item-2026-log-4",
+          "name": "Micro-fulfillment från butiker Q4",
+          "startDate": "2026-10-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-outer-1",
+          "activityId": "ag-3",
+          "description": "Franchisebutiker som lokalt lager"
+        },
+        {
+          "id": "item-2026-content-1",
+          "name": "Innehåll med lokala frilansare",
+          "startDate": "2026-01-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-outer-3",
+          "activityId": "ag-6",
+          "description": "Content-resurs + frilansare NO/DK/FI"
+        }
+      ]
+    }
+  ]
+}

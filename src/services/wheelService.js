@@ -62,6 +62,7 @@ export const fetchUserWheels = async () => {
       )
     `)
     .eq('user_id', user.id) // CRITICAL: Only fetch wheels owned by this user
+    .eq('is_template', false) // CRITICAL: Exclude templates (they show in separate section for admins)
     .order('created_at', { ascending: false }); // Sort by creation date (newest first)
 
   if (error) throw error;
