@@ -132,9 +132,10 @@ export const emailLayout = (content, preheader = '') => `
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #1B2A63 0%, #2D4EC8 100%); padding: 32px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
-                <span style="color: #36C2C6;">YEAR</span><span style="color: #A4E6E0;">WHEEL</span>
-              </h1>
+              <!-- Logo -->
+              <div style="margin-bottom: 16px;">
+                <img src="https://yearwheel.se/banner.webp" alt="YearWheel Logo" width="180" style="max-width: 180px; height: auto; display: inline-block;">
+              </div>
               <p style="margin: 8px 0 0 0; color: #A4E6E0; font-size: 14px; font-weight: 400;">
                 Visualisera och planera ditt år!
               </p>
