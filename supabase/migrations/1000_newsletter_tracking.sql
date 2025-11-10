@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS newsletter_sends (
   -- Store template data for reuse
   template_type TEXT CHECK (template_type IN ('newsletter', 'feature', 'tips', 'announcement')),
   template_data JSONB, -- Stores the form data so newsletters can be reused
+  is_draft BOOLEAN DEFAULT false, -- True if saved as draft, false if sent
   
   sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

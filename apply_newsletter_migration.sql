@@ -34,6 +34,15 @@ BEGIN
     ALTER TABLE newsletter_sends 
     ADD COLUMN template_data JSONB;
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'newsletter_sends' 
+    AND column_name = 'is_draft'
+  ) THEN
+    ALTER TABLE newsletter_sends 
+    ADD COLUMN is_draft BOOLEAN DEFAULT false;
+  END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_newsletter_sends_sent_by ON newsletter_sends(sent_by);
@@ -83,3 +92,4 @@ CREATE POLICY "Admin can delete newsletter records"
 
 COMMENT ON TABLE newsletter_sends IS 'Tracks newsletter sends for admin dashboard analytics';
 COMMENT ON COLUMN newsletter_sends.template_data IS 'JSONB storage of template form data for reuse';
+COMMENT ON COLUMN newsletter_sends.is_draft IS 'True if saved as draft, false if actually sent';

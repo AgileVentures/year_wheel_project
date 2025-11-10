@@ -6,13 +6,16 @@ import {
   tipsTemplate, 
   simpleAnnouncementTemplate 
 } from '../../utils/emailTemplates';
-import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2 } from 'lucide-react';
+import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save } from 'lucide-react';
 
 export default function NewsletterManager() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState([]);
+  const [drafts, setDrafts] = useState([]);
   const [preview, setPreview] = useState(null);
+  const [editingDraftId, setEditingDraftId] = useState(null);
   
   // Form state
   const [recipientType, setRecipientType] = useState('all');
@@ -52,17 +55,31 @@ export default function NewsletterManager() {
 
   useEffect(() => {
     loadHistory();
+    loadDrafts();
   }, []);
 
   const loadHistory = async () => {
     const { data, error } = await supabase
       .from('newsletter_sends')
       .select('*')
+      .eq('is_draft', false)
       .order('sent_at', { ascending: false })
       .limit(20);
     
     if (!error && data) {
       setHistory(data);
+    }
+  };
+
+  const loadDrafts = async () => {
+    const { data, error } = await supabase
+      .from('newsletter_sends')
+      .select('*')
+      .eq('is_draft', true)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setDrafts(data);
     }
   };
 
@@ -146,8 +163,18 @@ export default function NewsletterManager() {
       const result = await response.json();
 
       if (response.ok) {
+        // If we were editing a draft, delete it since we sent it
+        if (editingDraftId) {
+          await supabase
+            .from('newsletter_sends')
+            .delete()
+            .eq('id', editingDraftId);
+          setEditingDraftId(null);
+        }
+        
         alert(`✅ Newsletter skickat till ${result.totalRecipients} mottagare!`);
         loadHistory();
+        loadDrafts();
         // Reset form
         setSubject('');
         setPreview(null);
@@ -166,8 +193,9 @@ export default function NewsletterManager() {
     // Load the template data
     if (send.template_type && send.template_data) {
       setTemplateType(send.template_type);
-      setSubject(`${send.subject} (Kopia)`);
+      setSubject(send.is_draft ? send.subject : `${send.subject} (Kopia)`);
       setRecipientType(send.recipient_type);
+      setEditingDraftId(send.is_draft ? send.id : null);
       
       switch (send.template_type) {
         case 'newsletter':
@@ -205,9 +233,79 @@ export default function NewsletterManager() {
       if (error) throw error;
 
       loadHistory();
+      loadDrafts();
     } catch (error) {
       console.error('Delete error:', error);
       alert('Ett fel uppstod vid borttagning');
+    }
+  };
+
+  const saveDraft = async () => {
+    if (!subject) {
+      alert('Ange en ämnesrad');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Get current template data based on type
+      let currentTemplateData = null;
+      switch (templateType) {
+        case 'newsletter':
+          currentTemplateData = newsletter;
+          break;
+        case 'feature':
+          currentTemplateData = feature;
+          break;
+        case 'tips':
+          currentTemplateData = tips;
+          break;
+        case 'announcement':
+          currentTemplateData = announcement;
+          break;
+      }
+
+      const draftData = {
+        sent_by: session.user.id,
+        recipient_type: recipientType,
+        subject: subject,
+        recipient_count: 0,
+        success_count: 0,
+        error_count: 0,
+        template_type: templateType,
+        template_data: currentTemplateData,
+        is_draft: true,
+        created_at: new Date().toISOString()
+      };
+
+      if (editingDraftId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('newsletter_sends')
+          .update(draftData)
+          .eq('id', editingDraftId);
+
+        if (error) throw error;
+        alert('✅ Utkast uppdaterat!');
+      } else {
+        // Create new draft
+        const { error } = await supabase
+          .from('newsletter_sends')
+          .insert([draftData]);
+
+        if (error) throw error;
+        alert('✅ Utkast sparat!');
+      }
+
+      loadDrafts();
+    } catch (error) {
+      console.error('Save draft error:', error);
+      alert('Ett fel uppstod vid sparande');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -425,6 +523,15 @@ export default function NewsletterManager() {
 
             <div className="flex gap-3 mt-6">
               <button
+                onClick={saveDraft}
+                disabled={saving}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
+              >
+                <Save size={18} />
+                {saving ? 'Sparar...' : editingDraftId ? 'Uppdatera' : 'Spara'}
+              </button>
+              
+              <button
                 onClick={generatePreview}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
               >
@@ -443,8 +550,48 @@ export default function NewsletterManager() {
             </div>
           </div>
 
+          {/* Drafts */}
+          {drafts.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Utkast</h2>
+              <div className="space-y-3">
+                {drafts.map(draft => (
+                  <div key={draft.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-md hover:bg-amber-100 transition-colors border border-amber-200">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900 text-sm">{draft.subject}</p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Sparat {new Date(draft.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      {draft.template_type && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-amber-200 text-amber-800 text-xs rounded">
+                          {draft.template_type}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => reuseNewsletter(draft)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Redigera utkast"
+                      >
+                        <Copy size={16} />
+                      </button>
+                      <button
+                        onClick={() => deleteNewsletter(draft.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Ta bort utkast"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* History */}
-          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Historik</h2>
             <div className="space-y-3">
               {history.map(send => (

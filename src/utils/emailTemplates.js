@@ -136,7 +136,7 @@ export const emailLayout = (content, preheader = '') => `
                 <span style="color: #36C2C6;">YEAR</span><span style="color: #A4E6E0;">WHEEL</span>
               </h1>
               <p style="margin: 8px 0 0 0; color: #A4E6E0; font-size: 14px; font-weight: 400;">
-                Visualisera och planera ditt år med AI
+                Visualisera och planera ditt år!
               </p>
             </td>
           </tr>
