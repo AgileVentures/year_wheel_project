@@ -6,7 +6,7 @@ import {
   tipsTemplate, 
   simpleAnnouncementTemplate 
 } from '../../utils/emailTemplates';
-import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save } from 'lucide-react';
+import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save, X } from 'lucide-react';
 
 export default function NewsletterManager() {
   const [loading, setLoading] = useState(false);
@@ -16,6 +16,8 @@ export default function NewsletterManager() {
   const [drafts, setDrafts] = useState([]);
   const [preview, setPreview] = useState(null);
   const [editingDraftId, setEditingDraftId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   
   // Form state
   const [recipientType, setRecipientType] = useState('all');
@@ -52,6 +54,16 @@ export default function NewsletterManager() {
     message: '',
     cta: { text: '', url: '' }
   });
+
+  // Helper functions for UI feedback
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  const showConfirm = (message, onConfirm) => {
+    setConfirmDialog({ message, onConfirm });
+  };
 
   useEffect(() => {
     loadHistory();
@@ -106,20 +118,17 @@ export default function NewsletterManager() {
 
   const sendNewsletter = async () => {
     if (!subject) {
-      alert('Ange en ämnesrad');
+      showToast('Ange en ämnesrad', 'error');
       return;
     }
     
     if (!preview) {
-      alert('Generera en förhandsgranskning först');
+      showToast('Generera en förhandsgranskning först', 'error');
       return;
     }
 
-    if (!confirm(`Är du säker på att du vill skicka till "${recipientType}" mottagare?`)) {
-      return;
-    }
-
-    setSending(true);
+    showConfirm(`Är du säker på att du vill skicka till "${recipientType}" mottagare?`, async () => {
+      setSending(true);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -172,21 +181,22 @@ export default function NewsletterManager() {
           setEditingDraftId(null);
         }
         
-        alert(`✅ Newsletter skickat till ${result.totalRecipients} mottagare!`);
+        showToast(`Newsletter skickat till ${result.totalRecipients} mottagare!`, 'success');
         loadHistory();
         loadDrafts();
         // Reset form
         setSubject('');
         setPreview(null);
       } else {
-        alert(`❌ Fel: ${result.error}`);
+        showToast(`Fel: ${result.error}`, 'error');
       }
     } catch (error) {
       console.error('Send error:', error);
-      alert('Ett fel uppstod vid skickning');
+      showToast('Ett fel uppstod vid skickning', 'error');
     } finally {
       setSending(false);
     }
+    });
   };
 
   const reuseNewsletter = (send) => {
@@ -215,34 +225,33 @@ export default function NewsletterManager() {
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      alert('Denna newsletter har ingen mall-data att återanvända');
+      showToast('Denna newsletter har ingen mall-data att återanvända', 'error');
     }
   };
 
   const deleteNewsletter = async (id) => {
-    if (!confirm('Är du säker på att du vill ta bort denna newsletter från historiken?')) {
-      return;
-    }
+    showConfirm('Är du säker på att du vill ta bort denna newsletter från historiken?', async () => {
+      try {
+        const { error } = await supabase
+          .from('newsletter_sends')
+          .delete()
+          .eq('id', id);
 
-    try {
-      const { error } = await supabase
-        .from('newsletter_sends')
-        .delete()
-        .eq('id', id);
+        if (error) throw error;
 
-      if (error) throw error;
-
-      loadHistory();
-      loadDrafts();
-    } catch (error) {
-      console.error('Delete error:', error);
-      alert('Ett fel uppstod vid borttagning');
-    }
+        loadHistory();
+        loadDrafts();
+        showToast('Newsletter borttagen', 'success');
+      } catch (error) {
+        console.error('Delete error:', error);
+        showToast('Ett fel uppstod vid borttagning', 'error');
+      }
+    });
   };
 
   const saveDraft = async () => {
     if (!subject) {
-      alert('Ange en ämnesrad');
+      showToast('Ange en ämnesrad', 'error');
       return;
     }
 
@@ -289,7 +298,7 @@ export default function NewsletterManager() {
           .eq('id', editingDraftId);
 
         if (error) throw error;
-        alert('✅ Utkast uppdaterat!');
+        showToast('Utkast uppdaterat!', 'success');
       } else {
         // Create new draft
         const { error } = await supabase
@@ -297,13 +306,13 @@ export default function NewsletterManager() {
           .insert([draftData]);
 
         if (error) throw error;
-        alert('✅ Utkast sparat!');
+        showToast('Utkast sparat!', 'success');
       }
 
       loadDrafts();
     } catch (error) {
       console.error('Save draft error:', error);
-      alert('Ett fel uppstod vid sparande');
+      showToast('Ett fel uppstod vid sparande', 'error');
     } finally {
       setSaving(false);
     }
@@ -660,6 +669,57 @@ export default function NewsletterManager() {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-8 right-8 z-50 animate-slide-up">
+          <div className={`flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
+            toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          } text-white min-w-[320px]`}>
+            {toast.type === 'success' ? (
+              <CheckCircle size={24} />
+            ) : (
+              <AlertCircle size={24} />
+            )}
+            <span className="flex-1 font-medium">{toast.message}</span>
+            <button
+              onClick={() => setToast(null)}
+              className="hover:bg-white/20 rounded p-1 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Bekräfta åtgärd</h3>
+              <p className="text-gray-600">{confirmDialog.message}</p>
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                  setConfirmDialog(null);
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
+              >
+                Bekräfta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
