@@ -13,8 +13,14 @@ class YearWheel {
     this.context = canvas.getContext("2d");
     this.year = year;
     this.title = title;
-    this.outerRingColor = colors[0];
-    this.sectionColors = colors;
+    
+    // Ensure colors is always a valid array with at least one color
+    const validColors = (Array.isArray(colors) && colors.length > 0) 
+      ? colors 
+      : ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]; // Default palette
+    
+    this.outerRingColor = validColors[0];
+    this.sectionColors = validColors;
     this.size = size;
     this.events = events;
     this.options = options;
@@ -800,6 +806,11 @@ class YearWheel {
 
   // Create very light background color from template color for ring backgrounds
   getLightBackgroundColor(hexColor) {
+    // Safety check: if hexColor is undefined, use a default
+    if (!hexColor || typeof hexColor !== 'string') {
+      hexColor = '#F5E6D3'; // Default beige color
+    }
+    
     const r = parseInt(hexColor.slice(1, 3), 16);
     const g = parseInt(hexColor.slice(3, 5), 16);
     const b = parseInt(hexColor.slice(5, 7), 16);

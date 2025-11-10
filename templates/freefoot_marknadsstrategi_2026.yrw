@@ -1,0 +1,349 @@
+{
+  "version": "2.0",
+  "metadata": {
+    "title": "Freefoot Marknadsstrategi 2026",
+    "year": 2026,
+    "createdAt": "2025-11-10",
+    "description": "Nordisk expansion: E-commerce, Franchise, B2B och Varumärkesbyggande"
+  },
+  "settings": {
+    "showWeekRing": true,
+    "showMonthRing": true,
+    "showRingNames": true,
+    "weekRingDisplayMode": "week-numbers",
+    "showLabels": true,
+    "colors": {
+      "weekRing": "#94A3B8",
+      "monthRing": "#334155"
+    }
+  },
+  "structure": {
+    "rings": [
+      {
+        "id": "ring-1",
+        "name": "E-commerce Norden",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-2",
+        "name": "Franchise",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-3",
+        "name": "B2B/KAM",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-4",
+        "name": "Varumärke & Kommunikation",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-5",
+        "name": "Butiksdesign",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-6",
+        "name": "Stockholm Ny Butik",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "ag-1",
+        "name": "Strategi & Planering",
+        "color": "#3B82F6",
+        "visible": true
+      },
+      {
+        "id": "ag-2",
+        "name": "Utveckling & Design",
+        "color": "#8B5CF6",
+        "visible": true
+      },
+      {
+        "id": "ag-3",
+        "name": "Lansering & Etablering",
+        "color": "#10B981",
+        "visible": true
+      },
+      {
+        "id": "ag-4",
+        "name": "Rekrytering",
+        "color": "#F59E0B",
+        "visible": true
+      },
+      {
+        "id": "ag-5",
+        "name": "Implementering",
+        "color": "#EF4444",
+        "visible": true
+      },
+      {
+        "id": "ag-6",
+        "name": "Uppföljning & Optimering",
+        "color": "#06B6D4",
+        "visible": true
+      }
+    ],
+    "labels": [
+      {
+        "id": "label-1",
+        "name": "Kritisk milstolpe",
+        "color": "#DC2626",
+        "visible": true
+      },
+      {
+        "id": "label-2",
+        "name": "Pågående",
+        "color": "#059669",
+        "visible": true
+      },
+      {
+        "id": "label-3",
+        "name": "Pilot",
+        "color": "#7C3AED",
+        "visible": true
+      }
+    ]
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "year": 2026,
+      "pageOrder": 1,
+      "title": "Freefoot Marknadsstrategi 2026",
+      "items": [
+        {
+          "id": "item-1",
+          "name": "Teknisk genomgång e-commerce",
+          "startDate": "2026-01-01",
+          "endDate": "2026-01-31",
+          "ringId": "ring-1",
+          "activityId": "ag-1",
+          "labelId": "label-1",
+          "description": "Optimering av plattform: användarupplevelse, konvertering, skalbarhet"
+        },
+        {
+          "id": "item-2",
+          "name": "Lansering Norge, Danmark, Finland",
+          "startDate": "2026-01-15",
+          "endDate": "2026-03-31",
+          "ringId": "ring-1",
+          "activityId": "ag-3",
+          "labelId": "label-1",
+          "description": "Fullständig lokalisering: språk, betalning, logistik"
+        },
+        {
+          "id": "item-3",
+          "name": "E-commerce optimering pågående",
+          "startDate": "2026-04-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-1",
+          "activityId": "ag-6",
+          "labelId": "label-2",
+          "description": "Kontinuerlig optimering baserat på data och kundinsikter"
+        },
+        {
+          "id": "item-4",
+          "name": "Utveckling franchisekoncept",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-2",
+          "activityId": "ag-2",
+          "labelId": "label-1",
+          "description": "Affärsmodell, avtal, supportstruktur, kvalitetskriterier"
+        },
+        {
+          "id": "item-5",
+          "name": "Rekrytering franchisetagare",
+          "startDate": "2026-04-01",
+          "endDate": "2026-09-30",
+          "ringId": "ring-2",
+          "activityId": "ag-4",
+          "labelId": "label-1",
+          "description": "Norge, Danmark, Finland"
+        },
+        {
+          "id": "item-6",
+          "name": "Pilotbutiker franchise",
+          "startDate": "2026-07-01",
+          "endDate": "2026-09-30",
+          "ringId": "ring-2",
+          "activityId": "ag-3",
+          "labelId": "label-3",
+          "description": "Etablering första franchisebutiker Norden"
+        },
+        {
+          "id": "item-7",
+          "name": "Uppföljning franchise",
+          "startDate": "2026-10-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-2",
+          "activityId": "ag-6",
+          "description": "Finjustering av modell och processer"
+        },
+        {
+          "id": "item-8",
+          "name": "Rekrytera KAM-ansvarig",
+          "startDate": "2026-01-01",
+          "endDate": "2026-02-28",
+          "ringId": "ring-3",
+          "activityId": "ag-4",
+          "labelId": "label-1",
+          "description": "Key Account Manager för B2B-försäljning"
+        },
+        {
+          "id": "item-9",
+          "name": "Uppstart B2B-försäljning",
+          "startDate": "2026-03-01",
+          "endDate": "2026-04-30",
+          "ringId": "ring-3",
+          "activityId": "ag-3",
+          "labelId": "label-1",
+          "description": "Identifiera partners: företagshälsa, idrottsföreningar, HR"
+        },
+        {
+          "id": "item-10",
+          "name": "B2B-försäljning pågående",
+          "startDate": "2026-05-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-3",
+          "activityId": "ag-6",
+          "labelId": "label-2",
+          "description": "Utveckla B2B-erbjudanden och prissättning"
+        },
+        {
+          "id": "item-11",
+          "name": "Målgruppsanalys",
+          "startDate": "2026-01-01",
+          "endDate": "2026-02-28",
+          "ringId": "ring-4",
+          "activityId": "ag-1",
+          "description": "Fördjupad analys och definition av kommunikationsplattform"
+        },
+        {
+          "id": "item-12",
+          "name": "Innehållsstrategi",
+          "startDate": "2026-03-01",
+          "endDate": "2026-04-30",
+          "ringId": "ring-4",
+          "activityId": "ag-2",
+          "description": "Strategi för alla kanaler: sociala medier, e-post, butik, webb"
+        },
+        {
+          "id": "item-13",
+          "name": "Marknadsföring in-house",
+          "startDate": "2026-05-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-4",
+          "activityId": "ag-5",
+          "labelId": "label-2",
+          "description": "All produktion av marknadsföring och sociala medier internt"
+        },
+        {
+          "id": "item-14",
+          "name": "Designmanual butik",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-5",
+          "activityId": "ag-2",
+          "labelId": "label-1",
+          "description": "Manual för interiör, skyltning, produktpresentation"
+        },
+        {
+          "id": "item-15",
+          "name": "Implementering befintliga butiker",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-5",
+          "activityId": "ag-5",
+          "description": "Stockholm, Göteborg, Malmö enligt ny designmanual"
+        },
+        {
+          "id": "item-16",
+          "name": "Design i nya etableringar",
+          "startDate": "2026-07-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-5",
+          "activityId": "ag-5",
+          "labelId": "label-2",
+          "description": "Designmanual som grund för franchise och nya butiker"
+        },
+        {
+          "id": "item-17",
+          "name": "Lokalisering Stockholm",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-6",
+          "activityId": "ag-1",
+          "labelId": "label-1",
+          "description": "Affärsläge och förhandling"
+        },
+        {
+          "id": "item-18",
+          "name": "Etablering & lansering",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-6",
+          "activityId": "ag-3",
+          "labelId": "label-1",
+          "description": "Ny Stockholmsbutik enligt designmanual - varumärkesflagskepp"
+        },
+        {
+          "id": "item-19",
+          "name": "Drift ny butik",
+          "startDate": "2026-07-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-6",
+          "activityId": "ag-6",
+          "labelId": "label-2",
+          "description": "Referens för franchisekoncept"
+        },
+        {
+          "id": "item-20",
+          "name": "Rekrytera Marknadsansvarig",
+          "startDate": "2026-01-01",
+          "endDate": "2026-02-15",
+          "ringId": "ring-4",
+          "activityId": "ag-4",
+          "labelId": "label-1",
+          "description": "Teamledare för nytt marknadsteam"
+        },
+        {
+          "id": "item-21",
+          "name": "Rekrytera E-commerce-ansvarig",
+          "startDate": "2026-01-01",
+          "endDate": "2026-02-15",
+          "ringId": "ring-1",
+          "activityId": "ag-4",
+          "labelId": "label-1",
+          "description": "Äger digital försäljning och UX"
+        },
+        {
+          "id": "item-22",
+          "name": "Utvärdering alla initiativ",
+          "startDate": "2026-10-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-4",
+          "activityId": "ag-6",
+          "description": "Uppföljning KPI:er och planering 2027"
+        }
+      ]
+    }
+  ]
+}

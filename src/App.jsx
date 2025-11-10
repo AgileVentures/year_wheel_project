@@ -3715,9 +3715,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       })
     }), { type: 'addItem' });
 
-    // Persist to database
-    persistMultipleItems(itemsToAdd, { reason: 'item-create' }).catch(() => {});
-  }, [currentPageId, setWheelState, persistMultipleItems]);
+    // Queue save to prevent race conditions
+    if (wheelId) {
+      const snapshot = buildWheelSnapshot();
+      enqueueSave(snapshot, { 
+        reason: 'add-items',
+        itemIds: itemsToAdd.map(i => i.id)
+      });
+    }
+  }, [currentPageId, wheelId, setWheelState, buildWheelSnapshot, enqueueSave]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
     if (!itemId || !currentPageId) return;
@@ -3744,8 +3750,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       })
     }), { type: 'deleteItem' });
 
-    persistItemDeletion(itemId, { reason: 'delete-item' }).catch(() => {});
-  }, [currentPageId, setWheelState, persistItemDeletion]);
+    // Queue save to prevent race conditions
+    if (wheelId) {
+      const snapshot = buildWheelSnapshot();
+      enqueueSave(snapshot, { 
+        reason: 'delete-item',
+        itemId: itemId
+      });
+    }
+
+    showToast(itemName ? `${itemName} raderad` : 'Aktivitet raderad', 'success');
+  }, [currentPageId, wheelId, setWheelState, buildWheelSnapshot, enqueueSave, showToast]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
@@ -3761,10 +3776,59 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         try {
           const data = JSON.parse(readerEvent.target.result);
           
-          // Validate the data structure (allow empty title)
-          // Support both old format (wheelStructure) and new format (organizationData)
-          const hasOrgData = data.organizationData || data.wheelStructure;
-          if (data.title === undefined || !data.year || (!data.ringsData && !hasOrgData)) {
+          // Support both NEW format (v2.0 with metadata/structure/pages) and OLD format (flat)
+          const isNewFormat = data.version === "2.0" && data.metadata;
+          
+          let normalizedData;
+          if (isNewFormat) {
+            // NEW FORMAT: Convert to flat structure for processing
+            // Handle colors - new format has object, old format has array
+            let normalizedColors;
+            if (data.settings?.colors) {
+              if (Array.isArray(data.settings.colors)) {
+                normalizedColors = data.settings.colors;
+              } else {
+                // Convert object format to array (backwards compatibility)
+                normalizedColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]; // Default palette
+              }
+            } else {
+              normalizedColors = ["#F5E6D3", "#A8DCD1", "#F4A896", "#B8D4E8"]; // Default palette
+            }
+            
+            normalizedData = {
+              title: data.metadata.title,
+              year: String(data.metadata.year),
+              colors: normalizedColors,
+              showWeekRing: data.settings?.showWeekRing ?? true,
+              showMonthRing: data.settings?.showMonthRing ?? true,
+              showRingNames: data.settings?.showRingNames ?? true,
+              showLabels: data.settings?.showLabels ?? false,
+              weekRingDisplayMode: data.settings?.weekRingDisplayMode || 'week-numbers',
+              organizationData: {
+                rings: data.structure?.rings || [],
+                activityGroups: data.structure?.activityGroups || [],
+                labels: data.structure?.labels || [],
+                items: [] // Will be populated from pages
+              },
+              pages: data.pages || []
+            };
+            
+            // Collect all items from all pages
+            if (data.pages && data.pages.length > 0) {
+              data.pages.forEach(page => {
+                if (page.items && page.items.length > 0) {
+                  normalizedData.organizationData.items.push(...page.items);
+                }
+              });
+            }
+          } else {
+            // OLD FORMAT: Use as-is
+            normalizedData = data;
+          }
+          
+          // Validate the normalized data structure
+          const hasOrgData = normalizedData.organizationData || normalizedData.wheelStructure;
+          if (normalizedData.title === undefined || !normalizedData.year || (!normalizedData.ringsData && !hasOrgData)) {
             throw new Error('Invalid file format');
           }
 
@@ -3777,7 +3841,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           // Process organization data BEFORE setting state
           // Support both organizationData (new) and wheelStructure (old) naming
           let processedOrgData;
-          const sourceOrgData = data.organizationData || data.wheelStructure;
+          const sourceOrgData = normalizedData.organizationData || normalizedData.wheelStructure;
           
           if (sourceOrgData) {
             processedOrgData = { ...sourceOrgData };
@@ -3855,12 +3919,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               
               // Save immediately to prevent realtime from overwriting
               await updateWheel(wheelId, {
-                title: data.title,
-                year: parseInt(data.year),
-                colors: data.colors || colors,
-                showWeekRing: data.showWeekRing ?? showWeekRing,
-                showMonthRing: data.showMonthRing ?? showMonthRing,
-                showRingNames: data.showRingNames ?? showRingNames,
+                title: normalizedData.title,
+                year: parseInt(normalizedData.year),
+                colors: normalizedData.colors || colors,
+                showWeekRing: normalizedData.showWeekRing ?? showWeekRing,
+                showMonthRing: normalizedData.showMonthRing ?? showMonthRing,
+                showRingNames: normalizedData.showRingNames ?? showRingNames,
               });
               
               // MULTI-YEAR IMPORT: Group items by year from startDate
@@ -3881,7 +3945,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               });
               
               // Add items without dates to the file's main year
-              const mainYear = parseInt(data.year);
+              const mainYear = parseInt(normalizedData.year);
               if (itemsWithoutDate.length > 0) {
                 if (!itemsByYear[mainYear]) {
                   itemsByYear[mainYear] = [];
@@ -3927,7 +3991,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               }
               const sortedPreparedPages = [...preparedPages].sort((a, b) => a.year - b.year);
 
-              const fileYear = Number.parseInt(data.year, 10);
+              const fileYear = Number.parseInt(normalizedData.year, 10);
               const pageForFileYear = sortedPreparedPages.find((page) => page.year === fileYear) || sortedPreparedPages[0];
 
               if (pageForFileYear) {
@@ -3936,14 +4000,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                   ...prev,
                   metadata: {
                     ...prev.metadata,
-                    title: data.title,
+                    title: normalizedData.title,
                     year: String(pageForFileYear.year || fileYear),
-                    colors: data.colors || prev.metadata.colors,
-                    showWeekRing: data.showWeekRing ?? prev.metadata.showWeekRing,
-                    showMonthRing: data.showMonthRing ?? prev.metadata.showMonthRing,
-                    showRingNames: data.showRingNames ?? prev.metadata.showRingNames,
-                    showLabels: data.showLabels ?? prev.metadata.showLabels,
-                    weekRingDisplayMode: data.weekRingDisplayMode ?? prev.metadata.weekRingDisplayMode
+                    colors: normalizedData.colors || prev.metadata.colors,
+                    showWeekRing: normalizedData.showWeekRing ?? prev.metadata.showWeekRing,
+                    showMonthRing: normalizedData.showMonthRing ?? prev.metadata.showMonthRing,
+                    showRingNames: normalizedData.showRingNames ?? prev.metadata.showRingNames,
+                    showLabels: normalizedData.showLabels ?? prev.metadata.showLabels,
+                    weekRingDisplayMode: normalizedData.weekRingDisplayMode ?? prev.metadata.weekRingDisplayMode
                   },
                   structure: {
                     rings: [...processedOrgData.rings],
@@ -3963,13 +4027,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 // Update latestValuesRef for save operations
                 latestValuesRef.current = {
                   ...latestValuesRef.current,
-                  title: data.title,
-                  colors: data.colors || colors,
-                  showWeekRing: data.showWeekRing ?? showWeekRing,
-                  showMonthRing: data.showMonthRing ?? showMonthRing,
-                  showRingNames: data.showRingNames ?? showRingNames,
-                  showLabels: data.showLabels ?? showLabels,
-                  weekRingDisplayMode: data.weekRingDisplayMode ?? weekRingDisplayMode,
+                  title: normalizedData.title,
+                  colors: normalizedData.colors || colors,
+                  showWeekRing: normalizedData.showWeekRing ?? showWeekRing,
+                  showMonthRing: normalizedData.showMonthRing ?? showMonthRing,
+                  showRingNames: normalizedData.showRingNames ?? showRingNames,
+                  showLabels: normalizedData.showLabels ?? showLabels,
+                  weekRingDisplayMode: normalizedData.weekRingDisplayMode ?? weekRingDisplayMode,
                   currentPageId: pageForFileYear.id,
                   structure: {
                     rings: [...processedOrgData.rings],
@@ -3998,32 +4062,38 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }
 
           // Update state AFTER save attempt (always update so user can see the data)
-          // BATCH title, colors, and wheelStructure together to prevent race condition
-          const fileUpdates = {};
-          if (data.title) fileUpdates.title = data.title;
-          if (data.colors) fileUpdates.colors = data.colors;
-          fileUpdates.structure = {
-            rings: [...processedOrgData.rings],
-            activityGroups: [...processedOrgData.activityGroups],
-            labels: [...processedOrgData.labels],
-          };
-          setUndoableStates(fileUpdates);
+          // Use setWheelState to update the wheel state (not setUndoableStates)
+          if (!wheelId) {
+            // localStorage mode - update state directly
+            const fileUpdates = {
+              metadata: {
+                ...wheelState.metadata,
+                title: normalizedData.title,
+                year: normalizedData.year,
+                colors: normalizedData.colors,
+                showWeekRing: normalizedData.showWeekRing,
+                showMonthRing: normalizedData.showMonthRing,
+                showRingNames: normalizedData.showRingNames,
+                showLabels: normalizedData.showLabels,
+                weekRingDisplayMode: normalizedData.weekRingDisplayMode
+              },
+              structure: {
+                rings: [...processedOrgData.rings],
+                activityGroups: [...processedOrgData.activityGroups],
+                labels: [...processedOrgData.labels],
+              }
+            };
+            setWheelState(fileUpdates);
+          }
           
           // Clear undo history after file import (new data context)
           clearHistory();
           
-          // Set non-undoable states separately
-          setYear(data.year);
-          // Set ringsData first (for backward compatibility with old format)
-          if (data.ringsData) setRingsData(data.ringsData);
+          // Set ringsData for backward compatibility with old format
+          if (normalizedData.ringsData) setRingsData(normalizedData.ringsData);
           
-          if (data.showWeekRing !== undefined) setShowWeekRing(data.showWeekRing);
-          if (data.showMonthRing !== undefined) setShowMonthRing(data.showMonthRing);
-          if (data.showYearEvents !== undefined) setShowYearEvents(data.showYearEvents);
-          if (data.showSeasonRing !== undefined) setShowSeasonRing(data.showSeasonRing);
-          if (data.showRingNames !== undefined) setShowRingNames(data.showRingNames);
-          if (data.showLabels !== undefined) setShowLabels(data.showLabels);
-          if (data.weekRingDisplayMode) setWeekRingDisplayMode(data.weekRingDisplayMode);
+          if (normalizedData.showYearEvents !== undefined) setShowYearEvents(normalizedData.showYearEvents);
+          if (normalizedData.showSeasonRing !== undefined) setShowSeasonRing(normalizedData.showSeasonRing);
 
           if (!wheelId) {
             // localStorage mode - show success after state update

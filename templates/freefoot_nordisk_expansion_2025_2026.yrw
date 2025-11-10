@@ -1,0 +1,603 @@
+{
+  "version": "2.0",
+  "metadata": {
+    "title": "Freefoot Nordisk Expansion 2025-2026",
+    "year": 2025,
+    "createdAt": "2025-11-10",
+    "description": "E-handel Norge/Danmark/Finland Q4 2025, Franchise Q2 2026"
+  },
+  "settings": {
+    "showWeekRing": true,
+    "showMonthRing": true,
+    "showRingNames": true,
+    "weekRingDisplayMode": "week-numbers",
+    "showLabels": true,
+    "colors": {
+      "weekRing": "#94A3B8",
+      "monthRing": "#334155"
+    }
+  },
+  "structure": {
+    "rings": [
+      {
+        "id": "ring-1",
+        "name": "Norge",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-2",
+        "name": "Danmark",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-3",
+        "name": "Finland",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-4",
+        "name": "Franchisekoncept",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-5",
+        "name": "Plattform & Teknik",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      },
+      {
+        "id": "ring-6",
+        "name": "Organisation & Innehåll",
+        "type": "outer",
+        "visible": true,
+        "orientation": "horizontal"
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "ag-1",
+        "name": "Förstudie & Planering",
+        "color": "#3B82F6",
+        "visible": true
+      },
+      {
+        "id": "ag-2",
+        "name": "Teknisk Utveckling",
+        "color": "#8B5CF6",
+        "visible": true
+      },
+      {
+        "id": "ag-3",
+        "name": "Lokalisering",
+        "color": "#06B6D4",
+        "visible": true
+      },
+      {
+        "id": "ag-4",
+        "name": "Soft Launch",
+        "color": "#F59E0B",
+        "visible": true
+      },
+      {
+        "id": "ag-5",
+        "name": "Officiell Lansering",
+        "color": "#10B981",
+        "visible": true
+      },
+      {
+        "id": "ag-6",
+        "name": "Optimering",
+        "color": "#06B6D4",
+        "visible": true
+      },
+      {
+        "id": "ag-7",
+        "name": "Franchise Etablering",
+        "color": "#EF4444",
+        "visible": true
+      }
+    ],
+    "labels": [
+      {
+        "id": "label-1",
+        "name": "Kritisk milstolpe",
+        "color": "#DC2626",
+        "visible": true
+      },
+      {
+        "id": "label-2",
+        "name": "Lansering",
+        "color": "#10B981",
+        "visible": true
+      },
+      {
+        "id": "label-3",
+        "name": "Pågående",
+        "color": "#059669",
+        "visible": true
+      }
+    ]
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "year": 2025,
+      "pageOrder": 1,
+      "title": "2025: E-handel Norden",
+      "items": [
+        {
+          "id": "item-1",
+          "name": "Förstudie Norge",
+          "startDate": "2025-01-01",
+          "endDate": "2025-03-31",
+          "ringId": "ring-1",
+          "activityId": "ag-1",
+          "labelId": "label-1",
+          "description": "Betalflöden, frakt, moms, returhantering, språk, konkurrenter"
+        },
+        {
+          "id": "item-2",
+          "name": "Bygga freefoot.no",
+          "startDate": "2025-04-01",
+          "endDate": "2025-06-30",
+          "ringId": "ring-1",
+          "activityId": "ag-2",
+          "description": "Domän, Vipps, Bring/Posten Norge, NOK"
+        },
+        {
+          "id": "item-3",
+          "name": "Lokalisering innehåll NO",
+          "startDate": "2025-07-01",
+          "endDate": "2025-09-30",
+          "ringId": "ring-1",
+          "activityId": "ag-3",
+          "description": "Produkttexter, SEO, influencers, kampanjer"
+        },
+        {
+          "id": "item-4",
+          "name": "Soft launch Norge",
+          "startDate": "2025-10-01",
+          "endDate": "2025-10-20",
+          "ringId": "ring-1",
+          "activityId": "ag-4",
+          "description": "Test checkout, moms, frakt, returer"
+        },
+        {
+          "id": "item-5",
+          "name": "Lansering Norge v.43",
+          "startDate": "2025-10-20",
+          "endDate": "2025-10-26",
+          "ringId": "ring-1",
+          "activityId": "ag-5",
+          "labelId": "label-2",
+          "description": "Officiell lansering freefoot.no"
+        },
+        {
+          "id": "item-6",
+          "name": "Optimering Norge",
+          "startDate": "2025-10-27",
+          "endDate": "2025-12-31",
+          "ringId": "ring-1",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Konvertering, returgrad, fraktkostnad, kundservice"
+        },
+        {
+          "id": "item-7",
+          "name": "Förstudie Danmark",
+          "startDate": "2025-01-01",
+          "endDate": "2025-03-31",
+          "ringId": "ring-2",
+          "activityId": "ag-1",
+          "labelId": "label-1",
+          "description": "Betalflöden, frakt, moms, returhantering, språk, konkurrenter"
+        },
+        {
+          "id": "item-8",
+          "name": "Bygga freefoot.dk",
+          "startDate": "2025-04-01",
+          "endDate": "2025-06-30",
+          "ringId": "ring-2",
+          "activityId": "ag-2",
+          "description": "Domän, MobilePay, GLS/PostNord DK, DKK"
+        },
+        {
+          "id": "item-9",
+          "name": "Lokalisering innehåll DK",
+          "startDate": "2025-07-01",
+          "endDate": "2025-09-30",
+          "ringId": "ring-2",
+          "activityId": "ag-3",
+          "description": "Produkttexter danska, SEO, hälso-profiler, kampanjer"
+        },
+        {
+          "id": "item-10",
+          "name": "Soft launch Danmark",
+          "startDate": "2025-10-28",
+          "endDate": "2025-11-09",
+          "ringId": "ring-2",
+          "activityId": "ag-4",
+          "description": "Test checkout, moms, frakt, returer"
+        },
+        {
+          "id": "item-11",
+          "name": "Lansering Danmark v.45",
+          "startDate": "2025-11-03",
+          "endDate": "2025-11-09",
+          "ringId": "ring-2",
+          "activityId": "ag-5",
+          "labelId": "label-2",
+          "description": "Officiell lansering freefoot.dk"
+        },
+        {
+          "id": "item-12",
+          "name": "Optimering Danmark",
+          "startDate": "2025-11-10",
+          "endDate": "2025-12-31",
+          "ringId": "ring-2",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Konvertering, returgrad, fraktkostnad, kundservice"
+        },
+        {
+          "id": "item-13",
+          "name": "Förstudie Finland",
+          "startDate": "2025-01-01",
+          "endDate": "2025-03-31",
+          "ringId": "ring-3",
+          "activityId": "ag-1",
+          "labelId": "label-1",
+          "description": "Betalflöden, frakt, moms, returhantering, språk, konkurrenter"
+        },
+        {
+          "id": "item-14",
+          "name": "Bygga freefoot.fi",
+          "startDate": "2025-04-01",
+          "endDate": "2025-06-30",
+          "ringId": "ring-3",
+          "activityId": "ag-2",
+          "description": "Domän, finska bankbetalningar, Posti/Bring, EUR"
+        },
+        {
+          "id": "item-15",
+          "name": "Lokalisering innehåll FI",
+          "startDate": "2025-07-01",
+          "endDate": "2025-09-30",
+          "ringId": "ring-3",
+          "activityId": "ag-3",
+          "description": "Produkttexter finska, SEO, fysioterapeuter, PT:s, löpare"
+        },
+        {
+          "id": "item-16",
+          "name": "Soft launch Finland",
+          "startDate": "2025-11-17",
+          "endDate": "2025-11-30",
+          "ringId": "ring-3",
+          "activityId": "ag-4",
+          "description": "Test checkout, moms, frakt, returer"
+        },
+        {
+          "id": "item-17",
+          "name": "Lansering Finland v.48",
+          "startDate": "2025-11-24",
+          "endDate": "2025-11-30",
+          "ringId": "ring-3",
+          "activityId": "ag-5",
+          "labelId": "label-2",
+          "description": "Officiell lansering freefoot.fi"
+        },
+        {
+          "id": "item-18",
+          "name": "Optimering Finland",
+          "startDate": "2025-12-01",
+          "endDate": "2025-12-31",
+          "ringId": "ring-3",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Konvertering, returgrad, fraktkostnad, kundservice"
+        },
+        {
+          "id": "item-19",
+          "name": "Utkast franchisekoncept",
+          "startDate": "2025-07-01",
+          "endDate": "2025-09-30",
+          "ringId": "ring-4",
+          "activityId": "ag-1",
+          "description": "Affärsmodell, avgifter, inköpsvillkor, utbildning"
+        },
+        {
+          "id": "item-20",
+          "name": "Designmanual butik",
+          "startDate": "2025-10-01",
+          "endDate": "2025-12-31",
+          "ringId": "ring-4",
+          "activityId": "ag-2",
+          "labelId": "label-1",
+          "description": "Layout, inredning, skyltning, demo-yta fotanalys"
+        },
+        {
+          "id": "item-21",
+          "name": "Plattformsoptimering",
+          "startDate": "2025-01-01",
+          "endDate": "2025-03-31",
+          "ringId": "ring-5",
+          "activityId": "ag-2",
+          "labelId": "label-1",
+          "description": "Multi-market, multi-currency, multi-language på Shopify"
+        },
+        {
+          "id": "item-22",
+          "name": "Prissättningsmodell",
+          "startDate": "2025-01-01",
+          "endDate": "2025-03-31",
+          "ringId": "ring-5",
+          "activityId": "ag-1",
+          "description": "Lokal prislista vs SEK-baserad per marknad"
+        },
+        {
+          "id": "item-23",
+          "name": "Integrationer betalning & frakt",
+          "startDate": "2025-04-01",
+          "endDate": "2025-06-30",
+          "ringId": "ring-5",
+          "activityId": "ag-2",
+          "description": "Vipps, MobilePay, finska banker, Bring, GLS, PostNord"
+        },
+        {
+          "id": "item-24",
+          "name": "Kundserviceprocess",
+          "startDate": "2025-04-01",
+          "endDate": "2025-06-30",
+          "ringId": "ring-5",
+          "activityId": "ag-3",
+          "description": "Norska och danska svarsmallar, finsk extern partner"
+        },
+        {
+          "id": "item-25",
+          "name": "Kampanj- och innehållsramverk",
+          "startDate": "2025-01-01",
+          "endDate": "2025-03-31",
+          "ringId": "ring-6",
+          "activityId": "ag-1",
+          "description": "Nordisk nivå 80%, lokal anpassning 20%"
+        },
+        {
+          "id": "item-26",
+          "name": "Workshops innehåll & tone",
+          "startDate": "2025-02-01",
+          "endDate": "2025-02-28",
+          "ringId": "ring-6",
+          "activityId": "ag-1",
+          "description": "Lokalt innehåll NO/DK/FI och tone-of-voice"
+        },
+        {
+          "id": "item-27",
+          "name": "Influencer/ambassadörsprogram",
+          "startDate": "2025-07-01",
+          "endDate": "2025-09-30",
+          "ringId": "ring-6",
+          "activityId": "ag-3",
+          "description": "Norge, Danmark, Finland"
+        },
+        {
+          "id": "item-28",
+          "name": "Pilotkampanjer SoMe",
+          "startDate": "2025-07-01",
+          "endDate": "2025-09-30",
+          "ringId": "ring-6",
+          "activityId": "ag-3",
+          "description": "Per land med svensk fulfillment"
+        },
+        {
+          "id": "item-29",
+          "name": "Rekrytera Franchise Manager",
+          "startDate": "2025-11-01",
+          "endDate": "2025-12-31",
+          "ringId": "ring-4",
+          "activityId": "ag-1",
+          "labelId": "label-1",
+          "description": "Rekrytering, onboarding, uppföljning franchisetagare"
+        }
+      ]
+    },
+    {
+      "id": "page-2",
+      "year": 2026,
+      "pageOrder": 2,
+      "title": "2026: Franchise & Optimering",
+      "items": [
+        {
+          "id": "item-30",
+          "name": "Justeringar e-handel Norge",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-1",
+          "activityId": "ag-6",
+          "description": "Sortiment, storlekar, varumärken baserat på data"
+        },
+        {
+          "id": "item-31",
+          "name": "Tröskel lokalt lager NO",
+          "startDate": "2026-04-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-1",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Aktiveras vid 1800-2000 order/månad eller fraktkostnad över tak"
+        },
+        {
+          "id": "item-32",
+          "name": "Franchise Oslo",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-1",
+          "activityId": "ag-7",
+          "labelId": "label-2",
+          "description": "Signering och etablering pilotbutik Oslo"
+        },
+        {
+          "id": "item-33",
+          "name": "Justeringar e-handel Danmark",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-2",
+          "activityId": "ag-6",
+          "description": "Sortiment, storlekar, varumärken baserat på data"
+        },
+        {
+          "id": "item-34",
+          "name": "Tröskel lokalt lager DK",
+          "startDate": "2026-04-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-2",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Aktiveras vid 1500-1800 order/månad eller fraktkostnad över tak"
+        },
+        {
+          "id": "item-35",
+          "name": "Franchise Köpenhamn",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-2",
+          "activityId": "ag-7",
+          "labelId": "label-2",
+          "description": "Signering och etablering pilotbutik Köpenhamn"
+        },
+        {
+          "id": "item-36",
+          "name": "Justeringar e-handel Finland",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-3",
+          "activityId": "ag-6",
+          "description": "Sortiment, storlekar, varumärken baserat på data"
+        },
+        {
+          "id": "item-37",
+          "name": "Tröskel lokalt lager FI",
+          "startDate": "2026-04-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-3",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Aktiveras vid 1200-1500 order/månad eller fraktkostnad över tak"
+        },
+        {
+          "id": "item-38",
+          "name": "Franchise Helsingfors",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-3",
+          "activityId": "ag-7",
+          "labelId": "label-2",
+          "description": "Signering och etablering pilotbutik Helsingfors"
+        },
+        {
+          "id": "item-39",
+          "name": "Färdigställa franchisekoncept",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-4",
+          "activityId": "ag-2",
+          "labelId": "label-1",
+          "description": "Manualer, avtal, design, onboarding komplett"
+        },
+        {
+          "id": "item-40",
+          "name": "Freefoot Store in a Box",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-4",
+          "activityId": "ag-2",
+          "description": "Layout, inredning, skyltning, demo-yta fotanalys"
+        },
+        {
+          "id": "item-41",
+          "name": "Leadgenerering franchisetagare",
+          "startDate": "2026-01-01",
+          "endDate": "2026-03-31",
+          "ringId": "ring-4",
+          "activityId": "ag-1",
+          "description": "Entreprenörer, fysioterapeuter, fotkliniker, hälsokedjor"
+        },
+        {
+          "id": "item-42",
+          "name": "Signering franchisetagare",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-4",
+          "activityId": "ag-7",
+          "labelId": "label-1",
+          "description": "1-3 pilotbutiker NO/DK/FI"
+        },
+        {
+          "id": "item-43",
+          "name": "Utbildning franchisetagare",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-4",
+          "activityId": "ag-7",
+          "description": "Onboarding och varumärkesutbildning"
+        },
+        {
+          "id": "item-44",
+          "name": "Öppning pilotbutiker",
+          "startDate": "2026-06-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-4",
+          "activityId": "ag-7",
+          "labelId": "label-2",
+          "description": "Oslo, Köpenhamn, Helsingfors"
+        },
+        {
+          "id": "item-45",
+          "name": "Uppföljning franchise Q3-Q4",
+          "startDate": "2026-07-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-4",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Omsättning 90 dagar, NPS, click & collect"
+        },
+        {
+          "id": "item-46",
+          "name": "Koppling butik ↔ e-handel",
+          "startDate": "2026-04-01",
+          "endDate": "2026-06-30",
+          "ringId": "ring-5",
+          "activityId": "ag-2",
+          "description": "Click & collect, order i butik med hemleverans"
+        },
+        {
+          "id": "item-47",
+          "name": "Micro-fulfillment från butiker",
+          "startDate": "2026-07-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-5",
+          "activityId": "ag-6",
+          "description": "Franchisebutiker som lokalt lager för sin marknad"
+        },
+        {
+          "id": "item-48",
+          "name": "KPI-rapportering per marknad",
+          "startDate": "2026-01-01",
+          "endDate": "2026-12-31",
+          "ringId": "ring-6",
+          "activityId": "ag-6",
+          "labelId": "label-3",
+          "description": "Omsättning, konvertering, AOV, NPS, kännedom"
+        }
+      ]
+    }
+  ]
+}
