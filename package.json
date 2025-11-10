@@ -7,11 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "postbuild": "node scripts/prerender.js",
-  "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
     "preview": "vite preview"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.48",
+    "@react-email/components": "^1.0.0",
+    "@react-email/render": "^2.0.0",
     "@stripe/stripe-js": "^8.0.0",
     "@supabase/supabase-js": "^2.74.0",
     "ai": "^5.0.68",

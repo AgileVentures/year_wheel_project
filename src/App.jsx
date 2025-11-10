@@ -27,6 +27,7 @@ const LegalPage = lazy(() => import("./components/LegalPage"));
 const SupportPage = lazy(() => import("./components/SupportPage"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
+const NewsletterManager = lazy(() => import("./pages/admin/NewsletterManager"));
 const EmbedWheel = lazy(() => import("./components/EmbedWheel"));
 const CastReceiverPage = lazy(() => import("./pages/CastReceiverPage"));
 const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
@@ -4686,6 +4687,11 @@ function AppContent() {
         <Route path="/forecasts" element={
           <ProtectedRoute>
             <RevenueForecast />
+          </ProtectedRoute>
+        } />
+        <Route path="/newsletter" element={
+          <ProtectedRoute>
+            <NewsletterManager />
           </ProtectedRoute>
         } />
         <Route path="/affiliate" element={

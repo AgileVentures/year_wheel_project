@@ -1993,20 +1993,38 @@ export const duplicatePage = async (pageId) => {
  */
 export const reorderPages = async (wheelId, pageOrders) => {
   try {
-    // Update each page's order
-    const updates = pageOrders.map(({ id, page_order }) => 
+    // Strategy: Update in two passes to avoid unique constraint violations
+    // Pass 1: Set all page orders to temporary high values (10000+)
+    // Pass 2: Set final positive values (1, 2, 3, ...)
+    
+    const TEMP_OFFSET = 10000; // High enough to avoid conflicts with actual page counts
+    
+    // Pass 1: Move to temporary high values to clear the unique constraint
+    const tempUpdates = pageOrders.map(({ id }, index) => 
+      supabase
+        .from('wheel_pages')
+        .update({ page_order: TEMP_OFFSET + index })
+        .eq('id', id)
+    );
+
+    const tempResults = await Promise.all(tempUpdates);
+    const tempErrors = tempResults.filter(r => r.error);
+    if (tempErrors.length > 0) {
+      throw tempErrors[0].error;
+    }
+
+    // Pass 2: Set final page orders
+    const finalUpdates = pageOrders.map(({ id, page_order }) => 
       supabase
         .from('wheel_pages')
         .update({ page_order })
         .eq('id', id)
     );
 
-    const results = await Promise.all(updates);
-    
-    // Check for errors
-    const errors = results.filter(r => r.error);
-    if (errors.length > 0) {
-      throw errors[0].error;
+    const finalResults = await Promise.all(finalUpdates);
+    const finalErrors = finalResults.filter(r => r.error);
+    if (finalErrors.length > 0) {
+      throw finalErrors[0].error;
     }
 
     return await fetchPages(wheelId);
