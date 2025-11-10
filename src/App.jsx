@@ -61,6 +61,7 @@ import { useWheelPresence, useWheelActivity } from "./hooks/useWheelPresence";
 import { useWheelOperations } from "./hooks/useWheelOperations";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
 import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
+import { useWheelSaveQueue } from "./hooks/useWheelSaveQueue";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -367,6 +368,30 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           structure: restoredState.structure,
         });
       }
+    }
+  });
+
+  // ==========================================
+  // SAVE QUEUE: Prevents data loss during rapid changes
+  // ==========================================
+  const { 
+    enqueueSave, 
+    isSaving: isSavingToQueue, 
+    pendingCount, 
+    isIdle: isSaveQueueIdle,
+    hasQueuedChanges 
+  } = useWheelSaveQueue(wheelId, {
+    onSaveSuccess: (changes, metadata) => {
+      console.log(`✅ [SaveQueue] Saved batch of ${metadata.batchSize} changes`);
+      
+      // Mark undo history as saved
+      if (history && currentIndex !== null) {
+        markSaved(currentIndex);
+      }
+    },
+    onSaveError: (error, changes, metadata) => {
+      console.error('❌ [SaveQueue] Save failed:', error);
+      showToast('Kunde inte spara ändringar. Försöker igen...', 'error');
     }
   });
 
@@ -1196,6 +1221,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     
+    // CRITICAL: Check if we have queued changes - don't overwrite optimistic local state!
+    if (hasQueuedChanges()) {
+      console.log('[Realtime] Ignoring update - queued changes waiting to save');
+      return;
+    }
+    
     // Ignore broadcasts from our own recent saves (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
     if (timeSinceLastSave < 5000) {
@@ -1225,7 +1256,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Reload the wheel data when any change occurs
     // Throttled to prevent too many reloads
     throttledReload();
-  }, [throttledReload]);
+  }, [throttledReload, hasQueuedChanges, hasUnsavedChanges]);
 
   // Enable realtime sync for this wheel (ALL pages)
   // Page navigation is frontend-only, so we subscribe to the entire wheel
@@ -3558,7 +3589,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Use ref to capture result from inside setWheelState callback
     const changeResultRef = { actuallyChanged: false, itemFound: false };
 
-    // Update wheelState.pages directly (source of truth)
+    // CRITICAL: Update optimistic state immediately (before save)
     setWheelState((prev) => {
       const nextPages = prev.pages.map((page) => {
         if (page.id !== updatedItem.pageId) return page;
@@ -3601,7 +3632,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         if (!changeResultRef.actuallyChanged) return page;
 
-        // Update item in page items
+        // Update item in page items (optimistic update)
         const nextItems = currentItems.map((item) =>
           item.id === updatedItem.id ? updatedItem : item
         );
@@ -3639,7 +3670,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         console.log('[handleUpdateAktivitet] Calling endBatch()');
         const newHistoryIndex = endBatch();
         if (newHistoryIndex !== null) {
-          markSaved(newHistoryIndex);
+          // DON'T mark as saved yet - wait for save queue to complete
+          // markSaved(newHistoryIndex);
         }
       } else {
         console.log('[handleUpdateAktivitet] Calling cancelBatch()');
@@ -3647,15 +3679,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     }
 
-    // Persist to database (use ref values)
+    // Persist to database via save queue (use ref values)
     if (changeResultRef.actuallyChanged) {
-      console.log('[handleUpdateAktivitet] Persisting to database');
-      persistItemToDatabase(updatedItem, {
-        reason: wasDragging ? 'drag-update' : 'edit-update',
-        delay: wasDragging ? 120 : 0,
-      }).catch(() => {});
+      console.log('[handleUpdateAktivitet] Queueing save via save queue');
+      
+      // Build snapshot with current state
+      const snapshot = buildWheelSnapshot();
+      if (snapshot) {
+        enqueueSave(snapshot, { 
+          label: wasDragging ? 'drag' : 'edit',
+          reason: wasDragging ? 'drag-update' : 'edit-update'
+        });
+      }
     }
-  }, [setWheelState, endBatch, cancelBatch, markSaved, persistItemToDatabase]);
+  }, [setWheelState, endBatch, cancelBatch, buildWheelSnapshot, enqueueSave]);
 
   const handleAddItems = useCallback((newItems) => {
     if (!currentPageId) return;
