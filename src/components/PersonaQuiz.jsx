@@ -67,32 +67,32 @@ export default function PersonaQuiz({
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     
-    // TODO: Uncomment when backend is ready
-    // try {
-    //   const response = await fetch(
-    //     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-quiz`,
-    //     {
-    //       method: 'POST',
-    //       headers: {
-    //         'Content-Type': 'application/json',
-    //         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-    //       },
-    //       body: JSON.stringify({
-    //         email,
-    //         persona,
-    //         answers,
-    //         sourceUrl: window.location.href
-    //       })
-    //     }
-    //   );
-    //
-    //   const result = await response.json();
-    //   if (!response.ok) {
-    //     console.error('Quiz submission error:', result);
-    //   }
-    // } catch (error) {
-    //   console.error('Failed to submit quiz:', error);
-    // }
+    // Submit to backend
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-quiz`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            email,
+            persona,
+            answers,
+            sourceUrl: window.location.href
+          })
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) {
+        console.error('Quiz submission error:', result);
+      }
+    } catch (error) {
+      console.error('Failed to submit quiz:', error);
+    }
     
     // Track lead generation
     if (typeof window !== 'undefined' && window.gtag) {
