@@ -584,8 +584,13 @@ class InteractionHandler {
       newStartDate = new Date(originalItem.startDate);
     }
 
-    const yearStart = new Date(Number(this.wheel.year), 0, 1);
-    const yearEnd = new Date(Number(this.wheel.year), 11, 31);
+    // CRITICAL FIX: Use the item's year (from page), not the wheel's year
+    // This prevents false multi-year triggers on pages beyond page 1
+    const itemYear = originalItem ? new Date(originalItem.startDate).getFullYear() : Number(this.wheel.year);
+    const yearStart = new Date(itemYear, 0, 1);
+    const yearEnd = new Date(itemYear, 11, 31);
+
+    console.log(`[InteractionHandler] Year bounds for item "${originalItem?.name}": ${yearStart.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
 
     // Check for backward overflow BEFORE clamping
     let overflowStartDate = null;
