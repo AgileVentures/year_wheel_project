@@ -303,13 +303,19 @@ function YearWheel({
   const onDragStartRef = useRef(onDragStart);
   const onUpdateAktivitetRef = useRef(onUpdateAktivitet);
   const onDeleteAktivitetRef = useRef(onDeleteAktivitet);
+  const onItemClickRef = useRef(onItemClick);
+  const onExtendActivityBeyondYearRef = useRef(onExtendActivityBeyondYear);
+  const onExtendActivityToPreviousYearRef = useRef(onExtendActivityToPreviousYear);
 
   // Keep refs up to date
   useEffect(() => {
     onDragStartRef.current = onDragStart;
     onUpdateAktivitetRef.current = onUpdateAktivitet;
     onDeleteAktivitetRef.current = onDeleteAktivitet;
-  }, [onDragStart, onUpdateAktivitet, onDeleteAktivitet]);
+    onItemClickRef.current = onItemClick;
+    onExtendActivityBeyondYearRef.current = onExtendActivityBeyondYear;
+    onExtendActivityToPreviousYearRef.current = onExtendActivityToPreviousYear;
+  }, [onDragStart, onUpdateAktivitet, onDeleteAktivitet, onItemClick, onExtendActivityBeyondYear, onExtendActivityToPreviousYear]);
 
   // Toggle selection mode
   const toggleSelectionMode = useCallback(() => {
@@ -380,7 +386,8 @@ function YearWheel({
     }
   }, [selectedItems, clearSelections, t]);
 
-  const handleItemClick = useCallback((item, position, event) => {
+  // Stable wrapper functions for wheel callbacks (never recreated, use refs internally)
+  const stableHandleItemClick = useCallback((item, position, event) => {
     // CRITICAL: Validate that the item exists in current wheelStructure
     // This prevents showing stale data when canvas clickableItems array is out of sync
     const currentItem = yearFilteredOrgData?.items?.find(i => i.id === item.id);
@@ -426,12 +433,14 @@ function YearWheel({
     }
     
     // Notify parent component AFTER showing tooltip (for casting, etc.)
-    if (onItemClick) {
-      onItemClick(item);
+    if (onItemClickRef.current) {
+      onItemClickRef.current(item);
     }
-  }, [onItemClick, selectionMode, yearFilteredOrgData]);
+  }, [yearFilteredOrgData, selectionMode]); // Still depends on these for the logic
 
-  const handleDragStart = useCallback((item) => {
+  const handleItemClick = stableHandleItemClick; // Alias for backward compatibility
+
+  const stableHandleDragStart = useCallback((item) => {
     // Close tooltip when drag starts
     setTooltipPosition(null);
     setSelectedItem(null);
@@ -439,13 +448,31 @@ function YearWheel({
     if (onDragStartRef.current) {
       onDragStartRef.current(item);
     }
-  }, []); // Empty deps - uses ref
+  }, []); // No dependencies - stable forever
 
-  const handleUpdateAktivitet = useCallback((updatedItem) => {
+  const handleDragStart = stableHandleDragStart; // Alias
+
+  const stableHandleUpdateAktivitet = useCallback((updatedItem) => {
     if (onUpdateAktivitetRef.current) {
       onUpdateAktivitetRef.current(updatedItem);
     }
-  }, []); // Empty deps - uses ref
+  }, []); // No dependencies - stable forever
+
+  const handleUpdateAktivitet = stableHandleUpdateAktivitet; // Alias
+
+  const stableOnExtendActivityBeyondYear = useCallback((item, newDates) => {
+    if (onExtendActivityBeyondYearRef.current) {
+      onExtendActivityBeyondYearRef.current(item, newDates);
+    }
+  }, []); // No dependencies - stable forever
+
+  const stableOnExtendActivityToPreviousYear = useCallback((item, newDates) => {
+    if (onExtendActivityToPreviousYearRef.current) {
+      onExtendActivityToPreviousYearRef.current(item, newDates);
+    }
+  }, []); // No dependencies - stable forever
+
+  // DEPRECATED: Old non-stable versions (removed - now using stable versions above)
 
   const handleDeleteAktivitet = useCallback((itemId) => {
     if (onDeleteAktivitetRef.current) {
@@ -545,11 +572,11 @@ function YearWheel({
         zoomedQuarter,
         monthNames,
         zoomLevel, // Pass zoom level for smart text scaling
-    onItemClick: handleItemClick,
-    onDragStart: handleDragStart,
-    onUpdateAktivitet: handleUpdateAktivitet,
-    onExtendActivityToNextYear: onExtendActivityBeyondYear,
-    onExtendActivityToPreviousYear: onExtendActivityToPreviousYear,
+    onItemClick: stableHandleItemClick, // Use stable version
+    onDragStart: stableHandleDragStart, // Use stable version
+    onUpdateAktivitet: stableHandleUpdateAktivitet, // Use stable version
+    onExtendActivityToNextYear: stableOnExtendActivityBeyondYear, // Use stable version
+    onExtendActivityToPreviousYear: stableOnExtendActivityToPreviousYear, // Use stable version
         onRotationChange, // Pass rotation callback for casting sync
         selectionMode,
         selectedItems: Array.from(selectedItems),
@@ -588,13 +615,11 @@ function YearWheel({
     // yearFilteredOrgData EXCLUDED - updated via updateWheelStructure to prevent wheel recreation during drag
     // zoomedMonth and zoomedQuarter excluded - updated via updateZoomState to prevent wheel recreation
     monthNames,
-    // CRITICAL: Exclude callbacks from dependencies to prevent wheel recreation during state changes
-    // Callbacks are captured at wheel creation time and remain stable
-    // handleItemClick,
-    // handleDragStart,
-    // handleUpdateAktivitet,
-    // onExtendActivityBeyondYear,
-    // onExtendActivityToPreviousYear,
+    stableHandleItemClick, // Stable callbacks ARE included (they never change identity)
+    stableHandleDragStart,
+    stableHandleUpdateAktivitet,
+    stableOnExtendActivityBeyondYear,
+    stableOnExtendActivityToPreviousYear,
     // wheelStructure excluded - updated via updateWheelStructure to prevent wheel recreation during drag
   ]);
 
