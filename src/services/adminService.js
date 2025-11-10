@@ -462,3 +462,123 @@ export const getSubscriptionStats = async () => {
     throw error;
   }
 };
+
+/**
+ * Get quiz leads statistics
+ */
+export const getQuizLeadsStats = async () => {
+  try {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    // Total quiz submissions
+    const { count: totalLeads } = await supabase
+      .from('quiz_leads')
+      .select('*', { count: 'exact', head: true });
+
+    // Submissions this month
+    const { count: leadsThisMonth } = await supabase
+      .from('quiz_leads')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', monthStart.toISOString());
+
+    // Submissions last 7 days
+    const { count: leadsLast7Days } = await supabase
+      .from('quiz_leads')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', sevenDaysAgo.toISOString());
+
+    // High pain score leads (>15)
+    const { count: highPainLeads } = await supabase
+      .from('quiz_leads')
+      .select('*', { count: 'exact', head: true })
+      .gt('pain_score', 15);
+
+    // Converted leads
+    const { count: convertedLeads } = await supabase
+      .from('quiz_leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'converted');
+
+    // Leads by persona
+    const { data: personaBreakdown } = await supabase
+      .from('quiz_leads')
+      .select('persona')
+      .gte('created_at', monthStart.toISOString());
+
+    const personaCounts = {
+      marketing: 0,
+      project: 0,
+      education: 0,
+    };
+
+    personaBreakdown?.forEach(lead => {
+      if (personaCounts[lead.persona] !== undefined) {
+        personaCounts[lead.persona]++;
+      }
+    });
+
+    // Calculate conversion rate
+    const conversionRate = totalLeads > 0 
+      ? ((convertedLeads / totalLeads) * 100).toFixed(1)
+      : 0;
+
+    return {
+      total: totalLeads || 0,
+      thisMonth: leadsThisMonth || 0,
+      last7Days: leadsLast7Days || 0,
+      highPain: highPainLeads || 0,
+      converted: convertedLeads || 0,
+      conversionRate,
+      byPersona: personaCounts,
+    };
+  } catch (error) {
+    console.error('Error fetching quiz leads stats:', error);
+    return null;
+  }
+};
+
+/**
+ * Get newsletter send history
+ */
+export const getNewsletterStats = async () => {
+  try {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    // Total newsletters sent
+    const { count: totalSends } = await supabase
+      .from('newsletter_sends')
+      .select('*', { count: 'exact', head: true });
+
+    // This month
+    const { count: sendsThisMonth } = await supabase
+      .from('newsletter_sends')
+      .select('*', { count: 'exact', head: true })
+      .gte('sent_at', monthStart.toISOString());
+
+    // Total recipients (sum of all recipient_count)
+    const { data: allSends } = await supabase
+      .from('newsletter_sends')
+      .select('recipient_count, success_count');
+
+    const totalRecipients = allSends?.reduce((sum, send) => sum + (send.recipient_count || 0), 0) || 0;
+    const totalSuccess = allSends?.reduce((sum, send) => sum + (send.success_count || 0), 0) || 0;
+    const successRate = totalRecipients > 0 
+      ? ((totalSuccess / totalRecipients) * 100).toFixed(1)
+      : 0;
+
+    return {
+      total: totalSends || 0,
+      thisMonth: sendsThisMonth || 0,
+      totalRecipients,
+      successRate,
+    };
+  } catch (error) {
+    console.error('Error fetching newsletter stats:', error);
+    return null;
+  }
+};

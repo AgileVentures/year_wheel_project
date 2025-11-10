@@ -12,6 +12,8 @@ interface NewsletterRequest {
   subject: string
   htmlContent: string
   fromName?: string
+  templateType?: string
+  templateData?: any
 }
 
 serve(async (req) => {
@@ -63,7 +65,9 @@ serve(async (req) => {
       customEmails, 
       subject, 
       htmlContent,
-      fromName = 'Thomas från YearWheel'
+      fromName = 'Thomas från YearWheel',
+      templateType,
+      templateData
     } = await req.json() as NewsletterRequest
 
     // Get recipient emails based on type
@@ -181,6 +185,8 @@ serve(async (req) => {
         recipient_count: recipients.length,
         success_count: results.length * batchSize,
         error_count: errors.length * batchSize,
+        template_type: templateType,
+        template_data: templateData,
         sent_at: new Date().toISOString()
       })
 

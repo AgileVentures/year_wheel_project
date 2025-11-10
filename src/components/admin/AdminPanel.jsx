@@ -6,6 +6,7 @@ import AdminStats from './AdminStats';
 import AdminUsersTable from './AdminUsersTable';
 import AdminActivity from './AdminActivity';
 import AdminAffiliates from './AdminAffiliates';
+import AdminEmailStats from './AdminEmailStats';
 import {
   Activity,
   TrendingUp,
@@ -22,6 +23,8 @@ import {
   getWheelGrowthData,
   getRecentActivity,
   getSubscriptionStats,
+  getQuizLeadsStats,
+  getNewsletterStats,
 } from '../../services/adminService';
 import { checkIsAdmin } from '../../services/wheelService';
 
@@ -38,6 +41,8 @@ export default function AdminPanel() {
   const [wheelGrowth, setWheelGrowth] = useState([]);
   const [recentActivity, setRecentActivity] = useState(null);
   const [subscriptionStats, setSubscriptionStats] = useState(null);
+  const [quizLeadsStats, setQuizLeadsStats] = useState(null);
+  const [newsletterStats, setNewsletterStats] = useState(null);
   
   // Pagination & filters
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +89,8 @@ export default function AdminPanel() {
         wheelGrowthData,
         activityData,
         subStats,
+        quizStats,
+        emailStats,
       ] = await Promise.all([
         getAdminStats(),
         getUsers({ page: currentPage, limit: 50, search: searchQuery, sortBy, sortOrder }),
@@ -91,6 +98,8 @@ export default function AdminPanel() {
         getWheelGrowthData(30),
         getRecentActivity(10),
         getSubscriptionStats(),
+        getQuizLeadsStats(),
+        getNewsletterStats(),
       ]);
       
       setStats(statsData);
@@ -100,6 +109,8 @@ export default function AdminPanel() {
       setWheelGrowth(wheelGrowthData);
       setRecentActivity(activityData);
       setSubscriptionStats(subStats);
+      setQuizLeadsStats(quizStats);
+      setNewsletterStats(emailStats);
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
@@ -221,7 +232,10 @@ export default function AdminPanel() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && (
-          <AdminStats stats={stats} subscriptionStats={subscriptionStats} />
+          <div className="space-y-8">
+            <AdminStats stats={stats} subscriptionStats={subscriptionStats} />
+            <AdminEmailStats quizLeadsStats={quizLeadsStats} newsletterStats={newsletterStats} />
+          </div>
         )}
 
         {activeTab === 'users' && (

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabase';
 import { 
   newsletterTemplate, 
   featureAnnouncementTemplate, 
   tipsTemplate, 
   simpleAnnouncementTemplate 
 } from '../../utils/emailTemplates';
-import { Send, Users, Mail, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2 } from 'lucide-react';
 
 export default function NewsletterManager() {
   const [loading, setLoading] = useState(false);
@@ -107,6 +107,23 @@ export default function NewsletterManager() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
+      // Get current template data based on type
+      let currentTemplateData = null;
+      switch (templateType) {
+        case 'newsletter':
+          currentTemplateData = newsletter;
+          break;
+        case 'feature':
+          currentTemplateData = feature;
+          break;
+        case 'tips':
+          currentTemplateData = tips;
+          break;
+        case 'announcement':
+          currentTemplateData = announcement;
+          break;
+      }
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-newsletter`,
         {
@@ -119,7 +136,9 @@ export default function NewsletterManager() {
             recipientType,
             customEmails: recipientType === 'custom' ? customEmails.split(',').map(e => e.trim()) : undefined,
             subject,
-            htmlContent: preview
+            htmlContent: preview,
+            templateType,
+            templateData: currentTemplateData
           })
         }
       );
@@ -140,6 +159,55 @@ export default function NewsletterManager() {
       alert('Ett fel uppstod vid skickning');
     } finally {
       setSending(false);
+    }
+  };
+
+  const reuseNewsletter = (send) => {
+    // Load the template data
+    if (send.template_type && send.template_data) {
+      setTemplateType(send.template_type);
+      setSubject(`${send.subject} (Kopia)`);
+      setRecipientType(send.recipient_type);
+      
+      switch (send.template_type) {
+        case 'newsletter':
+          setNewsletter(send.template_data);
+          break;
+        case 'feature':
+          setFeature(send.template_data);
+          break;
+        case 'tips':
+          setTips(send.template_data);
+          break;
+        case 'announcement':
+          setAnnouncement(send.template_data);
+          break;
+      }
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      alert('Denna newsletter har ingen mall-data att återanvända');
+    }
+  };
+
+  const deleteNewsletter = async (id) => {
+    if (!confirm('Är du säker på att du vill ta bort denna newsletter från historiken?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('newsletter_sends')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      loadHistory();
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Ett fel uppstod vid borttagning');
     }
   };
 
@@ -174,7 +242,7 @@ export default function NewsletterManager() {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Editor */}
         <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Nytt Newsletter</h2>
             
             {/* Recipients */}
@@ -376,20 +444,43 @@ export default function NewsletterManager() {
           </div>
 
           {/* History */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Historik</h2>
             <div className="space-y-3">
               {history.map(send => (
-                <div key={send.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                  <div>
+                <div key={send.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
+                  <div className="flex-1">
                     <p className="font-medium text-gray-900 text-sm">{send.subject}</p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {send.recipient_count} mottagare • {new Date(send.sent_at).toLocaleDateString('sv-SE')}
+                      {send.recipient_count} mottagare • {new Date(send.sent_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
+                    {send.template_type && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
+                        {send.template_type}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle size={16} className="text-green-600" />
-                    <span className="text-sm text-gray-600">{send.success_count}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle size={14} className="text-green-600" />
+                      <span className="text-sm text-gray-600">{send.success_count}</span>
+                    </div>
+                    {send.template_data && (
+                      <button
+                        onClick={() => reuseNewsletter(send)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Återanvänd denna mall"
+                      >
+                        <Copy size={16} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteNewsletter(send.id)}
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Ta bort"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -403,7 +494,7 @@ export default function NewsletterManager() {
 
         {/* Preview */}
         <div className="lg:sticky lg:top-8 h-fit">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Förhandsgranskning</h2>
             {preview ? (
               <div className="border border-gray-200 rounded-md overflow-hidden">

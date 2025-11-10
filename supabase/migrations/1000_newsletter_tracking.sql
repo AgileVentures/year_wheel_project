@@ -7,6 +7,11 @@ CREATE TABLE IF NOT EXISTS newsletter_sends (
   recipient_count INTEGER NOT NULL,
   success_count INTEGER DEFAULT 0,
   error_count INTEGER DEFAULT 0,
+  
+  -- Store template data for reuse
+  template_type TEXT CHECK (template_type IN ('newsletter', 'feature', 'tips', 'announcement')),
+  template_data JSONB, -- Stores the form data so newsletters can be reused
+  
   sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -34,6 +39,18 @@ CREATE POLICY "Admin can insert newsletter records"
   FOR INSERT
   TO authenticated
   WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_admin = true
+    )
+  );
+
+CREATE POLICY "Admin can delete newsletter records"
+  ON newsletter_sends
+  FOR DELETE
+  TO authenticated
+  USING (
     EXISTS (
       SELECT 1 FROM profiles
       WHERE profiles.id = auth.uid()
