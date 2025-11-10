@@ -386,11 +386,21 @@ function YearWheel({
     }
   }, [selectedItems, clearSelections, t]);
 
+  // Create refs for state that callbacks need
+  const yearFilteredOrgDataRef = useRef(yearFilteredOrgData);
+  const selectionModeRef = useRef(selectionMode);
+  
+  // Keep state refs up to date
+  useEffect(() => {
+    yearFilteredOrgDataRef.current = yearFilteredOrgData;
+    selectionModeRef.current = selectionMode;
+  }, [yearFilteredOrgData, selectionMode]);
+
   // Stable wrapper functions for wheel callbacks (never recreated, use refs internally)
   const stableHandleItemClick = useCallback((item, position, event) => {
     // CRITICAL: Validate that the item exists in current wheelStructure
     // This prevents showing stale data when canvas clickableItems array is out of sync
-    const currentItem = yearFilteredOrgData?.items?.find(i => i.id === item.id);
+    const currentItem = yearFilteredOrgDataRef.current?.items?.find(i => i.id === item.id);
     if (!currentItem) {
       console.warn('[YearWheel] Clicked item not found in current data, ignoring click');
       return; // Item doesn't exist in current data - ignore the click
@@ -400,7 +410,7 @@ function YearWheel({
     const isMultiSelectClick = event && (event.metaKey || event.ctrlKey);
     
     // Multi-select mode (either explicit mode OR modifier key held)
-    if (selectionMode || isMultiSelectClick) {
+    if (selectionModeRef.current || isMultiSelectClick) {
       setSelectedItems(prev => {
         const newSet = new Set(prev);
         if (newSet.has(currentItem.id)) {
@@ -411,7 +421,7 @@ function YearWheel({
         return newSet;
       });
       // Activate selection mode if using modifier key
-      if (isMultiSelectClick && !selectionMode) {
+      if (isMultiSelectClick && !selectionModeRef.current) {
         setSelectionMode(true);
       }
       return; // Early return - don't show tooltip in selection mode
@@ -436,7 +446,7 @@ function YearWheel({
     if (onItemClickRef.current) {
       onItemClickRef.current(item);
     }
-  }, [yearFilteredOrgData, selectionMode]); // Still depends on these for the logic
+  }, []); // NO dependencies - truly stable forever
 
   const handleItemClick = stableHandleItemClick; // Alias for backward compatibility
 

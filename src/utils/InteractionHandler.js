@@ -592,6 +592,10 @@ class InteractionHandler {
 
     const CROSS_EPSILON = 0.0001;
 
+    // Convert radians to degrees for angleToDate (MUST BE BEFORE wrap detection that uses it)
+    const startDegrees = LayoutCalculator.radiansToDegrees(normalizedStartAngle);
+    const endDegrees = LayoutCalculator.radiansToDegrees(normalizedEndAngle);
+
     let forwardWrapCount = 0;
     if (this.dragState.dragMode === 'resize-end') {
       const candidate = unwrappedEndDegrees;
@@ -599,10 +603,20 @@ class InteractionHandler {
         forwardWrapCount = Math.floor((candidate + CROSS_EPSILON) / 360);
       }
     }
-
-    // Convert radians to degrees for angleToDate
-    const startDegrees = LayoutCalculator.radiansToDegrees(normalizedStartAngle);
-    const endDegrees = LayoutCalculator.radiansToDegrees(normalizedEndAngle);
+    
+    // BACKWARD WRAP DETECTION: Check if start angle wrapped backwards (before January 1)
+    let backwardWrapCount = 0;
+    if (this.dragState.dragMode === 'resize-start') {
+      const candidate = unwrappedStartDegrees;
+      if (candidate < -CROSS_EPSILON) {
+        backwardWrapCount = Math.floor(candidate / 360); // Use floor for negative numbers
+        console.log('[InteractionHandler] BACKWARD WRAP detected:', {
+          unwrappedStartDegrees: candidate,
+          backwardWrapCount,
+          normalizedStartAngle: startDegrees
+        });
+      }
+    }
 
     // Use wheel's angleToDate method which handles zoom levels and initAngle
     let newStartDate = this.wheel.angleToDate(startDegrees);
@@ -644,6 +658,18 @@ class InteractionHandler {
     });
 
     console.log(`[InteractionHandler] Year bounds for item "${originalItem?.name}": ${yearStart.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
+
+    // BACKWARD WRAP: Apply year offset if start was dragged backwards past January 1
+    const wrappedBackward =
+      this.dragState.dragMode === 'resize-start' &&
+      backwardWrapCount < 0;
+
+    if (wrappedBackward) {
+      console.log('[InteractionHandler] Applying backward wrap to start date');
+      const wrappedStart = new Date(newStartDate.getTime());
+      wrappedStart.setFullYear(wrappedStart.getFullYear() + backwardWrapCount); // backwardWrapCount is negative
+      newStartDate = wrappedStart;
+    }
 
     // Check for backward overflow BEFORE clamping
     let overflowStartDate = null;
@@ -712,11 +738,18 @@ class InteractionHandler {
 
     // Handle backward overflow (before January 1)
     if (overflowStartDate) {
+      console.log('[InteractionHandler] BACKWARD OVERFLOW - checking callback:', {
+        hasCallback: !!this.options.onExtendActivityToPreviousYear,
+        dragMode: this.dragState.dragMode,
+        hasOriginalItem: !!originalItem
+      });
+      
       if (
         originalItem &&
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
+        console.log('[InteractionHandler] ✅ Calling onExtendActivityToPreviousYear');
         try {
           await this.options.onExtendActivityToPreviousYear({
             item: originalItem,
@@ -924,12 +957,10 @@ class InteractionHandler {
   // ============================================================================
 
   handleMouseDown(event) {
-    console.log('[DEBUG] mouseDown - BEFORE reset:', this.wheel.hadDragInCurrentCycle);
     if (this.options.selectionMode) return;
 
     // Reset drag cycle flag on new mouseDown (PERSIST IN WHEEL INSTANCE)
     this.wheel.hadDragInCurrentCycle = false;
-    console.log('[DEBUG] mouseDown - AFTER reset:', this.wheel.hadDragInCurrentCycle);
 
     const { x, y } = this.getCanvasCoordinates(event);
     const dx = x - this.wheel.center.x;
