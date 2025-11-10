@@ -116,7 +116,7 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
               <div className="pt-4 border-t border-gray-100">
                 <a
                   href="/newsletter"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-sm transition-colors"
                 >
                   <Mail size={18} />
                   Send Newsletter

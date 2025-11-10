@@ -360,7 +360,7 @@ export default function NewsletterManager() {
               <select
                 value={recipientType}
                 onChange={(e) => setRecipientType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">Alla användare</option>
                 <option value="premium">Premium-användare</option>
@@ -379,7 +379,7 @@ export default function NewsletterManager() {
                   value={customEmails}
                   onChange={(e) => setCustomEmails(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
                   placeholder="user1@example.com, user2@example.com"
                 />
               </div>
@@ -394,7 +394,7 @@ export default function NewsletterManager() {
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
                 placeholder="YearWheel - Nya funktioner denna månad"
               />
             </div>
@@ -407,7 +407,7 @@ export default function NewsletterManager() {
               <select
                 value={templateType}
                 onChange={(e) => setTemplateType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
               >
                 <option value="newsletter">Newsletter (med sektioner)</option>
                 <option value="feature">Ny funktion</option>
@@ -424,18 +424,18 @@ export default function NewsletterManager() {
                   placeholder="Huvudrubrik"
                   value={newsletter.heading}
                   onChange={(e) => setNewsletter({ ...newsletter, heading: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
                 <textarea
                   placeholder="Intro-text"
                   value={newsletter.intro}
                   onChange={(e) => setNewsletter({ ...newsletter, intro: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
                 
                 {newsletter.sections.map((section, idx) => (
-                  <div key={idx} className="p-4 border border-gray-200 rounded-md space-y-2">
+                  <div key={idx} className="p-4 border border-gray-200 rounded-sm space-y-2">
                     <input
                       type="text"
                       placeholder="Sektion-rubrik"
@@ -445,7 +445,7 @@ export default function NewsletterManager() {
                         newSections[idx].title = e.target.value;
                         setNewsletter({ ...newsletter, sections: newSections });
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                     />
                     <textarea
                       placeholder="Sektion-innehåll"
@@ -456,7 +456,7 @@ export default function NewsletterManager() {
                         setNewsletter({ ...newsletter, sections: newSections });
                       }}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                     />
                   </div>
                 ))}
@@ -474,14 +474,14 @@ export default function NewsletterManager() {
                     placeholder="CTA Text"
                     value={newsletter.cta.text}
                     onChange={(e) => setNewsletter({ ...newsletter, cta: { ...newsletter.cta, text: e.target.value } })}
-                    className="px-3 py-2 border border-gray-300 rounded-md"
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
                   />
                   <input
                     type="text"
                     placeholder="CTA URL"
                     value={newsletter.cta.url}
                     onChange={(e) => setNewsletter({ ...newsletter, cta: { ...newsletter.cta, url: e.target.value } })}
-                    className="px-3 py-2 border border-gray-300 rounded-md"
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
                   />
                 </div>
                 
@@ -490,7 +490,7 @@ export default function NewsletterManager() {
                   placeholder="P.S. (valfritt)"
                   value={newsletter.ps}
                   onChange={(e) => setNewsletter({ ...newsletter, ps: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
               </div>
             )}
@@ -502,14 +502,14 @@ export default function NewsletterManager() {
                   placeholder="Titel"
                   value={announcement.title}
                   onChange={(e) => setAnnouncement({ ...announcement, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
                 <textarea
                   placeholder="Meddelande (HTML stöds)"
                   value={announcement.message}
                   onChange={(e) => setAnnouncement({ ...announcement, message: e.target.value })}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <input
@@ -517,14 +517,14 @@ export default function NewsletterManager() {
                     placeholder="CTA Text (valfritt)"
                     value={announcement.cta.text}
                     onChange={(e) => setAnnouncement({ ...announcement, cta: { ...announcement.cta, text: e.target.value } })}
-                    className="px-3 py-2 border border-gray-300 rounded-md"
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
                   />
                   <input
                     type="text"
                     placeholder="CTA URL (valfritt)"
                     value={announcement.cta.url}
                     onChange={(e) => setAnnouncement({ ...announcement, cta: { ...announcement.cta, url: e.target.value } })}
-                    className="px-3 py-2 border border-gray-300 rounded-md"
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
                   />
                 </div>
               </div>
@@ -534,7 +534,7 @@ export default function NewsletterManager() {
               <button
                 onClick={saveDraft}
                 disabled={saving}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-sm transition-colors"
               >
                 <Save size={18} />
                 {saving ? 'Sparar...' : editingDraftId ? 'Uppdatera' : 'Spara'}
@@ -542,7 +542,7 @@ export default function NewsletterManager() {
               
               <button
                 onClick={generatePreview}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-sm transition-colors"
               >
                 <Mail size={18} />
                 Förhandsgranska
@@ -551,7 +551,7 @@ export default function NewsletterManager() {
               <button
                 onClick={sendNewsletter}
                 disabled={!preview || sending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-sm transition-colors"
               >
                 <Send size={18} />
                 {sending ? 'Skickar...' : 'Skicka'}
@@ -561,11 +561,11 @@ export default function NewsletterManager() {
 
           {/* Drafts */}
           {drafts.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Utkast</h2>
               <div className="space-y-3">
                 {drafts.map(draft => (
-                  <div key={draft.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-md hover:bg-amber-100 transition-colors border border-amber-200">
+                  <div key={draft.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-sm hover:bg-amber-100 transition-colors border border-amber-200">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 text-sm">{draft.subject}</p>
                       <p className="text-xs text-gray-600 mt-1">
@@ -600,11 +600,11 @@ export default function NewsletterManager() {
           )}
 
           {/* History */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Historik</h2>
             <div className="space-y-3">
               {history.map(send => (
-                <div key={send.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors">
+                <div key={send.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-sm hover:bg-gray-100 transition-colors">
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 text-sm">{send.subject}</p>
                     <p className="text-xs text-gray-600 mt-1">
@@ -653,7 +653,7 @@ export default function NewsletterManager() {
           <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Förhandsgranskning</h2>
             {preview ? (
-              <div className="border border-gray-200 rounded-md overflow-hidden">
+              <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <iframe
                   srcDoc={preview}
                   className="w-full h-[600px]"
@@ -662,7 +662,7 @@ export default function NewsletterManager() {
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-center h-64 bg-gray-50 rounded-md">
+              <div className="flex items-center justify-center h-64 bg-gray-50 rounded-sm">
                 <p className="text-gray-500">Fyll i formuläret och klicka på "Förhandsgranska"</p>
               </div>
             )}
@@ -673,7 +673,7 @@ export default function NewsletterManager() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-8 right-8 z-50 animate-slide-up">
-          <div className={`flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg ${
+          <div className={`flex items-center gap-3 px-6 py-4 rounded-sm shadow-lg ${
             toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
           } text-white min-w-[320px]`}>
             {toast.type === 'success' ? (
@@ -695,7 +695,7 @@ export default function NewsletterManager() {
       {/* Confirm Dialog */}
       {confirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+          <div className="bg-white rounded-sm shadow-xl max-w-md w-full mx-4 overflow-hidden">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Bekräfta åtgärd</h3>
               <p className="text-gray-600">{confirmDialog.message}</p>
@@ -703,7 +703,7 @@ export default function NewsletterManager() {
             <div className="flex gap-3 px-6 pb-6">
               <button
                 onClick={() => setConfirmDialog(null)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-sm text-gray-700 hover:bg-gray-50 font-medium transition-colors"
               >
                 Avbryt
               </button>
@@ -712,7 +712,7 @@ export default function NewsletterManager() {
                   confirmDialog.onConfirm();
                   setConfirmDialog(null);
                 }}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm font-medium transition-colors"
               >
                 Bekräfta
               </button>
