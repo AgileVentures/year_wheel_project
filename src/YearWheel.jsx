@@ -434,6 +434,10 @@ function YearWheel({
   }, [onItemClick, selectionMode, yearFilteredOrgData]);
 
   const handleDragStart = useCallback((item) => {
+    // Close tooltip when drag starts
+    setTooltipPosition(null);
+    setSelectedItem(null);
+    
     if (onDragStartRef.current) {
       onDragStartRef.current(item);
     }
