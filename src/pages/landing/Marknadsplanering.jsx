@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import LandingPageTemplate from './LandingPageTemplate';
+import PersonaQuiz from '../../components/PersonaQuiz';
+import { marketingQuiz } from '../../data/quizData';
 import { Megaphone, Calendar, Image, TrendingUp, Users, Sparkles, FileSpreadsheet, Copy, MessageSquare, History } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Innehållsplanering & Marknadsföring Landing Page
@@ -9,6 +13,24 @@ import { useTranslation } from 'react-i18next';
  */
 export default function Marknadsplanering() {
   const { t } = useTranslation('landing');
+  const navigate = useNavigate();
+  const [showQuiz, setShowQuiz] = useState(false);
+
+  const handleQuizComplete = async (results) => {
+    // Track quiz completion
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'quiz_lead_generated', {
+        persona: 'marketing',
+        email: results.email
+      });
+    }
+
+    // TODO: Send to backend/CRM
+    console.log('Quiz results:', results);
+    
+    // Redirect to signup with context
+    navigate('/auth?mode=signup&source=quiz&persona=marketing');
+  };
   
   const schema = {
     "@context": "https://schema.org",
@@ -23,6 +45,91 @@ export default function Marknadsplanering() {
     "description": "Visuell innehållskalender och marknadsplan för hela året. Planera kampanjer, innehåll och sociala medier i ett årshjul."
   };
 
+  // Quiz section to inject before templates
+  const quizSection = showQuiz ? {
+    className: 'py-20 bg-gradient-to-br from-blue-600 to-purple-600',
+    content: (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <PersonaQuiz
+          persona={marketingQuiz.persona}
+          questions={marketingQuiz.questions}
+          resultMessages={marketingQuiz.resultMessages}
+          onComplete={handleQuizComplete}
+        />
+      </div>
+    )
+  } : {
+    className: 'py-20 bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50',
+    content: (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="bg-white rounded-sm shadow-2xl p-10">
+          {/* Pain Hook */}
+          <div className="mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Känner du igen dig?
+            </h2>
+            <div className="space-y-3 text-left max-w-2xl mx-auto mb-6">
+              <div className="flex items-start gap-3 text-lg">
+                <span className="text-red-600 font-bold text-xl">✗</span>
+                <p className="text-gray-700">"Innehållskalendern i Excel blir snabbt kaotisk"</p>
+              </div>
+              <div className="flex items-start gap-3 text-lg">
+                <span className="text-red-600 font-bold text-xl">✗</span>
+                <p className="text-gray-700">"Det tar timmar att producera rapporter till ledningen"</p>
+              </div>
+              <div className="flex items-start gap-3 text-lg">
+                <span className="text-red-600 font-bold text-xl">✗</span>
+                <p className="text-gray-700">"Teamet tappar överblicken över kampanjer"</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Hook */}
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Är du redo att...
+            </h3>
+            <div className="space-y-2 text-left max-w-2xl mx-auto mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-green-600 font-bold text-xl">✓</span>
+                <p className="text-gray-700">Få överblick över hela årets kampanjer på 5 sekunder?</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-green-600 font-bold text-xl">✓</span>
+                <p className="text-gray-700">Samordna innehåll mellan alla kanaler utan krångel?</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-green-600 font-bold text-xl">✓</span>
+                <p className="text-gray-700">Imponera på stakeholders med professionella presentationer?</p>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-sm p-6 mb-6">
+            <h4 className="text-xl font-bold text-gray-900 mb-3">
+              Ta vår quiz (2 minuter)
+            </h4>
+            <p className="text-gray-700 mb-4">
+              Svara på 10 frågor och få en personlig rekommendation om hur YearWheel kan förbättra just er marknadsplanering.
+            </p>
+            <button
+              onClick={() => setShowQuiz(true)}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg font-semibold rounded-sm shadow-lg hover:shadow-xl transition-all"
+            >
+              <Sparkles className="w-5 h-5" />
+              Starta quiz - få din rekommendation
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-500">
+            Över 500 marknadsavdelningar har redan upptäckt hur YearWheel förenklar deras planering
+          </p>
+        </div>
+      </div>
+    )
+  };
+
   return (
     <LandingPageTemplate
       metaTitle="Marknadsplanering & Innehållskalender - YearWheel"
@@ -31,15 +138,15 @@ export default function Marknadsplanering() {
       canonicalUrl="https://yearwheel.se/marknadsplanering"
       ogImage="https://yearwheel.se/hero-hr-planning.webp"
       
-      heroTitle="Marknadsplanering som inspirerar"
+      heroTitle="Frustrerad över marknadsplaneringen?"
       heroSubtitle="Skapa en visuell årsöversikt över kampanjer, innehåll och sociala medier. Samordna teamet och imponera på stakeholders med professionella presentationer."
       heroImage="/hero-hr-planning.webp"
       heroCTA="Planera ditt marknadsår"
       
       painPoints={[
-        "Innehållskalendern i Excel blir snabbt oöverskådlig",
-        "Svårt att koordinera kampanjer mellan olika kanaler",
-        "Teamet tappar överblicken över vad som händer när",
+        "Innehållskalendern i Excel blir snabbt kaotisk",
+        "Teamet tappar överblicken över kampanjer",
+        "Svårt att koordinera mellan olika kanaler",
         "Rapporter till ledningen tar timmar att producera"
       ]}
       
@@ -141,6 +248,8 @@ export default function Marknadsplanering() {
         author: "Erik Lundberg",
         role: "Creative Director, Digital Byrå"
       }}
+      
+      customSections={[quizSection]}
       
       schemaData={schema}
     />
