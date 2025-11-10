@@ -54,6 +54,7 @@ class InteractionHandler {
     this.mouseDownItem = null;
     this.mouseDownDragMode = null; // Store drag mode detected on mouseDown
     this.dragJustCompleted = false; // Flag to prevent click after drag completes
+    // REMOVED: this.hadDragInCurrentCycle - now stored in wheel instance for persistence
     this.CLICK_THRESHOLD_PX = 5; // Max movement in pixels to count as click
     this.CLICK_TIMEOUT_MS = 300; // Max time for click (prevent slow drags from clicking)
     
@@ -353,16 +354,20 @@ class InteractionHandler {
   startActivityDrag(event, itemRegion, dragMode = null) {
     const { x, y } = this.getCanvasCoordinates(event);
     
+    // Mark that a drag has started in this mouse cycle (PERSIST IN WHEEL INSTANCE)
+    console.log('[DEBUG] startActivityDrag - setting wheel.hadDragInCurrentCycle = true');
+    this.wheel.hadDragInCurrentCycle = true;
+    
     // Use provided dragMode (from mouseDown) or detect it now (for backward compatibility)
     if (!dragMode) {
       dragMode = this.detectDragZone(x, y, itemRegion);
       console.warn('[InteractionHandler] dragMode not provided, detecting from current position');
     }
     
-    console.log('[InteractionHandler] startActivityDrag', {
-      itemId: itemRegion.itemId,
-      dragMode
-    });
+    // console.log('[InteractionHandler] startActivityDrag', {
+    //   itemId: itemRegion.itemId,
+    //   dragMode
+    // });
     
     // Clear mouseDown state - we're starting a drag, not a click
     this.mouseDownItem = null;
@@ -424,10 +429,11 @@ class InteractionHandler {
     }
 
     // Notify parent
-    console.log('[InteractionHandler] About to call onDragStart with item:', this.dragState.draggedItem?.name);
-    if (this.wheel.options?.onDragStart) {
-      this.wheel.options.onDragStart(this.dragState.draggedItem);
-      console.log('[InteractionHandler] onDragStart called successfully');
+        // Notify parent component (for closing tooltips, etc.)
+    // console.log('[InteractionHandler] About to call onDragStart with item:', this.dragState.draggedItem?.name);
+    if (this.options.onDragStart) {
+      this.options.onDragStart(this.dragState.draggedItem);
+      // console.log('[InteractionHandler] onDragStart called successfully');
     } else {
       console.warn('[InteractionHandler] onDragStart callback not found!');
     }
@@ -549,17 +555,19 @@ class InteractionHandler {
    */
   async stopActivityDrag() {
     if (!this.dragState.isDragging) {
-      console.log('[InteractionHandler] stopActivityDrag called but not dragging - ignoring');
+      // console.log('[InteractionHandler] stopActivityDrag called but not dragging - ignoring');
       return;
     }
 
-    console.log('[InteractionHandler] stopActivityDrag starting');
+    // console.log('[InteractionHandler] stopActivityDrag starting');
 
     // Set flag to block subsequent click event
+    // Use longer timeout to account for slow async operations
     this.dragJustCompleted = true;
     setTimeout(() => {
       this.dragJustCompleted = false;
-    }, 100); // Block clicks for 100ms after drag
+      // console.log('[InteractionHandler] dragJustCompleted cleared');
+    }, 500); // Block clicks for 500ms after drag (increased from 100ms)
 
     // Clear mouseDown state to prevent click detection after drag
     this.mouseDownItem = null;
@@ -916,7 +924,12 @@ class InteractionHandler {
   // ============================================================================
 
   handleMouseDown(event) {
+    console.log('[DEBUG] mouseDown - BEFORE reset:', this.wheel.hadDragInCurrentCycle);
     if (this.options.selectionMode) return;
+
+    // Reset drag cycle flag on new mouseDown (PERSIST IN WHEEL INSTANCE)
+    this.wheel.hadDragInCurrentCycle = false;
+    console.log('[DEBUG] mouseDown - AFTER reset:', this.wheel.hadDragInCurrentCycle);
 
     const { x, y } = this.getCanvasCoordinates(event);
     const dx = x - this.wheel.center.x;
@@ -1105,11 +1118,12 @@ class InteractionHandler {
     
     if (this.dragState.isDragging) {
       await this.stopActivityDrag();
-      // Set flag to block the subsequent click event
+      // Set backup flag to block the subsequent click event
       this.dragJustCompleted = true;
       setTimeout(() => {
         this.dragJustCompleted = false;
-      }, 50); // Short timeout, just enough to block the click event
+        console.log('[InteractionHandler] dragJustCompleted cleared (from mouseUp)');
+      }, 500); // Longer timeout to account for async save operations
       return;
     }
 
@@ -1143,6 +1157,14 @@ class InteractionHandler {
   }
 
   handleClick(event) {
+    console.log('[DEBUG] handleClick - wheel.hadDragInCurrentCycle:', this.wheel.hadDragInCurrentCycle);
+    
+    // Block click if ANY drag happened in current mouse cycle (CHECK WHEEL INSTANCE)
+    if (this.wheel.hadDragInCurrentCycle) {
+      console.log('[DEBUG] BLOCKED by wheel.hadDragInCurrentCycle');
+      return;
+    }
+    
     // Block click if drag just completed
     if (this.dragJustCompleted) {
       return;

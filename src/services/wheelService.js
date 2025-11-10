@@ -857,11 +857,11 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
     };
 
     if (existingMatch) {
-      console.log('[syncActivityGroups] updating existing group', {
-        inputId: group.id,
-        dbId: existingMatch.id,
-        name: group.name,
-      });
+      // console.log('[syncActivityGroups] updating existing group', {
+      //   inputId: group.id,
+      //   dbId: existingMatch.id,
+      //   name: group.name,
+      // });
       await supabase.from('activity_groups').update(payload).eq('id', existingMatch.id);
       idMap.set(group.id, existingMatch.id);
       retainedIds.add(existingMatch.id);
@@ -885,21 +885,21 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
           throw error;
         }
 
-        console.log('[syncActivityGroups] ✅ INSERTED new activity group to database', {
-          inputId: group.id,
-          dbId: newGroup.id,
-          name: group.name,
-          wheel_id: wheelId,
-          page_id: applyPageScope ? pageId : 'N/A',
-        });
+        // console.log('[syncActivityGroups] ✅ INSERTED new activity group to database', {
+        //   inputId: group.id,
+        //   dbId: newGroup.id,
+        //   name: group.name,
+        //   wheel_id: wheelId,
+        //   page_id: applyPageScope ? pageId : 'N/A',
+        // });
         idMap.set(group.id, newGroup.id);
         retainedIds.add(newGroup.id);
       } else {
         await supabase.from('activity_groups').update(payload).eq('id', group.id);
-        console.log('[syncActivityGroups] updated group by id', {
-          id: group.id,
-          name: group.name,
-        });
+        // console.log('[syncActivityGroups] updated group by id', {
+        //   id: group.id,
+        //   name: group.name,
+        // });
         idMap.set(group.id, group.id);
         retainedIds.add(group.id);
       }
@@ -1053,7 +1053,7 @@ const syncLabels = async (wheelId, pageId, labels) => {
  * Uses ID mappings to convert temporary IDs to database UUIDs
  */
 export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelIdMap, pageId = null) => {
-  console.log(`[syncItems] Starting sync for wheelId=${wheelId}, pageId=${pageId}, items count=${items.length}`);
+  // console.log(`[syncItems] Starting sync for wheelId=${wheelId}, pageId=${pageId}, items count=${items.length}`);
   const supportsPageScope = await isPageScopeSupported();
   
   // CRITICAL FIX: We need to compare against ALL existing items in the wheel,
@@ -1067,13 +1067,13 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
     )
     .eq('wheel_id', wheelId);
 
-  console.log(`[syncItems] Found ${existing?.length || 0} existing items in database`);
-  if (existing && existing.length > 0) {
-    existing.forEach((i, idx) => {
-      const pageSnippet = supportsPageScope && i.page_id ? i.page_id.substring(0, 8) : 'N/A';
-      console.log(`[syncItems]   Item ${idx + 1}: id=${i.id.substring(0, 8)}, name="${i.name}", pageId=${pageSnippet}, dates=${i.start_date} to ${i.end_date}, created=${i.created_at}`);
-    });
-  }
+  // console.log(`[syncItems] Found ${existing?.length || 0} existing items in database`);
+  // if (existing && existing.length > 0) {
+  //   existing.forEach((i, idx) => {
+  //     const pageSnippet = supportsPageScope && i.page_id ? i.page_id.substring(0, 8) : 'N/A';
+  //     console.log(`[syncItems]   Item ${idx + 1}: id=${i.id.substring(0, 8)}, name="${i.name}", pageId=${pageSnippet}, dates=${i.start_date} to ${i.end_date}, created=${i.created_at}`);
+  //   });
+  // }
 
   const existingIds = new Set(existing?.map(i => i.id) || []);
   
@@ -1084,10 +1084,10 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
     existingByContent.set(key, dbItem.id);
   });
 
-  console.log(`[syncItems] Items to sync (from wheelStructure):`);
-  items.forEach((i, idx) => {
-    console.log(`[syncItems]   Item ${idx + 1}: id=${i.id ? i.id.substring(0, 8) : 'NEW'}, name="${i.name}", pageId=${i.pageId ? i.pageId.substring(0, 8) : 'NONE'}, ringId=${i.ringId ? i.ringId.substring(0, 8) : 'NONE'}, activityId=${i.activityId ? i.activityId.substring(0, 8) : 'NONE'}, dates=${i.startDate} to ${i.endDate}`);
-  });
+  // console.log(`[syncItems] Items to sync (from wheelStructure):`);
+  // items.forEach((i, idx) => {
+  //   console.log(`[syncItems]   Item ${idx + 1}: id=${i.id ? i.id.substring(0, 8) : 'NEW'}, name="${i.name}", pageId=${i.pageId ? i.pageId.substring(0, 8) : 'NONE'}, ringId=${i.ringId ? i.ringId.substring(0, 8) : 'NONE'}, activityId=${i.activityId ? i.activityId.substring(0, 8) : 'NONE'}, dates=${i.startDate} to ${i.endDate}`);
+  // });
 
   // Resolve temp IDs to database UUIDs via content matching
   const currentIds = new Set();
@@ -1101,7 +1101,7 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       const matchedId = existingByContent.get(contentKey);
       if (matchedId) {
         currentIds.add(matchedId);
-        console.log(`[syncItems] Matched temp ID "${item.id}" to database UUID ${matchedId.substring(0, 8)} via content`);
+        // console.log(`[syncItems] Matched temp ID "${item.id}" to database UUID ${matchedId.substring(0, 8)} via content`);
       }
     }
   });
@@ -1123,24 +1123,24 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
         const createdAt = new Date(i.created_at);
         const ageSeconds = (now - createdAt) / 1000;
         const isRecent = ageSeconds < 10;
-        if (isRecent) {
-          console.log(`[syncItems]   Recently created: id=${i.id.substring(0, 8)}, name="${i.name}", age=${ageSeconds.toFixed(1)}s`);
-        }
+        // if (isRecent) {
+        //   console.log(`[syncItems]   Recently created: id=${i.id.substring(0, 8)}, name="${i.name}", age=${ageSeconds.toFixed(1)}s`);
+        // }
         return isRecent;
       })
       .map(i => i.id) || []
   );
   
-  console.log(`[syncItems] Found ${recentlyCreated.size} recently created items that will be protected from deletion`);
+  // console.log(`[syncItems] Found ${recentlyCreated.size} recently created items that will be protected from deletion`);
   
   const toDelete = [...existingPageIds].filter(id => !currentIds.has(id) && !recentlyCreated.has(id));
   
-  console.log(`[syncItems] Items on current scope (${supportsPageScope ? pageId?.substring(0, 8) : 'wheel'}): ${existingPageItems.length}`);
-  console.log(`[syncItems] Items to DELETE: ${toDelete.length}`, toDelete.map(id => id.substring(0, 8)));
+  // console.log(`[syncItems] Items on current scope (${supportsPageScope ? pageId?.substring(0, 8) : 'wheel'}): ${existingPageItems.length}`);
+  // console.log(`[syncItems] Items to DELETE: ${toDelete.length}`, toDelete.map(id => id.substring(0, 8)));
   
   if (toDelete.length > 0) {
     await supabase.from('items').delete().in('id', toDelete);
-    console.log(`[syncItems] DELETED ${toDelete.length} items from database`);
+    // console.log(`[syncItems] DELETED ${toDelete.length} items from database`);
   }
 
   // Fetch all pages for this wheel to map years to page IDs
@@ -1326,16 +1326,16 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   if (!wheelId) throw new Error('wheelId is required for saveWheelSnapshot');
   if (!snapshot) throw new Error('snapshot is required for saveWheelSnapshot');
 
-  console.log('[saveWheelSnapshot] Received snapshot structure:', {
-    hasMetadata: !!snapshot.metadata,
-    hasStructure: !!snapshot.structure,
-    hasPages: !!snapshot.pages,
-    pageCount: snapshot.pages?.length || 0,
-    // Legacy fields (should not exist in new clean structure):
-    hasGlobalWheelStructure: !!snapshot.globalWheelStructure,
-    hasPageStructures: snapshot.pages?.[0]?.structure ? 'YES - LEGACY!' : 'NO',
-    hasPageWheelStructures: snapshot.pages?.[0]?.wheelStructure ? 'YES - LEGACY!' : 'NO',
-  });
+  // console.log('[saveWheelSnapshot] Received snapshot structure:', {
+  //   hasMetadata: !!snapshot.metadata,
+  //   hasStructure: !!snapshot.structure,
+  //   hasPages: !!snapshot.pages,
+  //   pageCount: snapshot.pages?.length || 0,
+  //   // Legacy fields (should not exist in new clean structure):
+  //   hasGlobalWheelStructure: !!snapshot.globalWheelStructure,
+  //   hasPageStructures: snapshot.pages?.[0]?.structure ? 'YES - LEGACY!' : 'NO',
+  //   hasPageWheelStructures: snapshot.pages?.[0]?.wheelStructure ? 'YES - LEGACY!' : 'NO',
+  // });
 
   const {
     metadata = {},
@@ -1361,11 +1361,11 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     ? structure.labels.map((label) => ({ ...label }))
     : [];
 
-  console.log('[saveWheelSnapshot] base structure snapshot', {
-    rings: baseRings.map((ring) => ({ id: ring.id, name: ring.name, type: ring.type })),
-    activityGroups: baseActivityGroups.map((group) => ({ id: group.id, name: group.name })),
-    labels: baseLabels.map((label) => ({ id: label.id, name: label.name })),
-  });
+  // console.log('[saveWheelSnapshot] base structure snapshot', {
+  //   rings: baseRings.map((ring) => ({ id: ring.id, name: ring.name, type: ring.type })),
+  //   activityGroups: baseActivityGroups.map((group) => ({ id: group.id, name: group.name })),
+  //   labels: baseLabels.map((label) => ({ id: label.id, name: label.name })),
+  // });
 
   const ringIdMap = await syncRings(wheelId, null, baseRings);
   const { data: debugRings, error: debugRingsError } = await supabase
@@ -1376,18 +1376,18 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   if (debugRingsError) {
     console.warn('[saveWheelSnapshot] Failed to fetch rings after sync', debugRingsError);
   } else {
-    console.log('[saveWheelSnapshot] rings persisted after sync', debugRings);
+    // console.log('[saveWheelSnapshot] rings persisted after sync', debugRings);
   }
   const activityIdMap = await syncActivityGroups(wheelId, null, baseActivityGroups);
   const labelIdMap = await syncLabels(wheelId, null, baseLabels);
 
   const mapToPairs = (map) => Array.from(map.entries()).map(([from, to]) => ({ from, to }));
 
-  console.log('[saveWheelSnapshot] id maps', {
-    ring: mapToPairs(ringIdMap),
-    activity: mapToPairs(activityIdMap),
-    label: mapToPairs(labelIdMap),
-  });
+  // console.log('[saveWheelSnapshot] id maps', {
+  //   ring: mapToPairs(ringIdMap),
+  //   activity: mapToPairs(activityIdMap),
+  //   label: mapToPairs(labelIdMap),
+  // });
 
   const normalizedPages = Array.isArray(pages) ? pages : [];
 

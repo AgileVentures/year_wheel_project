@@ -588,11 +588,13 @@ function YearWheel({
     // yearFilteredOrgData EXCLUDED - updated via updateWheelStructure to prevent wheel recreation during drag
     // zoomedMonth and zoomedQuarter excluded - updated via updateZoomState to prevent wheel recreation
     monthNames,
-    handleItemClick,
-    handleDragStart,
-    handleUpdateAktivitet,
-    onExtendActivityBeyondYear,
-    onExtendActivityToPreviousYear,
+    // CRITICAL: Exclude callbacks from dependencies to prevent wheel recreation during state changes
+    // Callbacks are captured at wheel creation time and remain stable
+    // handleItemClick,
+    // handleDragStart,
+    // handleUpdateAktivitet,
+    // onExtendActivityBeyondYear,
+    // onExtendActivityToPreviousYear,
     // wheelStructure excluded - updated via updateWheelStructure to prevent wheel recreation during drag
   ]);
 

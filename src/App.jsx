@@ -1199,44 +1199,44 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const handleRealtimeChange = useCallback((eventType, tableName, payload) => {
     // CRITICAL: Block ALL realtime updates during page navigation
     if (isNavigatingPagesRef.current) {
-      console.log('[Realtime] Ignoring update - page navigation in progress');
+      // console.log('[Realtime] Ignoring update - page navigation in progress');
       return;
     }
     
     // CRITICAL: Block ALL realtime updates during version restore
     if (isRestoringVersion.current) {
-      console.log('[Realtime] Ignoring update during version restore');
+      // console.log('[Realtime] Ignoring update during version restore');
       return;
     }
     
     // COMPLETELY IGNORE all events if we're in the middle of saving
     if (isSavingRef.current) {
-      console.log('[Realtime] Ignoring update - save in progress');
+      // console.log('[Realtime] Ignoring update - save in progress');
       return;
     }
 
     // Ignore realtime churn while user is dragging to prevent visual snapbacks
     if (isDraggingRef.current) {
-      console.log('[Realtime] Ignoring update - drag in progress');
+      // console.log('[Realtime] Ignoring update - drag in progress');
       return;
     }
     
     // CRITICAL: Check if we have queued changes - don't overwrite optimistic local state!
     if (hasQueuedChanges()) {
-      console.log('[Realtime] Ignoring update - queued changes waiting to save');
+      // console.log('[Realtime] Ignoring update - queued changes waiting to save');
       return;
     }
     
     // Ignore broadcasts from our own recent saves (within 5 seconds - increased to allow auto-save to complete)
     const timeSinceLastSave = Date.now() - lastSaveTimestamp.current;
     if (timeSinceLastSave < 5000) {
-      console.log('[Realtime] Ignoring update - recent save (<5s)');
+      // console.log('[Realtime] Ignoring update - recent save (<5s)');
       return;
     }
     
     // CRITICAL: Check if we have unsaved changes - don't overwrite local work!
     if (hasUnsavedChanges) {
-      console.log('[Realtime] Ignoring update - unsaved local changes exist');
+      // console.log('[Realtime] Ignoring update - unsaved local changes exist');
       return;
     }
     

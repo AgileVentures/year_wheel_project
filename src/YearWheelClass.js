@@ -137,6 +137,9 @@ class YearWheel {
     this.justFinishedDrag = false; // Prevent tooltip immediately after drag ends
   this.skipNextClick = false; // Ignore synthetic click directly after drag
 
+    // CRITICAL: Persist drag flag at wheel level to survive InteractionHandler recreation
+    this.hadDragInCurrentCycle = false;
+
     // Selection mode support
     this.selectionMode = options.selectionMode || false;
     this.selectedItems = options.selectedItems || [];
