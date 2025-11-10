@@ -381,13 +381,6 @@ function YearWheel({
   }, [selectedItems, clearSelections, t]);
 
   const handleItemClick = useCallback((item, position, event) => {
-    // If external click handler provided (e.g., for casting), call it
-    // This takes priority over all other modes
-    if (onItemClick) {
-      onItemClick(item);
-      return;
-    }
-    
     // CRITICAL: Validate that the item exists in current wheelStructure
     // This prevents showing stale data when canvas clickableItems array is out of sync
     const currentItem = yearFilteredOrgData?.items?.find(i => i.id === item.id);
@@ -430,6 +423,11 @@ function YearWheel({
     } else {
       // Fallback to click position if container ref not available
       setTooltipPosition(position);
+    }
+    
+    // Notify parent component AFTER showing tooltip (for casting, etc.)
+    if (onItemClick) {
+      onItemClick(item);
     }
   }, [onItemClick, selectionMode, yearFilteredOrgData]);
 

@@ -48,6 +48,13 @@ class InteractionHandler {
     this.lastHoverCheck = 0;
     this.hoverThrottleMs = 16; // ~60fps
     
+    // Click detection (distinguish clicks from drags)
+    this.mouseDownPos = null;
+    this.mouseDownTime = 0;
+    this.mouseDownItem = null;
+    this.CLICK_THRESHOLD_PX = 5; // Max movement in pixels to count as click
+    this.CLICK_TIMEOUT_MS = 300; // Max time for click (prevent slow drags from clicking)
+    
     // Bind event handlers
     this.boundHandlers = {
       mouseDown: this.handleMouseDown.bind(this),
@@ -344,6 +351,10 @@ class InteractionHandler {
   startActivityDrag(event, itemRegion) {
     const { x, y } = this.getCanvasCoordinates(event);
     const dragMode = this.detectDragZone(x, y, itemRegion);
+    
+    // Clear mouseDown state - we're starting a drag, not a click
+    this.mouseDownItem = null;
+    this.mouseDownPos = null;
     
     // CRITICAL: Look up fresh item data from wheelStructure (single source of truth)
     const freshItem = this.wheel.wheelStructure.items.find(
@@ -867,16 +878,22 @@ class InteractionHandler {
     const dy = y - this.wheel.center.y;
     const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
 
+    // Store mouseDown position and time for click detection
+    this.mouseDownPos = { x: event.clientX, y: event.clientY };
+    this.mouseDownTime = Date.now();
+    this.mouseDownItem = null;
+
     // Don't interact with center circle
     if (distanceFromCenter <= this.wheel.minRadius) {
       return;
     }
 
-    // Check for activity click
+    // Check for activity - store for potential click or drag
     if (this.wheel.clickableItems && distanceFromCenter > this.wheel.minRadius) {
       for (const itemRegion of this.wheel.clickableItems) {
         if (this.isPointInItemRegion(x, y, itemRegion)) {
-          this.startActivityDrag(event, itemRegion);
+          // Store the item for click detection, but don't start drag yet
+          this.mouseDownItem = itemRegion;
           return;
         }
       }
@@ -887,6 +904,20 @@ class InteractionHandler {
   }
 
   handleMouseMove(event) {
+    // Check if we should start dragging (mouseDown on item + moved beyond threshold)
+    if (this.mouseDownItem && !this.dragState.isDragging && !this.isRotating) {
+      const dx = event.clientX - this.mouseDownPos.x;
+      const dy = event.clientY - this.mouseDownPos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance > this.CLICK_THRESHOLD_PX) {
+        // Movement exceeded threshold - start drag
+        this.startActivityDrag(event, this.mouseDownItem);
+        this.mouseDownItem = null; // Clear so we don't start again
+      }
+      return;
+    }
+    
     // Handle active drags
     if (this.dragState.isDragging) {
       this.updateActivityDrag(event);
@@ -1004,6 +1035,24 @@ class InteractionHandler {
   }
 
   async handleMouseUp(event) {
+    // Check if this was a click (mouseDown + mouseUp on same item without drag)
+    if (this.mouseDownItem && !this.dragState.isDragging) {
+      const timeSinceDown = Date.now() - this.mouseDownTime;
+      const dx = event.clientX - this.mouseDownPos.x;
+      const dy = event.clientY - this.mouseDownPos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance <= this.CLICK_THRESHOLD_PX && timeSinceDown <= this.CLICK_TIMEOUT_MS) {
+        // This was a click! Trigger click handler
+        this.handleClick(event);
+      }
+      
+      // Clear mouseDown state
+      this.mouseDownItem = null;
+      this.mouseDownPos = null;
+      return;
+    }
+    
     if (this.dragState.isDragging) {
       await this.stopActivityDrag();
       return;
@@ -1073,11 +1122,18 @@ class InteractionHandler {
                 x: event.clientX,
                 y: event.clientY
               }, event);
+            } else {
+              console.warn('[InteractionHandler] Item not found in wheelStructure:', itemRegion.itemId);
             }
             return;
           }
         }
+        console.log('[InteractionHandler] Click was not on any item region');
+      } else {
+        console.log('[InteractionHandler] No clickableItems available');
       }
+    } else {
+      console.log('[InteractionHandler] No onItemClick callback');
     }
   }
 
