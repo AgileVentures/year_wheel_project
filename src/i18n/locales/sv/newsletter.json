@@ -1,7 +1,7 @@
 {
-  "title": "Newsletter",
-  "subtitle": "Skapa och skicka newsletters till dina användare",
-  "newNewsletter": "Nytt Newsletter",
+  "title": "Nyhetsbrev",
+  "subtitle": "Skapa och skicka nyhetsbrev till dina användare",
+  "newNewsletter": "Nytt Nyhetsbrev",
   "recipients": "Mottagare",
   "subject": "Ämnesrad",
   "subjectRequired": "Ämnesrad *",
@@ -48,7 +48,7 @@
   "customEmailsLabel": "Email-adresser (komma-separerade)",
   "customEmailsPlaceholder": "user1@example.com, user2@example.com",
   "templates": {
-    "newsletter": "Newsletter (med sektioner)",
+    "newsletter": "Nyhetsbrev (med sektioner)",
     "feature": "Ny funktion",
     "tips": "Tips & Tricks",
     "announcement": "Enkelt meddelande"
@@ -64,7 +64,7 @@
     "bounces": "Studsar och klagomål"
   },
   "detail": {
-    "title": "Newsletter Detaljer",
+    "title": "Nyhetsbrev Detaljer",
     "tabs": {
       "overview": "Översikt",
       "clicks": "Klick",
@@ -87,17 +87,17 @@
   "messages": {
     "draftSaved": "Utkast sparat!",
     "draftUpdated": "Utkast uppdaterat!",
-    "sendSuccess": "Newsletter skickat till {count} mottagare!",
+    "sendSuccess": "Nyhetsbrev skickat till {count} mottagare!",
     "sendPartial": "Delvis skickat: {success} lyckades, {failed} misslyckades. Se konsolen för detaljer.",
     "sendError": "Fel vid skickning: {error}",
     "sendConfirm": "Är du säker på att du vill skicka till \"{type}\" mottagare?",
-    "deleteConfirm": "Är du säker på att du vill ta bort denna newsletter från historiken?",
-    "deleted": "Newsletter borttagen",
+    "deleteConfirm": "Är du säker på att du vill ta bort detta nyhetsbrev från historiken?",
+    "deleted": "Nyhetsbrev borttaget",
     "deleteError": "Ett fel uppstod vid borttagning",
     "saveError": "Ett fel uppstod vid sparande",
     "subjectRequired": "Ange en ämnesrad",
     "previewRequired": "Generera en förhandsgranskning först",
-    "noTemplateData": "Denna newsletter har ingen mall-data att återanvända",
+    "noTemplateData": "Detta nyhetsbrev har ingen mall-data att återanvända",
     "domainNotVerified": "Domänen hello@yearwheel.se är inte verifierad i Resend. Kontakta admin.",
     "invalidApiKey": "Resend API-nyckeln är ogiltig. Kontakta admin.",
     "sendGeneralError": "Ett fel uppstod vid skickning. Se konsolen för detaljer."

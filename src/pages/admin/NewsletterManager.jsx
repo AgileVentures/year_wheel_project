@@ -12,7 +12,7 @@ import NewsletterDetail from '../../components/NewsletterDetail';
 import { useTranslation } from 'react-i18next';
 
 export default function NewsletterManager() {
-  const { t } = useTranslation(['newsletter', 'admin']);
+  const { t } = useTranslation('newsletter');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -765,9 +765,6 @@ export default function NewsletterManager() {
                         onClick={() => reuseNewsletter(send)}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title={t('reuse')}
-                      >
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Återanvänd denna mall"
                       >
                         <Copy size={16} />
                       </button>

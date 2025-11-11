@@ -18,6 +18,8 @@ import svSupport from './locales/sv/support.json';
 import svNotifications from './locales/sv/notifications.json';
 import svAffiliate from './locales/sv/affiliate.json';
 import svZoom from './locales/sv/zoom.json';
+import svNewsletter from './locales/sv/newsletter.json';
+import svQuiz from './locales/sv/quiz.json';
 
 // Import English translations
 import enCommon from './locales/en/common.json';
@@ -35,6 +37,8 @@ import enSupport from './locales/en/support.json';
 import enNotifications from './locales/en/notifications.json';
 import enAffiliate from './locales/en/affiliate.json';
 import enZoom from './locales/en/zoom.json';
+import enNewsletter from './locales/en/newsletter.json';
+import enQuiz from './locales/en/quiz.json';
 
 i18n
   .use(LanguageDetector)
@@ -57,6 +61,8 @@ i18n
         notifications: svNotifications,
         affiliate: svAffiliate,
         zoom: svZoom,
+        newsletter: svNewsletter,
+        quiz: svQuiz,
       },
       en: {
         common: enCommon,
@@ -74,6 +80,8 @@ i18n
         notifications: enNotifications,
         affiliate: enAffiliate,
         zoom: enZoom,
+        newsletter: enNewsletter,
+        quiz: enQuiz,
       },
     },
     lng: 'sv', // Default language
