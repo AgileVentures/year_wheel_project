@@ -25,6 +25,7 @@ const PreviewWheelPage = lazy(() => import("./components/PreviewWheelPage"));
 const PricingPage = lazy(() => import("./components/PricingPage"));
 const LegalPage = lazy(() => import("./components/LegalPage"));
 const SupportPage = lazy(() => import("./components/SupportPage"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
 const NewsletterManager = lazy(() => import("./pages/admin/NewsletterManager"));
@@ -4660,6 +4661,7 @@ function AppContent() {
         <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/support" element={<SupportPage />} />
+        <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/guide/quick-start" element={<QuickStartGuide />} />
         <Route path="/legal/:document" element={<LegalPage />} />
         <Route path="/invite/:token" element={<InviteAcceptPage />} />

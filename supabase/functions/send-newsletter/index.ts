@@ -79,6 +79,7 @@ serve(async (req) => {
       let query = supabase
         .from('profiles')
         .select('email')
+        .eq('newsletter_subscribed', true) // Only include subscribed users
 
       if (recipientType === 'premium') {
         // Get premium users from subscriptions table

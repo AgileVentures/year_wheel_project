@@ -5,6 +5,11 @@ ADD COLUMN IF NOT EXISTS opened_count INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS clicked_count INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS failed_count INTEGER DEFAULT 0;
 
+-- Add newsletter preferences to profiles
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS newsletter_subscribed BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS newsletter_unsubscribed_at TIMESTAMPTZ;
+
 -- Create newsletter_events table for detailed tracking
 CREATE TABLE IF NOT EXISTS newsletter_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -64,3 +69,5 @@ COMMENT ON COLUMN newsletter_sends.delivered_count IS 'Count of successfully del
 COMMENT ON COLUMN newsletter_sends.opened_count IS 'Count of email opens (requires tracking pixel)';
 COMMENT ON COLUMN newsletter_sends.clicked_count IS 'Count of link clicks in emails';
 COMMENT ON COLUMN newsletter_sends.failed_count IS 'Count of bounces and complaints';
+COMMENT ON COLUMN profiles.newsletter_subscribed IS 'Whether user wants to receive newsletters';
+COMMENT ON COLUMN profiles.newsletter_unsubscribed_at IS 'Timestamp when user unsubscribed from newsletters';

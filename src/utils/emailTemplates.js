@@ -159,7 +159,7 @@ export const emailLayout = (content, preheader = '') => `
                 Du får detta mail för att du har ett konto hos YearWheel.
               </p>
               <p style="margin: 0; font-size: 12px;">
-                <a href="{{unsubscribe_url}}" style="color: #9ca3af; text-decoration: underline;">Avregistrera</a> •
+                <a href="https://yearwheel.se/unsubscribe" style="color: #9ca3af; text-decoration: underline;">Avregistrera från nyhetsbrev</a> •
                 <a href="https://yearwheel.se/settings" style="color: #9ca3af; text-decoration: underline;">Inställningar</a>
               </p>
             </td>
