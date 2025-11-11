@@ -82,18 +82,25 @@
     "emailPreview": "Email Preview",
     "noPreview": "No preview available"
   },
+  "previewTitle": "Preview",
+  "previewEmpty": "Fill in the form and click \"Preview\"",
   "messages": {
     "draftSaved": "Draft saved!",
+    "draftUpdated": "Draft updated!",
     "sendSuccess": "Newsletter sent to {count} recipients!",
     "sendPartial": "Partially sent: {success} succeeded, {failed} failed. See console for details.",
     "sendError": "Error sending: {error}",
+    "sendConfirm": "Are you sure you want to send to \"{type}\" recipients?",
     "deleteConfirm": "Are you sure you want to delete this newsletter from history?",
     "deleted": "Newsletter deleted",
     "deleteError": "An error occurred while deleting",
+    "saveError": "An error occurred while saving",
     "subjectRequired": "Subject line is required",
+    "previewRequired": "Generate a preview first",
     "noTemplateData": "This newsletter has no template data to reuse",
-    "domainNotVerified": "The domain hello@yearwheel.se is not verified in Resend. Contact admin.",
-    "invalidApiKey": "Resend API key is invalid. Contact admin."
+    "domainNotVerified": "Domain hello@yearwheel.se is not verified in Resend. Contact admin.",
+    "invalidApiKey": "Resend API key is invalid. Contact admin.",
+    "sendGeneralError": "An error occurred while sending. See console for details."
   },
   "confirm": {
     "title": "Confirm Action",

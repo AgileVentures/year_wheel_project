@@ -82,18 +82,25 @@
     "emailPreview": "Email-förhandsgranskning",
     "noPreview": "Ingen förhandsgranskning tillgänglig"
   },
+  "previewTitle": "Förhandsgranskning",
+  "previewEmpty": "Fyll i formuläret och klicka på \"Förhandsgranska\"",
   "messages": {
     "draftSaved": "Utkast sparat!",
+    "draftUpdated": "Utkast uppdaterat!",
     "sendSuccess": "Newsletter skickat till {count} mottagare!",
     "sendPartial": "Delvis skickat: {success} lyckades, {failed} misslyckades. Se konsolen för detaljer.",
     "sendError": "Fel vid skickning: {error}",
+    "sendConfirm": "Är du säker på att du vill skicka till \"{type}\" mottagare?",
     "deleteConfirm": "Är du säker på att du vill ta bort denna newsletter från historiken?",
     "deleted": "Newsletter borttagen",
     "deleteError": "Ett fel uppstod vid borttagning",
-    "subjectRequired": "Ämnesrad krävs",
+    "saveError": "Ett fel uppstod vid sparande",
+    "subjectRequired": "Ange en ämnesrad",
+    "previewRequired": "Generera en förhandsgranskning först",
     "noTemplateData": "Denna newsletter har ingen mall-data att återanvända",
     "domainNotVerified": "Domänen hello@yearwheel.se är inte verifierad i Resend. Kontakta admin.",
-    "invalidApiKey": "Resend API-nyckeln är ogiltig. Kontakta admin."
+    "invalidApiKey": "Resend API-nyckeln är ogiltig. Kontakta admin.",
+    "sendGeneralError": "Ett fel uppstod vid skickning. Se konsolen för detaljer."
   },
   "confirm": {
     "title": "Bekräfta åtgärd",

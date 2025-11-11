@@ -124,16 +124,16 @@ export default function NewsletterManager() {
 
   const sendNewsletter = async () => {
     if (!subject) {
-      showToast('Ange en ämnesrad', 'error');
+      showToast(t('messages.subjectRequired'), 'error');
       return;
     }
     
     if (!preview) {
-      showToast('Generera en förhandsgranskning först', 'error');
+      showToast(t('messages.previewRequired'), 'error');
       return;
     }
 
-    showConfirm(`Är du säker på att du vill skicka till "${recipientType}" mottagare?`, async () => {
+    showConfirm(t('messages.sendConfirm', { type: recipientType }), async () => {
       setSending(true);
 
     try {
@@ -183,13 +183,13 @@ export default function NewsletterManager() {
         if (result.errorCount > 0) {
           // Partial success
           showToast(
-            `Delvis skickat: ${result.successCount} lyckades, ${result.errorCount} misslyckades. Se konsolen för detaljer.`,
+            t('messages.sendPartial', { success: result.successCount, failed: result.errorCount }),
             'warning'
           );
           console.error('Failed batches:', result.errors);
         } else {
           // Full success
-          showToast(`Newsletter skickat till ${result.successCount} mottagare!`, 'success');
+          showToast(t('messages.sendSuccess', { count: result.successCount }), 'success');
         }
         
         // If we were editing a draft, delete it since we sent it
@@ -209,22 +209,22 @@ export default function NewsletterManager() {
       } else {
         // Complete failure
         const errorMsg = result.message || result.error || 'Okänt fel';
-        showToast(`Fel vid skickning: ${errorMsg}`, 'error');
+        showToast(t('messages.sendError', { error: errorMsg }), 'error');
         
         if (result.errors && result.errors.length > 0) {
           console.error('Detailed errors:', result.errors);
           // Show first error in toast
           const firstError = result.errors[0];
           if (firstError.error.includes('domain') || firstError.error.includes('verified')) {
-            showToast('Domänen hello@yearwheel.se är inte verifierad i Resend. Kontakta admin.', 'error');
+            showToast(t('messages.domainNotVerified'), 'error');
           } else if (firstError.error.includes('API key')) {
-            showToast('Resend API-nyckeln är ogiltig. Kontakta admin.', 'error');
+            showToast(t('messages.invalidApiKey'), 'error');
           }
         }
       }
     } catch (error) {
       console.error('Send error:', error);
-      showToast('Ett fel uppstod vid skickning. Se konsolen för detaljer.', 'error');
+      showToast(t('messages.sendGeneralError'), 'error');
     } finally {
       setSending(false);
     }
@@ -257,12 +257,12 @@ export default function NewsletterManager() {
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      showToast('Denna newsletter har ingen mall-data att återanvända', 'error');
+      showToast(t('messages.noTemplateData'), 'error');
     }
   };
 
   const deleteNewsletter = async (id) => {
-    showConfirm('Är du säker på att du vill ta bort denna newsletter från historiken?', async () => {
+    showConfirm(t('messages.deleteConfirm'), async () => {
       try {
         const { error } = await supabase
           .from('newsletter_sends')
@@ -273,17 +273,17 @@ export default function NewsletterManager() {
 
         loadHistory();
         loadDrafts();
-        showToast('Newsletter borttagen', 'success');
+        showToast(t('messages.deleted'), 'success');
       } catch (error) {
         console.error('Delete error:', error);
-        showToast('Ett fel uppstod vid borttagning', 'error');
+        showToast(t('messages.deleteError'), 'error');
       }
     });
   };
 
   const saveDraft = async () => {
     if (!subject) {
-      showToast('Ange en ämnesrad', 'error');
+      showToast(t('messages.subjectRequired'), 'error');
       return;
     }
 
@@ -330,7 +330,7 @@ export default function NewsletterManager() {
           .eq('id', editingDraftId);
 
         if (error) throw error;
-        showToast('Utkast uppdaterat!', 'success');
+        showToast(t('messages.draftUpdated'), 'success');
       } else {
         // Create new draft
         const { error } = await supabase
@@ -338,13 +338,13 @@ export default function NewsletterManager() {
           .insert([draftData]);
 
         if (error) throw error;
-        showToast('Utkast sparat!', 'success');
+        showToast(t('messages.draftSaved'), 'success');
       }
 
       loadDrafts();
     } catch (error) {
       console.error('Save draft error:', error);
-      showToast('Ett fel uppstod vid sparande', 'error');
+      showToast(t('messages.saveError'), 'error');
     } finally {
       setSaving(false);
     }
@@ -413,14 +413,14 @@ export default function NewsletterManager() {
             {recipientType === 'custom' && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email-adresser (komma-separerade)
+                  {t('customEmailsLabel')}
                 </label>
                 <textarea
                   value={customEmails}
                   onChange={(e) => setCustomEmails(e.target.value)}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
-                  placeholder="user1@example.com, user2@example.com"
+                  placeholder={t('customEmailsPlaceholder')}
                 />
               </div>
             )}
@@ -428,31 +428,31 @@ export default function NewsletterManager() {
             {/* Subject */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ämnesrad *
+                {t('subjectRequired')}
               </label>
               <input
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
-                placeholder="YearWheel - Nya funktioner denna månad"
+                placeholder={t('subjectPlaceholder')}
               />
             </div>
 
             {/* Template Type */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mall
+                {t('template')}
               </label>
               <select
                 value={templateType}
                 onChange={(e) => setTemplateType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
               >
-                <option value="newsletter">Newsletter (med sektioner)</option>
-                <option value="feature">Ny funktion</option>
-                <option value="tips">Tips & Tricks</option>
-                <option value="announcement">Enkelt meddelande</option>
+                <option value="newsletter">{t('templates.newsletter')}</option>
+                <option value="feature">{t('templates.feature')}</option>
+                <option value="tips">{t('templates.tips')}</option>
+                <option value="announcement">{t('templates.announcement')}</option>
               </select>
             </div>
 
@@ -461,20 +461,20 @@ export default function NewsletterManager() {
               <div className="space-y-4">
                 <input
                   type="text"
-                  placeholder="Tagline (t.ex. 'Visualisera och planera ditt år!')"
+                  placeholder={t('taglinePlaceholder')}
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
                 <input
                   type="text"
-                  placeholder="Huvudrubrik"
+                  placeholder={t('headingPlaceholder')}
                   value={newsletter.heading}
                   onChange={(e) => setNewsletter({ ...newsletter, heading: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
                 <textarea
-                  placeholder="Intro-text"
+                  placeholder={t('introPlaceholder')}
                   value={newsletter.intro}
                   onChange={(e) => setNewsletter({ ...newsletter, intro: e.target.value })}
                   rows={3}
@@ -485,7 +485,7 @@ export default function NewsletterManager() {
                   <div key={idx} className="p-4 border border-gray-200 rounded-sm space-y-2">
                     <input
                       type="text"
-                      placeholder="Sektion-rubrik"
+                      placeholder={t('sectionTitle')}
                       value={section.title}
                       onChange={(e) => {
                         const newSections = [...newsletter.sections];
@@ -495,7 +495,7 @@ export default function NewsletterManager() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                     />
                     <textarea
-                      placeholder="Sektion-innehåll"
+                      placeholder={t('sectionContent')}
                       value={section.content}
                       onChange={(e) => {
                         const newSections = [...newsletter.sections];
@@ -517,14 +517,14 @@ export default function NewsletterManager() {
                           }}
                           className="mr-2"
                         />
-                        <span className="text-sm text-gray-700">Visa länk</span>
+                        <span className="text-sm text-gray-700">{t('showLink')}</span>
                       </label>
                     </div>
                     {section.showLink && (
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         <input
                           type="text"
-                          placeholder="Länktext (t.ex. 'Läs mer →')"
+                          placeholder={t('linkTextPlaceholder')}
                           value={section.link?.text || ''}
                           onChange={(e) => {
                             const newSections = [...newsletter.sections];
@@ -535,7 +535,7 @@ export default function NewsletterManager() {
                         />
                         <input
                           type="text"
-                          placeholder="URL"
+                          placeholder={t('linkUrl')}
                           value={section.link?.url || ''}
                           onChange={(e) => {
                             const newSections = [...newsletter.sections];
@@ -553,20 +553,20 @@ export default function NewsletterManager() {
                   onClick={addSection}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  + Lägg till sektion
+                  + {t('addSection')}
                 </button>
                 
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
-                    placeholder="CTA Text"
+                    placeholder={t('ctaText')}
                     value={newsletter.cta.text}
                     onChange={(e) => setNewsletter({ ...newsletter, cta: { ...newsletter.cta, text: e.target.value } })}
                     className="px-3 py-2 border border-gray-300 rounded-sm"
                   />
                   <input
                     type="text"
-                    placeholder="CTA URL"
+                    placeholder={t('ctaUrl')}
                     value={newsletter.cta.url}
                     onChange={(e) => setNewsletter({ ...newsletter, cta: { ...newsletter.cta, url: e.target.value } })}
                     className="px-3 py-2 border border-gray-300 rounded-sm"
@@ -575,7 +575,7 @@ export default function NewsletterManager() {
                 
                 <input
                   type="text"
-                  placeholder="P.S. (valfritt)"
+                  placeholder={t('psOptional')}
                   value={newsletter.ps}
                   onChange={(e) => setNewsletter({ ...newsletter, ps: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm"
@@ -625,7 +625,7 @@ export default function NewsletterManager() {
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-sm transition-colors"
               >
                 <Save size={18} />
-                {saving ? 'Sparar...' : editingDraftId ? 'Uppdatera' : 'Spara'}
+                {saving ? t('saving') : editingDraftId ? t('update') : t('saveDraft')}
               </button>
               
               <button
@@ -633,7 +633,7 @@ export default function NewsletterManager() {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-sm transition-colors"
               >
                 <Mail size={18} />
-                Förhandsgranska
+                {t('preview')}
               </button>
               
               <button
@@ -642,7 +642,7 @@ export default function NewsletterManager() {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-sm transition-colors"
               >
                 <Send size={18} />
-                {sending ? 'Skickar...' : 'Skicka'}
+                {sending ? t('sending') : t('send')}
               </button>
             </div>
           </div>
@@ -650,14 +650,14 @@ export default function NewsletterManager() {
           {/* Drafts */}
           {drafts.length > 0 && (
             <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Utkast</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('drafts')}</h2>
               <div className="space-y-3">
                 {drafts.map(draft => (
                   <div key={draft.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-sm hover:bg-amber-100 transition-colors border border-amber-200">
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 text-sm">{draft.subject}</p>
                       <p className="text-xs text-gray-600 mt-1">
-                        Sparat {new Date(draft.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {t('saved')} {new Date(draft.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {draft.template_type && (
                         <span className="inline-block mt-1 px-2 py-0.5 bg-amber-200 text-amber-800 text-xs rounded">
@@ -669,14 +669,14 @@ export default function NewsletterManager() {
                       <button
                         onClick={() => reuseNewsletter(draft)}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Redigera utkast"
+                        title={t('editDraft')}
                       >
                         <Copy size={16} />
                       </button>
                       <button
                         onClick={() => deleteNewsletter(draft.id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Ta bort utkast"
+                        title={t('delete')}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -689,7 +689,7 @@ export default function NewsletterManager() {
 
           {/* History */}
           <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Historik</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('history')}</h2>
             <div className="space-y-3">
               {history.map(send => (
                 <div key={send.id} className="flex items-start justify-between p-4 bg-gray-50 rounded-sm hover:bg-gray-100 transition-colors">
@@ -708,7 +708,7 @@ export default function NewsletterManager() {
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                       <div className="flex items-center gap-1.5">
                         <Send size={12} className="text-gray-500" />
-                        <span className="text-gray-600">Skickade:</span>
+                        <span className="text-gray-600">{t('stats.sent')}:</span>
                         <span className="font-semibold text-gray-900">{send.recipient_count}</span>
                       </div>
                       
@@ -716,13 +716,13 @@ export default function NewsletterManager() {
                         <>
                           <div className="flex items-center gap-1.5">
                             <CheckCircle size={12} className="text-green-600" />
-                            <span className="text-gray-600">Levererade:</span>
+                            <span className="text-gray-600">{t('stats.delivered')}:</span>
                             <span className="font-semibold text-green-700">{send.delivered_count || 0}</span>
                           </div>
                           
                           <div className="flex items-center gap-1.5">
                             <Mail size={12} className="text-blue-600" />
-                            <span className="text-gray-600">Öppnade:</span>
+                            <span className="text-gray-600">{t('stats.opened')}:</span>
                             <span className="font-semibold text-blue-700">
                               {send.opened_count || 0}
                               {send.delivered_count > 0 && send.opened_count > 0 && (
@@ -737,14 +737,14 @@ export default function NewsletterManager() {
                             <svg className="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                             </svg>
-                            <span className="text-gray-600">Klick:</span>
+                            <span className="text-gray-600">{t('stats.clicked')}:</span>
                             <span className="font-semibold text-purple-700">{send.clicked_count || 0}</span>
                           </div>
                           
                           {send.failed_count > 0 && (
                             <div className="flex items-center gap-1.5">
                               <AlertCircle size={12} className="text-red-600" />
-                              <span className="text-gray-600">Misslyckade:</span>
+                              <span className="text-gray-600">{t('stats.failed')}:</span>
                               <span className="font-semibold text-red-700">{send.failed_count}</span>
                             </div>
                           )}
@@ -756,13 +756,16 @@ export default function NewsletterManager() {
                     <button
                       onClick={() => setSelectedNewsletter(send)}
                       className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                      title="Visa detaljer"
+                      title={t('viewDetails')}
                     >
                       <Eye size={16} />
                     </button>
                     {send.template_data && (
                       <button
                         onClick={() => reuseNewsletter(send)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title={t('reuse')}
+                      >
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title="Återanvänd denna mall"
                       >
@@ -772,7 +775,7 @@ export default function NewsletterManager() {
                     <button
                       onClick={() => deleteNewsletter(send.id)}
                       className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Ta bort"
+                      title={t('delete')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -781,7 +784,7 @@ export default function NewsletterManager() {
               ))}
               
               {history.length === 0 && (
-                <p className="text-gray-500 text-sm text-center py-8">Ingen historik ännu</p>
+                <p className="text-gray-500 text-sm text-center py-8">{t('noHistory')}</p>
               )}
             </div>
           </div>
@@ -790,7 +793,7 @@ export default function NewsletterManager() {
         {/* Preview */}
         <div className="lg:sticky lg:top-8 h-fit">
           <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Förhandsgranskning</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('previewTitle')}</h2>
             {preview ? (
               <div className="border border-gray-200 rounded-sm overflow-hidden">
                 <iframe
@@ -802,7 +805,7 @@ export default function NewsletterManager() {
               </div>
             ) : (
               <div className="flex items-center justify-center h-64 bg-gray-50 rounded-sm">
-                <p className="text-gray-500">Fyll i formuläret och klicka på "Förhandsgranska"</p>
+                <p className="text-gray-500">{t('previewEmpty')}</p>
               </div>
             )}
           </div>
