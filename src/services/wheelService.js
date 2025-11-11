@@ -1319,6 +1319,10 @@ const mapDbItemToClient = (dbItem) => {
     source: dbItem.source,
     externalId: dbItem.external_id,
     syncMetadata: dbItem.sync_metadata,
+    // Dependency fields
+    dependsOn: dbItem.depends_on_item_id || null,
+    dependencyType: dbItem.dependency_type || 'finish_to_start',
+    lagDays: dbItem.dependency_lag_days !== undefined ? dbItem.dependency_lag_days : 0,
   };
 };
 
@@ -1549,6 +1553,10 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     // Wheel linking fields (optional)
     linked_wheel_id: item.linkedWheelId || null,
     link_type: item.linkType || null,
+    // Dependency fields (optional)
+    depends_on_item_id: item.dependsOn || null,
+    dependency_type: item.dependencyType || 'finish_to_start',
+    dependency_lag_days: item.lagDays !== undefined ? item.lagDays : 0,
   };
 
   if (supportsPageScope) {

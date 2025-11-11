@@ -15,6 +15,7 @@
  */
 
 import LayoutCalculator from './LayoutCalculator.js';
+import { cascadeUpdateDependents, validateDateChange } from '../services/dependencyService.js';
 
 class InteractionHandler {
   constructor(canvas, wheelInstance, options = {}) {
@@ -839,9 +840,53 @@ class InteractionHandler {
     console.log(`[InteractionHandler] hasChanges: ${hasChanges}`);
 
     if (hasChanges) {
+      // Store the primary update
       this.wheel.pendingItemUpdates.set(updatedItem.id, {
         item: updatedItem,
         timestamp: Date.now(),
+      });
+
+      // CASCADE DEPENDENCY UPDATES: Find and update all dependent items
+      const allItems = this.wheel.wheelStructure.items;
+      const cascadedUpdates = cascadeUpdateDependents(
+        allItems,
+        updatedItem.id,
+        {
+          startDate: updatedItem.startDate,
+          endDate: updatedItem.endDate
+        }
+      );
+
+      console.log(`[InteractionHandler] Cascaded ${cascadedUpdates.length} dependent items`);
+
+      // Add all cascaded updates to pending updates
+      cascadedUpdates.forEach(({ id, newDates }) => {
+        const dependentItem = allItems.find(i => i.id === id);
+        if (dependentItem) {
+          const updatedDependent = {
+            ...dependentItem,
+            startDate: newDates.startDate,
+            endDate: newDates.endDate
+          };
+          
+          this.wheel.pendingItemUpdates.set(id, {
+            item: updatedDependent,
+            timestamp: Date.now(),
+          });
+
+          // Update each dependent via callback
+          if (this.wheel.options?.onUpdateAktivitet) {
+            this.wheel.options.onUpdateAktivitet(updatedDependent);
+          }
+
+          // Broadcast cascaded update
+          if (this.wheel.broadcastOperation) {
+            this.wheel.broadcastOperation('drag', id, {
+              startDate: updatedDependent.startDate,
+              endDate: updatedDependent.endDate,
+            });
+          }
+        }
       });
 
       if (this.wheel.invalidateCache) {
@@ -856,6 +901,7 @@ class InteractionHandler {
         });
       }
 
+      // Update the primary item last (after dependents)
       if (this.wheel.options?.onUpdateAktivitet) {
         this.wheel.options.onUpdateAktivitet(updatedItem);
       }
