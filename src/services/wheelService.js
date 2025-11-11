@@ -1221,6 +1221,10 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       start_date: item.startDate,
       end_date: item.endDate,
       time: item.time || null,
+      // Dependency fields
+      depends_on_item_id: item.dependsOn || null,
+      dependency_type: item.dependencyType || 'finish_to_start',
+      dependency_lag_days: item.lagDays !== undefined ? item.lagDays : 0,
     };
 
     if (supportsPageScope) {
