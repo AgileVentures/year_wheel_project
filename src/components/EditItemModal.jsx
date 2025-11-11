@@ -1,7 +1,8 @@
-import { X, Trash2, Link2 } from 'lucide-react';
+import { X, Trash2, Link2, Link as LinkIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
+import { wouldCreateCircularDependency, getDependencyChain } from '../services/dependencyService';
 
 function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClose, currentWheelId }) {
   const { t } = useTranslation(['editor']);
@@ -15,7 +16,10 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
     time: item.time || '',
     description: item.description || '',
     linkedWheelId: item.linkedWheelId || '',
-    linkType: item.linkType || 'reference'
+    linkType: item.linkType || 'reference',
+    dependsOn: item.dependsOn || '',
+    dependencyType: item.dependencyType || 'finish_to_start',
+    lagDays: item.lagDays !== undefined ? item.lagDays : 0
   });
 
   const [errors, setErrors] = useState({});
@@ -24,6 +28,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
   const [loadingWheels, setLoadingWheels] = useState(false);
   const [selectedWheelPreview, setSelectedWheelPreview] = useState(null);
   const [showDescription, setShowDescription] = useState(!!item.description);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(!!item.description || !!item.dependsOn);
   const isRecurringInstance = item.isRecurringInstance || false;
 
   // Fetch accessible wheels on mount
@@ -79,6 +84,18 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
     if (new Date(formData.endDate) < new Date(formData.startDate)) {
       newErrors.endDate = t('editor:editItemModal.endDateInvalid');
     }
+    
+    // Validate circular dependency
+    if (formData.dependsOn) {
+      const wouldCreateCycle = wouldCreateCircularDependency(
+        wheelStructure.items,
+        item.id,
+        formData.dependsOn
+      );
+      if (wouldCreateCycle) {
+        newErrors.dependsOn = 'Circular dependency detected - this would create an infinite loop';
+      }
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -97,7 +114,10 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
       ...(formData.time ? { time: formData.time } : {}),
       ...(formData.description ? { description: formData.description } : {}),
       linkedWheelId: formData.linkedWheelId || null,
-      linkType: formData.linkedWheelId ? formData.linkType : null
+      linkType: formData.linkedWheelId ? formData.linkType : null,
+      dependsOn: formData.dependsOn || null,
+      dependencyType: formData.dependsOn ? formData.dependencyType : 'finish_to_start',
+      lagDays: formData.dependsOn ? parseInt(formData.lagDays) : 0
     };
 
     onUpdateItem(updatedItem);
@@ -229,29 +249,163 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                 )}
               </div>
 
-              {/* Description - Collapsible */}
+              {/* Time */}
               <div>
-                {!showDescription ? (
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('editor:editItemModal.timeLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.time}
+                  onChange={(e) => handleChange('time', e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="t.ex. 14:00, Morgon, Eftermiddag"
+                />
+              </div>
+
+              {/* Advanced Settings - Collapsible */}
+              <div className="pt-2">
+                {!showAdvancedSettings ? (
                   <button
                     type="button"
-                    onClick={() => setShowDescription(true)}
+                    onClick={() => setShowAdvancedSettings(true)}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
                   >
-                    + Lägg till beskrivning (valfritt)
+                    + Avancerade inställningar
                   </button>
                 ) : (
-                  <>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => handleChange('description', e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
-                      placeholder="Lägg till detaljer om denna aktivitet..."
-                    />
-                  </>
+                  <div className="border border-gray-200 rounded-sm p-4 bg-gray-50 space-y-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        Avancerade inställningar
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedSettings(false)}
+                        className="text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        Dölj
+                      </button>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
+                      </label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => handleChange('description', e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none bg-white"
+                        placeholder="Lägg till detaljer om denna aktivitet..."
+                      />
+                    </div>
+
+                    {/* Dependency Section */}
+                    <div className="border-t border-gray-300 pt-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <LinkIcon size={14} className="text-gray-600" />
+                        <label className="text-sm font-medium text-gray-700">
+                          Aktivitetsberoende <span className="text-gray-400 font-normal">(valfritt)</span>
+                        </label>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        {/* Predecessor Item */}
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1.5">
+                            Beror på aktivitet
+                          </label>
+                          <select
+                            value={formData.dependsOn}
+                            onChange={(e) => handleChange('dependsOn', e.target.value)}
+                            className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
+                              errors.dependsOn ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          >
+                            <option value="">Ingen (oberoende aktivitet)</option>
+                            {wheelStructure.items
+                              .filter(i => i.id !== item.id && i.pageId === item.pageId)
+                              .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+                              .map((otherItem) => (
+                                <option key={otherItem.id} value={otherItem.id}>
+                                  {otherItem.name} ({otherItem.startDate})
+                                </option>
+                              ))}
+                          </select>
+                          {errors.dependsOn && (
+                            <p className="mt-1 text-xs text-red-600">{errors.dependsOn}</p>
+                          )}
+                        </div>
+
+                        {/* Dependency Type - only show if predecessor selected */}
+                        {formData.dependsOn && (
+                          <>
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1.5">
+                                Beroendetyp
+                              </label>
+                              <select
+                                value={formData.dependencyType}
+                                onChange={(e) => handleChange('dependencyType', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                              >
+                                <option value="finish_to_start">Slut → Start (vanligast)</option>
+                                <option value="start_to_start">Start → Start (parallell)</option>
+                                <option value="finish_to_finish">Slut → Slut (synkroniserad)</option>
+                              </select>
+                              <p className="mt-1 text-xs text-gray-500">
+                                {formData.dependencyType === 'finish_to_start' && 'Denna aktivitet startar när föregående avslutas'}
+                                {formData.dependencyType === 'start_to_start' && 'Denna aktivitet startar samtidigt med föregående'}
+                                {formData.dependencyType === 'finish_to_finish' && 'Denna aktivitet avslutas samtidigt med föregående'}
+                              </p>
+                            </div>
+
+                            {/* Lag Days */}
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1.5">
+                                Fördröjning (dagar)
+                              </label>
+                              <input
+                                type="number"
+                                value={formData.lagDays}
+                                onChange={(e) => handleChange('lagDays', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                                placeholder="0"
+                                min="0"
+                              />
+                              <p className="mt-1 text-xs text-gray-500">
+                                Antal dagar att vänta efter föregående aktivitet (0 = ingen fördröjning)
+                              </p>
+                            </div>
+
+                            {/* Visual indicator of dependency chain */}
+                            {(() => {
+                              const chain = getDependencyChain(wheelStructure.items, item.id);
+                              return chain.length > 0 ? (
+                                <div className="bg-blue-50 border border-blue-200 rounded-sm p-2">
+                                  <p className="text-xs text-blue-900 font-medium mb-1">
+                                    🔗 Beroendekedja:
+                                  </p>
+                                  <div className="text-xs text-blue-700 space-y-0.5">
+                                    {chain.map((chainItem, idx) => (
+                                      <div key={chainItem.id}>
+                                        {'  '.repeat(idx)}→ {chainItem.name}
+                                      </div>
+                                    ))}
+                                    <div>
+                                      {'  '.repeat(chain.length)}→ <strong>{item.name}</strong> (denna)
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : null;
+                            })()}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
