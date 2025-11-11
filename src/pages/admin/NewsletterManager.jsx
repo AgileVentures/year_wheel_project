@@ -630,23 +630,67 @@ export default function NewsletterManager() {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Historik</h2>
             <div className="space-y-3">
               {history.map(send => (
-                <div key={send.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-sm hover:bg-gray-100 transition-colors">
+                <div key={send.id} className="flex items-start justify-between p-4 bg-gray-50 rounded-sm hover:bg-gray-100 transition-colors">
                   <div className="flex-1">
                     <p className="font-medium text-gray-900 text-sm">{send.subject}</p>
                     <p className="text-xs text-gray-600 mt-1">
-                      {send.recipient_count} mottagare • {new Date(send.sent_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(send.sent_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                     {send.template_type && (
                       <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
                         {send.template_type}
                       </span>
                     )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <CheckCircle size={14} className="text-green-600" />
-                      <span className="text-sm text-gray-600">{send.success_count}</span>
+                    
+                    {/* Email Stats */}
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <Send size={12} className="text-gray-500" />
+                        <span className="text-gray-600">Skickade:</span>
+                        <span className="font-semibold text-gray-900">{send.recipient_count}</span>
+                      </div>
+                      
+                      {(send.delivered_count > 0 || send.opened_count > 0 || send.clicked_count > 0 || send.failed_count > 0) && (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle size={12} className="text-green-600" />
+                            <span className="text-gray-600">Levererade:</span>
+                            <span className="font-semibold text-green-700">{send.delivered_count || 0}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            <Mail size={12} className="text-blue-600" />
+                            <span className="text-gray-600">Öppnade:</span>
+                            <span className="font-semibold text-blue-700">
+                              {send.opened_count || 0}
+                              {send.delivered_count > 0 && send.opened_count > 0 && (
+                                <span className="text-gray-500 ml-1">
+                                  ({Math.round((send.opened_count / send.delivered_count) * 100)}%)
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            <svg className="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            <span className="text-gray-600">Klick:</span>
+                            <span className="font-semibold text-purple-700">{send.clicked_count || 0}</span>
+                          </div>
+                          
+                          {send.failed_count > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <AlertCircle size={12} className="text-red-600" />
+                              <span className="text-gray-600">Misslyckade:</span>
+                              <span className="font-semibold text-red-700">{send.failed_count}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3 ml-4">
                     {send.template_data && (
                       <button
                         onClick={() => reuseNewsletter(send)}
