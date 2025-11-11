@@ -93,16 +93,45 @@ serve(async (req) => {
     // Extract event type (remove 'email.' prefix)
     const eventType = type.replace('email.', '')
 
-    // Check if this event already exists (prevent duplicates)
-    const { data: existingEvent } = await supabase
-      .from('newsletter_events')
-      .select('id')
-      .eq('email_id', emailId)
-      .eq('event_type', eventType)
-      .single()
+    // For click events, check for duplicate by URL and timestamp to allow multiple clicks
+    // For other events (delivered, opened), prevent duplicates by email_id + event_type
+    let isDuplicate = false
+    
+    if (eventType === 'clicked') {
+      // Allow multiple clicks, only skip if exact same timestamp
+      const clickedUrl = data.click?.link || data.click?.url || data.link || data.url
+      const clickTimestamp = data.click?.timestamp || data.created_at
+      
+      const { data: existingClick } = await supabase
+        .from('newsletter_events')
+        .select('id, event_data')
+        .eq('email_id', emailId)
+        .eq('event_type', eventType)
+        .single()
 
-    if (existingEvent) {
-      console.log(`Event ${eventType} for ${emailId} already recorded`)
+      if (existingClick) {
+        const existingTimestamp = existingClick.event_data?.click?.timestamp || existingClick.event_data?.created_at
+        if (existingTimestamp === clickTimestamp) {
+          isDuplicate = true
+          console.log(`Duplicate click event (same timestamp) for ${emailId}`)
+        }
+      }
+    } else {
+      // For non-click events, prevent any duplicate
+      const { data: existingEvent } = await supabase
+        .from('newsletter_events')
+        .select('id')
+        .eq('email_id', emailId)
+        .eq('event_type', eventType)
+        .single()
+
+      if (existingEvent) {
+        isDuplicate = true
+        console.log(`Event ${eventType} for ${emailId} already recorded`)
+      }
+    }
+
+    if (isDuplicate) {
       return new Response('ok', { headers: corsHeaders })
     }
 
