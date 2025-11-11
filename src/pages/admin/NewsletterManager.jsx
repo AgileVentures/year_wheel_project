@@ -170,8 +170,22 @@ export default function NewsletterManager() {
       );
 
       const result = await response.json();
+      console.log('Newsletter send result:', result);
 
-      if (response.ok) {
+      if (response.ok || response.status === 207) {
+        // Success or partial success
+        if (result.errorCount > 0) {
+          // Partial success
+          showToast(
+            `Delvis skickat: ${result.successCount} lyckades, ${result.errorCount} misslyckades. Se konsolen för detaljer.`,
+            'warning'
+          );
+          console.error('Failed batches:', result.errors);
+        } else {
+          // Full success
+          showToast(`Newsletter skickat till ${result.successCount} mottagare!`, 'success');
+        }
+        
         // If we were editing a draft, delete it since we sent it
         if (editingDraftId) {
           await supabase
@@ -181,18 +195,30 @@ export default function NewsletterManager() {
           setEditingDraftId(null);
         }
         
-        showToast(`Newsletter skickat till ${result.totalRecipients} mottagare!`, 'success');
         loadHistory();
         loadDrafts();
         // Reset form
         setSubject('');
         setPreview(null);
       } else {
-        showToast(`Fel: ${result.error}`, 'error');
+        // Complete failure
+        const errorMsg = result.message || result.error || 'Okänt fel';
+        showToast(`Fel vid skickning: ${errorMsg}`, 'error');
+        
+        if (result.errors && result.errors.length > 0) {
+          console.error('Detailed errors:', result.errors);
+          // Show first error in toast
+          const firstError = result.errors[0];
+          if (firstError.error.includes('domain') || firstError.error.includes('verified')) {
+            showToast('Domänen hello@yearwheel.se är inte verifierad i Resend. Kontakta admin.', 'error');
+          } else if (firstError.error.includes('API key')) {
+            showToast('Resend API-nyckeln är ogiltig. Kontakta admin.', 'error');
+          }
+        }
       }
     } catch (error) {
       console.error('Send error:', error);
-      showToast('Ett fel uppstod vid skickning', 'error');
+      showToast('Ett fel uppstod vid skickning. Se konsolen för detaljer.', 'error');
     } finally {
       setSending(false);
     }
