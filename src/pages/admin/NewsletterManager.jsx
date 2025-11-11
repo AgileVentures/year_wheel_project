@@ -6,7 +6,8 @@ import {
   tipsTemplate, 
   simpleAnnouncementTemplate 
 } from '../../utils/emailTemplates';
-import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save, X } from 'lucide-react';
+import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save, X, Eye } from 'lucide-react';
+import NewsletterDetail from '../../components/NewsletterDetail';
 
 export default function NewsletterManager() {
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,7 @@ export default function NewsletterManager() {
   const [editingDraftId, setEditingDraftId] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [selectedNewsletter, setSelectedNewsletter] = useState(null);
   
   // Form state
   const [recipientType, setRecipientType] = useState('all');
@@ -740,6 +742,13 @@ export default function NewsletterManager() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-4">
+                    <button
+                      onClick={() => setSelectedNewsletter(send)}
+                      className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                      title="Visa detaljer"
+                    >
+                      <Eye size={16} />
+                    </button>
                     {send.template_data && (
                       <button
                         onClick={() => reuseNewsletter(send)}
@@ -838,6 +847,14 @@ export default function NewsletterManager() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Newsletter Detail Modal */}
+      {selectedNewsletter && (
+        <NewsletterDetail
+          send={selectedNewsletter}
+          onClose={() => setSelectedNewsletter(null)}
+        />
       )}
     </div>
   );
