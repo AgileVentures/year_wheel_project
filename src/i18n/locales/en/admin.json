@@ -35,5 +35,31 @@
   "recentUsers": "Recent Users",
   "recentWheels": "Recent Wheels",
   "by": "by",
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "newsletter": "Newsletter",
+  "affiliates": "Affiliates",
+  "emailStats": {
+    "title": "Email & Lead Generation",
+    "quizLeads": "Quiz Leads",
+    "newsletters": "Newsletters",
+    "last7Days": "Last 7 days",
+    "thisMonth": "This month",
+    "totalRecipients": "Total recipients",
+    "highPainScore": "High pain score",
+    "converted": "Converted",
+    "conversionRate": "Conversion rate",
+    "thisMonthByPersona": "This month by persona:",
+    "marketing": "📊 Marketing",
+    "project": "📋 Project",
+    "education": "🎓 Education",
+    "deliverySuccessRate": "Delivery success rate",
+    "sendNewsletter": "Send Newsletter",
+    "leadGenInsights": "Lead Generation Insights",
+    "activeLeadsThisMonth": "Active leads this month",
+    "highPriorityLeads": "high-priority leads",
+    "newsletterEngagement": "Newsletter engagement",
+    "totalReach": "Total reach this period",
+    "leadToCustomer": "Lead to customer",
+    "convertedSuccessfully": "converted successfully"
+  }
 }

@@ -216,14 +216,14 @@ export default function AdminPanel() {
               }`}
             >
               <DollarSign size={16} className="inline mr-2" />
-              Affiliates
+              {t('affiliates')}
             </button>
             <button
               onClick={() => navigate('/newsletter')}
               className="px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >
               <Mail size={16} className="inline mr-2" />
-              Newsletter
+              {t('newsletter')}
             </button>
           </div>
         </div>

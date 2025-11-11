@@ -1,11 +1,14 @@
 import { Mail, Users, TrendingUp, Target, Send, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
+  const { t } = useTranslation('admin');
+  
   if (!quizLeadsStats && !newsletterStats) return null;
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Email & Lead Generation</h3>
+      <h3 className="text-lg font-semibold text-gray-900">{t('emailStats.title')}</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Quiz Leads Card */}
@@ -15,7 +18,7 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Target className="text-white" size={24} />
-                  <h4 className="text-lg font-semibold text-white">Quiz Leads</h4>
+                  <h4 className="text-lg font-semibold text-white">{t('emailStats.quizLeads')}</h4>
                 </div>
                 <div className="text-white text-2xl font-bold">{quizLeadsStats.total}</div>
               </div>
@@ -25,11 +28,11 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
               {/* Recent Activity */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Last 7 days</div>
+                  <div className="text-xs text-gray-500 mb-1">{t('emailStats.last7Days')}</div>
                   <div className="text-2xl font-bold text-gray-900">{quizLeadsStats.last7Days}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">This month</div>
+                  <div className="text-xs text-gray-500 mb-1">{t('emailStats.thisMonth')}</div>
                   <div className="text-2xl font-bold text-gray-900">{quizLeadsStats.thisMonth}</div>
                 </div>
               </div>
@@ -37,33 +40,33 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
               {/* Quality Metrics */}
               <div className="pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">High pain score</span>
+                  <span className="text-sm text-gray-600">{t('emailStats.highPainScore')}</span>
                   <span className="text-sm font-semibold text-orange-600">{quizLeadsStats.highPain}</span>
                 </div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Converted</span>
+                  <span className="text-sm text-gray-600">{t('emailStats.converted')}</span>
                   <span className="text-sm font-semibold text-green-600">{quizLeadsStats.converted}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Conversion rate</span>
+                  <span className="text-sm text-gray-600">{t('emailStats.conversionRate')}</span>
                   <span className="text-sm font-semibold text-purple-600">{quizLeadsStats.conversionRate}%</span>
                 </div>
               </div>
 
               {/* Persona Breakdown */}
               <div className="pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500 mb-3">This month by persona:</div>
+                <div className="text-xs text-gray-500 mb-3">{t('emailStats.thisMonthByPersona')}</div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">📊 Marketing</span>
+                    <span className="text-sm text-gray-700">{t('emailStats.marketing')}</span>
                     <span className="text-sm font-medium text-gray-900">{quizLeadsStats.byPersona.marketing}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">📋 Project</span>
+                    <span className="text-sm text-gray-700">{t('emailStats.project')}</span>
                     <span className="text-sm font-medium text-gray-900">{quizLeadsStats.byPersona.project}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-700">🎓 Education</span>
+                    <span className="text-sm text-gray-700">{t('emailStats.education')}</span>
                     <span className="text-sm font-medium text-gray-900">{quizLeadsStats.byPersona.education}</span>
                   </div>
                 </div>
@@ -79,7 +82,7 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Send className="text-white" size={24} />
-                  <h4 className="text-lg font-semibold text-white">Newsletters</h4>
+                  <h4 className="text-lg font-semibold text-white">{t('emailStats.newsletters')}</h4>
                 </div>
                 <div className="text-white text-2xl font-bold">{newsletterStats.total}</div>
               </div>
@@ -89,11 +92,11 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
               {/* Send Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">This month</div>
+                  <div className="text-xs text-gray-500 mb-1">{t('emailStats.thisMonth')}</div>
                   <div className="text-2xl font-bold text-gray-900">{newsletterStats.thisMonth}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Total recipients</div>
+                  <div className="text-xs text-gray-500 mb-1">{t('emailStats.totalRecipients')}</div>
                   <div className="text-2xl font-bold text-gray-900">{newsletterStats.totalRecipients}</div>
                 </div>
               </div>
@@ -101,7 +104,7 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
               {/* Success Rate */}
               <div className="pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-600">Delivery success rate</span>
+                  <span className="text-sm text-gray-600">{t('emailStats.deliverySuccessRate')}</span>
                   <span className="text-lg font-bold text-green-600">{newsletterStats.successRate}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -119,7 +122,7 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-sm transition-colors"
                 >
                   <Mail size={18} />
-                  Send Newsletter
+                  {t('emailStats.sendNewsletter')}
                 </a>
               </div>
             </div>
@@ -132,28 +135,28 @@ export default function AdminEmailStats({ quizLeadsStats, newsletterStats }) {
         <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-sm border border-purple-200 p-6">
           <div className="flex items-center gap-3 mb-4">
             <TrendingUp className="text-purple-600" size={20} />
-            <h4 className="text-sm font-semibold text-gray-900">Lead Generation Insights</h4>
+            <h4 className="text-sm font-semibold text-gray-900">{t('emailStats.leadGenInsights')}</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <div className="text-gray-600 mb-1">Active leads this month</div>
+              <div className="text-gray-600 mb-1">{t('emailStats.activeLeadsThisMonth')}</div>
               <div className="text-xl font-bold text-purple-600">{quizLeadsStats.thisMonth}</div>
               <div className="text-xs text-gray-500 mt-1">
-                {quizLeadsStats.highPain} high-priority leads
+                {quizLeadsStats.highPain} {t('emailStats.highPriorityLeads')}
               </div>
             </div>
             <div>
-              <div className="text-gray-600 mb-1">Newsletter engagement</div>
+              <div className="text-gray-600 mb-1">{t('emailStats.newsletterEngagement')}</div>
               <div className="text-xl font-bold text-blue-600">{newsletterStats.totalRecipients}</div>
               <div className="text-xs text-gray-500 mt-1">
-                Total reach this period
+                {t('emailStats.totalReach')}
               </div>
             </div>
             <div>
-              <div className="text-gray-600 mb-1">Lead to customer</div>
+              <div className="text-gray-600 mb-1">{t('emailStats.leadToCustomer')}</div>
               <div className="text-xl font-bold text-green-600">{quizLeadsStats.conversionRate}%</div>
               <div className="text-xs text-gray-500 mt-1">
-                {quizLeadsStats.converted} converted successfully
+                {quizLeadsStats.converted} {t('emailStats.convertedSuccessfully')}
               </div>
             </div>
           </div>

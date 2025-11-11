@@ -35,5 +35,31 @@
   "recentUsers": "Senaste Användare",
   "recentWheels": "Senaste Hjul",
   "by": "av",
-  "unknown": "Okänd"
+  "unknown": "Okänd",
+  "newsletter": "Newsletter",
+  "affiliates": "Affiliates",
+  "emailStats": {
+    "title": "Email & Lead Generation",
+    "quizLeads": "Quiz Leads",
+    "newsletters": "Newsletters",
+    "last7Days": "Senaste 7 dagarna",
+    "thisMonth": "Denna månad",
+    "totalRecipients": "Totalt mottagare",
+    "highPainScore": "Hög smärtpoäng",
+    "converted": "Konverterade",
+    "conversionRate": "Konverteringsgrad",
+    "thisMonthByPersona": "Denna månad efter persona:",
+    "marketing": "📊 Marknadsföring",
+    "project": "📋 Projekt",
+    "education": "🎓 Utbildning",
+    "deliverySuccessRate": "Leverans framgångsgrad",
+    "sendNewsletter": "Skicka Newsletter",
+    "leadGenInsights": "Lead Generation Insights",
+    "activeLeadsThisMonth": "Aktiva leads denna månad",
+    "highPriorityLeads": "högprioriterade leads",
+    "newsletterEngagement": "Newsletter engagemang",
+    "totalReach": "Total räckvidd denna period",
+    "leadToCustomer": "Lead till kund",
+    "convertedSuccessfully": "konverterade framgångsrikt"
+  }
 }
