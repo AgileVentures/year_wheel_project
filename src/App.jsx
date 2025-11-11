@@ -871,6 +871,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             source: dbItem.source,
             externalId: dbItem.external_id,
             syncMetadata: dbItem.sync_metadata,
+            // Dependency fields
+            dependsOn: dbItem.depends_on_item_id || null,
+            dependencyType: dbItem.dependency_type || 'finish_to_start',
+            lagDays: dbItem.dependency_lag_days !== undefined ? dbItem.dependency_lag_days : 0,
           }));
           
           // Instead of setAllItems/setPageItemsById/setPages, we'll update wheelState.pages with items

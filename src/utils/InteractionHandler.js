@@ -391,16 +391,19 @@ class InteractionHandler {
       return;
     }
 
-    // Calculate screen angles
+    // Calculate screen angles (for mouse tracking)
     const dx = x - this.wheel.center.x;
     const dy = y - this.wheel.center.y;
     const rawStartMouseAngle = Math.atan2(dy, dx);
     let startMouseAngle = this.normalizeAngle(rawStartMouseAngle);
 
-    const screenStartAngle = itemRegion.startAngle + this.wheel.rotationAngle;
-    const screenEndAngle = itemRegion.endAngle + this.wheel.rotationAngle;
-    const normalizedStartAngle = this.normalizeAngle(screenStartAngle);
-    const normalizedEndAngle = this.normalizeAngle(screenEndAngle);
+    // Item region angles are in logical space (include initAngle, no rotationAngle)
+    // For preview drawing (in rotated context), use logical angles
+    // For screen-space calculations (mouse delta), use screen angles
+    const logicalStartAngle = itemRegion.startAngle;
+    const logicalEndAngle = itemRegion.endAngle;
+    const screenStartAngle = logicalStartAngle + this.wheel.rotationAngle;
+    const screenEndAngle = logicalEndAngle + this.wheel.rotationAngle;
 
     this.dragState = {
       isDragging: true,
@@ -412,10 +415,12 @@ class InteractionHandler {
       rawStartMouseAngle,
       lastRawMouseAngle: rawStartMouseAngle,
       angleWrapOffset: 0,
-      initialStartAngle: normalizedStartAngle,
-      initialEndAngle: normalizedEndAngle,
-      previewStartAngle: normalizedStartAngle,
-      previewEndAngle: normalizedEndAngle,
+      // Logical angles (for preview drawing in rotated context)
+      initialStartAngle: logicalStartAngle,
+      initialEndAngle: logicalEndAngle,
+      previewStartAngle: logicalStartAngle,
+      previewEndAngle: logicalEndAngle,
+      // Screen angles (for mouse delta calculations)
       rawInitialStartAngle: screenStartAngle,
       rawInitialEndAngle: screenEndAngle,
       rawPreviewStartAngle: screenStartAngle,
@@ -496,13 +501,27 @@ class InteractionHandler {
     const minWeekAngle = LayoutCalculator.degreesToRadians((7 / 365) * 360);
 
     // Helper to convert angle to date
-    const angleToDate = (angle) => {
-      const normalizedAngle = this.normalizeAngle(angle - this.wheel.rotationAngle);
-      const degrees = LayoutCalculator.radiansToDegrees(normalizedAngle);
-      const month = Math.floor(degrees / 30);
-      const dayOfMonth = Math.floor(((degrees % 30) / 30) * 30) + 1;
-      const year = parseInt(this.wheel.year, 10);
-      return new Date(year, month, dayOfMonth);
+    // CRITICAL: Must use wheel's angleToDate method as source of truth
+    // It properly handles initAngle (-105° to position Jan 1 at top) and zoom levels
+    const angleToDate = (screenAngle) => {
+      // Convert screen angle (radians) to logical angle (degrees)
+      // Screen angle includes user rotation, need to remove it
+      const logicalAngleRad = this.normalizeAngle(screenAngle - this.wheel.rotationAngle);
+      const logicalAngleDeg = LayoutCalculator.radiansToDegrees(logicalAngleRad);
+      
+      // Log for debugging rotation issues
+      if (Math.abs(this.wheel.rotationAngle) > 0.01) {
+        console.log('[angleToDate]', {
+          screenAngleRad: screenAngle,
+          rotationAngleRad: this.wheel.rotationAngle,
+          logicalAngleRad,
+          logicalAngleDeg,
+          initAngle: this.wheel.initAngle
+        });
+      }
+      
+      // Use wheel's angleToDate which handles initAngle and zoom correctly
+      return this.wheel.angleToDate(logicalAngleDeg);
     };
 
     if (this.dragState.dragMode === 'move') {
@@ -539,18 +558,17 @@ class InteractionHandler {
       this.dragState.rawPreviewStartAngle = rawStart;
       this.dragState.rawPreviewEndAngle = rawEnd;
 
-      this.dragState.previewStartAngle = this.normalizeAngle(rawStart);
-      this.dragState.previewEndAngle = this.normalizeAngle(rawEnd);
+      // Convert screen angles back to logical for preview drawing
+      this.dragState.previewStartAngle = this.normalizeAngle(rawStart - this.wheel.rotationAngle);
+      this.dragState.previewEndAngle = this.normalizeAngle(rawEnd - this.wheel.rotationAngle);
       
     } else if (this.dragState.dragMode === 'resize-start') {
       // Resize start edge
       const rawStart = this.dragState.rawInitialStartAngle + angleDelta;
-      let newStartAngle = this.normalizeAngle(rawStart);
+      const logicalStart = this.normalizeAngle(rawStart - this.wheel.rotationAngle);
 
-      this.dragState.previewEndAngle = this.dragState.initialEndAngle;
-
-      // Enforce minimum span
-      let span = this.dragState.previewEndAngle - newStartAngle;
+      // Enforce minimum span (compare in logical space)
+      let span = this.dragState.initialEndAngle - logicalStart;
       if (span < 0) span += Math.PI * 2;
 
       if (span >= minWeekAngle) {
@@ -573,26 +591,28 @@ class InteractionHandler {
           }
         }
         
-        this.dragState.previewStartAngle = newStartAngle;
         this.dragState.rawPreviewStartAngle = rawStart;
+        // Convert screen angle back to logical for preview drawing
+        this.dragState.previewStartAngle = logicalStart;
+        this.dragState.previewEndAngle = this.dragState.initialEndAngle;
       }
       
     } else if (this.dragState.dragMode === 'resize-end') {
       // Resize end edge
       const rawEnd = this.dragState.rawInitialEndAngle + angleDelta;
-      let newEndAngle = this.normalizeAngle(rawEnd);
+      const logicalEnd = this.normalizeAngle(rawEnd - this.wheel.rotationAngle);
 
-      this.dragState.previewStartAngle = this.dragState.initialStartAngle;
-
-      // Enforce minimum span
-      let span = newEndAngle - this.dragState.previewStartAngle;
+      // Enforce minimum span (compare in logical space)
+      let span = logicalEnd - this.dragState.initialStartAngle;
       if (span < 0) span += Math.PI * 2;
 
       if (span >= minWeekAngle) {
         // For end date resize, we always allow it (user can manually adjust duration)
         // Dependencies on this item will be cascaded when the drag ends
-        this.dragState.previewEndAngle = newEndAngle;
         this.dragState.rawPreviewEndAngle = rawEnd;
+        // Convert screen angle back to logical for preview drawing
+        this.dragState.previewEndAngle = logicalEnd;
+        this.dragState.previewStartAngle = this.dragState.initialStartAngle;
       }
     }
 
