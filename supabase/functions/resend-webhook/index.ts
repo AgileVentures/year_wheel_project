@@ -1,9 +1,28 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature',
+}
+
+// Verify webhook signature from Resend
+function verifySignature(
+  payload: string,
+  signature: string,
+  secret: string
+): boolean {
+  try {
+    const hmac = createHmac('sha256', secret)
+    hmac.update(payload)
+    const expectedSignature = hmac.digest('base64')
+    
+    return signature === expectedSignature
+  } catch (error) {
+    console.error('Signature verification error:', error)
+    return false
+  }
 }
 
 serve(async (req) => {
@@ -17,7 +36,30 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const payload = await req.json()
+    // Get the raw body for signature verification
+    const body = await req.text()
+    
+    // Verify webhook signature
+    const WEBHOOK_SECRET = Deno.env.get('RESEND_WEBHOOK_SECRET')
+    if (WEBHOOK_SECRET) {
+      const signature = req.headers.get('svix-signature') || req.headers.get('webhook-signature')
+      
+      if (!signature) {
+        console.error('No signature header found')
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      }
+      
+      if (!verifySignature(body, signature, WEBHOOK_SECRET)) {
+        console.error('Invalid webhook signature')
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      }
+      
+      console.log('✅ Webhook signature verified')
+    } else {
+      console.warn('⚠️ RESEND_WEBHOOK_SECRET not set - skipping signature verification')
+    }
+
+    const payload = JSON.parse(body)
     
     console.log('Received Resend webhook:', payload.type)
     console.log('Event data:', JSON.stringify(payload.data, null, 2))
