@@ -434,6 +434,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // UI-only state (not part of wheelState)
   const [zoomedMonth, setZoomedMonth] = useState(null);
   const [zoomedQuarter, setZoomedQuarter] = useState(null);
+  const [wheelRotation, setWheelRotation] = useState(0); // Persist wheel rotation angle
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [wheelData, setWheelData] = useState(null);
 
@@ -4433,6 +4434,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               zoomedQuarter={zoomedQuarter}
               onSetZoomedMonth={setZoomedMonth}
               onSetZoomedQuarter={setZoomedQuarter}
+              initialRotation={wheelRotation}
+              onRotationChange={setWheelRotation}
               onWheelReady={setYearWheelRef}
               onDragStart={handleDragStart}
               onUpdateAktivitet={handleUpdateAktivitet}
