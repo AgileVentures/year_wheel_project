@@ -589,25 +589,8 @@ class InteractionHandler {
       if (span < 0) span += Math.PI * 2;
 
       if (span >= minWeekAngle) {
-        // Validate against dependencies (check if dependents would be violated)
-        const draggedItem = this.dragState.draggedItem;
-        if (draggedItem && this.wheel.wheelStructure?.items) {
-          const currentStartDate = angleToDate(this.dragState.rawInitialStartAngle);
-          const proposedEndDate = angleToDate(rawEnd);
-          
-          const validation = validateDateChange(
-            this.wheel.wheelStructure.items,
-            draggedItem.id,
-            { startDate: currentStartDate.toISOString().split('T')[0], endDate: proposedEndDate.toISOString().split('T')[0] }
-          );
-          
-          if (!validation.valid) {
-            this.canvas.style.cursor = 'not-allowed';
-            console.log('[InteractionHandler] Resize constrained:', validation.reason);
-            return;
-          }
-        }
-        
+        // For end date resize, we always allow it (user can manually adjust duration)
+        // Dependencies on this item will be cascaded when the drag ends
         this.dragState.previewEndAngle = newEndAngle;
         this.dragState.rawPreviewEndAngle = rawEnd;
       }
