@@ -8,3 +8,7 @@ verify_jwt = false
 # Stripe webhook - must be publicly accessible (Stripe sends webhooks without JWT)
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Resend webhook - must be publicly accessible (Resend sends webhooks without JWT)
+[functions.resend-webhook]
+verify_jwt = false
