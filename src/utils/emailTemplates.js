@@ -15,8 +15,11 @@
 /**
  * Base email layout wrapper
  * Ensures consistent styling across all emails
+ * @param {string} content - The main email content
+ * @param {string} preheader - Preview text shown in email clients
+ * @param {string} tagline - Customizable tagline (default: "Visualisera och planera ditt år!")
  */
-export const emailLayout = (content, preheader = '') => `
+export const emailLayout = (content, preheader = '', tagline = 'Visualisera och planera ditt år!') => `
 <!DOCTYPE html>
 <html lang="sv" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
@@ -137,7 +140,7 @@ export const emailLayout = (content, preheader = '') => `
                 <h1 style="margin: 0; padding: 0; color: #1B2A63; font-size: 32px; font-weight: 700; font-family: 'Poppins', sans-serif;">YearWheel</h1>
               </div>
               <p style="margin: 8px 0 0 0; color: #1B2A63; font-size: 14px; font-weight: 600;">
-                Visualisera och planera ditt år!
+                ${tagline}
               </p>
             </td>
           </tr>
@@ -175,13 +178,29 @@ export const emailLayout = (content, preheader = '') => `
 
 /**
  * Newsletter template
+ * @param {string} heading - Main headline
+ * @param {string} intro - Introduction paragraph
+ * @param {Array} sections - Array of section objects with optional links
+ * @param {Object} cta - Call-to-action button {url, text}
+ * @param {string} ps - Optional P.S. message
+ * @param {string} tagline - Custom tagline for header
+ * 
+ * Section structure:
+ * {
+ *   title: string,
+ *   content: string,
+ *   image: string (optional),
+ *   showLink: boolean,
+ *   link: { url: string, text: string } (required if showLink is true)
+ * }
  */
 export const newsletterTemplate = ({ 
   heading, 
   intro, 
   sections = [], 
   cta,
-  ps 
+  ps,
+  tagline
 }) => {
   const sectionsHtml = sections.map(section => `
     <div style="margin-bottom: 32px;">
@@ -200,9 +219,9 @@ export const newsletterTemplate = ({
         ${section.content}
       </p>
       
-      ${section.link ? `
+      ${section.showLink && section.link ? `
         <a href="${section.link.url}" 
-           style="color: #00A4A6; text-decoration: none; font-weight: 600; font-size: 15px;">
+           style="color: #00A4A6; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 4px;">
           ${section.link.text} →
         </a>
       ` : ''}
@@ -237,7 +256,7 @@ export const newsletterTemplate = ({
     ` : ''}
   `
 
-  return emailLayout(content, intro.substring(0, 100))
+  return emailLayout(content, intro.substring(0, 100), tagline)
 }
 
 /**

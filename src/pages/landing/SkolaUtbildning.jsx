@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import LandingPageTemplate from './LandingPageTemplate';
 import PersonaQuiz from '../../components/PersonaQuiz';
 import { educationQuiz } from '../../data/quizData';
 import { GraduationCap, BookOpen, Calendar, Users, Award, School, FileSpreadsheet, Share2, Sparkles, Copy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 /**
  * Skola & Utbildning Landing Page
@@ -14,7 +14,31 @@ import { useNavigate } from 'react-router-dom';
 export default function SkolaUtbildning() {
   const { t } = useTranslation('landing');
   const navigate = useNavigate();
+  const location = useLocation();
   const [showQuiz, setShowQuiz] = useState(false);
+  const quizRef = useRef(null);
+
+  // Check URL hash on mount and when location changes
+  useEffect(() => {
+    if (location.hash === '#quiz') {
+      setShowQuiz(true);
+      setTimeout(() => {
+        quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [location.hash]);
+
+  // Update URL hash when quiz is shown
+  useEffect(() => {
+    if (showQuiz) {
+      window.history.pushState(null, '', '#quiz');
+      setTimeout(() => {
+        quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else if (location.hash === '#quiz') {
+      window.history.pushState(null, '', location.pathname);
+    }
+  }, [showQuiz, location.pathname, location.hash]);
 
   const handleQuizComplete = async (results) => {
     if (typeof window !== 'undefined' && window.gtag) {
@@ -44,7 +68,7 @@ export default function SkolaUtbildning() {
   const quizSection = showQuiz ? {
     className: 'py-20 bg-gradient-to-br from-blue-600 to-purple-600',
     content: (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div ref={quizRef} id="quiz" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <PersonaQuiz
           persona={educationQuiz.persona}
           questions={educationQuiz.questions}

@@ -24,12 +24,13 @@ export default function NewsletterManager() {
   const [subject, setSubject] = useState('');
   const [templateType, setTemplateType] = useState('newsletter');
   const [customEmails, setCustomEmails] = useState('');
+  const [tagline, setTagline] = useState('Visualisera och planera ditt år!');
   
   // Template fields
   const [newsletter, setNewsletter] = useState({
     heading: '',
     intro: '',
-    sections: [{ title: '', content: '', link: { text: '', url: '' } }],
+    sections: [{ title: '', content: '', showLink: false, link: { text: '', url: '' } }],
     cta: { text: '', url: '' },
     ps: ''
   });
@@ -100,7 +101,7 @@ export default function NewsletterManager() {
     
     switch (templateType) {
       case 'newsletter':
-        html = newsletterTemplate(newsletter);
+        html = newsletterTemplate({ ...newsletter, tagline });
         break;
       case 'feature':
         html = featureAnnouncementTemplate(feature);
@@ -447,6 +448,13 @@ export default function NewsletterManager() {
               <div className="space-y-4">
                 <input
                   type="text"
+                  placeholder="Tagline (t.ex. 'Visualisera och planera ditt år!')"
+                  value={tagline}
+                  onChange={(e) => setTagline(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                <input
+                  type="text"
                   placeholder="Huvudrubrik"
                   value={newsletter.heading}
                   onChange={(e) => setNewsletter({ ...newsletter, heading: e.target.value })}
@@ -484,6 +492,47 @@ export default function NewsletterManager() {
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                     />
+                    <div className="flex items-center space-x-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={section.showLink || false}
+                          onChange={(e) => {
+                            const newSections = [...newsletter.sections];
+                            newSections[idx].showLink = e.target.checked;
+                            setNewsletter({ ...newsletter, sections: newSections });
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm text-gray-700">Visa länk</span>
+                      </label>
+                    </div>
+                    {section.showLink && (
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <input
+                          type="text"
+                          placeholder="Länktext (t.ex. 'Läs mer →')"
+                          value={section.link?.text || ''}
+                          onChange={(e) => {
+                            const newSections = [...newsletter.sections];
+                            newSections[idx].link = { ...newSections[idx].link, text: e.target.value };
+                            setNewsletter({ ...newsletter, sections: newSections });
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                        />
+                        <input
+                          type="text"
+                          placeholder="URL"
+                          value={section.link?.url || ''}
+                          onChange={(e) => {
+                            const newSections = [...newsletter.sections];
+                            newSections[idx].link = { ...newSections[idx].link, url: e.target.value };
+                            setNewsletter({ ...newsletter, sections: newSections });
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
                 

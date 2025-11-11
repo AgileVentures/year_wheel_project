@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import LandingPageTemplate from './LandingPageTemplate';
 import PersonaQuiz from '../../components/PersonaQuiz';
 import { marketingQuiz } from '../../data/quizData';
 import { Megaphone, Calendar, Image, TrendingUp, Users, Sparkles, FileSpreadsheet, Copy, MessageSquare, History } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 /**
  * Innehållsplanering & Marknadsföring Landing Page
@@ -14,7 +14,32 @@ import { useNavigate } from 'react-router-dom';
 export default function Marknadsplanering() {
   const { t } = useTranslation('landing');
   const navigate = useNavigate();
+  const location = useLocation();
   const [showQuiz, setShowQuiz] = useState(false);
+  const quizRef = useRef(null);
+
+  // Check URL hash on mount and when location changes
+  useEffect(() => {
+    if (location.hash === '#quiz') {
+      setShowQuiz(true);
+      // Scroll to quiz after state update
+      setTimeout(() => {
+        quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [location.hash]);
+
+  // Update URL hash when quiz is shown
+  useEffect(() => {
+    if (showQuiz) {
+      window.history.pushState(null, '', '#quiz');
+      setTimeout(() => {
+        quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    } else if (location.hash === '#quiz') {
+      window.history.pushState(null, '', location.pathname);
+    }
+  }, [showQuiz, location.pathname, location.hash]);
 
   const handleQuizComplete = async (results) => {
     // Track quiz completion
@@ -49,7 +74,7 @@ export default function Marknadsplanering() {
   const quizSection = showQuiz ? {
     className: 'py-20 bg-gradient-to-br from-blue-600 to-purple-600',
     content: (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div ref={quizRef} id="quiz" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <PersonaQuiz
           persona={marketingQuiz.persona}
           questions={marketingQuiz.questions}
