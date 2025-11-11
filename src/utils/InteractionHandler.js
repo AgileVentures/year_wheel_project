@@ -848,6 +848,15 @@ class InteractionHandler {
 
       // CASCADE DEPENDENCY UPDATES: Find and update all dependent items
       const allItems = this.wheel.wheelStructure.items;
+      
+      console.log(`[InteractionHandler] Checking dependencies for item ${updatedItem.id.substring(0, 8)} "${updatedItem.name}"`);
+      console.log(`[InteractionHandler] Total items in wheelStructure: ${allItems.length}`);
+      console.log(`[InteractionHandler] Items with dependencies:`, allItems.filter(i => i.dependsOn).map(i => ({ 
+        name: i.name, 
+        dependsOn: i.dependsOn?.substring(0, 8),
+        id: i.id.substring(0, 8)
+      })));
+      
       const cascadedUpdates = cascadeUpdateDependents(
         allItems,
         updatedItem.id,
@@ -863,6 +872,8 @@ class InteractionHandler {
       cascadedUpdates.forEach(({ id, newDates }) => {
         const dependentItem = allItems.find(i => i.id === id);
         if (dependentItem) {
+          console.log(`[InteractionHandler] Cascading update to "${dependentItem.name}": ${newDates.startDate} → ${newDates.endDate}`);
+          
           const updatedDependent = {
             ...dependentItem,
             startDate: newDates.startDate,
