@@ -3628,6 +3628,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       pageId: updatedItem.pageId,
       startDate: updatedItem.startDate,
       endDate: updatedItem.endDate,
+      dependsOn: updatedItem.dependsOn,
+      dependencyType: updatedItem.dependencyType,
+      lagDays: updatedItem.lagDays,
       wasDragging: isDraggingRef.current
     });
 
@@ -3662,19 +3665,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const linkChanged =
           (oldItem.linkType || null) !== (updatedItem.linkType || null) ||
           (oldItem.linkedWheelId || null) !== (updatedItem.linkedWheelId || null);
+        const dependencyChanged =
+          (oldItem.dependsOn || null) !== (updatedItem.dependsOn || null) ||
+          (oldItem.dependencyType || 'finish_to_start') !== (updatedItem.dependencyType || 'finish_to_start') ||
+          (oldItem.lagDays || 0) !== (updatedItem.lagDays || 0);
 
         // CRITICAL: Assign to ref so it's available after setWheelState completes
         changeResultRef.actuallyChanged =
           ringChanged || datesChanged || activityChanged || labelChanged ||
-          nameChanged || timeChanged || descriptionChanged || linkChanged;
+          nameChanged || timeChanged || descriptionChanged || linkChanged || dependencyChanged;
 
         console.log('[handleUpdateAktivitet] Changes detected:', {
           itemFound: changeResultRef.itemFound,
           actuallyChanged: changeResultRef.actuallyChanged,
           ringChanged,
           datesChanged,
+          dependencyChanged,
           oldDates: `${oldItem.startDate} → ${oldItem.endDate}`,
-          newDates: `${updatedItem.startDate} → ${updatedItem.endDate}`
+          newDates: `${updatedItem.startDate} → ${updatedItem.endDate}`,
+          oldDependsOn: oldItem.dependsOn,
+          newDependsOn: updatedItem.dependsOn
         });
 
         if (!changeResultRef.actuallyChanged) return page;
