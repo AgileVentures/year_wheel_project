@@ -1,0 +1,200 @@
+{
+  "version": "2.0",
+  "metadata": {
+    "title": "SEB Finansiell Rapportering 2026",
+    "year": 2026,
+    "createdAt": "2025-11-11",
+    "description": "SEB:s finansiella rapporteringskalender och tysta perioder för 2026"
+  },
+  "settings": {
+    "showWeekRing": true,
+    "showMonthRing": true,
+    "showRingNames": true,
+    "weekRingDisplayMode": "week-numbers",
+    "showLabels": true,
+    "colors": {
+      "weekRing": "#94A3B8",
+      "monthRing": "#334155"
+    }
+  },
+  "structure": {
+    "rings": [
+      {
+        "id": "ring-1",
+        "name": "Tysta perioder",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical"
+      },
+      {
+        "id": "ring-2",
+        "name": "Rapporter & händelser",
+        "type": "outer",
+        "visible": true,
+        "orientation": "vertical"
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "activity-1",
+        "name": "Tyst period",
+        "color": "#E63946",
+        "visible": true
+      },
+      {
+        "id": "activity-2",
+        "name": "Kvartalsrapport",
+        "color": "#06D6A0",
+        "visible": true
+      },
+      {
+        "id": "activity-3",
+        "name": "Års- och hållbarhetsredovisning",
+        "color": "#118AB2",
+        "visible": true
+      },
+      {
+        "id": "activity-4",
+        "name": "Årsstämma",
+        "color": "#FFD166",
+        "visible": true
+      }
+    ],
+    "labels": [
+      {
+        "id": "label-1",
+        "name": "Q4 2025",
+        "color": "#8B5CF6",
+        "visible": true
+      },
+      {
+        "id": "label-2",
+        "name": "Q1 2026",
+        "color": "#10B981",
+        "visible": true
+      },
+      {
+        "id": "label-3",
+        "name": "Q2 2026",
+        "color": "#3B82F6",
+        "visible": true
+      },
+      {
+        "id": "label-4",
+        "name": "Q3 2026",
+        "color": "#F59E0B",
+        "visible": true
+      }
+    ]
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "year": 2026,
+      "pageOrder": 1,
+      "title": "2026: Finansiell Rapportering",
+      "items": [
+        {
+          "id": "item-1",
+          "name": "Tyst period inför bokslutskommuniké 2025",
+          "startDate": "2026-01-01",
+          "endDate": "2026-01-29",
+          "ringId": "ring-1",
+          "activityId": "activity-1",
+          "labelId": "label-1",
+          "description": "Ingen finansiell kommunikation med media, investerare, analytiker eller övriga kommer att genomföras under den tysta perioden före offentliggörandet av kvartalets resultat."
+        },
+        {
+          "id": "item-2",
+          "name": "Kvartalsrapport Q4 2025",
+          "startDate": "2026-01-29",
+          "endDate": "2026-01-29",
+          "ringId": "ring-2",
+          "activityId": "activity-2",
+          "labelId": "label-1",
+          "description": "SEB presenterar resultaten för fjärde kvartalet 2025."
+        },
+        {
+          "id": "item-3",
+          "name": "Års- och hållbarhetsredovisning 2025",
+          "startDate": "2026-03-03",
+          "endDate": "2026-03-03",
+          "ringId": "ring-2",
+          "activityId": "activity-3",
+          "labelId": null,
+          "description": "Års- och hållbarhetsredovisning 2025 publiceras på sebgroup.com."
+        },
+        {
+          "id": "item-4",
+          "name": "Årsstämma 2025",
+          "startDate": "2026-03-24",
+          "endDate": "2026-03-24",
+          "ringId": "ring-2",
+          "activityId": "activity-4",
+          "labelId": null,
+          "description": "SEB håller sin årsstämma."
+        },
+        {
+          "id": "item-5",
+          "name": "Tyst period Q1 2026",
+          "startDate": "2026-04-01",
+          "endDate": "2026-04-29",
+          "ringId": "ring-1",
+          "activityId": "activity-1",
+          "labelId": "label-2",
+          "description": "Ingen finansiell kommunikation med media, investerare, analytiker eller övriga kommer att genomföras under den tysta perioden före offentliggörandet av kvartalets resultat."
+        },
+        {
+          "id": "item-6",
+          "name": "Kvartalsrapport Q1 2026",
+          "startDate": "2026-04-29",
+          "endDate": "2026-04-29",
+          "ringId": "ring-2",
+          "activityId": "activity-2",
+          "labelId": "label-2",
+          "description": "SEB presenterar resultaten för första kvartalet 2026."
+        },
+        {
+          "id": "item-7",
+          "name": "Tyst period Q2 2026",
+          "startDate": "2026-07-01",
+          "endDate": "2026-07-15",
+          "ringId": "ring-1",
+          "activityId": "activity-1",
+          "labelId": "label-3",
+          "description": "Ingen finansiell kommunikation med media, investerare, analytiker eller övriga kommer att genomföras under den tysta perioden före offentliggörandet av kvartalets resultat."
+        },
+        {
+          "id": "item-8",
+          "name": "Kvartalsrapport Q2 2026",
+          "startDate": "2026-07-15",
+          "endDate": "2026-07-15",
+          "ringId": "ring-2",
+          "activityId": "activity-2",
+          "labelId": "label-3",
+          "description": "SEB presenterar resultaten för andra kvartalet 2026."
+        },
+        {
+          "id": "item-9",
+          "name": "Tyst period Q3 2026",
+          "startDate": "2026-10-01",
+          "endDate": "2026-10-22",
+          "ringId": "ring-1",
+          "activityId": "activity-1",
+          "labelId": "label-4",
+          "description": "Ingen finansiell kommunikation med media, investerare, analytiker eller övriga kommer att genomföras under den tysta perioden före offentliggörandet av kvartalets resultat."
+        },
+        {
+          "id": "item-10",
+          "name": "Kvartalsrapport Q3 2026",
+          "startDate": "2026-10-22",
+          "endDate": "2026-10-22",
+          "ringId": "ring-2",
+          "activityId": "activity-2",
+          "labelId": "label-4",
+          "description": "SEB presenterar resultaten för tredje kvartalet 2026."
+        }
+      ]
+    }
+  ]
+}
