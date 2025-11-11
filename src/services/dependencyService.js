@@ -10,16 +10,22 @@
  * @returns {Object} - New startDate and endDate for the dependent
  */
 export function calculateDependentDates(predecessor, dependent) {
-  const lagDays = dependent.lagDays || 0;
+  // Use provided lag, but ensure minimum 1 day for finish-to-start to avoid visual stacking
+  const dependencyType = dependent.dependencyType || 'finish_to_start';
+  const providedLag = dependent.lagDays || 0;
+  const lagDays = dependencyType === 'finish_to_start' 
+    ? Math.max(1, providedLag)  // Minimum 1 day gap for finish-to-start
+    : providedLag;
+  
   const duration = Math.floor(
     (new Date(dependent.endDate) - new Date(dependent.startDate)) / (1000 * 60 * 60 * 24)
   );
 
   let newStartDate, newEndDate;
 
-  switch (dependent.dependencyType || 'finish_to_start') {
+  switch (dependencyType) {
     case 'finish_to_start':
-      // Dependent starts when predecessor finishes (+ lag)
+      // Dependent starts when predecessor finishes (+ lag, minimum 1 day)
       newStartDate = new Date(predecessor.endDate);
       newStartDate.setDate(newStartDate.getDate() + lagDays);
       newEndDate = new Date(newStartDate);

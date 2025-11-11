@@ -2,7 +2,7 @@ import { X, Plus, Link2, Link as LinkIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelService';
-import { wouldCreateCircularDependency, getDependencyChain } from '../services/dependencyService';
+import { wouldCreateCircularDependency, getDependencyChain, calculateDependentDates } from '../services/dependencyService';
 import ErrorDisplay from './ErrorDisplay';
 
 function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, currentPageId, year }) {
@@ -137,6 +137,30 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
       setRecurringPreview([]);
     }
   }, [formData.isRecurring, formData.startDate, formData.endDate, formData.recurringFrequency, formData.recurringDuration]);
+
+  // Auto-calculate dates when dependency settings change
+  useEffect(() => {
+    if (formData.dependsOn && formData.dependencyType) {
+      const predecessor = wheelStructure.items.find(item => item.id === formData.dependsOn);
+      if (predecessor) {
+        const calculatedDates = calculateDependentDates(predecessor, {
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          dependencyType: formData.dependencyType,
+          lagDays: formData.lagDays
+        });
+        
+        // Only update if dates actually changed to avoid infinite loop
+        if (calculatedDates.startDate !== formData.startDate || calculatedDates.endDate !== formData.endDate) {
+          setFormData(prev => ({
+            ...prev,
+            startDate: calculatedDates.startDate,
+            endDate: calculatedDates.endDate
+          }));
+        }
+      }
+    }
+  }, [formData.dependsOn, formData.dependencyType, formData.lagDays, wheelStructure.items]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -310,14 +334,16 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   {t('editor:addItemModal.startDateLabel')}
+                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(auto-beräknat)</span>}
                 </label>
                 <input
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => handleChange('startDate', e.target.value)}
+                  disabled={!!formData.dependsOn}
                   className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                     errors.startDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  } ${formData.dependsOn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 />
                 {errors.startDate && (
                   <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
@@ -330,15 +356,17 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                     ? t('editor:addItemModal.recurringEndDateLabel', 'Slutdatum (upprepar till)')
                     : t('editor:addItemModal.endDateLabel')
                   }
+                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(auto-beräknat)</span>}
                 </label>
                 <input
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => handleChange('endDate', e.target.value)}
                   min={formData.startDate}
+                  disabled={!!formData.dependsOn}
                   className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                     errors.endDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  } ${formData.dependsOn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 />
                 {errors.endDate && (
                   <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>

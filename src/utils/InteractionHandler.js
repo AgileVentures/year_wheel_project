@@ -495,6 +495,16 @@ class InteractionHandler {
     // Minimum activity size (1 week)
     const minWeekAngle = LayoutCalculator.degreesToRadians((7 / 365) * 360);
 
+    // Helper to convert angle to date
+    const angleToDate = (angle) => {
+      const normalizedAngle = this.normalizeAngle(angle - this.wheel.rotationAngle);
+      const degrees = LayoutCalculator.radiansToDegrees(normalizedAngle);
+      const month = Math.floor(degrees / 30);
+      const dayOfMonth = Math.floor(((degrees % 30) / 30) * 30) + 1;
+      const year = parseInt(this.wheel.year, 10);
+      return new Date(year, month, dayOfMonth);
+    };
+
     if (this.dragState.dragMode === 'move') {
       // Detect target ring for switching
       const targetRingInfo = this.detectTargetRing(x, y);
@@ -505,6 +515,26 @@ class InteractionHandler {
       // Apply delta to both start and end
       const rawStart = this.dragState.rawInitialStartAngle + angleDelta;
       const rawEnd = this.dragState.rawInitialEndAngle + angleDelta;
+
+      // Validate against dependencies
+      const draggedItem = this.dragState.draggedItem;
+      if (draggedItem && draggedItem.dependsOn && this.wheel.wheelStructure?.items) {
+        const proposedStartDate = angleToDate(rawStart);
+        const proposedEndDate = angleToDate(rawEnd);
+        
+        const validation = validateDateChange(
+          this.wheel.wheelStructure.items,
+          draggedItem.id,
+          { startDate: proposedStartDate.toISOString().split('T')[0], endDate: proposedEndDate.toISOString().split('T')[0] }
+        );
+        
+        if (!validation.valid) {
+          // Constraint violated - don't update preview, show visual feedback
+          this.canvas.style.cursor = 'not-allowed';
+          console.log('[InteractionHandler] Drag constrained:', validation.reason);
+          return; // Don't update preview position
+        }
+      }
 
       this.dragState.rawPreviewStartAngle = rawStart;
       this.dragState.rawPreviewEndAngle = rawEnd;
@@ -524,6 +554,25 @@ class InteractionHandler {
       if (span < 0) span += Math.PI * 2;
 
       if (span >= minWeekAngle) {
+        // Validate against dependencies
+        const draggedItem = this.dragState.draggedItem;
+        if (draggedItem && draggedItem.dependsOn && this.wheel.wheelStructure?.items) {
+          const proposedStartDate = angleToDate(rawStart);
+          const currentEndDate = angleToDate(this.dragState.rawInitialEndAngle);
+          
+          const validation = validateDateChange(
+            this.wheel.wheelStructure.items,
+            draggedItem.id,
+            { startDate: proposedStartDate.toISOString().split('T')[0], endDate: currentEndDate.toISOString().split('T')[0] }
+          );
+          
+          if (!validation.valid) {
+            this.canvas.style.cursor = 'not-allowed';
+            console.log('[InteractionHandler] Resize constrained:', validation.reason);
+            return;
+          }
+        }
+        
         this.dragState.previewStartAngle = newStartAngle;
         this.dragState.rawPreviewStartAngle = rawStart;
       }
@@ -540,9 +589,35 @@ class InteractionHandler {
       if (span < 0) span += Math.PI * 2;
 
       if (span >= minWeekAngle) {
+        // Validate against dependencies (check if dependents would be violated)
+        const draggedItem = this.dragState.draggedItem;
+        if (draggedItem && this.wheel.wheelStructure?.items) {
+          const currentStartDate = angleToDate(this.dragState.rawInitialStartAngle);
+          const proposedEndDate = angleToDate(rawEnd);
+          
+          const validation = validateDateChange(
+            this.wheel.wheelStructure.items,
+            draggedItem.id,
+            { startDate: currentStartDate.toISOString().split('T')[0], endDate: proposedEndDate.toISOString().split('T')[0] }
+          );
+          
+          if (!validation.valid) {
+            this.canvas.style.cursor = 'not-allowed';
+            console.log('[InteractionHandler] Resize constrained:', validation.reason);
+            return;
+          }
+        }
+        
         this.dragState.previewEndAngle = newEndAngle;
         this.dragState.rawPreviewEndAngle = rawEnd;
       }
+    }
+
+    // Reset cursor to default drag cursor if not constrained
+    if (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'resize-end') {
+      this.canvas.style.cursor = 'ew-resize';
+    } else {
+      this.canvas.style.cursor = 'grabbing';
     }
 
     // Trigger redraw
