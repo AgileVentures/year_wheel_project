@@ -368,10 +368,14 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
     endDate: i.end_date,
     time: i.time,
     description: i.description, // ⚠️ CRITICAL: Include description from synced items
-  pageId: shouldUsePageScope ? i.page_id : pageId,
+    pageId: shouldUsePageScope ? i.page_id : pageId,
     // Wheel linking fields
     linkedWheelId: i.linked_wheel_id,
     linkType: i.link_type,
+    // Dependency fields
+    dependsOn: i.depends_on_item_id || null,
+    dependencyType: i.dependency_type || 'finish_to_start',
+    lagDays: i.dependency_lag_days !== undefined ? i.dependency_lag_days : 0,
   }));
 };
 
