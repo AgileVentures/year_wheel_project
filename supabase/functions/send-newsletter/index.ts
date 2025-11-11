@@ -209,6 +209,8 @@ serve(async (req) => {
     console.log(`Send complete: ${successCount} succeeded, ${errorCount} failed`)
 
     // Log newsletter send
+    // Initialize delivered_count with success_count since Resend accepted these emails
+    // Webhook events will update this if we get delivery confirmations
     const logResult = await supabase
       .from('newsletter_sends')
       .insert({
@@ -218,6 +220,7 @@ serve(async (req) => {
         recipient_count: recipients.length,
         success_count: successCount,
         error_count: errorCount,
+        delivered_count: successCount, // Initialize with success count
         template_type: templateType,
         template_data: templateData,
         sent_at: new Date().toISOString()

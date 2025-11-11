@@ -90,11 +90,11 @@ export default function NewsletterDetail({ send, onClose }) {
     uniqueClicks: stat.recipients.size
   }));
 
-  // Calculate rates
+  // Calculate rates - use sent count as base for all calculations to avoid division by zero
   const deliveryRate = send.recipient_count > 0 ? ((send.delivered_count / send.recipient_count) * 100).toFixed(1) : 0;
-  const openRate = send.delivered_count > 0 ? ((send.opened_count / send.delivered_count) * 100).toFixed(1) : 0;
-  const clickRate = send.delivered_count > 0 ? ((send.clicked_count / send.delivered_count) * 100).toFixed(1) : 0;
-  const unsubscribeRate = send.delivered_count > 0 ? ((unsubscribeClicks.length / send.delivered_count) * 100).toFixed(2) : 0;
+  const openRate = send.recipient_count > 0 ? ((send.opened_count / send.recipient_count) * 100).toFixed(1) : 0;
+  const clickRate = send.recipient_count > 0 ? ((send.clicked_count / send.recipient_count) * 100).toFixed(1) : 0;
+  const unsubscribeRate = send.recipient_count > 0 ? ((unsubscribeClicks.length / send.recipient_count) * 100).toFixed(2) : 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -206,7 +206,7 @@ export default function NewsletterDetail({ send, onClose }) {
                         <span className="text-sm font-medium">Öppnade</span>
                       </div>
                       <p className="text-3xl font-bold text-purple-900">{send.opened_count}</p>
-                      <p className="text-xs text-purple-700 mt-1">{openRate}% av levererade</p>
+                      <p className="text-xs text-purple-700 mt-1">{openRate}% av skickade</p>
                     </div>
 
                     <div className="bg-indigo-50 rounded-sm p-4">
@@ -215,7 +215,7 @@ export default function NewsletterDetail({ send, onClose }) {
                         <span className="text-sm font-medium">Klick</span>
                       </div>
                       <p className="text-3xl font-bold text-indigo-900">{send.clicked_count}</p>
-                      <p className="text-xs text-indigo-700 mt-1">{clickRate}% av levererade</p>
+                      <p className="text-xs text-indigo-700 mt-1">{clickRate}% av skickade</p>
                     </div>
                   </div>
 
@@ -227,7 +227,7 @@ export default function NewsletterDetail({ send, onClose }) {
                         <span className="text-sm font-medium">Avregistreringar</span>
                       </div>
                       <p className="text-2xl font-bold text-orange-900">{unsubscribeClicks.length}</p>
-                      <p className="text-xs text-orange-700 mt-1">{unsubscribeRate}% av levererade</p>
+                      <p className="text-xs text-orange-700 mt-1">{unsubscribeRate}% av skickade</p>
                     </div>
 
                     {send.failed_count > 0 && (
