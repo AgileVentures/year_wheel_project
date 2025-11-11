@@ -65,13 +65,18 @@ export default function NewsletterDetail({ send, onClose }) {
 
   // Track unsubscribe clicks specifically
   const unsubscribeClicks = clickedEvents.filter(e => {
-    const url = e.event_data?.click?.url || '';
+    const url = e.event_data?.click?.link || e.event_data?.click?.url || '';
     return url.includes('/unsubscribe') || url.includes('avregistrera');
   });
 
   // Get unique link clicks (grouped by URL)
   const linkClickStats = clickedEvents.reduce((acc, event) => {
-    const url = event.event_data?.click?.url || 'Unknown URL';
+    // Try different possible locations for the URL in the event data
+    const url = event.event_data?.click?.link || 
+                event.event_data?.click?.url || 
+                event.event_data?.link || 
+                event.event_data?.url || 
+                'Unknown URL';
     if (!acc[url]) {
       acc[url] = { url, count: 0, recipients: new Set() };
     }
@@ -274,13 +279,22 @@ export default function NewsletterDetail({ send, onClose }) {
                               <div className="flex items-center gap-2 mb-2">
                                 <ExternalLink size={14} className="text-blue-600" />
                                 <span className="text-sm font-medium text-gray-900">{event.recipient}</span>
-                                {event.event_data?.click?.url?.includes('unsubscribe') && (
+                                {(event.event_data?.click?.link?.includes('unsubscribe') || 
+                                  event.event_data?.click?.url?.includes('unsubscribe') ||
+                                  event.event_data?.link?.includes('unsubscribe') ||
+                                  event.event_data?.url?.includes('unsubscribe')) && (
                                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded">
                                     Avregistrering
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 break-all">{event.event_data?.click?.url || 'N/A'}</p>
+                              <p className="text-sm text-gray-600 break-all">
+                                {event.event_data?.click?.link || 
+                                 event.event_data?.click?.url || 
+                                 event.event_data?.link || 
+                                 event.event_data?.url || 
+                                 'URL ej tillgänglig'}
+                              </p>
                             </div>
                             <div className="text-xs text-gray-500 ml-4 flex items-center gap-1">
                               <Clock size={12} />

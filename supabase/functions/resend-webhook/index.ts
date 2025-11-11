@@ -55,6 +55,12 @@ serve(async (req) => {
     
     console.log('Received Resend webhook:', payload.type)
     console.log('Event data:', JSON.stringify(payload.data, null, 2))
+    
+    // Extra logging for click events to debug URL structure
+    if (payload.type === 'email.clicked') {
+      console.log('CLICK EVENT - Full data structure:', JSON.stringify(payload.data, null, 2))
+      console.log('CLICK EVENT - click object:', JSON.stringify(payload.data.click, null, 2))
+    }
 
     const { type, data } = payload
 
