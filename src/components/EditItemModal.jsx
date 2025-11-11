@@ -410,9 +410,10 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                           <select
                             value={formData.dependsOn}
                             onChange={(e) => handleChange('dependsOn', e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
-                              errors.dependsOn ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            disabled={isRecurringInstance}
+                            className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                              isRecurringInstance ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'
+                            } ${errors.dependsOn ? 'border-red-500' : 'border-gray-300'}`}
                           >
                             <option value="">Ingen (oberoende aktivitet)</option>
                             {wheelStructure.items
@@ -424,6 +425,9 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                                 </option>
                               ))}
                           </select>
+                          {isRecurringInstance && (
+                            <p className="mt-1 text-xs text-gray-500">Återkommande aktiviteter kan inte ha beroenden</p>
+                          )}
                           {errors.dependsOn && (
                             <p className="mt-1 text-xs text-red-600">{errors.dependsOn}</p>
                           )}
@@ -517,7 +521,10 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                                 <select
                                   value={formData.linkedWheelId}
                                   onChange={(e) => handleChange('linkedWheelId', e.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                                  disabled={isRecurringInstance}
+                                  className={`w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                                    isRecurringInstance ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'
+                                  }`}
                                 >
                                   <option value="">Ingen länk</option>
                                   {accessibleWheels.map((wheel) => (
@@ -527,7 +534,10 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                                   ))}
                                 </select>
                                 <p className="mt-1 text-xs text-gray-500">
-                                  Länka denna händelse till ett annat hjul för referens eller detaljer
+                                  {isRecurringInstance
+                                    ? 'Återkommande aktiviteter kan inte länkas till andra hjul'
+                                    : 'Länka denna händelse till ett annat hjul för referens eller detaljer'
+                                  }
                                 </p>
                               </div>
 
