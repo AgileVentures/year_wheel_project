@@ -378,7 +378,8 @@ async function sendQuizResultEmail(
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Thomas från YearWheel <hello@yearwheel.se>',
+        from: 'Thomas från YearWheel <hello@notify.yearwheel.se>',
+        reply_to: 'hey@communitaslabs.io',
         to: email,
         subject: subject,
         html: htmlContent

@@ -139,7 +139,7 @@ serve(async (req) => {
 
     // Log what we're about to send
     console.log(`Attempting to send to ${recipients.length} recipients`)
-    console.log(`From: ${fromName} <hello@yearwheel.se>`)
+    console.log(`From: ${fromName} <hello@notify.yearwheel.se>`)
     console.log(`Subject: ${subject}`)
 
     // Send emails in batches of 100 (Resend batch limit)
@@ -157,7 +157,8 @@ serve(async (req) => {
 
       try {
         const payload = batch.map(email => ({
-          from: `${fromName} <hello@yearwheel.se>`,
+          from: `${fromName} <hello@notify.yearwheel.se>`,
+          reply_to: 'hey@communitaslabs.io',
           to: [email],
           subject: subject,
           html: htmlContent
