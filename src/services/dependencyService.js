@@ -64,24 +64,32 @@ export function findDependentItems(items, itemId) {
 
 /**
  * Recursively update all dependent items when a predecessor changes
- * @param {Array} items - All items in the wheel (mutable)
+ * @param {Array} items - All items in the wheel (immutable - will not be modified)
  * @param {String} changedItemId - ID of the item that was changed
  * @param {Object} updatedDates - New dates for the changed item
- * @returns {Array} - Array of all items that were updated (for undo/redo)
+ * @returns {Array} - Array of updates: [{ id, oldDates, newDates }]
  */
 export function cascadeUpdateDependents(items, changedItemId, updatedDates) {
   const updatedItems = [];
   const visited = new Set(); // Prevent infinite loops
 
-  function updateChain(itemId) {
+  // Create a lookup map for faster access
+  const itemsMap = new Map(items.map(i => [i.id, i]));
+
+  function updateChain(itemId, currentItemDates) {
     if (visited.has(itemId)) return;
     visited.add(itemId);
 
     const dependents = findDependentItems(items, itemId);
 
     dependents.forEach(dependent => {
-      const predecessor = items.find(i => i.id === itemId);
-      if (!predecessor) return;
+      // Use the current dates (either from items or from previous update)
+      const predecessor = {
+        ...itemsMap.get(itemId),
+        ...currentItemDates
+      };
+      
+      if (!predecessor.id) return;
 
       const newDates = calculateDependentDates(predecessor, dependent);
       
@@ -95,23 +103,19 @@ export function cascadeUpdateDependents(items, changedItemId, updatedDates) {
           endDate: dependent.endDate
         };
 
-        // Update the item in place
-        dependent.startDate = newDates.startDate;
-        dependent.endDate = newDates.endDate;
-
         updatedItems.push({
           id: dependent.id,
           oldDates,
           newDates
         });
 
-        // Recursively update this item's dependents
-        updateChain(dependent.id);
+        // Recursively update this item's dependents with the new dates
+        updateChain(dependent.id, newDates);
       }
     });
   }
 
-  updateChain(changedItemId);
+  updateChain(changedItemId, updatedDates);
   return updatedItems;
 }
 
