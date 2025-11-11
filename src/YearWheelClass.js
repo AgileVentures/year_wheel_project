@@ -3508,7 +3508,6 @@ class YearWheel {
 
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawRotatingElements();
-    this.drawDependencyArrows();
     this.drawStaticElements();
 
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
@@ -3570,11 +3569,9 @@ class YearWheel {
 
     // Apply rotation and draw rotating elements (months, events)
     this.drawRotatingElements();
-    // Draw dependency arrows (after items are positioned)
-    this.drawDependencyArrows();
     // Draw static elements (title and year)
     this.drawStaticElements();
-    // Drag preview is now drawn inside drawRotatingElements()
+    // Drag preview and dependency arrows are now drawn inside drawRotatingElements()
   }
 
   drawDragPreview() {
@@ -3684,7 +3681,8 @@ class YearWheel {
   }
 
   // Draw dependency arrows between connected activities
-  drawDependencyArrows() {
+  // Called INSIDE rotated context - uses logical angles directly
+  drawDependencyArrowsInRotatedContext() {
     // Only draw if we have clickable items (rendered items with positions)
     if (!this.clickableItems || this.clickableItems.length === 0) return;
 
@@ -3709,6 +3707,7 @@ class YearWheel {
       if (!dependentPos || !predecessorPos) return;
 
       // Calculate connection points based on dependency type
+      // Use logical angles directly (context is already rotated)
       let startAngle, startRadius, endAngle, endRadius;
 
       switch (item.dependencyType || 'finish_to_start') {
@@ -3740,15 +3739,11 @@ class YearWheel {
           return;
       }
 
-      // Convert angles to screen coordinates (including rotation)
-      const screenStartAngle = startAngle + this.rotationAngle;
-      const screenEndAngle = endAngle + this.rotationAngle;
-
-      // Calculate Cartesian coordinates
-      const startX = this.center.x + Math.cos(screenStartAngle) * startRadius;
-      const startY = this.center.y + Math.sin(screenStartAngle) * startRadius;
-      const endX = this.center.x + Math.cos(screenEndAngle) * endRadius;
-      const endY = this.center.y + Math.sin(screenEndAngle) * endRadius;
+      // Calculate Cartesian coordinates (no rotation added - context is already rotated)
+      const startX = this.center.x + Math.cos(startAngle) * startRadius;
+      const startY = this.center.y + Math.sin(startAngle) * startRadius;
+      const endX = this.center.x + Math.cos(endAngle) * endRadius;
+      const endY = this.center.y + Math.sin(endAngle) * endRadius;
 
       // Draw curved line using quadratic curve
       // Control point is offset perpendicular to the midpoint
@@ -3791,6 +3786,13 @@ class YearWheel {
     });
 
     this.context.restore();
+  }
+
+  // Legacy function - kept for backward compatibility but now calls the rotated version
+  drawDependencyArrows() {
+    // This is now called from within create() which sets up rotation context
+    // Just delegate to the new implementation
+    this.drawDependencyArrowsInRotatedContext();
   }
 
   // Function to draw static elements with proper proportions
@@ -5458,6 +5460,9 @@ class YearWheel {
 
     // FINALLY draw drag preview INSIDE the rotated context
     this.drawDragPreviewInRotatedContext();
+
+    // Draw dependency arrows INSIDE the rotated context (logical angles, no manual rotation)
+    this.drawDependencyArrowsInRotatedContext();
 
     this.context.restore();
   }
