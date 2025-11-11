@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { 
   newsletterTemplate, 
@@ -6,10 +7,12 @@ import {
   tipsTemplate, 
   simpleAnnouncementTemplate 
 } from '../../utils/emailTemplates';
-import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save, X, Eye } from 'lucide-react';
+import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save, X, Eye, ArrowLeft } from 'lucide-react';
 import NewsletterDetail from '../../components/NewsletterDetail';
+import { useTranslation } from 'react-i18next';
 
 export default function NewsletterManager() {
+  const { t } = useTranslation(['newsletter', 'admin']);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -370,32 +373,40 @@ export default function NewsletterManager() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header with back navigation */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Newsletter Manager</h1>
-        <p className="text-gray-600">Skapa och skicka newsletters till dina användare</p>
+        <Link
+          to="/admin"
+          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 font-medium"
+        >
+          <ArrowLeft size={20} />
+          {t('admin:backToDashboard')}
+        </Link>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('title')}</h1>
+        <p className="text-gray-600">{t('subtitle', 'Skapa och skicka newsletters till dina användare')}</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Editor */}
         <div className="space-y-6">
           <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Nytt Newsletter</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('newNewsletter')}</h2>
             
             {/* Recipients */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mottagare
+                {t('recipients')}
               </label>
               <select
                 value={recipientType}
                 onChange={(e) => setRecipientType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">Alla användare</option>
-                <option value="premium">Premium-användare</option>
-                <option value="free">Gratis-användare</option>
-                <option value="admins">Admins</option>
-                <option value="custom">Anpassad lista</option>
+                <option value="all">{t('recipientTypes.all')}</option>
+                <option value="premium">{t('recipientTypes.premium')}</option>
+                <option value="free">{t('recipientTypes.free')}</option>
+                <option value="admins">{t('recipientTypes.admins')}</option>
+                <option value="custom">{t('recipientTypes.custom')}</option>
               </select>
             </div>
 

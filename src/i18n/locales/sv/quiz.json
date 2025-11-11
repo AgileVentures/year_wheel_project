@@ -1,0 +1,37 @@
+{
+  "title": "Quiz",
+  "startQuiz": "Starta quiz",
+  "findYourSolution": "Hitta din lösning",
+  "getRecommendation": "Få din rekommendation",
+  "minute": "minut",
+  "minutes": "minuter",
+  "timeCommitment": "{minutes} minuters quiz",
+  "question": "Fråga",
+  "of": "av",
+  "progress": "{current} av {total}",
+  "previous": "Föregående",
+  "next": "Nästa",
+  "complete": "Slutför",
+  "thankYou": "Tack för dina svar!",
+  "emailLabel": "Få din personliga rekommendation via email:",
+  "emailPlaceholder": "din@email.se",
+  "submitButton": "Få min rekommendation",
+  "privacyNote": "Vi skickar dig tips och en personlig demo baserat på dina svar. Ingen spam!",
+  "categories": {
+    "bestPractice": "Best Practice",
+    "currentSituation": "Din nuvarande situation",
+    "desiredOutcome": "Önskat resultat",
+    "obstacles": "Hinder",
+    "solutionFit": "Lösning"
+  },
+  "results": {
+    "high": "Vi ser att du kämpar med flera utmaningar. Låt oss hjälpa dig!",
+    "medium": "Det finns möjligheter att förbättra er planering. Vi visar vägen!",
+    "low": "Ni är på rätt väg! Vi kan hjälpa er ta nästa steg."
+  },
+  "personas": {
+    "marketing": "Marknadsföring",
+    "project": "Projektplanering",
+    "education": "Skola & Utbildning"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "title": "Quiz",
+  "startQuiz": "Start Quiz",
+  "findYourSolution": "Find Your Solution",
+  "getRecommendation": "Get Your Recommendation",
+  "minute": "minute",
+  "minutes": "minutes",
+  "timeCommitment": "{minutes}-minute quiz",
+  "question": "Question",
+  "of": "of",
+  "progress": "{current} of {total}",
+  "previous": "Previous",
+  "next": "Next",
+  "complete": "Complete",
+  "thankYou": "Thank you for your answers!",
+  "emailLabel": "Get your personalized recommendation via email:",
+  "emailPlaceholder": "your@email.com",
+  "submitButton": "Get My Recommendation",
+  "privacyNote": "We'll send you tips and a personalized demo based on your answers. No spam!",
+  "categories": {
+    "bestPractice": "Best Practice",
+    "currentSituation": "Your Current Situation",
+    "desiredOutcome": "Desired Outcome",
+    "obstacles": "Obstacles",
+    "solutionFit": "Solution Fit"
+  },
+  "results": {
+    "high": "We see you're struggling with several challenges. Let us help!",
+    "medium": "There are opportunities to improve your planning. We'll show you how!",
+    "low": "You're on the right track! We can help you take the next step."
+  },
+  "personas": {
+    "marketing": "Marketing",
+    "project": "Project Planning",
+    "education": "School & Education"
+  }
+}
