@@ -224,7 +224,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
             {/* Left column - Basic Info & Dates */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                Grundläggande information
+                {t('editor:editItemModal.basicInfo', 'Grundläggande information')}
               </h3>
             
               {/* Name */}
@@ -251,7 +251,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   {t('editor:editItemModal.startDateLabel')}
-                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(auto-beräknat)</span>}
+                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">{t('editor:editItemModal.startDateAutoCalculated', '(auto-beräknat)')}</span>}
                 </label>
                 <input
                   type="date"
@@ -270,7 +270,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   {t('editor:editItemModal.endDateLabel')}
-                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(varaktighet beräknas)</span>}
+                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">{t('editor:editItemModal.endDateDurationCalculated', '(varaktighet beräknas)')}</span>}
                 </label>
                 <input
                   type="date"
@@ -290,7 +290,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
             {/* Right column - Categorization */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                Kategorisering
+                {t('editor:editItemModal.categorization', 'Kategorisering')}
               </h3>
 
               <div className="space-y-4">
@@ -359,34 +359,34 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                 onClick={() => setShowAdvancedSettings(true)}
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
               >
-                + Avancerade inställningar
+                {t('editor:editItemModal.showAdvancedSettings', '+ Avancerade inställningar')}
               </button>
             ) : (
               <div className="border border-gray-200 rounded-sm p-4 bg-gray-50 space-y-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Avancerade inställningar
+                    {t('editor:editItemModal.advancedSettings', 'Avancerade inställningar')}
                   </h4>
                   <button
                     type="button"
                     onClick={() => setShowAdvancedSettings(false)}
                     className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    Dölj
+                    {t('editor:editItemModal.hideAdvancedSettings', 'Dölj')}
                   </button>
                 </div>
 
                 {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
+                    {t('editor:editItemModal.descriptionLabel', 'Beskrivning')} <span className="text-gray-400 font-normal">({t('common:optional', 'valfritt')})</span>
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => handleChange('description', e.target.value)}
                     rows={3}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none bg-white"
-                    placeholder="Lägg till detaljer om denna aktivitet..."
+                    placeholder={t('editor:editItemModal.descriptionPlaceholder', 'Lägg till detaljer om denna aktivitet...')}
                   />
                 </div>
 
@@ -397,7 +397,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                     <div className="flex items-center gap-2 mb-3">
                       <LinkIcon size={14} className="text-gray-600" />
                       <label className="text-sm font-medium text-gray-700">
-                        Aktivitetsberoende
+                        {t('editor:editItemModal.dependencies.title', 'Aktivitetsberoende')}
                       </label>
                     </div>
                       
@@ -405,7 +405,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                         {/* Predecessor Item */}
                         <div>
                           <label className="block text-xs text-gray-600 mb-1.5">
-                            Beror på aktivitet
+                            {t('editor:editItemModal.dependencies.dependsOnLabel', 'Beror på aktivitet')}
                           </label>
                           <select
                             value={formData.dependsOn}
@@ -415,7 +415,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                               isRecurringInstance ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'
                             } ${errors.dependsOn ? 'border-red-500' : 'border-gray-300'}`}
                           >
-                            <option value="">Ingen (oberoende aktivitet)</option>
+                            <option value="">{t('editor:editItemModal.dependencies.noDependency', 'Ingen (oberoende aktivitet)')}</option>
                             {wheelStructure.items
                               .filter(i => i.id !== item.id && i.pageId === item.pageId)
                               .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
@@ -426,7 +426,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                               ))}
                           </select>
                           {isRecurringInstance && (
-                            <p className="mt-1 text-xs text-gray-500">Återkommande aktiviteter kan inte ha beroenden</p>
+                            <p className="mt-1 text-xs text-gray-500">{t('editor:editItemModal.dependencies.recurringRestriction', 'Återkommande aktiviteter kan inte ha beroenden')}</p>
                           )}
                           {errors.dependsOn && (
                             <p className="mt-1 text-xs text-red-600">{errors.dependsOn}</p>
@@ -438,39 +438,39 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                           <>
                             <div>
                               <label className="block text-xs text-gray-600 mb-1.5">
-                                Beroendetyp
+                                {t('editor:editItemModal.dependencies.typeLabel', 'Beroendetyp')}
                               </label>
                               <select
                                 value={formData.dependencyType}
                                 onChange={(e) => handleChange('dependencyType', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
                               >
-                                <option value="finish_to_start">Slut → Start (vanligast)</option>
-                                <option value="start_to_start">Start → Start (parallell)</option>
-                                <option value="finish_to_finish">Slut → Slut (synkroniserad)</option>
+                                <option value="finish_to_start">{t('editor:editItemModal.dependencies.typeFinishToStart', 'Slut → Start (vanligast)')}</option>
+                                <option value="start_to_start">{t('editor:editItemModal.dependencies.typeStartToStart', 'Start → Start (parallell)')}</option>
+                                <option value="finish_to_finish">{t('editor:editItemModal.dependencies.typeFinishToFinish', 'Slut → Slut (synkroniserad)')}</option>
                               </select>
                               <p className="mt-1 text-xs text-gray-500">
-                                {formData.dependencyType === 'finish_to_start' && 'Denna aktivitet startar när föregående avslutas'}
-                                {formData.dependencyType === 'start_to_start' && 'Denna aktivitet startar samtidigt med föregående'}
-                                {formData.dependencyType === 'finish_to_finish' && 'Denna aktivitet avslutas samtidigt med föregående'}
+                                {formData.dependencyType === 'finish_to_start' && t('editor:editItemModal.dependencies.typeHintFinishToStart', 'Denna aktivitet startar när föregående avslutas')}
+                                {formData.dependencyType === 'start_to_start' && t('editor:editItemModal.dependencies.typeHintStartToStart', 'Denna aktivitet startar samtidigt med föregående')}
+                                {formData.dependencyType === 'finish_to_finish' && t('editor:editItemModal.dependencies.typeHintFinishToFinish', 'Denna aktivitet avslutas samtidigt med föregående')}
                               </p>
                             </div>
 
                             {/* Lag Days */}
                             <div>
                               <label className="block text-xs text-gray-600 mb-1.5">
-                                Fördröjning (dagar)
+                                {t('editor:editItemModal.dependencies.lagDaysLabel', 'Fördröjning (dagar)')}
                               </label>
                               <input
                                 type="number"
                                 value={formData.lagDays}
                                 onChange={(e) => handleChange('lagDays', e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                                placeholder="0"
+                                placeholder={t('editor:editItemModal.dependencies.lagDaysPlaceholder', '0')}
                                 min="0"
                               />
                               <p className="mt-1 text-xs text-gray-500">
-                                Antal dagar att vänta efter föregående aktivitet (0 = ingen fördröjning)
+                                {t('editor:editItemModal.dependencies.lagDaysHint', 'Antal dagar att vänta efter föregående aktivitet (0 = ingen fördröjning)')}
                               </p>
                             </div>
 
@@ -480,7 +480,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                               return chain.length > 0 ? (
                                 <div className="bg-blue-50 border border-blue-200 rounded-sm p-2">
                                   <p className="text-xs text-blue-900 font-medium mb-1">
-                                    🔗 Beroendekedja:
+                                    {t('editor:editItemModal.dependencies.chainTitle', '🔗 Beroendekedja:')}
                                   </p>
                                   <div className="text-xs text-blue-700 space-y-0.5">
                                     {chain.map((chainItem, idx) => (
@@ -489,7 +489,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                                       </div>
                                     ))}
                                     <div>
-                                      {'  '.repeat(chain.length)}→ <strong>{item.name}</strong> (denna)
+                                      {'  '.repeat(chain.length)}→ <strong>{item.name}</strong> ({t('editor:editItemModal.dependencies.currentItem', 'denna')})
                                     </div>
                                   </div>
                                 </div>
@@ -505,18 +505,18 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                         <div className="flex items-center gap-2 mb-3">
                           <Link2 size={14} className="text-gray-600" />
                           <label className="text-sm font-medium text-gray-700">
-                            Länka till annat hjul
+                            {t('editor:editItemModal.wheelLinking.title', 'Länka till annat hjul')}
                           </label>
                         </div>
 
                         <div className="space-y-3">
                           {loadingWheels ? (
-                            <p className="text-sm text-gray-500">Laddar hjul...</p>
+                            <p className="text-sm text-gray-500">{t('editor:editItemModal.wheelLinking.loadingWheels', 'Laddar hjul...')}</p>
                           ) : accessibleWheels.length > 0 ? (
                             <>
                               <div>
                                 <label className="block text-xs text-gray-600 mb-1.5">
-                                  Välj hjul
+                                  {t('editor:editItemModal.wheelLinking.selectLabel', 'Välj hjul')}
                                 </label>
                                 <select
                                   value={formData.linkedWheelId}
@@ -526,7 +526,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                                     isRecurringInstance ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'
                                   }`}
                                 >
-                                  <option value="">Ingen länk</option>
+                                  <option value="">{t('editor:editItemModal.wheelLinking.noLink', 'Ingen länk')}</option>
                                   {accessibleWheels.map((wheel) => (
                                     <option key={wheel.id} value={wheel.id}>
                                       {wheel.title} ({wheel.year})
@@ -535,8 +535,8 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                                 </select>
                                 <p className="mt-1 text-xs text-gray-500">
                                   {isRecurringInstance
-                                    ? 'Återkommande aktiviteter kan inte länkas till andra hjul'
-                                    : 'Länka denna händelse till ett annat hjul för referens eller detaljer'
+                                    ? t('editor:editItemModal.wheelLinking.recurringRestriction', 'Återkommande aktiviteter kan inte länkas till andra hjul')
+                                    : t('editor:editItemModal.wheelLinking.helpText', 'Länka denna händelse till ett annat hjul för referens eller detaljer')
                                   }
                                 </p>
                               </div>
@@ -545,13 +545,13 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                               {selectedWheelPreview && (
                                 <div className="bg-blue-50 border border-blue-200 rounded-sm p-2">
                                   <p className="text-xs text-blue-900 font-medium">
-                                    Länkad till: {selectedWheelPreview.title} ({selectedWheelPreview.year})
+                                    {t('editor:editItemModal.wheelLinking.linkedTo', 'Länkad till:')} {selectedWheelPreview.title} ({selectedWheelPreview.year})
                                   </p>
                                 </div>
                               )}
                             </>
                           ) : (
-                            <p className="text-xs text-gray-500">Inga hjul tillgängliga för länkning</p>
+                            <p className="text-xs text-gray-500">{t('editor:editItemModal.wheelLinking.noWheelsAvailable', 'Inga hjul tillgängliga för länkning')}</p>
                           )}
                         </div>
                       </div>
