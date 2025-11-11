@@ -13,7 +13,6 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
     labelId: item.labelId || '',
     startDate: item.startDate,
     endDate: item.endDate,
-    time: item.time || '',
     description: item.description || '',
     linkedWheelId: item.linkedWheelId || '',
     linkType: item.linkType || 'reference',
@@ -72,6 +71,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
     if (formData.dependsOn && formData.dependencyType) {
       const predecessor = wheelStructure.items.find(i => i.id === formData.dependsOn);
       if (predecessor) {
+        // Calculate what the startDate should be based on dependency
         const calculatedDates = calculateDependentDates(predecessor, {
           startDate: formData.startDate,
           endDate: formData.endDate,
@@ -79,12 +79,23 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
           lagDays: formData.lagDays
         });
         
-        // Only update if dates actually changed to avoid infinite loop
-        if (calculatedDates.startDate !== formData.startDate || calculatedDates.endDate !== formData.endDate) {
+        // Only update startDate if it changed, preserve user's endDate choice
+        // This allows manual duration adjustment
+        if (calculatedDates.startDate !== formData.startDate) {
+          // Calculate current duration to preserve it
+          const currentDuration = Math.floor(
+            (new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)
+          );
+          
+          // Apply new startDate with preserved duration
+          const newStart = new Date(calculatedDates.startDate);
+          const newEnd = new Date(newStart);
+          newEnd.setDate(newEnd.getDate() + currentDuration);
+          
           setFormData(prev => ({
             ...prev,
             startDate: calculatedDates.startDate,
-            endDate: calculatedDates.endDate
+            endDate: newEnd.toISOString().split('T')[0]
           }));
         }
       }
@@ -135,7 +146,6 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
       labelId: formData.labelId,
       startDate: formData.startDate,
       endDate: formData.endDate,
-      ...(formData.time ? { time: formData.time } : {}),
       ...(formData.description ? { description: formData.description } : {}),
       linkedWheelId: formData.linkedWheelId || null,
       linkType: formData.linkedWheelId ? formData.linkType : null,
@@ -260,84 +270,136 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   {t('editor:editItemModal.endDateLabel')}
-                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(auto-beräknat)</span>}
+                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(varaktighet beräknas)</span>}
                 </label>
                 <input
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => handleChange('endDate', e.target.value)}
                   min={formData.startDate}
-                  disabled={!!formData.dependsOn}
                   className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                     errors.endDate ? 'border-red-500' : 'border-gray-300'
-                  } ${formData.dependsOn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  }`}
                 />
                 {errors.endDate && (
                   <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
                 )}
               </div>
+            </div>
 
-              {/* Time */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:editItemModal.timeLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.time}
-                  onChange={(e) => handleChange('time', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="t.ex. 14:00, Morgon, Eftermiddag"
-                />
+            {/* Right column - Categorization */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                Kategorisering
+              </h3>
+
+              <div className="space-y-4">
+                {/* Ring */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:editItemModal.ringLabel')}
+                  </label>
+                  <select
+                    value={formData.ringId}
+                    onChange={(e) => handleChange('ringId', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {wheelStructure.rings.map((ring) => (
+                      <option key={ring.id} value={ring.id}>
+                        {ring.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Activity */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:editItemModal.activityLabel')}
+                  </label>
+                  <select
+                    value={formData.activityId}
+                    onChange={(e) => handleChange('activityId', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {wheelStructure.activityGroups.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Label */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t('editor:editItemModal.labelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
+                  </label>
+                  <select
+                    value={formData.labelId}
+                    onChange={(e) => handleChange('labelId', e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    {wheelStructure.labels.map((label) => (
+                      <option key={label.id} value={label.id}>
+                        {label.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+            </div>
+          </div>
 
-              {/* Advanced Settings - Collapsible */}
-              <div className="pt-2">
-                {!showAdvancedSettings ? (
+          {/* Advanced Settings - Full Width Below Columns */}
+          <div className="pt-6 border-t border-gray-200 mt-6">
+            {!showAdvancedSettings ? (
+              <button
+                type="button"
+                onClick={() => setShowAdvancedSettings(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              >
+                + Avancerade inställningar
+              </button>
+            ) : (
+              <div className="border border-gray-200 rounded-sm p-4 bg-gray-50 space-y-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    Avancerade inställningar
+                  </h4>
                   <button
                     type="button"
-                    onClick={() => setShowAdvancedSettings(true)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                    onClick={() => setShowAdvancedSettings(false)}
+                    className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    + Avancerade inställningar
+                    Dölj
                   </button>
-                ) : (
-                  <div className="border border-gray-200 rounded-sm p-4 bg-gray-50 space-y-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                        Avancerade inställningar
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => setShowAdvancedSettings(false)}
-                        className="text-xs text-gray-500 hover:text-gray-700"
-                      >
-                        Dölj
-                      </button>
-                    </div>
+                </div>
 
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => handleChange('description', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none bg-white"
+                    placeholder="Lägg till detaljer om denna aktivitet..."
+                  />
+                </div>
+
+                {/* 2-column grid for Dependencies and Wheel Linking */}
+                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-300">
+                  {/* Dependency Section - Left Column */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <LinkIcon size={14} className="text-gray-600" />
+                      <label className="text-sm font-medium text-gray-700">
+                        Aktivitetsberoende
                       </label>
-                      <textarea
-                        value={formData.description}
-                        onChange={(e) => handleChange('description', e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none bg-white"
-                        placeholder="Lägg till detaljer om denna aktivitet..."
-                      />
                     </div>
-
-                    {/* Dependency Section */}
-                    <div className="border-t border-gray-300 pt-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <LinkIcon size={14} className="text-gray-600" />
-                        <label className="text-sm font-medium text-gray-700">
-                          Aktivitetsberoende <span className="text-gray-400 font-normal">(valfritt)</span>
-                        </label>
-                      </div>
                       
                       <div className="space-y-3">
                         {/* Predecessor Item */}
@@ -433,125 +495,60 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                         )}
                       </div>
                     </div>
+
+                      {/* Wheel Linking Section - Right Column */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Link2 size={14} className="text-gray-600" />
+                          <label className="text-sm font-medium text-gray-700">
+                            Länka till annat hjul
+                          </label>
+                        </div>
+
+                        <div className="space-y-3">
+                          {loadingWheels ? (
+                            <p className="text-sm text-gray-500">Laddar hjul...</p>
+                          ) : accessibleWheels.length > 0 ? (
+                            <>
+                              <div>
+                                <label className="block text-xs text-gray-600 mb-1.5">
+                                  Välj hjul
+                                </label>
+                                <select
+                                  value={formData.linkedWheelId}
+                                  onChange={(e) => handleChange('linkedWheelId', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                                >
+                                  <option value="">Ingen länk</option>
+                                  {accessibleWheels.map((wheel) => (
+                                    <option key={wheel.id} value={wheel.id}>
+                                      {wheel.title} ({wheel.year})
+                                    </option>
+                                  ))}
+                                </select>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Länka denna händelse till ett annat hjul för referens eller detaljer
+                                </p>
+                              </div>
+
+                              {/* Show preview when wheel is selected */}
+                              {selectedWheelPreview && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-sm p-2">
+                                  <p className="text-xs text-blue-900 font-medium">
+                                    Länkad till: {selectedWheelPreview.title} ({selectedWheelPreview.year})
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-xs text-gray-500">Inga hjul tillgängliga för länkning</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Right column - Categorization */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                Kategorisering
-              </h3>
-
-              <div className="space-y-4">
-                {/* Ring */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:editItemModal.ringLabel')}
-                  </label>
-                  <select
-                    value={formData.ringId}
-                    onChange={(e) => handleChange('ringId', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    {wheelStructure.rings.map((ring) => (
-                      <option key={ring.id} value={ring.id}>
-                        {ring.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Activity */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:editItemModal.activityLabel')}
-                  </label>
-                  <select
-                    value={formData.activityId}
-                    onChange={(e) => handleChange('activityId', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    {wheelStructure.activityGroups.map((activity) => (
-                      <option key={activity.id} value={activity.id}>
-                        {activity.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Label */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:editItemModal.labelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
-                  </label>
-                  <select
-                    value={formData.labelId}
-                    onChange={(e) => handleChange('labelId', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    {wheelStructure.labels.map((label) => (
-                      <option key={label.id} value={label.id}>
-                        {label.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
           </div>
-
-          {/* Wheel Linking Section - only show if there are wheels to link to */}
-          {!loadingWheels && accessibleWheels.length > 0 && (
-          <div className="border-t border-gray-200 pt-6 mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Link2 size={16} className="text-gray-600" />
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                {t('editor:editItemModal.linkToWheelTitle')}
-              </h3>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t('editor:editItemModal.selectWheelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
-              </label>
-              <select
-                value={formData.linkedWheelId}
-                onChange={(e) => handleChange('linkedWheelId', e.target.value)}
-                disabled={loadingWheels}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
-              >
-                <option value="">
-                  {loadingWheels 
-                    ? t('editor:editItemModal.loadingWheels') 
-                    : t('editor:editItemModal.noLinkOption')}
-                </option>
-                {accessibleWheels.map((wheel) => (
-                  <option key={wheel.id} value={wheel.id}>
-                    {wheel.title} ({wheel.year})
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-xs text-gray-500">
-                {t('editor:editItemModal.linkHelpText')}
-              </p>
-            </div>
-
-            {/* Show preview when wheel is selected */}
-            {selectedWheelPreview && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-sm">
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">{t('editor:editItemModal.linkedTo')}:</span>{' '}
-                  {selectedWheelPreview.title} ({selectedWheelPreview.year})
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {t('editor:editItemModal.linkWillOpenInNewTab')}
-                </p>
-              </div>
-            )}
-          </div>
-          )}
 
           {/* Buttons */}
           <div className="flex gap-3 pt-6 border-t border-gray-200">

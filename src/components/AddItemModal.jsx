@@ -19,7 +19,6 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
     labelId: wheelStructure.labels[0]?.id || '',
     startDate: defaultDate,
     endDate: defaultDate,
-    time: '',
     description: '',
     linkedWheelId: '',
     linkType: 'reference',
@@ -143,6 +142,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
     if (formData.dependsOn && formData.dependencyType) {
       const predecessor = wheelStructure.items.find(item => item.id === formData.dependsOn);
       if (predecessor) {
+        // Calculate what the startDate should be based on dependency
         const calculatedDates = calculateDependentDates(predecessor, {
           startDate: formData.startDate,
           endDate: formData.endDate,
@@ -150,12 +150,23 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
           lagDays: formData.lagDays
         });
         
-        // Only update if dates actually changed to avoid infinite loop
-        if (calculatedDates.startDate !== formData.startDate || calculatedDates.endDate !== formData.endDate) {
+        // Only update startDate if it changed, preserve user's endDate choice
+        // This allows manual duration adjustment
+        if (calculatedDates.startDate !== formData.startDate) {
+          // Calculate current duration to preserve it
+          const currentDuration = Math.floor(
+            (new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)
+          );
+          
+          // Apply new startDate with preserved duration
+          const newStart = new Date(calculatedDates.startDate);
+          const newEnd = new Date(newStart);
+          newEnd.setDate(newEnd.getDate() + currentDuration);
+          
           setFormData(prev => ({
             ...prev,
             startDate: calculatedDates.startDate,
-            endDate: calculatedDates.endDate
+            endDate: newEnd.toISOString().split('T')[0]
           }));
         }
       }
@@ -205,7 +216,6 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
         labelId: formData.labelId,
         startDate: dates.startDate,
         endDate: dates.endDate,
-        ...(formData.time && { time: formData.time }),
         ...(formData.description && { description: formData.description }),
         ...(formData.linkedWheelId && { 
           linkedWheelId: formData.linkedWheelId,
@@ -229,7 +239,6 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
         labelId: formData.labelId,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        ...(formData.time && { time: formData.time }),
         ...(formData.description && { description: formData.description }),
         ...(formData.linkedWheelId && { 
           linkedWheelId: formData.linkedWheelId,
@@ -356,158 +365,19 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                     ? t('editor:addItemModal.recurringEndDateLabel', 'Slutdatum (upprepar till)')
                     : t('editor:addItemModal.endDateLabel')
                   }
-                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(auto-beräknat)</span>}
+                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(varaktighet beräknas)</span>}
                 </label>
                 <input
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => handleChange('endDate', e.target.value)}
                   min={formData.startDate}
-                  disabled={!!formData.dependsOn}
                   className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                     errors.endDate ? 'border-red-500' : 'border-gray-300'
-                  } ${formData.dependsOn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  }`}
                 />
                 {errors.endDate && (
                   <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
-                )}
-              </div>
-
-              {/* Recurring checkbox */}
-              <div className="flex items-start gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="isRecurring"
-                  checked={formData.isRecurring}
-                  onChange={(e) => handleChange('isRecurring', e.target.checked)}
-                  className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
-                  {t('editor:addItemModal.recurringLabel', 'Återkommande aktivitet')}
-                </label>
-              </div>
-
-              {/* Advanced Settings - Collapsible */}
-              <div className="pt-2">
-                {!showAdvancedSettings ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvancedSettings(true)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
-                  >
-                    + Avancerade inställningar
-                  </button>
-                ) : (
-                  <div className="border border-gray-200 rounded-sm p-4 bg-gray-50 space-y-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                        Avancerade inställningar
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => setShowAdvancedSettings(false)}
-                        className="text-xs text-gray-500 hover:text-gray-700"
-                      >
-                        Dölj
-                      </button>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
-                      </label>
-                      <textarea
-                        value={formData.description}
-                        onChange={(e) => handleChange('description', e.target.value)}
-                        rows={3}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none bg-white"
-                        placeholder="Lägg till detaljer om denna aktivitet..."
-                      />
-                    </div>
-
-                    {/* Dependency Section */}
-                    <div className="border-t border-gray-300 pt-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <LinkIcon size={14} className="text-gray-600" />
-                        <label className="text-sm font-medium text-gray-700">
-                          Aktivitetsberoende <span className="text-gray-400 font-normal">(valfritt)</span>
-                        </label>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        {/* Predecessor Item */}
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1.5">
-                            Beror på aktivitet
-                          </label>
-                          <select
-                            value={formData.dependsOn}
-                            onChange={(e) => handleChange('dependsOn', e.target.value)}
-                            className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
-                              errors.dependsOn ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                          >
-                            <option value="">Ingen (oberoende aktivitet)</option>
-                            {wheelStructure.items
-                              .filter(i => i.pageId === currentPageId)
-                              .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-                              .map((otherItem) => (
-                                <option key={otherItem.id} value={otherItem.id}>
-                                  {otherItem.name} ({otherItem.startDate})
-                                </option>
-                              ))}
-                          </select>
-                          {errors.dependsOn && (
-                            <p className="mt-1 text-xs text-red-600">{errors.dependsOn}</p>
-                          )}
-                        </div>
-
-                        {/* Dependency Type - only show if predecessor selected */}
-                        {formData.dependsOn && (
-                          <>
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1.5">
-                                Beroendetyp
-                              </label>
-                              <select
-                                value={formData.dependencyType}
-                                onChange={(e) => handleChange('dependencyType', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                              >
-                                <option value="finish_to_start">Slut → Start (vanligast)</option>
-                                <option value="start_to_start">Start → Start (parallell)</option>
-                                <option value="finish_to_finish">Slut → Slut (synkroniserad)</option>
-                              </select>
-                              <p className="mt-1 text-xs text-gray-500">
-                                {formData.dependencyType === 'finish_to_start' && 'Denna aktivitet startar när föregående avslutas'}
-                                {formData.dependencyType === 'start_to_start' && 'Denna aktivitet startar samtidigt med föregående'}
-                                {formData.dependencyType === 'finish_to_finish' && 'Denna aktivitet avslutas samtidigt med föregående'}
-                              </p>
-                            </div>
-
-                            {/* Lag Days */}
-                            <div>
-                              <label className="block text-xs text-gray-600 mb-1.5">
-                                Fördröjning (dagar)
-                              </label>
-                              <input
-                                type="number"
-                                value={formData.lagDays}
-                                onChange={(e) => handleChange('lagDays', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-                                placeholder="0"
-                                min="0"
-                              />
-                              <p className="mt-1 text-xs text-gray-500">
-                                Antal dagar att vänta efter föregående aktivitet (0 = ingen fördröjning)
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 )}
               </div>
             </div>
@@ -576,114 +446,254 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
             </div>
           </div>
 
-          {/* Wheel Linking Section - only show if there are wheels to link to */}
-          {!loadingWheels && accessibleWheels.length > 0 && (
-          <div className="border-t border-gray-200 pt-6 mt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Link2 size={16} className="text-gray-600" />
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                {t('editor:addItemModal.linkToWheelTitle')}
-              </h3>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {t('editor:addItemModal.selectWheelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
-              </label>
-              <select
-                value={formData.linkedWheelId}
-                onChange={(e) => handleChange('linkedWheelId', e.target.value)}
-                disabled={loadingWheels}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
+          {/* Advanced Settings - Full Width Below Columns */}
+          <div className="pt-6 border-t border-gray-200 mt-6">
+            {!showAdvancedSettings ? (
+              <button
+                type="button"
+                onClick={() => setShowAdvancedSettings(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
               >
-                <option value="">
-                  {loadingWheels 
-                    ? t('editor:addItemModal.loadingWheels') 
-                    : t('editor:addItemModal.noLinkOption')}
-                </option>
-                {accessibleWheels.map((wheel) => (
-                  <option key={wheel.id} value={wheel.id}>
-                    {wheel.title} ({wheel.year})
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-xs text-gray-500">
-                {t('editor:addItemModal.linkHelpText')}
-              </p>
-            </div>
+                + Avancerade inställningar
+              </button>
+            ) : (
+              <div className="border border-gray-200 rounded-sm p-4 bg-gray-50 space-y-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    Avancerade inställningar
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedSettings(false)}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Dölj
+                  </button>
+                </div>
 
-            {/* Show preview when wheel is selected */}
-            {selectedWheelPreview && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-sm">
-                <p className="text-sm text-gray-700">
-                  <span className="font-medium">{t('editor:addItemModal.linkedTo')}:</span>{' '}
-                  {selectedWheelPreview.title} ({selectedWheelPreview.year})
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {t('editor:addItemModal.linkWillOpenInNewTab')}
-                </p>
+                {/* Recurring checkbox */}
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="isRecurring"
+                    checked={formData.isRecurring}
+                    onChange={(e) => handleChange('isRecurring', e.target.checked)}
+                    className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                    {t('editor:addItemModal.recurringLabel', 'Återkommande aktivitet')}
+                  </label>
+                </div>
+
+                {/* Recurring options - show when checkbox is checked */}
+                {formData.isRecurring && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1.5">
+                        {t('editor:addItemModal.recurringFrequencyLabel', 'Frekvens')}
+                      </label>
+                      <select
+                        value={formData.recurringFrequency}
+                        onChange={(e) => handleChange('recurringFrequency', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="weekly">{t('editor:addItemModal.weekly', 'Varje vecka')}</option>
+                        <option value="monthly">{t('editor:addItemModal.monthly', 'Varje månad')}</option>
+                        <option value="quarterly">{t('editor:addItemModal.quarterly', 'Varje kvartal')}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1.5">
+                        {t('editor:addItemModal.recurringDurationLabel', 'Varaktighet per tillfälle')}
+                      </label>
+                      <select
+                        value={formData.recurringDuration}
+                        onChange={(e) => handleChange('recurringDuration', parseInt(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="1">{t('editor:addItemModal.duration1day', '1 dag')}</option>
+                        <option value="2">{t('editor:addItemModal.duration2days', '2 dagar')}</option>
+                        <option value="3">{t('editor:addItemModal.duration3days', '3 dagar')}</option>
+                        <option value="7">{t('editor:addItemModal.duration1week', '1 vecka')}</option>
+                        <option value="14">{t('editor:addItemModal.duration2weeks', '2 veckor')}</option>
+                      </select>
+                    </div>
+
+                    {/* Preview of recurring dates */}
+                    {recurringPreview.length > 0 && (
+                      <div className="col-span-2 p-3 bg-blue-50 border border-blue-200 rounded-sm">
+                        <p className="text-xs font-medium text-blue-900 mb-2">
+                          {t('editor:addItemModal.recurringPreview', 'Kommer att skapa {{count}} aktiviteter:', { count: recurringPreview.length })}
+                        </p>
+                        <div className="max-h-32 overflow-y-auto space-y-1">
+                          {recurringPreview.slice(0, 10).map((date, index) => (
+                            <p key={index} className="text-xs text-blue-800">
+                              {new Date(date.startDate).toLocaleDateString('sv-SE')} - {new Date(date.endDate).toLocaleDateString('sv-SE')}
+                            </p>
+                          ))}
+                          {recurringPreview.length > 10 && (
+                            <p className="text-xs text-blue-700 italic">
+                              {t('editor:addItemModal.andMore', '...och {{count}} till', { count: recurringPreview.length - 10 })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Description */}
+                <div className="pt-4 border-t border-gray-300">
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Beskrivning <span className="text-gray-400 font-normal">(valfritt)</span>
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => handleChange('description', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none bg-white"
+                    placeholder="Lägg till detaljer om denna aktivitet..."
+                  />
+                </div>
+
+                {/* 2-column grid for Dependencies and Wheel Linking */}
+                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-300">
+                  {/* Dependency Section - Left Column */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <LinkIcon size={14} className="text-gray-600" />
+                      <label className="text-sm font-medium text-gray-700">
+                        Aktivitetsberoende
+                      </label>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {/* Predecessor Item */}
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1.5">
+                          Beror på aktivitet
+                        </label>
+                        <select
+                          value={formData.dependsOn}
+                          onChange={(e) => handleChange('dependsOn', e.target.value)}
+                          className={`w-full px-3 py-2 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white ${
+                            errors.dependsOn ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        >
+                          <option value="">Ingen (oberoende aktivitet)</option>
+                          {wheelStructure.items
+                            .filter(i => i.pageId === currentPageId)
+                            .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+                            .map((otherItem) => (
+                              <option key={otherItem.id} value={otherItem.id}>
+                                {otherItem.name} ({otherItem.startDate})
+                              </option>
+                            ))}
+                        </select>
+                        {errors.dependsOn && (
+                          <p className="mt-1 text-xs text-red-600">{errors.dependsOn}</p>
+                        )}
+                      </div>
+
+                      {/* Dependency Type - only show if predecessor selected */}
+                      {formData.dependsOn && (
+                        <>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1.5">
+                              Beroendetyp
+                            </label>
+                            <select
+                              value={formData.dependencyType}
+                              onChange={(e) => handleChange('dependencyType', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                            >
+                              <option value="finish_to_start">Slut → Start (vanligast)</option>
+                              <option value="start_to_start">Start → Start (parallell)</option>
+                              <option value="finish_to_finish">Slut → Slut (synkroniserad)</option>
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {formData.dependencyType === 'finish_to_start' && 'Denna aktivitet startar när föregående avslutas'}
+                              {formData.dependencyType === 'start_to_start' && 'Denna aktivitet startar samtidigt med föregående'}
+                              {formData.dependencyType === 'finish_to_finish' && 'Denna aktivitet avslutas samtidigt med föregående'}
+                            </p>
+                          </div>
+
+                          {/* Lag Days */}
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1.5">
+                              Fördröjning (dagar)
+                            </label>
+                            <input
+                              type="number"
+                              value={formData.lagDays}
+                              onChange={(e) => handleChange('lagDays', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                              placeholder="0"
+                              min="0"
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                              Antal dagar att vänta efter föregående aktivitet (0 = ingen fördröjning)
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Wheel Linking Section - Right Column */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Link2 size={14} className="text-gray-600" />
+                      <label className="text-sm font-medium text-gray-700">
+                        Länka till annat hjul
+                      </label>
+                    </div>
+
+                    <div className="space-y-3">
+                      {loadingWheels ? (
+                        <p className="text-sm text-gray-500">Laddar hjul...</p>
+                      ) : accessibleWheels.length > 0 ? (
+                        <>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1.5">
+                              Välj hjul
+                            </label>
+                            <select
+                              value={formData.linkedWheelId}
+                              onChange={(e) => handleChange('linkedWheelId', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                            >
+                              <option value="">Ingen länk</option>
+                              {accessibleWheels.map((wheel) => (
+                                <option key={wheel.id} value={wheel.id}>
+                                  {wheel.title} ({wheel.year})
+                                </option>
+                              ))}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">
+                              Länka denna händelse till ett annat hjul för referens eller detaljer
+                            </p>
+                          </div>
+
+                          {/* Show preview when wheel is selected */}
+                          {selectedWheelPreview && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-sm p-2">
+                              <p className="text-xs text-blue-900 font-medium">
+                                Länkad till: {selectedWheelPreview.title} ({selectedWheelPreview.year})
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-xs text-gray-500">Inga hjul tillgängliga för länkning</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-          )}
-
-          {/* Recurring options - Full width below the main grid */}
-          {formData.isRecurring && (
-            <div className="mt-6 grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:addItemModal.recurringFrequencyLabel', 'Frekvens')}
-                </label>
-                <select
-                  value={formData.recurringFrequency}
-                  onChange={(e) => handleChange('recurringFrequency', e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  <option value="weekly">{t('editor:addItemModal.weekly', 'Varje vecka')}</option>
-                  <option value="monthly">{t('editor:addItemModal.monthly', 'Varje månad')}</option>
-                  <option value="quarterly">{t('editor:addItemModal.quarterly', 'Varje kvartal')}</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:addItemModal.recurringDurationLabel', 'Varaktighet per tillfälle')}
-                </label>
-                <select
-                  value={formData.recurringDuration}
-                  onChange={(e) => handleChange('recurringDuration', parseInt(e.target.value))}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  <option value="1">{t('editor:addItemModal.duration1day', '1 dag')}</option>
-                  <option value="2">{t('editor:addItemModal.duration2days', '2 dagar')}</option>
-                  <option value="3">{t('editor:addItemModal.duration3days', '3 dagar')}</option>
-                  <option value="7">{t('editor:addItemModal.duration1week', '1 vecka')}</option>
-                  <option value="14">{t('editor:addItemModal.duration2weeks', '2 veckor')}</option>
-                </select>
-              </div>
-
-              {/* Preview of recurring dates - full width */}
-              {recurringPreview.length > 0 && (
-                <div className="col-span-2 p-3 bg-blue-50 border border-blue-200 rounded-sm">
-                  <p className="text-xs font-medium text-blue-900 mb-2">
-                    {t('editor:addItemModal.recurringPreview', 'Kommer att skapa {{count}} aktiviteter:', { count: recurringPreview.length })}
-                  </p>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {recurringPreview.slice(0, 10).map((date, index) => (
-                      <p key={index} className="text-xs text-blue-800">
-                        {new Date(date.startDate).toLocaleDateString('sv-SE')} - {new Date(date.endDate).toLocaleDateString('sv-SE')}
-                      </p>
-                    ))}
-                    {recurringPreview.length > 10 && (
-                      <p className="text-xs text-blue-700 italic">
-                        {t('editor:addItemModal.andMore', '...och {{count}} till', { count: recurringPreview.length - 10 })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Buttons */}
           <div className="flex gap-3 pt-6 border-t border-gray-200">
