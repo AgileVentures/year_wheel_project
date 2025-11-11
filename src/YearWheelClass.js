@@ -3508,6 +3508,7 @@ class YearWheel {
 
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawRotatingElements();
+    this.drawDependencyArrows();
     this.drawStaticElements();
 
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
@@ -3569,6 +3570,8 @@ class YearWheel {
 
     // Apply rotation and draw rotating elements (months, events)
     this.drawRotatingElements();
+    // Draw dependency arrows (after items are positioned)
+    this.drawDependencyArrows();
     // Draw static elements (title and year)
     this.drawStaticElements();
     // Drag preview is now drawn inside drawRotatingElements()
@@ -3676,6 +3679,116 @@ class YearWheel {
     this.context.setLineDash([5, 5]);
     this.context.stroke();
     this.context.setLineDash([]);
+
+    this.context.restore();
+  }
+
+  // Draw dependency arrows between connected activities
+  drawDependencyArrows() {
+    // Only draw if we have clickable items (rendered items with positions)
+    if (!this.clickableItems || this.clickableItems.length === 0) return;
+
+    // Build a map of item IDs to their rendered positions
+    const itemPositionMap = new Map();
+    this.clickableItems.forEach(clickableItem => {
+      itemPositionMap.set(clickableItem.itemId, clickableItem);
+    });
+
+    this.context.save();
+    
+    // Iterate through all items to find dependencies
+    this.wheelStructure.items.forEach(item => {
+      // Skip if this item doesn't depend on anything
+      if (!item.dependsOn) return;
+
+      // Get rendered positions for both items
+      const dependentPos = itemPositionMap.get(item.id);
+      const predecessorPos = itemPositionMap.get(item.dependsOn);
+
+      // Skip if either item isn't visible
+      if (!dependentPos || !predecessorPos) return;
+
+      // Calculate connection points based on dependency type
+      let startAngle, startRadius, endAngle, endRadius;
+
+      switch (item.dependencyType || 'finish_to_start') {
+        case 'finish_to_start':
+          // Arrow from predecessor END to dependent START
+          startAngle = predecessorPos.endAngle;
+          startRadius = (predecessorPos.startRadius + predecessorPos.endRadius) / 2;
+          endAngle = dependentPos.startAngle;
+          endRadius = (dependentPos.startRadius + dependentPos.endRadius) / 2;
+          break;
+        
+        case 'start_to_start':
+          // Arrow from predecessor START to dependent START
+          startAngle = predecessorPos.startAngle;
+          startRadius = (predecessorPos.startRadius + predecessorPos.endRadius) / 2;
+          endAngle = dependentPos.startAngle;
+          endRadius = (dependentPos.startRadius + dependentPos.endRadius) / 2;
+          break;
+        
+        case 'finish_to_finish':
+          // Arrow from predecessor END to dependent END
+          startAngle = predecessorPos.endAngle;
+          startRadius = (predecessorPos.startRadius + predecessorPos.endRadius) / 2;
+          endAngle = dependentPos.endAngle;
+          endRadius = (dependentPos.startRadius + dependentPos.endRadius) / 2;
+          break;
+        
+        default:
+          return;
+      }
+
+      // Convert angles to screen coordinates (including rotation)
+      const screenStartAngle = startAngle + this.rotationAngle;
+      const screenEndAngle = endAngle + this.rotationAngle;
+
+      // Calculate Cartesian coordinates
+      const startX = this.center.x + Math.cos(screenStartAngle) * startRadius;
+      const startY = this.center.y + Math.sin(screenStartAngle) * startRadius;
+      const endX = this.center.x + Math.cos(screenEndAngle) * endRadius;
+      const endY = this.center.y + Math.sin(screenEndAngle) * endRadius;
+
+      // Draw curved line using quadratic curve
+      // Control point is offset perpendicular to the midpoint
+      const midX = (startX + endX) / 2;
+      const midY = (startY + endY) / 2;
+      
+      // Calculate perpendicular offset (toward/away from center)
+      const centerToMidDist = Math.sqrt((midX - this.center.x) ** 2 + (midY - this.center.y) ** 2);
+      const offsetFactor = this.size / 20; // Curve depth
+      const controlX = midX + ((midX - this.center.x) / centerToMidDist) * offsetFactor;
+      const controlY = midY + ((midY - this.center.y) / centerToMidDist) * offsetFactor;
+
+      // Draw the curved line
+      this.context.beginPath();
+      this.context.moveTo(startX, startY);
+      this.context.quadraticCurveTo(controlX, controlY, endX, endY);
+      this.context.strokeStyle = 'rgba(59, 130, 246, 0.5)'; // Blue with transparency
+      this.context.lineWidth = this.size / 400;
+      this.context.setLineDash([this.size / 150, this.size / 250]); // Dashed line
+      this.context.stroke();
+      this.context.setLineDash([]); // Reset dash
+
+      // Draw arrowhead at the end
+      const arrowSize = this.size / 100;
+      const angle = Math.atan2(endY - controlY, endX - controlX);
+      
+      this.context.beginPath();
+      this.context.moveTo(endX, endY);
+      this.context.lineTo(
+        endX - arrowSize * Math.cos(angle - Math.PI / 6),
+        endY - arrowSize * Math.sin(angle - Math.PI / 6)
+      );
+      this.context.lineTo(
+        endX - arrowSize * Math.cos(angle + Math.PI / 6),
+        endY - arrowSize * Math.sin(angle + Math.PI / 6)
+      );
+      this.context.closePath();
+      this.context.fillStyle = 'rgba(59, 130, 246, 0.6)';
+      this.context.fill();
+    });
 
     this.context.restore();
   }
