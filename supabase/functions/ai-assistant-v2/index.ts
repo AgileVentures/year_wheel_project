@@ -551,6 +551,9 @@ async function applySuggestions(
     activityGroups: suggestions.activityGroups.length,
     activities: suggestions.activities.length,
   })
+  console.log('[applySuggestions] First activity example:', suggestions.activities[0])
+  console.log('[applySuggestions] Full suggestions object keys:', Object.keys(suggestions))
+  console.log('[applySuggestions] Activities array:', JSON.stringify(suggestions.activities, null, 2))
 
   queueProgressEvent(ctx, {
     message: 'Startar applicering av AI-förslag...',
