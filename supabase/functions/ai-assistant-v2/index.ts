@@ -1030,13 +1030,13 @@ async function createActivity(
       // CRITICAL: Copy structure from an existing page (rings, groups, labels)
       // Find the closest existing page to copy structure from
       const referencePage = pages[0] // Use first existing page as reference
-      const referenceOrgData = referencePage.organization_data || {}
+      const referenceStructure = referencePage.structure || {}
       
       // Copy structure but start with empty items array
-      const organizationData = {
-        rings: referenceOrgData.rings || [],
-        activityGroups: referenceOrgData.activityGroups || referenceOrgData.activities || [],
-        labels: referenceOrgData.labels || [],
+      const structure = {
+        rings: referenceStructure.rings || [],
+        activityGroups: referenceStructure.activityGroups || referenceStructure.activities || [],
+        labels: referenceStructure.labels || [],
         items: [] // Start empty, items will be added
       }
       
@@ -1057,7 +1057,7 @@ async function createActivity(
           year: year,
           title: `${year}`,
           page_order: nextOrder ?? pages.length,
-          organization_data: organizationData
+          structure: structure
         })
         .select()
         .single()
@@ -1136,29 +1136,12 @@ async function createActivity(
 
       if (insertError) throw insertError
       itemsCreated.push(newItem)
-      const byPage = itemsByPage.get(page.id) || []
-      byPage.push(mapDbItemToOrgItem(newItem))
-      itemsByPage.set(page.id, byPage)
     }
   }
 
-  // Update organization_data JSONB so frontend + agent context stay in sync
-  for (const [pageId, newItems] of itemsByPage.entries()) {
-    await updatePageOrganizationData(supabase, pageId, (orgData) => {
-      let changed = false
-      newItems.forEach((item) => {
-        const existingIndex = orgData.items.findIndex((existing: any) => existing.id === item.id)
-        if (existingIndex !== -1) {
-          orgData.items[existingIndex] = item
-          changed = true
-        } else {
-          orgData.items.push(item)
-          changed = true
-        }
-      })
-      return changed
-    })
-  }
+  // ✅ ARCHITECTURE FIX: Items created in items table (source of truth)
+  // Frontend queries items table directly - no JSONB sync needed!
+  // structure JSONB is a frontend-managed cache, not backend responsibility
 
   console.log(`[createActivity ${callId}] Successfully created ${itemsCreated.length} item(s)`)
   console.log(`[createActivity ${callId}] ========== END ==========`)
@@ -1192,63 +1175,9 @@ async function createRing(
   if (existingByName) {
     console.log(`[createRing] Ring "${args.name}" already exists for this wheel with id ${existingByName.id}`)
     
-    // Ensure organization_data JSON includes the ring with latest metadata across ALL pages
-    await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-      const current = orgData.rings.find((r: any) => r.id === existingByName.id)
-      const visible = existingByName.visible !== false
-      const colorToUse = existingByName.type === 'outer'
-        ? existingByName.color || finalColor
-        : undefined
-
-      if (current) {
-        let changed = false
-        if (current.name !== existingByName.name) {
-          current.name = existingByName.name
-          changed = true
-        }
-        if (existingByName.type === 'outer') {
-          if (current.color !== colorToUse) {
-            current.color = colorToUse
-            changed = true
-          }
-        } else {
-          const orientation = existingByName.orientation || current.orientation || 'vertical'
-          if (current.orientation !== orientation) {
-            current.orientation = orientation
-            changed = true
-          }
-          if (!Array.isArray(current.data)) {
-            current.data = cloneInnerRingData(current.data)
-            changed = true
-          }
-        }
-        if (current.visible !== visible) {
-          current.visible = visible
-          changed = true
-        }
-        return changed
-      }
-
-      // Ring exists in database but not in organization_data - add it to ALL pages
-      const newEntry: any = {
-        id: existingByName.id,
-        name: existingByName.name,
-        type: existingByName.type,
-        visible,
-      }
-
-      if (existingByName.type === 'outer') {
-        newEntry.color = colorToUse
-      } else {
-        newEntry.orientation = existingByName.orientation || 'vertical'
-        newEntry.data = cloneInnerRingData([])
-      }
-
-      orgData.rings.push(newEntry)
-      console.log(`[createRing] Added ring to organization_data:`, newEntry.name)
-      return true
-    })
-
+    // ✅ ARCHITECTURE FIX: Ring already exists in wheel_rings table (source of truth)
+    // Frontend queries tables directly - no JSONB sync needed!
+    
     return {
       success: true,
       message: `Ring "${args.name}" finns redan för detta hjul`,
@@ -1294,31 +1223,9 @@ async function createRing(
 
   console.log(`[createRing] Ring created successfully with id ${ring.id}`)
 
-  // Update organization_data across ALL pages to include the new ring
-  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    if (orgData.rings.some((r: any) => r.id === ring.id)) {
-      console.log(`[createRing] Ring ${ring.id} already in organization_data, skipping`)
-      return false
-    }
-
-    const entry: any = {
-      id: ring.id,
-      name: ring.name,
-      type: ring.type,
-      visible: ring.visible !== false,
-    }
-
-    if (ring.type === 'outer') {
-      entry.color = ring.color || finalColor
-    } else {
-      entry.orientation = ring.orientation || 'vertical'
-      entry.data = cloneInnerRingData([])
-    }
-
-    orgData.rings.push(entry)
-    console.log(`[createRing] Added ring to organization_data:`, entry.name)
-    return true
-  })
+  // ✅ ARCHITECTURE FIX: Ring is now in wheel_rings table (source of truth)
+  // Frontend will query wheel_rings table directly - no JSONB sync needed!
+  // structure JSONB is a frontend-managed cache, not backend responsibility
 
   return {
     success: true,
@@ -1345,40 +1252,9 @@ async function createGroup(
   if (existing) {
     console.log(`[createGroup] Group "${args.name}" already exists for this wheel with id ${existing.id}`)
     
-    // Ensure organization_data JSON includes the group with latest metadata across ALL pages
-    await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-      const current = orgData.activityGroups.find((g: any) => g.id === existing.id)
-      const normalizedColor = existing.color || args.color
-      const visible = existing.visible !== false
-
-      if (current) {
-        let changed = false
-        if (current.name !== existing.name) {
-          current.name = existing.name
-          changed = true
-        }
-        if (normalizedColor && current.color !== normalizedColor) {
-          current.color = normalizedColor
-          changed = true
-        }
-        if (current.visible !== visible) {
-          current.visible = visible
-          changed = true
-        }
-        return changed
-      }
-
-      // Group exists in database but not in organization_data - add it to ALL pages
-      orgData.activityGroups.push({
-        id: existing.id,
-        name: existing.name,
-        color: normalizedColor || args.color,
-        visible,
-      })
-      console.log(`[createGroup] Added group to organization_data:`, existing.name)
-      return true
-    })
-
+    // ✅ ARCHITECTURE FIX: Group already exists in activity_groups table (source of truth)
+    // Frontend queries tables directly - no JSONB sync needed!
+    
     return {
       success: true,
       message: `Aktivitetsgrupp "${args.name}" finns redan för detta hjul`,
@@ -1409,22 +1285,9 @@ async function createGroup(
 
   console.log(`[createGroup] Group created successfully with id ${group.id}`)
 
-  // Update organization_data across ALL pages to include the new group
-  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    if (orgData.activityGroups.some((g: any) => g.id === group.id)) {
-      console.log(`[createGroup] Group ${group.id} already in organization_data, skipping`)
-      return false
-    }
-
-    orgData.activityGroups.push({
-      id: group.id,
-      name: group.name,
-      color: group.color || args.color,
-      visible: group.visible !== false,
-    })
-    console.log(`[createGroup] Added group to organization_data:`, group.name)
-    return true
-  })
+  // ✅ ARCHITECTURE FIX: Group is now in activity_groups table (source of truth)
+  // Frontend will query activity_groups table directly - no JSONB sync needed!
+  // structure JSONB is a frontend-managed cache, not backend responsibility
 
   return {
     success: true,
@@ -1727,40 +1590,9 @@ async function createLabel(
   if (existing) {
     console.log(`[createLabel] Label "${args.name}" already exists for this wheel with id ${existing.id}`)
     
-    // Ensure organization_data JSON includes the label with latest metadata across ALL pages
-    await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-      const current = orgData.labels.find((l: any) => l.id === existing.id)
-      const normalizedColor = existing.color || args.color
-      const visible = existing.visible !== false
-
-      if (current) {
-        let changed = false
-        if (current.name !== existing.name) {
-          current.name = existing.name
-          changed = true
-        }
-        if (normalizedColor && current.color !== normalizedColor) {
-          current.color = normalizedColor
-          changed = true
-        }
-        if (current.visible !== visible) {
-          current.visible = visible
-          changed = true
-        }
-        return changed
-      }
-
-      // Label exists in database but not in organization_data - add it to ALL pages
-      orgData.labels.push({
-        id: existing.id,
-        name: existing.name,
-        color: normalizedColor || args.color,
-        visible,
-      })
-      console.log(`[createLabel] Added label to organization_data:`, existing.name)
-      return true
-    })
-
+    // ✅ ARCHITECTURE FIX: Label already exists in labels table (source of truth)
+    // Frontend queries tables directly - no JSONB sync needed!
+    
     return {
       success: true,
       message: `Label "${args.name}" finns redan för detta hjul`,
@@ -1791,22 +1623,9 @@ async function createLabel(
 
   console.log(`[createLabel] Label created successfully with id ${label.id}`)
 
-  // Update organization_data across ALL pages to include the new label
-  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    if (orgData.labels.some((l: any) => l.id === label.id)) {
-      console.log(`[createLabel] Label ${label.id} already in organization_data, skipping`)
-      return false
-    }
-
-    orgData.labels.push({
-      id: label.id,
-      name: label.name,
-      color: label.color || args.color,
-      visible: label.visible !== false,
-    })
-    console.log(`[createLabel] Added label to organization_data:`, label.name)
-    return true
-  })
+  // ✅ ARCHITECTURE FIX: Label is now in labels table (source of truth)
+  // Frontend will query labels table directly - no JSONB sync needed!
+  // structure JSONB is a frontend-managed cache, not backend responsibility
 
   return {
     success: true,
@@ -2078,21 +1897,8 @@ async function updateActivity(
         updatesByPage.set(row.page_id, list)
       })
 
-      for (const [pageId, updateItems] of updatesByPage.entries()) {
-        await updatePageOrganizationData(supabase, pageId, (orgData) => {
-          let changed = false
-          updateItems.forEach((item) => {
-            const index = orgData.items.findIndex((existing: any) => existing.id === item.id)
-            if (index !== -1) {
-              const existing = orgData.items[index]
-              // Update relevant fields while preserving optional metadata
-              orgData.items[index] = { ...existing, ...item }
-              changed = true
-            }
-          })
-          return changed
-        })
-      }
+      // ✅ ARCHITECTURE FIX: Items updated in items table (source of truth)
+      // Frontend queries items table directly - no JSONB sync needed!
     }
 
     let message = `Uppdaterade ${items.length} objekt för "${activityName}"`
@@ -2198,13 +2004,8 @@ async function updateActivity(
 
   if (deleteError) throw deleteError
 
-  for (const [pageId, ids] of itemsByPageToRemove.entries()) {
-    await updatePageOrganizationData(supabase, pageId, (orgData) => {
-      const before = orgData.items.length
-      orgData.items = orgData.items.filter((item: any) => !ids.includes(item.id))
-      return orgData.items.length !== before
-    })
-  }
+  // ✅ ARCHITECTURE FIX: Old items deleted from items table (source of truth)
+  // Frontend queries items table directly - no JSONB sync needed!
 
   // Create new items across the new date range
   const itemsCreated = []
@@ -2267,21 +2068,8 @@ async function updateActivity(
     }
   }
 
-  for (const [pageId, newItems] of newItemsByPage.entries()) {
-    await updatePageOrganizationData(supabase, pageId, (orgData) => {
-      let changed = false
-      newItems.forEach((item) => {
-        const index = orgData.items.findIndex((existing: any) => existing.id === item.id)
-        if (index !== -1) {
-          orgData.items[index] = { ...orgData.items[index], ...item }
-        } else {
-          orgData.items.push(item)
-        }
-        changed = true
-      })
-      return changed
-    })
-  }
+  // ✅ ARCHITECTURE FIX: New items created in items table (source of truth)
+  // Frontend queries items table directly - no JSONB sync needed!
 
   let message = `Uppdaterade "${activityName}" (${oldStartDate} → ${newStartDate} till ${oldEndDate} → ${newEndDate})`
   if (itemsCreated.length > 1) {
@@ -2331,21 +2119,9 @@ async function deleteActivity(
 
   console.log('[deleteActivity] Deleted items:', items.length)
 
-  const itemsByPage = new Map<string, string[]>()
-  items.forEach((item: any) => {
-    if (!item.page_id) return
-    const list = itemsByPage.get(item.page_id) || []
-    list.push(item.id)
-    itemsByPage.set(item.page_id, list)
-  })
-
-  for (const [pageId, ids] of itemsByPage.entries()) {
-    await updatePageOrganizationData(supabase, pageId, (orgData) => {
-      const before = orgData.items.length
-      orgData.items = orgData.items.filter((item: any) => !ids.includes(item.id))
-      return orgData.items.length !== before
-    })
-  }
+  // ✅ ARCHITECTURE FIX: Items deleted from items table (source of truth)
+  // Frontend queries items table directly - no JSONB sync needed!
+  // structure JSONB is a frontend-managed cache, not backend responsibility
 
   return {
     success: true,
@@ -2443,7 +2219,7 @@ async function updateOrgDataAcrossPages(
 ) {
   let query = supabase
     .from('wheel_pages')
-    .select('id, organization_data, updated_at')
+    .select('id, structure, updated_at')
     .eq('wheel_id', wheelId)
 
   if (targetPageIds && targetPageIds.length > 0) {
@@ -2472,7 +2248,7 @@ async function updateOrgDataAcrossPages(
       if (attempt > 0) {
         const { data: refetchedPage, error: refetchError } = await supabase
           .from('wheel_pages')
-          .select('id, organization_data, updated_at')
+          .select('id, structure, updated_at')
           .eq('id', page.id)
           .single()
         
@@ -2483,7 +2259,7 @@ async function updateOrgDataAcrossPages(
         currentPage = refetchedPage
       }
 
-      const normalized = normalizeOrgData(currentPage.organization_data)
+      const normalized = normalizeOrgData(currentPage.structure)
       const changed = mutate(normalized, currentPage.id)
 
       if (!changed) {
@@ -2495,7 +2271,7 @@ async function updateOrgDataAcrossPages(
       const { error: updateError } = await supabase
         .from('wheel_pages')
         .update({
-          organization_data: {
+          structure: {
             ...normalized,
             activities: normalized.activityGroups,
           },
@@ -2510,7 +2286,7 @@ async function updateOrgDataAcrossPages(
           await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1))) // Exponential backoff
           continue
         } else {
-          throw new Error(`Kunde inte uppdatera organization_data för sida ${currentPage.id} efter ${MAX_RETRIES} försök: ${updateError.message}`)
+          throw new Error(`Kunde inte uppdatera structure för sida ${currentPage.id} efter ${MAX_RETRIES} försök: ${updateError.message}`)
         }
       }
 
@@ -2536,7 +2312,7 @@ async function updatePageOrganizationData(
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const { data: page, error } = await supabase
       .from('wheel_pages')
-      .select('organization_data, updated_at')
+      .select('structure, updated_at')
       .eq('id', pageId)
       .single()
 
@@ -2544,7 +2320,7 @@ async function updatePageOrganizationData(
       throw new Error(`Kunde inte hämta sida ${pageId}: ${error.message}`)
     }
 
-    const normalized = normalizeOrgData(page?.organization_data || {})
+    const normalized = normalizeOrgData(page?.structure || {})
     const changed = mutate(normalized)
 
     if (!changed) {
@@ -2555,7 +2331,7 @@ async function updatePageOrganizationData(
     const { error: updateError } = await supabase
       .from('wheel_pages')
       .update({
-        organization_data: {
+        structure: {
           ...normalized,
           activities: normalized.activityGroups,
         },
@@ -2572,7 +2348,7 @@ async function updatePageOrganizationData(
       console.warn(`[updatePageOrganizationData] Conflict on page ${pageId}, attempt ${attempt + 1}/${MAX_RETRIES}, retrying...`)
       await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1))) // Exponential backoff
     } else {
-      throw new Error(`Kunde inte uppdatera organization_data för sida ${pageId} efter ${MAX_RETRIES} försök: ${updateError.message}`)
+      throw new Error(`Kunde inte uppdatera structure för sida ${pageId} efter ${MAX_RETRIES} försök: ${updateError.message}`)
     }
   }
 
@@ -2776,16 +2552,8 @@ async function smartCopyYear(
     if (insertError) throw insertError
     insertedItems = inserted || []
 
-    if (insertedItems.length > 0) {
-      await updatePageOrganizationData(supabase, newPageId, (orgData) => {
-        const insertedIds = new Set(insertedItems.map((item) => item.id))
-        orgData.items = orgData.items.filter((item: any) => !insertedIds.has(item.id))
-        insertedItems.forEach((item) => {
-          orgData.items.push(mapDbItemToOrgItem(item))
-        })
-        return insertedItems.length > 0
-      })
-    }
+    // ✅ ARCHITECTURE FIX: Items copied to items table (source of truth)
+    // Frontend queries items table directly - no JSONB sync needed!
   }
 
   return {
@@ -3144,10 +2912,10 @@ function createAgentSystem() {
       const { supabase, currentPageId } = ctx.context
       console.log('🔧 [TOOL] toggle_ring_visibility called:', input)
       
-      // Get current page's organization_data
+      // Get current page's structure
       const { data: page, error: pageError } = await supabase
         .from('wheel_pages')
-        .select('organization_data')
+        .select('structure')
         .eq('id', currentPageId)
         .single()
       
@@ -3155,7 +2923,7 @@ function createAgentSystem() {
         throw new Error('Kunde inte hitta sida')
       }
       
-      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
       
       // Find matching ring (case-insensitive partial match)
       const ringNameLower = input.ringName.toLowerCase()
@@ -3211,10 +2979,10 @@ function createAgentSystem() {
       const { supabase, currentPageId } = ctx.context
       console.log('🔧 [TOOL] toggle_group_visibility called:', input)
       
-      // Get current page's organization_data
+      // Get current page's structure
       const { data: page, error: pageError } = await supabase
         .from('wheel_pages')
-        .select('organization_data')
+        .select('structure')
         .eq('id', currentPageId)
         .single()
       
@@ -3222,7 +2990,7 @@ function createAgentSystem() {
         throw new Error('Kunde inte hitta sida')
       }
       
-      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
       const activityGroups = orgData.activityGroups || orgData.activities || []
       
       // Find matching group (case-insensitive partial match)
