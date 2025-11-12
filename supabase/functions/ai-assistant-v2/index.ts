@@ -2621,23 +2621,24 @@ function createAgentSystem() {
       
       const dateInfo = getCurrentDate()
       
-      // CRITICAL: Post-migration 013 (Oct 2025) - rings/groups/labels are PAGE-SCOPED (page_id), NOT wheel-scoped
+      // CRITICAL: Post-migration 015 - rings/groups/labels are WHEEL-SCOPED (shared across all pages)
+      // Only ITEMS are page-scoped (distributed by year)
       // Read from database tables (source of truth), NOT organization_data JSONB cache
       // This ensures newly created rings/groups are immediately visible to AI
       const [ringsRes, groupsRes, labelsRes, pagesRes] = await Promise.all([
         supabase
           .from('wheel_rings')
           .select('id, name, type, color, visible')
-          .eq('page_id', currentPageId)  // ✅ FIXED: Use page_id, not wheel_id
+          .eq('wheel_id', wheelId)  // ✅ CORRECT: Rings are wheel-scoped (Migration 015)
           .order('ring_order'),
         supabase
           .from('activity_groups')
           .select('id, name, color, visible')
-          .eq('page_id', currentPageId),  // ✅ FIXED: Use page_id, not wheel_id
+          .eq('wheel_id', wheelId),  // ✅ CORRECT: Groups are wheel-scoped (Migration 015)
         supabase
           .from('labels')
           .select('id, name, color, visible')
-          .eq('page_id', currentPageId),  // ✅ FIXED: Use page_id, not wheel_id
+          .eq('wheel_id', wheelId),  // ✅ CORRECT: Labels are wheel-scoped (Migration 015)
         supabase
           .from('wheel_pages')
           .select('id, year, title')

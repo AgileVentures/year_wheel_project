@@ -62,19 +62,20 @@ Core Tables:
   - CRITICAL: organization_data JSONB contains complete state: {rings, activityGroups, labels, items}
   
 - `wheel_rings` - Ring definitions (inner/outer bands)
-  - Columns: id, page_id (FK), wheel_id (nullable, legacy), name, type ('inner'|'outer'), color, visible, ring_order, orientation ('vertical'|'horizontal'), created_at
-  - Scoped to page_id (not wheel_id) for proper multi-year isolation
+  - Columns: id, wheel_id (FK NOT NULL), name, type ('inner'|'outer'), color, visible, ring_order, orientation ('vertical'|'horizontal'), created_at
+  - **WHEEL-SCOPED** (Migration 015): Shared across all pages in the wheel
   
 - `activity_groups` - Activity categories with colors
-  - Columns: id, page_id (FK), wheel_id (nullable, legacy), name, color, visible, created_at
-  - Scoped to page_id - each year page has its own activity groups
+  - Columns: id, wheel_id (FK NOT NULL), name, color, visible, created_at
+  - **WHEEL-SCOPED** (Migration 015): Shared across all pages in the wheel
   
 - `labels` - Optional item labels
-  - Columns: id, page_id (FK), wheel_id (nullable, legacy), name, color, visible, created_at
-  - Scoped to page_id for multi-year isolation
+  - Columns: id, wheel_id (FK NOT NULL), name, color, visible, created_at
+  - **WHEEL-SCOPED** (Migration 015): Shared across all pages in the wheel
   
 - `items` - Activities/events placed on the wheel
   - Columns: id, wheel_id (FK), page_id (FK), ring_id (FK), activity_id (FK), label_id (FK nullable), name, start_date, end_date, time, description, source ('manual'|'google_calendar'|'google_sheets'), external_id, sync_metadata (JSONB), created_at, updated_at
+  - **PAGE-SCOPED** (Migration 015): Distributed to pages by start_date year
   - MUST reference page_id, ring_id, and activity_id (label_id optional)
   
 - `ring_data` - Month-specific content for inner rings (text arrays)
@@ -121,9 +122,10 @@ Google Integrations:
 - Wheels → Pages (1:many) - Multi-year support
 - Wheels → Teams (many:1) - Team collaboration
 - Wheels → Versions (1:many) - Version control
-- Pages contain complete organizationData as JSONB (rings, activityGroups, labels, items)
+- **Rings/ActivityGroups/Labels → Wheel (many:1) - WHEEL-SCOPED** (Migration 015)
+- **Items → Page (many:1) - PAGE-SCOPED** (Migration 015)
 - Items reference page_id, ring_id, activity_id (required), label_id (optional)
-- Rings/ActivityGroups/Labels reference page_id (NOT wheel_id) for proper year isolation
+- Pages contain complete organizationData as JSONB cache (rings, activityGroups, labels, items)
 
 **Critical Database Functions:**
 - `is_premium_user(user_id)` - Checks active subscription OR is_admin flag
@@ -143,8 +145,10 @@ Google Integrations:
 5. Real-time updates via `useRealtimeWheel` hook (Supabase Realtime)
 
 **Migration Notes:**
-- Migration 013 (Oct 2025): Moved rings/activityGroups/labels from wheel_id to page_id scope
-- Items now require page_id (backfilled based on start_date year)
+- **Migration 015 (CRITICAL)**: Rings/activityGroups/labels are WHEEL-SCOPED (shared across all pages)
+- Only ITEMS are page-scoped (distributed by start_date year)
+- This enables cross-year activities (same ring/group UUID, different page_ids)
+- Items require page_id (backfilled based on start_date year)
 - Google integrations add source, external_id, sync_metadata to items table
 - Premium features enforced via RLS policies + helper functions
 
