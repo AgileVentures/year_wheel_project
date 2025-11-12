@@ -22,6 +22,8 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
   const label = item ? wheelStructure.labels.find(l => l.id === item.labelId) : null;
   const startDate = item ? new Date(item.startDate) : null;
   const endDate = item ? new Date(item.endDate) : null;
+  const isCluster = item?.isCluster || false;
+  const clusterItems = isCluster ? (item.items || []) : [];
 
   // Fetch linked wheel info if item has linkedWheelId
   useEffect(() => {
@@ -177,8 +179,8 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
           </button>
         </div>
 
-        {/* Tabs (only show if wheel exists - meaning this is a database wheel) */}
-        {wheel && (
+        {/* Tabs (only show if wheel exists and not a cluster) */}
+        {wheel && !isCluster && (
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab('details')}
@@ -214,6 +216,24 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
       <div className="flex-1 overflow-y-auto min-h-0">
         {activeTab === 'details' ? (
           <div className="p-3 space-y-2 text-xs">
+            {isCluster && (
+              <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-xs text-blue-900 font-medium mb-2">
+                  {t('editor:itemTooltip.clusterInfo', { count: clusterItems.length })}
+                </p>
+                <ul className="space-y-1.5 ml-2">
+                  {clusterItems.map((clusterItem, index) => (
+                    <li key={index} className="text-xs text-blue-800 flex items-start gap-1.5">
+                      <span className="text-blue-400 mt-0.5">•</span>
+                      <span>{clusterItem.name}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-blue-700 mt-2 italic">
+                  {t('editor:itemTooltip.clusterZoomHint')}
+                </p>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-gray-500">{t('editor:itemTooltip.ring')}:</span>
               <span className="text-gray-900 font-medium">{ring?.name || 'N/A'}</span>
@@ -299,35 +319,55 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
 
       {/* Actions - only show in edit mode and details tab */}
       {!readonly && activeTab === 'details' && (
-        <div className="flex gap-2 p-3 border-t border-gray-200 flex-shrink-0">
-          <button
-            onClick={() => {
-              onEdit(item);
-              onClose();
-            }}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
-          >
-            <Edit2 size={12} />
-            <span>{t('editor:itemTooltip.edit')}</span>
-          </button>
-          <button
-            onClick={async () => {
-              const confirmed = await showConfirmDialog({
-                title: t('editor:itemTooltip.deleteTitle', { defaultValue: 'Radera aktivitet' }),
-                message: t('editor:itemTooltip.deleteConfirm', { name: item.name }),
-                confirmText: t('editor:itemTooltip.deleteButton', { defaultValue: 'Radera' }),
-                cancelText: t('editor:itemTooltip.cancel', { defaultValue: 'Avbryt' }),
-                confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
-              });
-              if (confirmed) {
-                onDelete(item.id);
-                onClose();
-              }
-            }}
-            className="px-3 py-1.5 border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
-          >
-            <Trash2 size={14} />
-          </button>
+        <div className="flex flex-col gap-2 p-3 border-t border-gray-200 flex-shrink-0">
+          {isCluster && (
+            <div className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800 text-center">
+              {t('editor:itemTooltip.clusterEditHint', 'Zoom in to edit individual activities')}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (!isCluster) {
+                  onEdit(item);
+                  onClose();
+                }
+              }}
+              disabled={isCluster}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded transition-colors text-xs font-medium ${
+                isCluster
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              <Edit2 size={12} />
+              <span>{t('editor:itemTooltip.edit')}</span>
+            </button>
+            <button
+              onClick={async () => {
+                if (isCluster) return;
+                const confirmed = await showConfirmDialog({
+                  title: t('editor:itemTooltip.deleteTitle', { defaultValue: 'Radera aktivitet' }),
+                  message: t('editor:itemTooltip.deleteConfirm', { name: item.name }),
+                  confirmText: t('editor:itemTooltip.deleteButton', { defaultValue: 'Radera' }),
+                  cancelText: t('editor:itemTooltip.cancel', { defaultValue: 'Avbryt' }),
+                  confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+                });
+                if (confirmed) {
+                  onDelete(item.id);
+                  onClose();
+                }
+              }}
+              disabled={isCluster}
+              className={`px-3 py-1.5 rounded transition-colors ${
+                isCluster
+                  ? 'border border-gray-300 text-gray-400 cursor-not-allowed'
+                  : 'border border-red-300 text-red-600 hover:bg-red-50'
+              }`}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
       )}
     </div>

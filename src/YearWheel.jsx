@@ -400,23 +400,28 @@ function YearWheel({
   const stableHandleItemClick = useCallback((item, position, event) => {
     // CRITICAL: Validate that the item exists in current wheelStructure
     // This prevents showing stale data when canvas clickableItems array is out of sync
+    // EXCEPTION: Allow clusters through (they have isCluster flag and don't exist in items array)
     const currentItem = yearFilteredOrgDataRef.current?.items?.find(i => i.id === item.id);
-    if (!currentItem) {
+    if (!currentItem && !item.isCluster) {
       console.warn('[YearWheel] Clicked item not found in current data, ignoring click');
       return; // Item doesn't exist in current data - ignore the click
     }
+    
+    // Use the cluster data directly if it's a cluster, otherwise use validated item
+    const itemToUse = item.isCluster ? item : currentItem;
     
     // Check for modifier key: Cmd (Mac) or Ctrl (Windows/Linux)
     const isMultiSelectClick = event && (event.metaKey || event.ctrlKey);
     
     // Multi-select mode (either explicit mode OR modifier key held)
-    if (selectionModeRef.current || isMultiSelectClick) {
+    // Skip multi-select for clusters - they can't be selected
+    if ((selectionModeRef.current || isMultiSelectClick) && !itemToUse.isCluster) {
       setSelectedItems(prev => {
         const newSet = new Set(prev);
-        if (newSet.has(currentItem.id)) {
-          newSet.delete(currentItem.id);
+        if (newSet.has(itemToUse.id)) {
+          newSet.delete(itemToUse.id);
         } else {
-          newSet.add(currentItem.id);
+          newSet.add(itemToUse.id);
         }
         return newSet;
       });
@@ -427,8 +432,8 @@ function YearWheel({
       return; // Early return - don't show tooltip in selection mode
     }
     
-    // Normal mode: show tooltip with validated current item
-    setSelectedItem(currentItem); // Use validated item, not the one from canvas
+    // Normal mode: show tooltip with validated/cluster item
+    setSelectedItem(itemToUse); // Use cluster or validated item
     
     // Position tooltip at upper left of container with some padding
     if (containerRef.current) {

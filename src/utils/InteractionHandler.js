@@ -1356,6 +1356,15 @@ class InteractionHandler {
       if (this.wheel.clickableItems) {
         for (const itemRegion of this.wheel.clickableItems) {
           if (this.isPointInItemRegion(x, y, itemRegion)) {
+            // If this is a cluster, use the stored cluster data directly
+            if (itemRegion.clusterData) {
+              this.options.onItemClick(itemRegion.clusterData, {
+                x: event.clientX,
+                y: event.clientY
+              }, event);
+              return;
+            }
+            
             // CRITICAL: Look up fresh item data from wheelStructure (single source of truth)
             const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
             const freshItemFromData = this.wheel.wheelStructure.items.find(

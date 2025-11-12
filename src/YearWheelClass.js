@@ -4800,6 +4800,8 @@ class YearWheel {
                 endRadius: itemStartRadius + itemWidth,
                 startAngle: this.toRadians(adjustedStartAngle),
                 endAngle: this.toRadians(adjustedEndAngle),
+                // Store full cluster object if this is a cluster (can't look up by ID later)
+                clusterData: itemToRender.isCluster ? itemToRender : null
               });
             }
 
@@ -5203,6 +5205,8 @@ class YearWheel {
               endRadius: itemStartRadius + itemWidth,
               startAngle: this.toRadians(adjustedStartAngle),
               endAngle: this.toRadians(adjustedEndAngle),
+              // Store full cluster object if this is a cluster (can't look up by ID later)
+              clusterData: itemToRender.isCluster ? itemToRender : null
             });
           }
 

@@ -137,7 +137,10 @@
     "deleteButton": "Delete",
     "cancel": "Cancel",
     "details": "Details",
-    "comments": "Comments"
+    "comments": "Comments",
+    "clusterInfo": "This is a cluster of {{count}} activities in the same week:",
+    "clusterZoomHint": "Zoom in to see individual activities",
+    "clusterEditHint": "Zoom in to edit individual activities"
   },
   "addItemModal": {
     "title": "Add New Item",

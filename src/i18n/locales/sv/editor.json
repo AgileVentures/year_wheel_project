@@ -137,7 +137,10 @@
     "deleteButton": "Radera",
     "cancel": "Avbryt",
     "details": "Detaljer",
-    "comments": "Kommentarer"
+    "comments": "Kommentarer",
+    "clusterInfo": "Detta är ett kluster av {{count}} aktiviteter i samma vecka:",
+    "clusterZoomHint": "Zooma in för att se enskilda aktiviteter",
+    "clusterEditHint": "Zooma in för att redigera enskilda aktiviteter"
   },
   "addItemModal": {
     "title": "Lägg till ny händelse",
