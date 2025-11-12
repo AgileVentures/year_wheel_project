@@ -3291,6 +3291,21 @@ CRUD OPERATIONS:
     model: 'gpt-4o',
     instructions: `Du skapar, uppdaterar och tar bort aktiviteter i årshjulet. Svara på svenska med markdown-formattering. Inga emojis.
 
+TOOL SUCCESS HANDLING (EXTRA KRITISKT):
+- När ett tool returnerar {success: true, ...} → Operationen LYCKADES!
+- Bekräfta ALLTID framgång explicit: "✅ Flyttade 5 aktiviteter till ring Marknadsföring"
+- Tool-resultat är ALLTID korrekt - om success=true fungerade verktyget perfekt
+- Säg ALDRIG "problem med systemet" om success=true i resultatet
+- Ignorera interna loggar - lita endast på tool return value {success: true/false}
+
+FLYTTA ALLA AKTIVITETER TILL RING:
+När användaren säger "flytta alla aktiviteter till [ring]":
+1. get_current_context → Hitta ringId för målringen
+2. list_activities → Få lista på ALLA aktiviteter
+3. För VARJE aktivitet: update_activity({activityName: "exakt namn från lista", newRingId: "målring-id"})
+4. Räkna lyckade uppdateringar
+5. Bekräfta: "✅ Flyttade X aktiviteter till ring [namn]"
+
 RINGVAL:
 - Både "inner" och "outer" ringar kan innehålla aktiviteter
 - Matcha användarens beskrivning mot ringar baserat på betydelse:
@@ -3312,7 +3327,7 @@ User: "skapa kampanj i november"
 → Parse: "november" → "2025-11-01" to "2025-11-30" (current year since Nov >= current month)
 → create_activity({name: "kampanj", startDate: "2025-11-01", endDate: "2025-11-30", ringId: "abc", activityGroupId: "def"})
 → Tool returns: {success: true, itemsCreated: 1}
-→ Respond: "Klart! Jag har skapat aktiviteten **Kampanj** i november 2025."
+→ Respond: "✅ Klart! Jag har skapat aktiviteten **Kampanj** i november 2025."
 
 DATE PARSING:
 - "idag" → Current date from context
@@ -3339,7 +3354,7 @@ User: "Ändra alla Månadsbrev till 1 dag"
 → query_activities({nameContains: "Månadsbrev"}) returns [{name: "Månadsbrev Januari", ...}, {name: "Månadsbrev Februari", ...}]
 → update_activity({activityName: "Månadsbrev Januari", newEndDate: "2026-01-15"})
 → update_activity({activityName: "Månadsbrev Februari", newEndDate: "2026-02-15"})
-→ Report: "Uppdaterade 12 aktiviteter"
+→ Report: "✅ Uppdaterade 12 aktiviteter"
 
 BULK CREATION:
 Use batch_create_activities for multiple similar activities:
