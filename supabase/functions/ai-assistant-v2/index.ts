@@ -2532,16 +2532,16 @@ function createAgentSystem() {
   
   const getContextTool = tool<WheelContext>({
     name: 'get_current_context',
-    description: 'Get current rings, groups, labels, pages (years), and date. Call this when you need fresh IDs or to check which years exist. Returns ONLY visible items from the current page.',
+    description: 'Get current rings, groups, labels, pages (years), and date. Call this when you need fresh IDs or to check which years exist. Returns ONLY visible items.',
     parameters: z.object({}),
     async execute(_input: {}, ctx: RunContext<WheelContext>) {
       console.log('🔧 [TOOL] get_current_context called')
       const { supabase, wheelId, currentPageId } = ctx.context
       
-      // CRITICAL FIX: Fetch current page's organization_data (source of truth for visibility)
+      // Fetch current page info
       const { data: currentPage, error: pageError } = await supabase
         .from('wheel_pages')
-        .select('organization_data, year')
+        .select('year')
         .eq('id', currentPageId)
         .single()
       
@@ -2550,36 +2550,50 @@ function createAgentSystem() {
         throw new Error('Kunde inte hitta aktuell sida')
       }
       
-      // Extract organization_data (handles legacy 'activities' → 'activityGroups' rename)
-      const orgData = currentPage.organization_data || { 
-        rings: [], 
-        activityGroups: [], 
-        labels: [], 
-        items: [] 
-      }
-      
-      // Ensure activityGroups exists (handle legacy 'activities' field)
-      const activityGroups = orgData.activityGroups || orgData.activities || []
-      
       const dateInfo = getCurrentDate()
       
-      // Fetch all pages for this wheel to show which years exist
-      const { data: pages, error: pagesError } = await supabase
-        .from('wheel_pages')
-        .select('id, year, title')
-        .eq('wheel_id', wheelId)
-        .order('year')
+      // CACHE COHERENCE FIX: Read from database tables (source of truth), NOT organization_data JSONB
+      // This ensures newly created rings/groups are immediately visible to AI
+      const [ringsRes, groupsRes, labelsRes, pagesRes] = await Promise.all([
+        supabase
+          .from('wheel_rings')
+          .select('id, name, type, color, visible')
+          .eq('wheel_id', wheelId)
+          .order('ring_order'),
+        supabase
+          .from('activity_groups')
+          .select('id, name, color, visible')
+          .eq('wheel_id', wheelId),
+        supabase
+          .from('labels')
+          .select('id, name, color, visible')
+          .eq('wheel_id', wheelId),
+        supabase
+          .from('wheel_pages')
+          .select('id, year, title')
+          .eq('wheel_id', wheelId)
+          .order('year')
+      ])
       
-      if (pagesError) {
-        console.error('[get_current_context] Pages query error:', pagesError)
+      if (ringsRes.error) {
+        console.error('[get_current_context] Rings query error:', ringsRes.error)
+      }
+      if (groupsRes.error) {
+        console.error('[get_current_context] Groups query error:', groupsRes.error)
+      }
+      if (labelsRes.error) {
+        console.error('[get_current_context] Labels query error:', labelsRes.error)
+      }
+      if (pagesRes.error) {
+        console.error('[get_current_context] Pages query error:', pagesRes.error)
       }
       
-      // Return ONLY visible items from organization_data
+      // Return ONLY visible items
       const result = {
         date: dateInfo,
         currentPageId,
         currentYear: currentPage.year,
-        rings: (orgData.rings || [])
+        rings: (ringsRes.data || [])
           .filter((r: any) => r.visible !== false)
           .map((r: any) => ({ 
             id: r.id, 
@@ -2587,21 +2601,21 @@ function createAgentSystem() {
             type: r.type, 
             color: r.color 
           })),
-        groups: activityGroups
+        groups: (groupsRes.data || [])
           .filter((g: any) => g.visible !== false)
           .map((g: any) => ({ 
             id: g.id, 
             name: g.name, 
             color: g.color 
           })),
-        labels: (orgData.labels || [])
+        labels: (labelsRes.data || [])
           .filter((l: any) => l.visible !== false)
           .map((l: any) => ({
             id: l.id,
             name: l.name,
             color: l.color
           })),
-        pages: (pages || []).map((p: any) => ({ 
+        pages: (pagesRes.data || []).map((p: any) => ({ 
           id: p.id, 
           year: p.year, 
           title: p.title 
