@@ -4077,7 +4077,16 @@ Returnera ENDAST giltig JSON i detta format:
       
       try {
         console.log('🚀 [apply_suggested_plan] TOOL CALLED!')
-        console.log('[apply_suggested_plan] Received JSON length:', input.suggestionsJson?.length || 0)
+        console.log('[apply_suggested_plan] Received suggestionsJson parameter?', !!input.suggestionsJson)
+        console.log('[apply_suggested_plan] suggestionsJson length:', input.suggestionsJson?.length || 0)
+        console.log('[apply_suggested_plan] First 500 chars:', input.suggestionsJson?.substring(0, 500))
+        
+        // Also check context fallback
+        console.log('[apply_suggested_plan] Context lastSuggestionsRaw exists?', !!ctx.context.lastSuggestionsRaw)
+        console.log('[apply_suggested_plan] Context lastSuggestions exists?', !!ctx.context.lastSuggestions)
+        if (ctx.context.lastSuggestions) {
+          console.log('[apply_suggested_plan] Context lastSuggestions activities count:', ctx.context.lastSuggestions.activities?.length || 0)
+        }
 
         const summary = await applySuggestions(ctx, input.suggestionsJson)
         console.log('[apply_suggested_plan] Summary metadata:', summary.metadata)
