@@ -954,7 +954,7 @@ async function createRing(
   const defaultColor = '#408cfb'
   const finalColor = args.color || defaultColor
 
-  // Check if ring exists (wheel scoped - migration 015 reverted to wheel scope)
+  // FIXED: Check if ring exists (wheel scoped - rings are shared across all pages)
   const { data: existingByName } = await supabase
     .from('wheel_rings')
     .select('id, name, type, color, visible, orientation')
@@ -963,6 +963,8 @@ async function createRing(
     .maybeSingle()
 
   if (existingByName) {
+    console.log(`[createRing] Ring "${args.name}" already exists with id ${existingByName.id}`)
+    
     // Ensure organization_data JSON includes the ring with latest metadata
     await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
       const current = orgData.rings.find((r: any) => r.id === existingByName.id)
@@ -1000,6 +1002,7 @@ async function createRing(
         return changed
       }
 
+      // Ring exists in database but not in this page's organization_data - add it
       const newEntry: any = {
         id: existingByName.id,
         name: existingByName.name,
@@ -1015,6 +1018,7 @@ async function createRing(
       }
 
       orgData.rings.push(newEntry)
+      console.log(`[createRing] Added ring to organization_data:`, newEntry.name)
       return true
     })
 
@@ -1039,6 +1043,9 @@ async function createRing(
     ? existingRings[0].ring_order + 1 
     : 0
 
+  console.log(`[createRing] Creating new ring "${args.name}" for wheel ${wheelId} with order ${ringOrder}`)
+
+  // FIXED: Create ring in wheel_rings table (wheel-scoped, no page_id column)
   const { data: ring, error } = await supabase
     .from('wheel_rings')
     .insert({
@@ -1053,10 +1060,17 @@ async function createRing(
     .select()
     .single()
 
-  if (error) throw new Error(`Kunde inte skapa ring: ${error.message}`)
+  if (error) {
+    console.error('[createRing] Failed to insert ring:', error)
+    throw new Error(`Kunde inte skapa ring: ${error.message}`)
+  }
 
+  console.log(`[createRing] Ring created successfully with id ${ring.id}`)
+
+  // Update ALL pages' organization_data to include the new ring
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
     if (orgData.rings.some((r: any) => r.id === ring.id)) {
+      console.log(`[createRing] Ring ${ring.id} already in organization_data, skipping`)
       return false
     }
 
@@ -1075,12 +1089,13 @@ async function createRing(
     }
 
     orgData.rings.push(entry)
+    console.log(`[createRing] Added ring to organization_data:`, entry.name)
     return true
   })
 
   return {
-  success: true,
-  message: `Ring "${args.name}" skapad (typ: ${args.type === 'outer' ? 'outer – extern händelselager' : 'inner – huvudspår/strategi'}, färg: ${finalColor})`,
+    success: true,
+    message: `Ring "${args.name}" skapad (typ: ${args.type === 'outer' ? 'outer – extern händelselager' : 'inner – huvudspår/strategi'}, färg: ${finalColor})`,
     ringId: ring.id,
     ringName: ring.name,
   }
@@ -1091,7 +1106,7 @@ async function createGroup(
   wheelId: string,
   args: z.infer<typeof CreateGroupInput>
 ) {
-  // Check if group exists (wheel scoped - migration 015 reverted to wheel scope)
+  // FIXED: Check if group exists (wheel scoped - groups are shared across all pages)
   const { data: existing } = await supabase
     .from('activity_groups')
     .select('id, name, color, visible')
@@ -1100,6 +1115,8 @@ async function createGroup(
     .maybeSingle()
 
   if (existing) {
+    console.log(`[createGroup] Group "${args.name}" already exists with id ${existing.id}`)
+    
     await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
       const current = orgData.activityGroups.find((g: any) => g.id === existing.id)
       const normalizedColor = existing.color || args.color
@@ -1122,12 +1139,14 @@ async function createGroup(
         return changed
       }
 
+      // Group exists in database but not in this page's organization_data - add it
       orgData.activityGroups.push({
         id: existing.id,
         name: existing.name,
         color: normalizedColor || args.color,
         visible,
       })
+      console.log(`[createGroup] Added group to organization_data:`, existing.name)
       return true
     })
 
@@ -1140,6 +1159,9 @@ async function createGroup(
     }
   }
 
+  console.log(`[createGroup] Creating new group "${args.name}" for wheel ${wheelId}`)
+
+  // FIXED: Create group in activity_groups table (wheel-scoped, no page_id column)
   const { data: group, error } = await supabase
     .from('activity_groups')
     .insert({
@@ -1151,10 +1173,17 @@ async function createGroup(
     .select()
     .single()
 
-  if (error) throw new Error(`Kunde inte skapa aktivitetsgrupp: ${error.message}`)
+  if (error) {
+    console.error('[createGroup] Failed to insert group:', error)
+    throw new Error(`Kunde inte skapa aktivitetsgrupp: ${error.message}`)
+  }
 
+  console.log(`[createGroup] Group created successfully with id ${group.id}`)
+
+  // Update ALL pages' organization_data to include the new group
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
     if (orgData.activityGroups.some((g: any) => g.id === group.id)) {
+      console.log(`[createGroup] Group ${group.id} already in organization_data, skipping`)
       return false
     }
 
@@ -1164,6 +1193,7 @@ async function createGroup(
       color: group.color || args.color,
       visible: group.visible !== false,
     })
+    console.log(`[createGroup] Added group to organization_data:`, group.name)
     return true
   })
 
@@ -1456,7 +1486,7 @@ async function createLabel(
   wheelId: string,
   args: z.infer<typeof CreateLabelInput>
 ) {
-  // Check if label exists
+  // FIXED: Check if label exists (wheel scoped - labels are shared across all pages)
   const { data: existing } = await supabase
     .from('labels')
     .select('id, name, color, visible')
@@ -1465,6 +1495,8 @@ async function createLabel(
     .maybeSingle()
 
   if (existing) {
+    console.log(`[createLabel] Label "${args.name}" already exists with id ${existing.id}`)
+    
     await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
       const current = orgData.labels.find((l: any) => l.id === existing.id)
       const normalizedColor = existing.color || args.color
@@ -1487,12 +1519,14 @@ async function createLabel(
         return changed
       }
 
+      // Label exists in database but not in this page's organization_data - add it
       orgData.labels.push({
         id: existing.id,
         name: existing.name,
         color: normalizedColor || args.color,
         visible,
       })
+      console.log(`[createLabel] Added label to organization_data:`, existing.name)
       return true
     })
 
@@ -1505,6 +1539,9 @@ async function createLabel(
     }
   }
 
+  console.log(`[createLabel] Creating new label "${args.name}" for wheel ${wheelId}`)
+
+  // FIXED: Create label in labels table (wheel-scoped, no page_id column)
   const { data: label, error } = await supabase
     .from('labels')
     .insert({
@@ -1516,10 +1553,17 @@ async function createLabel(
     .select()
     .single()
 
-  if (error) throw new Error(`Kunde inte skapa label: ${error.message}`)
+  if (error) {
+    console.error('[createLabel] Failed to insert label:', error)
+    throw new Error(`Kunde inte skapa label: ${error.message}`)
+  }
 
+  console.log(`[createLabel] Label created successfully with id ${label.id}`)
+
+  // Update ALL pages' organization_data to include the new label
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
     if (orgData.labels.some((l: any) => l.id === label.id)) {
+      console.log(`[createLabel] Label ${label.id} already in organization_data, skipping`)
       return false
     }
 
@@ -1529,6 +1573,7 @@ async function createLabel(
       color: label.color || args.color,
       visible: label.visible !== false,
     })
+    console.log(`[createLabel] Added label to organization_data:`, label.name)
     return true
   })
 
