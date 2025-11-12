@@ -3785,11 +3785,17 @@ MULTI-YEAR AWARENESS:
 - Wheels can have multiple year pages
 - Call get_current_context to see available years: {pages: [{id, year, title}]}
 - Activities spanning multiple years are auto-split into segments
-- If user requests activities for non-existent year, offer to create that year page first
+- If user requests activities for non-existent year, suggest creating that year page
+
+RESPECTING EXISTING STRUCTURE:
+1. Call get_current_context FIRST to see existing rings and groups
+2. If user says "allt ska hamna på ringen X" → Use ONLY that existing ring, do NOT create new rings
+3. If user specifies ring/group names → Use those EXACT names (reuse if exists, create if missing)
+4. Only create NEW rings if user explicitly asks for them OR doesn't specify any
 
 WORKFLOW:
-1. Call get_current_context to see available years
-2. Call suggest_plan with user's goal and time period → Save the RAW JSON string returned
+1. Call get_current_context to see available years + existing rings/groups
+2. Call suggest_plan with user's goal, time period, AND existingRings/existingGroups → Save the RAW JSON string returned
 3. Present the suggestions clearly (rings, groups, AND activities organized by quarter)
 4. Wait for user approval ("ja", "applicera", etc.)
 5. Call apply_suggested_plan with the EXACT JSON string from step 2 (unchanged)
@@ -3817,8 +3823,16 @@ Organize by quarter with dates, ring, and group
 
 **Vill du att jag skapar denna struktur?**
 
-AFTER APPLYING:
-Read the actual result from apply_suggested_plan and report EXACT counts of what was created (not expected counts)`,
+INTERPRETING RESULTS:
+After apply_suggested_plan, read the actual result object:
+- {success: true} → Everything worked! Report actual counts from "created" field
+- {success: false, errors: [...]} → Some items failed. Report what succeeded + explain errors
+- If some activities failed due to missing year pages → Explain which years exist
+- NEVER say "tekniskt problem" if success=true OR if created counts > 0
+
+Example responses:
+✅ Success: "Klart! Skapade 3 ringar, 5 grupper och 12 aktiviteter."
+⚠️ Partial: "Skapade 3 ringar, 5 grupper och 9 av 12 aktiviteter. 3 aktiviteter för 2026 misslyckades eftersom sidan för det året saknas."`,
     tools: [getContextTool, suggestPlanTool, applySuggestedPlanTool],
   })
 
