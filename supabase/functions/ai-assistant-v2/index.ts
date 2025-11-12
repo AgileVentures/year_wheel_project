@@ -307,7 +307,7 @@ async function applySuggestions(
   ctx: RunContext<WheelContext>,
   rawSuggestionsJson?: string
 ): Promise<ApplySummary> {
-  const { supabase, wheelId } = ctx.context
+  const { supabase, wheelId, currentPageId } = ctx.context
 
   let suggestionSource: SuggestionSource | null = null
   let suggestions: PlanSuggestions | null = null
@@ -398,7 +398,7 @@ async function applySuggestions(
         detail: { name: ring.name, type: ring.type },
       })
 
-      const result = await createRing(supabase, wheelId, {
+      const result = await createRing(supabase, wheelId, currentPageId, {
         name: ring.name,
         type: ring.type === 'inner' ? 'inner' : 'outer',
         color: ring.type === 'outer' ? (ring.color || '#408cfb') : null,
@@ -949,24 +949,29 @@ async function createActivity(
 async function createRing(
   supabase: any,
   wheelId: string,
+  currentPageId: string,
   args: z.infer<typeof CreateRingInput>
 ) {
   const defaultColor = '#408cfb'
   const finalColor = args.color || defaultColor
 
-  // FIXED: Check if ring exists (wheel scoped - rings are shared across all pages)
+  // POST-MIGRATION 013: Rings are PAGE-SCOPED (page_id), not wheel-scoped
+  // Check if ring exists on THIS page
   const { data: existingByName } = await supabase
     .from('wheel_rings')
     .select('id, name, type, color, visible, orientation')
-    .eq('wheel_id', wheelId)
+    .eq('page_id', currentPageId)
     .ilike('name', args.name)
     .maybeSingle()
 
   if (existingByName) {
-    console.log(`[createRing] Ring "${args.name}" already exists with id ${existingByName.id}`)
+    console.log(`[createRing] Ring "${args.name}" already exists on this page with id ${existingByName.id}`)
     
     // Ensure organization_data JSON includes the ring with latest metadata
-    await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+    await updateOrgDataAcrossPages(supabase, wheelId, (orgData, pageId) => {
+      // Only update THIS page's organization_data
+      if (pageId !== currentPageId) return false
+      
       const current = orgData.rings.find((r: any) => r.id === existingByName.id)
       const visible = existingByName.visible !== false
       const colorToUse = existingByName.type === 'outer'
@@ -1024,18 +1029,18 @@ async function createRing(
 
     return {
       success: true,
-      message: `Ring "${args.name}" finns redan`,
+      message: `Ring "${args.name}" finns redan på denna sida`,
       ringId: existingByName.id,
       ringName: existingByName.name,
       alreadyExists: true,
     }
   }
 
-  // Auto-calculate ring_order for this wheel
+  // Auto-calculate ring_order for this PAGE
   const { data: existingRings } = await supabase
     .from('wheel_rings')
     .select('ring_order')
-    .eq('wheel_id', wheelId)
+    .eq('page_id', currentPageId)
     .order('ring_order', { ascending: false })
     .limit(1)
 
@@ -1043,13 +1048,14 @@ async function createRing(
     ? existingRings[0].ring_order + 1 
     : 0
 
-  console.log(`[createRing] Creating new ring "${args.name}" for wheel ${wheelId} with order ${ringOrder}`)
+  console.log(`[createRing] Creating new ring "${args.name}" for page ${currentPageId} with order ${ringOrder}`)
 
-  // FIXED: Create ring in wheel_rings table (wheel-scoped, no page_id column)
+  // POST-MIGRATION 013: Create ring with page_id (required), wheel_id (optional/legacy for compatibility)
   const { data: ring, error } = await supabase
     .from('wheel_rings')
     .insert({
-      wheel_id: wheelId,
+      page_id: currentPageId,  // ✅ REQUIRED after migration 013
+      wheel_id: wheelId,       // ✅ OPTIONAL (legacy compatibility)
       name: args.name,
       type: args.type,
       color: finalColor,
@@ -1067,8 +1073,11 @@ async function createRing(
 
   console.log(`[createRing] Ring created successfully with id ${ring.id}`)
 
-  // Update ALL pages' organization_data to include the new ring
-  await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
+  // Update THIS page's organization_data to include the new ring
+  await updateOrgDataAcrossPages(supabase, wheelId, (orgData, pageId) => {
+    // Only update THIS page
+    if (pageId !== currentPageId) return false
+    
     if (orgData.rings.some((r: any) => r.id === ring.id)) {
       console.log(`[createRing] Ring ${ring.id} already in organization_data, skipping`)
       return false
@@ -2552,22 +2561,23 @@ function createAgentSystem() {
       
       const dateInfo = getCurrentDate()
       
-      // CACHE COHERENCE FIX: Read from database tables (source of truth), NOT organization_data JSONB
+      // CRITICAL: Post-migration 013 (Oct 2025) - rings/groups/labels are PAGE-SCOPED (page_id), NOT wheel-scoped
+      // Read from database tables (source of truth), NOT organization_data JSONB cache
       // This ensures newly created rings/groups are immediately visible to AI
       const [ringsRes, groupsRes, labelsRes, pagesRes] = await Promise.all([
         supabase
           .from('wheel_rings')
           .select('id, name, type, color, visible')
-          .eq('wheel_id', wheelId)
+          .eq('page_id', currentPageId)  // ✅ FIXED: Use page_id, not wheel_id
           .order('ring_order'),
         supabase
           .from('activity_groups')
           .select('id, name, color, visible')
-          .eq('wheel_id', wheelId),
+          .eq('page_id', currentPageId),  // ✅ FIXED: Use page_id, not wheel_id
         supabase
           .from('labels')
           .select('id, name, color, visible')
-          .eq('wheel_id', wheelId),
+          .eq('page_id', currentPageId),  // ✅ FIXED: Use page_id, not wheel_id
         supabase
           .from('wheel_pages')
           .select('id, year, title')
@@ -2638,8 +2648,8 @@ function createAgentSystem() {
     parameters: CreateRingInput,
     async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext>) {
       console.log('🔧 [TOOL] create_ring called with:', JSON.stringify(input, null, 2))
-      const { supabase, wheelId } = ctx.context
-      const result = await createRing(supabase, wheelId, input)
+      const { supabase, wheelId, currentPageId } = ctx.context
+      const result = await createRing(supabase, wheelId, currentPageId, input)
       console.log('✅ [TOOL] create_ring result:', JSON.stringify(result, null, 2))
 
       if (result.success && result.ringId) {
