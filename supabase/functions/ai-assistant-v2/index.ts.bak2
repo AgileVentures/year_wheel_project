@@ -2608,7 +2608,7 @@ function createAgentSystem() {
         })),
       }
       console.log('✅ [TOOL] get_current_context result:', JSON.stringify(result, null, 2))
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2623,10 +2623,8 @@ function createAgentSystem() {
       '"inner" för huvudspår, strategiska aktiviteter eller textbaserad planering.',
     parameters: CreateRingInput,
     async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext>) {
-      console.log('🔧 [TOOL] create_ring called with:', JSON.stringify(input, null, 2))
       const { supabase, wheelId } = ctx.context
       const result = await createRing(supabase, wheelId, input)
-      console.log('✅ [TOOL] create_ring result:', JSON.stringify(result, null, 2))
 
       if (result.success && result.ringId) {
         queueRefreshEvent(ctx, {
@@ -2641,7 +2639,8 @@ function createAgentSystem() {
         })
       }
 
-      return JSON.stringify(result)
+      // Return object directly - SDK converts with toSmartString()
+      return result
     }
   })
 
@@ -2650,10 +2649,8 @@ function createAgentSystem() {
     description: 'Create a new activity group for organizing activities.',
     parameters: CreateGroupInput,
     async execute(input: z.infer<typeof CreateGroupInput>, ctx: RunContext<WheelContext>) {
-      console.log('🔧 [TOOL] create_activity_group called with:', JSON.stringify(input, null, 2))
       const { supabase, wheelId } = ctx.context
       const result = await createGroup(supabase, wheelId, input)
-      console.log('✅ [TOOL] create_activity_group result:', JSON.stringify(result, null, 2))
 
       if (result.success && result.groupId) {
         queueRefreshEvent(ctx, {
@@ -2668,7 +2665,8 @@ function createAgentSystem() {
         })
       }
 
-      return JSON.stringify(result)
+      // Return object directly - SDK converts with toSmartString()
+      return result
     }
   })
 
@@ -2683,7 +2681,7 @@ function createAgentSystem() {
         newName: input.newName || undefined,
         newColor: input.newColor || undefined,
       })
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2694,7 +2692,7 @@ function createAgentSystem() {
     async execute(input: z.infer<typeof DeleteRingInput>, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
       const result = await deleteRing(supabase, wheelId, input.name)
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2708,7 +2706,7 @@ function createAgentSystem() {
         newName: input.newName || undefined,
         newColor: input.newColor || undefined,
       })
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2719,7 +2717,7 @@ function createAgentSystem() {
     async execute(input: z.infer<typeof DeleteGroupInput>, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
       const result = await deleteGroup(supabase, wheelId, input.name)
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2730,7 +2728,7 @@ function createAgentSystem() {
     async execute(input: z.infer<typeof CreateLabelInput>, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
       const result = await createLabel(supabase, wheelId, input)
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2744,7 +2742,7 @@ function createAgentSystem() {
         newName: input.newName || undefined,
         newColor: input.newColor || undefined,
       })
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2755,7 +2753,7 @@ function createAgentSystem() {
     async execute(input: z.infer<typeof DeleteLabelInput>, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
       const result = await deleteLabel(supabase, wheelId, input.name)
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2822,7 +2820,7 @@ function createAgentSystem() {
       }
       
       console.log('✅ [TOOL] toggle_ring_visibility result:', result)
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2890,7 +2888,7 @@ function createAgentSystem() {
       }
       
       console.log('✅ [TOOL] toggle_group_visibility result:', result)
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2913,7 +2911,7 @@ function createAgentSystem() {
           ctx.context.allPages = pages
         }
       }
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2936,7 +2934,7 @@ function createAgentSystem() {
           ctx.context.allPages = pages
         }
       }
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -2955,19 +2953,18 @@ function createAgentSystem() {
   const structureAgent = new Agent<WheelContext>({
     name: 'Structure Agent',
     model: 'gpt-4o',
-  instructions: `Du ansvarar för årshjulets struktur: ringar, aktivitetsgrupper, etiketter och årssidor. Svara på svenska med markdown-formatering. Inga emojis.
+  instructions: `Du ansvarar för årshjulets struktur: ringar, aktivitetsgrupper, etiketter och årssidor. Svara på svenska med markdown-formattering. Inga emojis.
 
 RINGTYPER (KRITISKT):
 - Både "inner" och "outer" kan innehålla aktiviteter
 - **Outer**: Används typiskt för mindre/externa händelser (helgdagar, lov, säsonger, terminer, externa milstolpar)
 - **Inner**: Används för huvudspår, strategiska initiativ, projektfaser eller textbaserad planering
 
-TOOL RESULTS (EXTRA KRITISKT):
-- När ett tool returnerar {success: true, ...} → Operationen LYCKADES!
-- Bekräfta ALLTID framgång explicit till användaren: "✅ Ring 'Marknadsföring' skapad!"
-- Tool-resultat är ALLTID korrekt - om success=true fungerade verktyget perfekt
-- Säg ALDRIG "tekniskt fel" om success=true i resultatet
-- Ignorera interna loggar - lita endast på tool return value {success: true/false}
+TOOL SUCCESS HANDLING (KRITISKT):
+- När ett tool returnerar {"success": true, ...} → Operation lyckades!
+- Bekräfta alltid success explicit: "✅ Ring skapad!"
+- Tool-resultat är ALLTID korrekt - om success=true fungerade det
+- Säg ALDRIG "det blev ett tekniskt fel" om success=true
 
 STRUCTURE SUGGESTIONS:
 When user asks for structure ideas for a domain:
@@ -3035,7 +3032,7 @@ CRUD OPERATIONS:
         })
       }
 
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -3225,7 +3222,7 @@ CRUD OPERATIONS:
       }
       
       console.log('✅ [TOOL] query_activities found:', result.count, 'activities')
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -3250,7 +3247,7 @@ CRUD OPERATIONS:
       console.log('[updateActivityTool] Updates to apply:', JSON.stringify(updates, null, 2));
       
       const result = await updateActivity(ctx, input.activityName, updates);
-      return JSON.stringify(result)
+      return result
     }
   })
 
@@ -3261,7 +3258,7 @@ CRUD OPERATIONS:
     async execute(input: z.infer<typeof DeleteActivityInput>, ctx: RunContext<WheelContext>) {
       const { supabase, wheelId } = ctx.context
       const result = await deleteActivity(supabase, wheelId, input.name)
-      return JSON.stringify(result)
+      return result
     }
   })
 
