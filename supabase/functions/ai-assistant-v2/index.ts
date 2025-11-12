@@ -3811,8 +3811,7 @@ Returnera ENDAST giltig JSON i detta format:
 {
   "redistributions": [
     {
-      "activityId": "uuid-here",
-      "activityName": "Namn på aktivitet",
+      "activityName": "Exakt namn på aktivitet (måste matcha namnet från listan ovan)",
       "currentRing": "Nuvarande ringnamn",
       "suggestedRing": "Föreslagen ringnamn",
       "reason": "Kortfattad förklaring varför denna ring passar bättre"
@@ -3820,6 +3819,7 @@ Returnera ENDAST giltig JSON i detta format:
   ]
 }
 
+VIKTIGT: activityName måste vara EXAKT samma som i listan ovan (case-insensitive matching används).
 Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring).`
 
         const completion = await openai.chat.completions.create({
@@ -3859,6 +3859,17 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
         
         if (!input.dryRun) {
           for (const redist of redistributions) {
+            // Find the actual activity by name (AI might not provide correct UUID)
+            const activity = items.find((item: any) => 
+              item.name.toLowerCase() === redist.activityName.toLowerCase()
+            )
+            
+            if (!activity) {
+              console.error(`[smart_distribute_activities] Activity not found: ${redist.activityName}`)
+              errors.push(`Aktivitet "${redist.activityName}" hittades inte`)
+              continue
+            }
+            
             // Find target ring ID
             const targetRing = rings.find((r: any) => 
               r.name.toLowerCase() === redist.suggestedRing.toLowerCase()
@@ -3870,11 +3881,11 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
               continue
             }
             
-            // Update activity
+            // Update activity using the actual UUID from our database query
             const { error: updateError } = await supabase
               .from('items')
               .update({ ring_id: targetRing.id, updated_at: new Date().toISOString() })
-              .eq('id', redist.activityId)
+              .eq('id', activity.id)
             
             if (updateError) {
               console.error(`[smart_distribute_activities] Update error for ${redist.activityName}:`, updateError)
