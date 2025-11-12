@@ -3953,6 +3953,10 @@ serve(async (req: Request) => {
     if (!userMessage || !wheelId) {
       throw new Error('Missing required fields: userMessage, wheelId')
     }
+    
+    if (!currentPageId) {
+      throw new Error('Missing currentPageId - frontend must provide the active page ID')
+    }
 
     console.log('[AI Assistant V2] Processing:', { 
       userMessage, 
@@ -3968,10 +3972,13 @@ serve(async (req: Request) => {
     const { data: pageData, error: pageError } = await supabase
       .from('wheel_pages')
       .select('*')
-      .eq('id', currentPageId || wheelId)
+      .eq('id', currentPageId)
       .single()
 
-    if (pageError) throw pageError
+    if (pageError) {
+      console.error('[AI] Error fetching page:', pageError)
+      throw new Error(`Could not fetch page ${currentPageId}: ${pageError.message}`)
+    }
 
     // Fetch ALL pages for this wheel so AI knows what years exist
     const { data: allPages, error: allPagesError } = await supabase
@@ -3993,7 +4000,7 @@ serve(async (req: Request) => {
       wheelId,
       userId: user.id,
       currentYear: pageData.year,
-      currentPageId: currentPageId || wheelId,
+      currentPageId: currentPageId,
       lastSuggestions: undefined, // Will be populated by tools if needed
       allPages: allPages || [], // ✅ NEW: AI knows what pages exist
     }
