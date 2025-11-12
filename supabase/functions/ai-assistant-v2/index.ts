@@ -2814,12 +2814,20 @@ function createAgentSystem() {
     description: 'Update an existing ring name or color',
     parameters: UpdateRingInput,
     async execute(input: z.infer<typeof UpdateRingInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await updateRing(supabase, wheelId, input.ringName, {
-        newName: input.newName || undefined,
-        newColor: input.newColor || undefined,
-      })
-      return JSON.stringify(result)
+      const metric = trackToolStart('update_ring', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await updateRing(supabase, wheelId, input.ringName, {
+          newName: input.newName || undefined,
+          newColor: input.newColor || undefined,
+        })
+        trackToolEnd(metric, result.success, result.success ? undefined : result.message)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
+      }
     }
   })
 
@@ -2828,9 +2836,17 @@ function createAgentSystem() {
     description: 'Delete a ring by name. Will fail if ring has activities.',
     parameters: DeleteRingInput,
     async execute(input: z.infer<typeof DeleteRingInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await deleteRing(supabase, wheelId, input.name)
-      return JSON.stringify(result)
+      const metric = trackToolStart('delete_ring', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await deleteRing(supabase, wheelId, input.name)
+        trackToolEnd(metric, result.success, result.success ? undefined : result.message)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
+      }
     }
   })
 
@@ -2839,12 +2855,20 @@ function createAgentSystem() {
     description: 'Update an existing activity group name or color',
     parameters: UpdateGroupInput,
     async execute(input: z.infer<typeof UpdateGroupInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await updateGroup(supabase, wheelId, input.groupName, {
-        newName: input.newName || undefined,
-        newColor: input.newColor || undefined,
-      })
-      return JSON.stringify(result)
+      const metric = trackToolStart('update_activity_group', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await updateGroup(supabase, wheelId, input.groupName, {
+          newName: input.newName || undefined,
+          newColor: input.newColor || undefined,
+        })
+        trackToolEnd(metric, result.success, result.success ? undefined : result.message)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
+      }
     }
   })
 
@@ -2853,9 +2877,17 @@ function createAgentSystem() {
     description: 'Delete an activity group by name. Will fail if group has activities.',
     parameters: DeleteGroupInput,
     async execute(input: z.infer<typeof DeleteGroupInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await deleteGroup(supabase, wheelId, input.name)
-      return JSON.stringify(result)
+      const metric = trackToolStart('delete_activity_group', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await deleteGroup(supabase, wheelId, input.name)
+        trackToolEnd(metric, result.success, result.success ? undefined : result.message)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
+      }
     }
   })
 
@@ -2864,15 +2896,25 @@ function createAgentSystem() {
     description: 'Create a new label for categorizing activities',
     parameters: CreateLabelInput,
     async execute(input: z.infer<typeof CreateLabelInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await createLabel(supabase, wheelId, input)
+      const metric = trackToolStart('create_label', ctx.context.userId)
       
-      if (result.success && result.labelId) {
-        // Invalidate cache when structure changes
-        invalidateContextCache(ctx)
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await createLabel(supabase, wheelId, input)
+        
+        if (result.success && result.labelId) {
+          trackToolEnd(metric, true)
+          // Invalidate cache when structure changes
+          invalidateContextCache(ctx)
+        } else {
+          trackToolEnd(metric, false, result.message)
+        }
+        
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
       }
-      
-      return JSON.stringify(result)
     }
   })
 
@@ -2881,12 +2923,21 @@ function createAgentSystem() {
     description: 'Update an existing label name or color',
     parameters: UpdateLabelInput,
     async execute(input: z.infer<typeof UpdateLabelInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await updateLabel(supabase, wheelId, input.labelName, {
-        newName: input.newName || undefined,
-        newColor: input.newColor || undefined,
-      })
-      return JSON.stringify(result)
+      const metric = trackToolStart('update_label', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await updateLabel(supabase, wheelId, input.labelName, {
+          newName: input.newName || undefined,
+          newColor: input.newColor || undefined,
+        })
+        
+        trackToolEnd(metric, result.success, result.success ? undefined : result.message)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
+      }
     }
   })
 
@@ -2895,9 +2946,18 @@ function createAgentSystem() {
     description: 'Delete a label by name. Can be deleted even if in use.',
     parameters: DeleteLabelInput,
     async execute(input: z.infer<typeof DeleteLabelInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await deleteLabel(supabase, wheelId, input.name)
-      return JSON.stringify(result)
+      const metric = trackToolStart('delete_label', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await deleteLabel(supabase, wheelId, input.name)
+        
+        trackToolEnd(metric, result.success, result.success ? undefined : result.message)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
+      }
     }
   })
 
@@ -2909,62 +2969,73 @@ function createAgentSystem() {
       visible: z.boolean().describe('true to show the ring, false to hide it'),
     }),
     async execute(input: { ringName: string; visible: boolean }, ctx: RunContext<WheelContext>) {
-      const { supabase, currentPageId } = ctx.context
-      console.log('🔧 [TOOL] toggle_ring_visibility called:', input)
+      const metric = trackToolStart('toggle_ring_visibility', ctx.context.userId)
       
-      // Get current page's structure
-      const { data: page, error: pageError } = await supabase
-        .from('wheel_pages')
-        .select('structure')
-        .eq('id', currentPageId)
-        .single()
-      
-      if (pageError || !page) {
-        throw new Error('Kunde inte hitta sida')
-      }
-      
-      const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
-      
-      // Find matching ring (case-insensitive partial match)
-      const ringNameLower = input.ringName.toLowerCase()
-      let matchCount = 0
-      const updatedRings = (orgData.rings || []).map((r: any) => {
-        if (r.name.toLowerCase().includes(ringNameLower)) {
-          matchCount++
-          return { ...r, visible: input.visible }
+      try {
+        const { supabase, currentPageId } = ctx.context
+        console.log('🔧 [TOOL] toggle_ring_visibility called:', input)
+        
+        // Get current page's structure
+        const { data: page, error: pageError } = await supabase
+          .from('wheel_pages')
+          .select('structure')
+          .eq('id', currentPageId)
+          .single()
+        
+        if (pageError || !page) {
+          trackToolEnd(metric, false, 'Kunde inte hitta sida')
+          throw new Error('Kunde inte hitta sida')
         }
-        return r
-      })
-      
-      if (matchCount === 0) {
-        return JSON.stringify({
-          success: false,
-          message: `Ingen ring hittades med namnet "${input.ringName}"`
+        
+        const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
+        
+        // Find matching ring (case-insensitive partial match)
+        const ringNameLower = input.ringName.toLowerCase()
+        let matchCount = 0
+        const updatedRings = (orgData.rings || []).map((r: any) => {
+          if (r.name.toLowerCase().includes(ringNameLower)) {
+            matchCount++
+            return { ...r, visible: input.visible }
+          }
+          return r
         })
+        
+        if (matchCount === 0) {
+          trackToolEnd(metric, false, `Ingen ring hittades med namnet "${input.ringName}"`)
+          return JSON.stringify({
+            success: false,
+            message: `Ingen ring hittades med namnet "${input.ringName}"`
+          })
+        }
+        
+        // Update page's organization_data
+        const { error: updateError } = await supabase
+          .from('wheel_pages')
+          .update({ 
+            organization_data: { ...orgData, rings: updatedRings },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentPageId)
+        
+        if (updateError) {
+          console.error('[toggle_ring_visibility] Update error:', updateError)
+          trackToolEnd(metric, false, updateError.message)
+          throw new Error(`Kunde inte uppdatera ring: ${updateError.message}`)
+        }
+        
+        const result = {
+          success: true,
+          ringsUpdated: matchCount,
+          message: `${matchCount} ring(ar) med namnet "${input.ringName}" är nu ${input.visible ? 'synlig(a)' : 'dold(a)'}`
+        }
+        
+        trackToolEnd(metric, true)
+        console.log('✅ [TOOL] toggle_ring_visibility result:', result)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
       }
-      
-      // Update page's organization_data
-      const { error: updateError } = await supabase
-        .from('wheel_pages')
-        .update({ 
-          organization_data: { ...orgData, rings: updatedRings },
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentPageId)
-      
-      if (updateError) {
-        console.error('[toggle_ring_visibility] Update error:', updateError)
-        throw new Error(`Kunde inte uppdatera ring: ${updateError.message}`)
-      }
-      
-      const result = {
-        success: true,
-        ringsUpdated: matchCount,
-        message: `${matchCount} ring(ar) med namnet "${input.ringName}" är nu ${input.visible ? 'synlig(a)' : 'dold(a)'}`
-      }
-      
-      console.log('✅ [TOOL] toggle_ring_visibility result:', result)
-      return JSON.stringify(result)
     }
   })
 
@@ -2976,63 +3047,74 @@ function createAgentSystem() {
       visible: z.boolean().describe('true to show the group, false to hide it'),
     }),
     async execute(input: { groupName: string; visible: boolean }, ctx: RunContext<WheelContext>) {
-      const { supabase, currentPageId } = ctx.context
-      console.log('🔧 [TOOL] toggle_group_visibility called:', input)
+      const metric = trackToolStart('toggle_group_visibility', ctx.context.userId)
       
-      // Get current page's structure
-      const { data: page, error: pageError } = await supabase
-        .from('wheel_pages')
-        .select('structure')
-        .eq('id', currentPageId)
-        .single()
-      
-      if (pageError || !page) {
-        throw new Error('Kunde inte hitta sida')
-      }
-      
-      const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
-      const activityGroups = orgData.activityGroups || orgData.activities || []
-      
-      // Find matching group (case-insensitive partial match)
-      const groupNameLower = input.groupName.toLowerCase()
-      let matchCount = 0
-      const updatedGroups = activityGroups.map((g: any) => {
-        if (g.name.toLowerCase().includes(groupNameLower)) {
-          matchCount++
-          return { ...g, visible: input.visible }
+      try {
+        const { supabase, currentPageId } = ctx.context
+        console.log('🔧 [TOOL] toggle_group_visibility called:', input)
+        
+        // Get current page's structure
+        const { data: page, error: pageError } = await supabase
+          .from('wheel_pages')
+          .select('structure')
+          .eq('id', currentPageId)
+          .single()
+        
+        if (pageError || !page) {
+          trackToolEnd(metric, false, 'Kunde inte hitta sida')
+          throw new Error('Kunde inte hitta sida')
         }
-        return g
-      })
-      
-      if (matchCount === 0) {
-        return JSON.stringify({
-          success: false,
-          message: `Ingen aktivitetsgrupp hittades med namnet "${input.groupName}"`
+        
+        const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
+        const activityGroups = orgData.activityGroups || orgData.activities || []
+        
+        // Find matching group (case-insensitive partial match)
+        const groupNameLower = input.groupName.toLowerCase()
+        let matchCount = 0
+        const updatedGroups = activityGroups.map((g: any) => {
+          if (g.name.toLowerCase().includes(groupNameLower)) {
+            matchCount++
+            return { ...g, visible: input.visible }
+          }
+          return g
         })
+        
+        if (matchCount === 0) {
+          trackToolEnd(metric, false, `Ingen aktivitetsgrupp hittades med namnet "${input.groupName}"`)
+          return JSON.stringify({
+            success: false,
+            message: `Ingen aktivitetsgrupp hittades med namnet "${input.groupName}"`
+          })
+        }
+        
+        // Update page's organization_data (use activityGroups, not activities)
+        const { error: updateError } = await supabase
+          .from('wheel_pages')
+          .update({ 
+            organization_data: { ...orgData, activityGroups: updatedGroups },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentPageId)
+        
+        if (updateError) {
+          console.error('[toggle_group_visibility] Update error:', updateError)
+          trackToolEnd(metric, false, updateError.message)
+          throw new Error(`Kunde inte uppdatera aktivitetsgrupp: ${updateError.message}`)
+        }
+        
+        const result = {
+          success: true,
+          groupsUpdated: matchCount,
+          message: `${matchCount} aktivitetsgrupp(er) med namnet "${input.groupName}" är nu ${input.visible ? 'synlig(a)' : 'dold(a)'}`
+        }
+        
+        trackToolEnd(metric, true)
+        console.log('✅ [TOOL] toggle_group_visibility result:', result)
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
       }
-      
-      // Update page's organization_data (use activityGroups, not activities)
-      const { error: updateError } = await supabase
-        .from('wheel_pages')
-        .update({ 
-          organization_data: { ...orgData, activityGroups: updatedGroups },
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentPageId)
-      
-      if (updateError) {
-        console.error('[toggle_group_visibility] Update error:', updateError)
-        throw new Error(`Kunde inte uppdatera aktivitetsgrupp: ${updateError.message}`)
-      }
-      
-      const result = {
-        success: true,
-        groupsUpdated: matchCount,
-        message: `${matchCount} aktivitetsgrupp(er) med namnet "${input.groupName}" är nu ${input.visible ? 'synlig(a)' : 'dold(a)'}`
-      }
-      
-      console.log('✅ [TOOL] toggle_group_visibility result:', result)
-      return JSON.stringify(result)
     }
   })
 
@@ -3041,21 +3123,33 @@ function createAgentSystem() {
     description: 'Create a new year page. Can copy structure (rings, groups, labels) from current pages or start blank.',
     parameters: CreateYearPageInput,
     async execute(input: z.infer<typeof CreateYearPageInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await createYearPage(supabase, wheelId, input.year, input.copyStructure)
-      if (result.success && result.pageId) {
-        const pages = ctx.context.allPages || []
-        if (!pages.some((p: any) => p.id === result.pageId)) {
-          pages.push({
-            id: result.pageId,
-            year: result.year ?? input.year,
-            title: `${result.year ?? input.year}`,
-            page_order: pages.length,
-          })
-          ctx.context.allPages = pages
+      const metric = trackToolStart('create_year_page', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await createYearPage(supabase, wheelId, input.year, input.copyStructure)
+        
+        if (result.success && result.pageId) {
+          trackToolEnd(metric, true)
+          const pages = ctx.context.allPages || []
+          if (!pages.some((p: any) => p.id === result.pageId)) {
+            pages.push({
+              id: result.pageId,
+              year: result.year ?? input.year,
+              title: `${result.year ?? input.year}`,
+              page_order: pages.length,
+            })
+            ctx.context.allPages = pages
+          }
+        } else {
+          trackToolEnd(metric, false, result.message)
         }
+        
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
       }
-      return JSON.stringify(result)
     }
   })
 
@@ -3064,21 +3158,33 @@ function createAgentSystem() {
     description: 'Create a new year page and copy ALL activities from a source year with dates automatically adjusted to the new year.',
     parameters: SmartCopyYearInput,
     async execute(input: z.infer<typeof SmartCopyYearInput>, ctx: RunContext<WheelContext>) {
-      const { supabase, wheelId } = ctx.context
-      const result = await smartCopyYear(supabase, wheelId, input.sourceYear, input.targetYear)
-      if (result.success && result.pageId) {
-        const pages = ctx.context.allPages || []
-        if (!pages.some((p: any) => p.id === result.pageId)) {
-          pages.push({
-            id: result.pageId,
-            year: result.year ?? input.targetYear,
-            title: `${result.year ?? input.targetYear}`,
-            page_order: pages.length,
-          })
-          ctx.context.allPages = pages
+      const metric = trackToolStart('smart_copy_year', ctx.context.userId)
+      
+      try {
+        const { supabase, wheelId } = ctx.context
+        const result = await smartCopyYear(supabase, wheelId, input.sourceYear, input.targetYear)
+        
+        if (result.success && result.pageId) {
+          trackToolEnd(metric, true)
+          const pages = ctx.context.allPages || []
+          if (!pages.some((p: any) => p.id === result.pageId)) {
+            pages.push({
+              id: result.pageId,
+              year: result.year ?? input.targetYear,
+              title: `${result.year ?? input.targetYear}`,
+              page_order: pages.length,
+            })
+            ctx.context.allPages = pages
+          }
+        } else {
+          trackToolEnd(metric, false, result.message)
         }
+        
+        return JSON.stringify(result)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
       }
-      return JSON.stringify(result)
     }
   })
 
@@ -3086,11 +3192,20 @@ function createAgentSystem() {
     name: 'suggest_wheel_structure',
     description: 'AI-powered tool that suggests a complete Year Wheel structure (rings, activity groups, sample activities) based on a domain or use case. Use this when user wants ideas or a starting point.',
     parameters: SuggestStructureInput,
-    async execute(input: z.infer<typeof SuggestStructureInput>, _ctx: RunContext<WheelContext>) {
-      console.log('[TOOL] suggest_wheel_structure called with:', JSON.stringify(input, null, 2))
-      const suggestion = await suggestWheelStructure(input.domain, input.additionalContext)
-      console.log('[TOOL] suggest_wheel_structure result:', JSON.stringify(suggestion, null, 2))
-      return JSON.stringify(suggestion)
+    async execute(input: z.infer<typeof SuggestStructureInput>, ctx: RunContext<WheelContext>) {
+      const metric = trackToolStart('suggest_wheel_structure', ctx.context.userId)
+      
+      try {
+        console.log('[TOOL] suggest_wheel_structure called with:', JSON.stringify(input, null, 2))
+        const suggestion = await suggestWheelStructure(input.domain, input.additionalContext)
+        console.log('[TOOL] suggest_wheel_structure result:', JSON.stringify(suggestion, null, 2))
+        
+        trackToolEnd(metric, true)
+        return JSON.stringify(suggestion)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
+      }
     }
   })
 
@@ -3209,67 +3324,75 @@ CRUD OPERATIONS:
       })).min(1).max(50).describe('Array of activities to create (max 50)')
     }),
     async execute(input: { activities: any[] }, ctx: RunContext<WheelContext>) {
-      console.log('🔧 [TOOL] batch_create_activities called with:', input.activities.length, 'activities')
+      const metric = trackToolStart('batch_create_activities', ctx.context.userId)
       
-      const results: Array<{ index: number; name: string; itemsCreated: number }> = []
-      const errors: Array<{ index: number; name: string; error: string }> = []
-      
-      // Run sequentially to avoid organization_data race conditions
-      for (let index = 0; index < input.activities.length; index++) {
-        const activity = input.activities[index]
-        try {
-          const result = await createActivity(ctx, {
-            name: activity.name,
-            startDate: activity.startDate,
-            endDate: activity.endDate,
-            ringId: activity.ringId,
-            activityGroupId: activity.activityGroupId,
-            labelId: activity.labelId || null,
-          })
+      try {
+        console.log('🔧 [TOOL] batch_create_activities called with:', input.activities.length, 'activities')
+        
+        const results: Array<{ index: number; name: string; itemsCreated: number }> = []
+        const errors: Array<{ index: number; name: string; error: string }> = []
+        
+        // Run sequentially to avoid organization_data race conditions
+        for (let index = 0; index < input.activities.length; index++) {
+          const activity = input.activities[index]
+          try {
+            const result = await createActivity(ctx, {
+              name: activity.name,
+              startDate: activity.startDate,
+              endDate: activity.endDate,
+              ringId: activity.ringId,
+              activityGroupId: activity.activityGroupId,
+              labelId: activity.labelId || null,
+            })
 
-          if (result.success) {
-            results.push({
+            if (result.success) {
+              results.push({
+                index,
+                name: activity.name,
+                itemsCreated: result.itemsCreated || 1
+              })
+            }
+          } catch (error) {
+            console.error('[batch_create_activities] Error creating activity:', activity.name, error)
+            errors.push({
               index,
               name: activity.name,
-              itemsCreated: result.itemsCreated || 1
+              error: (error as Error).message
             })
           }
-        } catch (error) {
-          console.error('[batch_create_activities] Error creating activity:', activity.name, error)
-          errors.push({
-            index,
-            name: activity.name,
-            error: (error as Error).message
+        }
+        
+        const totalCreated = results.reduce((sum, r) => sum + r.itemsCreated, 0)
+        
+        const summary = {
+          success: true,
+          created: totalCreated,
+          requested: input.activities.length,
+          successfulActivities: results.length,
+          errors: errors.length > 0 ? errors : undefined,
+          message: `Skapade ${totalCreated} aktivitet(er) från ${input.activities.length} förfrågningar${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+        }
+        
+        if (totalCreated > 0) {
+          queueRefreshEvent(ctx, {
+            scope: 'activities',
+            reason: 'batch_activity_created',
+            payload: {
+              created: totalCreated,
+              requested: input.activities.length,
+              successfulActivities: results.length,
+              errors: errors.length,
+            },
           })
         }
+        
+        trackToolEnd(metric, true)
+        console.log('✅ [TOOL] batch_create_activities result:', summary)
+        return JSON.stringify(summary)
+      } catch (error: any) {
+        trackToolEnd(metric, false, error.message)
+        throw error
       }
-      
-      const totalCreated = results.reduce((sum, r) => sum + r.itemsCreated, 0)
-      
-      const summary = {
-        success: true,
-        created: totalCreated,
-        requested: input.activities.length,
-        successfulActivities: results.length,
-        errors: errors.length > 0 ? errors : undefined,
-        message: `Skapade ${totalCreated} aktivitet(er) från ${input.activities.length} förfrågningar${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
-      }
-
-      if (totalCreated > 0) {
-        queueRefreshEvent(ctx, {
-          scope: 'activities',
-          reason: 'batch_activity_created',
-          payload: {
-            created: totalCreated,
-            requested: input.activities.length,
-            successfulActivities: results.length,
-            errors: errors.length,
-          },
-        })
-      }
-      
-      console.log('✅ [TOOL] batch_create_activities result:', summary)
-      return JSON.stringify(summary)
     }
   })
 
@@ -3946,18 +4069,24 @@ Returnera ENDAST giltig JSON i detta format:
       suggestionsJson: z.string().describe('The complete suggestions JSON string returned from suggest_plan tool - pass it exactly as received')
     }),
     async execute(input: { suggestionsJson: string }, ctx: RunContext<WheelContext>) {
-      console.log('🚀 [apply_suggested_plan] TOOL CALLED!')
-      console.log('[apply_suggested_plan] Received JSON length:', input.suggestionsJson?.length || 0)
-
+      const metric = trackToolStart('apply_suggested_plan', ctx.context.userId)
+      
       try {
+        console.log('🚀 [apply_suggested_plan] TOOL CALLED!')
+        console.log('[apply_suggested_plan] Received JSON length:', input.suggestionsJson?.length || 0)
+
         const summary = await applySuggestions(ctx, input.suggestionsJson)
         console.log('[apply_suggested_plan] Summary metadata:', summary.metadata)
+        
+        const errorMessage = summary.success ? undefined : (summary.errors && summary.errors.length > 0 ? summary.errors[0] : 'Unknown error')
+        trackToolEnd(metric, summary.success, errorMessage)
         return JSON.stringify(summary)
-      } catch (error) {
+      } catch (error: any) {
         console.error('[apply_suggested_plan] Fatal error:', error)
+        trackToolEnd(metric, false, error.message)
         return JSON.stringify({
           success: false,
-          error: (error as Error).message,
+          error: error.message,
           message: 'Kunde inte applicera förslag'
         })
       }
