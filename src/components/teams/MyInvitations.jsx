@@ -134,6 +134,8 @@ const MyInvitations = ({ onInvitationAccepted }) => {
           <div
             key={invitation.id}
             className="border border-gray-200 rounded-sm p-4 hover:bg-gray-50 transition-colors"
+            data-cy="invitation-card"
+            data-invitation-email={invitation.email}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
@@ -157,6 +159,7 @@ const MyInvitations = ({ onInvitationAccepted }) => {
                   disabled={processingId === invitation.id}
                   className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 transition-colors disabled:bg-green-400 text-sm"
                   title={t('teams:myInvitations.acceptTooltip')}
+                  data-cy="invitation-accept-button"
                 >
                   <Check className="w-4 h-4" />
                   {t('teams:myInvitations.accept')}
@@ -166,6 +169,7 @@ const MyInvitations = ({ onInvitationAccepted }) => {
                   disabled={processingId === invitation.id}
                   className="flex items-center gap-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-sm hover:bg-gray-300 transition-colors disabled:bg-gray-100 text-sm"
                   title={t('teams:myInvitations.declineTooltip')}
+                  data-cy="invitation-decline-button"
                 >
                   <X className="w-4 h-4" />
                   {t('teams:myInvitations.decline')}

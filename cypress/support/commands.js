@@ -57,3 +57,58 @@ Cypress.Commands.add('visitWithMockAuth', (url, userOverrides = {}, options = {}
 		win.dispatchEvent(new CustomEvent(TEST_AUTH_EVENT, { detail: { user: mockUser } }));
 	});
 });
+
+// Import team intercept helpers
+import { 
+	stubSupabaseForTeamsImpl,
+	stubAuthEndpointsImpl,
+	stubUserDataImpl,
+	stubWheelDataImpl,
+	stubOrganizationDataImpl,
+	stubInvitationAcceptanceImpl,
+	blockExternalResourcesImpl
+} from './team-intercepts';
+
+// Team intercept commands
+Cypress.Commands.add('blockExternalResources', () => {
+	blockExternalResourcesImpl();
+});
+
+Cypress.Commands.add('stubAuthEndpoints', (fixtures) => {
+	stubAuthEndpointsImpl(fixtures);
+});
+
+Cypress.Commands.add('stubUserData', (fixtures) => {
+	stubUserDataImpl(fixtures);
+});
+
+Cypress.Commands.add('stubWheelData', (fixtures) => {
+	stubWheelDataImpl(fixtures);
+});
+
+Cypress.Commands.add('stubOrganizationData', () => {
+	stubOrganizationDataImpl();
+});
+
+Cypress.Commands.add('stubSupabaseForTeams', (fixtures, options = {}) => {
+	stubSupabaseForTeamsImpl(fixtures, options);
+});
+
+Cypress.Commands.add('stubInvitationAcceptance', (testInvitation) => {
+	stubInvitationAcceptanceImpl(testInvitation);
+});
+
+// Load all common fixtures
+Cypress.Commands.add('loadFixtures', () => {
+	const fixtures = {};
+	
+	return cy.fixture('auth-user.json').then(data => { fixtures.authUser = data; })
+		.then(() => cy.fixture('auth-session.json')).then(data => { fixtures.authSession = data; })
+		.then(() => cy.fixture('subscription.json')).then(data => { fixtures.subscription = data; })
+		.then(() => cy.fixture('user-wheels.json')).then(data => { fixtures.userWheels = data; })
+		.then(() => cy.fixture('team.json')).then(data => { fixtures.team = data; })
+		.then(() => cy.fixture('team-wheels.json')).then(data => { fixtures.teamWheels = data; })
+		.then(() => cy.fixture('template-wheels.json')).then(data => { fixtures.templateWheels = data; })
+		.then(() => cy.fixture('profile.json')).then(data => { fixtures.profile = data; })
+		.then(() => fixtures);
+});
