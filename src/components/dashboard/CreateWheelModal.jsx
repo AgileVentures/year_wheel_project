@@ -95,6 +95,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder={t('common:labels.title')}
               autoFocus
+              data-cy="create-wheel-title-input"
             />
           </div>
 
@@ -111,6 +112,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="2000"
               max="2100"
+              data-cy="create-wheel-year-input"
             />
           </div>
 
@@ -145,6 +147,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors"
               disabled={loading}
+              data-cy="create-wheel-cancel-button"
             >
               {t('common:actions.cancel')}
             </button>
@@ -152,6 +155,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:bg-blue-400"
               disabled={loading}
+              data-cy="create-wheel-submit-button"
             >
               {loading ? t('common:messages.processing') : t('dashboard:createWheel')}
             </button>

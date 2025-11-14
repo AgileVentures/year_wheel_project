@@ -5,6 +5,7 @@ function CreateWheelCard({ onClick, hasReachedLimit }) {
   
   return (
     <div 
+      data-cy="create-wheel-card"
       onClick={onClick}
       className={`
         bg-gradient-to-br from-blue-50 to-indigo-50 
