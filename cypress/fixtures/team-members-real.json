@@ -1,0 +1,18 @@
+[
+  {
+    "id": "11111111-2222-3333-4444-5555555555512",
+    "team_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+    "user_id": "11111111-2222-3333-4444-555555555551",
+    "role": "owner",
+    "joined_at": "2025-10-08T15:17:55.026835+00:00",
+    "email": "test.user@example.com"
+  },
+  {
+    "id": "11111111-2222-3333-4444-5555555555513",
+    "team_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+    "user_id": "11111111-2222-3333-4444-5555555555514",
+    "role": "member",
+    "joined_at": "2025-10-08T19:37:00.690904+00:00",
+    "email": "user6@example.com"
+  }
+]

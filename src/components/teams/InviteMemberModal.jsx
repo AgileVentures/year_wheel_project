@@ -124,6 +124,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent, sendIn
             <button
               onClick={onClose}
               className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 transition-colors"
+              data-cy="invite-success-close-button"
             >
               {t('teams:inviteMemberModal.close')}
             </button>
@@ -151,6 +152,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent, sendIn
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={loading}
                   autoFocus
+                  data-cy="invite-email-input"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {t('teams:inviteMemberModal.emailHint')}
@@ -170,6 +172,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent, sendIn
                   type="submit"
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex items-center justify-center gap-2"
                   disabled={loading || !email.trim()}
+                  data-cy="invite-submit-button"
                 >
                   {loading ? (
                     <>

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "11111111-2222-3333-4444-5555555555516",
+    "name": "Test Team 1",
+    "description": "Test description for planning activities",
+    "owner_id": "11111111-2222-3333-4444-555555555551",
+    "created_at": "2025-10-08T15:17:55.026835+00:00",
+    "updated_at": "2025-10-08T19:39:09.967178+00:00"
+  },
+  {
+    "id": "11111111-2222-3333-4444-5555555555519",
+    "name": "Test Team 1",
+    "description": "Test description for planning activities",
+    "owner_id": "11111111-2222-3333-4444-555555555551",
+    "created_at": "2025-10-23T17:32:45.209812+00:00",
+    "updated_at": "2025-10-23T17:32:45.209812+00:00"
+  }
+]

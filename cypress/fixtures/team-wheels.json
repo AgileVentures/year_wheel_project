@@ -1,0 +1,86 @@
+[
+  {
+    "id": "11111111-2222-3333-4444-5555555555515",
+    "user_id": "11111111-2222-3333-4444-555555555551",
+    "title": "Test Wheel 1",
+    "year": 2026,
+    "colors": [
+      "#F5E6D3",
+      "#A8DCD1",
+      "#F4A896",
+      "#B8D4E8"
+    ],
+    "show_week_ring": true,
+    "show_month_ring": true,
+    "show_ring_names": true,
+    "is_public": false,
+    "share_token": null,
+    "created_at": "2025-11-10T08:34:45.891989+00:00",
+    "updated_at": "2025-11-10T08:56:14.570024+00:00",
+    "team_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+    "show_labels": false,
+    "week_ring_display_mode": "dates",
+    "is_template": false,
+    "show_on_landing": false,
+    "teams": {
+      "id": "11111111-2222-3333-4444-5555555555516",
+      "name": "Test User"
+    }
+  },
+  {
+    "id": "11111111-2222-3333-4444-5555555555517",
+    "user_id": "11111111-2222-3333-4444-555555555551",
+    "title": "Test Wheel 1",
+    "year": 2025,
+    "colors": [
+      "#F5E6D3",
+      "#A8DCD1",
+      "#F4A896",
+      "#B8D4E8"
+    ],
+    "show_week_ring": true,
+    "show_month_ring": true,
+    "show_ring_names": true,
+    "is_public": true,
+    "share_token": null,
+    "created_at": "2025-10-14T09:12:07.3841+00:00",
+    "updated_at": "2025-11-10T09:13:32.89025+00:00",
+    "team_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+    "show_labels": false,
+    "week_ring_display_mode": "dates",
+    "is_template": false,
+    "show_on_landing": false,
+    "teams": {
+      "id": "11111111-2222-3333-4444-5555555555516",
+      "name": "Test User"
+    }
+  },
+  {
+    "id": "11111111-2222-3333-4444-5555555555518",
+    "user_id": "11111111-2222-3333-4444-555555555551",
+    "title": "Test Wheel 1",
+    "year": 2025,
+    "colors": [
+      "#3B82F6",
+      "#EF4444",
+      "#10B981",
+      "#F59E0B"
+    ],
+    "show_week_ring": true,
+    "show_month_ring": true,
+    "show_ring_names": true,
+    "is_public": true,
+    "share_token": null,
+    "created_at": "2025-10-08T12:14:11.480906+00:00",
+    "updated_at": "2025-11-04T14:51:55.131296+00:00",
+    "team_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeee01",
+    "show_labels": false,
+    "week_ring_display_mode": "dates",
+    "is_template": false,
+    "show_on_landing": false,
+    "teams": {
+      "id": "11111111-2222-3333-4444-5555555555516",
+      "name": "Test User"
+    }
+  }
+]

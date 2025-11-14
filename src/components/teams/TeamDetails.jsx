@@ -236,6 +236,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                   ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
+              data-cy="team-invite-button"
             >
               <UserPlus className="w-4 h-4" />
               {t('teams:invite')}
@@ -244,7 +245,10 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
         </div>
 
         {isAtSeatLimit && (
-          <div className="mb-4 rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <div
+            className="mb-4 rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+            data-cy="team-seat-limit-alert"
+          >
             <p>
               {t('teams:limits.maxMembersReached', { max: maxTeamMembers })}{' '}
               <a href="/pricing" className="font-semibold underline">

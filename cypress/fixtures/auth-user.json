@@ -1,0 +1,79 @@
+{
+  "id": "11111111-2222-3333-4444-555555555551",
+  "aud": "authenticated",
+  "role": "authenticated",
+  "email": "test.user@example.com",
+  "email_confirmed_at": "2025-10-08T12:14:05.944147Z",
+  "phone": "",
+  "confirmation_sent_at": "2025-10-08T12:12:09.966842Z",
+  "confirmed_at": "2025-10-08T12:14:05.944147Z",
+  "last_sign_in_at": "2025-11-14T22:08:51.595776Z",
+  "app_metadata": {
+    "provider": "email",
+    "providers": [
+      "email",
+      "google"
+    ]
+  },
+  "user_metadata": {
+    "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
+    "custom_claims": {
+      "hd": "freefoot.se"
+    },
+    "email": "test.user@example.com",
+    "email_verified": true,
+    "full_name": "Test User",
+    "iss": "https://accounts.google.com",
+    "name": "Test User",
+    "phone_verified": false,
+    "picture": "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
+    "provider_id": "100000000000000000000",
+    "sub": "100000000000000000000"
+  },
+  "identities": [
+    {
+      "identity_id": "814caff8-0ca8-4fb3-9062-6d5e8f854065",
+      "id": "11111111-2222-3333-4444-555555555551",
+      "user_id": "11111111-2222-3333-4444-555555555551",
+      "identity_data": {
+        "email": "test.user@example.com",
+        "email_verified": true,
+        "phone_verified": false,
+        "sub": "100000000000000000000"
+      },
+      "provider": "email",
+      "last_sign_in_at": "2025-10-08T12:12:09.960329Z",
+      "created_at": "2025-10-08T12:12:09.960384Z",
+      "updated_at": "2025-10-08T12:12:09.960384Z",
+      "email": "test.user@example.com"
+    },
+    {
+      "identity_id": "7d56fb02-5105-4f47-8aa6-11f513945a38",
+      "id": "11111111-2222-3333-4444-555555555552",
+      "user_id": "11111111-2222-3333-4444-555555555551",
+      "identity_data": {
+        "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
+        "custom_claims": {
+          "hd": "freefoot.se"
+        },
+        "email": "test.user@example.com",
+        "email_verified": true,
+        "full_name": "Test User",
+        "iss": "https://accounts.google.com",
+        "name": "Test User",
+        "phone_verified": false,
+        "picture": "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
+        "provider_id": "100000000000000000000",
+        "sub": "100000000000000000000"
+      },
+      "provider": "google",
+      "last_sign_in_at": "2025-10-12T16:24:59.045979Z",
+      "created_at": "2025-10-12T16:24:59.046054Z",
+      "updated_at": "2025-10-26T09:20:18.005925Z",
+      "email": "test.user@example.com"
+    }
+  ],
+  "created_at": "2025-10-08T12:12:09.948027Z",
+  "updated_at": "2025-11-14T22:08:51.653264Z",
+  "is_anonymous": false
+}

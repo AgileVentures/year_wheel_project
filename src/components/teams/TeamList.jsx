@@ -135,6 +135,8 @@ const TeamList = ({ onSelectWheel }) => {
           {teams.map((team) => (
             <div
               key={team.id}
+              data-cy="team-card"
+              data-team-name={team.name}
               onClick={() => setSelectedTeam(team.id)}
               className="bg-white border border-gray-200 rounded-sm p-6 hover:shadow-lg transition-shadow cursor-pointer"
             >

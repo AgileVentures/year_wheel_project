@@ -544,6 +544,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex items-center gap-1 sm:gap-2 overflow-x-auto">
                 <button
+                  data-cy="nav-wheels"
                   onClick={() => setCurrentView('wheels')}
                   className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-medium transition-all whitespace-nowrap ${
                     currentView === 'wheels'
@@ -562,6 +563,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 </button>
                 
                 <button
+                  data-cy="nav-teams"
                   onClick={() => setCurrentView('teams')}
                   className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-medium transition-all whitespace-nowrap ${
                     currentView === 'teams'
@@ -575,6 +577,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 </button>
                 
                 <button
+                  data-cy="nav-invitations"
                   onClick={() => setCurrentView('invitations')}
                   className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 sm:py-2.5 rounded-sm font-medium transition-all relative whitespace-nowrap ${
                     currentView === 'invitations'

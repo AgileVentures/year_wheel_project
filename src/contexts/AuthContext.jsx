@@ -5,12 +5,51 @@ import { trackAffiliateSignup } from '../utils/affiliateTracking';
 
 export const AuthContext = createContext({});
 
+const TEST_AUTH_EVENT = 'yearwheel:test-auth';
+
+function getInjectedTestUser(win) {
+  if (!win || !win.Cypress) return null;
+  return win.__YEARWHEEL_TEST_USER__ || null;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hasTrackedSignup, setHasTrackedSignup] = useState(false);
 
   useEffect(() => {
+    const win = typeof window !== 'undefined' ? window : undefined;
+    const injectedUser = getInjectedTestUser(win);
+
+    const handleTestAuth = (event) => {
+      const nextUser = event?.detail?.user || null;
+      setUser(nextUser);
+      setLoading(false);
+    };
+
+    if (injectedUser) {
+      setUser(injectedUser);
+      setLoading(false);
+    }
+
+    if (win && win.addEventListener) {
+      win.addEventListener(TEST_AUTH_EVENT, handleTestAuth);
+    }
+
+    return () => {
+      if (win && win.removeEventListener) {
+        win.removeEventListener(TEST_AUTH_EVENT, handleTestAuth);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const win = typeof window !== 'undefined' ? window : undefined;
+    if (win?.Cypress) {
+      // Skip real Supabase auth calls when Cypress has injected a user
+      return;
+    }
+
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
