@@ -8,7 +8,11 @@
     "build": "vite build",
     "postbuild": "node scripts/prerender.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:open:component": "cypress open --component",
+    "cy:run:component": "cypress run --component"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.48",
@@ -47,6 +51,7 @@
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.21",
+    "cypress": "^13.13.1",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",

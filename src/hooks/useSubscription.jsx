@@ -123,13 +123,13 @@ export function useSubscription() {
   }, []);
 
   // Check if user can add team member
-  const checkCanAddTeamMember = useCallback(async (wheelId) => {
-    return await canAddTeamMember(wheelId);
+  const checkCanAddTeamMember = useCallback(async (teamId) => {
+    return await canAddTeamMember(teamId);
   }, []);
 
   // Get team member count
-  const getTeamCount = useCallback(async (wheelId) => {
-    return await getTeamMemberCount(wheelId);
+  const getTeamCount = useCallback(async (teamId) => {
+    return await getTeamMemberCount(teamId);
   }, []);
 
   return {

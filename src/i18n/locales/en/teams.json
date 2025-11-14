@@ -86,6 +86,7 @@
     "emailInvalid": "Invalid email address",
     "emailHint": "The person will receive an invitation and can accept it from their account.",
     "errorDuplicate": "An invitation has already been sent to this email address",
+    "errorLimitReached": "This team already has the maximum number of members on the free plan.",
     "cancel": "Cancel",
     "send": "Send invitation",
     "sending": "Sending...",
@@ -113,6 +114,11 @@
     "declineTooltip": "Decline invitation",
     "confirmDecline": "Are you sure you want to decline this invitation?",
     "errorAccept": "Could not accept invitation",
-    "errorDecline": "Could not decline invitation"
+    "errorLimitReached": "The team has reached the maximum number of members on the free plan. Ask the owner to upgrade to invite more."
+  },
+  "limits": {
+    "maxMembersReached": "You have reached the free plan limit of {{max}} team members. Upgrade to add more members.",
+    "maxMembersReachedShort": "Free plan limit ({{max}} members)",
+    "upgradeCta": "Upgrade to unlock more seats"
   }
 }

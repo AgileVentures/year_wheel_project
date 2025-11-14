@@ -7,6 +7,14 @@
 
 import { supabase } from '../lib/supabase';
 
+const WHEEL_LIMIT_ERROR_CODE = 'wheel_limit_reached';
+
+const createWheelLimitError = () => {
+  const error = new Error('WHEEL_LIMIT_REACHED');
+  error.code = WHEEL_LIMIT_ERROR_CODE;
+  return error;
+};
+
 let pageScopeSupportCache = null;
 let pageScopeDetectionPromise = null;
 
@@ -386,6 +394,19 @@ export const createWheel = async (wheelData) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
+  // Server-side guard to prevent bypassing wheel limits
+  const { data: canCreate, error: canCreateError } = await supabase.rpc('can_create_wheel', {
+    user_uuid: user.id,
+  });
+
+  if (canCreateError) {
+    throw canCreateError;
+  }
+
+  if (!canCreate) {
+    throw createWheelLimitError();
+  }
+
   const defaultColors = Array.isArray(wheelData.colors) && wheelData.colors.length > 0
     ? wheelData.colors
     : ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8'];
@@ -414,7 +435,13 @@ export const createWheel = async (wheelData) => {
     .select()
     .single();
 
-  if (wheelError) throw wheelError;
+  if (wheelError) {
+    const isRlsError = wheelError.code === '42501' || /row-level security/i.test(wheelError.message || '');
+    if (isRlsError) {
+      throw createWheelLimitError();
+    }
+    throw wheelError;
+  }
 
   // Ensure the wheel has a persisted default page + structure so items can be saved immediately
   const baseWheelStructure = wheelData.wheelStructure

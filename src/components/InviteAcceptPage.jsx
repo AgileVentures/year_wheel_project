@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { checkEmailExists } from '../services/teamService';
+import { checkEmailExists, TEAM_LIMIT_ERROR_CODE } from '../services/teamService';
 import { Users, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 export default function InviteAcceptPage() {
@@ -14,6 +14,7 @@ export default function InviteAcceptPage() {
   const [invitation, setInvitation] = useState(null);
   const [success, setSuccess] = useState(false);
   const hasProcessed = useRef(false);
+  const limitReachedMessage = 'Det här teamet har nått maxantalet medlemmar på gratisplanen. Be ägaren uppgradera för att bjuda in fler.';
 
   const checkAndRedirect = async () => {
     try {
@@ -148,6 +149,7 @@ export default function InviteAcceptPage() {
 
       setInvitation(invitationWithTeam);
 
+      // Ensure the team still has capacity before inserting the member
       // Add user to team (should not fail since we checked above)
       const { error: memberError } = await supabase
         .from('team_members')
@@ -183,7 +185,11 @@ export default function InviteAcceptPage() {
 
     } catch (err) {
       console.error('Error accepting invitation:', err);
-      setError('Ett fel uppstod när inbjudan skulle accepteras');
+      if (err?.code === TEAM_LIMIT_ERROR_CODE || err?.message === TEAM_LIMIT_ERROR_CODE) {
+        setError(limitReachedMessage);
+      } else {
+        setError('Ett fel uppstod när inbjudan skulle accepteras');
+      }
       setLoading(false);
     }
   };

@@ -1,5 +1,23 @@
 import { supabase } from '../lib/supabase';
 
+export const TEAM_LIMIT_ERROR_CODE = 'TEAM_MEMBER_LIMIT_REACHED';
+
+const createTeamLimitError = () => {
+  const error = new Error(TEAM_LIMIT_ERROR_CODE);
+  error.code = TEAM_LIMIT_ERROR_CODE;
+  return error;
+};
+
+async function ensureTeamHasCapacity(teamId, actingUserId) {
+  const { data, error } = await supabase.rpc('can_add_team_member', {
+    team_uuid: teamId,
+    user_uuid: actingUserId,
+  });
+
+  if (error) throw error;
+  if (!data) throw createTeamLimitError();
+}
+
 /**
  * Team Management Service
  * Handles all team-related database operations
@@ -181,6 +199,8 @@ export async function sendTeamInvitation(teamId, email) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  await ensureTeamHasCapacity(teamId, user.id);
+
   const { data, error } = await supabase
     .from('team_invitations')
     .insert([
@@ -263,6 +283,25 @@ export async function acceptInvitation(invitationId) {
 
   if (invError) throw invError;
   if (!invitation) throw new Error('Invitation not found');
+
+  const { data: existingMember, error: existingMemberError } = await supabase
+    .from('team_members')
+    .select('id')
+    .eq('team_id', invitation.team_id)
+    .eq('user_id', user.id)
+    .limit(1);
+
+  if (existingMemberError) throw existingMemberError;
+
+  if (existingMember && existingMember.length > 0) {
+    await supabase
+      .from('team_invitations')
+      .update({ status: 'accepted' })
+      .eq('id', invitationId);
+    return invitation.team_id;
+  }
+
+  await ensureTeamHasCapacity(invitation.team_id, invitation.invited_by);
 
   // Add user to team
   const { error: memberError } = await supabase

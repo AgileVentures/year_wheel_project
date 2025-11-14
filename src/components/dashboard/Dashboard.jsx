@@ -428,6 +428,17 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       window.dispatchEvent(event);
     } catch (err) {
       console.error('Error creating wheel:', err);
+
+      const isWheelLimitError = err?.code === 'wheel_limit_reached' || err?.message === 'WHEEL_LIMIT_REACHED';
+      if (isWheelLimitError) {
+        setShowUpgradePrompt(true);
+        showToast(
+          t('subscription:limitReached.message', { current: wheelCount, max: maxWheels }),
+          'warning'
+        );
+        return;
+      }
+
       const event = new CustomEvent('showToast', { 
         detail: { message: t('dashboard:messages.createError'), type: 'error' } 
       });

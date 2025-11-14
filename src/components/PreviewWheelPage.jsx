@@ -386,6 +386,17 @@ function PreviewWheelPage() {
       navigate(`/dashboard/wheel/${newWheelId}`);
     } catch (error) {
       console.error('[PreviewWheelPage] Error copying template:', error);
+
+      const isWheelLimitError = error?.code === 'wheel_limit_reached' || error?.message === 'WHEEL_LIMIT_REACHED';
+      if (isWheelLimitError) {
+        const limitEvent = new CustomEvent('showToast', {
+          detail: { message: t('subscription:limitReached.upgradePrompt'), type: 'warning' }
+        });
+        window.dispatchEvent(limitEvent);
+        navigate('/pricing');
+        return;
+      }
+
       const event = new CustomEvent('showToast', {
         detail: { message: t('common:previewWheelPage.copyFailed'), type: 'error' }
       });

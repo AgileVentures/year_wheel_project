@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { X, Mail, Copy, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { sendTeamInvitation } from '../../services/teamService';
+import { sendTeamInvitation, TEAM_LIMIT_ERROR_CODE } from '../../services/teamService';
 
-const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
+const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent, sendInvitation = sendTeamInvitation }) => {
   const { t } = useTranslation(['teams']);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
     try {
       setLoading(true);
       setError(null);
-      const invitation = await sendTeamInvitation(teamId, email.trim());
+      const invitation = await sendInvitation(teamId, email.trim());
       
       // Generate invite link
       const link = `${window.location.origin}/invite/${invitation.token}`;
@@ -43,7 +43,9 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent }) => {
       if (onInvitationSent) onInvitationSent();
     } catch (err) {
       console.error('Error sending invitation:', err);
-      if (err.message.includes('duplicate')) {
+      if (err?.code === TEAM_LIMIT_ERROR_CODE || err?.message === TEAM_LIMIT_ERROR_CODE) {
+        setError(t('teams:inviteMemberModal.errorLimitReached'));
+      } else if (err.message?.includes('duplicate')) {
         setError(t('teams:inviteMemberModal.errorDuplicate'));
       } else {
         setError(err.message);

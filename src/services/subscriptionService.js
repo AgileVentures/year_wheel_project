@@ -109,12 +109,12 @@ export async function canCreateWheel() {
 }
 
 /**
- * Get team member count for a wheel
+ * Get member count for a team
  */
-export async function getTeamMemberCount(wheelId) {
+export async function getTeamMemberCount(teamId) {
   try {
     const { data, error } = await supabase.rpc('get_team_member_count', {
-      wheel_uuid: wheelId
+      team_uuid: teamId
     });
 
     if (error) throw error;
@@ -126,15 +126,15 @@ export async function getTeamMemberCount(wheelId) {
 }
 
 /**
- * Check if user can add team member to a wheel
+ * Check if user can add a member to the given team
  */
-export async function canAddTeamMember(wheelId) {
+export async function canAddTeamMember(teamId) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
     const { data, error } = await supabase.rpc('can_add_team_member', {
-      wheel_uuid: wheelId,
+      team_uuid: teamId,
       user_uuid: user.id
     });
 

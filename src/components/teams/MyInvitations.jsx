@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, Check, X, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getMyInvitations, acceptInvitation, declineInvitation } from '../../services/teamService';
+import { getMyInvitations, acceptInvitation, declineInvitation, TEAM_LIMIT_ERROR_CODE } from '../../services/teamService';
 import { showConfirmDialog, showToast } from '../../utils/dialogs';
 
 const MyInvitations = ({ onInvitationAccepted }) => {
@@ -39,7 +39,10 @@ const MyInvitations = ({ onInvitationAccepted }) => {
       }
     } catch (err) {
       console.error('Error accepting invitation:', err);
-      showToast(t('teams:myInvitations.errorAccept') + ': ' + err.message, 'error');
+      const message = (err?.code === TEAM_LIMIT_ERROR_CODE || err?.message === TEAM_LIMIT_ERROR_CODE)
+        ? t('teams:myInvitations.errorLimitReached')
+        : err.message;
+      showToast(t('teams:myInvitations.errorAccept') + ': ' + message, 'error');
     } finally {
       setProcessingId(null);
     }

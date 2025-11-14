@@ -13,6 +13,7 @@ import {
   cancelInvitation
 } from '../../services/teamService';
 import { useAuth } from '../../hooks/useAuth';
+import { useSubscription } from '../../hooks/useSubscription';
 import InviteMemberModal from './InviteMemberModal';
 import WheelCard from '../dashboard/WheelCard';
 import { showConfirmDialog, showToast } from '../../utils/dialogs';
@@ -20,6 +21,7 @@ import { showConfirmDialog, showToast } from '../../utils/dialogs';
 const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWheel }) => {
   const { t, i18n } = useTranslation(['teams']);
   const { user } = useAuth();
+  const { isPremium, limits } = useSubscription();
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
@@ -36,6 +38,9 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
   const currentUserRole = team?.team_members?.find(m => m.user_id === user?.id)?.role;
   const canManageTeam = currentUserRole === 'owner' || currentUserRole === 'admin';
   const isOwner = currentUserRole === 'owner';
+  const maxTeamMembers = limits?.maxTeamMembers ?? Infinity;
+  const hasSeatLimit = !isPremium && Number.isFinite(maxTeamMembers);
+  const isAtSeatLimit = hasSeatLimit && members.length >= maxTeamMembers;
 
   useEffect(() => {
     loadTeamDetails();
@@ -224,13 +229,30 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
           {canManageTeam && (
             <button
               onClick={() => setShowInviteModal(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm"
+              disabled={isAtSeatLimit}
+              title={isAtSeatLimit ? t('teams:limits.maxMembersReachedShort', { max: maxTeamMembers }) : undefined}
+              className={`flex items-center gap-2 px-3 py-2 rounded-sm text-sm transition-colors ${
+                isAtSeatLimit
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
             >
               <UserPlus className="w-4 h-4" />
               {t('teams:invite')}
             </button>
           )}
         </div>
+
+        {isAtSeatLimit && (
+          <div className="mb-4 rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <p>
+              {t('teams:limits.maxMembersReached', { max: maxTeamMembers })}{' '}
+              <a href="/pricing" className="font-semibold underline">
+                {t('teams:limits.upgradeCta')}
+              </a>
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           {members.map((member) => (

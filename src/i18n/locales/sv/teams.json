@@ -86,6 +86,7 @@
     "emailInvalid": "Ogiltig e-postadress",
     "emailHint": "Personen kommer att få en inbjudan och kan acceptera den från sitt konto.",
     "errorDuplicate": "En inbjudan har redan skickats till denna e-postadress",
+    "errorLimitReached": "Teamet har redan nått maxantalet medlemmar på gratis-planen.",
     "cancel": "Avbryt",
     "send": "Skicka inbjudan",
     "sending": "Skickar...",
@@ -113,6 +114,12 @@
     "declineTooltip": "Avvisa inbjudan",
     "confirmDecline": "Är du säker på att du vill avvisa denna inbjudan?",
     "errorAccept": "Kunde inte acceptera inbjudan",
+    "errorLimitReached": "Teamet har nått maxantalet medlemmar på gratis-planen. Be ägaren uppgradera för att bjuda in fler.",
     "errorDecline": "Kunde inte avvisa inbjudan"
+  },
+  "limits": {
+    "maxMembersReached": "Du har nått gratis-planens gräns på {{max}} teammedlemmar. Uppgradera för att lägga till fler medlemmar.",
+    "maxMembersReachedShort": "Gratis-plan: max {{max}} medlemmar",
+    "upgradeCta": "Uppgradera för fler platser"
   }
 }
