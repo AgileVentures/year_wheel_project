@@ -444,10 +444,10 @@ export default function AdminAffiliates() {
                                   : 'bg-red-100 text-red-800'
                               }`}>
                                 {org.affiliate_status === 'approved' 
-                                  ? `✓ ${t('affiliate:admin.status.approved')}` 
+                                  ? t('affiliate:admin.status.approved')
                                   : org.affiliate_status === 'pending' 
-                                  ? `⏳ ${t('affiliate:admin.status.pending')}` 
-                                  : `✗ ${t('affiliate:admin.status.rejected')}`}
+                                  ? t('affiliate:admin.status.pending')
+                                  : t('affiliate:admin.status.rejected')}
                               </span>
                             </td>
                             <td className="px-4 py-4">
@@ -591,7 +591,7 @@ export default function AdminAffiliates() {
                                       {org.terms_accepted && (
                                         <div>
                                           <dt className="text-gray-500">{t('affiliate:admin.details.termsAccepted')}</dt>
-                                          <dd className="font-medium text-green-600">✓ {formatDate(org.terms_accepted_at)}</dd>
+                                          <dd className="font-medium text-green-600">{formatDate(org.terms_accepted_at)}</dd>
                                         </div>
                                       )}
                                     </dl>
@@ -702,10 +702,10 @@ export default function AdminAffiliates() {
                                 : 'bg-red-100 text-red-800'
                             }`}>
                               {org.affiliate_status === 'approved' 
-                                ? `✓ ${t('affiliate:admin.status.approved')}` 
+                                ? t('affiliate:admin.status.approved')
                                 : org.affiliate_status === 'pending' 
-                                ? `⏳ ${t('affiliate:admin.status.pending')}` 
-                                : `✗ ${t('affiliate:admin.status.rejected')}`}
+                                ? t('affiliate:admin.status.pending')
+                                : t('affiliate:admin.status.rejected')}
                             </span>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               org.affiliate_active

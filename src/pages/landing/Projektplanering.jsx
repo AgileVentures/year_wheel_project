@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import LandingPageTemplate from './LandingPageTemplate';
 import PersonaQuiz from '../../components/PersonaQuiz';
 import { projectQuiz } from '../../data/quizData';
-import { Target, ClipboardList, Users, BarChart3, Calendar, Workflow, FileSpreadsheet, Share2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Target, ClipboardList, Users, BarChart3, Calendar, Workflow, FileSpreadsheet, Share2, CheckCircle2, Sparkles, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -88,15 +88,15 @@ export default function Projektplanering() {
             </h2>
             <div className="space-y-3 text-left max-w-2xl mx-auto mb-6">
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Asana och Monday är för komplicerat för våra behov"</p>
               </div>
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Excel-ark blir rörigt när flera projekt pågår"</p>
               </div>
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Kunden vill ha enkel översikt, inte Gantt-diagram"</p>
               </div>
             </div>
@@ -108,15 +108,15 @@ export default function Projektplanering() {
             </h3>
             <div className="space-y-2 text-left max-w-2xl mx-auto mb-6">
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Se alla projekt och milstolpar i en enda vy?</p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Uppdatera projektplan på 2 minuter istället för 20?</p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Få kunder att säga "WOW" när de ser projektplanen?</p>
               </div>
             </div>

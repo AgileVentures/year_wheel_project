@@ -175,7 +175,7 @@ export default function LandingPageTemplate({
                   {painPoints.map((point, idx) => (
                     <div key={idx} className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold mt-0.5">
-                        ✗
+                        X
                       </div>
                       <p className="text-gray-700">{point}</p>
                     </div>

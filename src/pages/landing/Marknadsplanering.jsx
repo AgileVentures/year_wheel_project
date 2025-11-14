@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import LandingPageTemplate from './LandingPageTemplate';
 import PersonaQuiz from '../../components/PersonaQuiz';
 import { marketingQuiz } from '../../data/quizData';
-import { Megaphone, Calendar, Image, TrendingUp, Users, Sparkles, FileSpreadsheet, Copy, MessageSquare, History } from 'lucide-react';
+import { Megaphone, Calendar, Image, TrendingUp, Users, Sparkles, FileSpreadsheet, Copy, MessageSquare, History, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -95,15 +95,15 @@ export default function Marknadsplanering() {
             </h2>
             <div className="space-y-3 text-left max-w-2xl mx-auto mb-6">
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Innehållskalendern i Excel blir snabbt kaotisk"</p>
               </div>
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Det tar timmar att producera rapporter till ledningen"</p>
               </div>
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Teamet tappar överblicken över kampanjer"</p>
               </div>
             </div>
@@ -116,15 +116,15 @@ export default function Marknadsplanering() {
             </h3>
             <div className="space-y-2 text-left max-w-2xl mx-auto mb-6">
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Få överblick över hela årets kampanjer på 5 sekunder?</p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Samordna innehåll mellan alla kanaler utan krångel?</p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Imponera på stakeholders med professionella presentationer?</p>
               </div>
             </div>

@@ -84,7 +84,7 @@ export function useRealtimeCast() {
           console.log('[useRealtimeCast] Channel status:', status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('[useRealtimeCast] ✅ Connected! Waiting for receiver...');
+            console.log('[useRealtimeCast] Connected! Waiting for receiver...');
             setIsConnected(true);
             setSessionToken(token);
             setError(null);
@@ -118,11 +118,11 @@ export function useRealtimeCast() {
               }, 3000); // 3 second fallback delay
             }
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('[useRealtimeCast] ❌ Channel error');
+            console.error('[useRealtimeCast] Channel error');
             setError('Failed to connect to casting channel');
             setIsConnected(false);
           } else if (status === 'TIMED_OUT') {
-            console.error('[useRealtimeCast] ❌ Timeout');
+            console.error('[useRealtimeCast] Timeout');
             setError('Connection timed out');
             setIsConnected(false);
           } else if (status === 'CLOSED') {
@@ -273,7 +273,7 @@ export function useRealtimeCastReceiver(sessionToken) {
         console.log('[useRealtimeCastReceiver] Status:', status);
         
         if (status === 'SUBSCRIBED') {
-          console.log('[useRealtimeCastReceiver] ✅ Listening for messages');
+          console.log('[useRealtimeCastReceiver] Listening for messages');
           setIsConnected(true);
           setError(null);
           
@@ -292,7 +292,7 @@ export function useRealtimeCastReceiver(sessionToken) {
             });
           }, 100); // Small delay to ensure channel is fully ready
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error('[useRealtimeCastReceiver] ❌ Connection failed');
+          console.error('[useRealtimeCastReceiver] Connection failed');
           setError('Connection failed');
           setIsConnected(false);
         } else if (status === 'CLOSED') {

@@ -124,7 +124,7 @@ export default function AddPageModal({
                   </p>
                   {isLocked && (
                     <p className="text-xs text-purple-600 font-medium mt-2">
-                      🔒 Uppgradera till Premium för att använda denna funktion
+                      Uppgradera till Premium för att använda denna funktion
                     </p>
                   )}
                 </div>

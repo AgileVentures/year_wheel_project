@@ -1,4 +1,4 @@
-import { AlertTriangle, Crown } from 'lucide-react';
+import { AlertTriangle, Crown, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function UpgradePrompt({ 
@@ -58,31 +58,31 @@ export default function UpgradePrompt({
           </div>
           <ul className="space-y-2 text-sm text-gray-700">
             <li className="flex items-start">
-              <span className="text-blue-600 mr-2">✓</span>
+              <Check className="text-blue-600 w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
               <span>{t('subscription:upgradePrompt.benefit1')}</span>
             </li>
             <li className="flex items-start">
-              <span className="text-blue-600 mr-2">✓</span>
+              <Check className="text-blue-600 w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
               <span>{t('subscription:upgradePrompt.benefit2')}</span>
             </li>
             <li className="flex items-start">
-              <span className="text-blue-600 mr-2">✓</span>
+              <Check className="text-blue-600 w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
               <span>{t('subscription:upgradePrompt.benefit3')}</span>
             </li>
             <li className="flex items-start">
-              <span className="text-blue-600 mr-2">✓</span>
+              <Check className="text-blue-600 w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
               <span>{t('subscription:upgradePrompt.benefit4')}</span>
             </li>
             <li className="flex items-start">
-              <span className="text-blue-600 mr-2">✓</span>
+              <Check className="text-blue-600 w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
               <span>{t('subscription:upgradePrompt.benefit5')}</span>
             </li>
             <li className="flex items-start">
-              <span className="text-blue-600 mr-2">✓</span>
+              <Check className="text-blue-600 w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
               <span>{t('subscription:upgradePrompt.benefit6')}</span>
             </li>
             <li className="flex items-start">
-              <span className="text-blue-600 mr-2">✓</span>
+              <Check className="text-blue-600 w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
               <span>{t('subscription:upgradePrompt.benefit7')}</span>
             </li>
           </ul>

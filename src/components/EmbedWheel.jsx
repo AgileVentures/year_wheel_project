@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 import YearWheel from '../YearWheel';
 import { supabase } from '../lib/supabase';
 import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
@@ -81,7 +82,7 @@ export default function EmbedWheel() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-5xl mb-4">⚠️</div>
+          <AlertTriangle className="text-red-600 w-12 h-12 mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Ett fel uppstod</h2>
           <p className="text-gray-600">{error}</p>
         </div>

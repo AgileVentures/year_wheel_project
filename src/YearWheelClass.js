@@ -1985,7 +1985,7 @@ class YearWheel {
           if (truncationPercent > 15) {
             // Debug logging silenced for production
             // if (debugThisText) {
-            //   console.log(`  ❌ REJECTED: ${!fitsHorizontally ? 'Horizontal' : 'Vertical'} overflow ${truncationPercent.toFixed(1)}%`);
+            //   console.log(`  REJECTED: ${!fitsHorizontally ? 'Horizontal' : 'Vertical'} overflow ${truncationPercent.toFixed(1)}%`);
             //   console.log(`     Max line width: ${maxLineWidth.toFixed(1)}px, Available: ${(availableArcLength * 0.98).toFixed(1)}px`);
             //   console.log(`     Total height: ${totalRadialHeight.toFixed(1)}px, Max: ${maxRadialHeight.toFixed(1)}px`);
             // }
@@ -2312,12 +2312,12 @@ class YearWheel {
     // 4. Vertical (any) → ~60 points (heavily penalized)
     //
     // Example scores:
-    // - Horizontal multi-line + 18px font: 35 + 25 + 65 + 60 = 185 ✅ BEST
-    // - Horizontal single-line + 20px font: 35 + 25 + 50 + 40 = 150 ✅ EXCELLENT
-    // - Horizontal single-line + 14px font: 28 + 25 + 50 + 30 = 133 ✅ GOOD
-    // - Horizontal truncated + 16px font: 35 + 10 + 20 + 20 = 85 ✅ ACCEPTABLE
-    // - Vertical multi-line + 20px font: 35 + 25 + 65 - 20 = 105 ❌ AVOID
-    // - Vertical single-line + 20px font: 35 + 25 + 50 - 35 = 75 ❌ AVOID
+    // - Horizontal multi-line + 18px font: 35 + 25 + 65 + 60 = 185 BEST
+    // - Horizontal single-line + 20px font: 35 + 25 + 50 + 40 = 150 EXCELLENT
+    // - Horizontal single-line + 14px font: 28 + 25 + 50 + 30 = 133 GOOD
+    // - Horizontal truncated + 16px font: 35 + 10 + 20 + 20 = 85 ACCEPTABLE
+    // - Vertical multi-line + 20px font: 35 + 25 + 65 - 20 = 105 AVOID
+    // - Vertical single-line + 20px font: 35 + 25 + 50 - 35 = 75 AVOID
 
     // CRITICAL OVERFLOW PENALTY
     // User requirement: "text is out of bounds. That can never happen"
@@ -2676,7 +2676,7 @@ class YearWheel {
 
         // Debug logging silenced for production
         // if (text.includes('Kampanj') || text.includes('planering') || text.includes('Q1')) {
-        //   console.log(`\n⚠️ OVERFLOW REJECTION: "${originalWinner.description}" rejected (${originalWinner.truncationPercent.toFixed(1)}% overflow)`);
+        //   console.log(`\nOVERFLOW REJECTION: "${originalWinner.description}" rejected (${originalWinner.truncationPercent.toFixed(1)}% overflow)`);
         //   console.log(`   Switching to: "${bestSolution.description}" (${bestSolution.truncationPercent.toFixed(1)}% overflow)`);
         // }
       }
@@ -4486,7 +4486,7 @@ class YearWheel {
         const totalSpaceNeeded = visibleRings.length * outerRingTotalHeight;
         const availableSpace = currentMaxRadius;
         if (totalSpaceNeeded > availableSpace) {
-          console.warn(`⚠️ Too many outer rings! Need ${totalSpaceNeeded.toFixed(0)}px but only ${availableSpace.toFixed(0)}px available. Some rings will be skipped.`);
+          console.warn(`Too many outer rings! Need ${totalSpaceNeeded.toFixed(0)}px but only ${availableSpace.toFixed(0)}px available. Some rings will be skipped.`);
         }
 
         let currentRadius = currentMaxRadius;
@@ -4861,7 +4861,7 @@ class YearWheel {
       minInnerSpace;
     
     if (totalSpaceNeeded > this.maxRadius) {
-      console.error(`❌ CRITICAL: Not enough space for all rings!`);
+      console.error(`CRITICAL: Not enough space for all rings!`);
       console.error(`   Need: ${totalSpaceNeeded.toFixed(0)}px`);
       console.error(`   Available: ${this.maxRadius.toFixed(0)}px`);
       console.error(`   Outer rings: ${visibleRings.length} × ${outerRingHeight.toFixed(0)}px = ${(visibleRings.length * outerRingHeight).toFixed(0)}px`);

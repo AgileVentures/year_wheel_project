@@ -506,7 +506,7 @@ export const aiCreateItem = async (wheelId, pageId, { name, startDate, endDate, 
       throw insertError;
     }
     
-    console.log('✅ [AI] Item created in database:', {
+    console.log('[AI] Item created in database:', {
       id: newItem.id,
       name,
       pageId,
@@ -790,7 +790,7 @@ export const aiDeleteItems = async (wheelId, pageId, { itemName, itemIds }) => {
     
     await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
-    console.log('🗑️ [AI] Items deleted:', itemsToDelete.map(i => i.name));
+    console.log('[AI] Items deleted:', itemsToDelete.map(i => i.name));
     
     return {
       success: true,
@@ -855,7 +855,7 @@ export const aiDeleteItemsByRing = async (wheelId, pageId, { ringName, ringId })
     
     await saveAndUpdateIds(wheelId, pageId, updatedOrgData);
     
-    console.log('🗑️ [AI] Deleted all items from ring:', ring.name, 'Count:', itemsToDelete.length);
+    console.log('[AI] Deleted all items from ring:', ring.name, 'Count:', itemsToDelete.length);
     
     return {
       success: true,
@@ -1014,7 +1014,7 @@ export const aiSearchWheel = async (wheelId, { query, type }) => {
       results.activityGroups.length + 
       results.labels.length;
     
-    console.log('🔍 [AI] Search results for "' + query + '":', {
+    console.log('[AI] Search results for "' + query + '":', {
       items: results.items.length,
       rings: results.rings.length,
       activityGroups: results.activityGroups.length,
@@ -1147,7 +1147,7 @@ export const aiAnalyzeWheel = async (wheelId) => {
         formattedMessage += `- ${insight}\n`;
       });
     } else {
-      formattedMessage += `**Status:** Ditt hjul är väl strukturerat och innehåller aktiviteter! 👍\n`;
+      formattedMessage += `**Status:** Ditt hjul är väl strukturerat och innehåller aktiviteter!\n`;
     }
     
     return {

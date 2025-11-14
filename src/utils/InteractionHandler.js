@@ -828,7 +828,7 @@ class InteractionHandler {
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
-        console.log('[InteractionHandler] ✅ Calling onExtendActivityToPreviousYear');
+        console.log('[InteractionHandler] Calling onExtendActivityToPreviousYear');
         try {
           await this.options.onExtendActivityToPreviousYear({
             item: originalItem,

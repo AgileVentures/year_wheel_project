@@ -147,7 +147,7 @@ export default function CastReceiverPage() {
 
     // Set up message handler
     realtimeReceiver.onMessage((message) => {
-      console.log('[Receiver] 🔍 RAW MESSAGE:', JSON.stringify(message, null, 2));
+      console.log('[Receiver] RAW MESSAGE:', JSON.stringify(message, null, 2));
       setDebugInfo(prev => ({
         ...prev,
         messagesReceived: prev.messagesReceived + 1,
@@ -166,7 +166,7 @@ export default function CastReceiverPage() {
 
     switch (message.type) {
       case CAST_MESSAGE_TYPES.INIT:
-        console.log('[Receiver] 🎉 INIT received! Setting wheel data...');
+        console.log('[Receiver] INIT received! Setting wheel data...');
         setWheelData(message.data);
         setRotation(message.data.rotation || 0);
         setZoomedMonth(message.data.zoomedMonth || null);
@@ -411,11 +411,11 @@ export default function CastReceiverPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (enteredCode.length === 6) {
-                console.log('[CastReceiverPage] ✅ Code submitted:', enteredCode.toUpperCase());
+                console.log('[CastReceiverPage] Code submitted:', enteredCode.toUpperCase());
                 setIsCodeSubmitted(true);
                 setSearchParams({ code: enteredCode.toUpperCase() });
               } else {
-                console.log('[CastReceiverPage] ❌ Invalid code length:', enteredCode.length);
+                console.log('[CastReceiverPage] Invalid code length:', enteredCode.length);
               }
             }}
             className="space-y-6"

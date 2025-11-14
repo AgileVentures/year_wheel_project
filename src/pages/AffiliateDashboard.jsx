@@ -708,7 +708,7 @@ export default function AffiliateDashboard() {
                     disabled={generatingCode}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm hover:bg-gray-200 font-medium text-sm disabled:opacity-50"
                   >
-                    {generatingCode ? '...' : '🔄'}
+                    {generatingCode ? '...' : 'Refresh'}
                   </button>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">

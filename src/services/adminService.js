@@ -9,11 +9,12 @@ import { supabase } from '../lib/supabase';
  */
 export const getAdminStats = async () => {
   try {
+    // Use UTC for consistent timezone handling
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const sevenDaysAgo = new Date(todayStart);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
     // Get total users
     const { count: totalUsers } = await supabase
@@ -437,21 +438,34 @@ export const deleteUser = async (userId) => {
 
 /**
  * Get subscription statistics
+ * Uses Edge Function to bypass RLS (consistent with premium count)
  */
 export const getSubscriptionStats = async () => {
   try {
-    const { data: subscriptions } = await supabase
-      .from('subscriptions')
-      .select('plan_type, status')
-      .in('status', ['active', 'trialing']);
+    // Use Edge Function to bypass RLS (same as premium count)
+    const { data: response, error } = await supabase.functions.invoke('admin-get-user-data', {
+      body: { userIds: [] } // Empty array to get all subscriptions
+    });
+
+    if (error) {
+      console.error('Error fetching subscription stats:', error);
+      return { monthly: 0, yearly: 0, total: 0 };
+    }
+
+    const subscriptions = response?.subscriptions || [];
+    
+    // Filter active/trialing subscriptions
+    const activeSubscriptions = subscriptions.filter(
+      sub => sub.status === 'active' || sub.status === 'trialing'
+    );
 
     const stats = {
       monthly: 0,
       yearly: 0,
-      total: subscriptions?.length || 0,
+      total: activeSubscriptions.length,
     };
 
-    subscriptions?.forEach(sub => {
+    activeSubscriptions.forEach(sub => {
       if (sub.plan_type === 'monthly') stats.monthly++;
       if (sub.plan_type === 'yearly') stats.yearly++;
     });
@@ -459,7 +473,7 @@ export const getSubscriptionStats = async () => {
     return stats;
   } catch (error) {
     console.error('Error fetching subscription stats:', error);
-    throw error;
+    return { monthly: 0, yearly: 0, total: 0 };
   }
 };
 
@@ -468,10 +482,11 @@ export const getSubscriptionStats = async () => {
  */
 export const getQuizLeadsStats = async () => {
   try {
+    // Use UTC for consistent timezone handling
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
 
     // Total quiz submissions
     const { count: totalLeads } = await supabase
@@ -496,11 +511,11 @@ export const getQuizLeadsStats = async () => {
       .select('*', { count: 'exact', head: true })
       .gt('pain_score', 15);
 
-    // Converted leads
+    // Converted leads (use converted_to_user_id as source of truth)
     const { count: convertedLeads } = await supabase
       .from('quiz_leads')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'converted');
+      .not('converted_to_user_id', 'is', null);
 
     // Leads by persona
     const { data: personaBreakdown } = await supabase
@@ -545,25 +560,28 @@ export const getQuizLeadsStats = async () => {
  */
 export const getNewsletterStats = async () => {
   try {
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+    // Use UTC for consistent timezone handling
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-    // Total newsletters sent
+    // Total newsletters sent (exclude drafts)
     const { count: totalSends } = await supabase
       .from('newsletter_sends')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('is_draft', false);
 
-    // This month
+    // This month (exclude drafts)
     const { count: sendsThisMonth } = await supabase
       .from('newsletter_sends')
       .select('*', { count: 'exact', head: true })
+      .eq('is_draft', false)
       .gte('sent_at', monthStart.toISOString());
 
-    // Total recipients (sum of all recipient_count)
+    // Total recipients (sum of all recipient_count, exclude drafts)
     const { data: allSends } = await supabase
       .from('newsletter_sends')
-      .select('recipient_count, success_count');
+      .select('recipient_count, success_count')
+      .eq('is_draft', false);
 
     const totalRecipients = allSends?.reduce((sum, send) => sum + (send.recipient_count || 0), 0) || 0;
     const totalSuccess = allSends?.reduce((sum, send) => sum + (send.success_count || 0), 0) || 0;

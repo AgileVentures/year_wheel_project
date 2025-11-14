@@ -94,7 +94,7 @@ function QuickStartGuide() {
       content: (
         <>
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-            <p className="text-purple-900 font-medium mb-2">💡 Vad är ringar?</p>
+            <p className="text-purple-900 font-medium mb-2">Vad är ringar?</p>
             <p className="text-purple-800"><strong>Ringar</strong> är huvudkategorierna i ditt hjul - som avdelningar, projekt eller fokusområden. De visas som cirkulära band runt årshjulet där du placerar aktiviteter.</p>
           </div>
 
@@ -122,7 +122,7 @@ function QuickStartGuide() {
           </ol>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
-            <p className="text-amber-900 font-medium mb-2">📚 Exempel på ringar:</p>
+            <p className="text-amber-900 font-medium mb-2">Exempel på ringar:</p>
             <ul className="text-amber-800 space-y-2">
               <li><strong>För affärsplanering:</strong> Marknadsföring, Försäljning, Produkt, Drift</li>
               <li><strong>För personlig planering:</strong> Privat, Familj, Arbete, Hälsa</li>
@@ -141,7 +141,7 @@ function QuickStartGuide() {
       content: (
         <>
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-            <p className="text-purple-900 font-medium mb-2">🎨 Vad är aktivitetsgrupper?</p>
+            <p className="text-purple-900 font-medium mb-2">Vad är aktivitetsgrupper?</p>
             <p className="text-purple-800"><strong>Aktivitetsgrupper</strong> bestämmer färgen på dina aktiviteter. Tänk på dem som färgkodningskategorier - alla aktiviteter i samma grupp får samma färg på ditt hjul.</p>
           </div>
 
@@ -169,7 +169,7 @@ function QuickStartGuide() {
           </ol>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
-            <p className="text-amber-900 font-medium mb-2">📚 Exempel på grupper:</p>
+            <p className="text-amber-900 font-medium mb-2">Exempel på grupper:</p>
             <ul className="text-amber-800 space-y-2">
               <li><strong>Efter typ:</strong> Kampanjer, Event, Återkommande uppgifter, Milstolpar</li>
               <li><strong>Efter status:</strong> Planerad, Pågående, Slutförd</li>
@@ -178,7 +178,7 @@ function QuickStartGuide() {
           </div>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
-            <p className="text-green-900 font-medium mb-2">💡 Varför färger är viktiga</p>
+            <p className="text-green-900 font-medium mb-2">Varför färger är viktiga</p>
             <p className="text-green-800">När du har många aktiviteter på ditt hjul hjälper färger dig att omedelbart se mönster - som att se alla Q2-aktiviteter på en gång, eller identifiera alla högprioriterade objekt.</p>
           </div>
         </>
@@ -192,7 +192,7 @@ function QuickStartGuide() {
       content: (
         <>
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-            <p className="text-purple-900 font-medium mb-2">📅 Vad är en aktivitet?</p>
+            <p className="text-purple-900 font-medium mb-2">Vad är en aktivitet?</p>
             <p className="text-purple-800">En <strong>aktivitet</strong> är vilken händelse, projekt, kampanj eller uppgift som helst du vill spåra under året. Den visas som en färgad båge på ditt hjul.</p>
           </div>
 
@@ -222,7 +222,7 @@ function QuickStartGuide() {
           </ol>
 
           <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="Första aktiviteten" className="mt-4 sm:mt-6 w-full" />
-          <p className="text-gray-600 italic text-center">🎉 Hjulet visar nu din första aktivitet - en blå båge i Produktringen för Vårproduktlansering</p>
+          <p className="text-gray-600 italic text-center">Hjulet visar nu din första aktivitet - en blå båge i Produktringen för Vårproduktlansering</p>
         </>
       )
     },
@@ -251,7 +251,7 @@ function QuickStartGuide() {
                 <li><strong>Ring:</strong> Marknadsföring</li>
                 <li><strong>Grupp:</strong> "Återkommande uppgifter"</li>
                 <li><strong>Datum:</strong> 20 januari - 21 januari 2025</li>
-                <li><strong>Återkommande:</strong> ✓ Markera checkbox</li>
+                <li><strong>Återkommande:</strong> Markera checkbox</li>
                 <li><strong>Frekvens:</strong> Varje månad</li>
               </ul>
               <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Återkommande aktivitet" className="w-full" />
@@ -271,11 +271,11 @@ function QuickStartGuide() {
       imageCaption: "När du hovrar över en aktivitet visas handikonen - klicka och dra för att flytta",
       content: (
         <>
-          <p className="text-gray-700 mb-6 font-medium">🎯 Du kan flytta och ändra storlek på aktiviteter direkt på hjulet!</p>
+          <p className="text-gray-700 mb-6 font-medium">Du kan flytta och ändra storlek på aktiviteter direkt på hjulet!</p>
 
           <div className="space-y-6">
             <div className="p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-3">👆 Flytta en aktivitet:</h4>
+              <h4 className="font-semibold text-blue-900 mb-3">Flytta en aktivitet:</h4>
               <ol className="text-blue-800 space-y-2">
                 <li>1. <strong>Placera muspekaren</strong> över en aktivitet på hjulet</li>
                 <li>2. <strong>Klicka och håll</strong> i mitten av aktiviteten</li>
@@ -286,7 +286,7 @@ function QuickStartGuide() {
             </div>
 
             <div className="p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-              <h4 className="font-semibold text-purple-900 mb-3">↔️ Ändra storlek på en aktivitet:</h4>
+              <h4 className="font-semibold text-purple-900 mb-3">Ändra storlek på en aktivitet:</h4>
               <ol className="text-purple-800 space-y-2">
                 <li>1. <strong>Placera muspekaren</strong> över kanten på en aktivitet</li>
                 <li>2. Vänta tills markören ändras till storleksändringsikoner</li>
@@ -296,7 +296,7 @@ function QuickStartGuide() {
             </div>
 
             <div className="p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
-              <h4 className="font-semibold text-green-900 mb-2">🔄 Flytta mellan ringar:</h4>
+              <h4 className="font-semibold text-green-900 mb-2">Flytta mellan ringar:</h4>
               <p className="text-green-800">Du kan också dra en aktivitet <strong>radiellt</strong> (inåt/utåt) för att flytta den till en annan ring</p>
             </div>
           </div>
@@ -305,7 +305,7 @@ function QuickStartGuide() {
           <p className="text-gray-600 italic text-center">Närbild av dra-och-släpp-funktionen - se hur markören ändras vid kanterna för storleksändring</p>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
-            <p className="text-amber-900 font-medium">💡 Pro tips:</p>
+            <p className="text-amber-900 font-medium">Pro tips:</p>
             <p className="text-amber-800 mt-1">Detta är mycket snabbare än att öppna formulär och ändra datum manuellt. De flesta användare gör alla sina planeringsändringar med dra-och-släpp!</p>
           </div>
         </>
@@ -393,7 +393,7 @@ function QuickStartGuide() {
       content: (
         <>
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-            <p className="text-purple-900 font-medium mb-2">💡 What are rings?</p>
+            <p className="text-purple-900 font-medium mb-2">What are rings?</p>
             <p className="text-purple-800"><strong>Rings</strong> are the main categories in your wheel - like departments, projects, or focus areas. They appear as circular bands around the year wheel where you place activities.</p>
           </div>
 
@@ -425,7 +425,7 @@ function QuickStartGuide() {
           </ol>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
-            <p className="text-amber-900 font-medium mb-2">📚 Example rings:</p>
+            <p className="text-amber-900 font-medium mb-2">Example rings:</p>
             <ul className="text-amber-800 space-y-2">
               <li><strong>For business planning:</strong> Marketing, Sales, Product, Operations</li>
               <li><strong>For personal planning:</strong> Personal, Family, Work, Health</li>
@@ -444,7 +444,7 @@ function QuickStartGuide() {
       content: (
         <>
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-            <p className="text-purple-900 font-medium mb-2">🎨 What are activity groups?</p>
+            <p className="text-purple-900 font-medium mb-2">What are activity groups?</p>
             <p className="text-purple-800"><strong>Activity Groups</strong> determine the color of your activities. Think of them as color-coding categories - all activities in the same group will have the same color on your wheel.</p>
           </div>
 
@@ -476,7 +476,7 @@ function QuickStartGuide() {
           </ol>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
-            <p className="text-amber-900 font-medium mb-2">📚 Example groups:</p>
+            <p className="text-amber-900 font-medium mb-2">Example groups:</p>
             <ul className="text-amber-800 space-y-2">
               <li><strong>By type:</strong> Campaigns, Events, Recurring Tasks, Milestones</li>
               <li><strong>By status:</strong> Planned, In Progress, Completed</li>
@@ -485,7 +485,7 @@ function QuickStartGuide() {
           </div>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
-            <p className="text-green-900 font-medium mb-2">💡 Why colors matter</p>
+            <p className="text-green-900 font-medium mb-2">Why colors matter</p>
             <p className="text-green-800">When you have many activities on your wheel, colors help you instantly recognize patterns - like seeing all Q2 activities at a glance, or spotting all high-priority items.</p>
           </div>
         </>
@@ -499,7 +499,7 @@ function QuickStartGuide() {
       content: (
         <>
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-            <p className="text-purple-900 font-medium mb-2">📅 What is an activity?</p>
+            <p className="text-purple-900 font-medium mb-2">What is an activity?</p>
             <p className="text-purple-800">An <strong>activity</strong> is any event, project, campaign, or task you want to track during the year. It appears as a colored arc on your wheel.</p>
           </div>
 
@@ -529,7 +529,7 @@ function QuickStartGuide() {
           </ol>
 
           <img src="/docs/guides/images/QUICK_START_09_editor_with_changes_02.png" alt="First activity" className="mt-4 sm:mt-6 w-full" />
-          <p className="text-gray-600 italic text-center">🎉 The wheel now shows your first activity - a blue arc in the Product ring for Spring Product Launch</p>
+          <p className="text-gray-600 italic text-center">The wheel now shows your first activity - a blue arc in the Product ring for Spring Product Launch</p>
         </>
       )
     },
@@ -558,7 +558,7 @@ function QuickStartGuide() {
                 <li><strong>Ring:</strong> Marketing</li>
                 <li><strong>Group:</strong> "Recurring Tasks"</li>
                 <li><strong>Dates:</strong> January 20 - January 21, 2025</li>
-                <li><strong>Recurring:</strong> ✓ Check the checkbox</li>
+                <li><strong>Recurring:</strong> Check the checkbox</li>
                 <li><strong>Frequency:</strong> Every month</li>
               </ul>
               <img src="/docs/guides/images/QUICK_START_10_create_recurring_activity.png" alt="Recurring activity" className="w-full" />
@@ -578,11 +578,11 @@ function QuickStartGuide() {
       imageCaption: "When you hover over an activity, the hand icon appears - click and drag to move",
       content: (
         <>
-          <p className="text-gray-700 mb-6 font-medium">🎯 You can move and resize activities directly on the wheel!</p>
+          <p className="text-gray-700 mb-6 font-medium">You can move and resize activities directly on the wheel!</p>
 
           <div className="space-y-6">
             <div className="p-3 sm:p-4 bg-blue-50 rounded-sm border border-blue-200">
-              <h4 className="font-semibold text-blue-900 mb-3">👆 Move an activity:</h4>
+              <h4 className="font-semibold text-blue-900 mb-3">Move an activity:</h4>
               <ol className="text-blue-800 space-y-2">
                 <li>1. <strong>Hover</strong> over an activity on the wheel</li>
                 <li>2. <strong>Click and hold</strong> in the middle of the activity</li>
@@ -593,7 +593,7 @@ function QuickStartGuide() {
             </div>
 
             <div className="p-3 sm:p-4 bg-purple-50 rounded-sm border border-purple-200">
-              <h4 className="font-semibold text-purple-900 mb-3">↔️ Resize an activity:</h4>
+              <h4 className="font-semibold text-purple-900 mb-3">Resize an activity:</h4>
               <ol className="text-purple-800 space-y-2">
                 <li>1. <strong>Hover</strong> over the edge of an activity</li>
                 <li>2. Wait for the cursor to change to resize arrows</li>
@@ -603,7 +603,7 @@ function QuickStartGuide() {
             </div>
 
             <div className="p-3 sm:p-4 bg-green-50 rounded-sm border border-green-200">
-              <h4 className="font-semibold text-green-900 mb-2">🔄 Move between rings:</h4>
+              <h4 className="font-semibold text-green-900 mb-2">Move between rings:</h4>
               <p className="text-green-800">You can also drag an activity <strong>radially</strong> (inward/outward) to move it to a different ring</p>
             </div>
           </div>
@@ -612,7 +612,7 @@ function QuickStartGuide() {
           <p className="text-gray-600 italic text-center">Close-up of the drag and drop feature - see how the cursor changes at the edges for resizing</p>
 
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-amber-50 rounded-sm border border-amber-200">
-            <p className="text-amber-900 font-medium">💡 Pro tip:</p>
+            <p className="text-amber-900 font-medium">Pro tip:</p>
             <p className="text-amber-800 mt-1">This is much faster than opening forms and changing dates manually. Most users do all their planning adjustments with drag and drop!</p>
           </div>
         </>

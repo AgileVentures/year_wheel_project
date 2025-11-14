@@ -787,7 +787,7 @@ function RingIntegrationModal({ ring, onClose, onSyncComplete }) {
 
                 {/* Date Format Hint */}
                 <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded-sm border border-blue-200">
-                  <div className="font-medium text-blue-900 mb-1">💡 {t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatTitle')}</div>
+                  <div className="font-medium text-blue-900 mb-1">{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatTitle')}</div>
                   <ul className="space-y-0.5 text-blue-800 ml-4 list-disc">
                     <li>{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatBest')}</li>
                     <li>{t('integration:ringIntegrationModal.sheets.columnMapping.dateFormatGood')}</li>

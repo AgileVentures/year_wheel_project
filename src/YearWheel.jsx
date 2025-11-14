@@ -87,7 +87,7 @@ function YearWheel({
   useEffect(() => {
     if (completeWheelSnapshot) {
       // console.log('═══════════════════════════════════════════════════════');
-      // console.log('🎡 COMPLETE WHEEL SNAPSHOT (YearWheel.jsx):');
+      // console.log('COMPLETE WHEEL SNAPSHOT (YearWheel.jsx):');
       // console.log('═══════════════════════════════════════════════════════');
       // console.log(JSON.stringify(completeWheelSnapshot, null, 2));
       // console.log('═══════════════════════════════════════════════════════');
@@ -138,7 +138,7 @@ function YearWheel({
       };
       
       console.log('═══════════════════════════════════════════════════════');
-      console.log('🎡 FALLBACK WHEEL SNAPSHOT (YearWheel.jsx):');
+      console.log('FALLBACK WHEEL SNAPSHOT (YearWheel.jsx):');
       console.log('═══════════════════════════════════════════════════════');
       console.log(JSON.stringify(snapshot, null, 2));
       console.log('═══════════════════════════════════════════════════════');

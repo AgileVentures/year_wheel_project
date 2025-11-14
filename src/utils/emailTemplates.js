@@ -275,7 +275,7 @@ export const featureAnnouncementTemplate = ({
         <table role="presentation">
           <tr>
             <td style="width: 32px; vertical-align: top;">
-              <span style="display: inline-block; width: 24px; height: 24px; background: linear-gradient(135deg, #9FCB3E 0%, #2E9E97 100%); border-radius: 50%; text-align: center; line-height: 24px; color: #ffffff; font-weight: 700; font-size: 14px;">✓</span>
+              <span style="display: inline-block; width: 24px; height: 24px; background: linear-gradient(135deg, #9FCB3E 0%, #2E9E97 100%); border-radius: 50%; text-align: center; line-height: 24px; color: #ffffff; font-weight: 700; font-size: 11px;">✓</span>
             </td>
             <td style="color: #4b5563; font-size: 15px; line-height: 1.6; padding-left: 12px;">
               ${benefit}
@@ -289,7 +289,7 @@ export const featureAnnouncementTemplate = ({
   const content = `
     <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, #A4E6E0 0%, #36C2C6 100%); border-radius: 8px; margin-bottom: 32px;">
       <p style="margin: 0; color: #1B2A63; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-        Ny Funktion 🎉
+        Ny Funktion
       </p>
     </div>
     
@@ -350,7 +350,7 @@ export const tipsTemplate = ({ title, intro, tips = [], cta }) => {
 
   const content = `
     <div style="text-align: center; margin-bottom: 32px;">
-      <span style="display: inline-block; font-size: 48px;">💡</span>
+      <span style="display: inline-block; font-size: 24px; font-weight: bold; color: #3b82f6;">TIP</span>
     </div>
     
     <h1 style="color: #1B2A63; font-size: 28px; font-weight: 700; margin: 0 0 16px 0; text-align: center; line-height: 1.3;">

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import LandingPageTemplate from './LandingPageTemplate';
 import PersonaQuiz from '../../components/PersonaQuiz';
 import { educationQuiz } from '../../data/quizData';
-import { GraduationCap, BookOpen, Calendar, Users, Award, School, FileSpreadsheet, Share2, Sparkles, Copy } from 'lucide-react';
+import { GraduationCap, BookOpen, Calendar, Users, Award, School, FileSpreadsheet, Share2, Sparkles, Copy, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -88,15 +88,15 @@ export default function SkolaUtbildning() {
             </h2>
             <div className="space-y-3 text-left max-w-2xl mx-auto mb-6">
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Svårt att få helhetsbild av hela läsåret"</p>
               </div>
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Utvecklingsdagar krockar med andra aktiviteter"</p>
               </div>
               <div className="flex items-start gap-3 text-lg">
-                <span className="text-red-600 font-bold text-xl">✗</span>
+                <X className="text-red-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">"Föräldrar vill ha tydligare översikt"</p>
               </div>
             </div>
@@ -108,15 +108,15 @@ export default function SkolaUtbildning() {
             </h3>
             <div className="space-y-2 text-left max-w-2xl mx-auto mb-6">
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Få hela läsåret visuellt på en sida?</p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Dela professionell översikt med föräldrar direkt?</p>
               </div>
               <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold text-xl">✓</span>
+                <Check className="text-green-600 w-5 h-5 mt-0.5" />
                 <p className="text-gray-700">Samordna arbetslaget i samma digitala kalender?</p>
               </div>
             </div>

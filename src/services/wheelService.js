@@ -367,7 +367,7 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
     startDate: i.start_date,
     endDate: i.end_date,
     time: i.time,
-    description: i.description, // ⚠️ CRITICAL: Include description from synced items
+    description: i.description, // CRITICAL: Include description from synced items
     pageId: shouldUsePageScope ? i.page_id : pageId,
     // Wheel linking fields
     linkedWheelId: i.linked_wheel_id,
@@ -503,7 +503,7 @@ export const createWheel = async (wheelData) => {
       ],
     });
 
-    console.log('[createWheel] ✅ Default structure saved successfully');
+    console.log('[createWheel] Default structure saved successfully');
 
     // Verify that rings and activity groups were created
     const { data: verifyRings } = await supabase
@@ -528,7 +528,7 @@ export const createWheel = async (wheelData) => {
     }
 
   } catch (structureError) {
-    console.error('[createWheel] ❌ Failed to initialize default wheel structure:', structureError);
+    console.error('[createWheel] Failed to initialize default wheel structure:', structureError);
     try {
       if (initialPage?.id) {
         await supabase.from('wheel_pages').delete().eq('id', initialPage.id);
@@ -703,7 +703,7 @@ const syncRings = async (wheelId, pageId, rings) => {
           throw error;
         }
 
-        console.log('[syncRings] ✅ INSERTED new ring to database', {
+        console.log('[syncRings] INSERTED new ring to database', {
           inputId: ring.id,
           dbId: newRing.id,
           name: ring.name,
@@ -889,7 +889,7 @@ const syncActivityGroups = async (wheelId, pageId, activityGroups) => {
           throw error;
         }
 
-        // console.log('[syncActivityGroups] ✅ INSERTED new activity group to database', {
+        // console.log('[syncActivityGroups] INSERTED new activity group to database', {
         //   inputId: group.id,
         //   dbId: newGroup.id,
         //   name: group.name,

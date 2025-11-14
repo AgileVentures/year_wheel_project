@@ -68,7 +68,7 @@ export function useWheelSaveQueue(wheelId, options = {}) {
     // Save to database
     const result = await saveWheelSnapshot(wheelId, snapshot);
     
-    console.log(`[useWheelSaveQueue] ✅ Saved successfully in ${Date.now() - metadata.firstEnqueuedAt}ms`);
+    console.log(`[useWheelSaveQueue] Saved successfully in ${Date.now() - metadata.firstEnqueuedAt}ms`);
     
     return result;
   }, [wheelId]);

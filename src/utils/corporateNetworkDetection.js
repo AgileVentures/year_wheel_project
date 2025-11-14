@@ -202,7 +202,7 @@ export const showCorporateNetworkWarning = () => {
         to { transform: translateY(0); }
       }
     </style>
-    <strong>⚠️ Corporate Network Detected</strong> - 
+    <strong>Corporate Network Detected</strong> - 
     If you experience connection issues, please contact your IT department about SSL inspection settings.
     <button onclick="this.parentElement.remove()" style="
       background: white;

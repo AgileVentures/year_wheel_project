@@ -322,7 +322,7 @@ function EditorPanel({
 
                 <details className="group mb-3">
                   <summary className="cursor-pointer flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors">
-                    <span>⚙️ Avancerade inställningar</span>
+                    <span>Avancerade inställningar</span>
                   </summary>
                   <div className="mt-3 pl-4 space-y-3">
                     <div>

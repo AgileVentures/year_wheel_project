@@ -359,7 +359,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-        console.error('🔴 [AI Assistant] Edge function error:', errorData);
+        console.error('[AI Assistant] Edge function error:', errorData);
         throw new Error(errorData.error || t('editor:aiAssistant.edgeFunctionError'));
       }
 
@@ -397,12 +397,12 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 break;
               
               case 'tool':
-                setStreamingStatus(`🔧 ${data.message}`);
+                setStreamingStatus(data.message);
                 break;
               
               case 'tool_result':
                 // Optional: show tool completion briefly
-                setStreamingStatus(`✓ ${data.message}`);
+                setStreamingStatus(data.message);
                 break;
 
               case 'refresh': {

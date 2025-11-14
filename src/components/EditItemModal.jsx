@@ -211,7 +211,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
           {isRecurringInstance && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-sm">
               <p className="text-sm text-blue-900">
-                <span className="font-medium">ℹ️ {t('editor:editItemModal.recurringNotice', 'Återkommande aktivitet')}</span>
+                <span className="font-medium">{t('editor:editItemModal.recurringNotice', 'Återkommande aktivitet')}</span>
                 <br />
                 <span className="text-xs text-blue-700">
                   {t('editor:editItemModal.recurringNoticeText', 'Detta är en del av en återkommande aktivitetsserie. Ändringar påverkar endast denna instans.')}
@@ -480,7 +480,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                               return chain.length > 0 ? (
                                 <div className="bg-blue-50 border border-blue-200 rounded-sm p-2">
                                   <p className="text-xs text-blue-900 font-medium mb-1">
-                                    {t('editor:editItemModal.dependencies.chainTitle', '🔗 Beroendekedja:')}
+                                    {t('editor:editItemModal.dependencies.chainTitle', 'Beroendekedja:')}
                                   </p>
                                   <div className="text-xs text-blue-700 space-y-0.5">
                                     {chain.map((chainItem, idx) => (

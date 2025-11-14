@@ -599,7 +599,7 @@ export default function RevenueForecast() {
                   <div className="text-gray-600 text-xs mb-1">LTV:CAC Ratio</div>
                   <div className="font-bold text-blue-600">{ltvCacRatio}:1</div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {parseFloat(ltvCacRatio) >= 3 ? '✅ Utmärkt!' : parseFloat(ltvCacRatio) >= 2 ? '👍 Bra' : '⚠️ Förbättra'}
+                    {parseFloat(ltvCacRatio) >= 3 ? 'Utmärkt!' : parseFloat(ltvCacRatio) >= 2 ? 'Bra' : 'Förbättra'}
                   </div>
                 </div>
                 <div className="bg-white rounded p-3">
@@ -912,7 +912,7 @@ export default function RevenueForecast() {
           <h2 className="text-xl font-semibold mb-4">Insikter & Rekommendationer</h2>
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">📈 Tillväxtstrategier</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Tillväxtstrategier</h3>
               <ul className="space-y-2 text-sm text-gray-700 list-disc list-inside">
                 <li><strong>Optimera LTV:</strong> Minska churn från {currentScenario.churnRate}% till 3% för att öka LTV med ~50%</li>
                 <li><strong>Främja årsprenumeration:</strong> Öka från {currentScenario.annualVsMonthlyRatio}% till 80% för bättre cash flow</li>
@@ -921,7 +921,7 @@ export default function RevenueForecast() {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">🎯 Nordisk Marknad</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Nordisk Marknad</h3>
               <ul className="space-y-2 text-sm text-gray-700 list-disc list-inside">
                 <li><strong>LTV:CAC ratio:</strong> Sikta på 3:1 eller bättre för hållbar tillväxt</li>
                 <li><strong>Säsongsvariation:</strong> Höga signups i jan/aug ger konverteringar under feb-apr/sep-nov</li>
@@ -932,7 +932,7 @@ export default function RevenueForecast() {
           </div>
           
           <div className="mt-6 p-4 bg-blue-50 rounded border-l-4 border-blue-500">
-            <h3 className="font-semibold text-gray-900 mb-2">💡 Kritiska Framgångsfaktorer</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">Kritiska Framgångsfaktorer</h3>
             <div className="text-sm text-gray-700 space-y-1">
               <p><strong>Månad 12 mål:</strong> {formatCurrency(year1Data.displayMrrSEK || 0)} MRR | {formatNumber(year1Data.displayPayingUsers || 0)} kunder | LTV = {formatCurrency(ltv3Years)}</p>
               <p><strong>Månad 24 mål:</strong> {formatCurrency(year2Data.displayMrrSEK || 0)} MRR | {formatNumber(year2Data.displayPayingUsers || 0)} kunder</p>

@@ -383,7 +383,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     hasQueuedChanges 
   } = useWheelSaveQueue(wheelId, {
     onSaveSuccess: (changes, metadata) => {
-      console.log(`✅ [SaveQueue] Saved batch of ${metadata.batchSize} changes`);
+      console.log(`[SaveQueue] Saved batch of ${metadata.batchSize} changes`);
       
       // Mark undo history as saved
       if (history && currentIndex !== null) {
@@ -391,7 +391,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     },
     onSaveError: (error, changes, metadata) => {
-      console.error('❌ [SaveQueue] Save failed:', error);
+      console.error('[SaveQueue] Save failed:', error);
       showToast('Kunde inte spara ändringar. Försöker igen...', 'error');
     }
   });
@@ -1651,17 +1651,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     // CRITICAL: Block ALL saves during page navigation
     if (isNavigatingPagesRef.current) {
-      console.warn('[FullSave] ❌ BLOCKED - page navigation in progress');
+      console.warn('[FullSave] BLOCKED - page navigation in progress');
       return null;
     }
 
     // CRITICAL: Block saves during data loading
     if (isLoadingData.current) {
-      console.warn('[FullSave] ❌ BLOCKED - data loading in progress');
+      console.warn('[FullSave] BLOCKED - data loading in progress');
       return null;
     }
 
-    console.log(`[FullSave] ✅ STARTING save (reason: ${reason || 'auto'})`);
+    console.log(`[FullSave] STARTING save (reason: ${reason || 'auto'})`);
     
     isSavingRef.current = true;
     setIsSaving(true);
@@ -1679,7 +1679,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const knownPages = Array.isArray(pagesRef.current) ? pagesRef.current : [];
 
         if (knownPages.length > 0) {
-          console.error('[FullSave] ❌ Snapshot builder returned 0 pages, but editor state has', knownPages.length);
+          console.error('[FullSave] Snapshot builder returned 0 pages, but editor state has', knownPages.length);
           const event = new CustomEvent('showToast', {
             detail: {
               message: 'Kunde inte spara eftersom siddata saknas. Ladda om hjulet och försök igen.',
@@ -1715,7 +1715,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
 
         if (existingPagesCount > 0) {
-          console.error('[FullSave] ❌ Aborting fallback page creation - database already has', existingPagesCount, 'pages');
+          console.error('[FullSave] Aborting fallback page creation - database already has', existingPagesCount, 'pages');
           const event = new CustomEvent('showToast', {
             detail: {
               message: 'Kunde inte spara eftersom befintliga sidor saknas i snapshotet. Ladda om hjulet.',
@@ -1793,7 +1793,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       validation = validateSnapshotPages(snapshot, latest);
 
       if (!validation?.valid) {
-        console.warn('[FullSave] ❌ Snapshot validation failed', validation?.problems);
+        console.warn('[FullSave] Snapshot validation failed', validation?.problems);
         if (reason === 'manual') {
           showToast('Sparning stoppad: vissa sidor saknar eller duplicerar aktiviteter.', 'error');
           throw new Error('Snapshot validation failed');
@@ -1802,7 +1802,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       } else {
         const validatedPageCount = validation?.details?.length || 0;
-        console.log(`[FullSave] ✅ Snapshot validation passed (${validatedPageCount} pages checked)`);
+        console.log(`[FullSave] Snapshot validation passed (${validatedPageCount} pages checked)`);
       }
 
       const result = await saveWheelSnapshot(wheelId, snapshot);
@@ -1851,7 +1851,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isLoadingData.current = wasSkippingHistory;
 
       if (itemsByPage) {
-        console.log('[FullSave] ✅ Updating pages with database UUIDs from itemsByPage:', Object.keys(itemsByPage).map(pageId => `${pageId.substring(0,8)}: ${itemsByPage[pageId].length} items`));
+        console.log('[FullSave] Updating pages with database UUIDs from itemsByPage:', Object.keys(itemsByPage).map(pageId => `${pageId.substring(0,8)}: ${itemsByPage[pageId].length} items`));
         
         // Log sample of ID mappings
         const sampleItems = Object.values(itemsByPage).flat().slice(0, 3);
@@ -4522,7 +4522,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                   }));
                 }
               } catch (error) {
-                console.error('❌ [App] Error loading page:', error);
+                console.error('[App] Error loading page:', error);
               }
             })();
           }}

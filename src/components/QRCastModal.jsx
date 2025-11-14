@@ -79,7 +79,7 @@ export const QRCastModal = ({ isOpen, onClose, onDisconnect, sessionToken, isCon
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {isConnected ? '✓ ' + t('cast.casting') : t('cast.pairingCodeTitle')}
+          {isConnected ? t('cast.casting') : t('cast.pairingCodeTitle')}
         </h2>
         <p className="text-gray-600 mb-6">
           {isConnected ? t('cast.connectedYouCanClose') : t('cast.pairingCodeSubtitle')}
