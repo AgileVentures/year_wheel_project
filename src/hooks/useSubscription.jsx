@@ -27,11 +27,18 @@ export function useSubscription() {
     try {
       setLoading(true);
       
+      // Get user once and pass to all functions
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
       const [subData, premiumStatus, adminStatus, count] = await Promise.all([
-        getUserSubscription(),
-        isPremiumUser(),
-        isAdmin(),
-        getUserWheelCount()
+        getUserSubscription(user),
+        isPremiumUser(user),
+        isAdmin(user),
+        getUserWheelCount(user)
       ]);
 
       setSubscription(subData);
@@ -44,12 +51,12 @@ export function useSubscription() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // ✅ Empty deps - function is stable
 
   // Initial load
   useEffect(() => {
     loadSubscription();
-  }, [loadSubscription]);
+  }, []); // ✅ Only run once on mount
 
   // Subscribe to subscription changes AND wheel changes
   useEffect(() => {
@@ -115,7 +122,7 @@ export function useSubscription() {
         supabase.removeChannel(wheelsChannel);
       }
     };
-  }, [loadSubscription]);
+  }, []); // ✅ Empty deps - loadSubscription is stable, setup only once
 
   // Check if user can create a wheel
   const checkCanCreateWheel = useCallback(async () => {

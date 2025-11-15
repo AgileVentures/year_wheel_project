@@ -6,11 +6,21 @@ import { supabase } from '../lib/supabase';
  */
 
 /**
- * Get current user's subscription
+ * Get current user from Supabase auth
+ * @returns {Promise<Object|null>} User object or null
  */
-export async function getUserSubscription() {
+async function getCurrentUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
+/**
+ * Get current user's subscription
+ * @param {Object} user - Optional user object to avoid redundant getUser() calls
+ */
+export async function getUserSubscription(user = null) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase
@@ -29,10 +39,11 @@ export async function getUserSubscription() {
 
 /**
  * Check if user is admin
+ * @param {Object} user - Optional user object to avoid redundant getUser() calls
  */
-export async function isAdmin() {
+export async function isAdmin(user = null) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) user = await getCurrentUser();
     if (!user) return false;
 
     const { data, error } = await supabase.rpc('is_admin', {
@@ -50,10 +61,11 @@ export async function isAdmin() {
 /**
  * Check if user is premium (includes admins)
  * Admins automatically get premium features without subscription
+ * @param {Object} user - Optional user object to avoid redundant getUser() calls
  */
-export async function isPremiumUser() {
+export async function isPremiumUser(user = null) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) user = await getCurrentUser();
     if (!user) return false;
 
     const { data, error } = await supabase.rpc('is_premium_user', {
@@ -70,10 +82,11 @@ export async function isPremiumUser() {
 
 /**
  * Get user's wheel count
+ * @param {Object} user - Optional user object to avoid redundant getUser() calls
  */
-export async function getUserWheelCount() {
+export async function getUserWheelCount(user = null) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) user = await getCurrentUser();
     if (!user) return 0;
 
     const { data, error } = await supabase.rpc('get_user_wheel_count', {
@@ -90,10 +103,11 @@ export async function getUserWheelCount() {
 
 /**
  * Check if user can create a new wheel
+ * @param {Object} user - Optional user object to avoid redundant getUser() calls
  */
-export async function canCreateWheel() {
+export async function canCreateWheel(user = null) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) user = await getCurrentUser();
     if (!user) return false;
 
     const { data, error } = await supabase.rpc('can_create_wheel', {
@@ -127,10 +141,12 @@ export async function getTeamMemberCount(teamId) {
 
 /**
  * Check if user can add a member to the given team
+ * @param {string} teamId - Team UUID
+ * @param {Object} user - Optional user object to avoid redundant getUser() calls
  */
-export async function canAddTeamMember(teamId) {
+export async function canAddTeamMember(teamId, user = null) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) user = await getCurrentUser();
     if (!user) return false;
 
     const { data, error } = await supabase.rpc('can_add_team_member', {
