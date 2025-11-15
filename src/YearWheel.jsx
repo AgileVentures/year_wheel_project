@@ -703,6 +703,11 @@ function YearWheel({
         };
         
         onWheelReady(yearWheel);
+        
+        // Expose yearWheel instance for Cypress testing
+        if (window.Cypress) {
+          window.__yearWheelInstance__ = yearWheel;
+        }
       }
     }
   }, [yearWheel, onWheelReady, wheelStructure]);

@@ -1869,6 +1869,13 @@ csstype@^3.0.2:
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.1.3.tgz#d80ff294d114fb0e6ac500fbf85b60137d7eff81"
   integrity sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==
 
+cypress-recurse@^1.37.1:
+  version "1.37.1"
+  resolved "https://registry.yarnpkg.com/cypress-recurse/-/cypress-recurse-1.37.1.tgz#b98e79433f4eea5386f564834f8bd93191ebfe3b"
+  integrity sha512-Uk+gw1ignYH2DbfOhb23+59rtQrgbivXpF4pQDgxhPUbBQ0ZU2VQl4OJlUrQdzBfeXP7UiK+km1pSRsFciYl0w==
+  dependencies:
+    humanize-duration "^3.27.3"
+
 cypress@^13.13.1:
   version "13.17.0"
   resolved "https://registry.yarnpkg.com/cypress/-/cypress-13.17.0.tgz#34c3d68080c4497eace0f353bd1629587a5f600d"
@@ -3407,6 +3414,11 @@ human-signals@^2.1.0:
   resolved "https://registry.yarnpkg.com/human-signals/-/human-signals-2.1.0.tgz#dc91fcba42e4d06e4abaed33b3e7a3c02f514ea0"
   integrity sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==
 
+humanize-duration@^3.27.3:
+  version "3.33.1"
+  resolved "https://registry.yarnpkg.com/humanize-duration/-/humanize-duration-3.33.1.tgz#e4df2ce6660f24a6a3bf4a7b3bc63edb5be7826f"
+  integrity sha512-hwzSCymnRdFx9YdRkQQ0OYequXiVAV6ZGQA2uzocwB0F4309Ke6pO8dg0P8LHhRQJyVjGteRTAA/zNfEcpXn8A==
+
 i18next-browser-languagedetector@^8.2.0:
   version "8.2.0"
   resolved "https://registry.yarnpkg.com/i18next-browser-languagedetector/-/i18next-browser-languagedetector-8.2.0.tgz#c3ca311e249d2f7d8bb9b3b13ac9af380a3b15b0"
@@ -4906,6 +4918,11 @@ object.values@^1.1.6, object.values@^1.2.1:
     call-bound "^1.0.3"
     define-properties "^1.2.1"
     es-object-atoms "^1.0.0"
+
+odiff-bin@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/odiff-bin/-/odiff-bin-4.1.1.tgz#9162c354df8cb787ff3d20791fa120901104cea6"
+  integrity sha512-iYp9D2czwNyRNcgSHnv34HlDhmhqzlRuh+eqO4ToqW4Jj++m1Na8/NSrfOzjWHz1CUH6QK4x6/K2higiou0WDw==
 
 on-finished@^2.2.0:
   version "2.4.1"

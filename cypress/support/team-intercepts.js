@@ -15,6 +15,20 @@ export function blockExternalResourcesImpl() {
   cy.intercept('**/google-analytics.com/**', { statusCode: 200, body: '' });
   cy.intercept('**/googletagmanager.com/**', { statusCode: 200, body: '' });
   cy.intercept('**/analytics.google.com/**', { statusCode: 200, body: '' });
+  
+  // Block Supabase realtime WebSocket connections
+  cy.on('window:before:load', (win) => {
+    // Stub WebSocket to prevent Supabase realtime connection errors
+    win.WebSocket = class WebSocket {
+      constructor() {
+        this.readyState = 3; // CLOSED
+      }
+      close() {}
+      send() {}
+      addEventListener() {}
+      removeEventListener() {}
+    };
+  });
 }
 
 /**

@@ -286,7 +286,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" data-cy="add-activity-modal">
       <div className="bg-white rounded-sm shadow-xl w-full max-w-2xl my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
@@ -333,6 +333,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                   }`}
                   placeholder={t('editor:addItemModal.itemNamePlaceholder')}
                   autoFocus
+                  data-cy="activity-name-input"
                 />
                 {errors.name && (
                   <p className="mt-1 text-xs text-red-600">{errors.name}</p>
@@ -353,6 +354,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                   className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                     errors.startDate ? 'border-red-500' : 'border-gray-300'
                   } ${formData.dependsOn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  data-cy="activity-start-date-input"
                 />
                 {errors.startDate && (
                   <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
@@ -375,6 +377,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                   className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
                     errors.endDate ? 'border-red-500' : 'border-gray-300'
                   }`}
+                  data-cy="activity-end-date-input"
                 />
                 {errors.endDate && (
                   <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
@@ -398,6 +401,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                     value={formData.ringId}
                     onChange={(e) => handleChange('ringId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    data-cy="activity-ring-select"
                   >
                     {wheelStructure.rings.map((ring) => (
                       <option key={ring.id} value={ring.id}>
@@ -416,6 +420,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                     value={formData.activityId}
                     onChange={(e) => handleChange('activityId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    data-cy="activity-group-select"
                   >
                     {wheelStructure.activityGroups.map((activity) => (
                       <option key={activity.id} value={activity.id}>
@@ -446,24 +451,45 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
             </div>
           </div>
 
-            {/* Advanced Settings Section */}
+            {/* Advanced Settings Section - Collapsible */}
             {formData.activityId && (
               <div className="pt-6 border-t border-gray-200 mt-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-                  {t('editor:addItemModal.advancedSettings', 'Avancerade inställningar')}
-                </h3>                {/* Recurring checkbox */}
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    id="isRecurring"
-                    checked={formData.isRecurring}
-                    onChange={(e) => handleChange('isRecurring', e.target.checked)}
-                    className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
-                    {t('editor:addItemModal.recurringLabel', 'Återkommande aktivitet')}
-                  </label>
-                </div>
+                {!showAdvancedSettings ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedSettings(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                  >
+                    {t('editor:addItemModal.showAdvancedSettings', '+ Avancerade inställningar')}
+                  </button>
+                ) : (
+                  <div className="border border-gray-200 rounded-sm p-4 bg-gray-50 space-y-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        {t('editor:addItemModal.advancedSettings', 'Avancerade inställningar')}
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedSettings(false)}
+                        className="text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        {t('editor:addItemModal.hideAdvancedSettings', 'Dölj')}
+                      </button>
+                    </div>
+
+                    {/* Recurring checkbox */}
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        id="isRecurring"
+                        checked={formData.isRecurring}
+                        onChange={(e) => handleChange('isRecurring', e.target.checked)}
+                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                        {t('editor:addItemModal.recurringLabel', 'Återkommande aktivitet')}
+                      </label>
+                    </div>
 
                 {/* Recurring options - show when checkbox is checked */}
                 {formData.isRecurring && (
@@ -681,6 +707,8 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                     </div>
                   </div>
                 </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -696,6 +724,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
             <button
               type="submit"
               className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+              data-cy="activity-save-button"
             >
               <Plus size={16} />
               {t('editor:addItemModal.addItem')}

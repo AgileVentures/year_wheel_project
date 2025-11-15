@@ -112,3 +112,67 @@ Cypress.Commands.add('loadFixtures', () => {
 		.then(() => cy.fixture('profile.json')).then(data => { fixtures.profile = data; })
 		.then(() => fixtures);
 });
+
+// Verify activity rendered on canvas using visual regression testing
+Cypress.Commands.add('verifyCanvasActivity', (activityName, options = {}) => {
+	const { recurse } = require('cypress-recurse');
+	
+	cy.log(`🎨 Visual verification for activity: ${activityName}`);
+	
+	// Safe filename (replace spaces and special chars)
+	const safeFilename = activityName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+	const beforeFilename = `canvas-before-${safeFilename}.png`;
+	const afterFilename = `canvas-after-${safeFilename}.png`;
+	
+	// Wait for canvas to stabilize after activity creation
+	cy.wait(2000);
+	
+	// Get both images and compare them
+	return cy.wrap(null).then(() => {
+		return recurse(
+			() => {
+				// Download current canvas state as PNG (after adding activity)
+				return cy.get('canvas').then(($canvas) => {
+					const url = $canvas[0].toDataURL('image/png');
+					const data = url.replace(/^data:image\/png;base64,/, '');
+					cy.writeFile(`cypress/downloads/${afterFilename}`, data, 'base64');
+					return cy.wrap({ beforeFilename, afterFilename });
+				}).then((filenames) => {
+					// Compare before vs after - they should be DIFFERENT
+					return cy.task('compareBeforeAfter', filenames);
+				});
+			},
+			(result) => result.different === true,
+			{
+				limit: 10,
+				delay: 1000,
+				timeout: 15000,
+				log: (result) => {
+					if (result && result.different === false) {
+						cy.log(`❌ Canvas unchanged - retrying...`);
+					} else if (result && result.different === true) {
+						cy.log(`✅ Canvas has changed! Activity rendered.`);
+					}
+				},
+				error: 'Canvas did not change after adding activity (10 attempts)'
+			}
+		);
+	}).then((result) => {
+		// Assert that the canvas changed
+		expect(result.different, 'Canvas should change after adding activity').to.be.true;
+	});
+});
+
+// Capture empty canvas state (call this BEFORE adding activity)
+Cypress.Commands.add('captureEmptyCanvas', (testName) => {
+	const safeFilename = testName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+	const filename = `canvas-before-${safeFilename}.png`;
+	
+	cy.log(`📸 Capturing empty canvas state`);
+	
+	return cy.get('canvas').then(($canvas) => {
+		const url = $canvas[0].toDataURL('image/png');
+		const data = url.replace(/^data:image\/png;base64,/, '');
+		cy.writeFile(`cypress/downloads/${filename}`, data, 'base64');
+	});
+});
