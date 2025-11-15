@@ -33,8 +33,8 @@ describe("Team Seat Limits", () => {
   describe("for Freemium user", () => {
     let fixtures = {};
 
-    before(() => {
-      // Set up fixtures for freemium user (once for all tests in this block)
+    beforeEach(() => {
+      // Set up fresh fixtures for each test
       fixtures = setupFreemiumUser(baseFixtures);
     });
 
@@ -266,8 +266,8 @@ describe("Team Seat Limits", () => {
   describe("for Subscribing user", () => {
     let fixtures = {};
 
-    before(() => {
-      // Set up fixtures for premium user (once for all tests in this block)
+    beforeEach(() => {
+      // Set up fresh fixtures for each test
       fixtures = setupPremiumUser(baseFixtures);
     });
 
