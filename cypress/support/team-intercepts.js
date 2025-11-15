@@ -5,7 +5,7 @@
  * Tests should use cy.stubSupabaseForTeams() etc. instead of importing these directly.
  */
 
-import { TEST_USER, TEAM_ID, baseMembers } from './team-test-helpers';
+import { TEST_USER, TEAM_ID, baseMembers } from './test-helpers';
 
 /**
  * Block external resources that aren't needed for tests
@@ -37,9 +37,12 @@ export function stubAuthEndpointsImpl(fixtures) {
  * Set up subscription and profile intercepts
  */
 export function stubUserDataImpl(fixtures) {
+  const subscription = fixtures.subscription;
+  const isPremium = subscription.status === 'active' && subscription.plan_type !== 'free';
+  
   cy.intercept('GET', '**/rest/v1/subscriptions*', {
     statusCode: 200,
-    body: [fixtures.subscription],
+    body: [subscription],
   }).as('subscription');
 
   cy.intercept('GET', '**/rest/v1/profiles*', (req) => {
@@ -56,7 +59,11 @@ export function stubUserDataImpl(fixtures) {
     }
   }).as('profiles');
 
-  cy.intercept('POST', '**/rest/v1/rpc/is_premium_user', { statusCode: 200, body: false }).as('isPremium');
+  cy.intercept('POST', '**/rest/v1/rpc/is_premium_user', { 
+    statusCode: 200, 
+    body: isPremium 
+  }).as('isPremium');
+  
   cy.intercept('POST', '**/rest/v1/rpc/is_admin', { statusCode: 200, body: false }).as('isAdmin');
   cy.intercept('POST', '**/rest/v1/rpc/get_user_wheel_count', { statusCode: 200, body: 1 }).as('wheelCount');
 }

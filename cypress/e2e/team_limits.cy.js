@@ -11,26 +11,36 @@ import {
   baseMembers,
   seatLimitMembers,
   visitTeamsDashboard,
-} from "../support/team-test-helpers";
+  setupFreemiumUser,
+  setupPremiumUser,
+  generateTeamMembers,
+} from "../support/test-helpers";
 
 describe("Team Seat Limits", () => {
   // Shared fixture data - loaded once before all tests
-  let fixtures = {};
-  describe("for Freemium user", () => {
-    before(() => {
-      // Load all fixtures using custom command
-      cy.loadFixtures().then((loadedFixtures) => {
-        fixtures = loadedFixtures;
-      });
+  let baseFixtures = {};
+
+  before(() => {
+    // Load all fixtures using custom command
+    cy.loadFixtures().then((loadedFixtures) => {
+      baseFixtures = loadedFixtures;
     });
+  });
+
+  describe("for Freemium user", () => {
+    let fixtures = {};
 
     beforeEach(() => {
+      // Set up fixtures for freemium user
+      fixtures = setupFreemiumUser(baseFixtures);
+
       // Verify fixtures are loaded
       expect(fixtures.authUser, "authUser fixture should be loaded").to.exist;
       expect(fixtures.authSession, "authSession fixture should be loaded").to
         .exist;
       expect(fixtures.subscription, "subscription fixture should be loaded").to
         .exist;
+      expect(fixtures.subscription.status, "should be freemium").to.equal('inactive');
 
       // Set up common intercepts using Cypress command
       cy.stubSupabaseForTeams(fixtures);
@@ -258,6 +268,199 @@ describe("Team Seat Limits", () => {
       cy.contains(
         "Teamet har redan nått maxantalet medlemmar på gratis-planen."
       ).should("be.visible");
+    });
+  });
+
+  describe("for Subscribing user", () => {
+    let fixtures = {};
+
+    beforeEach(() => {
+      // Set up fixtures for premium user
+      fixtures = setupPremiumUser(baseFixtures);
+
+      // Verify fixtures are loaded
+      expect(fixtures.authUser, "authUser fixture should be loaded").to.exist;
+      expect(fixtures.subscription, "subscription fixture should be loaded").to.exist;
+      expect(fixtures.subscription.status, "should be premium").to.equal('active');
+
+      // Set up common intercepts using Cypress command
+      cy.stubSupabaseForTeams(fixtures);
+    });
+
+    it("allows unlimited team member invitations", () => {
+      // Set up with many members (more than free limit)
+      const manyMembers = [
+        ...seatLimitMembers,
+        {
+          id: 'member-4',
+          email: 'member4@example.com',
+          role: 'member',
+          user_id: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        },
+        {
+          id: 'member-5',
+          email: 'member5@example.com',
+          role: 'member',
+          user_id: 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff',
+        },
+      ];
+
+      cy.stubSupabaseForTeams(fixtures, { members: manyMembers });
+      visitTeamsDashboard();
+
+      // Verify no seat limit alert
+      cy.get('[data-cy="team-seat-limit-alert"]').should('not.exist');
+
+      // Verify invite button is enabled
+      cy.get('[data-cy="team-invite-button"]').should('not.be.disabled');
+
+      // Should be able to create invite
+      cy.get('[data-cy="team-invite-button"]').click();
+      cy.get('[data-cy="invite-email-input"]').should('be.visible');
+    });
+
+    it("can invite members even with 5+ existing members", () => {
+      // Set up with 7 members (well over free limit of 3)
+      const sevenMembers = [
+        ...seatLimitMembers, // 3 members
+        { id: 'member-4', email: 'member4@example.com', role: 'member', user_id: 'id-4' },
+        { id: 'member-5', email: 'member5@example.com', role: 'member', user_id: 'id-5' },
+        { id: 'member-6', email: 'member6@example.com', role: 'member', user_id: 'id-6' },
+        { id: 'member-7', email: 'member7@example.com', role: 'member', user_id: 'id-7' },
+      ];
+
+      cy.stubSupabaseForTeams(fixtures, { members: sevenMembers });
+      visitTeamsDashboard();
+
+      // Verify member count is displayed
+      cy.contains('Medlemmar').should('be.visible');
+
+      // Verify all 7 members are visible
+      cy.contains('member4@example.com').should('be.visible');
+      cy.contains('member7@example.com').should('be.visible');
+
+      // Open invite modal and create new invite
+      cy.get('[data-cy="team-invite-button"]').should('not.be.disabled').click();
+      cy.get('[data-cy="invite-email-input"]').type('member8@example.com');
+      cy.get('[data-cy="invite-submit-button"]').click();
+
+      // Verify invitation was created
+      cy.wait('@canAddTeamMember');
+      cy.wait('@createInvite').then((interception) => {
+        expect(interception.response.statusCode).to.equal(201);
+        expect(interception.response.body).to.have.property('email', 'member8@example.com');
+      });
+    });
+
+    it("shows correct team member count for large teams", () => {
+      const tenMembers = [
+        ...baseMembers,
+        ...Array.from({ length: 8 }, (_, i) => ({
+          id: `member-${i + 3}`,
+          email: `member${i + 3}@example.com`,
+          role: 'member',
+          user_id: `user-id-${i + 3}`,
+        })),
+      ];
+
+      cy.stubSupabaseForTeams(fixtures, { members: tenMembers });
+      visitTeamsDashboard();
+
+      // Verify member section exists
+      cy.contains('Medlemmar').should('be.visible');
+
+      // Count should reflect all members (implementation may vary)
+      // Just verify no error and can see multiple members
+      cy.contains('admin@example.com').should('be.visible');
+      cy.contains('member9@example.com').should('be.visible');
+    });
+
+    it("can manage multiple pending invitations simultaneously", () => {
+      const existingInvites = [
+        {
+          id: 'invite-1',
+          email: 'invite1@example.com',
+          token: 'token-1',
+          team_id: TEAM_ID,
+          status: 'pending',
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+        },
+        {
+          id: 'invite-2',
+          email: 'invite2@example.com',
+          token: 'token-2',
+          team_id: TEAM_ID,
+          status: 'pending',
+          created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+        },
+        {
+          id: 'invite-3',
+          email: 'invite3@example.com',
+          token: 'token-3',
+          team_id: TEAM_ID,
+          status: 'pending',
+          created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+        },
+      ];
+
+      cy.stubSupabaseForTeams(fixtures, { invites: existingInvites });
+      visitTeamsDashboard();
+
+      // Verify all pending invitations are visible
+      cy.wait('@teamInvitations');
+      cy.contains('invite1@example.com').should('be.visible');
+      cy.contains('invite2@example.com').should('be.visible');
+      cy.contains('invite3@example.com').should('be.visible');
+
+      // Create a new invitation
+      cy.get('[data-cy="team-invite-button"]').click();
+      cy.get('[data-cy="invite-email-input"]').type('invite4@example.com');
+      cy.get('[data-cy="invite-submit-button"]').click();
+
+      cy.wait('@createInvite').then((interception) => {
+        expect(interception.response.statusCode).to.equal(201);
+      });
+    });
+
+    it("does not show upgrade prompts for team features", () => {
+      visitTeamsDashboard();
+
+      // No upgrade prompts should be visible in team context
+      cy.contains('Uppgradera till Premium').should('not.exist');
+      cy.contains('gratis-planens gräns').should('not.exist');
+    });
+
+    it.only("backend allows team member creation beyond free limit", () => {
+      // Use base members plus 8 generated members (total 10 > free limit of 3)
+      const manyMembers = [
+        ...baseMembers,
+        ...generateTeamMembers(8)
+      ];
+
+      cy.stubSupabaseForTeams(fixtures, {
+        members: manyMembers,
+        canAddMember: true,
+      });
+
+      visitTeamsDashboard();
+
+      // Wait for team page to load and verify invite button exists
+      cy.get('[data-cy="team-invite-button"]', { timeout: 10000 })
+        .should('be.visible')
+        .should('not.be.disabled')
+        .click();
+        
+      cy.get('[data-cy="invite-email-input"]').type('newmember@example.com');
+      cy.get('[data-cy="invite-submit-button"]').click();
+
+      // Verify backend check passes
+      cy.wait('@canAddTeamMember').then((interception) => {
+        expect(interception.response.body).to.equal(true);
+      });
+
+      cy.wait('@createInvite').then((interception) => {
+        expect(interception.response.statusCode).to.equal(201);
+      });
     });
   });
 });

@@ -6,7 +6,7 @@
  * 2. Free-plan limit of 2 wheels is enforced
  */
 
-import { TEST_USER } from '../support/team-test-helpers';
+import { TEST_USER } from '../support/test-helpers';
 
 describe('Wheel Creation and Limits', () => {
   let fixtures = {};
