@@ -33,23 +33,13 @@ describe("Team Seat Limits", () => {
   describe("for Freemium user", () => {
     let fixtures = {};
 
-    beforeEach(() => {
-      // Set up fixtures for freemium user
+    before(() => {
+      // Set up fixtures for freemium user (once for all tests in this block)
       fixtures = setupFreemiumUser(baseFixtures);
-
-      // Verify fixtures are loaded
-      expect(fixtures.authUser, "authUser fixture should be loaded").to.exist;
-      expect(fixtures.authSession, "authSession fixture should be loaded").to
-        .exist;
-      expect(fixtures.subscription, "subscription fixture should be loaded").to
-        .exist;
-      expect(fixtures.subscription.status, "should be freemium").to.equal('inactive');
-
-      // Set up common intercepts using Cypress command
-      cy.stubSupabaseForTeams(fixtures);
     });
 
     it("allows invites while under the free-plan limit", () => {
+      cy.stubSupabaseForTeams(fixtures);
       visitTeamsDashboard();
 
       // Open invite modal
@@ -99,7 +89,11 @@ describe("Team Seat Limits", () => {
         created_at: new Date(Date.now() - 86400000).toISOString(),
       };
 
-      cy.stubSupabaseForTeams(fixtures, { invites: [existingInvite] });
+      // Override teamInvitations to include existing invite
+      cy.intercept('GET', '**/rest/v1/team_invitations*', {
+        statusCode: 200,
+        body: [existingInvite],
+      }).as('teamInvitations');
       visitTeamsDashboard();
 
       // Create new invitation
@@ -131,11 +125,7 @@ describe("Team Seat Limits", () => {
         },
       };
 
-      // Set up all necessary intercepts using Cypress commands
-      cy.stubAuthEndpoints(fixtures);
-      cy.stubUserData(fixtures);
-      cy.stubWheelData(fixtures);
-      cy.stubOrganizationData();
+      // Set up invitation acceptance intercepts
       cy.stubInvitationAcceptance(testInvitation);
 
       // Navigate to invitations
@@ -276,17 +266,9 @@ describe("Team Seat Limits", () => {
   describe("for Subscribing user", () => {
     let fixtures = {};
 
-    beforeEach(() => {
-      // Set up fixtures for premium user
+    before(() => {
+      // Set up fixtures for premium user (once for all tests in this block)
       fixtures = setupPremiumUser(baseFixtures);
-
-      // Verify fixtures are loaded
-      expect(fixtures.authUser, "authUser fixture should be loaded").to.exist;
-      expect(fixtures.subscription, "subscription fixture should be loaded").to.exist;
-      expect(fixtures.subscription.status, "should be premium").to.equal('active');
-
-      // Set up common intercepts using Cypress command
-      cy.stubSupabaseForTeams(fixtures);
     });
 
     it("allows unlimited team member invitations", () => {
@@ -432,7 +414,7 @@ describe("Team Seat Limits", () => {
       cy.contains('gratis-planens gräns').should('not.exist');
     });
 
-    it.only("backend allows team member creation beyond free limit", () => {
+    it("backend allows team member creation beyond free limit", () => {
       // Use base members plus 8 generated members (total 10 > free limit of 3)
       const manyMembers = [
         ...baseMembers,
