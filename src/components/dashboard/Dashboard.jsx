@@ -14,7 +14,6 @@ import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
 import { Users, Mail, LayoutGrid, Crown, Shield, Sparkles, User, LogOut, ChevronDown, TrendingUp } from 'lucide-react';
 import { useUsageLimits } from '../../hooks/useSubscription';
-import { useSubscription } from '../../hooks/useSubscription';
 import SubscriptionModal from '../subscription/SubscriptionModal';
 import UpgradePrompt from '../subscription/UpgradePrompt';
 import SubscriptionSettings from '../subscription/SubscriptionSettings';
@@ -225,8 +224,16 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [isAffiliateMember, setIsAffiliateMember] = useState(false);
   
   // Subscription state
-  const { hasReachedWheelLimit, wheelCount, maxWheels, isPremium, loading: subscriptionLoading, refresh: refreshSubscription } = useUsageLimits();
-  const { isAdmin: isAdminUser, subscription } = useSubscription();
+  const { 
+    hasReachedWheelLimit, 
+    wheelCount, 
+    maxWheels, 
+    isPremium, 
+    isAdmin: isAdminUser, 
+    subscription,
+    loading: subscriptionLoading, 
+    refresh: refreshSubscription 
+  } = useUsageLimits();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);

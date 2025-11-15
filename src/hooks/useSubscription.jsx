@@ -157,7 +157,7 @@ export function useSubscription() {
  * Hook for checking if user has reached usage limits
  */
 export function useUsageLimits() {
-  const { isPremium, wheelCount, limits, loading, refresh } = useSubscription();
+  const { isPremium, isAdmin, wheelCount, limits, loading, refresh, subscription } = useSubscription();
 
   const hasReachedWheelLimit = !isPremium && wheelCount >= (limits?.maxWheels || 2);
   
@@ -166,6 +166,8 @@ export function useUsageLimits() {
     wheelCount,
     maxWheels: limits?.maxWheels || 2,
     isPremium,
+    isAdmin,
+    subscription,
     loading,
     refresh, // Export the refresh function so it updates this instance
     canExport: (format) => {
