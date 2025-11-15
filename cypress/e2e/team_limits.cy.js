@@ -36,10 +36,12 @@ describe("Team Seat Limits", () => {
     beforeEach(() => {
       // Set up fresh fixtures for each test
       fixtures = setupFreemiumUser(baseFixtures);
+      
+      // Set up intercepts in beforeEach so they're ready before any test code runs
+      cy.stubSupabaseForTeams(fixtures);
     });
 
     it("allows invites while under the free-plan limit", () => {
-      cy.stubSupabaseForTeams(fixtures);
       visitTeamsDashboard();
 
       // Open invite modal
@@ -269,6 +271,9 @@ describe("Team Seat Limits", () => {
     beforeEach(() => {
       // Set up fresh fixtures for each test
       fixtures = setupPremiumUser(baseFixtures);
+      
+      // Set up intercepts in beforeEach so they're ready before any test code runs
+      cy.stubSupabaseForTeams(fixtures);
     });
 
     it("allows unlimited team member invitations", () => {
@@ -407,6 +412,7 @@ describe("Team Seat Limits", () => {
     });
 
     it("does not show upgrade prompts for team features", () => {
+      cy.stubSupabaseForTeams(fixtures);
       visitTeamsDashboard();
 
       // No upgrade prompts should be visible in team context
