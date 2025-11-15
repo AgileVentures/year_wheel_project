@@ -91,11 +91,33 @@ describe("Team Seat Limits", () => {
         created_at: new Date(Date.now() - 86400000).toISOString(),
       };
 
-      // Override teamInvitations to include existing invite
+      const newInvite = {
+        id: "new-invite-2",
+        email: "ny.member@example.com",
+        token: "new-token",
+        team_id: TEAM_ID,
+        status: "pending",
+        created_at: new Date().toISOString(),
+      };
+
+      // First intercept: return existing invite
       cy.intercept('GET', '**/rest/v1/team_invitations*', {
         statusCode: 200,
         body: [existingInvite],
-      }).as('teamInvitations');
+      }).as('teamInvitationsInitial');
+
+      // Intercept creation to return the new invite
+      cy.intercept('POST', '**/rest/v1/team_invitations*', {
+        statusCode: 201,
+        body: [newInvite],
+      }).as('createInvite');
+
+      // After creation, return both invites
+      cy.intercept('GET', '**/rest/v1/team_invitations*', {
+        statusCode: 200,
+        body: [existingInvite, newInvite],
+      }).as('teamInvitationsAfterCreate');
+
       visitTeamsDashboard();
 
       // Create new invitation
@@ -108,7 +130,7 @@ describe("Team Seat Limits", () => {
       cy.get('[data-cy="invite-success-close-button"]').click();
 
       // Verify both invitations appear
-      cy.wait("@teamInvitations");
+      cy.wait("@teamInvitationsAfterCreate");
       cy.contains("existing@example.com").should("be.visible");
       cy.contains("ny.member@example.com").should("be.visible");
     });
