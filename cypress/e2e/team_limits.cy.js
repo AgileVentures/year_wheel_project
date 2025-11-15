@@ -21,6 +21,9 @@ describe("Team Seat Limits", () => {
   let baseFixtures = {};
 
   before(() => {
+    // Block external resources once for all tests
+    cy.blockExternalResources();
+    
     // Load all fixtures using custom command
     cy.loadFixtures().then((loadedFixtures) => {
       baseFixtures = loadedFixtures;
@@ -129,7 +132,6 @@ describe("Team Seat Limits", () => {
       };
 
       // Set up all necessary intercepts using Cypress commands
-      cy.blockExternalResources();
       cy.stubAuthEndpoints(fixtures);
       cy.stubUserData(fixtures);
       cy.stubWheelData(fixtures);

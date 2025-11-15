@@ -192,9 +192,9 @@ export function stubTeamDataImpl(fixtures, options = {}) {
 
 /**
  * Set up all common intercepts for team tests
+ * Note: Does NOT call blockExternalResources - call that separately if needed
  */
 export function stubSupabaseForTeamsImpl(fixtures, options = {}) {
-  blockExternalResourcesImpl();
   stubAuthEndpointsImpl(fixtures);
   stubUserDataImpl(fixtures);
   stubWheelDataImpl(fixtures);
