@@ -129,7 +129,7 @@ export default function Unsubscribe() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+        <div className="bg-white rounded-sm shadow-xl p-8 max-w-md w-full text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Laddar...</p>
         </div>
@@ -139,7 +139,7 @@ export default function Unsubscribe() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
+      <div className="bg-white rounded-sm shadow-xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
           {unsubscribed ? (
             <CheckCircle className="mx-auto h-16 w-16 text-green-600 mb-4" />
@@ -155,7 +155,7 @@ export default function Unsubscribe() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-800">{error}</p>
           </div>
@@ -163,7 +163,7 @@ export default function Unsubscribe() {
 
         {unsubscribed ? (
           <div className="space-y-4">
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-sm">
               <p className="text-sm text-gray-700 mb-2">
                 Du är nu avregistrerad från våra nyhetsbrev.
               </p>
@@ -176,14 +176,14 @@ export default function Unsubscribe() {
               <button
                 onClick={handleResubscribe}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors"
+                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium rounded-sm transition-colors"
               >
                 {loading ? 'Återregistrerar...' : 'Prenumerera igen'}
               </button>
 
               <button
                 onClick={() => navigate('/dashboard')}
-                className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-lg transition-colors"
+                className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-sm transition-colors"
               >
                 Tillbaka till översikt
               </button>
@@ -191,7 +191,7 @@ export default function Unsubscribe() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-sm">
               <p className="text-sm text-gray-700 mb-2">
                 Vill du sluta få nyhetsbrev från YearWheel?
               </p>
@@ -204,14 +204,14 @@ export default function Unsubscribe() {
               <button
                 onClick={handleUnsubscribe}
                 disabled={loading}
-                className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-medium rounded-lg transition-colors"
+                className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-medium rounded-sm transition-colors"
               >
                 {loading ? 'Avregistrerar...' : 'Ja, avregistrera mig'}
               </button>
 
               <button
                 onClick={() => navigate('/dashboard')}
-                className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-lg transition-colors"
+                className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-sm transition-colors"
               >
                 Avbryt
               </button>

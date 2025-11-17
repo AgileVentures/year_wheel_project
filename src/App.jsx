@@ -40,6 +40,7 @@ const Marknadsplanering = lazy(() => import("./pages/landing/Marknadsplanering")
 const SkolaUtbildning = lazy(() => import("./pages/landing/SkolaUtbildning"));
 const Projektplanering = lazy(() => import("./pages/landing/Projektplanering"));
 const QuickStartGuide = lazy(() => import("./components/QuickStartGuide"));
+const ArshjulGuide = lazy(() => import("./pages/ArshjulGuide"));
 
 // Lazy load heavy editor components with retry logic (only needed in editor route)
 const lazyWithRetry = (componentImport) => 
@@ -4679,6 +4680,7 @@ function AppContent() {
         <Route path="/support" element={<SupportPage />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/guide/quick-start" element={<QuickStartGuide />} />
+        <Route path="/guide/arshjul" element={<ArshjulGuide />} />
         <Route path="/legal/:document" element={<LegalPage />} />
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
