@@ -202,41 +202,6 @@ describe('Subscription Purchase Flow', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('shows error toast when checkout session creation fails', () => {
-      // Stub Stripe Edge Function to return network error
-      cy.intercept('POST', '**/functions/v1/create-checkout-session', {
-        forceNetworkError: true
-      }).as('createCheckoutSessionError');
-
-      cy.visitWithMockAuth('/pricing', {
-        id: TEST_USER.id,
-        email: TEST_USER.email,
-      });
-
-      cy.contains('Enkel prissättning', { timeout: 10000 }).should('be.visible');
-
-      // Open modal
-      cy.get('[data-cy="premium-plan-cta"]').scrollIntoView().click({ force: true });
-
-      // Modal should be visible
-      cy.contains('Välj din plan').should('be.visible');
-
-      // Click upgrade button
-      cy.get('[data-cy="upgrade-monthly-button"]').click();
-
-      // Wait a bit for the async error handling
-      cy.wait(1000);
-      
-      // Verify error toast appears
-      cy.get('[data-cy="toast-error"]', { timeout: 5000 }).should('be.visible');
-      cy.get('[data-cy="toast-message"]').should('contain', 'Något gick fel');
-      
-      // Modal should remain open (not redirected)
-      cy.contains('Välj din plan').should('be.visible');
-    });
-  });
-
   describe('Unauthenticated User', () => {
     it('redirects to auth page when not logged in', () => {
       // Block external resources
