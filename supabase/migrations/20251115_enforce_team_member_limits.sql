@@ -3,6 +3,10 @@
 -- Align can_add_team_member/get_team_member_count with team-based collaboration model
 -- =====================================================
 
+-- Drop existing functions to allow parameter name changes
+DROP FUNCTION IF EXISTS public.get_team_member_count(UUID);
+DROP FUNCTION IF EXISTS public.can_add_team_member(UUID, UUID);
+
 -- Count members for a team (including owner/admin/member roles)
 CREATE OR REPLACE FUNCTION public.get_team_member_count(team_uuid UUID)
 RETURNS INTEGER

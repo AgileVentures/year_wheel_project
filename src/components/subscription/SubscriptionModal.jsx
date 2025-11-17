@@ -141,6 +141,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            data-cy="close-subscription-modal"
           >
             <X size={24} />
           </button>
@@ -234,6 +235,7 @@ export default function SubscriptionModal({ onClose, currentPlan = 'free' }) {
                       ${plan.disabled ? 'cursor-not-allowed opacity-60' : ''}
                       ${loading ? 'opacity-50 cursor-wait' : ''}
                     `}
+                    data-cy={`upgrade-${plan.id}-button`}
                   >
                     {loading && !plan.disabled ? t('subscription:modal.processing') : plan.buttonText}
                   </button>

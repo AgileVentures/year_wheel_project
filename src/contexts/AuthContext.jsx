@@ -27,7 +27,8 @@ export function AuthProvider({ children }) {
       setLoading(false);
     };
 
-    if (injectedUser) {
+    // If __YEARWHEEL_TEST_USER__ exists (even if null), use it and set loading to false
+    if (win && '__YEARWHEEL_TEST_USER__' in win) {
       setUser(injectedUser);
       setLoading(false);
     }
@@ -45,8 +46,9 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const win = typeof window !== 'undefined' ? window : undefined;
-    if (win?.Cypress) {
-      // Skip real Supabase auth calls when Cypress has injected a user
+    if (win?.Cypress || win?.__YEARWHEEL_TEST_USER__ !== undefined) {
+      // Skip real Supabase auth calls when in Cypress test mode
+      // The first useEffect handles test user injection
       return;
     }
 

@@ -100,6 +100,7 @@ function PricingPage() {
             aria-label={`Switch to ${billingCycle === 'monthly' ? 'yearly' : 'monthly'} billing`}
             role="switch"
             aria-checked={billingCycle === 'yearly'}
+            data-cy="billing-cycle-toggle"
           >
             <span className="sr-only">Toggle billing cycle</span>
             <span
@@ -196,6 +197,7 @@ function PricingPage() {
             <button
               onClick={handleGetStarted}
               className="w-full py-3 px-6 bg-white hover:bg-[#A4E6E0] text-[#1B2A63] rounded-sm font-semibold transition-colors mb-8 shadow-lg"
+              data-cy="premium-plan-cta"
             >
               {t('landing:pricing.premium.cta')}
             </button>

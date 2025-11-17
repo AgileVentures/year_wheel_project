@@ -47,6 +47,7 @@ function Toast() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
+          data-cy={`toast-${toast.type}`}
           className={`
             ${getStyles(toast.type)}
             flex items-center gap-3 px-4 py-3 rounded-sm border shadow-lg
@@ -56,10 +57,11 @@ function Toast() {
           <div className="flex-shrink-0">
             {getIcon(toast.type)}
           </div>
-          <p className="flex-1 font-medium">{toast.message}</p>
+          <p className="flex-1 font-medium" data-cy="toast-message">{toast.message}</p>
           <button
             onClick={() => removeToast(toast.id)}
             className="flex-shrink-0 hover:opacity-70 transition-opacity"
+            aria-label="Close notification"
           >
             <X size={16} />
           </button>
