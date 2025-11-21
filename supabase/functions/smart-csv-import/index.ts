@@ -45,11 +45,11 @@ serve(async (req: Request) => {
       )
     }
 
-    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails } = await req.json()
+    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions } = await req.json()
 
     if (action === 'analyze') {
       // Analyze CSV structure and generate AI suggestions
-      const result = await analyzeCsvWithAI(csvStructure, wheelId, currentPageId, supabase)
+      const result = await analyzeCsvWithAI(csvStructure, wheelId, currentPageId, supabase, refinementPrompt, previousSuggestions)
       
       return new Response(
         JSON.stringify(result),
@@ -79,8 +79,12 @@ serve(async (req: Request) => {
 /**
  * Analyze CSV structure using OpenAI and generate mapping suggestions
  */
-async function analyzeCsvWithAI(csvStructure: any, wheelId: string, currentPageId: string, supabase: any) {
-  console.log('[analyzeCsvWithAI] Analyzing CSV structure...')
+async function analyzeCsvWithAI(csvStructure: any, wheelId: string, currentPageId: string, supabase: any, refinementPrompt?: string, previousSuggestions?: any) {
+  console.log('[analyzeCsvWithAI] Analyzing CSV structure...', {
+    totalRows: csvStructure.totalRows,
+    sampleRows: csvStructure.sampleRows?.length,
+    isRefinement: !!refinementPrompt
+  })
   
   const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY')! })
   
@@ -109,6 +113,10 @@ async function analyzeCsvWithAI(csvStructure: any, wheelId: string, currentPageI
 
   const systemPrompt = `You are an expert data analyst specializing in CSV import and mapping for Year Wheel planning applications.
 
+${refinementPrompt ? `USER REFINEMENT REQUEST: "${refinementPrompt}"
+
+You must adjust the previous suggestions based on this request while maintaining data integrity.` : ''}
+
 Your task is to analyze a CSV file structure and generate intelligent mapping suggestions that will be executed by the AI Assistant V2.
 
 CONTEXT:
@@ -119,21 +127,31 @@ CONTEXT:
 
 CSV STRUCTURE:
 - Headers: ${JSON.stringify(csvStructure.headers)}
-- Sample Rows: ${JSON.stringify(csvStructure.sampleRows.slice(0, 3))}
+- Sample Rows (first 5): ${JSON.stringify(csvStructure.sampleRows.slice(0, 5))}
 - Total Rows: ${csvStructure.totalRows}
+
+CRITICAL: You MUST generate mappings for ALL ${csvStructure.totalRows} rows, not just samples!
+For each row in the CSV, create an activity entry in the activities array.
 
 YOUR TASK:
 1. Identify which columns map to: activity name, start date, end date, description, ring, category/group, person/owner, comments
-2. Detect date formats (YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, etc.)
+2. Detect date formats and convert ALL to YYYY-MM-DD
 3. Suggest rings to create (REUSE existing rings if they match!)
 4. Suggest activity groups to create (REUSE existing groups if they match!)
-5. Generate activity mappings with correct ring and group assignments
+5. Generate activity mappings for EVERY ROW in the CSV (all ${csvStructure.totalRows} activities)
 6. Detect people mentioned (names, emails) for team invitations
 7. Handle any special columns (status, priority, tags, etc.)
+
+DATE HANDLING:
+- Excel serial dates (numbers like 45321): Convert to YYYY-MM-DD
+- Text dates (DD/MM/YYYY, MM/DD/YYYY): Parse and convert to YYYY-MM-DD
+- If only end date exists, use it for both start and end
+- If no date column, distribute activities evenly across ${page?.year}
 
 RING STRATEGY:
 - "outer" rings: For external events, holidays, milestones, deadlines
 - "inner" rings: For main tracks, strategic initiatives, team-specific work
+- Keep it simple: 1-3 rings for most cases
 
 RESPONSE FORMAT (JSON):
 {
@@ -148,57 +166,55 @@ RESPONSE FORMAT (JSON):
       "person": "column_name_or_null",
       "comments": "column_name_or_null"
     },
-    "dateFormat": "YYYY-MM-DD|DD/MM/YYYY|MM/DD/YYYY|etc",
-    "explanation": "Brief explanation of the detected structure"
+    "dateFormat": "detected_format",
+    "explanation": "Brief explanation"
   },
   "rings": [
     {
       "name": "Ring name in Swedish",
       "type": "outer|inner",
       "color": "#hex_color_for_outer_only",
-      "description": "Why this ring",
-      "existingId": "uuid_if_reusing_existing|null"
+      "description": "Why this ring"
     }
   ],
   "activityGroups": [
     {
       "name": "Group name in Swedish",
       "color": "#hex_color",
-      "description": "Purpose",
-      "existingId": "uuid_if_reusing_existing|null"
+      "description": "Purpose"
     }
   ],
   "activities": [
+    // ⚠️ MUST INCLUDE ALL ${csvStructure.totalRows} ACTIVITIES!
     {
-      "name": "Activity name",
+      "name": "Activity name from row",
       "startDate": "YYYY-MM-DD",
       "endDate": "YYYY-MM-DD",
       "ring": "ring_name_matching_above",
       "group": "group_name_matching_above",
-      "description": "Optional description text"
+      "description": "Optional"
     }
   ],
   "detectedPeople": [
     {
       "name": "Person name|null",
-      "email": "email@example.com",
-      "context": "Where they were mentioned"
+      "email": "email@example.com|null",
+      "context": "Where mentioned"
     }
   ]
 }
 
-IMPORTANT:
-- ALL dates MUST be in YYYY-MM-DD format in the output
-- Match existing rings/groups by name similarity when possible
-- Activity dates must be within the page year (${page?.year})
-- Use professional Swedish names for rings and groups
-- Detect email patterns: name@domain.com, Name <email@domain.com>
-- Be conservative with rings (3-6 is ideal)
-- Activity groups should be distinct categories
+CRITICAL RULES:
+- activities array MUST contain ${csvStructure.totalRows} entries (one per CSV row)
+- ALL dates MUST be YYYY-MM-DD format
+- Use existing rings/groups when possible
+- Activity dates must be in year ${page?.year}
 
 Respond ONLY with valid JSON, no other text.`
 
-  const userPrompt = `Analyze this CSV structure and generate comprehensive import suggestions.`
+  let userPrompt = refinementPrompt 
+    ? `Previous suggestions: ${JSON.stringify(previousSuggestions, null, 2)}\n\nREFINEMENT REQUEST: ${refinementPrompt}\n\nGenerate updated suggestions based on the refinement request.`
+    : `Analyze this CSV and generate import suggestions for ALL ${csvStructure.totalRows} rows.`
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -353,7 +369,8 @@ async function executeImport(
   } catch (error) {
     console.error('[executeImport] Critical error:', error)
     results.success = false
-    results.errors.push(error.message || 'Okänt fel vid import')
+    const errorMessage = error instanceof Error ? error.message : 'Okänt fel vid import'
+    results.errors.push(errorMessage)
   }
 
   return {

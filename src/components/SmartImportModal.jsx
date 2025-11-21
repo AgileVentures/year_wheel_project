@@ -14,13 +14,14 @@ import { supabase } from '../lib/supabase';
  * - Comprehensive error handling and rollback
  */
 export default function SmartImportModal({ isOpen, onClose, wheelId, currentPageId, onImportComplete }) {
-  const [stage, setStage] = useState('upload'); // upload, analyzing, review, importing, complete
+  const [stage, setStage] = useState('upload'); // upload, analyzing, review, refining, importing, complete
   const [csvData, setCsvData] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(null);
   const [detectedPeople, setDetectedPeople] = useState([]);
   const [selectedPeople, setSelectedPeople] = useState(new Set());
+  const [refinementPrompt, setRefinementPrompt] = useState('');
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
@@ -120,30 +121,56 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
   const handleImport = async () => {
     setStage('importing');
-    setProgress('Importerar data...');
+    setProgress('Skapar struktur och aktiviteter...');
 
     try {
-      // Use dedicated smart-csv-import Edge Function to execute the import
-      const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
+      // Use AI Assistant V2 to apply suggestions using its existing tools
+      const { data, error: apiError } = await supabase.functions.invoke('ai-assistant-v2', {
         body: {
-          action: 'import',
           wheelId,
           currentPageId,
-          csvData: {
-            headers: csvData.headers,
-            rows: csvData.rows
-          },
-          suggestions: aiSuggestions,
-          inviteEmails: Array.from(selectedPeople)
+          message: `Applicera dessa CSV-importförslag:\n\nRingar: ${aiSuggestions.rings.length}\nAktivitetsgrupper: ${aiSuggestions.activityGroups.length}\nAktiviteter: ${aiSuggestions.activities.length}\n\nAnvänd apply_suggested_plan verktyget för att skapa allt.`,
+          context: {
+            lastSuggestions: aiSuggestions,
+            lastSuggestionsRaw: JSON.stringify({
+              success: true,
+              suggestions: aiSuggestions
+            })
+          }
         }
       });
 
       if (apiError) throw apiError;
 
-      console.log('[SmartImport] Import result:', data);
+      console.log('[SmartImport] AI Assistant result:', data);
 
-      if (!data.success) {
-        throw new Error(data.message || 'Import misslyckades');
+      // Handle team invitations if any people selected
+      if (selectedPeople.size > 0) {
+        setProgress('Skickar teameinbjudningar...');
+        
+        const { data: wheel } = await supabase
+          .from('year_wheels')
+          .select('team_id')
+          .eq('id', wheelId)
+          .single();
+
+        if (wheel?.team_id) {
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          for (const email of selectedPeople) {
+            try {
+              await supabase
+                .from('team_invitations')
+                .insert({
+                  team_id: wheel.team_id,
+                  email: email.toLowerCase().trim(),
+                  invited_by: user.id
+                });
+            } catch (inviteErr) {
+              console.warn('[SmartImport] Failed to invite:', email, inviteErr);
+            }
+          }
+        }
       }
 
       setStage('complete');
@@ -163,13 +190,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   };
 
   const togglePersonSelection = (email) => {
-    const newSet = new Set(selectedPeople);
-    if (newSet.has(email)) {
-      newSet.delete(email);
-    } else {
-      newSet.add(email);
-    }
-    setSelectedPeople(newSet);
+    setSelectedPeople(prevSelected => {
+      const newSet = new Set(prevSelected);
+      if (newSet.has(email)) {
+        newSet.delete(email);
+      } else {
+        newSet.add(email);
+      }
+      return newSet;
+    });
   };
 
   const handleClose = () => {
@@ -179,8 +208,50 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setProgress(null);
     setDetectedPeople([]);
     setSelectedPeople(new Set());
+    setRefinementPrompt('');
     setStage('upload');
     onClose();
+  };
+
+  const handleRefine = async () => {
+    if (!refinementPrompt.trim()) return;
+    
+    setStage('analyzing');
+    setProgress('AI justerar förslag...');
+    setError(null);
+
+    try {
+      const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
+        body: {
+          action: 'analyze',
+          wheelId,
+          currentPageId,
+          csvStructure: {
+            headers: csvData.headers,
+            sampleRows: csvData.rows.slice(0, 20),
+            totalRows: csvData.rows.length
+          },
+          refinementPrompt: refinementPrompt,
+          previousSuggestions: aiSuggestions
+        }
+      });
+
+      if (apiError) throw apiError;
+      if (!data.success || !data.suggestions) {
+        throw new Error(data.message || 'AI kunde inte generera nya förslag');
+      }
+
+      setAiSuggestions(data.suggestions);
+      setDetectedPeople(data.suggestions.detectedPeople || []);
+      setRefinementPrompt('');
+      setStage('review');
+      setProgress(null);
+    } catch (err) {
+      console.error('[SmartImport] Refinement error:', err);
+      setError(err.message || 'Fel vid justering av förslag');
+      setProgress(null);
+      setStage('review');
+    }
   };
 
   const renderUploadStage = () => (
@@ -447,7 +518,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-sm shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -491,21 +562,56 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
         {/* Footer Actions */}
         {stage === 'review' && (
-          <div className="border-t border-gray-200 p-6 bg-gray-50">
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setStage('upload')}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
-              >
-                Avbryt
-              </button>
-              <button
-                onClick={handleImport}
-                className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                Importera
-              </button>
+          <div className="border-t border-gray-200 bg-gray-50">
+            {/* Refinement Section */}
+            <div className="p-4 border-b border-gray-200">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Justera förslag (valfritt)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={refinementPrompt}
+                  onChange={(e) => setRefinementPrompt(e.target.value)}
+                  placeholder="T.ex: 'Skapa fler ringar', 'Använd andra färger', 'Gruppera per månad'"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && refinementPrompt.trim()) {
+                      handleRefine();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handleRefine}
+                  disabled={!refinementPrompt.trim()}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Justera
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Be AI:n att justera förslagen innan du importerar
+              </p>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="p-6">
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setStage('upload')}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
+                >
+                  Avbryt
+                </button>
+                <button
+                  onClick={handleImport}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Importera
+                </button>
+              </div>
             </div>
           </div>
         )}
