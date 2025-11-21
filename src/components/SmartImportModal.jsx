@@ -76,74 +76,29 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setProgress('AI analyserar CSV-strukturen...');
 
     try {
-      // Prepare CSV structure for AI analysis
-      const csvAnalysisPrompt = `Analysera denna CSV-struktur och generera importförslag:
-
-Kolumner: ${headers.join(', ')}
-
-Exempel på data (första 5 rader):
-${rows.slice(0, 5).map((row, idx) => 
-  `Rad ${idx + 1}: ${headers.map((h, i) => `${h}="${row[i] || ''}"`).join(', ')}`
-).join('\n')}
-
-Totalt antal rader: ${rows.length}
-
-Generera förslag för:
-1. Vilka ringar som behövs (outer för externa händelser, inner för huvudspår)
-2. Vilka aktivitetsgrupper (färgkodade kategorier)
-3. Mappning av aktiviteter med startdatum, slutdatum
-4. Identifiera personer/emails för teameinbjudningar
-
-Svara med ett JSON-objekt med denna struktur:
-{
-  "rings": [{"name": "...", "type": "outer|inner", "color": "#hex", "description": "..."}],
-  "activityGroups": [{"name": "...", "color": "#hex", "description": "..."}],
-  "activities": [{"name": "...", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD", "ring": "ringnamn", "group": "gruppnamn", "description": "..."}],
-  "detectedPeople": [{"name": "...", "email": "...", "context": "..."}],
-  "mapping": {
-    "columns": {"activityName": "kolumnnamn", "startDate": "kolumnnamn", "endDate": "kolumnnamn", ...},
-    "explanation": "Förklaring av strukturen"
-  }
-}`;
-
-      // Use AI Assistant V2 directly with suggest_plan functionality
-      const { data, error: apiError } = await supabase.functions.invoke('ai-assistant-v2', {
+      // Use dedicated smart-csv-import Edge Function for analysis
+      const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
         body: {
+          action: 'analyze',
           wheelId,
           currentPageId,
-          message: csvAnalysisPrompt,
-          useTools: ['suggest_plan'] // This tells AI to use the suggest_plan tool
+          csvStructure: {
+            headers,
+            sampleRows: rows.slice(0, 10), // Send first 10 rows for analysis
+            totalRows: rows.length
+          }
         }
       });
 
       if (apiError) throw apiError;
 
-      console.log('[SmartImport] AI Assistant response:', data);
+      console.log('[SmartImport] AI analysis result:', data);
 
-      // Extract suggestions from AI response
-      // The AI Assistant V2 might return suggestions in the context or as tool results
-      let suggestions = null;
-      
-      if (data.context?.lastSuggestions) {
-        suggestions = data.context.lastSuggestions;
-      } else if (data.suggestions) {
-        suggestions = data.suggestions;
-      } else {
-        // Try to parse from message if AI returned JSON
-        try {
-          const jsonMatch = data.message?.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            suggestions = JSON.parse(jsonMatch[0]);
-          }
-        } catch (e) {
-          console.warn('[SmartImport] Could not parse JSON from message');
-        }
+      if (!data.success || !data.suggestions) {
+        throw new Error(data.message || 'AI kunde inte generera förslag');
       }
 
-      if (!suggestions) {
-        throw new Error('AI kunde inte generera förslag. Prova igen eller kontrollera CSV-strukturen.');
-      }
-
+      const suggestions = data.suggestions;
       setAiSuggestions(suggestions);
       setDetectedPeople(suggestions.detectedPeople || []);
       
@@ -168,22 +123,18 @@ Svara med ett JSON-objekt med denna struktur:
     setProgress('Importerar data...');
 
     try {
-      // Use AI Assistant V2 to apply the suggestions
-      // This leverages the existing applySuggestions function which creates rings, groups, and activities
-      const { data, error: apiError } = await supabase.functions.invoke('ai-assistant-v2', {
+      // Use dedicated smart-csv-import Edge Function to execute the import
+      const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
         body: {
+          action: 'import',
           wheelId,
           currentPageId,
-          message: 'Applicera CSV-importförslag nu',
-          context: {
-            // Pass suggestions to AI Assistant context so applySuggestions can use them
-            lastSuggestions: aiSuggestions,
-            lastSuggestionsRaw: JSON.stringify({
-              success: true,
-              suggestions: aiSuggestions
-            })
+          csvData: {
+            headers: csvData.headers,
+            rows: csvData.rows
           },
-          useTools: ['apply_suggested_plan'] // Tell AI to apply the plan
+          suggestions: aiSuggestions,
+          inviteEmails: Array.from(selectedPeople)
         }
       });
 
@@ -191,36 +142,8 @@ Svara med ett JSON-objekt med denna struktur:
 
       console.log('[SmartImport] Import result:', data);
 
-      // Handle team invitations separately
-      if (selectedPeople.size > 0) {
-        setProgress('Skickar teameinbjudningar...');
-        
-        // Get wheel's team_id
-        const { data: wheel } = await supabase
-          .from('year_wheels')
-          .select('team_id')
-          .eq('id', wheelId)
-          .single();
-
-        if (wheel?.team_id) {
-          const invitePromises = Array.from(selectedPeople).map(async (email) => {
-            try {
-              await supabase
-                .from('team_invitations')
-                .insert({
-                  team_id: wheel.team_id,
-                  email: email.toLowerCase().trim(),
-                  invited_by: (await supabase.auth.getUser()).data.user?.id
-                });
-              return { success: true, email };
-            } catch (err) {
-              console.warn('[SmartImport] Invitation failed:', email, err);
-              return { success: false, email, error: err.message };
-            }
-          });
-
-          await Promise.all(invitePromises);
-        }
+      if (!data.success) {
+        throw new Error(data.message || 'Import misslyckades');
       }
 
       setStage('complete');
@@ -274,7 +197,7 @@ Svara med ett JSON-objekt med denna struktur:
         </p>
       </div>
 
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+      <div className="border-2 border-dashed border-gray-300 rounded-sm p-8 text-center hover:border-blue-400 transition-colors">
         <input
           ref={fileInputRef}
           type="file"
@@ -284,7 +207,7 @@ Svara med ett JSON-objekt med denna struktur:
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
         >
           <FileSpreadsheet className="w-5 h-5" />
           Välj CSV-fil
@@ -294,7 +217,7 @@ Svara med ett JSON-objekt med denna struktur:
         </p>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
         <div className="flex gap-3">
           <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800 space-y-2">
@@ -336,7 +259,7 @@ Svara med ett JSON-objekt med denna struktur:
 
     return (
       <div className="space-y-6 max-h-[60vh] overflow-y-auto">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 border border-green-200 rounded-sm p-4">
           <div className="flex items-start gap-3">
             <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div>
@@ -353,7 +276,7 @@ Svara med ett JSON-objekt med denna struktur:
           <h4 className="font-medium text-gray-900 mb-3">Ringar ({aiSuggestions.rings.length})</h4>
           <div className="space-y-2">
             {aiSuggestions.rings.map((ring, idx) => (
-              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-sm p-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="font-medium text-gray-900">{ring.name}</span>
@@ -383,7 +306,7 @@ Svara med ett JSON-objekt med denna struktur:
           </h4>
           <div className="space-y-2">
             {aiSuggestions.activityGroups.map((group, idx) => (
-              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-sm p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">{group.name}</span>
                   <div 
@@ -404,7 +327,7 @@ Svara med ett JSON-objekt med denna struktur:
           <h4 className="font-medium text-gray-900 mb-3">
             Aktiviteter ({aiSuggestions.activities.length})
           </h4>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <div className="bg-gray-50 border border-gray-200 rounded-sm p-3">
             <p className="text-sm text-gray-700">
               {aiSuggestions.activities.length} aktiviteter kommer att importeras
             </p>
@@ -434,7 +357,7 @@ Svara med ett JSON-objekt med denna struktur:
               {detectedPeople.map((person, idx) => (
                 <label 
                   key={idx}
-                  className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-100"
+                  className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-sm p-3 cursor-pointer hover:bg-gray-100"
                 >
                   <input
                     type="checkbox"
@@ -469,7 +392,7 @@ Svara med ett JSON-objekt med denna struktur:
         {aiSuggestions.mapping && (
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Kolumnmappning</h4>
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-600 space-y-1">
+            <div className="bg-gray-50 border border-gray-200 rounded-sm p-3 text-xs text-gray-600 space-y-1">
               {Object.entries(aiSuggestions.mapping.columns).map(([field, column]) => (
                 <div key={field} className="flex justify-between">
                   <span className="font-medium">{field}:</span>
@@ -515,7 +438,7 @@ Svara med ett JSON-objekt med denna struktur:
       )}
       <button
         onClick={handleClose}
-        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
       >
         Stäng
       </button>
@@ -528,7 +451,7 @@ Svara med ett JSON-objekt med denna struktur:
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-100 rounded-sm flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-blue-600" />
             </div>
             <div>
@@ -548,7 +471,7 @@ Svara med ett JSON-objekt med denna struktur:
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-sm p-4">
               <div className="flex gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                 <div className="text-sm text-red-800">
@@ -572,13 +495,13 @@ Svara med ett JSON-objekt med denna struktur:
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setStage('upload')}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
               >
                 Avbryt
               </button>
               <button
                 onClick={handleImport}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 Importera
