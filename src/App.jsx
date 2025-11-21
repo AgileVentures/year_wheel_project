@@ -54,6 +54,7 @@ const lazyWithRetry = (componentImport) =>
   );
 const AddPageModal = lazyWithRetry(() => import("./components/AddPageModal"));
 const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal"));
+const SmartImportModal = lazyWithRetry(() => import("./components/SmartImportModal"));
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
@@ -671,6 +672,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [isAdmin, setIsAdmin] = useState(false); // Admin status
   const [showVersionHistory, setShowVersionHistory] = useState(false); // Version history modal
   const [showExportModal, setShowExportModal] = useState(false); // Export data modal
+  const [showSmartImport, setShowSmartImport] = useState(false); // Smart CSV import modal
   
   
   // AI Assistant state
@@ -4284,6 +4286,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onSaveToFile={handleSaveToFile}
         onLoadFromFile={handleLoadFromFile}
         onExportData={() => setShowExportModal(true)}
+        onSmartImport={() => setShowSmartImport(true)}
         onReset={handleReset}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -4486,6 +4489,23 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             title={title}
             onClose={() => setShowExportModal(false)}
             isPremium={isPremium}
+          />
+        </Suspense>
+      )}
+
+      {/* Smart CSV Import Modal */}
+      {showSmartImport && wheelId && (
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <SmartImportModal
+            isOpen={showSmartImport}
+            onClose={() => setShowSmartImport(false)}
+            wheelId={wheelId}
+            currentPageId={currentPageId}
+            onImportComplete={() => {
+              // Reload wheel data after import
+              loadWheelData();
+              setShowSmartImport(false);
+            }}
           />
         </Suspense>
       )}

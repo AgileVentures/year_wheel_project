@@ -18,6 +18,7 @@ function Header({
   onSaveToFile, 
   onLoadFromFile,
   onExportData,
+  onSmartImport,
   onReset, 
   isSidebarOpen, 
   onToggleSidebar, 
@@ -272,6 +273,18 @@ function Header({
                 </span>
               }
               onClick={onExportData}
+            />
+          )}
+          {onSmartImport && wheelId && (
+            <DropdownItem
+              icon={Sparkles}
+              label={
+                <span className="flex items-center gap-2">
+                  Smart Import (CSV)
+                  <span className="text-xs font-semibold px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">AI</span>
+                </span>
+              }
+              onClick={onSmartImport}
             />
           )}
           
@@ -803,6 +816,21 @@ function Header({
                           <span className="flex items-center gap-2">
                             {t('common:header.exportData')}
                             <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                          </span>
+                        </span>
+                      </button>
+                    )}
+                    {onSmartImport && wheelId && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onSmartImport)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Sparkles size={16} aria-hidden="true" />
+                          <span className="flex items-center gap-2">
+                            Smart Import (CSV)
+                            <span className="text-xs font-semibold px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">AI</span>
                           </span>
                         </span>
                       </button>
