@@ -45,11 +45,11 @@ serve(async (req: Request) => {
       )
     }
 
-    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions } = await req.json()
+    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions, allRows } = await req.json()
 
     if (action === 'analyze') {
-      // Analyze CSV structure and generate AI suggestions
-      const result = await analyzeCsvWithAI(csvStructure, wheelId, currentPageId, supabase, refinementPrompt, previousSuggestions)
+      // Analyze CSV structure and generate AI mapping rules + apply to ALL rows
+      const result = await analyzeCsvWithAI(csvStructure, allRows, wheelId, currentPageId, supabase, refinementPrompt, previousSuggestions)
       
       return new Response(
         JSON.stringify(result),
@@ -77,12 +77,13 @@ serve(async (req: Request) => {
 })
 
 /**
- * Analyze CSV structure using OpenAI and generate mapping suggestions
+ * Analyze CSV structure using OpenAI and generate mapping rules, then apply to ALL rows
  */
-async function analyzeCsvWithAI(csvStructure: any, wheelId: string, currentPageId: string, supabase: any, refinementPrompt?: string, previousSuggestions?: any) {
+async function analyzeCsvWithAI(csvStructure: any, allRows: any[], wheelId: string, currentPageId: string, supabase: any, refinementPrompt?: string, previousSuggestions?: any) {
   console.log('[analyzeCsvWithAI] Analyzing CSV structure...', {
     totalRows: csvStructure.totalRows,
     sampleRows: csvStructure.sampleRows?.length,
+    allRows: allRows?.length,
     isRefinement: !!refinementPrompt
   })
   
@@ -117,7 +118,7 @@ ${refinementPrompt ? `USER REFINEMENT REQUEST: "${refinementPrompt}"
 
 You must adjust the previous suggestions based on this request while maintaining data integrity.` : ''}
 
-Your task is to analyze a CSV file structure and generate intelligent mapping suggestions that will be executed by the AI Assistant V2.
+Your task is to analyze a CSV file structure and generate MAPPING RULES that will be applied to ALL ${csvStructure.totalRows} rows on the server.
 
 CONTEXT:
 - Wheel: "${wheel?.title || 'Unknown'}" (Year: ${page?.year || wheel?.year || 'Unknown'})
@@ -127,26 +128,26 @@ CONTEXT:
 
 CSV STRUCTURE:
 - Headers: ${JSON.stringify(csvStructure.headers)}
-- Sample Rows (first 5): ${JSON.stringify(csvStructure.sampleRows.slice(0, 5))}
+- Sample Rows (first 20): ${JSON.stringify(csvStructure.sampleRows)}
 - Total Rows: ${csvStructure.totalRows}
-
-CRITICAL: You MUST generate mappings for ALL ${csvStructure.totalRows} rows, not just samples!
-For each row in the CSV, create an activity entry in the activities array.
 
 YOUR TASK:
 1. Identify which columns map to: activity name, start date, end date, description, ring, category/group, person/owner, comments
-2. Detect date formats and convert ALL to YYYY-MM-DD
+2. Detect date formats (Excel serial, DD/MM/YYYY, MM/DD/YYYY, etc.)
 3. Suggest rings to create (REUSE existing rings if they match!)
 4. Suggest activity groups to create (REUSE existing groups if they match!)
-5. Generate activity mappings for EVERY ROW in the CSV (all ${csvStructure.totalRows} activities)
+5. Define MAPPING RULES that will be applied server-side to all ${csvStructure.totalRows} rows
 6. Detect people mentioned (names, emails) for team invitations
 7. Handle any special columns (status, priority, tags, etc.)
 
+IMPORTANT: You define the RULES, the server will apply them to ALL rows.
+Do NOT generate ${csvStructure.totalRows} individual activities - just define the mapping logic.
+
 DATE HANDLING:
-- Excel serial dates (numbers like 45321): Convert to YYYY-MM-DD
-- Text dates (DD/MM/YYYY, MM/DD/YYYY): Parse and convert to YYYY-MM-DD
+- Excel serial dates (numbers like 45321): Specify conversion formula
+- Text dates: Specify parse pattern
 - If only end date exists, use it for both start and end
-- If no date column, distribute activities evenly across ${page?.year}
+- If no date column, specify default behavior
 
 RING STRATEGY:
 - "outer" rings: For external events, holidays, milestones, deadlines
@@ -157,17 +158,19 @@ RESPONSE FORMAT (JSON):
 {
   "mapping": {
     "columns": {
-      "activityName": "column_name_or_null",
-      "startDate": "column_name_or_null",
-      "endDate": "column_name_or_null",
-      "description": "column_name_or_null",
-      "ring": "column_name_or_null",
-      "group": "column_name_or_null",
-      "person": "column_name_or_null",
-      "comments": "column_name_or_null"
+      "activityName": "exact_column_name_or_null",
+      "startDate": "exact_column_name_or_null",
+      "endDate": "exact_column_name_or_null",
+      "description": "exact_column_name_or_null",
+      "ring": "exact_column_name_or_null_or_constant",
+      "group": "exact_column_name_or_null",
+      "person": "exact_column_name_or_null",
+      "comments": "exact_column_name_or_null"
     },
-    "dateFormat": "detected_format",
-    "explanation": "Brief explanation"
+    "dateFormat": "detected_format_with_conversion_rules",
+    "explanation": "Brief explanation of mapping logic",
+    "ringAssignmentLogic": "How to assign activities to rings (e.g., 'all to outer ring X' or 'based on column Y')",
+    "groupAssignmentLogic": "How to assign activities to groups (e.g., 'based on column Z' or 'default to group A')"
   },
   "rings": [
     {
@@ -184,17 +187,6 @@ RESPONSE FORMAT (JSON):
       "description": "Purpose"
     }
   ],
-  "activities": [
-    // ⚠️ MUST INCLUDE ALL ${csvStructure.totalRows} ACTIVITIES!
-    {
-      "name": "Activity name from row",
-      "startDate": "YYYY-MM-DD",
-      "endDate": "YYYY-MM-DD",
-      "ring": "ring_name_matching_above",
-      "group": "group_name_matching_above",
-      "description": "Optional"
-    }
-  ],
   "detectedPeople": [
     {
       "name": "Person name|null",
@@ -205,16 +197,17 @@ RESPONSE FORMAT (JSON):
 }
 
 CRITICAL RULES:
-- activities array MUST contain ${csvStructure.totalRows} entries (one per CSV row)
-- ALL dates MUST be YYYY-MM-DD format
+- Provide MAPPING RULES, not individual activities
+- ALL column names must match CSV headers EXACTLY
+- Specify date conversion logic clearly
 - Use existing rings/groups when possible
-- Activity dates must be in year ${page?.year}
+- Activities will be assigned to year ${page?.year}
 
 Respond ONLY with valid JSON, no other text.`
 
   let userPrompt = refinementPrompt 
-    ? `Previous suggestions: ${JSON.stringify(previousSuggestions, null, 2)}\n\nREFINEMENT REQUEST: ${refinementPrompt}\n\nGenerate updated suggestions based on the refinement request.`
-    : `Analyze this CSV and generate import suggestions for ALL ${csvStructure.totalRows} rows.`
+    ? `Previous suggestions: ${JSON.stringify(previousSuggestions, null, 2)}\n\nREFINEMENT REQUEST: ${refinementPrompt}\n\nGenerate updated mapping rules based on the refinement request.`
+    : `Analyze this CSV structure and generate mapping rules that will be applied to ALL ${csvStructure.totalRows} rows server-side.`
 
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -222,20 +215,144 @@ Respond ONLY with valid JSON, no other text.`
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt }
     ],
-    temperature: 0.3, // Lower temperature for more consistent mapping
+    temperature: 0.2, // Low for consistent mapping rules
     response_format: { type: 'json_object' }
   })
 
   const responseText = completion.choices[0].message.content || '{}'
-  console.log('[analyzeCsvWithAI] OpenAI response:', responseText)
+  console.log('[analyzeCsvWithAI] OpenAI response length:', responseText.length)
   
-  const suggestions = JSON.parse(responseText)
+  const mapping = JSON.parse(responseText)
+  
+  // Step 2: Apply mapping rules to ALL rows server-side
+  console.log('[analyzeCsvWithAI] Applying mapping rules to', allRows.length, 'rows...')
+  
+  const activities = allRows.map((row, index) => {
+    try {
+      // Extract values based on mapping rules
+      const activityName = mapping.mapping.columns.activityName 
+        ? row[csvStructure.headers.indexOf(mapping.mapping.columns.activityName)]
+        : `Aktivitet ${index + 1}`
+      
+      const startDateRaw = mapping.mapping.columns.startDate
+        ? row[csvStructure.headers.indexOf(mapping.mapping.columns.startDate)]
+        : null
+      
+      const endDateRaw = mapping.mapping.columns.endDate
+        ? row[csvStructure.headers.indexOf(mapping.mapping.columns.endDate)]
+        : startDateRaw
+      
+      // Convert dates based on detected format
+      const startDate = convertDate(startDateRaw, mapping.mapping.dateFormat, page?.year)
+      const endDate = convertDate(endDateRaw, mapping.mapping.dateFormat, page?.year)
+      
+      // Determine ring assignment
+      let ringName = mapping.rings[0]?.name || 'Aktiviteter' // Default to first ring
+      if (mapping.mapping.columns.ring && typeof mapping.mapping.columns.ring === 'string') {
+        const ringColIndex = csvStructure.headers.indexOf(mapping.mapping.columns.ring)
+        if (ringColIndex >= 0) {
+          ringName = row[ringColIndex] || ringName
+        }
+      }
+      
+      // Determine group assignment
+      let groupName = mapping.activityGroups[0]?.name || 'Allmänt' // Default to first group
+      if (mapping.mapping.columns.group) {
+        const groupColIndex = csvStructure.headers.indexOf(mapping.mapping.columns.group)
+        if (groupColIndex >= 0) {
+          groupName = row[groupColIndex] || groupName
+        }
+      }
+      
+      // Extract description
+      const description = mapping.mapping.columns.description
+        ? row[csvStructure.headers.indexOf(mapping.mapping.columns.description)]
+        : undefined
+      
+      return {
+        name: activityName,
+        startDate,
+        endDate,
+        ring: ringName,
+        group: groupName,
+        description: description || undefined
+      }
+    } catch (err) {
+      console.error('[analyzeCsvWithAI] Error processing row', index, err)
+      return {
+        name: `Aktivitet ${index + 1}`,
+        startDate: `${page?.year}-01-01`,
+        endDate: `${page?.year}-01-01`,
+        ring: mapping.rings[0]?.name || 'Aktiviteter',
+        group: mapping.activityGroups[0]?.name || 'Allmänt'
+      }
+    }
+  })
+  
+  console.log('[analyzeCsvWithAI] Generated', activities.length, 'activities from', allRows.length, 'rows')
+  
+  const suggestions = {
+    mapping: mapping.mapping,
+    rings: mapping.rings,
+    activityGroups: mapping.activityGroups,
+    activities, // All activities generated server-side
+    detectedPeople: mapping.detectedPeople || []
+  }
   
   return {
     success: true,
     suggestions,
-    message: `AI har analyserat ${csvStructure.totalRows} rader och genererat importförslag`
+    message: `AI har analyserat ${csvStructure.totalRows} rader och genererat ${activities.length} aktiviteter`
   }
+}
+
+/**
+ * Convert date from various formats to YYYY-MM-DD
+ */
+function convertDate(dateValue: any, format: string, defaultYear: number): string {
+  if (!dateValue) {
+    return `${defaultYear}-01-01`
+  }
+  
+  // Excel serial date (number)
+  if (typeof dateValue === 'number' && format.toLowerCase().includes('excel')) {
+    const excelEpoch = new Date(1899, 11, 30)
+    const date = new Date(excelEpoch.getTime() + dateValue * 86400000)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  
+  // ISO format already
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue
+  }
+  
+  // Try parsing common formats
+  if (typeof dateValue === 'string') {
+    // DD/MM/YYYY or DD-MM-YYYY
+    const ddmmyyyy = dateValue.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
+    if (ddmmyyyy) {
+      const day = ddmmyyyy[1].padStart(2, '0')
+      const month = ddmmyyyy[2].padStart(2, '0')
+      const year = ddmmyyyy[3]
+      return `${year}-${month}-${day}`
+    }
+    
+    // YYYY/MM/DD or YYYY-MM-DD
+    const yyyymmdd = dateValue.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/)
+    if (yyyymmdd) {
+      const year = yyyymmdd[1]
+      const month = yyyymmdd[2].padStart(2, '0')
+      const day = yyyymmdd[3].padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+  }
+  
+  // Fallback
+  console.warn('[convertDate] Could not parse date:', dateValue)
+  return `${defaultYear}-01-01`
 }
 
 /**
@@ -251,6 +368,11 @@ async function executeImport(
   user: any
 ) {
   console.log('[executeImport] Starting import process...')
+  console.log('[executeImport] Suggestions counts:', {
+    rings: suggestions.rings?.length || 0,
+    activityGroups: suggestions.activityGroups?.length || 0,
+    activities: suggestions.activities?.length || 0
+  })
   
   const results = {
     success: true,
@@ -265,31 +387,31 @@ async function executeImport(
   }
 
   try {
-    // Step 1: Use AI Assistant V2's suggest_plan and apply_suggested_plan workflow
-    // This leverages all the existing logic for creating rings, groups, and activities
+    // Step 1: Format suggestions in the exact structure AI Assistant V2 expects
+    const formattedSuggestions = {
+      success: true,
+      suggestions: {
+        rings: suggestions.rings || [],
+        activityGroups: suggestions.activityGroups || [],
+        activities: suggestions.activities || []
+      }
+    }
     
-    console.log('[executeImport] Calling AI Assistant V2 with plan...')
+    const suggestionsJson = JSON.stringify(formattedSuggestions)
+    console.log('[executeImport] Formatted suggestions JSON length:', suggestionsJson.length)
+    console.log('[executeImport] First 500 chars:', suggestionsJson.substring(0, 500))
+    
+    // Step 2: Call AI Assistant V2 with clear tool call request
+    console.log('[executeImport] Calling AI Assistant V2...')
     
     const { data: aiResult, error: aiError } = await supabase.functions.invoke('ai-assistant-v2', {
       body: {
         wheelId,
         currentPageId,
-        message: 'apply_csv_import_plan',
+        message: `Applicera CSV-importförslag med apply_suggested_plan verktyget. Använd suggestionsJson från context.`,
         context: {
-          // Pass the suggestions directly to be applied
-          lastSuggestions: {
-            rings: suggestions.rings,
-            activityGroups: suggestions.activityGroups,
-            activities: suggestions.activities
-          },
-          lastSuggestionsRaw: JSON.stringify({
-            success: true,
-            suggestions: {
-              rings: suggestions.rings,
-              activityGroups: suggestions.activityGroups,
-              activities: suggestions.activities
-            }
-          })
+          lastSuggestions: formattedSuggestions.suggestions,
+          lastSuggestionsRaw: suggestionsJson
         }
       }
     })
@@ -299,19 +421,39 @@ async function executeImport(
       throw aiError
     }
 
-    console.log('[executeImport] AI Assistant result:', aiResult)
+    console.log('[executeImport] AI Assistant raw result:', JSON.stringify(aiResult).substring(0, 1000))
     
-    // Parse the AI response to extract what was created
-    if (aiResult?.summary) {
+    // Parse the AI response - it might be a streaming response or direct result
+    let parsedResult = aiResult
+    
+    // If it's a string response, try to extract JSON from it
+    if (typeof aiResult === 'string') {
+      try {
+        parsedResult = JSON.parse(aiResult)
+      } catch (e) {
+        console.error('[executeImport] Could not parse AI result as JSON')
+      }
+    }
+    
+    // Extract creation counts from the result
+    if (parsedResult?.summary) {
       results.created = {
-        rings: aiResult.summary.created?.rings || 0,
-        groups: aiResult.summary.created?.groups || 0,
-        activities: aiResult.summary.created?.activities || 0,
+        rings: parsedResult.summary.created?.rings || 0,
+        groups: parsedResult.summary.created?.groups || 0,
+        activities: parsedResult.summary.created?.activities || 0,
         invitations: 0
       }
       
-      if (aiResult.summary.errors) {
-        results.errors.push(...aiResult.summary.errors)
+      if (parsedResult.summary.errors) {
+        results.errors.push(...parsedResult.summary.errors)
+      }
+    } else if (parsedResult?.result) {
+      // Alternative format
+      const match = parsedResult.result.match(/skapade (\d+) ringar.*?(\d+) grupper.*?(\d+) aktiviteter/i)
+      if (match) {
+        results.created.rings = parseInt(match[1])
+        results.created.groups = parseInt(match[2])
+        results.created.activities = parseInt(match[3])
       }
     }
 

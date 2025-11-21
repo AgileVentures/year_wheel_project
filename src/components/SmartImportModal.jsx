@@ -85,9 +85,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           currentPageId,
           csvStructure: {
             headers,
-            sampleRows: rows.slice(0, 10), // Send first 10 rows for analysis
+            sampleRows: rows.slice(0, 20), // Send samples for pattern detection
             totalRows: rows.length
-          }
+          },
+          allRows: rows // Send ALL rows for server-side processing
         }
       });
 
