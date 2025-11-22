@@ -147,76 +147,127 @@ serve(async (req) => {
       console.log('[BatchImport] Inserted', insertedLabels.length, 'labels with IDs')
     }
 
-    // STEP 4: Ensure pages exist and map ring/group names to their database IDs
+    // STEP 4: Ensure pages exist (don't update structure - it's a cache that will be rebuilt)
     console.log('[BatchImport] Step 4: Ensuring pages exist...')
     const pageIdMap = new Map<string, string>() // temp ID -> database ID
     
     for (const page of pages) {
-      // Map ring IDs and group IDs in items to database IDs
-      const mappedItems = page.items.map(item => {
-        const dbRingId = ringNameToId.get(structure.rings.find(r => r.id === item.ringId)?.name || '')
-        const dbActivityId = groupNameToId.get(structure.activityGroups.find(g => g.id === item.activityId)?.name || '')
-        
-        let dbLabelId = null
-        if (item.labelId && structure.labels.length > 0) {
-          const labelName = structure.labels.find(l => l.id === item.labelId)?.name
-          dbLabelId = labelName ? labelNameToId.get(labelName) : null
-        }
-        
-        return {
-          ...item,
-          ringId: dbRingId,
-          activityId: dbActivityId,
-          labelId: dbLabelId
-        }
-      })
-      
-      const { data: upsertedPage, error: pageError } = await supabaseClient
+      // Check if page already exists by wheel_id + year (unique constraint)
+      const { data: existingPage, error: selectError } = await supabaseClient
         .from('wheel_pages')
-        .upsert({
-          id: page.id, // Keep the page ID from ensurePageForYear
-          wheel_id: wheelId,
-          year: page.year,
-          page_order: page.pageOrder,
-          title: page.title,
-          organization_data: {
-            rings: structure.rings,
-            activityGroups: structure.activityGroups,
-            labels: structure.labels,
-            items: mappedItems
-          }
-        }, { onConflict: 'id' })
         .select('id')
-        .single()
-
-      if (pageError) {
-        console.error('[BatchImport] Page upsert error:', pageError)
-        throw new Error(`Failed to upsert page ${page.year}: ${pageError.message}`)
-      }
+        .eq('wheel_id', wheelId)
+        .eq('year', page.year)
+        .maybeSingle()
       
-      pageIdMap.set(page.id, upsertedPage.id)
+      if (existingPage) {
+        // Page already exists, use its ID
+        console.log('[BatchImport] Page for year', page.year, 'already exists with ID:', existingPage.id)
+        pageIdMap.set(page.id, existingPage.id)
+      } else {
+        // Page doesn't exist, get next available page_order and create it
+        const { data: nextOrderData, error: orderError } = await supabaseClient
+          .rpc('get_next_page_order', { p_wheel_id: wheelId })
+        
+        if (orderError) {
+          console.error('[BatchImport] Failed to get next page order:', orderError)
+          throw new Error(`Failed to get next page order: ${orderError.message}`)
+        }
+        
+        const nextPageOrder = nextOrderData || 1
+        
+        const { data: newPage, error: insertError } = await supabaseClient
+          .from('wheel_pages')
+          .insert({
+            wheel_id: wheelId,
+            year: page.year,
+            page_order: nextPageOrder,
+            title: page.title || `${page.year}`
+          })
+          .select('id')
+          .single()
+        
+        if (insertError) {
+          console.error('[BatchImport] Page insert error:', insertError)
+          throw new Error(`Failed to insert page ${page.year}: ${insertError.message}`)
+        }
+        
+        console.log('[BatchImport] Created new page for year', page.year, 'with ID:', newPage.id, 'page_order:', nextPageOrder)
+        pageIdMap.set(page.id, newPage.id)
+      }
+    }
+    
+    // CRITICAL: Reorder all pages chronologically after creating new ones
+    console.log('[BatchImport] Reordering pages chronologically...')
+    const { data: allPages, error: fetchError } = await supabaseClient
+      .from('wheel_pages')
+      .select('id, year')
+      .eq('wheel_id', wheelId)
+      .order('year', { ascending: true })
+    
+    if (fetchError) {
+      console.error('[BatchImport] Failed to fetch pages for reordering:', fetchError)
+    } else if (allPages) {
+      // Update page_order to match chronological year order
+      const updates = allPages.map((pg: any, index: number) => 
+        supabaseClient
+          .from('wheel_pages')
+          .update({ page_order: index + 1 })
+          .eq('id', pg.id)
+      )
+      
+      await Promise.all(updates)
+      console.log('[BatchImport] Reordered', allPages.length, 'pages by year')
     }
 
-    // STEP 5: Bulk insert ALL items across all pages with mapped IDs
-    console.log('[BatchImport] Step 5: Bulk inserting items...')
+    // STEP 5: Build ID mappings by matching on names (since temp IDs from frontend need to map to DB UUIDs)
+    // Frontend sends: {id: "ring-1", name: "Klientaktiviteter"}
+    // We inserted and got back: {id: "uuid-abc", name: "Klientaktiviteter"}
+    // Map: "ring-1" -> "uuid-abc" by matching names
+    
+    const tempToDbRingId = new Map<string, string>()
+    structure.rings.forEach(tempRing => {
+      const dbId = ringNameToId.get(tempRing.name)
+      if (dbId) {
+        tempToDbRingId.set(tempRing.id, dbId)
+      }
+    })
+    
+    const tempToDbGroupId = new Map<string, string>()
+    structure.activityGroups.forEach(tempGroup => {
+      const dbId = groupNameToId.get(tempGroup.name)
+      if (dbId) {
+        tempToDbGroupId.set(tempGroup.id, dbId)
+      }
+    })
+    
+    const tempToDbLabelId = new Map<string, string>()
+    structure.labels.forEach(tempLabel => {
+      const dbId = labelNameToId.get(tempLabel.name)
+      if (dbId) {
+        tempToDbLabelId.set(tempLabel.id, dbId)
+      }
+    })
+
+    // STEP 6: Bulk insert ALL items across all pages with mapped IDs
     const allItemInserts = []
     
     for (const page of pages) {
       const dbPageId = pageIdMap.get(page.id)
       
       for (const item of page.items) {
-        const dbRingId = ringNameToId.get(structure.rings.find(r => r.id === item.ringId)?.name || '')
-        const dbActivityId = groupNameToId.get(structure.activityGroups.find(g => g.id === item.activityId)?.name || '')
-        
-        let dbLabelId = null
-        if (item.labelId && structure.labels.length > 0) {
-          const labelName = structure.labels.find(l => l.id === item.labelId)?.name
-          dbLabelId = labelName ? labelNameToId.get(labelName) : null
-        }
+        // Use temp-to-DB ID mapping from Step 5
+        const dbRingId = tempToDbRingId.get(item.ringId)
+        const dbActivityId = tempToDbGroupId.get(item.activityId)
+        const dbLabelId = item.labelId ? tempToDbLabelId.get(item.labelId) : null
         
         if (!dbRingId || !dbActivityId || !dbPageId) {
           console.warn('[BatchImport] Skipping item with missing IDs:', item.name, {
-            dbRingId, dbActivityId, dbPageId
+            tempRingId: item.ringId,
+            tempActivityId: item.activityId,
+            dbRingId,
+            dbActivityId,
+            dbPageId
           })
           continue
         }

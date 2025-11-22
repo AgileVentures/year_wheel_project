@@ -201,14 +201,16 @@ Analyze this CSV with ${csvStructure.totalRows} rows and generate mapping rules 
 ### DATE DETECTION (HIGHEST PRIORITY):
 Analyze BOTH column names AND data values to detect date columns:
 - **Data patterns to recognize**:
+  * Date RANGES in single column: "YYYYMMDD-YYYYMMDD" (e.g., "20250101-20251231")
   * Excel serial numbers: 40000-50000 range (days since 1900-01-01)
   * ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
   * European format: DD/MM/YYYY or DD-MM-YYYY
   * US format: MM/DD/YYYY
   * Text dates: "January 15, 2024", "15 Jan 2024"
-- **Column name hints** (examples only): "Deadline", "Datum", "Date", "StartDate", "Slutdatum", "Start", "End", "Due", "Frist", "DueDate"
+- **Column name hints** (examples only): "Räkenskapsår", "Fiscal Year", "Period", "Deadline", "Datum", "Date", "StartDate", "Slutdatum", "Start", "End", "Due", "Frist", "DueDate"
+- **DATE RANGE DETECTION**: If a column contains values like "20240101-20241231", set BOTH startDate AND endDate to that column name, and set dateFormat to "range-YYYYMMDD-YYYYMMDD"
 - **Behavior**: Examine first 5 rows of data to confirm date patterns
-- If only ONE date column exists, use it for both start AND end dates
+- If only ONE date column exists (not a range), use it for both start AND end dates
 - The "startDate" field in mapping.columns MUST be the EXACT column name from the CSV headers
 
 ### RING ASSIGNMENT (2-4 RINGS MAX):
@@ -392,6 +394,9 @@ Analyze the data and respond with the complete JSON structure.`
     dateFormat: mapping.mapping?.dateFormat
   })
   
+  console.log('[analyzeCsvWithAI] AI returned columns mapping:', JSON.stringify(mapping.mapping.columns, null, 2))
+  console.log('[analyzeCsvWithAI] descriptionColumns:', mapping.mapping.columns.descriptionColumns)
+  
   // Step 2: Apply mapping rules to ALL rows server-side
   console.log('[analyzeCsvWithAI] Applying mapping rules to', allRows.length, 'rows...')
   
@@ -433,14 +438,38 @@ Analyze the data and respond with the complete JSON structure.`
           startDateColIndex,
           endDateCol: mapping.mapping.columns.endDate,
           endDateColIndex,
+          dateFormat: mapping.mapping.dateFormat,
           headers: csvStructure.headers,
           firstRowData: row
         })
       }
       
       // Convert dates based on detected format
-      const startDate = convertDate(startDateRaw, mapping.mapping.dateFormat, page?.year)
-      const endDate = convertDate(endDateRaw, mapping.mapping.dateFormat, page?.year)
+      // Handle date ranges in single column (e.g., "20250101-20251231")
+      let startDate: string
+      let endDate: string
+      
+      if (mapping.mapping.dateFormat?.startsWith('range-')) {
+        // Date range in single column
+        const rangeStr = String(startDateRaw || '')
+        const rangeParts = rangeStr.split('-')
+        
+        if (rangeParts.length === 2 && rangeParts[0].length === 8 && rangeParts[1].length === 8) {
+          // Format: YYYYMMDD-YYYYMMDD
+          const startPart = rangeParts[0]
+          const endPart = rangeParts[1]
+          startDate = `${startPart.slice(0, 4)}-${startPart.slice(4, 6)}-${startPart.slice(6, 8)}`
+          endDate = `${endPart.slice(0, 4)}-${endPart.slice(4, 6)}-${endPart.slice(6, 8)}`
+        } else {
+          // Fallback if range parsing fails
+          startDate = convertDate(startDateRaw, mapping.mapping.dateFormat, page?.year)
+          endDate = convertDate(endDateRaw, mapping.mapping.dateFormat, page?.year)
+        }
+      } else {
+        // Separate columns or single date column
+        startDate = convertDate(startDateRaw, mapping.mapping.dateFormat, page?.year)
+        endDate = convertDate(endDateRaw, mapping.mapping.dateFormat, page?.year)
+      }
       
       // Debug first few rows to see date conversion
       if (index < 3) {
@@ -494,6 +523,14 @@ Analyze the data and respond with the complete JSON structure.`
       
       // Build description from primary description + unused columns
       let descriptionParts: string[] = []
+      
+      if (index === 0) {
+        console.log('[analyzeCsvWithAI] Building description for first row')
+        console.log('  - Primary description column:', mapping.mapping.columns.description)
+        console.log('  - descriptionColumns:', mapping.mapping.columns.descriptionColumns)
+        console.log('  - Used columns:', Array.from(usedColumnNames))
+        console.log('  - All headers:', csvStructure.headers)
+      }
       
       // Add primary description if exists
       if (mapping.mapping.columns.description) {
