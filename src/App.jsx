@@ -4617,46 +4617,47 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 
                 console.log('[SmartImport] Items grouped by year:', Object.keys(itemsByYear).map(y => `${y}: ${itemsByYear[y].length} items`));
                 
-                // CRITICAL: Create pages for ALL years in the imported data
+                // CRITICAL: Use ensurePageForYear to create pages in database FIRST (same as file import)
                 const importedYears = Object.keys(itemsByYear).map(Number).sort((a, b) => a - b);
-                const existingYears = new Set(wheelState.pages.map(p => p.year));
-                const allPages = [];
+                const preparedPages = [];
+                const itemsByPageId = {};
                 
-                // Start with existing pages
-                wheelState.pages.forEach(page => {
-                  const yearItems = itemsByYear[page.year] || [];
-                  allPages.push({
-                    id: page.id,
-                    year: page.year,
-                    items: yearItems
-                  });
-                });
+                console.log('[SmartImport] Ensuring pages exist for years:', importedYears);
                 
-                // Add new pages for years that don't exist yet
-                importedYears.forEach(year => {
-                  if (!existingYears.has(year)) {
-                    console.log('[SmartImport] Creating NEW page for year:', year);
-                    allPages.push({
-                      id: crypto.randomUUID(),
-                      year: year,
-                      title: `${year}`,
-                      pageOrder: allPages.length + 1,
-                      items: itemsByYear[year]
-                    });
+                for (const year of importedYears) {
+                  // ensurePageForYear creates page in DB if it doesn't exist and returns real UUID
+                  const ensured = await ensurePageForYear(year);
+                  const targetPage = ensured?.page;
+                  
+                  if (!targetPage) {
+                    console.warn('[SmartImport] Failed to ensure page for year:', year);
+                    continue;
                   }
-                });
+                  
+                  console.log('[SmartImport] Page for year', year, 'has ID:', targetPage.id);
+                  
+                  // Assign items to this page's real database ID
+                  const pageItems = itemsByYear[year] || [];
+                  itemsByPageId[targetPage.id] = pageItems;
+                  
+                  // Assign pageId to each item (critical for foreign key constraint)
+                  pageItems.forEach(item => {
+                    item.pageId = targetPage.id;
+                  });
+                  
+                  preparedPages.push({
+                    ...targetPage,
+                    items: pageItems
+                  });
+                }
                 
-                // Sort pages by year
-                allPages.sort((a, b) => a.year - b.year);
+                console.log('[SmartImport] Prepared pages with database IDs:', preparedPages.map(p => `${p.year}: ${p.id} (${p.items?.length || 0} items)`));
                 
-                console.log('[SmartImport] Final pages structure:', allPages.map(p => `${p.year}: ${p.items?.length || 0} items`));
+                if (preparedPages.length === 0) {
+                  throw new Error('Kunde inte skapa sidor för importerat innehåll');
+                }
                 
-                // CRITICAL: Smart Import REPLACES all data, so clear existing items from affected pages
-                // This prevents "already exists" warnings for recurring activities
-                const affectedYears = new Set(allPages.map(p => p.year));
-                console.log('[SmartImport] Clearing existing items from years:', Array.from(affectedYears));
-                
-                // Build snapshot and save
+                // Build snapshot with pages that have real database IDs
                 const snapshot = {
                   metadata: {
                     title: normalizedData.title,
@@ -4667,9 +4668,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                     activityGroups: processedOrgData.activityGroups,
                     labels: processedOrgData.labels
                   },
-                  pages: allPages
+                  pages: preparedPages.map(page => ({
+                    id: page.id,
+                    year: page.year,
+                    pageOrder: page.pageOrder,
+                    title: page.title,
+                    items: itemsByPageId[page.id] || []
+                  }))
                 };
                 
+                console.log('[SmartImport] Saving snapshot with', snapshot.pages.length, 'pages');
                 await saveWheelSnapshot(wheelId, snapshot);
                 
                 // Handle team invitations if any
