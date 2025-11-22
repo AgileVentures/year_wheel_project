@@ -14,7 +14,7 @@ import { supabase } from '../lib/supabase';
  * - Comprehensive error handling and rollback
  */
 export default function SmartImportModal({ isOpen, onClose, wheelId, currentPageId, onImportComplete }) {
-  const [stage, setStage] = useState('upload'); // upload, analyzing, review, refining, importing, complete
+  const [stage, setStage] = useState('upload'); // upload, analyzing, review, refining, importing, complete, confirm-delete
   const [csvData, setCsvData] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [error, setError] = useState(null);
@@ -22,6 +22,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [detectedPeople, setDetectedPeople] = useState([]);
   const [selectedPeople, setSelectedPeople] = useState(new Set());
   const [refinementPrompt, setRefinementPrompt] = useState('');
+  const [importMode, setImportMode] = useState('replace'); // 'replace' or 'append'
+  const [showAdvancedMapping, setShowAdvancedMapping] = useState(false);
+  const [manualMapping, setManualMapping] = useState(null);
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
@@ -63,8 +66,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         rowCount: rows.length
       });
 
-      setStage('analyzing');
-      await analyzeWithAI(headers, rows);
+      // Show confirmation dialog before proceeding
+      setStage('confirm-delete');
 
     } catch (err) {
       console.error('[SmartImport] File upload error:', err);
@@ -403,6 +406,95 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     }
   };
 
+  const renderConfirmStage = () => (
+    <div className="space-y-6">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-6">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div className="space-y-3">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Välj importmetod</h3>
+              <p className="text-sm text-gray-700 mb-4">
+                Du har laddat upp <strong>{csvData.rowCount} rader</strong> från <strong>{csvData.fileName}</strong>
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 p-4 border-2 rounded-sm cursor-pointer hover:bg-yellow-100/50 transition-colors"
+                style={{ borderColor: importMode === 'replace' ? '#EAB308' : '#E5E7EB' }}>
+                <input
+                  type="radio"
+                  name="importMode"
+                  value="replace"
+                  checked={importMode === 'replace'}
+                  onChange={(e) => setImportMode(e.target.value)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">Ersätt alla data</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <strong>VARNING:</strong> Alla befintliga ringar, aktivitetsgrupper, etiketter och aktiviteter kommer att raderas permanent.
+                    Endast sidor kommer att behållas för att bevara sidstrukturen.
+                  </div>
+                </div>
+              </label>
+              
+              <label className="flex items-start gap-3 p-4 border-2 rounded-sm cursor-pointer hover:bg-green-50 transition-colors"
+                style={{ borderColor: importMode === 'append' ? '#10B981' : '#E5E7EB' }}>
+                <input
+                  type="radio"
+                  name="importMode"
+                  value="append"
+                  checked={importMode === 'append'}
+                  onChange={(e) => setImportMode(e.target.value)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">Lägg till befintliga data</div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    Nya ringar, grupper och aktiviteter läggs till utan att radera befintliga data.
+                    Duplicerade namn kan uppstå.
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <div className="pt-4 border-t border-yellow-300">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showAdvancedMapping}
+                  onChange={(e) => setShowAdvancedMapping(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-700">Visa avancerade mappningsalternativ (ej implementerat än)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex gap-3 justify-end">
+        <button
+          onClick={() => setStage('upload')}
+          className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
+        >
+          Tillbaka
+        </button>
+        <button
+          onClick={async () => {
+            setStage('analyzing');
+            await analyzeWithAI(csvData.headers, csvData.rows);
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Sparkles className="w-4 h-4" />
+          Fortsätt till AI-analys
+        </button>
+      </div>
+    </div>
+  );
+
   const renderUploadStage = () => (
     <div className="space-y-6">
       <div className="text-center">
@@ -703,6 +795,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           )}
 
           {stage === 'upload' && renderUploadStage()}
+          {stage === 'confirm-delete' && renderConfirmStage()}
           {stage === 'analyzing' && renderAnalyzingStage()}
           {stage === 'review' && renderReviewStage()}
           {stage === 'importing' && renderImportingStage()}
