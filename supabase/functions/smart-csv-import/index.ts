@@ -45,11 +45,11 @@ serve(async (req: Request) => {
       )
     }
 
-    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions, allRows } = await req.json()
+    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions, allRows, manualMapping } = await req.json()
 
     if (action === 'analyze') {
       // Analyze CSV structure and generate AI mapping rules + apply to ALL rows
-      const result = await analyzeCsvWithAI(csvStructure, allRows, wheelId, currentPageId, supabase, refinementPrompt, previousSuggestions)
+      const result = await analyzeCsvWithAI(csvStructure, allRows, wheelId, currentPageId, supabase, refinementPrompt, previousSuggestions, manualMapping)
       
       return new Response(
         JSON.stringify(result),
@@ -79,13 +79,19 @@ serve(async (req: Request) => {
 /**
  * Analyze CSV structure using OpenAI and generate mapping rules, then apply to ALL rows
  */
-async function analyzeCsvWithAI(csvStructure: any, allRows: any[], wheelId: string, currentPageId: string, supabase: any, refinementPrompt?: string, previousSuggestions?: any) {
+async function analyzeCsvWithAI(csvStructure: any, allRows: any[], wheelId: string, currentPageId: string, supabase: any, refinementPrompt?: string, previousSuggestions?: any, manualMapping?: any) {
   console.log('[analyzeCsvWithAI] Analyzing CSV structure...', {
     totalRows: csvStructure.totalRows,
     sampleRows: csvStructure.sampleRows?.length,
     allRows: allRows?.length,
-    isRefinement: !!refinementPrompt
+    isRefinement: !!refinementPrompt,
+    hasManualMapping: !!manualMapping
   })
+  
+  // If manual mapping provided, use it to guide or override AI
+  if (manualMapping && Object.values(manualMapping).some(v => v !== null && (Array.isArray(v) ? v.length > 0 : true))) {
+    console.log('[analyzeCsvWithAI] Manual mapping provided:', manualMapping)
+  }
   
   const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY')! })
   
@@ -339,6 +345,39 @@ Analyze the data and respond with the complete JSON structure.`
   console.log('[analyzeCsvWithAI] OpenAI response length:', responseText.length)
   
   const mapping = JSON.parse(responseText)
+  
+  // MANUAL MAPPING OVERRIDES: Apply user selections over AI suggestions
+  if (manualMapping) {
+    console.log('[analyzeCsvWithAI] Applying manual mapping overrides...')
+    if (manualMapping.activityName) {
+      mapping.mapping.columns.activityName = manualMapping.activityName
+      console.log('[analyzeCsvWithAI] Override activityName:', manualMapping.activityName)
+    }
+    if (manualMapping.startDate) {
+      mapping.mapping.columns.startDate = manualMapping.startDate
+      console.log('[analyzeCsvWithAI] Override startDate:', manualMapping.startDate)
+    }
+    if (manualMapping.endDate) {
+      mapping.mapping.columns.endDate = manualMapping.endDate
+      console.log('[analyzeCsvWithAI] Override endDate:', manualMapping.endDate)
+    }
+    if (manualMapping.description) {
+      mapping.mapping.columns.description = manualMapping.description
+      console.log('[analyzeCsvWithAI] Override description:', manualMapping.description)
+    }
+    if (manualMapping.ring) {
+      mapping.mapping.columns.ring = manualMapping.ring
+      console.log('[analyzeCsvWithAI] Override ring:', manualMapping.ring)
+    }
+    if (manualMapping.group) {
+      mapping.mapping.columns.group = manualMapping.group
+      console.log('[analyzeCsvWithAI] Override group:', manualMapping.group)
+    }
+    if (manualMapping.labels && manualMapping.labels.length > 0) {
+      mapping.mapping.columns.labels = manualMapping.labels
+      console.log('[analyzeCsvWithAI] Override labels:', manualMapping.labels)
+    }
+  }
   
   // CRITICAL DEBUG: Log what AI detected for mapping
   console.log('[analyzeCsvWithAI] AI detected mapping:', {
