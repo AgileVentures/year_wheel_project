@@ -65,74 +65,116 @@ serve(async (req) => {
       )
     }
 
-    // STEP 1: Bulk insert rings (ON CONFLICT DO NOTHING to handle existing)
+    // STEP 1: Bulk insert rings (let database generate UUIDs)
     console.log('[BatchImport] Step 1: Inserting rings...')
     const ringInserts = structure.rings.map(ring => ({
-      id: ring.id,
       wheel_id: wheelId,
       name: ring.name,
       type: ring.type,
       visible: ring.visible,
       orientation: ring.orientation || 'vertical',
-      color: ring.color || null
+      color: ring.color || null,
+      ring_order: 0 // Will be updated if needed
     }))
 
-    const { error: ringError } = await supabaseClient
+    const { data: insertedRings, error: ringError } = await supabaseClient
       .from('wheel_rings')
-      .upsert(ringInserts, { onConflict: 'id', ignoreDuplicates: false })
+      .insert(ringInserts)
+      .select('id, name')
 
     if (ringError) {
       console.error('[BatchImport] Ring insert error:', ringError)
       throw new Error(`Failed to insert rings: ${ringError.message}`)
     }
 
+    // Build ring name -> database ID mapping
+    const ringNameToId = new Map<string, string>()
+    insertedRings.forEach((ring: any) => {
+      ringNameToId.set(ring.name, ring.id)
+    })
+    console.log('[BatchImport] Inserted', insertedRings.length, 'rings with IDs')
+
     // STEP 2: Bulk insert activity groups
     console.log('[BatchImport] Step 2: Inserting activity groups...')
     const groupInserts = structure.activityGroups.map(group => ({
-      id: group.id,
       wheel_id: wheelId,
       name: group.name,
       color: group.color,
       visible: group.visible
     }))
 
-    const { error: groupError } = await supabaseClient
+    const { data: insertedGroups, error: groupError } = await supabaseClient
       .from('activity_groups')
-      .upsert(groupInserts, { onConflict: 'id', ignoreDuplicates: false })
+      .insert(groupInserts)
+      .select('id, name')
 
     if (groupError) {
       console.error('[BatchImport] Group insert error:', groupError)
       throw new Error(`Failed to insert activity groups: ${groupError.message}`)
     }
 
+    // Build group name -> database ID mapping
+    const groupNameToId = new Map<string, string>()
+    insertedGroups.forEach((group: any) => {
+      groupNameToId.set(group.name, group.id)
+    })
+    console.log('[BatchImport] Inserted', insertedGroups.length, 'activity groups with IDs')
+
     // STEP 3: Bulk insert labels
+    const labelNameToId = new Map<string, string>()
     if (structure.labels.length > 0) {
       console.log('[BatchImport] Step 3: Inserting labels...')
       const labelInserts = structure.labels.map(label => ({
-        id: label.id,
         wheel_id: wheelId,
         name: label.name,
         color: label.color,
         visible: label.visible
       }))
 
-      const { error: labelError } = await supabaseClient
+      const { data: insertedLabels, error: labelError } = await supabaseClient
         .from('labels')
-        .upsert(labelInserts, { onConflict: 'id', ignoreDuplicates: false })
+        .insert(labelInserts)
+        .select('id, name')
 
       if (labelError) {
         console.error('[BatchImport] Label insert error:', labelError)
         throw new Error(`Failed to insert labels: ${labelError.message}`)
       }
+
+      insertedLabels.forEach((label: any) => {
+        labelNameToId.set(label.name, label.id)
+      })
+      console.log('[BatchImport] Inserted', insertedLabels.length, 'labels with IDs')
     }
 
-    // STEP 4: Ensure pages exist with correct page_order
+    // STEP 4: Ensure pages exist and map ring/group names to their database IDs
     console.log('[BatchImport] Step 4: Ensuring pages exist...')
+    const pageIdMap = new Map<string, string>() // temp ID -> database ID
+    
     for (const page of pages) {
-      const { error: pageError } = await supabaseClient
+      // Map ring IDs and group IDs in items to database IDs
+      const mappedItems = page.items.map(item => {
+        const dbRingId = ringNameToId.get(structure.rings.find(r => r.id === item.ringId)?.name || '')
+        const dbActivityId = groupNameToId.get(structure.activityGroups.find(g => g.id === item.activityId)?.name || '')
+        
+        let dbLabelId = null
+        if (item.labelId && structure.labels.length > 0) {
+          const labelName = structure.labels.find(l => l.id === item.labelId)?.name
+          dbLabelId = labelName ? labelNameToId.get(labelName) : null
+        }
+        
+        return {
+          ...item,
+          ringId: dbRingId,
+          activityId: dbActivityId,
+          labelId: dbLabelId
+        }
+      })
+      
+      const { data: upsertedPage, error: pageError } = await supabaseClient
         .from('wheel_pages')
         .upsert({
-          id: page.id,
+          id: page.id, // Keep the page ID from ensurePageForYear
           wheel_id: wheelId,
           year: page.year,
           page_order: page.pageOrder,
@@ -141,29 +183,50 @@ serve(async (req) => {
             rings: structure.rings,
             activityGroups: structure.activityGroups,
             labels: structure.labels,
-            items: page.items
+            items: mappedItems
           }
         }, { onConflict: 'id' })
+        .select('id')
+        .single()
 
       if (pageError) {
         console.error('[BatchImport] Page upsert error:', pageError)
         throw new Error(`Failed to upsert page ${page.year}: ${pageError.message}`)
       }
+      
+      pageIdMap.set(page.id, upsertedPage.id)
     }
 
-    // STEP 5: Bulk insert ALL items across all pages
+    // STEP 5: Bulk insert ALL items across all pages with mapped IDs
     console.log('[BatchImport] Step 5: Bulk inserting items...')
     const allItemInserts = []
     
     for (const page of pages) {
+      const dbPageId = pageIdMap.get(page.id)
+      
       for (const item of page.items) {
+        const dbRingId = ringNameToId.get(structure.rings.find(r => r.id === item.ringId)?.name || '')
+        const dbActivityId = groupNameToId.get(structure.activityGroups.find(g => g.id === item.activityId)?.name || '')
+        
+        let dbLabelId = null
+        if (item.labelId && structure.labels.length > 0) {
+          const labelName = structure.labels.find(l => l.id === item.labelId)?.name
+          dbLabelId = labelName ? labelNameToId.get(labelName) : null
+        }
+        
+        if (!dbRingId || !dbActivityId || !dbPageId) {
+          console.warn('[BatchImport] Skipping item with missing IDs:', item.name, {
+            dbRingId, dbActivityId, dbPageId
+          })
+          continue
+        }
+        
         allItemInserts.push({
-          id: item.id,
           wheel_id: wheelId,
-          page_id: page.id,
-          ring_id: item.ringId,
-          activity_id: item.activityId,
-          label_id: item.labelId || null,
+          page_id: dbPageId,
+          ring_id: dbRingId,
+          activity_id: dbActivityId,
+          label_id: dbLabelId,
           name: item.name,
           start_date: item.startDate,
           end_date: item.endDate,
@@ -178,41 +241,39 @@ serve(async (req) => {
 
     console.log('[BatchImport] Inserting', allItemInserts.length, 'items in bulk...')
 
-    // Use upsert with ON CONFLICT to handle duplicates gracefully
+    // Insert items without IDs - let database generate them
     const { error: itemError, count } = await supabaseClient
       .from('items')
-      .upsert(allItemInserts, { 
-        onConflict: 'id',
-        ignoreDuplicates: false,
-        count: 'exact'
-      })
+      .insert(allItemInserts)
+      .select('id', { count: 'exact', head: true })
 
     if (itemError) {
       console.error('[BatchImport] Item insert error:', itemError)
       throw new Error(`Failed to insert items: ${itemError.message}`)
     }
 
-    console.log('[BatchImport] Successfully inserted/updated', count, 'items')
+    console.log('[BatchImport] Successfully inserted', count || allItemInserts.length, 'items')
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: `Import complete: ${count} items saved`,
+        message: `Import complete: ${count || allItemInserts.length} items saved`,
         stats: {
-          rings: structure.rings.length,
-          groups: structure.activityGroups.length,
+          rings: insertedRings.length,
+          groups: insertedGroups.length,
           labels: structure.labels.length,
           pages: pages.length,
-          items: count
+          items: count || allItemInserts.length
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[BatchImport] Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
