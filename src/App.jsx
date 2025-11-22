@@ -4503,182 +4503,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             currentPageId={currentPageId}
             onImportComplete={async (result) => {
               try {
-                // Show loading state during import
+                // The batch-import Edge Function has already saved everything to the database
+                // We just need to reload the wheel data and handle team invitations
+                
                 setIsSaving(true);
-                
-                console.log('[SmartImport] Processing import with', result.yrwData.structure?.rings?.length, 'rings,', result.yrwData.structure?.activityGroups?.length, 'groups,', result.yrwData.pages?.[0]?.items?.length, 'items');
-                
-                // CRITICAL: Use the SAME logic as handleLoadFromFile (lines 3830-4020)
-                // This ensures consistent ID mapping and prevents undefined ring_id issues
-                const data = result.yrwData;
-                
-                // Convert NEW format to flat structure (same as lines 3845-3890)
-                const normalizedData = {
-                  title: data.metadata.title,
-                  year: String(data.metadata.year),
-                  colors: colors, // Keep current wheel colors
-                  showWeekRing: data.settings?.showWeekRing ?? true,
-                  showMonthRing: data.settings?.showMonthRing ?? true,
-                  showRingNames: data.settings?.showRingNames ?? true,
-                  showLabels: data.settings?.showLabels ?? false,
-                  weekRingDisplayMode: data.settings?.weekRingDisplayMode || 'week-numbers',
-                  organizationData: {
-                    rings: data.structure?.rings || [],
-                    activityGroups: data.structure?.activityGroups || [],
-                    labels: data.structure?.labels || [],
-                    items: []
-                  }
-                };
-                
-                // Collect all items from all pages
-                if (data.pages && data.pages.length > 0) {
-                  data.pages.forEach(page => {
-                    if (page.items && page.items.length > 0) {
-                      normalizedData.organizationData.items.push(...page.items);
-                    }
-                  });
-                }
-                
-                console.log('[SmartImport] Normalized data with', normalizedData.organizationData.items.length, 'total items');
-                
-                // Mark as loading to prevent realtime from overwriting
-                isLoadingData.current = true;
-                isRealtimeUpdate.current = true;
-                
-                // Process organization data (same as lines 3910-3980)
-                let processedOrgData = { ...normalizedData.organizationData };
-                
-                // Generate new UUIDs to prevent cross-wheel conflicts
-                const idMapping = { rings: {}, activityGroups: {}, labels: {} };
-                
-                processedOrgData.rings = processedOrgData.rings.map(ring => {
-                  const oldId = ring.id;
-                  const newId = crypto.randomUUID();
-                  idMapping.rings[oldId] = newId;
-                  console.log('[SmartImport] Ring ID mapping:', oldId, '->', newId);
-                  return { ...ring, id: newId };
-                });
-                
-                processedOrgData.activityGroups = processedOrgData.activityGroups.map(group => {
-                  const oldId = group.id;
-                  const newId = crypto.randomUUID();
-                  idMapping.activityGroups[oldId] = newId;
-                  console.log('[SmartImport] Group ID mapping:', oldId, '->', newId);
-                  return { ...group, id: newId };
-                });
-                
-                processedOrgData.labels = processedOrgData.labels.map(label => {
-                  const oldId = label.id;
-                  const newId = crypto.randomUUID();
-                  idMapping.labels[oldId] = newId;
-                  return { ...label, id: newId };
-                });
-                
-                // Remap item foreign keys
-                processedOrgData.items = processedOrgData.items.map(item => {
-                  const newRingId = idMapping.rings[item.ringId] || item.ringId;
-                  const newActivityId = idMapping.activityGroups[item.activityId] || item.activityId;
-                  
-                  if (!newRingId || newRingId === item.ringId) {
-                    console.warn('[SmartImport] Failed to map ring_id for item:', item.name, 'ringId:', item.ringId, 'Available mappings:', Object.keys(idMapping.rings));
-                  }
-                  if (!newActivityId || newActivityId === item.activityId) {
-                    console.warn('[SmartImport] Failed to map activityId for item:', item.name, 'activityId:', item.activityId, 'Available mappings:', Object.keys(idMapping.activityGroups));
-                  }
-                  
-                  return {
-                    ...item,
-                    id: crypto.randomUUID(),
-                    ringId: newRingId,
-                    activityId: newActivityId,
-                    labelId: item.labelId ? (idMapping.labels[item.labelId] || item.labelId) : null
-                  };
-                });
-                
-                console.log('[SmartImport] Processed items sample:', processedOrgData.items.slice(0, 3));
-                
-                // DEBUG: Check dates in processed items
-                const dateDistribution = {};
-                processedOrgData.items.forEach(item => {
-                  const dateKey = item.startDate || 'no-date';
-                  dateDistribution[dateKey] = (dateDistribution[dateKey] || 0) + 1;
-                });
-                console.log('[SmartImport] Date distribution:', dateDistribution);
-                
-                // Group items by year
-                const itemsByYear = {};
-                processedOrgData.items.forEach(item => {
-                  if (item.startDate) {
-                    const itemYear = new Date(item.startDate).getFullYear();
-                    if (!itemsByYear[itemYear]) itemsByYear[itemYear] = [];
-                    itemsByYear[itemYear].push(item);
-                  }
-                });
-                
-                console.log('[SmartImport] Items grouped by year:', Object.keys(itemsByYear).map(y => `${y}: ${itemsByYear[y].length} items`));
-                
-                // CRITICAL: Use ensurePageForYear to create pages in database FIRST (same as file import)
-                const importedYears = Object.keys(itemsByYear).map(Number).sort((a, b) => a - b);
-                const preparedPages = [];
-                const itemsByPageId = {};
-                
-                console.log('[SmartImport] Ensuring pages exist for years:', importedYears);
-                
-                for (const year of importedYears) {
-                  // ensurePageForYear creates page in DB if it doesn't exist and returns real UUID
-                  const ensured = await ensurePageForYear(year);
-                  const targetPage = ensured?.page;
-                  
-                  if (!targetPage) {
-                    console.warn('[SmartImport] Failed to ensure page for year:', year);
-                    continue;
-                  }
-                  
-                  console.log('[SmartImport] Page for year', year, 'has ID:', targetPage.id);
-                  
-                  // Assign items to this page's real database ID
-                  const pageItems = itemsByYear[year] || [];
-                  itemsByPageId[targetPage.id] = pageItems;
-                  
-                  // Assign pageId to each item (critical for foreign key constraint)
-                  pageItems.forEach(item => {
-                    item.pageId = targetPage.id;
-                  });
-                  
-                  preparedPages.push({
-                    ...targetPage,
-                    items: pageItems
-                  });
-                }
-                
-                console.log('[SmartImport] Prepared pages with database IDs:', preparedPages.map(p => `${p.year}: ${p.id} (${p.items?.length || 0} items)`));
-                
-                if (preparedPages.length === 0) {
-                  throw new Error('Kunde inte skapa sidor för importerat innehåll');
-                }
-                
-                // Build snapshot with pages that have real database IDs
-                const snapshot = {
-                  metadata: {
-                    title: normalizedData.title,
-                    colors: normalizedData.colors
-                  },
-                  structure: {
-                    rings: processedOrgData.rings,
-                    activityGroups: processedOrgData.activityGroups,
-                    labels: processedOrgData.labels
-                  },
-                  pages: preparedPages.map(page => ({
-                    id: page.id,
-                    year: page.year,
-                    pageOrder: page.pageOrder,
-                    title: page.title,
-                    items: itemsByPageId[page.id] || []
-                  }))
-                };
-                
-                console.log('[SmartImport] Saving snapshot with', snapshot.pages.length, 'pages');
-                await saveWheelSnapshot(wheelId, snapshot);
+                console.log('[SmartImport] Import complete, reloading wheel data...');
                 
                 // Handle team invitations if any
                 if (result.inviteEmails && result.inviteEmails.length > 0) {
@@ -4707,17 +4536,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                   }
                 }
                 
-                console.log('[SmartImport] Reloading wheel data...');
-                
-                // CRITICAL: Wait for database sync to complete, then reload
-                await new Promise(resolve => setTimeout(resolve, 500)); // Give DB time to sync
+                // Reload wheel data from database
                 await loadWheelData();
                 
                 setIsSaving(false);
                 setShowSmartImport(false);
-                showToast('CSV importerad! ' + processedOrgData.items.length + ' aktiviteter skapade.', 'success');
+                
+                const totalItems = result.yrwData.pages.reduce((sum, p) => sum + p.items.length, 0);
+                showToast(`CSV importerad! ${totalItems} aktiviteter över ${result.yrwData.pages.length} år.`, 'success');
+                
               } catch (err) {
-                console.error('[SmartImport] Import failed:', err);
+                console.error('[SmartImport] Post-import error:', err);
                 setIsSaving(false);
                 showToast(err.message || 'Import misslyckades', 'error');
               }

@@ -277,10 +277,54 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
       console.log('[SmartImport] Generated .yrw structure with', ringsWithIds.length, 'rings,', groupsWithIds.length, 'groups,', labelsWithIds.length, 'labels,', pages.length, 'pages,', itemsWithIds.length, 'total items');
 
-      // Trigger the parent's file import handler and wait for it to complete
+      // Use batch import Edge Function for performance
+      setProgress('Sparar till databas (batch import)...');
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-import-activities`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          wheelId,
+          structure: {
+            rings: ringsWithIds,
+            activityGroups: groupsWithIds,
+            labels: labelsWithIds
+          },
+          pages
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Batch import failed');
+      }
+      
+      const result = await response.json();
+      console.log('[SmartImport] Batch import result:', result);
+
+      // Trigger the parent's completion handler if provided
       if (onImportComplete) {
-        setProgress('Sparar till databas och synkroniserar...');
-        await onImportComplete({ yrwData, inviteEmails: Array.from(selectedPeople) });
+        setProgress('Uppdaterar gränssnittet...');
+        await onImportComplete({ 
+          yrwData: {
+            metadata: {
+              title: csvData.fileName.replace(/\.(csv|xlsx|xls)$/i, ''),
+              year: pages[0].year
+            },
+            structure: {
+              rings: ringsWithIds,
+              activityGroups: groupsWithIds,
+              labels: labelsWithIds
+            },
+            pages
+          }, 
+          inviteEmails: Array.from(selectedPeople) 
+        });
       }
 
       setStage('complete');
