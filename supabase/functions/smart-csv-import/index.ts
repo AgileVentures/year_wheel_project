@@ -177,44 +177,60 @@ Analyze this CSV with ${csvStructure.totalRows} rows and generate mapping rules 
 ## CRITICAL INSTRUCTIONS:
 
 ### DATE DETECTION (HIGHEST PRIORITY):
-Be VERY careful to detect dates correctly:
-- **Excel serial numbers**: 40000-50000 (days since 1900-01-01)
-- **ISO format**: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
-- **European format**: DD/MM/YYYY or DD-MM-YYYY
-- **US format**: MM/DD/YYYY (less common in Swedish data)
-- Look for columns named: "Deadline", "Datum", "Date", "StartDate", "Slutdatum", "Start", "End"
+Analyze BOTH column names AND data values to detect date columns:
+- **Data patterns to recognize**:
+  * Excel serial numbers: 40000-50000 range (days since 1900-01-01)
+  * ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
+  * European format: DD/MM/YYYY or DD-MM-YYYY
+  * US format: MM/DD/YYYY
+  * Text dates: "January 15, 2024", "15 Jan 2024"
+- **Column name hints** (examples only): "Deadline", "Datum", "Date", "StartDate", "Slutdatum", "Start", "End", "Due", "Frist", "DueDate"
+- **Behavior**: Examine first 5 rows of data to confirm date patterns
 - If only ONE date column exists, use it for both start AND end dates
 - The "startDate" field in mapping.columns MUST be the EXACT column name from the CSV headers
 
 ### RING ASSIGNMENT (2-4 RINGS MAX):
-- Analyze the PRIMARY organizational dimension in the data
-- Don't create a ring per unique value (e.g., don't make 50 rings for 50 clients)
-- Instead, create 2-4 CATEGORY-based rings
-- Example: If CSV has "Företagsform" (company type), create rings like:
-  * "Aktiebolag/Ekonomisk förening" (outer)
-  * "Enskild firma" (inner)
-  * "Ideell förening/Stiftelse" (inner)
+- Identify the PRIMARY organizational dimension by analyzing data patterns
+- Rings represent CATEGORIES or TIME HORIZONS, not individual items
+- Don't create a ring per unique value (❌ 50 rings for 50 clients)
+- Instead, analyze value distribution:
+  * If 2-4 distinct categories exist → use them as rings
+  * If 5-20 distinct values → consider grouping by pattern (e.g., first letter, category)
+  * If >20 distinct values → create 2-4 generic category rings
+- Examples of good ring logic:
+  * Project phases: "Planning", "Execution", "Review"
+  * Time horizons: "Short-term", "Long-term"
+  * Priority levels: "Critical", "Important", "Normal"
+  * Categories from data patterns: "Type A", "Type B", "Type C"
 
 ### ACTIVITY GROUP ASSIGNMENT:
-- CAN have many groups (5-15 is fine)
-- Map to columns with categorical data
-- Extract unique values from the chosen column
-- Assign distinct colors to each group
+- Activity groups provide COLOR-CODING for activities
+- CAN have many groups (5-20 is optimal, up to 30 is acceptable)
+- Select a column with categorical/classification data
+- Extract ALL unique values from that column
+- Each unique value becomes one activity group
+- Good candidates: Project type, task category, department, client name, activity type
+- Assign distinct colors to each group for visual differentiation
 
 ### LABEL DETECTION:
-- Look for person names, assignees, or status values
-- Common column names: Responsible, Assignee, Handler, Owner, Ansvarig, Handläggare, Klientansvarig
-- Also check: Status, Priority, Department, Team, Medlem
+- Analyze the DATA VALUES to identify columns containing:
+  * Person names (first name, last name, or full name patterns)
+  * Status values (categorical data like "Active", "Pending", "Completed")
+  * Roles or assignments (who is responsible, assigned, handling)
+  * Teams, departments, or organizational units
+- **Column names are HINTS only** - Examples: Responsible, Assignee, Handler, Owner, Ansvarig, Handläggare, Klientansvarig, Status, Priority, Department, Team, Medlem
+- If a column contains repeated categorical values (2-50 unique values) that could be used for filtering, consider it as a label source
 - Create one label per unique value found
 - Labels enable filtering and visual categorization
 - Format: { id: "label-1", name: "Person Name", color: "#hexcode", visible: true }
 
 ### DESCRIPTION FIELD:
-- Combine ALL unused columns into the description field
+- YOUR TASK: Identify which columns should be used for structure (rings, groups, labels, dates) and which for metadata
+- Combine ALL remaining metadata columns into the description field
 - Any column NOT used for: activityName, startDate, endDate, ring, group, or labels
 - Format: "Column Name: Value | Another Column: Value"
 - This ensures no data is wasted
-- If a dedicated description/comments column exists, prioritize it but still append unused data
+- Priority: If a dedicated description/comments/notes column exists, use it first, then append other unused columns
 
 ### RESPONSE SCHEMA:
 
