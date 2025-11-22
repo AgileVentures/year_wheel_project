@@ -179,7 +179,7 @@ function Header({
             aria-label={isSidebarOpen ? t('common:header.closePanel') : t('common:header.openPanel')}
             title={isSidebarOpen ? t('common:header.closePanel') : t('common:header.openPanel')}
           >
-            {isSidebarOpen ? <X size={14} /> : <Menu size={14} />}
+            {isSidebarOpen ? <X size={18} className="min-w-[18px] min-h-[18px]" /> : <Menu size={18} className="min-w-[18px] min-h-[18px]" />}
           </button>
           
           {/* Back to Dashboard Button (if available) */}
@@ -190,7 +190,7 @@ function Header({
               title={t('common:header.backToDashboard')}
               aria-label={t('common:header.backToDashboard')}
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={20} className="min-w-[20px] min-h-[20px]" />
             </button>
           )}
         </div>
@@ -249,7 +249,7 @@ function Header({
               title={t('common:header.fileOperations')}
               aria-label={t('common:header.fileOperations')}
             >
-              <FolderOpen size={14} />
+              <FolderOpen size={18} className="min-w-[18px] min-h-[18px]" />
             </button>
           }
         >
@@ -343,8 +343,8 @@ function Header({
             title={t('common:header.imageExport')}
             aria-label={t('common:header.imageExport')}
           >
-            <Image size={16} />
-            <ChevronDown size={14} />
+            <Image size={18} className="min-w-[18px] min-h-[18px]" />
+            <ChevronDown size={16} className="min-w-[16px] min-h-[16px]" />
           </button>
 
           {showImageExportMenu && (
@@ -689,7 +689,7 @@ function Header({
           title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
           data-onboarding="save-button"
         >
-          <Save size={14} />
+          <Save size={18} className="min-w-[18px] min-h-[18px]" />
           <span className="hidden sm:inline">
             {isSaving ? t('common:header.saving') : t('common:actions.save')}
             {!isSaving && unsavedChangesCount > 0 && (

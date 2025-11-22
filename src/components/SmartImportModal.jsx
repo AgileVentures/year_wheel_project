@@ -125,62 +125,166 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setProgress('Skapar struktur och aktiviteter...');
 
     try {
-      // Use AI Assistant V2 to apply suggestions using its existing tools
-      const { data, error: apiError } = await supabase.functions.invoke('ai-assistant-v2', {
-        body: {
-          wheelId,
-          currentPageId,
-          message: `Applicera dessa CSV-importförslag:\n\nRingar: ${aiSuggestions.rings.length}\nAktivitetsgrupper: ${aiSuggestions.activityGroups.length}\nAktiviteter: ${aiSuggestions.activities.length}\n\nAnvänd apply_suggested_plan verktyget för att skapa allt.`,
-          context: {
-            lastSuggestions: aiSuggestions,
-            lastSuggestionsRaw: JSON.stringify({
-              success: true,
-              suggestions: aiSuggestions
-            })
+      // Generate consistent IDs for rings and groups (will be remapped by App.jsx import logic)
+      const ringIdMap = new Map();
+      const groupIdMap = new Map();
+      
+      // Assign consistent IDs to rings
+      const ringsWithIds = aiSuggestions.rings.map((ring, index) => {
+        const id = ring.id || `ring-${index + 1}`;
+        ringIdMap.set(ring.name, id);
+        return {
+          ...ring,
+          id,
+          visible: true
+        };
+      });
+      
+      // Assign consistent IDs to activity groups
+      const groupsWithIds = aiSuggestions.activityGroups.map((group, index) => {
+        const id = group.id || `ag-${index + 1}`;
+        groupIdMap.set(group.name, id);
+        return {
+          ...group,
+          id,
+          visible: true
+        };
+      });
+      
+      // Assign consistent IDs to labels
+      const labelIdMap = new Map();
+      const labelsWithIds = (aiSuggestions.labels || []).map((label, index) => {
+        const id = label.id || `label-${index + 1}`;
+        labelIdMap.set(label.name, id);
+        return {
+          ...label,
+          id,
+          visible: true
+        };
+      });
+      
+      // Map activities to use proper ringId, activityId, and labelIds
+      const itemsWithIds = aiSuggestions.activities.map((activity, index) => {
+        const ringId = ringIdMap.get(activity.ring);
+        const activityId = groupIdMap.get(activity.group);
+        
+        // Map label names to label IDs
+        const labelIds = (activity.labels || [])
+          .map(labelName => labelIdMap.get(labelName))
+          .filter(Boolean);
+        
+        if (!ringId) {
+          console.error('[SmartImport] ERROR: No ring ID found for activity:', {
+            activityName: activity.name,
+            requestedRing: activity.ring,
+            availableRings: Array.from(ringIdMap.keys()),
+            ringIdMapSize: ringIdMap.size
+          });
+        }
+        if (!activityId) {
+          console.error('[SmartImport] ERROR: No activity group ID found for activity:', {
+            activityName: activity.name,
+            requestedGroup: activity.group,
+            availableGroups: Array.from(groupIdMap.keys()),
+            groupIdMapSize: groupIdMap.size
+          });
+        }
+        
+        return {
+          id: `item-${index + 1}`,
+          name: activity.name,
+          startDate: activity.startDate,
+          endDate: activity.endDate,
+          ringId,
+          activityId,
+          labelIds: labelIds.length > 0 ? labelIds : null,
+          labelId: labelIds[0] || null, // Keep legacy single labelId for backwards compatibility
+          description: activity.description || null
+        };
+      });
+      
+      console.log('[SmartImport] Generated structure:', {
+        rings: ringsWithIds.length,
+        groups: groupsWithIds.length,
+        labels: labelsWithIds.length,
+        items: itemsWithIds.length,
+        sampleRings: ringsWithIds.slice(0, 2),
+        sampleGroups: groupsWithIds.slice(0, 2),
+        sampleLabels: labelsWithIds.slice(0, 3),
+        sampleItems: itemsWithIds.slice(0, 2)
+      });
+      
+      // CRITICAL: Group items by year to create multi-year pages
+      const itemsByYear = {};
+      itemsWithIds.forEach(item => {
+        if (item.startDate) {
+          const year = new Date(item.startDate).getFullYear();
+          if (!itemsByYear[year]) {
+            itemsByYear[year] = [];
           }
+          itemsByYear[year].push(item);
         }
       });
+      
+      // Sort years to create pages in chronological order
+      const years = Object.keys(itemsByYear).map(Number).sort((a, b) => a - b);
+      console.log('[SmartImport] Creating pages for years:', years, 'with item counts:', years.map(y => itemsByYear[y].length));
+      
+      // Create a page for each year
+      const pages = years.map((year, index) => ({
+        id: `page-${index + 1}`,
+        year,
+        pageOrder: index + 1,
+        title: `${year}`,
+        items: itemsByYear[year]
+      }));
+      
+      // If no items have valid dates, create single page with current year
+      if (pages.length === 0) {
+        console.warn('[SmartImport] No valid dates found, creating single page for current year');
+        pages.push({
+          id: 'page-1',
+          year: new Date().getFullYear(),
+          pageOrder: 1,
+          title: `${new Date().getFullYear()}`,
+          items: itemsWithIds
+        });
+      }
+      
+      // Generate a .yrw-compatible structure from AI suggestions
+      const yrwData = {
+        version: '2.0',
+        metadata: {
+          title: csvData.fileName.replace(/\.(csv|xlsx|xls)$/i, ''),
+          year: pages[0].year, // Use first page year as wheel year
+          createdAt: new Date().toISOString().split('T')[0],
+          description: `Importerad från ${csvData.fileName}`
+        },
+        settings: {
+          showWeekRing: true,
+          showMonthRing: true,
+          showRingNames: true,
+          weekRingDisplayMode: 'week-numbers',
+          showLabels: (aiSuggestions.labels?.length > 0) || (aiSuggestions.detectedPeople?.length > 0)
+        },
+        structure: {
+          rings: ringsWithIds,
+          activityGroups: groupsWithIds,
+          labels: labelsWithIds
+        },
+        pages // Multi-year pages
+      };
 
-      if (apiError) throw apiError;
+      console.log('[SmartImport] Generated .yrw structure with', ringsWithIds.length, 'rings,', groupsWithIds.length, 'groups,', labelsWithIds.length, 'labels,', pages.length, 'pages,', itemsWithIds.length, 'total items');
 
-      console.log('[SmartImport] AI Assistant result:', data);
-
-      // Handle team invitations if any people selected
-      if (selectedPeople.size > 0) {
-        setProgress('Skickar teameinbjudningar...');
-        
-        const { data: wheel } = await supabase
-          .from('year_wheels')
-          .select('team_id')
-          .eq('id', wheelId)
-          .single();
-
-        if (wheel?.team_id) {
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          for (const email of selectedPeople) {
-            try {
-              await supabase
-                .from('team_invitations')
-                .insert({
-                  team_id: wheel.team_id,
-                  email: email.toLowerCase().trim(),
-                  invited_by: user.id
-                });
-            } catch (inviteErr) {
-              console.warn('[SmartImport] Failed to invite:', email, inviteErr);
-            }
-          }
-        }
+      // Trigger the parent's file import handler and wait for it to complete
+      if (onImportComplete) {
+        setProgress('Sparar till databas och synkroniserar...');
+        await onImportComplete({ yrwData, inviteEmails: Array.from(selectedPeople) });
       }
 
       setStage('complete');
       setProgress(null);
-
-      // Call parent callback to refresh data
-      if (onImportComplete) {
-        setTimeout(() => onImportComplete(data), 500);
-      }
 
     } catch (err) {
       console.error('[SmartImport] Import error:', err);
