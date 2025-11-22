@@ -141,10 +141,15 @@ Adjust the previous suggestions based on this request while maintaining data int
 A YearWheel consists of these components:
 
 **1. RINGS** (2-4 concentric circles - STRICT LIMIT):
-- PURPOSE: Separate different types of work or organizational dimensions
-- VISUAL: Inner rings closer to center, outer rings on the edge
-- EXAMPLES: "Client Deadlines" (outer), "Internal Projects" (inner), "Team Tasks" (inner)
-- CONSTRAINT: Users get visually overwhelmed with >4 rings - simplicity is critical
+- PURPOSE: Organize activities into different tracks or organizational dimensions
+- **BOTH ring types can contain activities** - the difference is visual and conceptual
+- **"outer" rings**: Best for smaller or external events - holidays, vacations, seasons, deadlines, external milestones
+  * Visual: Outside the month ring (on the perimeter)
+  * Use case: Context layers, reference points, external constraints
+- **"inner" rings**: Best for main tracks - strategic initiatives, project phases, or text-based planning
+  * Visual: Between center and month ring
+  * Use case: Core work streams, team workload, ongoing projects
+- CONSTRAINT: Users get overwhelmed with >4 rings - simplicity is critical
 - DECISION RULE: If data has 50 clients, DON'T make 50 rings - make 2-4 category-based rings
 
 **2. ACTIVITY GROUPS** (5-30 color categories):
