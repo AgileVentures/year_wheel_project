@@ -112,54 +112,71 @@ async function analyzeCsvWithAI(csvStructure: any, allRows: any[], wheelId: stri
     .select('name, color')
     .eq('wheel_id', wheelId)
 
-  const systemPrompt = `You are a smart data transformation assistant that helps users visualize raw data in a YearWheel - a circular, annual planning visualization.
+  const systemPrompt = `You are a smart data transformation assistant that helps users visualize their project data, deadlines, and activities in a YearWheel.
+
+## YEARWHEEL PURPOSE & USE CASES:
+
+A YearWheel is a **circular annual planning tool** that visualizes an entire year at a glance:
+- **Primary value**: See all deadlines, projects, and activities distributed across 12 months (arranged clockwise)
+- **Key benefit**: Instantly identify busy periods, gaps, conflicts, and patterns
+- **Common users**: Project managers, accounting firms tracking client deadlines, teams coordinating workload
+
+**Typical scenarios**:
+- Accounting firm tracking tax deadlines for 50+ clients across multiple service types
+- Product team managing feature releases, sprints, and quarterly goals
+- Executive team planning board meetings, financial reports, and strategic reviews
+- Multi-year initiatives spanning 2024-2026 with dependencies and milestones
+
+**How users interact**:
+- Filter by person responsible, project type, or status to focus on relevant activities
+- Identify overloaded months vs. quiet periods for resource planning
+- Coordinate across teams by seeing who owns what and when
 
 ${refinementPrompt ? `USER REFINEMENT REQUEST: "${refinementPrompt}"
 
 Adjust the previous suggestions based on this request while maintaining data integrity.` : ''}
 
-## WHAT IS A YEARWHEEL?
+## YEARWHEEL TECHNICAL STRUCTURE:
 
-A YearWheel is a circular calendar visualization where:
-- The **center** shows the year (e.g., 2025)
-- **Concentric rings** radiate outward, each representing a category or organizational dimension
-- **Activities (items)** are placed on rings as colored arcs spanning dates
-- **Activity Groups** provide color-coding for different types of activities
-- **Pages** represent different years (multi-year projects)
+A YearWheel consists of these components:
 
-### STRUCTURE COMPONENTS:
+**1. RINGS** (2-4 concentric circles - STRICT LIMIT):
+- PURPOSE: Separate different types of work or organizational dimensions
+- VISUAL: Inner rings closer to center, outer rings on the edge
+- EXAMPLES: "Client Deadlines" (outer), "Internal Projects" (inner), "Team Tasks" (inner)
+- CONSTRAINT: Users get visually overwhelmed with >4 rings - simplicity is critical
+- DECISION RULE: If data has 50 clients, DON'T make 50 rings - make 2-4 category-based rings
 
-**1. RINGS** (concentric circles):
-- **Outer rings**: Deadlines, milestones, external dependencies (type: "outer")
-- **Inner rings**: Ongoing projects, team-specific work (type: "inner")
-- **Keep it simple**: 2-4 rings maximum
-- Examples: "Client Projects", "Internal Tasks", "Milestones"
+**2. ACTIVITY GROUPS** (5-30 color categories):
+- PURPOSE: Color-code activities for quick visual identification
+- VISUAL: Each group has a distinct color, activities inherit that color
+- EXAMPLES: Individual client names, project types, departments, task categories
+- FLEXIBILITY: Can have many groups (unlike rings) - each gets a unique color
+- DECISION RULE: One group per unique categorical value is fine here
 
-**2. ACTIVITY GROUPS** (color categories):
-- Provide color-coding for activities
-- Can have many groups (5-15 is fine)
-- Examples: Different clients, project types, departments, task categories
-- Each group has a unique color
+**3. ITEMS/ACTIVITIES** (the actual work):
+- PURPOSE: Represent actual tasks, deadlines, events, meetings, deliverables
+- VISUAL: Colored arcs spanning time on the wheel (start date → end date)
+- PLACEMENT: Each item must be on exactly ONE ring and have ONE activity group (for color)
+- PROPERTIES:
+  * name: Short title (e.g., "Q1 Tax Filing - Client ABC")
+  * startDate, endDate: YYYY-MM-DD format (span time on wheel)
+  * ringId: Which concentric ring to place it on
+  * activityId: Which activity group (determines color)
+  * labelIds: Optional tags for filtering (e.g., person responsible)
+  * description: Additional context/notes
 
-**3. ITEMS (activities)**:
-- Placed on a specific ring
-- Assigned to an activity group (for color)
-- Have start and end dates (span time on the wheel)
-- Can have a **description** (additional notes/details)
-- Can be tagged with **labels** (e.g., person responsible, status)
-- Examples: "Q1 Review Meeting", "Project Alpha Delivery", "Annual Report"
-
-**4. LABELS** (optional tags):
-- Used to tag activities with additional context
-- Common use: Person responsible, team member, assignee
-- Can also be: Status, priority, location, department
-- Each label has a unique color
-- Examples: "Marie Isidorsson", "Ted Glaumann", "High Priority"
+**4. LABELS** (optional filter tags):
+- PURPOSE: Enable filtering - "show only Marie's items" or "show only high priority"
+- VISUAL: Each label has a color, used to tag items
+- EXAMPLES: Person names ("Marie Isidorsson"), statuses ("In Progress"), priorities ("Critical")
+- CARDINALITY: Works best with 2-50 unique values
+- DECISION RULE: If a column has 2-50 categorical values useful for filtering, make it labels
 
 **5. PAGES** (multi-year support):
-- Each page represents one year
-- Items are distributed to pages based on their start date year
-- Enables long-term planning across multiple years
+- PURPOSE: Handle projects spanning multiple years (2024, 2025, 2026)
+- BEHAVIOR: Items automatically distributed to pages based on their start date year
+- SHARING: Rings, activity groups, and labels are shared across all pages (wheel-scoped)
 
 ## YOUR TASK:
 
