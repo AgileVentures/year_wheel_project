@@ -135,9 +135,42 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
   const handleImport = async () => {
     setStage('importing');
-    setProgress('Skapar struktur och aktiviteter...');
+    setProgress('Förbereder import...');
 
     try {
+      // If manual mapping is active, re-analyze with overrides before importing
+      if (showAdvancedMapping && manualMapping) {
+        console.log('[SmartImport] Re-analyzing with manual mapping before import:', manualMapping);
+        setProgress('Applicerar manuella mappningar...');
+        
+        const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
+          body: {
+            action: 'analyze',
+            wheelId,
+            currentPageId,
+            csvStructure: {
+              headers: csvData.headers,
+              sampleRows: csvData.rows.slice(0, 20),
+              totalRows: csvData.rows.length
+            },
+            allRows: csvData.rows,
+            manualMapping: manualMapping // Apply user overrides
+          }
+        });
+
+        if (apiError) throw apiError;
+
+        if (!data.success || !data.suggestions) {
+          throw new Error(data.message || 'Fel vid applicering av manuella mappningar');
+        }
+
+        // Update aiSuggestions with remapped data
+        setAiSuggestions(data.suggestions);
+        console.log('[SmartImport] Updated aiSuggestions with manual mapping:', data.suggestions);
+      }
+      
+      setProgress('Skapar struktur och aktiviteter...');
+      
       // Generate consistent IDs for rings and groups (will be remapped by App.jsx import logic)
       const ringIdMap = new Map();
       const groupIdMap = new Map();
@@ -470,190 +503,14 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             </div>
             
             <div className="pt-4 border-t border-yellow-300">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showAdvancedMapping}
-                  onChange={(e) => setShowAdvancedMapping(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">Avancerad kolumnmappning (manuellt val)</span>
-              </label>
-              <p className="text-xs text-gray-500 ml-6 mt-1">
-                Välj själv vilka kolumner som används istället för att låta AI:n analysera
+              <p className="text-xs text-gray-500">
+                Nästa steg: AI kommer att analysera din CSV-fil och föreslå mappningar automatiskt.
+                Du kan sedan granska och justera förslagen innan import.
               </p>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Advanced Mapping Section */}
-      {showAdvancedMapping && (
-        <div className="bg-gray-50 border border-gray-200 rounded-sm p-6 space-y-4">
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-1">Kolumnmappning</h3>
-            <p className="text-sm text-gray-600">Välj vilka kolumner som ska användas för varje fält</p>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {/* Activity Name */}
-            <div className="bg-white p-3 rounded-sm border border-gray-200">
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Aktivitetsnamn <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={manualMapping.activityName ?? ''}
-                onChange={(e) => setManualMapping(prev => ({ 
-                  ...prev, 
-                  activityName: e.target.value === '' ? null : e.target.value 
-                }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Låt AI:n välja...</option>
-                {csvData.headers.map((header, index) => (
-                  <option key={index} value={header}>{header}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Group */}
-            <div className="bg-white p-3 rounded-sm border border-gray-200">
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Aktivitetsgrupp <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={manualMapping.group ?? ''}
-                onChange={(e) => setManualMapping(prev => ({ 
-                  ...prev, 
-                  group: e.target.value === '' ? null : e.target.value 
-                }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Låt AI:n välja...</option>
-                {csvData.headers.map((header, index) => (
-                  <option key={index} value={header}>{header}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Kolumn med kategorier för färgkodning</p>
-            </div>
-            
-            {/* Start Date */}
-            <div className="bg-white p-3 rounded-sm border border-gray-200">
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Startdatum <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={manualMapping.startDate ?? ''}
-                onChange={(e) => setManualMapping(prev => ({ 
-                  ...prev, 
-                  startDate: e.target.value === '' ? null : e.target.value 
-                }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Låt AI:n välja...</option>
-                {csvData.headers.map((header, index) => (
-                  <option key={index} value={header}>{header}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* End Date */}
-            <div className="bg-white p-3 rounded-sm border border-gray-200">
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Slutdatum <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={manualMapping.endDate ?? ''}
-                onChange={(e) => setManualMapping(prev => ({ 
-                  ...prev, 
-                  endDate: e.target.value === '' ? null : e.target.value 
-                }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Samma som startdatum</option>
-                {csvData.headers.map((header, index) => (
-                  <option key={index} value={header}>{header}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Ring Assignment */}
-            <div className="bg-white p-3 rounded-sm border border-gray-200">
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Ringtilldelning
-              </label>
-              <select
-                value={manualMapping.ring ?? ''}
-                onChange={(e) => setManualMapping(prev => ({ 
-                  ...prev, 
-                  ring: e.target.value === '' ? null : e.target.value 
-                }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Låt AI:n välja...</option>
-                {csvData.headers.map((header, index) => (
-                  <option key={index} value={header}>{header}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Kolumn för att skapa ringar (valfritt)</p>
-            </div>
-            
-            {/* Description */}
-            <div className="bg-white p-3 rounded-sm border border-gray-200">
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Beskrivning
-              </label>
-              <select
-                value={manualMapping.description ?? ''}
-                onChange={(e) => setManualMapping(prev => ({ 
-                  ...prev, 
-                  description: e.target.value === '' ? null : e.target.value 
-                }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Alla oanvända kolumner</option>
-                {csvData.headers.map((header, index) => (
-                  <option key={index} value={header}>{header}</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Primär beskrivningskolumn</p>
-            </div>
-          </div>
-          
-          {/* Labels (Multi-select) */}
-          <div className="bg-white p-3 rounded-sm border border-gray-200">
-            <label className="block text-sm font-medium text-gray-900 mb-2">
-              Etiketter (filtreringskolumner)
-            </label>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {csvData.headers.map((header, index) => (
-                <label key={index} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
-                  <input
-                    type="checkbox"
-                    checked={manualMapping.labels.includes(header)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setManualMapping(prev => ({ 
-                          ...prev, 
-                          labels: [...prev.labels, header] 
-                        }));
-                      } else {
-                        setManualMapping(prev => ({ 
-                          ...prev, 
-                          labels: prev.labels.filter(l => l !== header) 
-                        }));
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-gray-700">{header}</span>
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">Välj kolumner med personer, status eller taggar</p>
-          </div>
-        </div>
-      )}
       
       <div className="flex gap-3 justify-end">
         <button
@@ -755,14 +612,206 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         <div className="bg-green-50 border border-green-200 rounded-sm p-4">
           <div className="flex items-start gap-3">
             <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1">
               <h4 className="font-medium text-green-900">AI-analys klar!</h4>
               <p className="text-sm text-green-700 mt-1">
                 {aiSuggestions.mapping.explanation}
               </p>
+              
+              <div className="mt-3 pt-3 border-t border-green-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showAdvancedMapping}
+                    onChange={(e) => setShowAdvancedMapping(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-green-900 font-medium">Avancerad kolumnmappning</span>
+                </label>
+                <p className="text-xs text-green-700 ml-6 mt-1">
+                  Anpassa AI:s val av kolumner manuellt
+                </p>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Advanced Mapping Section */}
+        {showAdvancedMapping && (
+          <div className="bg-blue-50 border border-blue-200 rounded-sm p-6 space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-1">Kolumnmappning</h3>
+              <p className="text-sm text-gray-600">Välj vilka kolumner som ska användas för varje fält. Låt AI:n välja = använd AI:s förslag</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {/* Activity Name */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Aktivitetsnamn <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={manualMapping.activityName ?? ''}
+                  onChange={(e) => setManualMapping(prev => ({ 
+                    ...prev, 
+                    activityName: e.target.value === '' ? null : e.target.value 
+                  }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.activityName})</option>
+                  {csvData.headers.map((header, index) => (
+                    <option key={index} value={header}>{header}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Group */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Aktivitetsgrupp <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={manualMapping.group ?? ''}
+                  onChange={(e) => setManualMapping(prev => ({ 
+                    ...prev, 
+                    group: e.target.value === '' ? null : e.target.value 
+                  }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.group || 'ingen'})</option>
+                  {csvData.headers.map((header, index) => (
+                    <option key={index} value={header}>{header}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Kolumn med kategorier för färgkodning</p>
+              </div>
+              
+              {/* Start Date */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Startdatum <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={manualMapping.startDate ?? ''}
+                  onChange={(e) => setManualMapping(prev => ({ 
+                    ...prev, 
+                    startDate: e.target.value === '' ? null : e.target.value 
+                  }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.startDate})</option>
+                  {csvData.headers.map((header, index) => (
+                    <option key={index} value={header}>{header}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* End Date */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Slutdatum
+                </label>
+                <select
+                  value={manualMapping.endDate ?? ''}
+                  onChange={(e) => setManualMapping(prev => ({ 
+                    ...prev, 
+                    endDate: e.target.value === '' ? null : e.target.value 
+                  }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.endDate || aiSuggestions.mapping.columns.startDate})</option>
+                  {csvData.headers.map((header, index) => (
+                    <option key={index} value={header}>{header}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Ring Assignment */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Ringtilldelning
+                </label>
+                <select
+                  value={manualMapping.ring ?? ''}
+                  onChange={(e) => setManualMapping(prev => ({ 
+                    ...prev, 
+                    ring: e.target.value === '' ? null : e.target.value 
+                  }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.ring || 'ingen'})</option>
+                  {csvData.headers.map((header, index) => (
+                    <option key={index} value={header}>{header}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Kolumn för att skapa ringar (valfritt)</p>
+              </div>
+              
+              {/* Description */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Beskrivning
+                </label>
+                <select
+                  value={manualMapping.description ?? ''}
+                  onChange={(e) => setManualMapping(prev => ({ 
+                    ...prev, 
+                    description: e.target.value === '' ? null : e.target.value 
+                  }))}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.description || 'alla oanvända'})</option>
+                  {csvData.headers.map((header, index) => (
+                    <option key={index} value={header}>{header}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Primär beskrivningskolumn</p>
+              </div>
+            </div>
+            
+            {/* Labels (Multi-select) */}
+            <div className="bg-white p-3 rounded-sm border border-gray-200">
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Etiketter (filtreringskolumner)
+              </label>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {csvData.headers.map((header, index) => (
+                  <label key={index} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={manualMapping.labels.includes(header)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setManualMapping(prev => ({ 
+                            ...prev, 
+                            labels: [...prev.labels, header] 
+                          }));
+                        } else {
+                          setManualMapping(prev => ({ 
+                            ...prev, 
+                            labels: prev.labels.filter(l => l !== header) 
+                          }));
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-gray-700">{header}</span>
+                    {aiSuggestions.mapping.columns.labels?.includes(header) && (
+                      <span className="text-xs text-blue-600">(AI valde denna)</span>
+                    )}
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Välj kolumner med personer, status eller taggar</p>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-3">
+              <p className="text-sm text-yellow-800">
+                <strong>Tips:</strong> Dina ändringar kommer att appliceras automatiskt när du klickar på "Importera" nedan.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Rings Section */}
         <div>
