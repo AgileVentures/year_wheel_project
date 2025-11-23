@@ -34,6 +34,7 @@ function getMonthName(date, language = 'sv') {
 
 /**
  * Transform wheelStructure into a flat array suitable for spreadsheet export
+ * MULTI-PAGE SUPPORT: Exports ALL items from ALL pages if pages array is provided
  * @param {Object} wheelStructure - The wheel's organization data
  * @param {Object} options - Export options
  * @returns {Array} Array of row objects
@@ -52,10 +53,29 @@ export function transformDataForExport(wheelStructure, options = {}) {
     includeStartWeek = false,
     includeEndWeek = false,
     columnNames = {},
-    language = 'sv'
+    language = 'sv',
+    pages = null // CRITICAL: Pass pages array to export ALL items
   } = options;
   
-  if (!wheelStructure || !wheelStructure.items) {
+  if (!wheelStructure) {
+    return [];
+  }
+
+  // MULTI-PAGE EXPORT: Collect items from all pages if provided
+  let allItems = [];
+  if (pages && Array.isArray(pages) && pages.length > 0) {
+    // Aggregate items from all pages
+    pages.forEach(page => {
+      if (page.items && Array.isArray(page.items)) {
+        allItems = allItems.concat(page.items);
+      }
+    });
+  } else {
+    // Fallback: Use items from wheelStructure (current page only)
+    allItems = wheelStructure.items || [];
+  }
+
+  if (allItems.length === 0) {
     return [];
   }
 
@@ -83,7 +103,7 @@ export function transformDataForExport(wheelStructure, options = {}) {
   const labelsMap = new Map((wheelStructure.labels || []).map(l => [l.id, l]));
 
   // Transform items into flat rows
-  const rows = wheelStructure.items.map(item => {
+  const rows = allItems.map(item => {
     const row = {
       [cols.name]: item.name || '',
       [cols.startDate]: item.startDate || '',

@@ -9,7 +9,8 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_ANON_KEY
 );
 
-const wheelId = '417af283-c708-44d9-b282-6d235453a720';
+// Get wheel ID from command line argument or use default
+const wheelId = process.argv[2] || '417af283-c708-44d9-b282-6d235453a720';
 
 async function analyzeWheel() {
   console.log('═══════════════════════════════════════════════════════════════');

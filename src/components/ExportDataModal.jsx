@@ -19,6 +19,7 @@ import { getUserIntegrationByProvider } from '../services/integrationService';
 
 function ExportDataModal({ 
   wheelStructure, 
+  pages = [], // CRITICAL: All pages for multi-page export
   year, 
   title, 
   onClose,
@@ -107,6 +108,7 @@ function ExportDataModal({
     try {
       const previewData = getExportPreview(wheelStructure, {
         maxRows: 5,
+        pages: pages, // Pass all pages for accurate preview
         includeRingNames,
         includeActivityGroups,
         includeLabels,
@@ -147,6 +149,7 @@ function ExportDataModal({
         includeStartWeek,
         includeEndWeek,
         language: i18n.language,
+        pages: pages, // CRITICAL: Pass all pages for multi-page export
         columnNames: Object.fromEntries(
           Object.entries(columnNames).filter(([_, value]) => value)
         )
