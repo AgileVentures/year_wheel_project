@@ -959,8 +959,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">Dina anpassningar används automatiskt</p>
-                  <p>Alla ändringar du gör i kolumnmappning, ringar och grupper används direkt när du klickar på "Importera". Du behöver inte göra något mer.</p>
+                  <p className="font-medium mb-1">✨ Så här fungerar det</p>
+                  <ul className="text-xs space-y-1 mt-2">
+                    <li>• Ändra kolumnmappningar, ringar eller grupper efter behov</li>
+                    <li>• Alla dina anpassningar sparas automatiskt</li>
+                    <li>• När du ändrar ringnamn uppdateras aktiviteterna automatiskt</li>
+                    <li>• Klicka "Importera" när du är klar</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -984,7 +989,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               {/* Custom Rings */}
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="font-medium text-gray-900">Ringar (2-4 rekommenderat)</label>
+                  <div>
+                    <label className="font-medium text-gray-900">Ringar (2-4 rekommenderat)</label>
+                    {customRings && ringOriginalNames && (
+                      <p className="text-xs text-gray-500 mt-0.5">Redigerar AI:s förslag – aktiviteter uppdateras automatiskt</p>
+                    )}
+                  </div>
                   <button
                     onClick={() => {
                       if (customRings) {
@@ -1036,6 +1046,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                               setCustomRingTypes(updated);
                             }}
                             className="px-2 py-1 text-sm border border-gray-300 rounded"
+                            title="Inner = huvudområde mellan center och månadscirkel, Outer = yttre kant"
                           >
                             <option value="inner">Inner</option>
                             <option value="outer">Outer</option>
@@ -1097,7 +1108,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               {/* Custom Groups */}
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="font-medium text-gray-900">Aktivitetsgrupper</label>
+                  <div>
+                    <label className="font-medium text-gray-900">Aktivitetsgrupper</label>
+                    {customGroups && groupOriginalNames && (
+                      <p className="text-xs text-gray-500 mt-0.5">Redigerar AI:s förslag – aktiviteter uppdateras automatiskt</p>
+                    )}
+                  </div>
                   <button
                     onClick={() => {
                       if (customGroups) {
@@ -1412,6 +1428,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <button
                 onClick={handleImport}
                 className="px-4 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 flex items-center gap-2 font-medium"
+                title={`Importera ${csvData.rowCount} rader till ${getEffectiveRingsAndGroups().effectiveRings.length} ringar och ${getEffectiveRingsAndGroups().effectiveGroups.length} grupper`}
               >
                 <Check className="w-4 h-4" />
                 Importera {csvData.rowCount} aktiviteter
