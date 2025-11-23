@@ -35,7 +35,34 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   });
   const [customRings, setCustomRings] = useState(null); // null = use AI, array = custom
   const [customGroups, setCustomGroups] = useState(null); // null = use AI, array = custom
+  const [customRingTypes, setCustomRingTypes] = useState(null); // null = use AI, array of 'inner'|'outer'
   const fileInputRef = useRef(null);
+
+  // Helper: Get effective rings/groups (AI suggestions or custom overrides)
+  const getEffectiveRingsAndGroups = () => {
+    const effectiveRings = customRings
+      ? customRings.map((name, index) => ({
+          id: `ring-${index + 1}`,
+          name,
+          type: customRingTypes ? customRingTypes[index] : (index === 0 ? 'outer' : 'inner'),
+          visible: true,
+          orientation: 'vertical',
+          isCustom: true
+        }))
+      : aiSuggestions.rings;
+
+    const effectiveGroups = customGroups
+      ? customGroups.map((name, index) => ({
+          id: `ag-${index + 1}`,
+          name,
+          color: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'][index % 8],
+          visible: true,
+          isCustom: true
+        }))
+      : aiSuggestions.activityGroups;
+
+    return { effectiveRings, effectiveGroups };
+  };
 
   if (!isOpen) return null;
 
@@ -161,12 +188,20 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       }
       
       // Override rings if user customized them
+      const oldToNewRingName = new Map(); // Track ring name changes for activity remapping
       if (customRings !== null) {
         console.log('[SmartImport] Applying custom rings:', customRings);
+        // Build mapping from old names to new names
+        aiSuggestions.rings.forEach((oldRing, index) => {
+          if (index < customRings.length) {
+            oldToNewRingName.set(oldRing.name, customRings[index]);
+          }
+        });
+        
         effectiveSuggestions.rings = customRings.map((name, index) => ({
           id: `ring-${index + 1}`,
           name,
-          type: index === 0 ? 'outer' : 'inner',
+          type: customRingTypes ? customRingTypes[index] : (index === 0 ? 'outer' : 'inner'),
           visible: true,
           orientation: 'vertical',
           description: `Anpassad ring: ${name}`,
@@ -175,8 +210,16 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       }
       
       // Override activity groups if user customized them
+      const oldToNewGroupName = new Map(); // Track group name changes for activity remapping
       if (customGroups !== null) {
         console.log('[SmartImport] Applying custom activity groups:', customGroups);
+        // Build mapping from old names to new names
+        aiSuggestions.activityGroups.forEach((oldGroup, index) => {
+          if (index < customGroups.length) {
+            oldToNewGroupName.set(oldGroup.name, customGroups[index]);
+          }
+        });
+        
         const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
         effectiveSuggestions.activityGroups = customGroups.map((name, index) => ({
           id: `ag-${index + 1}`,
@@ -185,6 +228,16 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           visible: true,
           description: `Anpassad grupp: ${name}`,
           isCustom: true
+        }));
+      }
+      
+      // CRITICAL: Remap activities to use new ring/group names
+      if (oldToNewRingName.size > 0 || oldToNewGroupName.size > 0) {
+        console.log('[SmartImport] Remapping activities to new ring/group names');
+        effectiveSuggestions.activities = effectiveSuggestions.activities.map(activity => ({
+          ...activity,
+          ring: oldToNewRingName.get(activity.ring) || activity.ring,
+          group: oldToNewGroupName.get(activity.group) || activity.group
         }));
       }
       
@@ -874,9 +927,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Anpassa Ringar och Grupper</h3>
                 <p className="text-sm text-gray-600">
-                  AI:n har föreslagit {aiSuggestions.rings.length} ringar och {aiSuggestions.activityGroups.length} aktivitetsgrupper.
-                  {aiSuggestions.activityGroups.length > 20 && (
-                    <span className="text-amber-700 font-medium"> OBS: {aiSuggestions.activityGroups.length} grupper kan bli rörigt - överväg att minska antalet.</span>
+                  {customRings || customGroups ? (
+                    <>Dina anpassningar: {getEffectiveRingsAndGroups().effectiveRings.length} ringar och {getEffectiveRingsAndGroups().effectiveGroups.length} aktivitetsgrupper.</>
+                  ) : (
+                    <>AI:n har föreslagit {aiSuggestions.rings.length} ringar och {aiSuggestions.activityGroups.length} aktivitetsgrupper.</>
+                  )}
+                  {getEffectiveRingsAndGroups().effectiveGroups.length > 20 && (
+                    <span className="text-amber-700 font-medium"> OBS: {getEffectiveRingsAndGroups().effectiveGroups.length} grupper kan bli rörigt - överväg att minska antalet.</span>
                   )}
                 </p>
               </div>
@@ -887,7 +944,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   <label className="font-medium text-gray-900">Ringar (2-4 rekommenderat)</label>
                   <button
                     onClick={() => {
-                      setCustomRings(customRings ? null : aiSuggestions.rings.map(r => r.name));
+                      if (customRings) {
+                        setCustomRings(null);
+                        setCustomRingTypes(null);
+                      } else {
+                        setCustomRings(aiSuggestions.rings.map(r => r.name));
+                        setCustomRingTypes(aiSuggestions.rings.map(r => r.type));
+                      }
                     }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
@@ -898,37 +961,61 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 {!customRings ? (
                   <div className="text-sm text-gray-600 space-y-1">
                     {aiSuggestions.rings.map((ring, idx) => (
-                      <div key={idx}>• {ring.name}</div>
+                      <div key={idx}>• {ring.name} <span className="text-xs text-gray-500">({ring.type === 'inner' ? 'Inner' : 'Outer'})</span></div>
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {customRings.map((ringName, idx) => (
-                      <div key={idx} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={ringName}
-                          onChange={(e) => {
-                            const updated = [...customRings];
-                            updated[idx] = e.target.value;
-                            setCustomRings(updated);
-                          }}
-                          placeholder={`Ring ${idx + 1}`}
-                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-                        />
-                        {customRings.length > 1 && (
-                          <button
-                            onClick={() => setCustomRings(customRings.filter((_, i) => i !== idx))}
-                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                    {customRings.map((ringName, idx) => {
+                      const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
+                      return (
+                        <div key={idx} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={ringName}
+                            onChange={(e) => {
+                              const updated = [...customRings];
+                              updated[idx] = e.target.value;
+                              setCustomRings(updated);
+                            }}
+                            placeholder={`Ring ${idx + 1}`}
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                          />
+                          <select
+                            value={types[idx]}
+                            onChange={(e) => {
+                              const updated = [...types];
+                              updated[idx] = e.target.value;
+                              setCustomRingTypes(updated);
+                            }}
+                            className="px-2 py-1 text-sm border border-gray-300 rounded"
                           >
-                            Ta bort
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                            <option value="inner">Inner</option>
+                            <option value="outer">Outer</option>
+                          </select>
+                          {customRings.length > 1 && (
+                            <button
+                              onClick={() => {
+                                setCustomRings(customRings.filter((_, i) => i !== idx));
+                                if (customRingTypes) {
+                                  setCustomRingTypes(customRingTypes.filter((_, i) => i !== idx));
+                                }
+                              }}
+                              className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            >
+                              Ta bort
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                     {customRings.length < 4 && (
                       <button
-                        onClick={() => setCustomRings([...customRings, `Ring ${customRings.length + 1}`])}
+                        onClick={() => {
+                          setCustomRings([...customRings, `Ring ${customRings.length + 1}`]);
+                          const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
+                          setCustomRingTypes([...types, 'inner']);
+                        }}
                         className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                       >
                         + Lägg till ring
@@ -995,9 +1082,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
         {/* Rings Section */}
         <div>
-          <h4 className="font-medium text-gray-900 mb-3">Ringar ({aiSuggestions.rings.length})</h4>
+          <h4 className="font-medium text-gray-900 mb-3">Ringar ({getEffectiveRingsAndGroups().effectiveRings.length})</h4>
           <div className="space-y-2">
-            {aiSuggestions.rings.map((ring, idx) => (
+            {getEffectiveRingsAndGroups().effectiveRings.map((ring, idx) => (
               <div key={idx} className="bg-gray-50 border border-gray-200 rounded-sm p-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1024,10 +1111,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {/* Activity Groups Section */}
         <div>
           <h4 className="font-medium text-gray-900 mb-3">
-            Aktivitetsgrupper ({aiSuggestions.activityGroups.length})
+            Aktivitetsgrupper ({getEffectiveRingsAndGroups().effectiveGroups.length})
           </h4>
           <div className="space-y-2">
-            {aiSuggestions.activityGroups.map((group, idx) => (
+            {getEffectiveRingsAndGroups().effectiveGroups.map((group, idx) => (
               <div key={idx} className="bg-gray-50 border border-gray-200 rounded-sm p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">{group.name}</span>
