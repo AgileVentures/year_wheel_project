@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
+import { config } from 'dotenv';
 
-dotenv.config();
+// Load .env.local
+config({ path: '.env.local' });
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -14,6 +15,73 @@ async function analyzeWheel() {
   console.log('═══════════════════════════════════════════════════════════════');
   console.log('WHEEL ANALYSIS FOR:', wheelId);
   console.log('═══════════════════════════════════════════════════════════════\n');
+
+  // Check auth status
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user) {
+    console.log('⚠️  Not authenticated - fetching as public user\n');
+  } else {
+    console.log('✅ Authenticated as:', user.email, '\n');
+  }
+
+  // First, try to find this specific wheel (with or without auth)
+  console.log('🔍 Looking for wheel:', wheelId);
+  const { data: targetWheel, error: targetError } = await supabase
+    .from('year_wheels')
+    .select('id, title, year, user_id, team_id, is_public')
+    .eq('id', wheelId)
+    .maybeSingle();
+
+  if (targetError) {
+    console.error('❌ Error checking wheel:', targetError);
+  } else if (!targetWheel) {
+    console.log('❌ Wheel not found or access denied\n');
+    console.log('This could mean:');
+    console.log('  1. The wheel belongs to another user');
+    console.log('  2. RLS policies are blocking access');
+    console.log('  3. The wheel ID is incorrect\n');
+  } else {
+    console.log('✅ Found wheel!\n');
+    console.log('  Title:', targetWheel.title);
+    console.log('  Year:', targetWheel.year);
+    console.log('  User ID:', targetWheel.user_id);
+    console.log('  Team ID:', targetWheel.team_id || 'None');
+    console.log('  Public:', targetWheel.is_public);
+    console.log('');
+  }
+
+  // List all wheels to verify what's accessible
+  console.log('📋 Listing accessible wheels:');
+  console.log('─────────────────────────────────────────────────────────────');
+  const { data: allWheels, error: wheelsError } = await supabase
+    .from('year_wheels')
+    .select('id, title, year, created_at')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (wheelsError) {
+    console.error('Error fetching wheels:', wheelsError);
+    return;
+  }
+
+  if (allWheels && allWheels.length > 0) {
+    allWheels.forEach((w, index) => {
+      const isTarget = w.id === wheelId;
+      console.log(`  ${isTarget ? '👉' : '  '} ${index + 1}. ${w.title || 'Untitled'} (${w.year})`);
+      console.log(`     ID: ${w.id}`);
+      console.log(`     Created: ${new Date(w.created_at).toLocaleString()}`);
+    });
+  } else {
+    console.log('  No wheels accessible');
+    return;
+  }
+  console.log('\n═══════════════════════════════════════════════════════════════\n');
+
+  if (!targetWheel) {
+    console.log('Cannot proceed with analysis - wheel not accessible');
+    return;
+  }
 
   // 1. Wheel Overview
   const { data: wheel, error: wheelError } = await supabase

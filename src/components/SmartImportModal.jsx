@@ -34,6 +34,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     group: null,
     labels: []
   });
+  const [customRings, setCustomRings] = useState(null); // null = use AI, array = custom
+  const [customGroups, setCustomGroups] = useState(null); // null = use AI, array = custom
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
@@ -138,10 +140,14 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setProgress('Förbereder import...');
 
     try {
-      // If manual mapping is active, re-analyze with overrides before importing
-      if (showAdvancedMapping && manualMapping) {
-        console.log('[SmartImport] Re-analyzing with manual mapping before import:', manualMapping);
-        setProgress('Applicerar manuella mappningar...');
+      // If manual mapping is active OR custom rings/groups are set, re-analyze before importing
+      if (showAdvancedMapping && (manualMapping || customRings || customGroups)) {
+        console.log('[SmartImport] Re-analyzing with manual overrides before import:', {
+          manualMapping,
+          customRings,
+          customGroups
+        });
+        setProgress('Applicerar manuella ändringar...');
         
         const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
           body: {
@@ -154,19 +160,21 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               totalRows: csvData.rows.length
             },
             allRows: csvData.rows,
-            manualMapping: manualMapping // Apply user overrides
+            manualMapping: manualMapping, // Apply column overrides
+            customRings: customRings, // Apply custom ring names
+            customGroups: customGroups // Apply custom group names
           }
         });
 
         if (apiError) throw apiError;
 
         if (!data.success || !data.suggestions) {
-          throw new Error(data.message || 'Fel vid applicering av manuella mappningar');
+          throw new Error(data.message || 'Fel vid applicering av ändringar');
         }
 
         // Update aiSuggestions with remapped data
         setAiSuggestions(data.suggestions);
-        console.log('[SmartImport] Updated aiSuggestions with manual mapping:', data.suggestions);
+        console.log('[SmartImport] Updated aiSuggestions with overrides:', data.suggestions);
       }
       
       setProgress('Skapar struktur och aktiviteter...');
@@ -619,6 +627,24 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 {aiSuggestions.mapping.explanation}
               </p>
               
+              {/* Show AI's grouping strategy */}
+              {(aiSuggestions.mapping.suggestedRingStrategy || aiSuggestions.mapping.suggestedGroupingStrategy) && (
+                <div className="mt-3 pt-3 border-t border-green-200 space-y-2">
+                  {aiSuggestions.mapping.suggestedRingStrategy && (
+                    <div>
+                      <h5 className="text-xs font-semibold text-green-900 mb-1">Ringar (2-4 st):</h5>
+                      <p className="text-xs text-green-700">{aiSuggestions.mapping.suggestedRingStrategy}</p>
+                    </div>
+                  )}
+                  {aiSuggestions.mapping.suggestedGroupingStrategy && (
+                    <div>
+                      <h5 className="text-xs font-semibold text-green-900 mb-1">Aktivitetsgrupper:</h5>
+                      <p className="text-xs text-green-700">{aiSuggestions.mapping.suggestedGroupingStrategy}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="mt-3 pt-3 border-t border-green-200">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -627,10 +653,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     onChange={(e) => setShowAdvancedMapping(e.target.checked)}
                     className="rounded"
                   />
-                  <span className="text-sm text-green-900 font-medium">Avancerad kolumnmappning</span>
+                  <span className="text-sm text-green-900 font-medium">Avancerad mappning</span>
                 </label>
                 <p className="text-xs text-green-700 ml-6 mt-1">
-                  Anpassa AI:s val av kolumner manuellt
+                  Anpassa AI:s val av kolumner, ringar och grupper
                 </p>
               </div>
             </div>
@@ -810,6 +836,124 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <p className="text-sm text-yellow-800">
                 <strong>Tips:</strong> Dina ändringar kommer att appliceras automatiskt när du klickar på "Importera" nedan.
               </p>
+            </div>
+            
+            {/* Custom Ring/Group Editor */}
+            <div className="bg-purple-50 border border-purple-200 rounded-sm p-4 space-y-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Anpassa Ringar och Grupper</h3>
+                <p className="text-sm text-gray-600">
+                  AI:n har föreslagit {aiSuggestions.rings.length} ringar och {aiSuggestions.activityGroups.length} aktivitetsgrupper.
+                  {aiSuggestions.activityGroups.length > 20 && (
+                    <span className="text-amber-700 font-medium"> OBS: {aiSuggestions.activityGroups.length} grupper kan bli rörigt - överväg att minska antalet.</span>
+                  )}
+                </p>
+              </div>
+              
+              {/* Custom Rings */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-medium text-gray-900">Ringar (2-4 rekommenderat)</label>
+                  <button
+                    onClick={() => setCustomRings(customRings ? null : aiSuggestions.rings.map(r => r.name))}
+                    className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                  >
+                    {customRings ? 'Återställ till AI:s förslag' : 'Anpassa'}
+                  </button>
+                </div>
+                
+                {!customRings ? (
+                  <div className="text-sm text-gray-600 space-y-1">
+                    {aiSuggestions.rings.map((ring, idx) => (
+                      <div key={idx}>• {ring.name}</div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {customRings.map((ringName, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={ringName}
+                          onChange={(e) => {
+                            const updated = [...customRings];
+                            updated[idx] = e.target.value;
+                            setCustomRings(updated);
+                          }}
+                          placeholder={`Ring ${idx + 1}`}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                        />
+                        {customRings.length > 1 && (
+                          <button
+                            onClick={() => setCustomRings(customRings.filter((_, i) => i !== idx))}
+                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                          >
+                            Ta bort
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {customRings.length < 4 && (
+                      <button
+                        onClick={() => setCustomRings([...customRings, `Ring ${customRings.length + 1}`])}
+                        className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      >
+                        + Lägg till ring
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Custom Groups */}
+              <div className="bg-white p-3 rounded-sm border border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="font-medium text-gray-900">Aktivitetsgrupper</label>
+                  <button
+                    onClick={() => setCustomGroups(customGroups ? null : aiSuggestions.activityGroups.map(g => g.name))}
+                    className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                  >
+                    {customGroups ? 'Återställ till AI:s förslag' : 'Anpassa'}
+                  </button>
+                </div>
+                
+                {!customGroups ? (
+                  <div className="text-sm text-gray-600">
+                    {aiSuggestions.activityGroups.length} grupper: {aiSuggestions.activityGroups.slice(0, 5).map(g => g.name).join(', ')}
+                    {aiSuggestions.activityGroups.length > 5 && '...'}
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {customGroups.map((groupName, idx) => (
+                      <div key={idx} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={groupName}
+                          onChange={(e) => {
+                            const updated = [...customGroups];
+                            updated[idx] = e.target.value;
+                            setCustomGroups(updated);
+                          }}
+                          placeholder={`Grupp ${idx + 1}`}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                        />
+                        <button
+                          onClick={() => setCustomGroups(customGroups.filter((_, i) => i !== idx))}
+                          className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        >
+                          Ta bort
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setCustomGroups([...customGroups, `Grupp ${customGroups.length + 1}`])}
+                      className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    >
+                      + Lägg till grupp
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

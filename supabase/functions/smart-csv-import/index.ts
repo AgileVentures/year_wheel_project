@@ -45,11 +45,17 @@ serve(async (req: Request) => {
       )
     }
 
-    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions, allRows, manualMapping } = await req.json()
+    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions, allRows, manualMapping, customRings, customGroups } = await req.json()
 
     if (action === 'analyze') {
       // Analyze CSV structure and generate AI mapping rules + apply to ALL rows
-      const result = await analyzeCsvWithAI(csvStructure, allRows, wheelId, currentPageId, supabase, refinementPrompt, previousSuggestions, manualMapping)
+      const result = await analyzeCsvWithAI(csvStructure, allRows, wheelId, currentPageId, supabase, {
+        refinementPrompt,
+        previousSuggestions,
+        manualMapping,
+        customRings,
+        customGroups
+      })
       
       return new Response(
         JSON.stringify(result),
@@ -79,18 +85,43 @@ serve(async (req: Request) => {
 /**
  * Analyze CSV structure using OpenAI and generate mapping rules, then apply to ALL rows
  */
-async function analyzeCsvWithAI(csvStructure: any, allRows: any[], wheelId: string, currentPageId: string, supabase: any, refinementPrompt?: string, previousSuggestions?: any, manualMapping?: any) {
+async function analyzeCsvWithAI(
+  csvStructure: any,
+  allRows: any[],
+  wheelId: string,
+  currentPageId: string,
+  supabase: any,
+  options: {
+    refinementPrompt?: string,
+    previousSuggestions?: any,
+    manualMapping?: any,
+    customRings?: string[],
+    customGroups?: string[]
+  } = {}
+) {
+  const { refinementPrompt, previousSuggestions, manualMapping, customRings, customGroups } = options
+  
   console.log('[analyzeCsvWithAI] Analyzing CSV structure...', {
     totalRows: csvStructure.totalRows,
     sampleRows: csvStructure.sampleRows?.length,
     allRows: allRows?.length,
     isRefinement: !!refinementPrompt,
-    hasManualMapping: !!manualMapping
+    hasManualMapping: !!manualMapping,
+    hasCustomRings: !!customRings,
+    hasCustomGroups: !!customGroups
   })
   
   // If manual mapping provided, use it to guide or override AI
   if (manualMapping && Object.values(manualMapping).some(v => v !== null && (Array.isArray(v) ? v.length > 0 : true))) {
     console.log('[analyzeCsvWithAI] Manual mapping provided:', manualMapping)
+  }
+  
+  // If custom rings/groups provided, log them
+  if (customRings) {
+    console.log('[analyzeCsvWithAI] Custom rings provided:', customRings)
+  }
+  if (customGroups) {
+    console.log('[analyzeCsvWithAI] Custom groups provided:', customGroups)
   }
   
   const openai = new OpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY')! })
@@ -222,28 +253,42 @@ Analyze BOTH column names AND data values to detect date columns:
 - If only ONE date column exists (not a range), use it for both start AND end dates
 - The "startDate" field in mapping.columns MUST be the EXACT column name from the CSV headers
 
-### RING ASSIGNMENT (2-4 RINGS MAX):
-- Identify the PRIMARY organizational dimension by analyzing data patterns
-- Rings represent CATEGORIES or TIME HORIZONS, not individual items
-- Don't create a ring per unique value (❌ 50 rings for 50 clients)
-- Instead, analyze value distribution:
-  * If 2-4 distinct categories exist → use them as rings
-  * If 5-20 distinct values → consider grouping by pattern (e.g., first letter, category)
-  * If >20 distinct values → create 2-4 generic category rings
-- Examples of good ring logic:
-  * Project phases: "Planning", "Execution", "Review"
-  * Time horizons: "Short-term", "Long-term"
-  * Priority levels: "Critical", "Important", "Normal"
-  * Categories from data patterns: "Type A", "Type B", "Type C"
+### RING ASSIGNMENT (INTELLIGENT PATTERN DETECTION):
+- **STRICT LIMIT: 2-4 rings maximum**
+- Rings represent PRIMARY organizational dimension (tracks, workstreams, categories)
+- **ANALYZE DATA PATTERNS** - don't just map column values!
+- **Pattern detection strategies**:
+  * Look for natural categorical splits in the data (2-4 categories)
+  * Detect hierarchies: organizational units, priority levels, project phases
+  * Identify temporal patterns: time horizons, quarters, fiscal periods
+  * Find semantic groupings: company types, service categories, client segments
+- **When column has 2-4 distinct values**: Use them directly as rings
+- **When column has 5-20 values**: Group into 2-4 broader categories
+  * Example: 10 departments → "Operations", "Support", "Development" (3 rings)
+  * Example: 8 project types → "Core", "Innovation", "Maintenance" (3 rings)
+- **When column has 20+ values**: Create generic rings OR analyze other columns
+  * Example: 50 clients → don't use client names, use "Company Type" column instead
+  * Example: No categorical column → create generic rings: "Huvudaktiviteter", "Stödaktiviteter"
+- **Custom ring suggestion**:
+  * Provide a "suggestedRingStrategy" field explaining your reasoning
+  * Offer alternative ring options if multiple dimensions detected
 
-### ACTIVITY GROUP ASSIGNMENT:
-- Activity groups provide COLOR-CODING for activities
-- CAN have many groups (5-20 is optimal, up to 30 is acceptable)
-- Select a column with categorical/classification data
-- Extract ALL unique values from that column
-- Each unique value becomes one activity group
-- Good candidates: Project type, task category, department, client name, activity type
-- Assign distinct colors to each group for visual differentiation
+### ACTIVITY GROUP ASSIGNMENT (INTELLIGENT PATTERN DETECTION):
+- Activity groups provide COLOR-CODING and FILTERING for activities
+- **OPTIMAL: 5-15 groups** (up to 20 acceptable, 20-30 is getting cluttered)
+- **ANALYZE THE DATA SEMANTICALLY** - don't just map columns!
+- **Pattern detection strategies**:
+  * If column has 50+ unique values (e.g., client names): DON'T use as-is
+  * Instead, detect patterns: fiscal year cycles, geographic regions, alphabetical ranges, team assignments
+  * Example: 50 clients with fiscal years → group by "Calendar Year", "May-April", "Jul-Jun", etc. (4-6 groups)
+  * Example: 100 companies → group by first letter "A-E", "F-M", "N-Z" (3 groups)
+  * Example: Mixed locations → group by region "North", "South", "Central" (3-5 groups)
+- **When to use column values directly**:
+  * Column has 5-20 distinct categorical values (project types, departments, statuses)
+  * Values are meaningful categories, not individual entities
+- **Custom group suggestion**:
+  * Provide a "suggestedGroupingStrategy" field explaining your reasoning
+  * Offer alternative grouping options if multiple patterns detected
 
 ### LABEL DETECTION:
 - Analyze the DATA VALUES to identify columns containing:
@@ -277,7 +322,7 @@ Analyze BOTH column names AND data values to detect date columns:
       description: string | null,      // EXACT column name for primary description/notes
       descriptionColumns: string[],    // Additional columns to append to description
       ring: string,                    // Column name OR constant value for ring assignment
-      group: string | null,            // EXACT column name for activity grouping
+      group: string | null,            // EXACT column name for activity grouping (or null if using pattern-based groups)
       labels: string[],                // EXACT column names for person/status/tags
       person: string | null,           // Deprecated: use labels array instead
       comments: string | null          // Deprecated: use descriptionColumns array
@@ -285,23 +330,28 @@ Analyze BOTH column names AND data values to detect date columns:
     dateFormat: string,                // Description of detected date format
     explanation: string,               // Why you chose these mappings
     ringAssignmentLogic: string,      // How you're assigning rings (2-4 max)
-    groupAssignmentLogic: string      // How you're assigning groups
+    groupAssignmentLogic: string,     // How you're assigning groups
+    suggestedRingStrategy: string,    // EXPLAIN your ring grouping logic with alternatives
+    suggestedGroupingStrategy: string // EXPLAIN your group detection logic with alternatives
   },
   rings: Array<{
     id: string,                        // Format: "ring-1", "ring-2", etc.
-    name: string,                      // Swedish name based on data
+    name: string,                      // Swedish name based on data OR pattern-based
     type: "outer" | "inner",          // First ring = outer, rest = inner
     color?: string,                    // Hex color (only for outer ring)
     visible: boolean,                  // Always true
     orientation: "vertical" | "horizontal",
-    description: string               // Why this ring exists
+    description: string,              // Why this ring exists
+    isCustom: boolean                 // true if AI generated pattern-based rings
   }>,
   activityGroups: Array<{
     id: string,                        // Format: "ag-1", "ag-2", etc.
-    name: string,                      // Swedish name from data
+    name: string,                      // Swedish name from data OR pattern-based
     color: string,                     // Hex color for this group
     visible: boolean,                  // Always true
-    description: string               // Purpose of this category
+    description: string,              // Purpose of this category
+    isCustom: boolean,                // true if AI detected patterns rather than column values
+    pattern?: string                  // If isCustom, explain the pattern (e.g., "fiscal-year-cycle", "alphabetical", "geographic")
   }>,
   labels: Array<{
     id: string,                        // Format: "label-1", "label-2", etc.
@@ -314,7 +364,19 @@ Analyze BOTH column names AND data values to detect date columns:
     name: string,                      // Full name
     email: string | null,             // Email if found
     context: string                    // Column where found
-  }>
+  }>,
+  alternativeStrategies?: {           // OPTIONAL: Offer alternative grouping approaches
+    rings?: Array<{
+      strategy: string,                // E.g., "by-team", "by-priority", "by-phase"
+      description: string,             // Why this might work
+      ringNames: string[]              // What the rings would be called
+    }>,
+    groups?: Array<{
+      strategy: string,                // E.g., "by-fiscal-cycle", "alphabetical", "geographic"
+      description: string,             // Why this might work
+      estimatedGroupCount: number      // How many groups this would create
+    }>
+  }
 }
 \`\`\`
 
@@ -632,47 +694,11 @@ Analyze the data and respond with the complete JSON structure.`
   console.log('[analyzeCsvWithAI] Generated', activities.length, 'activities from', allRows.length, 'rows')
   console.log('[analyzeCsvWithAI] Label values collected:', Array.from(labelValuesMap.entries()).map(([col, vals]) => ({ column: col, count: vals.size })))
   
-  // CRITICAL FIX: Extract unique ring and group names from activities
-  const uniqueRingNames = new Set<string>()
-  const uniqueGroupNames = new Set<string>()
-  
-  activities.forEach(activity => {
-    if (activity.ring) uniqueRingNames.add(activity.ring)
-    if (activity.group) uniqueGroupNames.add(activity.group)
-  })
-  
-  console.log('[analyzeCsvWithAI] Unique rings from activities:', Array.from(uniqueRingNames))
-  console.log('[analyzeCsvWithAI] Unique groups from activities:', Array.from(uniqueGroupNames))
-  
-  // INTELLIGENT RING CONSOLIDATION: Limit to 2-4 rings maximum
+  // PATTERN-BASED GROUPING: Use AI's suggestions if they provided custom groupings
   let consolidatedRings: Array<{id: string, name: string, type: string, color?: string, visible: boolean, orientation: string}>
-  const ringNames = Array.from(uniqueRingNames)
+  let actualGroups: Array<{id: string, name: string, color: string, visible: boolean}>
   
-  if (ringNames.length <= 4) {
-    // Good number of rings, use as-is
-    consolidatedRings = ringNames.map((name, i) => ({
-      id: `ring-${i + 1}`,
-      name,
-      type: i === 0 ? 'outer' : 'inner',
-      color: i === 0 ? '#F4A896' : undefined,
-      visible: true,
-      orientation: 'vertical'
-    }))
-  } else {
-    // TOO MANY rings - consolidate into 2 generic rings
-    console.warn('[analyzeCsvWithAI] Too many rings detected:', ringNames.length, '- consolidating to 2 rings')
-    consolidatedRings = [
-      { id: 'ring-1', name: 'Aktiviteter', type: 'outer', color: '#F4A896', visible: true, orientation: 'vertical' },
-      { id: 'ring-2', name: 'Projekt', type: 'inner', visible: true, orientation: 'vertical' }
-    ]
-    
-    // Reassign all activities to generic rings (alternate between them for visual distribution)
-    activities.forEach((activity, index) => {
-      activity.ring = index % 2 === 0 ? 'Aktiviteter' : 'Projekt'
-    })
-  }
-  
-  // Generate color palette for groups
+  // Generate color palette
   const colorPalette = [
     '#F4A896', '#A8DCD1', '#F5E6D3', '#B8D4E8', 
     '#FFD89B', '#C5B9D6', '#F8C3AF', '#A6E3D7',
@@ -680,15 +706,151 @@ Analyze the data and respond with the complete JSON structure.`
     '#FFE4E1', '#E0BBE4', '#FFDAC1', '#B2F7EF'
   ]
   
-  // Rebuild activity groups from actual data (groups can be numerous)
-  const actualGroups = Array.from(uniqueGroupNames).map((groupName, index) => ({
-    id: `ag-${index + 1}`,
-    name: groupName,
-    color: colorPalette[index % colorPalette.length],
-    visible: true
-  }))
+  // CHECK: Did AI provide custom pattern-based rings/groups?
+  const hasCustomRings = mapping.rings?.some((r: any) => r.isCustom)
+  const hasCustomGroups = mapping.activityGroups?.some((g: any) => g.isCustom)
+  
+  if (hasCustomRings) {
+    // AI provided intelligent ring grouping - use it directly
+    console.log('[analyzeCsvWithAI] Using AI custom ring strategy')
+    consolidatedRings = mapping.rings.map((ring: any, i: number) => ({
+      id: ring.id || `ring-${i + 1}`,
+      name: ring.name,
+      type: ring.type || (i === 0 ? 'outer' : 'inner'),
+      color: ring.color || (i === 0 ? '#F4A896' : undefined),
+      visible: true,
+      orientation: ring.orientation || 'vertical'
+    }))
+    
+    // Reassign activities to AI's custom ring logic
+    activities.forEach(activity => {
+      // AI should have set a ring pattern - find matching ring
+      const matchingRing = consolidatedRings.find(r => 
+        r.name.toLowerCase() === activity.ring?.toLowerCase()
+      )
+      if (matchingRing) {
+        activity.ring = matchingRing.name
+      } else {
+        // Fallback to first ring if no match
+        activity.ring = consolidatedRings[0].name
+      }
+    })
+  } else {
+    // Extract unique ring names from activities (traditional approach)
+    const uniqueRingNames = new Set<string>()
+    activities.forEach(activity => {
+      if (activity.ring) uniqueRingNames.add(activity.ring)
+    })
+    
+    const ringNames = Array.from(uniqueRingNames)
+    console.log('[analyzeCsvWithAI] Unique rings from activities:', ringNames)
+    
+    if (ringNames.length <= 4) {
+      // Good number of rings, use as-is
+      consolidatedRings = ringNames.map((name, i) => ({
+        id: `ring-${i + 1}`,
+        name,
+        type: i === 0 ? 'outer' : 'inner',
+        color: i === 0 ? '#F4A896' : undefined,
+        visible: true,
+        orientation: 'vertical'
+      }))
+    } else {
+      // TOO MANY rings - consolidate into 2 generic rings
+      console.warn('[analyzeCsvWithAI] Too many rings detected:', ringNames.length, '- consolidating to 2 rings')
+      consolidatedRings = [
+        { id: 'ring-1', name: 'Aktiviteter', type: 'outer', color: '#F4A896', visible: true, orientation: 'vertical' },
+        { id: 'ring-2', name: 'Projekt', type: 'inner', visible: true, orientation: 'vertical' }
+      ]
+      
+      // Reassign all activities to generic rings (alternate between them for visual distribution)
+      activities.forEach((activity, index) => {
+        activity.ring = index % 2 === 0 ? 'Aktiviteter' : 'Projekt'
+      })
+    }
+  }
+  
+  if (hasCustomGroups) {
+    // AI provided intelligent group patterns - use them directly
+    console.log('[analyzeCsvWithAI] Using AI custom group strategy')
+    actualGroups = mapping.activityGroups.map((group: any, i: number) => ({
+      id: group.id || `ag-${i + 1}`,
+      name: group.name,
+      color: group.color || colorPalette[i % colorPalette.length],
+      visible: true
+    }))
+    
+    // Reassign activities to AI's custom group logic (pattern-based matching)
+    activities.forEach(activity => {
+      // AI should have applied pattern logic in activity.group already
+      const matchingGroup = actualGroups.find(g => 
+        g.name.toLowerCase() === activity.group?.toLowerCase()
+      )
+      if (matchingGroup) {
+        activity.group = matchingGroup.name
+      } else {
+        // Fallback to first group if no match
+        activity.group = actualGroups[0].name
+      }
+    })
+  } else {
+    // Extract unique group names from activities (traditional approach)
+    const uniqueGroupNames = new Set<string>()
+    activities.forEach(activity => {
+      if (activity.group) uniqueGroupNames.add(activity.group)
+    })
+    
+    console.log('[analyzeCsvWithAI] Unique groups from activities:', Array.from(uniqueGroupNames))
+    
+    // Rebuild activity groups from actual data (groups can be numerous)
+    actualGroups = Array.from(uniqueGroupNames).map((groupName, index) => ({
+      id: `ag-${index + 1}`,
+      name: groupName,
+      color: colorPalette[index % colorPalette.length],
+      visible: true
+    }))
+  }
   
   console.log('[analyzeCsvWithAI] Final structure:', consolidatedRings.length, 'rings and', actualGroups.length, 'groups')
+  console.log('[analyzeCsvWithAI] Custom strategies:', {
+    rings: hasCustomRings,
+    groups: hasCustomGroups,
+    suggestedRingStrategy: mapping.mapping?.suggestedRingStrategy,
+    suggestedGroupingStrategy: mapping.mapping?.suggestedGroupingStrategy
+  })
+  
+  // CUSTOM RING/GROUP OVERRIDE: If user provided custom names, use them instead
+  if (customRings && customRings.length > 0) {
+    console.log('[analyzeCsvWithAI] Applying custom ring names:', customRings)
+    consolidatedRings = customRings.map((ringName, i) => ({
+      id: `ring-${i + 1}`,
+      name: ringName,
+      type: i === 0 ? 'outer' : 'inner',
+      color: i === 0 ? '#F4A896' : undefined,
+      visible: true,
+      orientation: 'vertical'
+    }))
+    
+    // Distribute activities across custom rings (round-robin)
+    activities.forEach((activity, index) => {
+      activity.ring = consolidatedRings[index % consolidatedRings.length].name
+    })
+  }
+  
+  if (customGroups && customGroups.length > 0) {
+    console.log('[analyzeCsvWithAI] Applying custom group names:', customGroups)
+    actualGroups = customGroups.map((groupName, i) => ({
+      id: `ag-${i + 1}`,
+      name: groupName,
+      color: colorPalette[i % colorPalette.length],
+      visible: true
+    }))
+    
+    // Distribute activities across custom groups (round-robin)
+    activities.forEach((activity, index) => {
+      activity.group = actualGroups[index % actualGroups.length].name
+    })
+  }
   
   // Generate labels from collected label values
   const labelColorPalette = [
