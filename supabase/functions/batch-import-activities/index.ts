@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface ImportRequest {
   wheelId: string
+  importMode?: 'replace' | 'append'  // Default: 'append' for backwards compatibility
   structure: {
     rings: Array<{id: string, name: string, type: string, visible: boolean, orientation?: string, color?: string}>
     activityGroups: Array<{id: string, name: string, color: string, visible: boolean}>
@@ -45,9 +46,9 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    const { wheelId, structure, pages } = await req.json() as ImportRequest
+    const { wheelId, importMode = 'append', structure, pages } = await req.json() as ImportRequest
 
-    console.log('[BatchImport] Starting import for wheel:', wheelId)
+    console.log('[BatchImport] Starting import for wheel:', wheelId, 'mode:', importMode)
     console.log('[BatchImport] Structure:', structure.rings.length, 'rings,', structure.activityGroups.length, 'groups,', structure.labels.length, 'labels')
     console.log('[BatchImport] Pages:', pages.length, 'pages with', pages.reduce((sum, p) => sum + p.items.length, 0), 'total items')
 
@@ -63,6 +64,63 @@ serve(async (req) => {
         JSON.stringify({ error: 'Wheel not found or access denied' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // STEP 0: Delete existing data if replace mode
+    if (importMode === 'replace') {
+      console.log('[BatchImport] Replace mode: Deleting existing wheel data...')
+      
+      // Delete in correct order to avoid FK violations:
+      // 1. Items (references rings, activity_groups, labels, pages)
+      // 2. Labels (references wheel)
+      // 3. Activity groups (references wheel)
+      // 4. Rings (references wheel)
+      // Note: We do NOT delete pages or the wheel itself
+      
+      const { error: itemsDeleteError } = await supabaseClient
+        .from('items')
+        .delete()
+        .eq('wheel_id', wheelId)
+      
+      if (itemsDeleteError) {
+        console.error('[BatchImport] Failed to delete items:', itemsDeleteError)
+        throw new Error(`Failed to delete items: ${itemsDeleteError.message}`)
+      }
+      console.log('[BatchImport] Deleted items')
+      
+      const { error: labelsDeleteError } = await supabaseClient
+        .from('labels')
+        .delete()
+        .eq('wheel_id', wheelId)
+      
+      if (labelsDeleteError) {
+        console.error('[BatchImport] Failed to delete labels:', labelsDeleteError)
+        throw new Error(`Failed to delete labels: ${labelsDeleteError.message}`)
+      }
+      console.log('[BatchImport] Deleted labels')
+      
+      const { error: groupsDeleteError } = await supabaseClient
+        .from('activity_groups')
+        .delete()
+        .eq('wheel_id', wheelId)
+      
+      if (groupsDeleteError) {
+        console.error('[BatchImport] Failed to delete activity groups:', groupsDeleteError)
+        throw new Error(`Failed to delete activity groups: ${groupsDeleteError.message}`)
+      }
+      console.log('[BatchImport] Deleted activity groups')
+      
+      const { error: ringsDeleteError } = await supabaseClient
+        .from('wheel_rings')
+        .delete()
+        .eq('wheel_id', wheelId)
+      
+      if (ringsDeleteError) {
+        console.error('[BatchImport] Failed to delete rings:', ringsDeleteError)
+        throw new Error(`Failed to delete rings: ${ringsDeleteError.message}`)
+      }
+      console.log('[BatchImport] Deleted rings')
+      console.log('[BatchImport] All existing data deleted successfully')
     }
 
     // STEP 1: Bulk insert rings (let database generate UUIDs)

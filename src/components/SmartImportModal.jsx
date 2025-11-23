@@ -336,6 +336,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         },
         body: JSON.stringify({
           wheelId,
+          importMode, // 'replace' or 'append'
           structure: {
             rings: ringsWithIds,
             activityGroups: groupsWithIds,
