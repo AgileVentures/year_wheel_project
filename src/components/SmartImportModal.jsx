@@ -36,6 +36,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   });
   const [customRings, setCustomRings] = useState(null); // null = use AI, array = custom
   const [customGroups, setCustomGroups] = useState(null); // null = use AI, array = custom
+  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false); // Track if user made changes
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
@@ -298,14 +299,17 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       console.log('[SmartImport] Generated .yrw structure with', ringsWithIds.length, 'rings,', groupsWithIds.length, 'groups,', labelsWithIds.length, 'labels,', pages.length, 'pages,', itemsWithIds.length, 'total items');
 
       // Show detailed progress for large imports
-      const isLargeImport = itemsWithIds.length >= 200;
+      const isLargeImport = itemsWithIds.length > 200;
       if (isLargeImport) {
         setProgress(`Förbereder stor import (${itemsWithIds.length} aktiviteter över ${pages.length} år)...`);
         await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause to show message
       }
       
       // Use batch import Edge Function for performance
-      setProgress(`Sparar ${itemsWithIds.length} aktiviteter till databas...${isLargeImport ? ' Detta kan ta flera minuter.' : ''}`);
+      setProgress(`Sparar ${itemsWithIds.length} aktiviteter till databas...${isLargeImport ? ' Email skickas när importen är klar.' : ''}`);
+      
+      // Get user email for notification
+      const { data: { user } } = await supabase.auth.getUser();
       
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -323,7 +327,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             activityGroups: groupsWithIds,
             labels: labelsWithIds
           },
-          pages
+          pages,
+          notifyEmail: isLargeImport ? user?.email : null, // Send email for large imports
+          fileName: csvData.fileName
         })
       });
       
@@ -434,15 +440,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const renderConfirmStage = () => {
     // Estimate import time based on row count
     const estimateImportTime = (rows) => {
-      if (rows < 50) return { time: '< 1 minut', fast: true };
-      if (rows < 200) return { time: '1-2 minuter', fast: true };
-      if (rows < 500) return { time: '2-5 minuter', fast: false };
-      if (rows < 1000) return { time: '5-10 minuter', fast: false };
-      return { time: '> 10 minuter', fast: false };
+      if (rows < 100) return { time: '< 1 minut', fast: true };
+      if (rows < 250) return { time: '1-3 minuter', fast: true };
+      if (rows < 500) return { time: '3-7 minuter', fast: false };
+      if (rows < 1000) return { time: '7-15 minuter', fast: false };
+      return { time: '> 15 minuter', fast: false };
     };
     
     const timeEstimate = estimateImportTime(csvData.rowCount);
-    const isLargeImport = csvData.rowCount >= 200;
+    const isLargeImport = csvData.rowCount > 200;
     
     return (
       <div className="space-y-6">
@@ -450,16 +456,19 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {isLargeImport && (
           <div className="bg-amber-50 border-2 border-amber-300 rounded-sm p-4">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0" />
+              <Mail className="w-6 h-6 text-amber-600 flex-shrink-0" />
               <div>
                 <h4 className="font-semibold text-amber-900 mb-1">Stor import ({csvData.rowCount} rader)</h4>
                 <p className="text-sm text-amber-800 mb-2">
                   Beräknad tid: <strong>{timeEstimate.time}</strong>
                 </p>
-                <p className="text-xs text-amber-700">
-                  För stora importer rekommenderar vi att du håller fönstret öppet tills importen är klar.
-                  {csvData.rowCount >= 500 && ' Du kan också jobba i ett annat flik medan importen pågår.'}
+                <p className="text-xs text-amber-700 mb-2">
+                  Vi kommer att skicka ett email till dig när importen är klar.
+                  Du kan stänga detta fönster och fortsätta arbeta.
                 </p>
+                <div className="bg-white border border-amber-200 rounded px-2 py-1 text-xs text-amber-900">
+                  📧 Email skickas till din registrerade adress
+                </div>
               </div>
             </div>
           </div>
@@ -685,10 +694,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 </label>
                 <select
                   value={manualMapping.activityName ?? ''}
-                  onChange={(e) => setManualMapping(prev => ({ 
-                    ...prev, 
-                    activityName: e.target.value === '' ? null : e.target.value 
-                  }))}
+                  onChange={(e) => {
+                    setManualMapping(prev => ({ 
+                      ...prev, 
+                      activityName: e.target.value === '' ? null : e.target.value 
+                    }));
+                    setHasUnappliedChanges(true);
+                  }}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.activityName})</option>
@@ -841,6 +853,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-3 flex items-start justify-between gap-3">
               <p className="text-sm text-yellow-800 flex-1">
                 <strong>Tips:</strong> När du gör ändringar i kolumnmappning eller ringar/grupper, klicka på knappen till höger för att låta AI:n justera förslagen.
+                {hasUnappliedChanges && <span className="block mt-1 text-amber-700 font-medium">⚠️ Du har ändringar som inte har applicerats ännu!</span>}
               </p>
               <button
                 onClick={async () => {
@@ -873,6 +886,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   
                   if (data.success && data.suggestions) {
                     setAiSuggestions(data.suggestions);
+                    setHasUnappliedChanges(false); // Changes applied successfully
                     setStage('review');
                     setProgress(null);
                   } else {
@@ -881,9 +895,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     setProgress(null);
                   }
                 }}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 whitespace-nowrap flex-shrink-0"
+                className={`px-3 py-1.5 text-white text-sm rounded whitespace-nowrap flex-shrink-0 ${
+                  hasUnappliedChanges ? 'bg-amber-600 hover:bg-amber-700 animate-pulse' : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
-                Applicera ändringar
+                {hasUnappliedChanges ? '⚠️ Applicera ändringar' : 'Applicera ändringar'}
               </button>
             </div>
             
@@ -904,7 +920,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 <div className="flex items-center justify-between mb-2">
                   <label className="font-medium text-gray-900">Ringar (2-4 rekommenderat)</label>
                   <button
-                    onClick={() => setCustomRings(customRings ? null : aiSuggestions.rings.map(r => r.name))}
+                    onClick={() => {
+                      setCustomRings(customRings ? null : aiSuggestions.rings.map(r => r.name));
+                      setHasUnappliedChanges(true);
+                    }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
                     {customRings ? 'Återställ till AI:s förslag' : 'Anpassa'}
@@ -959,7 +978,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 <div className="flex items-center justify-between mb-2">
                   <label className="font-medium text-gray-900">Aktivitetsgrupper</label>
                   <button
-                    onClick={() => setCustomGroups(customGroups ? null : aiSuggestions.activityGroups.map(g => g.name))}
+                    onClick={() => {
+                      setCustomGroups(customGroups ? null : aiSuggestions.activityGroups.map(g => g.name));
+                      setHasUnappliedChanges(true);
+                    }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
                     {customGroups ? 'Återställ till AI:s förslag' : 'Anpassa'}

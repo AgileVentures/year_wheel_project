@@ -2,14 +2,138 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
+declare const Deno: any
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to send import completion email
+async function sendImportCompletionEmail(params: {
+  email: string
+  wheelId: string
+  fileName: string
+  stats: {
+    rings: number
+    groups: number
+    labels: number
+    pages: number
+    items: number
+  }
+}) {
+  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+  if (!RESEND_API_KEY) {
+    console.warn('[Email] RESEND_API_KEY not configured, skipping email')
+    return
+  }
+
+  const wheelUrl = `${Deno.env.get('APP_URL') || 'https://app.yearwheel.com'}/wheel/${params.wheelId}`
+  
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+    .stats { background: white; border-radius: 6px; padding: 20px; margin: 20px 0; }
+    .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: #6b7280; }
+    .stat-value { font-weight: 600; color: #111827; }
+    .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+    .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0;">✅ Import Klar!</h1>
+    </div>
+    <div class="content">
+      <p>Din CSV-import har slutförts framgångsrikt.</p>
+      
+      <div class="stats">
+        <h3 style="margin-top: 0;">Import Statistik</h3>
+        <div class="stat-row">
+          <span class="stat-label">Fil</span>
+          <span class="stat-value">${params.fileName}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Ringar</span>
+          <span class="stat-value">${params.stats.rings}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Aktivitetsgrupper</span>
+          <span class="stat-value">${params.stats.groups}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Etiketter</span>
+          <span class="stat-value">${params.stats.labels}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Sidor (år)</span>
+          <span class="stat-value">${params.stats.pages}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Aktiviteter</span>
+          <span class="stat-value">${params.stats.items}</span>
+        </div>
+      </div>
+      
+      <p>Ditt årshjul är nu redo att använda!</p>
+      
+      <a href="${wheelUrl}" class="button">Öppna Årshjul</a>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+        Länken är giltig i 30 dagar. Du kan också hitta ditt hjul i din instrumentpanel.
+      </p>
+    </div>
+    <div class="footer">
+      <p>YearWheel - Visualisera ditt år</p>
+    </div>
+  </div>
+</body>
+</html>`
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'YearWheel <noreply@yearwheel.com>',
+        to: [params.email],
+        subject: `✅ Din CSV-import är klar! (${params.stats.items} aktiviteter)`,
+        html: htmlContent
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error('[Email] Resend API error:', error)
+      throw new Error(`Resend API error: ${error}`)
+    }
+
+    const data = await response.json()
+    console.log('[Email] Successfully sent completion email:', data)
+  } catch (error) {
+    console.error('[Email] Failed to send completion email:', error)
+    // Don't throw - email failure shouldn't fail the import
+  }
+}
+
 interface ImportRequest {
   wheelId: string
   importMode?: 'replace' | 'append'  // Default: 'append' for backwards compatibility
+  notifyEmail?: string | null  // Send email notification when import completes
+  fileName?: string  // Original filename for email
   structure: {
     rings: Array<{id: string, name: string, type: string, visible: boolean, orientation?: string, color?: string}>
     activityGroups: Array<{id: string, name: string, color: string, visible: boolean}>
@@ -46,9 +170,9 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    const { wheelId, importMode = 'append', structure, pages } = await req.json() as ImportRequest
+    const { wheelId, importMode = 'append', structure, pages, notifyEmail, fileName } = await req.json() as ImportRequest
 
-    console.log('[BatchImport] Starting import for wheel:', wheelId, 'mode:', importMode)
+    console.log('[BatchImport] Starting import for wheel:', wheelId, 'mode:', importMode, 'notifyEmail:', notifyEmail)
     console.log('[BatchImport] Structure:', structure.rings.length, 'rings,', structure.activityGroups.length, 'groups,', structure.labels.length, 'labels')
     console.log('[BatchImport] Pages:', pages.length, 'pages with', pages.reduce((sum, p) => sum + p.items.length, 0), 'total items')
 
@@ -371,10 +495,27 @@ serve(async (req) => {
 
     console.log('[BatchImport] Successfully inserted', count || allItemInserts.length, 'items')
 
+    // Send email notification for large imports
+    if (notifyEmail) {
+      console.log('[BatchImport] Sending completion email to:', notifyEmail)
+      await sendImportCompletionEmail({
+        email: notifyEmail,
+        wheelId,
+        fileName: fileName || 'CSV-fil',
+        stats: {
+          rings: insertedRings.length,
+          groups: insertedGroups.length,
+          labels: structure.labels.length,
+          pages: pages.length,
+          items: count || allItemInserts.length
+        }
+      })
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: `Import complete: ${count || allItemInserts.length} items saved`,
+        message: `Import complete: ${count || allItemInserts.length} items saved${notifyEmail ? '. Email notification sent.' : ''}`,
         stats: {
           rings: insertedRings.length,
           groups: insertedGroups.length,
