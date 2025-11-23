@@ -191,10 +191,20 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       const oldToNewRingName = new Map(); // Track ring name changes for activity remapping
       if (customRings !== null) {
         console.log('[SmartImport] Applying custom rings:', customRings);
-        // Build mapping from old names to new names
+        console.log('[SmartImport] Original AI rings:', aiSuggestions.rings.map(r => r.name));
+        
+        // Build mapping ONLY for rings that actually changed names (by matching position)
         aiSuggestions.rings.forEach((oldRing, index) => {
           if (index < customRings.length) {
-            oldToNewRingName.set(oldRing.name, customRings[index]);
+            const newName = customRings[index];
+            if (oldRing.name !== newName) {
+              console.log(`[SmartImport] Ring ${index}: "${oldRing.name}" → "${newName}"`);
+              oldToNewRingName.set(oldRing.name, newName);
+            }
+          } else {
+            // Ring was deleted - map to first available ring as fallback
+            console.log(`[SmartImport] Ring ${index}: "${oldRing.name}" was deleted, mapping to "${customRings[0]}"`);
+            oldToNewRingName.set(oldRing.name, customRings[0]);
           }
         });
         
@@ -213,10 +223,20 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       const oldToNewGroupName = new Map(); // Track group name changes for activity remapping
       if (customGroups !== null) {
         console.log('[SmartImport] Applying custom activity groups:', customGroups);
-        // Build mapping from old names to new names
+        console.log('[SmartImport] Original AI groups:', aiSuggestions.activityGroups.map(g => g.name));
+        
+        // Build mapping ONLY for groups that actually changed names (by matching position)
         aiSuggestions.activityGroups.forEach((oldGroup, index) => {
           if (index < customGroups.length) {
-            oldToNewGroupName.set(oldGroup.name, customGroups[index]);
+            const newName = customGroups[index];
+            if (oldGroup.name !== newName) {
+              console.log(`[SmartImport] Group ${index}: "${oldGroup.name}" → "${newName}"`);
+              oldToNewGroupName.set(oldGroup.name, newName);
+            }
+          } else {
+            // Group was deleted - map to first available group as fallback
+            console.log(`[SmartImport] Group ${index}: "${oldGroup.name}" was deleted, mapping to "${customGroups[0]}"`);
+            oldToNewGroupName.set(oldGroup.name, customGroups[0]);
           }
         });
         
@@ -234,17 +254,28 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       // CRITICAL: Remap activities to use new ring/group names
       if (oldToNewRingName.size > 0 || oldToNewGroupName.size > 0) {
         console.log('[SmartImport] Remapping activities to new ring/group names');
+        console.log('[SmartImport] Ring name mapping:', Object.fromEntries(oldToNewRingName));
+        console.log('[SmartImport] Group name mapping:', Object.fromEntries(oldToNewGroupName));
+        console.log('[SmartImport] Sample activities BEFORE remap:', effectiveSuggestions.activities.slice(0, 3).map(a => ({ name: a.name, ring: a.ring, group: a.group })));
+        
         effectiveSuggestions.activities = effectiveSuggestions.activities.map(activity => ({
           ...activity,
           ring: oldToNewRingName.get(activity.ring) || activity.ring,
           group: oldToNewGroupName.get(activity.group) || activity.group
         }));
+        
+        console.log('[SmartImport] Sample activities AFTER remap:', effectiveSuggestions.activities.slice(0, 3).map(a => ({ name: a.name, ring: a.ring, group: a.group })));
       }
       
       console.log('[SmartImport] Effective suggestions after user overrides:', {
         columnMappings: effectiveSuggestions.mapping.columns,
         ringCount: effectiveSuggestions.rings.length,
-        groupCount: effectiveSuggestions.activityGroups.length
+        groupCount: effectiveSuggestions.activityGroups.length,
+        activityCount: effectiveSuggestions.activities.length,
+        sampleRingNames: effectiveSuggestions.rings.map(r => r.name),
+        sampleGroupNames: effectiveSuggestions.activityGroups.map(g => g.name),
+        sampleActivityRings: effectiveSuggestions.activities.slice(0, 3).map(a => a.ring),
+        sampleActivityGroups: effectiveSuggestions.activities.slice(0, 3).map(a => a.group)
       });
       
       setProgress('Skapar struktur och aktiviteter...');
