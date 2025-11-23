@@ -3141,32 +3141,112 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   };
 
   const handleSaveToFile = () => {
-    // Use wheelState structure for export
-    const currentPage = pages.find(p => p.id === currentPageId) || pages[0];
+    // Generate anonymous IDs for export (don't expose real database UUIDs)
+    const generateAnonymousId = (prefix, index) => `${prefix}-${index + 1}`;
     
-    // Build organizationData with current page items
-    const organizationData = {
-      rings: structure.rings || [],
-      activityGroups: structure.activityGroups || [],
-      labels: structure.labels || [],
-      items: currentPage?.items || []
-    };
+    // Map database UUIDs to anonymous IDs
+    const ringIdMap = new Map();
+    const groupIdMap = new Map();
+    const labelIdMap = new Map();
+    const pageIdMap = new Map();
     
+    // Create anonymous structure (rings, activityGroups, labels)
+    const exportRings = (structure.rings || []).map((ring, index) => {
+      const anonymousId = generateAnonymousId('ring', index);
+      ringIdMap.set(ring.id, anonymousId);
+      return {
+        id: anonymousId,
+        name: ring.name,
+        type: ring.type,
+        visible: ring.visible,
+        orientation: ring.orientation || 'vertical',
+        ...(ring.color && { color: ring.color })
+      };
+    });
+    
+    const exportGroups = (structure.activityGroups || []).map((group, index) => {
+      const anonymousId = generateAnonymousId('ag', index);
+      groupIdMap.set(group.id, anonymousId);
+      return {
+        id: anonymousId,
+        name: group.name,
+        color: group.color,
+        visible: group.visible
+      };
+    });
+    
+    const exportLabels = (structure.labels || []).map((label, index) => {
+      const anonymousId = generateAnonymousId('label', index);
+      labelIdMap.set(label.id, anonymousId);
+      return {
+        id: anonymousId,
+        name: label.name,
+        color: label.color,
+        visible: label.visible
+      };
+    });
+    
+    // Create pages array with items (multi-year support)
+    const exportPages = pages.map((page, pageIndex) => {
+      const anonymousPageId = generateAnonymousId('page', pageIndex);
+      pageIdMap.set(page.id, anonymousPageId);
+      
+      const exportItems = (page.items || []).map((item, itemIndex) => {
+        const exportItem = {
+          id: generateAnonymousId(`item-${page.year}`, itemIndex),
+          name: item.name,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          ringId: ringIdMap.get(item.ringId),
+          activityId: groupIdMap.get(item.activityId)
+        };
+        
+        // Add optional fields
+        if (item.labelId) {
+          exportItem.labelId = labelIdMap.get(item.labelId);
+        }
+        if (item.description) {
+          exportItem.description = item.description;
+        }
+        if (item.time) {
+          exportItem.time = item.time;
+        }
+        
+        return exportItem;
+      });
+      
+      return {
+        id: anonymousPageId,
+        year: page.year,
+        pageOrder: page.pageOrder || pageIndex + 1,
+        title: page.title || `${page.year}`,
+        items: exportItems
+      };
+    });
+    
+    // Build v2.0 format (matches template structure)
     const dataToSave = {
-      version: "1.0",
-      createdAt: new Date().toISOString(),
-      title,
-      year,
-      colors,
-      // Include ringsData for backward compatibility with old versions
-      ringsData,
-      // Use organizationData (matches template format and database)
-      organizationData,
-      showWeekRing,
-      showMonthRing,
-      showRingNames,
-      showLabels,
-      weekRingDisplayMode,
+      version: "2.0",
+      metadata: {
+        title,
+        year: pages.length > 0 ? pages[0].year : year,
+        createdAt: new Date().toISOString().split('T')[0],
+        description: `Exported from YearWheel`
+      },
+      settings: {
+        showWeekRing,
+        showMonthRing,
+        showRingNames,
+        weekRingDisplayMode,
+        showLabels,
+        ...(colors && { colors })
+      },
+      structure: {
+        rings: exportRings,
+        activityGroups: exportGroups,
+        labels: exportLabels
+      },
+      pages: exportPages
     };
 
     const jsonString = JSON.stringify(dataToSave, null, 2);
