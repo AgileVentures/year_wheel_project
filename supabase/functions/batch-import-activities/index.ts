@@ -390,15 +390,20 @@ serve(async (req) => {
     if (fetchError) {
       console.error('[BatchImport] Failed to fetch pages for reordering:', fetchError)
     } else if (allPages) {
-      // Update page_order to match chronological year order
-      const updates = allPages.map((pg: any, index: number) => 
-        supabaseClient
+      // Update page_order sequentially to avoid unique constraint violations
+      // (parallel updates can temporarily create duplicates)
+      for (let index = 0; index < allPages.length; index++) {
+        const pg = allPages[index]
+        const { error: updateError } = await supabaseClient
           .from('wheel_pages')
           .update({ page_order: index + 1 })
           .eq('id', pg.id)
-      )
-      
-      await Promise.all(updates)
+        
+        if (updateError) {
+          console.error('[BatchImport] Failed to reorder page', pg.id, ':', updateError)
+          // Don't throw - continue with other updates
+        }
+      }
       console.log('[BatchImport] Reordered', allPages.length, 'pages by year')
     }
 
