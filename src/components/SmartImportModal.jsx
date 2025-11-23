@@ -21,7 +21,6 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [progress, setProgress] = useState(null);
   const [detectedPeople, setDetectedPeople] = useState([]);
   const [selectedPeople, setSelectedPeople] = useState(new Set());
-  const [refinementPrompt, setRefinementPrompt] = useState('');
   const [importMode, setImportMode] = useState('replace'); // 'replace' or 'append'
   const [showAdvancedMapping, setShowAdvancedMapping] = useState(false);
   const [manualMapping, setManualMapping] = useState({
@@ -36,7 +35,6 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   });
   const [customRings, setCustomRings] = useState(null); // null = use AI, array = custom
   const [customGroups, setCustomGroups] = useState(null); // null = use AI, array = custom
-  const [hasUnappliedChanges, setHasUnappliedChanges] = useState(false); // Track if user made changes
   const fileInputRef = useRef(null);
 
   if (!isOpen) return null;
@@ -141,8 +139,60 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setProgress('Förbereder import...');
 
     try {
-      // NOTE: Custom overrides should already be applied via "Applicera ändringar" button
-      // We proceed with the current aiSuggestions which reflect user's changes
+      // Apply user's manual overrides to AI suggestions before processing
+      const effectiveSuggestions = { ...aiSuggestions };
+      
+      // Override column mappings if user customized them
+      if (manualMapping.activityName !== null || manualMapping.startDate !== null || 
+          manualMapping.endDate !== null || manualMapping.ring !== null || 
+          manualMapping.group !== null || manualMapping.description !== null ||
+          manualMapping.labels.length > 0) {
+        console.log('[SmartImport] Applying manual column mappings:', manualMapping);
+        effectiveSuggestions.mapping.columns = {
+          ...effectiveSuggestions.mapping.columns,
+          activityName: manualMapping.activityName || effectiveSuggestions.mapping.columns.activityName,
+          startDate: manualMapping.startDate || effectiveSuggestions.mapping.columns.startDate,
+          endDate: manualMapping.endDate || effectiveSuggestions.mapping.columns.endDate,
+          ring: manualMapping.ring || effectiveSuggestions.mapping.columns.ring,
+          group: manualMapping.group || effectiveSuggestions.mapping.columns.group,
+          description: manualMapping.description || effectiveSuggestions.mapping.columns.description,
+          labels: manualMapping.labels.length > 0 ? manualMapping.labels : effectiveSuggestions.mapping.columns.labels
+        };
+      }
+      
+      // Override rings if user customized them
+      if (customRings !== null) {
+        console.log('[SmartImport] Applying custom rings:', customRings);
+        effectiveSuggestions.rings = customRings.map((name, index) => ({
+          id: `ring-${index + 1}`,
+          name,
+          type: index === 0 ? 'outer' : 'inner',
+          visible: true,
+          orientation: 'vertical',
+          description: `Anpassad ring: ${name}`,
+          isCustom: true
+        }));
+      }
+      
+      // Override activity groups if user customized them
+      if (customGroups !== null) {
+        console.log('[SmartImport] Applying custom activity groups:', customGroups);
+        const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+        effectiveSuggestions.activityGroups = customGroups.map((name, index) => ({
+          id: `ag-${index + 1}`,
+          name,
+          color: colors[index % colors.length],
+          visible: true,
+          description: `Anpassad grupp: ${name}`,
+          isCustom: true
+        }));
+      }
+      
+      console.log('[SmartImport] Effective suggestions after user overrides:', {
+        columnMappings: effectiveSuggestions.mapping.columns,
+        ringCount: effectiveSuggestions.rings.length,
+        groupCount: effectiveSuggestions.activityGroups.length
+      });
       
       setProgress('Skapar struktur och aktiviteter...');
       
@@ -151,7 +201,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       const groupIdMap = new Map();
       
       // Assign consistent IDs to rings
-      const ringsWithIds = aiSuggestions.rings.map((ring, index) => {
+      const ringsWithIds = effectiveSuggestions.rings.map((ring, index) => {
         const id = ring.id || `ring-${index + 1}`;
         ringIdMap.set(ring.name, id);
         return {
@@ -162,7 +212,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       });
       
       // Assign consistent IDs to activity groups
-      const groupsWithIds = aiSuggestions.activityGroups.map((group, index) => {
+      const groupsWithIds = effectiveSuggestions.activityGroups.map((group, index) => {
         const id = group.id || `ag-${index + 1}`;
         groupIdMap.set(group.name, id);
         return {
@@ -174,7 +224,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       
       // Assign consistent IDs to labels
       const labelIdMap = new Map();
-      const labelsWithIds = (aiSuggestions.labels || []).map((label, index) => {
+      const labelsWithIds = (effectiveSuggestions.labels || []).map((label, index) => {
         const id = label.id || `label-${index + 1}`;
         labelIdMap.set(label.name, id);
         return {
@@ -185,7 +235,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       });
       
       // Map activities to use proper ringId, activityId, and labelIds
-      const itemsWithIds = aiSuggestions.activities.map((activity, index) => {
+      const itemsWithIds = effectiveSuggestions.activities.map((activity, index) => {
         const ringId = ringIdMap.get(activity.ring);
         const activityId = groupIdMap.get(activity.group);
         
@@ -286,7 +336,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           showMonthRing: true,
           showRingNames: true,
           weekRingDisplayMode: 'week-numbers',
-          showLabels: (aiSuggestions.labels?.length > 0) || (aiSuggestions.detectedPeople?.length > 0)
+          showLabels: (effectiveSuggestions.labels?.length > 0) || (effectiveSuggestions.detectedPeople?.length > 0)
         },
         structure: {
           rings: ringsWithIds,
@@ -391,51 +441,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setProgress(null);
     setDetectedPeople([]);
     setSelectedPeople(new Set());
-    setRefinementPrompt('');
     setStage('upload');
     onClose();
   };
 
-  const handleRefine = async () => {
-    if (!refinementPrompt.trim()) return;
-    
-    setStage('analyzing');
-    setProgress('AI justerar förslag...');
-    setError(null);
 
-    try {
-      const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
-        body: {
-          action: 'analyze',
-          wheelId,
-          currentPageId,
-          csvStructure: {
-            headers: csvData.headers,
-            sampleRows: csvData.rows.slice(0, 20),
-            totalRows: csvData.rows.length
-          },
-          refinementPrompt: refinementPrompt,
-          previousSuggestions: aiSuggestions
-        }
-      });
-
-      if (apiError) throw apiError;
-      if (!data.success || !data.suggestions) {
-        throw new Error(data.message || 'AI kunde inte generera nya förslag');
-      }
-
-      setAiSuggestions(data.suggestions);
-      setDetectedPeople(data.suggestions.detectedPeople || []);
-      setRefinementPrompt('');
-      setStage('review');
-      setProgress(null);
-    } catch (err) {
-      console.error('[SmartImport] Refinement error:', err);
-      setError(err.message || 'Fel vid justering av förslag');
-      setProgress(null);
-      setStage('review');
-    }
-  };
 
   const renderConfirmStage = () => {
     // Estimate import time based on row count
@@ -682,8 +692,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {showAdvancedMapping && (
           <div className="bg-blue-50 border border-blue-200 rounded-sm p-6 space-y-4">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Kolumnmappning</h3>
-              <p className="text-sm text-gray-600">Välj vilka kolumner som ska användas för varje fält. Låt AI:n välja = använd AI:s förslag</p>
+              <h3 className="font-semibold text-gray-900 mb-1">Anpassa kolumnmappning</h3>
+              <p className="text-sm text-gray-600">Välj vilka kolumner som ska användas för varje fält. Dina val används direkt vid import.</p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -699,7 +709,6 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                       ...prev, 
                       activityName: e.target.value === '' ? null : e.target.value 
                     }));
-                    setHasUnappliedChanges(true);
                   }}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -850,57 +859,14 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <p className="text-xs text-gray-500 mt-2">Välj kolumner med personer, status eller taggar</p>
             </div>
             
-            <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-3 flex items-start justify-between gap-3">
-              <p className="text-sm text-yellow-800 flex-1">
-                <strong>Tips:</strong> När du gör ändringar i kolumnmappning eller ringar/grupper, klicka på knappen till höger för att låta AI:n justera förslagen.
-                {hasUnappliedChanges && <span className="block mt-1 text-amber-700 font-medium">⚠️ Du har ändringar som inte har applicerats ännu!</span>}
-              </p>
-              <button
-                onClick={async () => {
-                  setProgress('Applicerar ändringar och justerar förslag...');
-                  setStage('refining');
-                  
-                  const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
-                    body: {
-                      action: 'analyze',
-                      wheelId,
-                      currentPageId,
-                      csvStructure: {
-                        headers: csvData.headers,
-                        sampleRows: csvData.rows.slice(0, 20),
-                        totalRows: csvData.rows.length
-                      },
-                      allRows: csvData.rows,
-                      manualMapping: manualMapping,
-                      customRings: customRings,
-                      customGroups: customGroups
-                    }
-                  });
-                  
-                  if (apiError) {
-                    setError(apiError.message || 'Fel vid applicering av ändringar');
-                    setStage('review');
-                    setProgress(null);
-                    return;
-                  }
-                  
-                  if (data.success && data.suggestions) {
-                    setAiSuggestions(data.suggestions);
-                    setHasUnappliedChanges(false); // Changes applied successfully
-                    setStage('review');
-                    setProgress(null);
-                  } else {
-                    setError(data.message || 'Kunde inte applicera ändringar');
-                    setStage('review');
-                    setProgress(null);
-                  }
-                }}
-                className={`px-3 py-1.5 text-white text-sm rounded whitespace-nowrap flex-shrink-0 ${
-                  hasUnappliedChanges ? 'bg-amber-600 hover:bg-amber-700 animate-pulse' : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                {hasUnappliedChanges ? '⚠️ Applicera ändringar' : 'Applicera ändringar'}
-              </button>
+            <div className="bg-blue-50 border border-blue-200 rounded-sm p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Dina anpassningar används automatiskt</p>
+                  <p>Alla ändringar du gör i kolumnmappning, ringar och grupper används direkt när du klickar på "Importera". Du behöver inte göra något mer.</p>
+                </div>
+              </div>
             </div>
             
             {/* Custom Ring/Group Editor */}
@@ -922,7 +888,6 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   <button
                     onClick={() => {
                       setCustomRings(customRings ? null : aiSuggestions.rings.map(r => r.name));
-                      setHasUnappliedChanges(true);
                     }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
@@ -980,7 +945,6 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   <button
                     onClick={() => {
                       setCustomGroups(customGroups ? null : aiSuggestions.activityGroups.map(g => g.name));
-                      setHasUnappliedChanges(true);
                     }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
@@ -1250,56 +1214,21 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
         {/* Footer Actions */}
         {stage === 'review' && (
-          <div className="border-t border-gray-200 bg-gray-50">
-            {/* Refinement Section */}
-            <div className="p-4 border-b border-gray-200">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Justera förslag (valfritt)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={refinementPrompt}
-                  onChange={(e) => setRefinementPrompt(e.target.value)}
-                  placeholder="T.ex: 'Skapa fler ringar', 'Använd andra färger', 'Gruppera per månad'"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && refinementPrompt.trim()) {
-                      handleRefine();
-                    }
-                  }}
-                />
-                <button
-                  onClick={handleRefine}
-                  disabled={!refinementPrompt.trim()}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-sm hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Justera
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Be AI:n att justera förslagen innan du importerar
-              </p>
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="p-6">
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setStage('upload')}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
-                >
-                  Avbryt
-                </button>
-                <button
-                  onClick={handleImport}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Importera
-                </button>
-              </div>
+          <div className="border-t border-gray-200 bg-gray-50 p-6">
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setStage('upload')}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={handleImport}
+                className="px-4 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 flex items-center gap-2 font-medium"
+              >
+                <Check className="w-4 h-4" />
+                Importera {csvData.rowCount} aktiviteter
+              </button>
             </div>
           </div>
         )}
