@@ -36,6 +36,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [customRings, setCustomRings] = useState(null); // null = use AI, array = custom
   const [customGroups, setCustomGroups] = useState(null); // null = use AI, array = custom
   const [customRingTypes, setCustomRingTypes] = useState(null); // null = use AI, array of 'inner'|'outer'
+  const [ringOriginalNames, setRingOriginalNames] = useState(null); // Track which custom ring maps to which AI ring
+  const [groupOriginalNames, setGroupOriginalNames] = useState(null); // Track which custom group maps to which AI group
   const fileInputRef = useRef(null);
 
   // Helper: Get effective rings/groups (AI suggestions or custom overrides)
@@ -189,22 +191,27 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       
       // Override rings if user customized them
       const oldToNewRingName = new Map(); // Track ring name changes for activity remapping
-      if (customRings !== null) {
+      if (customRings !== null && ringOriginalNames !== null) {
         console.log('[SmartImport] Applying custom rings:', customRings);
-        console.log('[SmartImport] Original AI rings:', aiSuggestions.rings.map(r => r.name));
+        console.log('[SmartImport] Original AI ring names:', ringOriginalNames);
         
-        // Build mapping ONLY for rings that actually changed names (by matching position)
-        aiSuggestions.rings.forEach((oldRing, index) => {
-          if (index < customRings.length) {
-            const newName = customRings[index];
-            if (oldRing.name !== newName) {
-              console.log(`[SmartImport] Ring ${index}: "${oldRing.name}" → "${newName}"`);
-              oldToNewRingName.set(oldRing.name, newName);
+        // Build mapping from ORIGINAL AI names to CURRENT custom names
+        ringOriginalNames.forEach((originalName, index) => {
+          if (originalName !== null && index < customRings.length) {
+            const currentName = customRings[index];
+            if (originalName !== currentName) {
+              console.log(`[SmartImport] Ring mapping: "${originalName}" → "${currentName}"`);
+              oldToNewRingName.set(originalName, currentName);
             }
-          } else {
-            // Ring was deleted - map to first available ring as fallback
-            console.log(`[SmartImport] Ring ${index}: "${oldRing.name}" was deleted, mapping to "${customRings[0]}"`);
-            oldToNewRingName.set(oldRing.name, customRings[0]);
+          }
+        });
+        
+        // Handle deleted rings: map them to the first ring as fallback
+        const remainingOriginals = new Set(ringOriginalNames.filter(n => n !== null));
+        aiSuggestions.rings.forEach(aiRing => {
+          if (!remainingOriginals.has(aiRing.name)) {
+            console.log(`[SmartImport] Deleted ring "${aiRing.name}" → fallback to "${customRings[0]}"`);
+            oldToNewRingName.set(aiRing.name, customRings[0]);
           }
         });
         
@@ -221,22 +228,27 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       
       // Override activity groups if user customized them
       const oldToNewGroupName = new Map(); // Track group name changes for activity remapping
-      if (customGroups !== null) {
+      if (customGroups !== null && groupOriginalNames !== null) {
         console.log('[SmartImport] Applying custom activity groups:', customGroups);
-        console.log('[SmartImport] Original AI groups:', aiSuggestions.activityGroups.map(g => g.name));
+        console.log('[SmartImport] Original AI group names:', groupOriginalNames);
         
-        // Build mapping ONLY for groups that actually changed names (by matching position)
-        aiSuggestions.activityGroups.forEach((oldGroup, index) => {
-          if (index < customGroups.length) {
-            const newName = customGroups[index];
-            if (oldGroup.name !== newName) {
-              console.log(`[SmartImport] Group ${index}: "${oldGroup.name}" → "${newName}"`);
-              oldToNewGroupName.set(oldGroup.name, newName);
+        // Build mapping from ORIGINAL AI names to CURRENT custom names
+        groupOriginalNames.forEach((originalName, index) => {
+          if (originalName !== null && index < customGroups.length) {
+            const currentName = customGroups[index];
+            if (originalName !== currentName) {
+              console.log(`[SmartImport] Group mapping: "${originalName}" → "${currentName}"`);
+              oldToNewGroupName.set(originalName, currentName);
             }
-          } else {
-            // Group was deleted - map to first available group as fallback
-            console.log(`[SmartImport] Group ${index}: "${oldGroup.name}" was deleted, mapping to "${customGroups[0]}"`);
-            oldToNewGroupName.set(oldGroup.name, customGroups[0]);
+          }
+        });
+        
+        // Handle deleted groups: map them to the first group as fallback
+        const remainingOriginals = new Set(groupOriginalNames.filter(n => n !== null));
+        aiSuggestions.activityGroups.forEach(aiGroup => {
+          if (!remainingOriginals.has(aiGroup.name)) {
+            console.log(`[SmartImport] Deleted group "${aiGroup.name}" → fallback to "${customGroups[0]}"`);
+            oldToNewGroupName.set(aiGroup.name, customGroups[0]);
           }
         });
         
@@ -976,11 +988,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   <button
                     onClick={() => {
                       if (customRings) {
+                        // Reset to AI suggestions
                         setCustomRings(null);
                         setCustomRingTypes(null);
+                        setRingOriginalNames(null);
                       } else {
+                        // Enter edit mode - capture original mapping
                         setCustomRings(aiSuggestions.rings.map(r => r.name));
                         setCustomRingTypes(aiSuggestions.rings.map(r => r.type));
+                        setRingOriginalNames(aiSuggestions.rings.map(r => r.name)); // Store original AI names
                       }
                     }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
@@ -1031,6 +1047,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                                 if (customRingTypes) {
                                   setCustomRingTypes(customRingTypes.filter((_, i) => i !== idx));
                                 }
+                                if (ringOriginalNames) {
+                                  setRingOriginalNames(ringOriginalNames.filter((_, i) => i !== idx));
+                                }
                               }}
                               className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
                             >
@@ -1047,6 +1066,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                             setCustomRings([...customRings, `Ring ${customRings.length + 1}`]);
                             const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
                             setCustomRingTypes([...types, 'inner']);
+                            if (ringOriginalNames) {
+                              setRingOriginalNames([...ringOriginalNames, null]); // New ring, no AI mapping
+                            }
                           }}
                           className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                         >
@@ -1059,6 +1081,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                             if (confirm(`Ta bort alla ${customRings.length} ringar? Detta kan inte ångras.`)) {
                               setCustomRings([customRings[0]]); // Keep at least one
                               setCustomRingTypes(customRingTypes ? [customRingTypes[0]] : null);
+                              setRingOriginalNames(ringOriginalNames ? [ringOriginalNames[0]] : null);
                             }
                           }}
                           className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
@@ -1077,7 +1100,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   <label className="font-medium text-gray-900">Aktivitetsgrupper</label>
                   <button
                     onClick={() => {
-                      setCustomGroups(customGroups ? null : aiSuggestions.activityGroups.map(g => g.name));
+                      if (customGroups) {
+                        setCustomGroups(null);
+                        setGroupOriginalNames(null);
+                      } else {
+                        setCustomGroups(aiSuggestions.activityGroups.map(g => g.name));
+                        setGroupOriginalNames(aiSuggestions.activityGroups.map(g => g.name)); // Store original AI names
+                      }
                     }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
@@ -1106,7 +1135,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                           className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
                         />
                         <button
-                          onClick={() => setCustomGroups(customGroups.filter((_, i) => i !== idx))}
+                          onClick={() => {
+                            setCustomGroups(customGroups.filter((_, i) => i !== idx));
+                            if (groupOriginalNames) {
+                              setGroupOriginalNames(groupOriginalNames.filter((_, i) => i !== idx));
+                            }
+                          }}
                           className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
                         >
                           Ta bort
@@ -1115,7 +1149,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     ))}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setCustomGroups([...customGroups, `Grupp ${customGroups.length + 1}`])}
+                        onClick={() => {
+                          setCustomGroups([...customGroups, `Grupp ${customGroups.length + 1}`]);
+                          if (groupOriginalNames) {
+                            setGroupOriginalNames([...groupOriginalNames, null]); // New group, no AI mapping
+                          }
+                        }}
                         className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                       >
                         + Lägg till grupp
@@ -1125,6 +1164,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                           onClick={() => {
                             if (confirm(`Ta bort alla ${customGroups.length} grupper? Detta kan inte ångras.`)) {
                               setCustomGroups([customGroups[0]]); // Keep at least one
+                              setGroupOriginalNames(groupOriginalNames ? [groupOriginalNames[0]] : null);
                             }
                           }}
                           className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
