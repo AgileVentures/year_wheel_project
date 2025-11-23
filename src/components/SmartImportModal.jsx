@@ -1009,18 +1009,33 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                         </div>
                       );
                     })}
-                    {customRings.length < 4 && (
-                      <button
-                        onClick={() => {
-                          setCustomRings([...customRings, `Ring ${customRings.length + 1}`]);
-                          const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
-                          setCustomRingTypes([...types, 'inner']);
-                        }}
-                        className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                      >
-                        + Lägg till ring
-                      </button>
-                    )}
+                    <div className="flex gap-2">
+                      {customRings.length < 4 && (
+                        <button
+                          onClick={() => {
+                            setCustomRings([...customRings, `Ring ${customRings.length + 1}`]);
+                            const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
+                            setCustomRingTypes([...types, 'inner']);
+                          }}
+                          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                        >
+                          + Lägg till ring
+                        </button>
+                      )}
+                      {customRings.length > 1 && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Ta bort alla ${customRings.length} ringar? Detta kan inte ångras.`)) {
+                              setCustomRings([customRings[0]]); // Keep at least one
+                              setCustomRingTypes(customRingTypes ? [customRingTypes[0]] : null);
+                            }
+                          }}
+                          className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        >
+                          Ta bort alla
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1067,12 +1082,26 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                         </button>
                       </div>
                     ))}
-                    <button
-                      onClick={() => setCustomGroups([...customGroups, `Grupp ${customGroups.length + 1}`])}
-                      className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                    >
-                      + Lägg till grupp
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCustomGroups([...customGroups, `Grupp ${customGroups.length + 1}`])}
+                        className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      >
+                        + Lägg till grupp
+                      </button>
+                      {customGroups.length > 1 && (
+                        <button
+                          onClick={() => {
+                            if (confirm(`Ta bort alla ${customGroups.length} grupper? Detta kan inte ångras.`)) {
+                              setCustomGroups([customGroups[0]]); // Keep at least one
+                            }
+                          }}
+                          className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        >
+                          Ta bort alla
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
