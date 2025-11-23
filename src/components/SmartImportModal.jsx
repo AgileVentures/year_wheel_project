@@ -140,42 +140,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setProgress('Förbereder import...');
 
     try {
-      // If manual mapping is active OR custom rings/groups are set, re-analyze before importing
-      if (showAdvancedMapping && (manualMapping || customRings || customGroups)) {
-        console.log('[SmartImport] Re-analyzing with manual overrides before import:', {
-          manualMapping,
-          customRings,
-          customGroups
-        });
-        setProgress('Applicerar manuella ändringar...');
-        
-        const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
-          body: {
-            action: 'analyze',
-            wheelId,
-            currentPageId,
-            csvStructure: {
-              headers: csvData.headers,
-              sampleRows: csvData.rows.slice(0, 20),
-              totalRows: csvData.rows.length
-            },
-            allRows: csvData.rows,
-            manualMapping: manualMapping, // Apply column overrides
-            customRings: customRings, // Apply custom ring names
-            customGroups: customGroups // Apply custom group names
-          }
-        });
-
-        if (apiError) throw apiError;
-
-        if (!data.success || !data.suggestions) {
-          throw new Error(data.message || 'Fel vid applicering av ändringar');
-        }
-
-        // Update aiSuggestions with remapped data
-        setAiSuggestions(data.suggestions);
-        console.log('[SmartImport] Updated aiSuggestions with overrides:', data.suggestions);
-      }
+      // NOTE: Custom overrides should already be applied via "Applicera ändringar" button
+      // We proceed with the current aiSuggestions which reflect user's changes
       
       setProgress('Skapar struktur och aktiviteter...');
       
@@ -331,8 +297,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
       console.log('[SmartImport] Generated .yrw structure with', ringsWithIds.length, 'rings,', groupsWithIds.length, 'groups,', labelsWithIds.length, 'labels,', pages.length, 'pages,', itemsWithIds.length, 'total items');
 
+      // Show detailed progress for large imports
+      const isLargeImport = itemsWithIds.length >= 200;
+      if (isLargeImport) {
+        setProgress(`Förbereder stor import (${itemsWithIds.length} aktiviteter över ${pages.length} år)...`);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause to show message
+      }
+      
       // Use batch import Edge Function for performance
-      setProgress('Sparar till databas (batch import)...');
+      setProgress(`Sparar ${itemsWithIds.length} aktiviteter till databas...${isLargeImport ? ' Detta kan ta flera minuter.' : ''}`);
       
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -458,18 +431,50 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     }
   };
 
-  const renderConfirmStage = () => (
-    <div className="space-y-6">
-      <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-6">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-          <div className="space-y-3">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Välj importmetod</h3>
-              <p className="text-sm text-gray-700 mb-4">
-                Du har laddat upp <strong>{csvData.rowCount} rader</strong> från <strong>{csvData.fileName}</strong>
-              </p>
+  const renderConfirmStage = () => {
+    // Estimate import time based on row count
+    const estimateImportTime = (rows) => {
+      if (rows < 50) return { time: '< 1 minut', fast: true };
+      if (rows < 200) return { time: '1-2 minuter', fast: true };
+      if (rows < 500) return { time: '2-5 minuter', fast: false };
+      if (rows < 1000) return { time: '5-10 minuter', fast: false };
+      return { time: '> 10 minuter', fast: false };
+    };
+    
+    const timeEstimate = estimateImportTime(csvData.rowCount);
+    const isLargeImport = csvData.rowCount >= 200;
+    
+    return (
+      <div className="space-y-6">
+        {/* Size Warning for Large Imports */}
+        {isLargeImport && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-sm p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-amber-900 mb-1">Stor import ({csvData.rowCount} rader)</h4>
+                <p className="text-sm text-amber-800 mb-2">
+                  Beräknad tid: <strong>{timeEstimate.time}</strong>
+                </p>
+                <p className="text-xs text-amber-700">
+                  För stora importer rekommenderar vi att du håller fönstret öppet tills importen är klar.
+                  {csvData.rowCount >= 500 && ' Du kan också jobba i ett annat flik medan importen pågår.'}
+                </p>
+              </div>
             </div>
+          </div>
+        )}
+        
+        <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-3">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Välj importmetod</h3>
+                <p className="text-sm text-gray-700 mb-4">
+                  Du har laddat upp <strong>{csvData.rowCount} rader</strong> från <strong>{csvData.fileName}</strong>
+                </p>
+              </div>
             
             <div className="space-y-3">
               <label className="flex items-start gap-3 p-4 border-2 rounded-sm cursor-pointer hover:bg-yellow-100/50 transition-colors"
@@ -541,6 +546,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       </div>
     </div>
   );
+};
 
   const renderUploadStage = () => (
     <div className="space-y-6">
@@ -832,10 +838,53 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <p className="text-xs text-gray-500 mt-2">Välj kolumner med personer, status eller taggar</p>
             </div>
             
-            <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-3">
-              <p className="text-sm text-yellow-800">
-                <strong>Tips:</strong> Dina ändringar kommer att appliceras automatiskt när du klickar på "Importera" nedan.
+            <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-3 flex items-start justify-between gap-3">
+              <p className="text-sm text-yellow-800 flex-1">
+                <strong>Tips:</strong> När du gör ändringar i kolumnmappning eller ringar/grupper, klicka på knappen till höger för att låta AI:n justera förslagen.
               </p>
+              <button
+                onClick={async () => {
+                  setProgress('Applicerar ändringar och justerar förslag...');
+                  setStage('refining');
+                  
+                  const { data, error: apiError } = await supabase.functions.invoke('smart-csv-import', {
+                    body: {
+                      action: 'analyze',
+                      wheelId,
+                      currentPageId,
+                      csvStructure: {
+                        headers: csvData.headers,
+                        sampleRows: csvData.rows.slice(0, 20),
+                        totalRows: csvData.rows.length
+                      },
+                      allRows: csvData.rows,
+                      manualMapping: manualMapping,
+                      customRings: customRings,
+                      customGroups: customGroups
+                    }
+                  });
+                  
+                  if (apiError) {
+                    setError(apiError.message || 'Fel vid applicering av ändringar');
+                    setStage('review');
+                    setProgress(null);
+                    return;
+                  }
+                  
+                  if (data.success && data.suggestions) {
+                    setAiSuggestions(data.suggestions);
+                    setStage('review');
+                    setProgress(null);
+                  } else {
+                    setError(data.message || 'Kunde inte applicera ändringar');
+                    setStage('review');
+                    setProgress(null);
+                  }
+                }}
+                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 whitespace-nowrap flex-shrink-0"
+              >
+                Applicera ändringar
+              </button>
             </div>
             
             {/* Custom Ring/Group Editor */}

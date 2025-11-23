@@ -349,6 +349,14 @@ serve(async (req) => {
     }
 
     console.log('[BatchImport] Inserting', allItemInserts.length, 'items in bulk...')
+    console.log('[BatchImport] Sample items (first 3):', allItemInserts.slice(0, 3))
+    console.log('[BatchImport] ID mapping stats:', {
+      totalRingMappings: tempToDbRingId.size,
+      totalGroupMappings: tempToDbGroupId.size,
+      totalLabelMappings: tempToDbLabelId.size,
+      totalPageMappings: pageIdMap.size,
+      pagesWithItems: pages.map(p => ({ pageId: p.id, itemCount: p.items.length }))
+    })
 
     // Insert items without IDs - let database generate them
     const { error: itemError, count } = await supabaseClient
