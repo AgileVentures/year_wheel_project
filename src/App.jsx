@@ -2218,7 +2218,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               showToast(message, 'success');
             }
             
+            console.log('[DeltaSave] Calling markSaved() to clear unsaved changes indicator');
             markSaved();
+            console.log('[DeltaSave] markSaved() called, unsavedChangesCount should now be 0');
             return;
           } else {
             console.error('[DeltaSave] Failed:', result.errors);
