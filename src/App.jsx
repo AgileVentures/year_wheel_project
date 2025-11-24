@@ -66,6 +66,7 @@ import { useWheelOperations } from "./hooks/useWheelOperations";
 import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackUtils";
 import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
 import { useWheelSaveQueue } from "./hooks/useWheelSaveQueue";
+import { useChangeTracker } from "./hooks/useChangeTracker";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -649,6 +650,144 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       structure: nextStructure,
     };
   }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange]);
+  
+  // Track changes for delta saves (compare previous state to current)
+  useEffect(() => {
+    if (!wheelId || !wheelState || isNavigatingPagesRef.current) return;
+    
+    const prevState = prevStateRef.current;
+    if (!prevState) {
+      // First render - store initial state
+      prevStateRef.current = JSON.parse(JSON.stringify(wheelState));
+      return;
+    }
+    
+    const currentState = wheelState;
+    
+    // Track ring changes
+    const prevRings = prevState.structure?.rings || [];
+    const currentRings = currentState.structure?.rings || [];
+    const prevRingMap = new Map(prevRings.map(r => [r.id, r]));
+    const currentRingMap = new Map(currentRings.map(r => [r.id, r]));
+    
+    // Deleted rings
+    for (const [id, ring] of prevRingMap) {
+      if (!currentRingMap.has(id)) {
+        changeTracker.trackRingChange(id, ring, null);
+      }
+    }
+    
+    // Added or modified rings
+    for (const [id, ring] of currentRingMap) {
+      const prevRing = prevRingMap.get(id);
+      if (!prevRing || JSON.stringify(prevRing) !== JSON.stringify(ring)) {
+        changeTracker.trackRingChange(id, prevRing, ring);
+      }
+    }
+    
+    // Track activity group changes
+    const prevGroups = prevState.structure?.activityGroups || [];
+    const currentGroups = currentState.structure?.activityGroups || [];
+    const prevGroupMap = new Map(prevGroups.map(g => [g.id, g]));
+    const currentGroupMap = new Map(currentGroups.map(g => [g.id, g]));
+    
+    // Deleted groups
+    for (const [id, group] of prevGroupMap) {
+      if (!currentGroupMap.has(id)) {
+        changeTracker.trackActivityGroupChange(id, group, null);
+      }
+    }
+    
+    // Added or modified groups
+    for (const [id, group] of currentGroupMap) {
+      const prevGroup = prevGroupMap.get(id);
+      if (!prevGroup || JSON.stringify(prevGroup) !== JSON.stringify(group)) {
+        changeTracker.trackActivityGroupChange(id, prevGroup, group);
+      }
+    }
+    
+    // Track label changes
+    const prevLabels = prevState.structure?.labels || [];
+    const currentLabels = currentState.structure?.labels || [];
+    const prevLabelMap = new Map(prevLabels.map(l => [l.id, l]));
+    const currentLabelMap = new Map(currentLabels.map(l => [l.id, l]));
+    
+    // Deleted labels
+    for (const [id, label] of prevLabelMap) {
+      if (!currentLabelMap.has(id)) {
+        changeTracker.trackLabelChange(id, label, null);
+      }
+    }
+    
+    // Added or modified labels
+    for (const [id, label] of currentLabelMap) {
+      const prevLabel = prevLabelMap.get(id);
+      if (!prevLabel || JSON.stringify(prevLabel) !== JSON.stringify(label)) {
+        changeTracker.trackLabelChange(id, prevLabel, label);
+      }
+    }
+    
+    // Track item changes (all pages)
+    const prevAllItems = [];
+    const currentAllItems = [];
+    
+    for (const page of prevState.pages || []) {
+      prevAllItems.push(...(page.items || []));
+    }
+    
+    for (const page of currentState.pages || []) {
+      currentAllItems.push(...(page.items || []));
+    }
+    
+    const prevItemMap = new Map(prevAllItems.map(i => [i.id, i]));
+    const currentItemMap = new Map(currentAllItems.map(i => [i.id, i]));
+    
+    // Deleted items
+    for (const [id, item] of prevItemMap) {
+      if (!currentItemMap.has(id)) {
+        changeTracker.trackItemChange(id, item, null);
+      }
+    }
+    
+    // Added or modified items
+    for (const [id, item] of currentItemMap) {
+      const prevItem = prevItemMap.get(id);
+      if (!prevItem || JSON.stringify(prevItem) !== JSON.stringify(item)) {
+        changeTracker.trackItemChange(id, prevItem, item);
+      }
+    }
+    
+    // Track page metadata changes (year, title, overrides)
+    const prevPages = prevState.pages || [];
+    const currentPages = currentState.pages || [];
+    const prevPageMap = new Map(prevPages.map(p => [p.id, p]));
+    const currentPageMap = new Map(currentPages.map(p => [p.id, p]));
+    
+    // Check for page metadata changes (excluding items since we track those separately)
+    for (const [id, page] of currentPageMap) {
+      const prevPage = prevPageMap.get(id);
+      if (prevPage) {
+        const prevMeta = { ...prevPage, items: undefined };
+        const currentMeta = { ...page, items: undefined };
+        if (JSON.stringify(prevMeta) !== JSON.stringify(currentMeta)) {
+          changeTracker.trackPageChange(id, prevMeta, currentMeta);
+        }
+      }
+    }
+    
+    // Update prevStateRef for next comparison
+    prevStateRef.current = JSON.parse(JSON.stringify(currentState));
+    
+    // Log changes for debugging
+    if (changeTracker.hasChanges()) {
+      const summary = changeTracker.getChangesSummary();
+      console.log('[ChangeTracker] Changes detected:', summary);
+    }
+  }, [wheelState, wheelId, changeTracker]);
+  
+  // Keep ringsData for backward compatibility when loading old files
+  const changeTracker = useChangeTracker();
+  const prevStateRef = useRef(null);
   
   // Keep ringsData for backward compatibility when loading old files
   const [ringsData, setRingsData] = useState([
@@ -2165,6 +2304,48 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     if (wheelId) {
       try {
+        // Check if we have tracked changes for delta save
+        if (changeTracker.hasChanges()) {
+          const changes = changeTracker.getChanges();
+          const summary = changeTracker.getChangesSummary();
+          
+          console.log('[DeltaSave] Applying delta changes:', summary);
+          
+          // Import wheelService for delta save
+          const { applyDeltaChanges, broadcastDeltaChanges } = await import('./services/wheelService');
+          
+          // Apply delta changes to database
+          const result = await applyDeltaChanges(wheelId, changes);
+          
+          if (result.success) {
+            // Broadcast delta changes for realtime collaboration
+            await broadcastDeltaChanges(wheelId, changes, user?.id);
+            
+            // Clear tracked changes after successful save
+            changeTracker.clearChanges();
+            
+            if (!silent) {
+              const { items, rings, activityGroups, labels, pages } = result;
+              const totalOps = 
+                (items?.inserted || 0) + (items?.updated || 0) + (items?.deleted || 0) +
+                (rings?.inserted || 0) + (rings?.updated || 0) + (rings?.deleted || 0) +
+                (activityGroups?.inserted || 0) + (activityGroups?.updated || 0) + (activityGroups?.deleted || 0) +
+                (labels?.inserted || 0) + (labels?.updated || 0) + (labels?.deleted || 0) +
+                (pages?.updated || 0);
+              
+              const message = `Data har sparats! ${totalOps} ändring${totalOps !== 1 ? 'ar' : ''} tillämpade.`;
+              showToast(message, 'success');
+            }
+            
+            markSaved();
+            return;
+          } else {
+            console.error('[DeltaSave] Failed:', result.errors);
+            // Fall back to full save on error
+          }
+        }
+        
+        // Fall back to full save if no changes tracked or delta save failed
         const saveResult = await enqueueFullSave(reason === 'manual' ? 'manual' : reason);
 
         if (!silent) {
@@ -2207,7 +2388,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!silent) {
       showToast('Data har sparats lokalt!', 'success');
     }
-  }, [wheelId, autoSaveEnabled, enqueueFullSave, showToast, title, year, colors, ringsData, wheelStructure, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, markSaved]);
+  }, [wheelId, changeTracker, user, enqueueFullSave, showToast, title, year, colors, ringsData, wheelStructure, showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode, markSaved]);
 
   useEffect(() => {
     handleSaveRef.current = handleSave;
