@@ -75,12 +75,177 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('[smart-csv-import] Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
+
+/**
+ * Analyze data suitability for YearWheel visualization
+ * Returns warning object if data is unsuitable, null otherwise
+ */
+function analyzeDataSuitability(
+  csvStructure: any,
+  allRows: any[],
+  mapping: any
+): {
+  severity: 'error' | 'warning' | 'info',
+  title: string,
+  message: string,
+  suggestions: Array<{
+    action: string,
+    description: string,
+    filterColumn?: string,
+    filterStrategy?: string
+  }>
+} | null {
+  const totalRows = allRows.length
+  const headers = csvStructure.headers
+  
+  // Parse date columns from first few rows to analyze patterns
+  const startDateCol = mapping.mapping?.columns?.startDate
+  const endDateCol = mapping.mapping?.columns?.endDate
+  
+  if (!startDateCol || !endDateCol) {
+    return null // Can't analyze without date info
+  }
+  
+  // Sample date ranges from first 10 rows
+  const dateRanges = allRows.slice(0, Math.min(10, totalRows)).map((row: any) => {
+    const startIdx = headers.indexOf(startDateCol)
+    const endIdx = headers.indexOf(endDateCol)
+    if (startIdx === -1 || endIdx === -1) return null
+    
+    const startVal = row[startIdx]
+    const endVal = row[endIdx]
+    
+    // Parse dates (handle various formats)
+    let start: Date | null = null
+    let end: Date | null = null
+    
+    if (typeof startVal === 'string' && startVal.includes('-')) {
+      start = new Date(startVal.split('-')[0])
+      end = new Date(startVal.split('-')[1] || startVal.split('-')[0])
+    } else {
+      start = new Date(startVal)
+      end = new Date(endVal)
+    }
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null
+    
+    const daysDiff = Math.abs((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    return { start, end, daysDiff }
+  }).filter(Boolean)
+  
+  // PATTERN 1: Most items span the entire year (300+ days)
+  const fullYearItems = dateRanges.filter((r: any) => r.daysDiff > 300).length
+  const fullYearRatio = dateRanges.length > 0 ? fullYearItems / dateRanges.length : 0
+  
+  // PATTERN 2: All items have identical date ranges
+  const uniqueDateRanges = new Set(dateRanges.map((r: any) => `${r.start.toISOString()}-${r.end.toISOString()}`))
+  const allIdenticalDates = uniqueDateRanges.size === 1 && dateRanges.length > 1
+  
+  // PATTERN 3: Detect high-cardinality columns that could be used for filtering
+  const potentialFilterColumns: Array<{ name: string, uniqueCount: number, category: string }> = []
+  
+  for (const header of headers) {
+    const colIdx = headers.indexOf(header)
+    const values = allRows.slice(0, Math.min(100, totalRows)).map((row: any) => row[colIdx])
+    const uniqueValues = new Set(values.filter(Boolean))
+    
+    // Skip if it's already used for structure
+    if (header === startDateCol || header === endDateCol || 
+        header === mapping.mapping?.columns?.activityName ||
+        header === mapping.mapping?.columns?.ring ||
+        header === mapping.mapping?.columns?.group) {
+      continue
+    }
+    
+    // Look for columns with 5-50 unique values (good for filtering)
+    if (uniqueValues.size >= 5 && uniqueValues.size <= 50) {
+      // Detect category by column name patterns
+      let category = 'other'
+      const lowerHeader = header.toLowerCase()
+      if (lowerHeader.includes('person') || lowerHeader.includes('ansvarig') || 
+          lowerHeader.includes('klient') || lowerHeader.includes('client') ||
+          lowerHeader.includes('contact') || lowerHeader.includes('namn') || lowerHeader.includes('name')) {
+        category = 'person'
+      } else if (lowerHeader.includes('status') || lowerHeader.includes('phase') || 
+                 lowerHeader.includes('stage') || lowerHeader.includes('typ') || lowerHeader.includes('type')) {
+        category = 'status'
+      } else if (lowerHeader.includes('team') || lowerHeader.includes('department') || 
+                 lowerHeader.includes('avdelning') || lowerHeader.includes('enhet')) {
+        category = 'team'
+      }
+      
+      potentialFilterColumns.push({
+        name: header,
+        uniqueCount: uniqueValues.size,
+        category
+      })
+    }
+  }
+  
+  // DECISION: Return warning if data is unsuitable
+  if (fullYearRatio > 0.7 && totalRows > 10) {
+    // Most items span full year - poor visualization
+    const suggestions = []
+    
+    // Suggest filtering by detected columns
+    if (potentialFilterColumns.length > 0) {
+      // Prioritize person/client columns, then team, then status
+      const prioritized = [...potentialFilterColumns].sort((a, b) => {
+        const priority = { person: 0, team: 1, status: 2, other: 3 }
+        return (priority[a.category as keyof typeof priority] || 3) - (priority[b.category as keyof typeof priority] || 3)
+      })
+      
+      for (const col of prioritized.slice(0, 3)) {
+        suggestions.push({
+          action: `Filtrera på "${col.name}"`,
+          description: `Välj en eller flera värden från kolumnen "${col.name}" (${col.uniqueCount} unika värden) för att skapa ett fokuserat årshjul`,
+          filterColumn: col.name,
+          filterStrategy: col.category
+        })
+      }
+    }
+    
+    suggestions.push({
+      action: 'Dela upp i flera årshjul',
+      description: 'Skapa separata årshjul för olika team, projekt eller perioder istället för att importera allt på en gång'
+    })
+    
+    return {
+      severity: 'warning',
+      title: 'Stor dataset med helårsspann - svår att visualisera',
+      message: `Denna CSV innehåller ${totalRows} rader där de flesta spänner över hela året (2025-01-01 till 2025-12-31). Detta skapar överlappande staplar som gör det svårt att se individuella aktiviteter.\n\nYearWheel fungerar bäst när aktiviteter har olika start- och slutdatum utspridda över året.`,
+      suggestions
+    }
+  }
+  
+  if (allIdenticalDates && totalRows > 10) {
+    // All items have same dates - no temporal variation
+    return {
+      severity: 'warning',
+      title: 'Alla aktiviteter har identiska datum',
+      message: `Alla ${totalRows} rader har samma start- och slutdatum. YearWheel är till för att visualisera aktiviteter över tid - denna data har ingen tidsvariation.`,
+      suggestions: [
+        {
+          action: 'Kontrollera datumkolumner',
+          description: 'Se till att rätt kolumner är mappade till start- och slutdatum'
+        },
+        {
+          action: 'Använd en annan visualisering',
+          description: 'Överväg en tabell eller lista istället för ett tidsbaserat årshjul'
+        }
+      ]
+    }
+  }
+  
+  return null // Data looks suitable
+}
 
 /**
  * Analyze CSV structure using OpenAI and generate mapping rules, then apply to ALL rows
@@ -439,6 +604,13 @@ Analyze the data and respond with the complete JSON structure.`
       mapping.mapping.columns.labels = manualMapping.labels
       console.log('[analyzeCsvWithAI] Override labels:', manualMapping.labels)
     }
+  }
+  
+  // DATA SUITABILITY ANALYSIS: Detect patterns that make poor YearWheel visualizations
+  const suitabilityAnalysis = analyzeDataSuitability(csvStructure, allRows, mapping)
+  if (suitabilityAnalysis) {
+    mapping.suitabilityWarning = suitabilityAnalysis
+    console.log('[analyzeCsvWithAI] Data suitability warning:', suitabilityAnalysis)
   }
   
   // CRITICAL DEBUG: Log what AI detected for mapping

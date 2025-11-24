@@ -784,6 +784,83 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </div>
         </div>
 
+        {/* Data Suitability Warning */}
+        {aiSuggestions.suitabilityWarning && (
+          <div className={`border rounded-sm p-4 ${
+            aiSuggestions.suitabilityWarning.severity === 'error' 
+              ? 'bg-red-50 border-red-300' 
+              : aiSuggestions.suitabilityWarning.severity === 'warning'
+              ? 'bg-amber-50 border-amber-300'
+              : 'bg-blue-50 border-blue-300'
+          }`}>
+            <div className="flex items-start gap-3">
+              <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                aiSuggestions.suitabilityWarning.severity === 'error' 
+                  ? 'text-red-600' 
+                  : aiSuggestions.suitabilityWarning.severity === 'warning'
+                  ? 'text-amber-600'
+                  : 'text-blue-600'
+              }`} />
+              <div className="flex-1">
+                <h4 className={`font-semibold ${
+                  aiSuggestions.suitabilityWarning.severity === 'error' 
+                    ? 'text-red-900' 
+                    : aiSuggestions.suitabilityWarning.severity === 'warning'
+                    ? 'text-amber-900'
+                    : 'text-blue-900'
+                }`}>
+                  {aiSuggestions.suitabilityWarning.title}
+                </h4>
+                <p className={`text-sm mt-1 whitespace-pre-line ${
+                  aiSuggestions.suitabilityWarning.severity === 'error' 
+                    ? 'text-red-800' 
+                    : aiSuggestions.suitabilityWarning.severity === 'warning'
+                    ? 'text-amber-800'
+                    : 'text-blue-800'
+                }`}>
+                  {aiSuggestions.suitabilityWarning.message}
+                </p>
+                
+                {aiSuggestions.suitabilityWarning.suggestions && aiSuggestions.suitabilityWarning.suggestions.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-amber-200">
+                    <h5 className="text-sm font-semibold text-amber-900 mb-2">💡 Rekommenderade åtgärder:</h5>
+                    <ul className="space-y-2">
+                      {aiSuggestions.suitabilityWarning.suggestions.map((suggestion, idx) => (
+                        <li key={idx} className="text-sm">
+                          <div className="flex items-start gap-2">
+                            <span className="font-medium text-amber-900 flex-shrink-0">{idx + 1}.</span>
+                            <div className="flex-1">
+                              <p className="font-medium text-amber-900">{suggestion.action}</p>
+                              <p className="text-xs text-amber-700 mt-0.5">{suggestion.description}</p>
+                              {suggestion.filterColumn && (
+                                <button
+                                  onClick={() => {
+                                    // Auto-select this column as a label for easy filtering
+                                    if (!manualMapping.labels.includes(suggestion.filterColumn)) {
+                                      setManualMapping(prev => ({
+                                        ...prev,
+                                        labels: [...prev.labels, suggestion.filterColumn]
+                                      }));
+                                    }
+                                    setShowAdvancedMapping(true);
+                                  }}
+                                  className="mt-2 text-xs px-2 py-1 bg-amber-200 text-amber-900 rounded hover:bg-amber-300 transition-colors"
+                                >
+                                  📌 Använd "{suggestion.filterColumn}" för filtrering
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Advanced Mapping Section */}
         {showAdvancedMapping && (
           <div className="bg-blue-50 border border-blue-200 rounded-sm p-6 space-y-4">
