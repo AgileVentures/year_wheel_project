@@ -121,6 +121,7 @@ const normalizePageStructure = (pageLike) => {
 };
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
+  console.log('🚀🚀🚀 WheelEditor loaded - VERSION: ab3997d');
   const { t } = useTranslation(['common']);
   const { user } = useAuth();
   const { isPremium, loading: subscriptionLoading } = useSubscription();
