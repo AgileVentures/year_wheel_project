@@ -122,6 +122,7 @@ const normalizePageStructure = (pageLike) => {
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t } = useTranslation(['common']);
+  const { user } = useAuth();
   const { isPremium, loading: subscriptionLoading } = useSubscription();
   
   // Helper: Filter items to only those belonging to a specific year
