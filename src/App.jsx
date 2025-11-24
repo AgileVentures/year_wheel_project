@@ -374,6 +374,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     }
   });
+  
+  // Change tracking for delta saves
+  const changeTracker = useChangeTracker();
+  const prevStateRef = useRef(null);
 
   // ==========================================
   // SAVE QUEUE: Prevents data loss during rapid changes
@@ -784,10 +788,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       console.log('[ChangeTracker] Changes detected:', summary);
     }
   }, [wheelState, wheelId, changeTracker]);
-  
-  // Keep ringsData for backward compatibility when loading old files
-  const changeTracker = useChangeTracker();
-  const prevStateRef = useRef(null);
   
   // Keep ringsData for backward compatibility when loading old files
   const [ringsData, setRingsData] = useState([
