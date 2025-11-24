@@ -56,7 +56,8 @@ export function useUndoRedo(initialState, options = {}) {
   const isUndoRedoAction = useRef(false);
   
   // Track save points in history (for "undo to save" feature)
-  const lastSaveIndex = useRef(0);
+  // Using state instead of ref so changes trigger re-renders for unsavedChangesCount
+  const [lastSaveIndex, setLastSaveIndex] = useState(0);
   
   // Batch mode (for drag operations, etc.)
   const isBatchMode = useRef(false);
@@ -113,13 +114,15 @@ export function useUndoRedo(initialState, options = {}) {
           // Keep only the last 'limit' entries
           draft.splice(0, trimCount);
           
-          // Adjust save index if it was trimmed
-          if (lastSaveIndex.current >= trimCount) {
-            lastSaveIndex.current -= trimCount;
-          } else {
-            // Save point was trimmed, reset to oldest entry
-            lastSaveIndex.current = 0;
-          }
+          // Adjust save index if it was trimmed (do this in effect or callback)
+          setLastSaveIndex(prev => {
+            if (prev >= trimCount) {
+              return prev - trimCount;
+            } else {
+              // Save point was trimmed, reset to oldest entry
+              return 0;
+            }
+          });
         }
       });
       
@@ -284,21 +287,21 @@ export function useUndoRedo(initialState, options = {}) {
    */
   const markSaved = useCallback((index = null) => {
     const indexToMark = index !== null ? index : currentIndexRef.current;
-    lastSaveIndex.current = indexToMark;
+    setLastSaveIndex(indexToMark);
   }, []);
   
   /**
    * Undo to last save point
    */
   const undoToSave = useCallback(() => {
-    if (currentIndex > lastSaveIndex.current && history.length > 0) {
-      let saveIndex = lastSaveIndex.current;
+    if (currentIndex > lastSaveIndex && history.length > 0) {
+      let saveIndex = lastSaveIndex;
       
       // If save index is out of bounds (history was trimmed), use first entry
       if (saveIndex >= history.length) {
         console.warn(`Save point ${saveIndex} is out of bounds (history length: ${history.length}). Using oldest entry.`);
         saveIndex = 0;
-        lastSaveIndex.current = 0; // Update to valid index
+        setLastSaveIndex(0); // Update to valid index
       }
       
       const historyEntry = history[saveIndex];
@@ -325,7 +328,7 @@ export function useUndoRedo(initialState, options = {}) {
       return true;
     }
     return false;
-  }, [currentIndex, history]);
+  }, [currentIndex, history, lastSaveIndex]);
 
   /**
    * Start batch mode - accumulate changes without creating history entries
@@ -429,7 +432,7 @@ export function useUndoRedo(initialState, options = {}) {
       // Reset history with the CURRENT state, not initial state
       setHistory([{ state: freeze(currentState, true), label: 'Start' }]);
       setCurrentIndex(0);
-      lastSaveIndex.current = 0;
+      setLastSaveIndex(0);
       
       // Return unchanged state (we're only clearing history)
       return currentState;
@@ -441,8 +444,8 @@ export function useUndoRedo(initialState, options = {}) {
    */
   const canUndo = currentIndex > 0;
   const canRedo = currentIndex < history.length - 1;
-  const hasUnsavedChanges = currentIndex !== lastSaveIndex.current;
-  const unsavedChangesCount = Math.abs(currentIndex - lastSaveIndex.current);
+  const hasUnsavedChanges = currentIndex !== lastSaveIndex;
+  const unsavedChangesCount = Math.abs(currentIndex - lastSaveIndex);
   
   // Get descriptive labels for UI with safety checks
   const undoLabel = canUndo && history[currentIndex - 1] ? (history[currentIndex - 1].label || '') : '';
