@@ -2307,7 +2307,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const handleSave = useCallback(async (options = {}) => {
     const { silent = false, reason = 'manual' } = options;
     
-    console.log('[handleSave] Called with reason:', reason, 'wheelId:', wheelId);
+    console.log('🔥🔥🔥 [handleSave] CALLED WITH REASON:', reason, 'wheelId:', wheelId);
+    alert('handleSave called!'); // TEMPORARY DEBUG
 
     if (wheelId) {
       try {
