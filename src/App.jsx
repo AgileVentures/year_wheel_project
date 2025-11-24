@@ -2306,7 +2306,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (wheelId) {
       try {
         // Check if we have tracked changes for delta save
-        if (changeTracker.hasChanges()) {
+        const hasChanges = changeTracker.hasChanges();
+        console.log('[handleSave] Has tracked changes:', hasChanges);
+        
+        if (hasChanges) {
           const changes = changeTracker.getChanges();
           const summary = changeTracker.getChangesSummary();
           
