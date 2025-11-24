@@ -657,145 +657,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange]);
   
   // Track changes for delta saves (compare previous state to current)
-  useEffect(() => {
-    // Don't track during initial load, data loading, or page navigation
-    if (!wheelId || !wheelState || isNavigatingPagesRef.current || isInitialLoad.current || isLoadingData.current) {
-      console.log('[ChangeTracker] Skipping - flags:', { wheelId: !!wheelId, wheelState: !!wheelState, navigating: isNavigatingPagesRef.current, initialLoad: isInitialLoad.current, loadingData: isLoadingData.current });
-      return;
-    }
-    
-    const prevState = prevStateRef.current;
-    if (!prevState) {
-      // First render - store initial state WITHOUT tracking
-      console.log('[ChangeTracker] First render - storing initial state');
-      prevStateRef.current = JSON.parse(JSON.stringify(wheelState));
-      return;
-    }
-    
-    console.log('[ChangeTracker] Comparing states for changes...');
-    
-    const currentState = wheelState;
-    
-    // Track ring changes
-    const prevRings = prevState.structure?.rings || [];
-    const currentRings = currentState.structure?.rings || [];
-    const prevRingMap = new Map(prevRings.map(r => [r.id, r]));
-    const currentRingMap = new Map(currentRings.map(r => [r.id, r]));
-    
-    // Deleted rings
-    for (const [id, ring] of prevRingMap) {
-      if (!currentRingMap.has(id)) {
-        changeTracker.trackRingChange(id, ring, null);
-      }
-    }
-    
-    // Added or modified rings
-    for (const [id, ring] of currentRingMap) {
-      const prevRing = prevRingMap.get(id);
-      if (!prevRing || JSON.stringify(prevRing) !== JSON.stringify(ring)) {
-        changeTracker.trackRingChange(id, prevRing, ring);
-      }
-    }
-    
-    // Track activity group changes
-    const prevGroups = prevState.structure?.activityGroups || [];
-    const currentGroups = currentState.structure?.activityGroups || [];
-    const prevGroupMap = new Map(prevGroups.map(g => [g.id, g]));
-    const currentGroupMap = new Map(currentGroups.map(g => [g.id, g]));
-    
-    // Deleted groups
-    for (const [id, group] of prevGroupMap) {
-      if (!currentGroupMap.has(id)) {
-        changeTracker.trackActivityGroupChange(id, group, null);
-      }
-    }
-    
-    // Added or modified groups
-    for (const [id, group] of currentGroupMap) {
-      const prevGroup = prevGroupMap.get(id);
-      if (!prevGroup || JSON.stringify(prevGroup) !== JSON.stringify(group)) {
-        changeTracker.trackActivityGroupChange(id, prevGroup, group);
-      }
-    }
-    
-    // Track label changes
-    const prevLabels = prevState.structure?.labels || [];
-    const currentLabels = currentState.structure?.labels || [];
-    const prevLabelMap = new Map(prevLabels.map(l => [l.id, l]));
-    const currentLabelMap = new Map(currentLabels.map(l => [l.id, l]));
-    
-    // Deleted labels
-    for (const [id, label] of prevLabelMap) {
-      if (!currentLabelMap.has(id)) {
-        changeTracker.trackLabelChange(id, label, null);
-      }
-    }
-    
-    // Added or modified labels
-    for (const [id, label] of currentLabelMap) {
-      const prevLabel = prevLabelMap.get(id);
-      if (!prevLabel || JSON.stringify(prevLabel) !== JSON.stringify(label)) {
-        changeTracker.trackLabelChange(id, prevLabel, label);
-      }
-    }
-    
-    // Track item changes (all pages)
-    const prevAllItems = [];
-    const currentAllItems = [];
-    
-    for (const page of prevState.pages || []) {
-      prevAllItems.push(...(page.items || []));
-    }
-    
-    for (const page of currentState.pages || []) {
-      currentAllItems.push(...(page.items || []));
-    }
-    
-    const prevItemMap = new Map(prevAllItems.map(i => [i.id, i]));
-    const currentItemMap = new Map(currentAllItems.map(i => [i.id, i]));
-    
-    // Deleted items
-    for (const [id, item] of prevItemMap) {
-      if (!currentItemMap.has(id)) {
-        changeTracker.trackItemChange(id, item, null);
-      }
-    }
-    
-    // Added or modified items
-    for (const [id, item] of currentItemMap) {
-      const prevItem = prevItemMap.get(id);
-      if (!prevItem || JSON.stringify(prevItem) !== JSON.stringify(item)) {
-        changeTracker.trackItemChange(id, prevItem, item);
-      }
-    }
-    
-    // Track page metadata changes (year, title, overrides)
-    const prevPages = prevState.pages || [];
-    const currentPages = currentState.pages || [];
-    const prevPageMap = new Map(prevPages.map(p => [p.id, p]));
-    const currentPageMap = new Map(currentPages.map(p => [p.id, p]));
-    
-    // Check for page metadata changes (excluding items since we track those separately)
-    for (const [id, page] of currentPageMap) {
-      const prevPage = prevPageMap.get(id);
-      if (prevPage) {
-        const prevMeta = { ...prevPage, items: undefined };
-        const currentMeta = { ...page, items: undefined };
-        if (JSON.stringify(prevMeta) !== JSON.stringify(currentMeta)) {
-          changeTracker.trackPageChange(id, prevMeta, currentMeta);
-        }
-      }
-    }
-    
-    // Update prevStateRef for next comparison
-    prevStateRef.current = JSON.parse(JSON.stringify(currentState));
-    
-    // Log changes for debugging
-    if (changeTracker.hasChanges()) {
-      const summary = changeTracker.getChangesSummary();
-      console.log('[ChangeTracker] Changes detected:', summary);
-    }
-  }, [wheelState, wheelId, changeTracker]);
+  // Note: Change tracking happens directly in mutation handlers (handleUpdateAktivitet, handleAddItems, etc.)
+  // This is more reliable than useEffect since state updates from useMultiStateUndoRedo may not trigger deps
   
   // Keep ringsData for backward compatibility when loading old files
   const [ringsData, setRingsData] = useState([
@@ -3984,15 +3847,27 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
 
     // Track change for delta save
+    console.log('[handleUpdateAktivitet] About to track changes, actuallyChanged:', changeResultRef.actuallyChanged);
     if (changeResultRef.actuallyChanged) {
       console.log('[handleUpdateAktivitet] Change detected, tracking for delta save');
       
       // Track the item change with the change tracker
       const updatedItem = changeResultRef.updatedItem;
+      console.log('[handleUpdateAktivitet] updatedItem:', updatedItem);
       if (updatedItem) {
+        console.log('[handleUpdateAktivitet] CALLING trackItemChange for:', updatedItem.id, updatedItem.name);
         changeTracker.trackItemChange(updatedItem.id, 'modified', updatedItem);
         console.log('[handleUpdateAktivitet] Tracked item change:', updatedItem.id, updatedItem.name);
+        
+        // Verify it was tracked
+        const hasChanges = changeTracker.hasChanges();
+        const summary = changeTracker.getChangesSummary();
+        console.log('[handleUpdateAktivitet] After tracking - hasChanges:', hasChanges, 'summary:', summary);
+      } else {
+        console.log('[handleUpdateAktivitet] WARNING: updatedItem is null/undefined');
       }
+    } else {
+      console.log('[handleUpdateAktivitet] No changes detected (actuallyChanged is false)');
     }
   }, [setWheelState, endBatch, cancelBatch, changeTracker]);
 
