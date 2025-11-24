@@ -2601,9 +2601,26 @@ export const applyDeltaChanges = async (wheelId, changes) => {
     // 3. UPDATE operations (use upsert for efficiency)
     if (changes.items.modified.length > 0) {
       for (const item of changes.items.modified) {
+        // Filter to only updatable database columns (exclude id, created_at, updated_at)
+        const updateData = {
+          wheel_id: item.wheel_id || item.wheelId,
+          page_id: item.page_id || item.pageId,
+          ring_id: item.ring_id || item.ringId,
+          activity_id: item.activity_id || item.activityId,
+          label_id: item.label_id || item.labelId || null,
+          name: item.name,
+          start_date: item.start_date || item.startDate,
+          end_date: item.end_date || item.endDate,
+          time: item.time || null,
+          description: item.description || null,
+          source: item.source || 'manual',
+          external_id: item.external_id || item.externalId || null,
+          sync_metadata: item.sync_metadata || item.syncMetadata || null
+        };
+        
         const { error } = await supabase
           .from('items')
-          .update(item)
+          .update(updateData)
           .eq('id', item.id);
         if (error) results.errors.push(`Item ${item.id}: ${error.message}`);
         else results.items.updated++;
@@ -2612,9 +2629,19 @@ export const applyDeltaChanges = async (wheelId, changes) => {
 
     if (changes.rings.modified.length > 0) {
       for (const ring of changes.rings.modified) {
+        const updateData = {
+          wheel_id: ring.wheel_id || ring.wheelId,
+          name: ring.name,
+          type: ring.type,
+          color: ring.color || null,
+          visible: ring.visible !== undefined ? ring.visible : true,
+          ring_order: ring.ring_order || ring.ringOrder || 0,
+          orientation: ring.orientation || 'vertical'
+        };
+        
         const { error } = await supabase
           .from('wheel_rings')
-          .update(ring)
+          .update(updateData)
           .eq('id', ring.id);
         if (error) results.errors.push(`Ring ${ring.id}: ${error.message}`);
         else results.rings.updated++;
@@ -2623,9 +2650,16 @@ export const applyDeltaChanges = async (wheelId, changes) => {
 
     if (changes.activityGroups.modified.length > 0) {
       for (const group of changes.activityGroups.modified) {
+        const updateData = {
+          wheel_id: group.wheel_id || group.wheelId,
+          name: group.name,
+          color: group.color,
+          visible: group.visible !== undefined ? group.visible : true
+        };
+        
         const { error } = await supabase
           .from('activity_groups')
-          .update(group)
+          .update(updateData)
           .eq('id', group.id);
         if (error) results.errors.push(`Group ${group.id}: ${error.message}`);
         else results.activityGroups.updated++;
@@ -2634,9 +2668,16 @@ export const applyDeltaChanges = async (wheelId, changes) => {
 
     if (changes.labels.modified.length > 0) {
       for (const label of changes.labels.modified) {
+        const updateData = {
+          wheel_id: label.wheel_id || label.wheelId,
+          name: label.name,
+          color: label.color,
+          visible: label.visible !== undefined ? label.visible : true
+        };
+        
         const { error } = await supabase
           .from('labels')
-          .update(label)
+          .update(updateData)
           .eq('id', label.id);
         if (error) results.errors.push(`Label ${label.id}: ${error.message}`);
         else results.labels.updated++;
@@ -2645,9 +2686,21 @@ export const applyDeltaChanges = async (wheelId, changes) => {
 
     if (changes.pages.modified.length > 0) {
       for (const page of changes.pages.modified) {
+        const updateData = {
+          wheel_id: page.wheel_id || page.wheelId,
+          page_order: page.page_order || page.pageOrder,
+          year: page.year,
+          title: page.title || null,
+          organization_data: page.organization_data || page.organizationData || null,
+          override_colors: page.override_colors || page.overrideColors || null,
+          override_show_week_ring: page.override_show_week_ring !== undefined ? page.override_show_week_ring : null,
+          override_show_month_ring: page.override_show_month_ring !== undefined ? page.override_show_month_ring : null,
+          override_show_ring_names: page.override_show_ring_names !== undefined ? page.override_show_ring_names : null
+        };
+        
         const { error } = await supabase
           .from('wheel_pages')
-          .update(page)
+          .update(updateData)
           .eq('id', page.id);
         if (error) results.errors.push(`Page ${page.id}: ${error.message}`);
         else results.pages.updated++;
