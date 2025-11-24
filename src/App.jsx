@@ -658,11 +658,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
   // Track changes for delta saves (compare previous state to current)
   useEffect(() => {
-    if (!wheelId || !wheelState || isNavigatingPagesRef.current) return;
+    // Don't track during initial load, data loading, or page navigation
+    if (!wheelId || !wheelState || isNavigatingPagesRef.current || isInitialLoad.current || isLoadingData.current) return;
     
     const prevState = prevStateRef.current;
     if (!prevState) {
-      // First render - store initial state
+      // First render - store initial state WITHOUT tracking
       prevStateRef.current = JSON.parse(JSON.stringify(wheelState));
       return;
     }
@@ -2171,9 +2172,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Load wheel data
     loadWheelData().finally(() => {
       setIsLoading(false);
-      // After initial load completes, enable auto-save
+      // After initial load completes, enable auto-save and clear any tracked changes from load
       setTimeout(() => {
         isInitialLoad.current = false;
+        // Clear any changes that were tracked during initial load
+        changeTracker.clearChanges();
+        console.log('[InitialLoad] Cleared change tracker after initial load');
       }, 500);
       
       // Check if this is a first-time user (no onboarding completed flag)
