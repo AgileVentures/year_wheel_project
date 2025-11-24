@@ -823,37 +823,72 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 
                 {aiSuggestions.suitabilityWarning.suggestions && aiSuggestions.suitabilityWarning.suggestions.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-amber-200">
-                    <h5 className="text-sm font-semibold text-amber-900 mb-2">💡 Rekommenderade åtgärder:</h5>
-                    <ul className="space-y-2">
+                    <h5 className="text-sm font-semibold text-amber-900 mb-2">
+                      {aiSuggestions.suitabilityWarning.severity === 'error' 
+                        ? '🚨 Nödvändiga åtgärder innan import:' 
+                        : '💡 Rekommenderade åtgärder:'}
+                    </h5>
+                    <ul className="space-y-3">
                       {aiSuggestions.suitabilityWarning.suggestions.map((suggestion, idx) => (
                         <li key={idx} className="text-sm">
                           <div className="flex items-start gap-2">
-                            <span className="font-medium text-amber-900 flex-shrink-0">{idx + 1}.</span>
+                            <span className="font-medium text-amber-900 flex-shrink-0 mt-0.5">
+                              {suggestion.multiWheelStrategy ? '🔗' : idx + 1 + '.'}
+                            </span>
                             <div className="flex-1">
-                              <p className="font-medium text-amber-900">{suggestion.action}</p>
-                              <p className="text-xs text-amber-700 mt-0.5">{suggestion.description}</p>
-                              {suggestion.filterColumn && (
-                                <button
-                                  onClick={() => {
-                                    // Auto-select this column as a label for easy filtering
-                                    if (!manualMapping.labels.includes(suggestion.filterColumn)) {
-                                      setManualMapping(prev => ({
-                                        ...prev,
-                                        labels: [...prev.labels, suggestion.filterColumn]
-                                      }));
-                                    }
-                                    setShowAdvancedMapping(true);
-                                  }}
-                                  className="mt-2 text-xs px-2 py-1 bg-amber-200 text-amber-900 rounded hover:bg-amber-300 transition-colors"
-                                >
-                                  📌 Använd "{suggestion.filterColumn}" för filtrering
-                                </button>
-                              )}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <p className="font-medium text-amber-900">
+                                    {suggestion.action}
+                                    {suggestion.multiWheelStrategy && (
+                                      <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                                        Multi-Wheel
+                                      </span>
+                                    )}
+                                    {suggestion.isFutureFeature && (
+                                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                        Kommande
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-amber-700 mt-0.5">{suggestion.description}</p>
+                                </div>
+                                {suggestion.filterColumn && (
+                                  <button
+                                    onClick={() => {
+                                      // Auto-select this column as a label for easy filtering
+                                      if (!manualMapping.labels.includes(suggestion.filterColumn)) {
+                                        setManualMapping(prev => ({
+                                          ...prev,
+                                          labels: [...prev.labels, suggestion.filterColumn]
+                                        }));
+                                      }
+                                      setShowAdvancedMapping(true);
+                                    }}
+                                    className="text-xs px-2 py-1 bg-amber-200 text-amber-900 rounded hover:bg-amber-300 transition-colors flex-shrink-0"
+                                  >
+                                    📌 Använd för filtrering
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </li>
                       ))}
                     </ul>
+                    
+                    {aiSuggestions.suitabilityWarning.severity === 'error' && (
+                      <div className="mt-3 pt-3 border-t border-red-300 bg-red-100 rounded p-3">
+                        <p className="text-xs font-semibold text-red-900 mb-1">
+                          ⚠️ Varför blockerar vi importen?
+                        </p>
+                        <p className="text-xs text-red-800">
+                          Ett årshjul med överlappande helårsstaplar ger ingen användbar visualisering. 
+                          YearWheel är mest värdefullt när du kan <strong>se tidsmönster och identifiera konflikter</strong>. 
+                          Genom att dela upp datan i flera fokuserade hjul får du betydligt bättre översikt.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1502,14 +1537,34 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               >
                 Avbryt
               </button>
-              <button
-                onClick={handleImport}
-                className="px-4 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 flex items-center gap-2 font-medium"
-                title={`Importera ${csvData.rowCount} rader till ${getEffectiveRingsAndGroups().effectiveRings.length} ringar och ${getEffectiveRingsAndGroups().effectiveGroups.length} grupper`}
-              >
-                <Check className="w-4 h-4" />
-                Importera {csvData.rowCount} aktiviteter
-              </button>
+              {aiSuggestions.suitabilityWarning?.blockImport ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-red-600 font-medium">Import blockerad - se varningen ovan</span>
+                  <button
+                    disabled
+                    className="px-4 py-2 bg-gray-300 text-gray-500 rounded-sm cursor-not-allowed flex items-center gap-2 font-medium"
+                    title="Import är blockerad på grund av olämplig datastruktur"
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    Import blockerad
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleImport}
+                  className={`px-4 py-2 rounded-sm flex items-center gap-2 font-medium ${
+                    aiSuggestions.suitabilityWarning?.severity === 'warning'
+                      ? 'bg-amber-600 text-white hover:bg-amber-700'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  }`}
+                  title={`Importera ${csvData.rowCount} rader till ${getEffectiveRingsAndGroups().effectiveRings.length} ringar och ${getEffectiveRingsAndGroups().effectiveGroups.length} grupper`}
+                >
+                  <Check className="w-4 h-4" />
+                  {aiSuggestions.suitabilityWarning?.severity === 'warning' 
+                    ? `⚠️ Importera ändå (${csvData.rowCount})` 
+                    : `Importera ${csvData.rowCount} aktiviteter`}
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -99,8 +99,11 @@ function analyzeDataSuitability(
     action: string,
     description: string,
     filterColumn?: string,
-    filterStrategy?: string
-  }>
+    filterStrategy?: string,
+    multiWheelStrategy?: boolean,
+    isFutureFeature?: boolean
+  }>,
+  blockImport?: boolean
 } | null {
   const totalRows = allRows.length
   const headers = csvStructure.headers
@@ -189,7 +192,7 @@ function analyzeDataSuitability(
     }
   }
   
-  // DECISION: Return warning if data is unsuitable
+  // DECISION: Return warning/error if data is unsuitable
   if (fullYearRatio > 0.7 && totalRows > 10) {
     // Most items span full year - poor visualization
     const suggestions = []
@@ -204,43 +207,70 @@ function analyzeDataSuitability(
       
       for (const col of prioritized.slice(0, 3)) {
         suggestions.push({
-          action: `Filtrera på "${col.name}"`,
-          description: `Välj en eller flera värden från kolumnen "${col.name}" (${col.uniqueCount} unika värden) för att skapa ett fokuserat årshjul`,
+          action: `Skapa ett årshjul per ${col.name}`,
+          description: `Kolumnen "${col.name}" har ${col.uniqueCount} unika värden. Filtrera datan och skapa ett separat årshjul för varje ${col.category === 'person' ? 'person' : col.category === 'team' ? 'team' : 'kategori'}.`,
           filterColumn: col.name,
-          filterStrategy: col.category
+          filterStrategy: col.category,
+          multiWheelStrategy: true
         })
       }
+      
+      // Add suggestion to import filtered subset
+      suggestions.push({
+        action: 'Importera endast ett urval',
+        description: `Filtrera CSV-filen utanför YearWheel (t.ex. i Excel) och importera endast de rader som hör till ett specifikt projekt/team/person. Skapa sedan fler årshjul för andra grupper.`,
+        filterStrategy: 'manual'
+      })
+    } else {
+      suggestions.push({
+        action: 'Dela upp datan manuellt',
+        description: 'Filtrera CSV-filen i Excel/Google Sheets och skapa separata filer för olika kategorier innan import'
+      })
     }
     
     suggestions.push({
-      action: 'Dela upp i flera årshjul',
-      description: 'Skapa separata årshjul för olika team, projekt eller perioder istället för att importera allt på en gång'
+      action: 'Använd länkar mellan årshjul (kommande funktion)',
+      description: 'Skapa ett "huvudhjul" med översikt och länka till detaljerade årshjul för varje kategori. Detta håller varje vy enkel men sammankopplad.',
+      isFutureFeature: true
     })
     
+    // BLOCK import if data is severely unsuitable (>15 full-year items)
+    const severity = totalRows > 15 ? 'error' : 'warning'
+    
     return {
-      severity: 'warning',
-      title: 'Stor dataset med helårsspann - svår att visualisera',
-      message: `Denna CSV innehåller ${totalRows} rader där de flesta spänner över hela året (2025-01-01 till 2025-12-31). Detta skapar överlappande staplar som gör det svårt att se individuella aktiviteter.\n\nYearWheel fungerar bäst när aktiviteter har olika start- och slutdatum utspridda över året.`,
-      suggestions
+      severity,
+      title: severity === 'error' 
+        ? '⛔ Import blockerad: Data passar inte för ett enda årshjul'
+        : '⚠️ Varning: Data passar inte bra för ett enda årshjul',
+      message: severity === 'error'
+        ? `Denna CSV innehåller ${totalRows} rader där ${Math.round(fullYearRatio * 100)}% spänner över hela året. Detta skapar en oläslig visualisering med överlappande staplar.\n\n**YearWheel-principen:** Ett årshjul = ett fokusområde (ett team, en person, ett projekt).\n\nDu behöver dela upp datan INNAN import.`
+        : `Denna CSV innehåller ${totalRows} rader där ${Math.round(fullYearRatio * 100)}% spänner över hela året. Detta kan skapa överlappande visualiseringar som är svåra att tyda.\n\n**Rekommendation:** Dela upp datan i flera fokuserade årshjul istället för att importera allt på en gång.`,
+      suggestions,
+      blockImport: severity === 'error'
     }
   }
   
   if (allIdenticalDates && totalRows > 10) {
     // All items have same dates - no temporal variation
     return {
-      severity: 'warning',
-      title: 'Alla aktiviteter har identiska datum',
-      message: `Alla ${totalRows} rader har samma start- och slutdatum. YearWheel är till för att visualisera aktiviteter över tid - denna data har ingen tidsvariation.`,
+      severity: 'error',
+      title: '⛔ Import blockerad: Ingen tidsvariation i data',
+      message: `Alla ${totalRows} rader har identiska start- och slutdatum. YearWheel är till för att visualisera aktiviteter **fördelade över tid** - denna data saknar helt tidsvariation.\n\n**Detta passar inte för YearWheel.** Överväg att använda en tabell, lista eller annan visualisering istället.`,
       suggestions: [
         {
           action: 'Kontrollera datumkolumner',
-          description: 'Se till att rätt kolumner är mappade till start- och slutdatum'
+          description: 'Se till att rätt kolumner är mappade till start- och slutdatum. Kanske finns det andra datumkolumner i CSV:n?'
+        },
+        {
+          action: 'Lägg till riktiga datum i källdata',
+          description: 'Om aktiviteterna har olika deadlines/milstones, lägg till dessa i CSV-filen innan import'
         },
         {
           action: 'Använd en annan visualisering',
-          description: 'Överväg en tabell eller lista istället för ett tidsbaserat årshjul'
+          description: 'För data utan tidsdimension passar en tabell, Kanban-board eller lista bättre än YearWheel'
         }
-      ]
+      ],
+      blockImport: true
     }
   }
   
