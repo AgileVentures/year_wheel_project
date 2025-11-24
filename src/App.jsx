@@ -2175,22 +2175,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   const handleSave = useCallback(async (options = {}) => {
     const { silent = false, reason = 'manual' } = options;
-    
-    console.log('🔥🔥🔥 [handleSave] CALLED WITH REASON:', reason, 'wheelId:', wheelId);
 
     if (wheelId) {
-      console.log('🔥 [handleSave] Inside wheelId block');
       try {
         // Check if we have tracked changes for delta save
-        console.log('🔥 [handleSave] About to check hasChanges');
         const hasChanges = changeTracker.hasChanges();
-        console.log('🔥🔥🔥 [handleSave] Has tracked changes:', hasChanges);
         
         if (hasChanges) {
           const changes = changeTracker.getChanges();
-          const summary = changeTracker.getChangesSummary();
-          
-          console.log('[DeltaSave] Applying delta changes:', summary);
           
           // Import wheelService for delta save
           const { applyDeltaChanges, broadcastDeltaChanges } = await import('./services/wheelService');
@@ -2218,9 +2210,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               showToast(message, 'success');
             }
             
-            console.log('[DeltaSave] Calling markSaved() to clear unsaved changes indicator');
             markSaved();
-            console.log('[DeltaSave] markSaved() called, unsavedChangesCount should now be 0');
             return;
           } else {
             console.error('[DeltaSave] Failed:', result.errors);
@@ -3850,27 +3840,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
 
     // Track change for delta save
-    console.log('[handleUpdateAktivitet] About to track changes, actuallyChanged:', changeResultRef.actuallyChanged);
-    if (changeResultRef.actuallyChanged) {
-      console.log('[handleUpdateAktivitet] Change detected, tracking for delta save');
-      
-      // Track the item change with the change tracker (use stored ref value)
-      const itemToTrack = changeResultRef.updatedItem;
-      console.log('[handleUpdateAktivitet] itemToTrack:', itemToTrack);
-      if (itemToTrack) {
-        console.log('[handleUpdateAktivitet] CALLING trackItemChange for:', itemToTrack.id, itemToTrack.name);
-        changeTracker.trackItemChange(itemToTrack.id, 'modified', itemToTrack);
-        console.log('[handleUpdateAktivitet] Tracked item change:', itemToTrack.id, itemToTrack.name);
-        
-        // Verify it was tracked
-        const hasChanges = changeTracker.hasChanges();
-        const summary = changeTracker.getChangesSummary();
-        console.log('[handleUpdateAktivitet] After tracking - hasChanges:', hasChanges, 'summary:', summary);
-      } else {
-        console.log('[handleUpdateAktivitet] WARNING: itemToTrack is null/undefined');
-      }
-    } else {
-      console.log('[handleUpdateAktivitet] No changes detected (actuallyChanged is false)');
+    if (changeResultRef.actuallyChanged && changeResultRef.updatedItem) {
+      changeTracker.trackItemChange(changeResultRef.updatedItem.id, 'modified', changeResultRef.updatedItem);
     }
   }, [setWheelState, endBatch, cancelBatch, changeTracker]);
 
@@ -3898,7 +3869,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Track changes for delta save
     itemsToAdd.forEach(item => {
       changeTracker.trackItemChange(item.id, 'added', item);
-      console.log('[handleAddItems] Tracked new item:', item.id, item.name);
     });
   }, [currentPageId, wheelId, setWheelState, changeTracker]);
 
@@ -3932,7 +3902,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Track deletion for delta save
     if (deletedItem) {
       changeTracker.trackItemChange(itemId, 'deleted', deletedItem);
-      console.log('[handleDeleteAktivitet] Tracked item deletion:', itemId, deletedItem.name);
     }
 
     showToast(itemName ? `${itemName} raderad` : 'Aktivitet raderad', 'success');
