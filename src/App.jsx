@@ -901,7 +901,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }));
 
           const pageItems = normalizedItems.filter(item => item.pageId === pageToLoad.id);
-          console.log(`[loadWheelData] Prepared ${pageItems.length} items for page ${pageToLoad.id}`);
+          // Page items prepared
           
           const pageStructure = normalizePageStructure(pageToLoad);
 
@@ -2046,7 +2046,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         isInitialLoad.current = false;
         // Clear any changes that were tracked during initial load
         changeTracker.clearChanges();
-        console.log('[InitialLoad] Cleared change tracker after initial load');
       }, 500);
       
       // Check if this is a first-time user (no onboarding completed flag)
@@ -3724,18 +3723,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
 
-    console.log('[handleUpdateAktivitet] Called with:', {
-      id: updatedItem.id,
-      name: updatedItem.name,
-      pageId: updatedItem.pageId,
-      startDate: updatedItem.startDate,
-      endDate: updatedItem.endDate,
-      dependsOn: updatedItem.dependsOn,
-      dependencyType: updatedItem.dependencyType,
-      lagDays: updatedItem.lagDays,
-      wasDragging: isDraggingRef.current
-    });
-
     const wasDragging = isDraggingRef.current;
     
     // Use ref to capture result from inside setWheelState callback
@@ -3778,26 +3765,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           nameChanged || timeChanged || descriptionChanged || linkChanged || dependencyChanged;
         changeResultRef.updatedItem = updatedItem;
 
-        console.log('[handleUpdateAktivitet] Changes detected:', {
-          itemFound: changeResultRef.itemFound,
-          actuallyChanged: changeResultRef.actuallyChanged,
-          ringChanged,
-          datesChanged,
-          dependencyChanged,
-          oldDates: `${oldItem.startDate} → ${oldItem.endDate}`,
-          newDates: `${updatedItem.startDate} → ${updatedItem.endDate}`,
-          oldDependsOn: oldItem.dependsOn,
-          newDependsOn: updatedItem.dependsOn
-        });
-
         if (!changeResultRef.actuallyChanged) return page;
 
         // Update item in page items (optimistic update)
         const nextItems = currentItems.map((item) =>
           item.id === updatedItem.id ? updatedItem : item
         );
-
-        console.log('[handleUpdateAktivitet] Updated items for page', page.id, 'count:', nextItems.length);
 
         return {
           ...page,
@@ -3816,12 +3789,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         pages: nextPages 
       };
     }, wasDragging ? { type: 'dragItem', params: { itemId: updatedItem.id } } : { type: 'updateItem' });
-
-    console.log('[handleUpdateAktivitet] After setWheelState:', { 
-      actuallyChanged: changeResultRef.actuallyChanged, 
-      itemFound: changeResultRef.itemFound, 
-      wasDragging 
-    });
 
     // Handle drag mode cleanup (use ref values)
     if (wasDragging) {

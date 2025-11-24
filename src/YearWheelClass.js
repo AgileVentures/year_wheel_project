@@ -5063,7 +5063,7 @@ class YearWheel {
               
               if (datesMatch && ringMatches) {
                 // wheelStructure now has our changes - safe to clear
-                console.log('[INNER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
+                // console.log('[INNER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
                 this.pendingItemUpdates.delete(item.id);
               }
               // else: keep using pending update

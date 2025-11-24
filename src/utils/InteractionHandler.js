@@ -356,7 +356,7 @@ class InteractionHandler {
     const { x, y } = this.getCanvasCoordinates(event);
     
     // Mark that a drag has started in this mouse cycle (PERSIST IN WHEEL INSTANCE)
-    console.log('[DEBUG] startActivityDrag - setting wheel.hadDragInCurrentCycle = true');
+    // console.log('[DEBUG] startActivityDrag - setting wheel.hadDragInCurrentCycle = true');
     this.wheel.hadDragInCurrentCycle = true;
     
     // Use provided dragMode (from mouseDown) or detect it now (for backward compatibility)
@@ -701,13 +701,13 @@ class InteractionHandler {
     let newStartDate = this.wheel.angleToDate(startDegrees);
     let newEndDate = this.wheel.angleToDate(endDegrees);
     
-    console.log('[InteractionHandler] Initial dates from angles:', {
-      startDegrees,
-      endDegrees,
-      newStartDate: newStartDate.toISOString(),
-      newEndDate: newEndDate.toISOString(),
-      dragMode: this.dragState.dragMode
-    });
+    // console.log('[InteractionHandler] Initial dates from angles:', {
+    //   startDegrees,
+    //   endDegrees,
+    //   newStartDate: newStartDate.toISOString(),
+    //   newEndDate: newEndDate.toISOString(),
+    //   dragMode: this.dragState.dragMode
+    // });
 
     // CRITICAL FIX: In resize-start mode, preserve the original end date
     // Only the start should change, end stays the same
@@ -724,19 +724,19 @@ class InteractionHandler {
     // CRITICAL FIX: Use the wheel's current year (from page), not the item's startDate year
     // The wheel.year represents the current page being viewed/edited
     const itemYear = Number(this.wheel.year);
-    console.log('[InteractionHandler] Wheel year:', this.wheel.year, 'parsed as:', itemYear);
+    // console.log('[InteractionHandler] Wheel year:', this.wheel.year, 'parsed as:', itemYear);
     
     // Create year boundaries using UTC to avoid timezone issues
     // Use Date.UTC to create timestamps, then convert to Date objects
     const yearStart = new Date(Date.UTC(itemYear, 0, 1, 0, 0, 0));
     const yearEnd = new Date(Date.UTC(itemYear, 11, 31, 23, 59, 59));
     
-    console.log('[InteractionHandler] Calculated bounds:', { 
-      yearStart: yearStart.toISOString(), 
-      yearEnd: yearEnd.toISOString()
-    });
+    // console.log('[InteractionHandler] Calculated bounds:', { 
+    //   yearStart: yearStart.toISOString(), 
+    //   yearEnd: yearEnd.toISOString()
+    // });
 
-    console.log(`[InteractionHandler] Year bounds for item "${originalItem?.name}": ${yearStart.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
+    // console.log(`[InteractionHandler] Year bounds for item "${originalItem?.name}": ${yearStart.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
 
     // BACKWARD WRAP: Apply year offset if start was dragged backwards past January 1
     const wrappedBackward =
@@ -895,7 +895,7 @@ class InteractionHandler {
       endDate: formatDate(newEndDate),
     };
 
-    console.log(`[InteractionHandler] Updating item "${originalItem.name}" with dates: ${updates.startDate} to ${updates.endDate}`);
+    // console.log(`[InteractionHandler] Updating item "${originalItem.name}" with dates: ${updates.startDate} to ${updates.endDate}`);
 
     if (
       this.dragState.targetRing &&
@@ -915,7 +915,7 @@ class InteractionHandler {
       originalItem.endDate !== updatedItem.endDate ||
       originalItem.ringId !== updatedItem.ringId;
 
-    console.log(`[InteractionHandler] hasChanges: ${hasChanges}`);
+    // console.log(`[InteractionHandler] hasChanges: ${hasChanges}`);
 
     if (hasChanges) {
       // Store the primary update
@@ -927,13 +927,13 @@ class InteractionHandler {
       // CASCADE DEPENDENCY UPDATES: Find and update all dependent items
       const allItems = this.wheel.wheelStructure.items;
       
-      console.log(`[InteractionHandler] Checking dependencies for item ${updatedItem.id.substring(0, 8)} "${updatedItem.name}"`);
-      console.log(`[InteractionHandler] Total items in wheelStructure: ${allItems.length}`);
-      console.log(`[InteractionHandler] Items with dependencies:`, allItems.filter(i => i.dependsOn).map(i => ({ 
-        name: i.name, 
-        dependsOn: i.dependsOn?.substring(0, 8),
-        id: i.id.substring(0, 8)
-      })));
+      // console.log(`[InteractionHandler] Checking dependencies for item ${updatedItem.id.substring(0, 8)} "${updatedItem.name}"`);
+      // console.log(`[InteractionHandler] Total items in wheelStructure: ${allItems.length}`);
+      // console.log(`[InteractionHandler] Items with dependencies:`, allItems.filter(i => i.dependsOn).map(i => ({ 
+      //   name: i.name, 
+      //   dependsOn: i.dependsOn?.substring(0, 8),
+      //   id: i.id.substring(0, 8)
+      // })));
       
       const cascadedUpdates = cascadeUpdateDependents(
         allItems,
@@ -944,7 +944,7 @@ class InteractionHandler {
         }
       );
 
-      console.log(`[InteractionHandler] Cascaded ${cascadedUpdates.length} dependent items`);
+      // console.log(`[InteractionHandler] Cascaded ${cascadedUpdates.length} dependent items`);
 
       // Add all cascaded updates to pending updates
       cascadedUpdates.forEach(({ id, newDates }) => {
@@ -1120,7 +1120,6 @@ class InteractionHandler {
           // Detect drag mode NOW (at mouseDown position) and store it
           this.mouseDownDragMode = this.detectDragZone(x, y, itemRegion);
           this.mouseDownItem = itemRegion;
-          console.log('[InteractionHandler] mouseDown on item, detected mode:', this.mouseDownDragMode);
           return;
         }
       }
@@ -1139,7 +1138,6 @@ class InteractionHandler {
       
       if (distance > this.CLICK_THRESHOLD_PX) {
         // Movement exceeded threshold - start drag with the mode detected on mouseDown
-        console.log('[InteractionHandler] Starting drag after threshold exceeded:', distance, 'mode:', this.mouseDownDragMode);
         this.startActivityDrag(event, this.mouseDownItem, this.mouseDownDragMode);
         this.mouseDownItem = null; // Clear so we don't start again
         this.mouseDownDragMode = null;
@@ -1323,11 +1321,11 @@ class InteractionHandler {
   }
 
   handleClick(event) {
-    console.log('[DEBUG] handleClick - wheel.hadDragInCurrentCycle:', this.wheel.hadDragInCurrentCycle);
+    // console.log('[DEBUG] handleClick - wheel.hadDragInCurrentCycle:', this.wheel.hadDragInCurrentCycle);
     
     // Block click if ANY drag happened in current mouse cycle (CHECK WHEEL INSTANCE)
     if (this.wheel.hadDragInCurrentCycle) {
-      console.log('[DEBUG] BLOCKED by wheel.hadDragInCurrentCycle');
+      // console.log('[DEBUG] BLOCKED by wheel.hadDragInCurrentCycle');
       return;
     }
     
