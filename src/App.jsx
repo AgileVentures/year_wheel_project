@@ -3979,18 +3979,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     // Persist to database via save queue (use ref values)
     if (changeResultRef.actuallyChanged) {
-      console.log('[handleUpdateAktivitet] Queueing save via save queue');
+      console.log('[handleUpdateAktivitet] Change detected, waiting for manual save (auto-save disabled)');
       
+      // DELTA SAVE: Don't auto-save, let user trigger manual save with delta changes
       // Build snapshot with current state
-      const snapshot = buildWheelSnapshot();
-      if (snapshot) {
-        enqueueSave(snapshot, { 
-          label: wasDragging ? 'drag' : 'edit',
-          reason: wasDragging ? 'drag-update' : 'edit-update'
-        });
-      }
+      // const snapshot = buildWheelSnapshot();
+      // if (snapshot) {
+      //   enqueueSave(snapshot, { 
+      //     label: wasDragging ? 'drag' : 'edit',
+      //     reason: wasDragging ? 'drag-update' : 'edit-update'
+      //   });
+      // }
     }
-  }, [setWheelState, endBatch, cancelBatch, buildWheelSnapshot, enqueueSave]);
+  }, [setWheelState, endBatch, cancelBatch]);
 
   const handleAddItems = useCallback((newItems) => {
     if (!currentPageId) return;
@@ -4013,15 +4014,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       })
     }), { type: 'addItem' });
 
-    // Queue save to prevent race conditions
-    if (wheelId) {
-      const snapshot = buildWheelSnapshot();
-      enqueueSave(snapshot, { 
-        reason: 'add-items',
-        itemIds: itemsToAdd.map(i => i.id)
-      });
-    }
-  }, [currentPageId, wheelId, setWheelState, buildWheelSnapshot, enqueueSave]);
+    // DELTA SAVE: Don't auto-save, let user trigger manual save
+    // if (wheelId) {
+    //   const snapshot = buildWheelSnapshot();
+    //   enqueueSave(snapshot, { 
+    //     reason: 'add-items',
+    //     itemIds: itemsToAdd.map(i => i.id)
+    //   });
+    // }
+  }, [currentPageId, wheelId, setWheelState]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
     if (!itemId || !currentPageId) return;
@@ -4048,17 +4049,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       })
     }), { type: 'deleteItem' });
 
-    // Queue save to prevent race conditions
-    if (wheelId) {
-      const snapshot = buildWheelSnapshot();
-      enqueueSave(snapshot, { 
-        reason: 'delete-item',
-        itemId: itemId
-      });
-    }
+    // DELTA SAVE: Don't auto-save, let user trigger manual save
+    // if (wheelId) {
+    //   const snapshot = buildWheelSnapshot();
+    //   enqueueSave(snapshot, { 
+    //     reason: 'delete-item',
+    //     itemId: itemId
+    //   });
+    // }
 
     showToast(itemName ? `${itemName} raderad` : 'Aktivitet raderad', 'success');
-  }, [currentPageId, wheelId, setWheelState, buildWheelSnapshot, enqueueSave, showToast]);
+  }, [currentPageId, wheelId, setWheelState, showToast]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
