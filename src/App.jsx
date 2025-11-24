@@ -3747,7 +3747,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const wasDragging = isDraggingRef.current;
     
     // Use ref to capture result from inside setWheelState callback
-    const changeResultRef = { actuallyChanged: false, itemFound: false };
+    const changeResultRef = { actuallyChanged: false, itemFound: false, updatedItem: null };
 
     // CRITICAL: Update optimistic state immediately (before save)
     setWheelState((prev) => {
@@ -3784,6 +3784,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         changeResultRef.actuallyChanged =
           ringChanged || datesChanged || activityChanged || labelChanged ||
           nameChanged || timeChanged || descriptionChanged || linkChanged || dependencyChanged;
+        changeResultRef.updatedItem = updatedItem;
 
         console.log('[handleUpdateAktivitet] Changes detected:', {
           itemFound: changeResultRef.itemFound,
@@ -3851,20 +3852,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (changeResultRef.actuallyChanged) {
       console.log('[handleUpdateAktivitet] Change detected, tracking for delta save');
       
-      // Track the item change with the change tracker
-      const updatedItem = changeResultRef.updatedItem;
-      console.log('[handleUpdateAktivitet] updatedItem:', updatedItem);
-      if (updatedItem) {
-        console.log('[handleUpdateAktivitet] CALLING trackItemChange for:', updatedItem.id, updatedItem.name);
-        changeTracker.trackItemChange(updatedItem.id, 'modified', updatedItem);
-        console.log('[handleUpdateAktivitet] Tracked item change:', updatedItem.id, updatedItem.name);
+      // Track the item change with the change tracker (use stored ref value)
+      const itemToTrack = changeResultRef.updatedItem;
+      console.log('[handleUpdateAktivitet] itemToTrack:', itemToTrack);
+      if (itemToTrack) {
+        console.log('[handleUpdateAktivitet] CALLING trackItemChange for:', itemToTrack.id, itemToTrack.name);
+        changeTracker.trackItemChange(itemToTrack.id, 'modified', itemToTrack);
+        console.log('[handleUpdateAktivitet] Tracked item change:', itemToTrack.id, itemToTrack.name);
         
         // Verify it was tracked
         const hasChanges = changeTracker.hasChanges();
         const summary = changeTracker.getChangesSummary();
         console.log('[handleUpdateAktivitet] After tracking - hasChanges:', hasChanges, 'summary:', summary);
       } else {
-        console.log('[handleUpdateAktivitet] WARNING: updatedItem is null/undefined');
+        console.log('[handleUpdateAktivitet] WARNING: itemToTrack is null/undefined');
       }
     } else {
       console.log('[handleUpdateAktivitet] No changes detected (actuallyChanged is false)');
