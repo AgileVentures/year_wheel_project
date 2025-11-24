@@ -693,13 +693,6 @@ const syncRings = async (wheelId, pageId, rings) => {
         .update(ringData)
         .eq('id', targetId);
 
-      console.log('[syncRings] matched existing ring', {
-        inputId: ring.id,
-        dbId: targetId,
-        name: ring.name,
-        type: ring.type,
-      });
-
       idMap.set(ring.id, targetId);
       retainedIds.add(targetId);
 
@@ -726,17 +719,8 @@ const syncRings = async (wheelId, pageId, rings) => {
           .single();
 
         if (error) {
-          console.error('[syncRings] INSERT FAILED for ring', { inputId: ring.id, name: ring.name, error });
           throw error;
         }
-
-        console.log('[syncRings] INSERTED new ring to database', {
-          inputId: ring.id,
-          dbId: newRing.id,
-          name: ring.name,
-          type: ring.type,
-          wheel_id: wheelId,
-        });
 
         idMap.set(ring.id, newRing.id);
         retainedIds.add(newRing.id);
@@ -749,12 +733,6 @@ const syncRings = async (wheelId, pageId, rings) => {
           .from('wheel_rings')
           .update(ringData)
           .eq('id', ring.id);
-
-        console.log('[syncRings] updated ring by id', {
-          id: ring.id,
-          name: ring.name,
-          type: ring.type,
-        });
 
         idMap.set(ring.id, ring.id);
         retainedIds.add(ring.id);
@@ -769,7 +747,6 @@ const syncRings = async (wheelId, pageId, rings) => {
   const toDelete = [...existingIds].filter((id) => !retainedIds.has(id));
 
   if (toDelete.length > 0) {
-    console.warn('[syncRings] Deleting rings not retained', toDelete);
     await supabase.from('wheel_rings').delete().in('id', toDelete);
   }
 
@@ -1413,9 +1390,7 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     .eq('wheel_id', wheelId);
 
   if (debugRingsError) {
-    console.warn('[saveWheelSnapshot] Failed to fetch rings after sync', debugRingsError);
-  } else {
-    // console.log('[saveWheelSnapshot] rings persisted after sync', debugRings);
+    // Silent fail for debug fetch
   }
   const activityIdMap = await syncActivityGroups(wheelId, null, baseActivityGroups);
   const labelIdMap = await syncLabels(wheelId, null, baseLabels);
@@ -1444,12 +1419,6 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
 
     // CLEAN STRUCTURE: Items are directly in page.items (not nested in wheelStructure)
     const rawItems = Array.isArray(page.items) ? page.items : [];
-    
-    if (rawItems.length === 0) {
-      console.log(`[saveWheelSnapshot] Page ${page.id?.substring(0,8)} has no items to save`);
-    } else {
-      console.log(`[saveWheelSnapshot] Page ${page.id?.substring(0,8)} has ${rawItems.length} items to save`);
-    }
 
     const sanitizedItems = rawItems
       .filter(Boolean)
