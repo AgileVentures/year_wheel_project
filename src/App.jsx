@@ -2308,13 +2308,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const { silent = false, reason = 'manual' } = options;
     
     console.log('🔥🔥🔥 [handleSave] CALLED WITH REASON:', reason, 'wheelId:', wheelId);
-    alert('handleSave called!'); // TEMPORARY DEBUG
 
     if (wheelId) {
+      console.log('🔥 [handleSave] Inside wheelId block');
       try {
         // Check if we have tracked changes for delta save
+        console.log('🔥 [handleSave] About to check hasChanges');
         const hasChanges = changeTracker.hasChanges();
-        console.log('[handleSave] Has tracked changes:', hasChanges);
+        console.log('🔥🔥🔥 [handleSave] Has tracked changes:', hasChanges);
         
         if (hasChanges) {
           const changes = changeTracker.getChanges();
