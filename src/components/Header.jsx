@@ -683,7 +683,7 @@ function Header({
         <div className="hidden sm:block w-px h-8 bg-gray-300"></div>
         
         <button
-          onClick={() => { console.log('🔴 SAVE BUTTON CLICKED'); onSave(); }}
+          onClick={onSave}
           disabled={isSaving}
           className="flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
