@@ -2306,6 +2306,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   const handleSave = useCallback(async (options = {}) => {
     const { silent = false, reason = 'manual' } = options;
+    
+    console.log('[handleSave] Called with reason:', reason, 'wheelId:', wheelId);
 
     if (wheelId) {
       try {
@@ -3458,64 +3460,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   };
 
   const persistItemToDatabase = useCallback((item, options = {}) => {
-    if (!wheelId || !item) {
-      return Promise.resolve(null);
-    }
-
-    const { reason = 'item-update', delay = 0 } = options;
-
-    const run = () => enqueueFullSave(reason);
-
-    if (delay > 0) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          run().then(resolve).catch(reject);
-        }, delay);
-      });
-    }
-
-    return run();
-  }, [wheelId, enqueueFullSave]);
+    // DELTA SAVE: Don't trigger save here - let change tracker detect it
+    // Save will be triggered manually by user or via debounced auto-save
+    console.log('[persistItemToDatabase] Item updated in state, waiting for manual save');
+    return Promise.resolve(null);
+  }, []);
 
   const persistMultipleItems = useCallback((items, options = {}) => {
-    if (!wheelId) {
-      return Promise.resolve(Array.isArray(items) ? items : items ? [items] : []);
-    }
-
-    const { reason = 'item-batch', delay = 0 } = options;
-
-    const run = () => enqueueFullSave(reason).then(() => items);
-
-    if (delay > 0) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          run().then(resolve).catch(reject);
-        }, delay);
-      });
-    }
-
-    return run();
-  }, [wheelId, enqueueFullSave]);
+    // DELTA SAVE: Don't trigger save here - let change tracker detect it
+    // Save will be triggered manually by user or via debounced auto-save
+    console.log('[persistMultipleItems] Items updated in state, waiting for manual save');
+    return Promise.resolve(Array.isArray(items) ? items : items ? [items] : []);
+  }, []);
 
   const persistItemDeletion = useCallback((itemId, options = {}) => {
-    if (!wheelId) {
-      return Promise.resolve();
-    }
-
-    const { reason = 'item-delete', delay = 0 } = options;
-
-    const run = () => enqueueFullSave(reason);
-
-    if (delay > 0) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          run().then(resolve).catch(reject);
-        }, delay);
-      });
-    }
-
-    return run();
-  }, [wheelId, enqueueFullSave]);
+    // DELTA SAVE: Don't trigger save here - let change tracker detect it
+    // Save will be triggered manually by user or via debounced auto-save
+    console.log('[persistItemDeletion] Item deleted from state, waiting for manual save');
+    return Promise.resolve();
+  }, []);
 
   const handlePersistNewItems = useCallback((items) => {
     return persistMultipleItems(items, { reason: 'item-create' });
