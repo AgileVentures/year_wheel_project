@@ -1010,6 +1010,12 @@ function YearWheel({
             setSelectedItem(null);
             setTooltipPosition(null);
           }}
+          onOpenItem={(itemId) => {
+            const item = wheelStructure?.items?.find(i => i.id === itemId);
+            if (item) {
+              setSelectedItem(item);
+            }
+          }}
           readonly={readonly}
           wheel={wheelData}
         />

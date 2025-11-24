@@ -6,7 +6,7 @@ import { fetchLinkedWheelInfo } from '../services/wheelService';
 import ItemCommentsPanel from './ItemCommentsPanel';
 import { getCommentCount } from '../services/commentService';
 
-function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose, readonly = false, wheel = null }) {
+function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose, onOpenItem, readonly = false, wheel = null }) {
   const { t, i18n } = useTranslation(['editor']);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -225,7 +225,17 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
                   {clusterItems.map((clusterItem, index) => (
                     <li key={index} className="text-xs text-blue-800 flex items-start gap-1.5">
                       <span className="text-blue-400 mt-0.5">•</span>
-                      <span>{clusterItem.name}</span>
+                      <span 
+                        className="cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onOpenItem && clusterItem.id) {
+                            onOpenItem(clusterItem.id);
+                          }
+                        }}
+                      >
+                        {clusterItem.name}
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -1571,27 +1571,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Get items directly from page.items (single source of truth)
         const rawItems = Array.isArray(page.items) ? page.items : [];
 
-        console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} year=${pageYear}: mappedItems=${rawItems.length}, currentItems=${page.id === latest.currentPageId ? (Array.isArray(latest.currentItems) ? latest.currentItems.length : 'N/A') : 'skip'}, page.structure.items=N/A, allItems=${Array.isArray(latest.allItems) ? latest.allItems.length : 'N/A'} → rawItems=${rawItems.length}`);
-        
-        if (rawItems.length > 0) {
-          console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} rawItems sample:`, rawItems.slice(0, 2).map(i => ({
-            id: i.id?.substring(0, 8),
-            name: i.name,
-            pageId: i.pageId?.substring(0, 8) || 'UNDEFINED',
-            startDate: i.startDate,
-            endDate: i.endDate
-          })));
-        }
-
         const pageItems = rawItems
           .filter((item) => {
             if (!item) {
-              console.log(`[buildWheelSnapshot] Filtering out null/undefined item`);
               return false;
             }
 
             if (item.pageId && item.pageId !== page.id) {
-              console.log(`[buildWheelSnapshot] Filtering out item ${item.id?.substring(0,8)} - pageId mismatch: ${item.pageId?.substring(0,8)} !== ${page.id?.substring(0,8)}`);
               return false;
             }
 
@@ -1603,14 +1589,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             const endYear = item.endDate ? new Date(item.endDate).getFullYear() : startYear;
 
             if (startYear == null || endYear == null) {
-              console.log(`[buildWheelSnapshot] Filtering out item ${item.id?.substring(0,8)} - invalid dates: ${item.startDate} to ${item.endDate}`);
               return false;
             }
 
             const yearMatch = startYear <= pageYear && endYear >= pageYear;
-            if (!yearMatch) {
-              console.log(`[buildWheelSnapshot] Filtering out item ${item.id?.substring(0,8)} - year mismatch: ${startYear}-${endYear} vs page year ${pageYear}`);
-            }
             return yearMatch;
           })
           .map((item) => {
@@ -1627,8 +1609,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               pageId: cleanItem.pageId || page.id,
             };
           });
-
-        console.log(`[buildWheelSnapshot] page ${page.id?.substring(0,8)} FINAL: ${pageItems.length} items → ${pageItems.map(i => `${i.name}(${i.id?.substring(0,8)})`).join(', ')}`);
 
         // CLEAN STRUCTURE: Only id, year, items (no duplicate structure or wheelStructure)
         return {
