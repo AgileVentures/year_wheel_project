@@ -1286,7 +1286,7 @@ class InteractionHandler {
       this.dragJustCompleted = true;
       setTimeout(() => {
         this.dragJustCompleted = false;
-        console.log('[InteractionHandler] dragJustCompleted cleared (from mouseUp)');
+        // console.log('[InteractionHandler] dragJustCompleted cleared (from mouseUp)');
       }, 500); // Longer timeout to account for async save operations
       return;
     }
