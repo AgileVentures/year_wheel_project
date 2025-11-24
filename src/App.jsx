@@ -300,30 +300,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // CRITICAL: Preserve currentPageId - don't let undo/redo navigate away from current page
       const preservedPageId = currentPageIdRef.current;
       
-      console.log('[Debug][UndoRestore] State restored:', {
-        hasStructure: !!restoredState?.structure,
-        hasPages: !!restoredState?.pages,
-        pageCount: restoredState?.pages?.length || 0,
-        restoredPageId: restoredState?.currentPageId,
-        preservingPageId: preservedPageId,
-        metadata: restoredState?.metadata
-      });
-      
-      // DEBUG: Log restored items
-      if (restoredState?.pages) {
-        restoredState.pages.forEach((page, idx) => {
-          console.log(`[Debug][UndoRestore] Page ${idx}: id=${page.id}, year=${page.year}, items=${page.items?.length || 0}`);
-          if (page.items?.length > 0) {
-            console.log('[Debug][UndoRestore] First item:', {
-              id: page.items[0].id,
-              name: page.items[0].name,
-              startDate: page.items[0].startDate,
-              endDate: page.items[0].endDate
-            });
-          }
-        });
-      }
-      
       // Clear pending item updates in YearWheel
       const wheelRef = yearWheelRefRef.current;
       if (wheelRef && typeof wheelRef.clearPendingItemUpdates === 'function') {
@@ -333,13 +309,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // CRITICAL: Fix currentPageId after state restoration if needed
       // Can't modify restoredState (it's frozen), so we schedule a fix if needed
       if (preservedPageId && restoredState.currentPageId !== preservedPageId) {
-        console.log('[Debug][UndoRestore] Need to fix currentPageId after restore');
         // Use setTimeout to run AFTER the state restoration completes
         setTimeout(() => {
           setWheelState((prev) => {
             // Only update if still mismatched (prevent unnecessary updates)
             if (prev.currentPageId !== preservedPageId) {
-              console.log('[Debug][UndoRestore] Fixing currentPageId to preserve current page');
               return {
                 ...prev,
                 currentPageId: preservedPageId
@@ -351,19 +325,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
       
       // Force canvas redraw after React updates
-      console.log('[Debug][UndoRestore] Checking canvas redraw - wheelRef:', !!wheelRef, 'create:', !!(wheelRef?.create));
       if (wheelRef && typeof wheelRef.create === 'function') {
-        console.log('[Debug][UndoRestore] Scheduling canvas redraw');
         requestAnimationFrame(() => {
-          console.log('[Debug][UndoRestore] First rAF fired');
           requestAnimationFrame(() => {
-            console.log('[Debug][UndoRestore] Second rAF fired - calling create()');
             wheelRef.create();
-            console.log('[Debug][UndoRestore] Canvas create() completed');
           });
         });
-      } else {
-        console.warn('[Debug][UndoRestore] Cannot redraw - wheelRef not available or no create method');
       }
       
       // Broadcast restore operation to collaboration system
@@ -598,14 +565,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const nextItems = Array.isArray(nextRaw?.items) ? nextRaw.items : currentItems;
 
-    console.log('[Debug][setWheelStructure] Items decision:', {
-      hasNextRawItems: Array.isArray(nextRaw?.items),
-      nextRawItemsLength: nextRaw?.items?.length,
-      currentItemsLength: currentItems?.length,
-      finalItemsLength: nextItems?.length,
-      historyLabel: historyLabel?.type || historyLabel
-    });
-
     const nextCombined = {
       ...nextStructure,
       items: nextItems,
@@ -615,23 +574,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const changeType = detectOrganizationChange(currentCombined, nextCombined);
     const structureChanged = JSON.stringify(currentStructure) !== JSON.stringify(nextStructure);
     const itemsChanged = JSON.stringify(currentItems) !== JSON.stringify(nextItems);
-
-    if (updatedItemIds.size > 0) {
-      console.log('[Debug][setWheelStructure] nextCombined snapshot', {
-        changeType,
-        nextItemCount: nextItems.length,
-        sample: nextItems.slice(0, 3).map((item) =>
-          item
-            ? {
-                id: item.id,
-                pageId: item.pageId,
-                startDate: item.startDate,
-                endDate: item.endDate,
-              }
-            : null
-        ),
-      });
-    }
 
     if (!structureChanged && !itemsChanged && !historyLabel) {
       return;
@@ -654,7 +596,67 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       ...latestValuesRef.current,
       structure: nextStructure,
     };
-  }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange]);
+
+    // Track changes for delta saves
+    if (structureChanged && !isLoadingData.current) {
+      // Track ring changes
+      const currentRingMap = new Map(currentStructure.rings.map(r => [r.id, r]));
+      const nextRingMap = new Map(nextStructure.rings.map(r => [r.id, r]));
+      
+      nextStructure.rings.forEach(ring => {
+        const oldRing = currentRingMap.get(ring.id);
+        if (!oldRing) {
+          changeTracker.trackRingChange(ring.id, 'added', ring);
+        } else if (JSON.stringify(oldRing) !== JSON.stringify(ring)) {
+          changeTracker.trackRingChange(ring.id, 'modified', ring);
+        }
+      });
+      
+      currentStructure.rings.forEach(ring => {
+        if (!nextRingMap.has(ring.id)) {
+          changeTracker.trackRingChange(ring.id, 'deleted', ring);
+        }
+      });
+
+      // Track activity group changes
+      const currentActivityMap = new Map(currentStructure.activityGroups.map(a => [a.id, a]));
+      const nextActivityMap = new Map(nextStructure.activityGroups.map(a => [a.id, a]));
+      
+      nextStructure.activityGroups.forEach(activity => {
+        const oldActivity = currentActivityMap.get(activity.id);
+        if (!oldActivity) {
+          changeTracker.trackActivityGroupChange(activity.id, 'added', activity);
+        } else if (JSON.stringify(oldActivity) !== JSON.stringify(activity)) {
+          changeTracker.trackActivityGroupChange(activity.id, 'modified', activity);
+        }
+      });
+      
+      currentStructure.activityGroups.forEach(activity => {
+        if (!nextActivityMap.has(activity.id)) {
+          changeTracker.trackActivityGroupChange(activity.id, 'deleted', activity);
+        }
+      });
+
+      // Track label changes
+      const currentLabelMap = new Map(currentStructure.labels.map(l => [l.id, l]));
+      const nextLabelMap = new Map(nextStructure.labels.map(l => [l.id, l]));
+      
+      nextStructure.labels.forEach(label => {
+        const oldLabel = currentLabelMap.get(label.id);
+        if (!oldLabel) {
+          changeTracker.trackLabelChange(label.id, 'added', label);
+        } else if (JSON.stringify(oldLabel) !== JSON.stringify(label)) {
+          changeTracker.trackLabelChange(label.id, 'modified', label);
+        }
+      });
+      
+      currentStructure.labels.forEach(label => {
+        if (!nextLabelMap.has(label.id)) {
+          changeTracker.trackLabelChange(label.id, 'deleted', label);
+        }
+      });
+    }
+  }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange, changeTracker]);
   
   // Track changes for delta saves (compare previous state to current)
   // Note: Change tracking happens directly in mutation handlers (handleUpdateAktivitet, handleAddItems, etc.)
@@ -3659,13 +3661,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
-    console.log('[Debug][handleDragStart] Starting drag', item?.name);
     isDraggingRef.current = true;
     const label = item 
       ? { type: 'dragItem', params: { name: item.name } }
       : { type: 'dragActivity' };
     startBatch(label);
-    console.log('[Debug][handleDragStart] Batch started');
   }, [startBatch]);
 
   // Memoize callbacks to prevent infinite loops
