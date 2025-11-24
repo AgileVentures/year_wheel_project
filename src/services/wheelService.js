@@ -2461,3 +2461,246 @@ export const checkCircularReference = async (sourceWheelId, targetWheelId, maxDe
     return false; // Err on the side of caution
   }
 };
+
+/**
+ * ============================================================================
+ * DELTA SAVE METHODS - Efficient granular updates instead of full replacement
+ * ============================================================================
+ */
+
+/**
+ * Apply delta changes to wheel data
+ * Only updates what changed instead of replacing everything
+ * 
+ * @param {string} wheelId - The wheel ID
+ * @param {Object} changes - Change deltas from useChangeTracker
+ * @returns {Promise<Object>} Summary of applied changes
+ */
+export const applyDeltaChanges = async (wheelId, changes) => {
+  console.log('[wheelService] Applying delta changes:', {
+    items: `+${changes.items.added.length} ~${changes.items.modified.length} -${changes.items.deleted.length}`,
+    rings: `+${changes.rings.added.length} ~${changes.rings.modified.length} -${changes.rings.deleted.length}`,
+    activityGroups: `+${changes.activityGroups.added.length} ~${changes.activityGroups.modified.length} -${changes.activityGroups.deleted.length}`,
+    labels: `+${changes.labels.added.length} ~${changes.labels.modified.length} -${changes.labels.deleted.length}`,
+    pages: `+${changes.pages.added.length} ~${changes.pages.modified.length} -${changes.pages.deleted.length}`
+  });
+
+  const results = {
+    success: true,
+    items: { inserted: 0, updated: 0, deleted: 0 },
+    rings: { inserted: 0, updated: 0, deleted: 0 },
+    activityGroups: { inserted: 0, updated: 0, deleted: 0 },
+    labels: { inserted: 0, updated: 0, deleted: 0 },
+    pages: { inserted: 0, updated: 0, deleted: 0 },
+    errors: []
+  };
+
+  try {
+    // 1. DELETE operations (do deletes first to avoid conflicts)
+    if (changes.items.deleted.length > 0) {
+      const { error } = await supabase
+        .from('items')
+        .delete()
+        .in('id', changes.items.deleted);
+      if (error) throw new Error(`Items delete failed: ${error.message}`);
+      results.items.deleted = changes.items.deleted.length;
+    }
+
+    if (changes.rings.deleted.length > 0) {
+      const { error } = await supabase
+        .from('wheel_rings')
+        .delete()
+        .in('id', changes.rings.deleted);
+      if (error) throw new Error(`Rings delete failed: ${error.message}`);
+      results.rings.deleted = changes.rings.deleted.length;
+    }
+
+    if (changes.activityGroups.deleted.length > 0) {
+      const { error } = await supabase
+        .from('activity_groups')
+        .delete()
+        .in('id', changes.activityGroups.deleted);
+      if (error) throw new Error(`Activity groups delete failed: ${error.message}`);
+      results.activityGroups.deleted = changes.activityGroups.deleted.length;
+    }
+
+    if (changes.labels.deleted.length > 0) {
+      const { error } = await supabase
+        .from('labels')
+        .delete()
+        .in('id', changes.labels.deleted);
+      if (error) throw new Error(`Labels delete failed: ${error.message}`);
+      results.labels.deleted = changes.labels.deleted.length;
+    }
+
+    if (changes.pages.deleted.length > 0) {
+      const { error } = await supabase
+        .from('wheel_pages')
+        .delete()
+        .in('id', changes.pages.deleted);
+      if (error) throw new Error(`Pages delete failed: ${error.message}`);
+      results.pages.deleted = changes.pages.deleted.length;
+    }
+
+    // 2. INSERT operations
+    if (changes.items.added.length > 0) {
+      const { error } = await supabase
+        .from('items')
+        .insert(changes.items.added.map(item => ({
+          ...item,
+          wheel_id: wheelId
+        })));
+      if (error) throw new Error(`Items insert failed: ${error.message}`);
+      results.items.inserted = changes.items.added.length;
+    }
+
+    if (changes.rings.added.length > 0) {
+      const { error } = await supabase
+        .from('wheel_rings')
+        .insert(changes.rings.added.map(ring => ({
+          ...ring,
+          wheel_id: wheelId
+        })));
+      if (error) throw new Error(`Rings insert failed: ${error.message}`);
+      results.rings.inserted = changes.rings.added.length;
+    }
+
+    if (changes.activityGroups.added.length > 0) {
+      const { error } = await supabase
+        .from('activity_groups')
+        .insert(changes.activityGroups.added.map(group => ({
+          ...group,
+          wheel_id: wheelId
+        })));
+      if (error) throw new Error(`Activity groups insert failed: ${error.message}`);
+      results.activityGroups.inserted = changes.activityGroups.added.length;
+    }
+
+    if (changes.labels.added.length > 0) {
+      const { error } = await supabase
+        .from('labels')
+        .insert(changes.labels.added.map(label => ({
+          ...label,
+          wheel_id: wheelId
+        })));
+      if (error) throw new Error(`Labels insert failed: ${error.message}`);
+      results.labels.inserted = changes.labels.added.length;
+    }
+
+    if (changes.pages.added.length > 0) {
+      const { error } = await supabase
+        .from('wheel_pages')
+        .insert(changes.pages.added.map(page => ({
+          ...page,
+          wheel_id: wheelId
+        })));
+      if (error) throw new Error(`Pages insert failed: ${error.message}`);
+      results.pages.inserted = changes.pages.added.length;
+    }
+
+    // 3. UPDATE operations (use upsert for efficiency)
+    if (changes.items.modified.length > 0) {
+      for (const item of changes.items.modified) {
+        const { error } = await supabase
+          .from('items')
+          .update(item)
+          .eq('id', item.id);
+        if (error) results.errors.push(`Item ${item.id}: ${error.message}`);
+        else results.items.updated++;
+      }
+    }
+
+    if (changes.rings.modified.length > 0) {
+      for (const ring of changes.rings.modified) {
+        const { error } = await supabase
+          .from('wheel_rings')
+          .update(ring)
+          .eq('id', ring.id);
+        if (error) results.errors.push(`Ring ${ring.id}: ${error.message}`);
+        else results.rings.updated++;
+      }
+    }
+
+    if (changes.activityGroups.modified.length > 0) {
+      for (const group of changes.activityGroups.modified) {
+        const { error } = await supabase
+          .from('activity_groups')
+          .update(group)
+          .eq('id', group.id);
+        if (error) results.errors.push(`Group ${group.id}: ${error.message}`);
+        else results.activityGroups.updated++;
+      }
+    }
+
+    if (changes.labels.modified.length > 0) {
+      for (const label of changes.labels.modified) {
+        const { error } = await supabase
+          .from('labels')
+          .update(label)
+          .eq('id', label.id);
+        if (error) results.errors.push(`Label ${label.id}: ${error.message}`);
+        else results.labels.updated++;
+      }
+    }
+
+    if (changes.pages.modified.length > 0) {
+      for (const page of changes.pages.modified) {
+        const { error } = await supabase
+          .from('wheel_pages')
+          .update(page)
+          .eq('id', page.id);
+        if (error) results.errors.push(`Page ${page.id}: ${error.message}`);
+        else results.pages.updated++;
+      }
+    }
+
+    console.log('[wheelService] Delta changes applied:', results);
+    return results;
+
+  } catch (error) {
+    console.error('[wheelService] Delta save failed:', error);
+    results.success = false;
+    results.errors.push(error.message);
+    return results;
+  }
+};
+
+/**
+ * Broadcast delta changes via Supabase Realtime
+ * Only sends what changed, not the entire wheel
+ * 
+ * @param {string} wheelId - The wheel ID
+ * @param {Object} changes - Change deltas
+ * @param {string} userId - User who made the change
+ */
+export const broadcastDeltaChanges = async (wheelId, changes, userId) => {
+  const channel = supabase.channel(`wheel:${wheelId}`);
+  
+  // Send granular events for each type of change
+  if (changes.items.added.length > 0) {
+    await channel.send({
+      type: 'broadcast',
+      event: 'items:added',
+      payload: { items: changes.items.added, userId }
+    });
+  }
+
+  if (changes.items.modified.length > 0) {
+    await channel.send({
+      type: 'broadcast',
+      event: 'items:modified',
+      payload: { items: changes.items.modified, userId }
+    });
+  }
+
+  if (changes.items.deleted.length > 0) {
+    await channel.send({
+      type: 'broadcast',
+      event: 'items:deleted',
+      payload: { ids: changes.items.deleted, userId }
+    });
+  }
+
+  // Similar broadcasts for rings, groups, labels, pages...
+  // (Add as needed)
+};

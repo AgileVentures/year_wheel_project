@@ -1,0 +1,245 @@
+import { useRef, useCallback } from 'react';
+
+/**
+ * useChangeTracker - Tracks changes to wheel data for efficient delta saves
+ * 
+ * Instead of saving entire wheel on every change, tracks what was:
+ * - Added (new items/rings/groups)
+ * - Modified (changed properties)
+ * - Deleted (removed items/rings/groups)
+ * 
+ * Usage:
+ *   const tracker = useChangeTracker();
+ *   tracker.trackItemChange(itemId, oldItem, newItem);
+ *   const changes = tracker.getChanges();
+ *   tracker.clearChanges();
+ */
+export function useChangeTracker() {
+  const changesRef = useRef({
+    items: { added: new Map(), modified: new Map(), deleted: new Set() },
+    rings: { added: new Map(), modified: new Map(), deleted: new Set() },
+    activityGroups: { added: new Map(), modified: new Map(), deleted: new Set() },
+    labels: { added: new Map(), modified: new Map(), deleted: new Set() },
+    pages: { added: new Map(), modified: new Map(), deleted: new Set() }
+  });
+
+  const trackItemChange = useCallback((id, oldItem, newItem) => {
+    const changes = changesRef.current.items;
+
+    if (!oldItem && newItem) {
+      // New item added
+      changes.added.set(id, newItem);
+      changes.modified.delete(id);
+      changes.deleted.delete(id);
+    } else if (oldItem && !newItem) {
+      // Item deleted
+      changes.deleted.add(id);
+      changes.added.delete(id);
+      changes.modified.delete(id);
+    } else if (oldItem && newItem) {
+      // Item modified - check if actually different
+      if (JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+        if (!changes.added.has(id)) {
+          // Only track as modified if not a new item
+          changes.modified.set(id, newItem);
+        } else {
+          // Update the added item data
+          changes.added.set(id, newItem);
+        }
+      }
+    }
+  }, []);
+
+  const trackRingChange = useCallback((id, oldRing, newRing) => {
+    const changes = changesRef.current.rings;
+
+    if (!oldRing && newRing) {
+      changes.added.set(id, newRing);
+      changes.modified.delete(id);
+      changes.deleted.delete(id);
+    } else if (oldRing && !newRing) {
+      changes.deleted.add(id);
+      changes.added.delete(id);
+      changes.modified.delete(id);
+    } else if (oldRing && newRing) {
+      if (JSON.stringify(oldRing) !== JSON.stringify(newRing)) {
+        if (!changes.added.has(id)) {
+          changes.modified.set(id, newRing);
+        } else {
+          changes.added.set(id, newRing);
+        }
+      }
+    }
+  }, []);
+
+  const trackActivityGroupChange = useCallback((id, oldGroup, newGroup) => {
+    const changes = changesRef.current.activityGroups;
+
+    if (!oldGroup && newGroup) {
+      changes.added.set(id, newGroup);
+      changes.modified.delete(id);
+      changes.deleted.delete(id);
+    } else if (oldGroup && !newGroup) {
+      changes.deleted.add(id);
+      changes.added.delete(id);
+      changes.modified.delete(id);
+    } else if (oldGroup && newGroup) {
+      if (JSON.stringify(oldGroup) !== JSON.stringify(newGroup)) {
+        if (!changes.added.has(id)) {
+          changes.modified.set(id, newGroup);
+        } else {
+          changes.added.set(id, newGroup);
+        }
+      }
+    }
+  }, []);
+
+  const trackLabelChange = useCallback((id, oldLabel, newLabel) => {
+    const changes = changesRef.current.labels;
+
+    if (!oldLabel && newLabel) {
+      changes.added.set(id, newLabel);
+      changes.modified.delete(id);
+      changes.deleted.delete(id);
+    } else if (oldLabel && !newLabel) {
+      changes.deleted.add(id);
+      changes.added.delete(id);
+      changes.modified.delete(id);
+    } else if (oldLabel && newLabel) {
+      if (JSON.stringify(oldLabel) !== JSON.stringify(newLabel)) {
+        if (!changes.added.has(id)) {
+          changes.modified.set(id, newLabel);
+        } else {
+          changes.added.set(id, newLabel);
+        }
+      }
+    }
+  }, []);
+
+  const trackPageChange = useCallback((id, oldPage, newPage) => {
+    const changes = changesRef.current.pages;
+
+    if (!oldPage && newPage) {
+      changes.added.set(id, newPage);
+      changes.modified.delete(id);
+      changes.deleted.delete(id);
+    } else if (oldPage && !newPage) {
+      changes.deleted.add(id);
+      changes.added.delete(id);
+      changes.modified.delete(id);
+    } else if (oldPage && newPage) {
+      if (JSON.stringify(oldPage) !== JSON.stringify(newPage)) {
+        if (!changes.added.has(id)) {
+          changes.modified.set(id, newPage);
+        } else {
+          changes.added.set(id, newPage);
+        }
+      }
+    }
+  }, []);
+
+  const getChanges = useCallback(() => {
+    const changes = changesRef.current;
+    return {
+      items: {
+        added: Array.from(changes.items.added.values()),
+        modified: Array.from(changes.items.modified.values()),
+        deleted: Array.from(changes.items.deleted)
+      },
+      rings: {
+        added: Array.from(changes.rings.added.values()),
+        modified: Array.from(changes.rings.modified.values()),
+        deleted: Array.from(changes.rings.deleted)
+      },
+      activityGroups: {
+        added: Array.from(changes.activityGroups.added.values()),
+        modified: Array.from(changes.activityGroups.modified.values()),
+        deleted: Array.from(changes.activityGroups.deleted)
+      },
+      labels: {
+        added: Array.from(changes.labels.added.values()),
+        modified: Array.from(changes.labels.modified.values()),
+        deleted: Array.from(changes.labels.deleted)
+      },
+      pages: {
+        added: Array.from(changes.pages.added.values()),
+        modified: Array.from(changes.pages.modified.values()),
+        deleted: Array.from(changes.pages.deleted)
+      }
+    };
+  }, []);
+
+  const hasChanges = useCallback(() => {
+    const changes = changesRef.current;
+    return (
+      changes.items.added.size > 0 ||
+      changes.items.modified.size > 0 ||
+      changes.items.deleted.size > 0 ||
+      changes.rings.added.size > 0 ||
+      changes.rings.modified.size > 0 ||
+      changes.rings.deleted.size > 0 ||
+      changes.activityGroups.added.size > 0 ||
+      changes.activityGroups.modified.size > 0 ||
+      changes.activityGroups.deleted.size > 0 ||
+      changes.labels.added.size > 0 ||
+      changes.labels.modified.size > 0 ||
+      changes.labels.deleted.size > 0 ||
+      changes.pages.added.size > 0 ||
+      changes.pages.modified.size > 0 ||
+      changes.pages.deleted.size > 0
+    );
+  }, []);
+
+  const clearChanges = useCallback(() => {
+    changesRef.current = {
+      items: { added: new Map(), modified: new Map(), deleted: new Set() },
+      rings: { added: new Map(), modified: new Map(), deleted: new Set() },
+      activityGroups: { added: new Map(), modified: new Map(), deleted: new Set() },
+      labels: { added: new Map(), modified: new Map(), deleted: new Set() },
+      pages: { added: new Map(), modified: new Map(), deleted: new Set() }
+    };
+  }, []);
+
+  const getChangesSummary = useCallback(() => {
+    const changes = changesRef.current;
+    return {
+      items: {
+        added: changes.items.added.size,
+        modified: changes.items.modified.size,
+        deleted: changes.items.deleted.size
+      },
+      rings: {
+        added: changes.rings.added.size,
+        modified: changes.rings.modified.size,
+        deleted: changes.rings.deleted.size
+      },
+      activityGroups: {
+        added: changes.activityGroups.added.size,
+        modified: changes.activityGroups.modified.size,
+        deleted: changes.activityGroups.deleted.size
+      },
+      labels: {
+        added: changes.labels.added.size,
+        modified: changes.labels.modified.size,
+        deleted: changes.labels.deleted.size
+      },
+      pages: {
+        added: changes.pages.added.size,
+        modified: changes.pages.modified.size,
+        deleted: changes.pages.deleted.size
+      }
+    };
+  }, []);
+
+  return {
+    trackItemChange,
+    trackRingChange,
+    trackActivityGroupChange,
+    trackLabelChange,
+    trackPageChange,
+    getChanges,
+    hasChanges,
+    clearChanges,
+    getChangesSummary
+  };
+}
