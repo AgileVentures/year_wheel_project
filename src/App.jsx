@@ -660,14 +660,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Track changes for delta saves (compare previous state to current)
   useEffect(() => {
     // Don't track during initial load, data loading, or page navigation
-    if (!wheelId || !wheelState || isNavigatingPagesRef.current || isInitialLoad.current || isLoadingData.current) return;
+    if (!wheelId || !wheelState || isNavigatingPagesRef.current || isInitialLoad.current || isLoadingData.current) {
+      console.log('[ChangeTracker] Skipping - flags:', { wheelId: !!wheelId, wheelState: !!wheelState, navigating: isNavigatingPagesRef.current, initialLoad: isInitialLoad.current, loadingData: isLoadingData.current });
+      return;
+    }
     
     const prevState = prevStateRef.current;
     if (!prevState) {
       // First render - store initial state WITHOUT tracking
+      console.log('[ChangeTracker] First render - storing initial state');
       prevStateRef.current = JSON.parse(JSON.stringify(wheelState));
       return;
     }
+    
+    console.log('[ChangeTracker] Comparing states for changes...');
     
     const currentState = wheelState;
     
