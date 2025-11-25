@@ -803,12 +803,22 @@ Analyze the data and respond with the complete JSON structure.`
         })
       }
       
-      // Determine ring assignment
+      // Determine ring assignment - ENSURE CONSISTENCY
       let ringName = mapping.rings[0]?.name || 'Aktiviteter' // Default to first ring
       if (mapping.mapping.columns.ring && typeof mapping.mapping.columns.ring === 'string') {
         const ringColIndex = csvStructure.headers.indexOf(mapping.mapping.columns.ring)
         if (ringColIndex >= 0) {
-          ringName = row[ringColIndex] || ringName
+          const ringValue = row[ringColIndex]
+          if (ringValue && String(ringValue).trim()) {
+            // Normalize ring value to match existing rings consistently
+            const normalizedValue = String(ringValue).trim()
+            const matchingRing = mapping.rings.find((r: any) => 
+              r.name.toLowerCase() === normalizedValue.toLowerCase() ||
+              r.name.includes(normalizedValue) ||
+              normalizedValue.includes(r.name)
+            )
+            ringName = matchingRing ? matchingRing.name : ringName
+          }
         }
       }
       
@@ -842,8 +852,9 @@ Analyze the data and respond with the complete JSON structure.`
         })
       }
       
-      // Build description from primary description + unused columns
+      // Build description with improved formatting
       let descriptionParts: string[] = []
+      let metadataFields: string[] = []
       
       if (index === 0) {
         console.log('[analyzeCsvWithAI] Building description for first row')
@@ -861,30 +872,47 @@ Analyze the data and respond with the complete JSON structure.`
         }
       }
       
+      // Collect metadata from additional columns with intelligent grouping
+      const collectMetadata = (colName: string, value: any) => {
+        if (value && String(value).trim()) {
+          const cleanValue = String(value).trim()
+          // Shorten common Swedish field names for readability
+          const shortName = colName
+            .replace('Klientansvarig', 'Ansvarig')
+            .replace('Handläggare', 'Handl.')
+            .replace('Kundnummer', 'Kund#')
+            .replace('Företagstyp', 'Typ')
+            .replace('Organisationsnummer', 'Orgnr')
+          metadataFields.push(`${shortName}: ${cleanValue}`)
+        }
+      }
+      
       // Add additional description columns
       if (mapping.mapping.columns.descriptionColumns && Array.isArray(mapping.mapping.columns.descriptionColumns)) {
         mapping.mapping.columns.descriptionColumns.forEach((colName: string) => {
           const colIndex = csvStructure.headers.indexOf(colName)
           if (colIndex >= 0) {
-            const value = row[colIndex]
-            if (value && String(value).trim()) {
-              descriptionParts.push(`${colName}: ${String(value).trim()}`)
-            }
+            collectMetadata(colName, row[colIndex])
           }
         })
       }
       
-      // Append unused columns to description
+      // Append unused columns to metadata
       csvStructure.headers.forEach((headerName: string, headerIndex: number) => {
         if (!usedColumnNames.has(headerName) && !(mapping.mapping.columns.descriptionColumns || []).includes(headerName)) {
-          const value = row[headerIndex]
-          if (value && String(value).trim()) {
-            descriptionParts.push(`${headerName}: ${String(value).trim()}`)
-          }
+          collectMetadata(headerName, row[headerIndex])
         }
       })
       
-      const finalDescription = descriptionParts.length > 0 ? descriptionParts.join(' | ') : undefined
+      // Combine with improved formatting: Primary description + line break + metadata
+      let finalDescription: string | undefined
+      if (descriptionParts.length > 0 && metadataFields.length > 0) {
+        finalDescription = `${descriptionParts.join('\n\n')}\n\n${metadataFields.join(' • ')}`
+      } else if (descriptionParts.length > 0) {
+        finalDescription = descriptionParts.join('\n\n')
+      } else if (metadataFields.length > 0) {
+        finalDescription = metadataFields.join(' • ')
+      }
       
       return {
         name: activityName,
