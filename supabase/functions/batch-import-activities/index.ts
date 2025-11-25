@@ -164,23 +164,32 @@ serve(async (req) => {
   }
 
   try {
+    // Use service role client for job creation (bypasses RLS)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
+    // Get user from auth token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { wheelId, importMode = 'append', structure, pages, notifyEmail, fileName } = await req.json() as ImportRequest
 
-    console.log('[BatchImport] Starting import for wheel:', wheelId, 'mode:', importMode, 'notifyEmail:', notifyEmail)
-    console.log('[BatchImport] Structure:', structure.rings.length, 'rings,', structure.activityGroups.length, 'groups,', structure.labels.length, 'labels')
-    console.log('[BatchImport] Pages:', pages.length, 'pages with', pages.reduce((sum, p) => sum + p.items.length, 0), 'total items')
+    console.log('[BatchImport] Creating background import job for wheel:', wheelId, 'user:', user.id)
 
     // Verify user has access to this wheel
     const { data: wheel, error: wheelError } = await supabaseClient
       .from('year_wheels')
       .select('id')
       .eq('id', wheelId)
+      .eq('user_id', user.id)
       .single()
 
     if (wheelError || !wheel) {
@@ -190,9 +199,96 @@ serve(async (req) => {
       )
     }
 
-    // STEP 0: Delete existing data if replace mode
-    if (importMode === 'replace') {
-      console.log('[BatchImport] Replace mode: Deleting existing wheel data...')
+    const totalItems = pages.reduce((sum, p) => sum + p.items.length, 0)
+
+    // Create import job record
+    const { data: job, error: jobError } = await supabaseClient
+      .from('import_jobs')
+      .insert({
+        wheel_id: wheelId,
+        user_id: user.id,
+        file_name: fileName || 'import.csv',
+        import_mode: importMode,
+        status: 'pending',
+        progress: 0,
+        total_items: totalItems,
+        processed_items: 0,
+        payload: { structure, pages, notifyEmail }
+      })
+      .select()
+      .single()
+
+    if (jobError || !job) {
+      console.error('[BatchImport] Failed to create job:', jobError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to create import job' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('[BatchImport] Job created:', job.id, 'processing in background...')
+
+    // Start background processing (don't await - return immediately)
+    processImportJob(job.id, supabaseClient, notifyEmail, user.email).catch(err => {
+      console.error('[BatchImport] Background processing error:', err)
+    })
+
+    // Return immediately with job ID
+    return new Response(
+      JSON.stringify({
+        success: true,
+        jobId: job.id,
+        message: `Import job created with ${totalItems} items. Progress will update in realtime.`
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    console.error('[BatchImport] Error:', error)
+    return new Response(
+      JSON.stringify({ error: error.message || 'Internal server error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})
+
+// Background job processor
+async function processImportJob(
+  jobId: string,
+  supabaseClient: any,
+  notifyEmail: string | null | undefined,
+  userEmail: string | undefined
+) {
+  try {
+    console.log('[ProcessJob] Starting processing for job:', jobId)
+
+    // Fetch job
+    const { data: job, error: fetchError } = await supabaseClient
+      .from('import_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single()
+
+    if (fetchError || !job) {
+      console.error('[ProcessJob] Job not found:', jobId, fetchError)
+      return
+    }
+
+    const { wheel_id: wheelId, import_mode: importMode, payload, total_items: totalItems } = job
+    const { structure, pages } = payload
+
+    // Update status to processing
+    await supabaseClient
+      .from('import_jobs')
+      .update({
+        status: 'processing',
+        started_at: new Date().toISOString(),
+        current_step: 'Förbereder import...',
+        progress: 5
+      })
+      .eq('id', jobId)
+
+    console.log('[ProcessJob] Processing:', totalItems, 'items across', pages.length, 'pages')
       
       // Delete in correct order to avoid FK violations:
       // 1. Items (references rings, activity_groups, labels, pages)
