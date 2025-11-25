@@ -44,19 +44,30 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase client with user auth
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Create Supabase client with auth context
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     )
 
-    // Verify authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Verify JWT token
+    const jwt = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt)
+
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
