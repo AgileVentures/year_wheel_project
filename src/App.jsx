@@ -892,24 +892,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             lagDays: dbItem.dependency_lag_days !== undefined ? dbItem.dependency_lag_days : 0,
           }));
           
-          // Instead of setAllItems/setPageItemsById/setPages, we'll update wheelState.pages with items
-          // Build pages array with items attached
-          const pagesWithItems = pagesData.map((page) => ({
-            id: page.id,
-            year: page.year,
-            pageOrder: page.page_order,
-            title: page.title,
-            items: normalizedItems.filter(item => item.pageId === page.id)
-          }));
-
-          const pageItems = normalizedItems.filter(item => item.pageId === pageToLoad.id);
-          
-          // Ensure unique items by ID (safeguard against duplicates)
-          const uniquePageItems = Array.from(
-            new Map(pageItems.map(item => [item.id, item])).values()
+          // CRITICAL: Deduplicate items by ID first (safeguard against DB duplicates)
+          const uniqueItems = Array.from(
+            new Map(normalizedItems.map(item => [item.id, item])).values()
           );
           
-          // Page items prepared
+          console.log('[loadWheelData] Total items:', normalizedItems.length, 'Unique:', uniqueItems.length);
+          
+          // Build pages array with UNIQUE items attached
+          const pagesWithItems = pagesData.map((page) => {
+            const pageItems = uniqueItems.filter(item => item.pageId === page.id);
+            return {
+              id: page.id,
+              year: page.year,
+              pageOrder: page.page_order,
+              title: page.title,
+              items: pageItems
+            };
+          });
+
+          const pageItems = uniqueItems.filter(item => item.pageId === pageToLoad.id);
           
           const pageStructure = normalizePageStructure(pageToLoad);
 
@@ -948,7 +950,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             rings: [],
             activityGroups: [],
             labels: [],
-            items: uniquePageItems
+            items: pageItems
           };
           
           // Rings from database (shared across all pages)
@@ -2173,25 +2175,29 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             return;
           } else {
             console.error('[DeltaSave] Failed:', result.errors);
-            // Fall back to full save on error
-          }
-        }
-        
-        // Fall back to full save if no changes tracked or delta save failed
-        const saveResult = await enqueueFullSave(reason === 'manual' ? 'manual' : reason);
+            // Fall back to full save on error only
+            const saveResult = await enqueueFullSave(reason === 'manual' ? 'manual' : reason);
 
-        if (!silent) {
-          const validationDetails = saveResult?.validation;
+            if (!silent) {
+              const validationDetails = saveResult?.validation;
 
-          if (validationDetails?.valid) {
-            const validatedPages = validationDetails.details?.length || 0;
-            const message = validatedPages > 0
-              ? `Data har sparats! ${validatedPages} sidor verifierades med sina aktiviteter.`
-              : 'Data har sparats!';
-            showToast(message, 'success');
-          } else {
-            showToast('Data har sparats!', 'success');
+              if (validationDetails?.valid) {
+                const validatedPages = validationDetails.details?.length || 0;
+                const message = validatedPages > 0
+                  ? `Data har sparats! ${validatedPages} sidor verifierades med sina aktiviteter.`
+                  : 'Data har sparats!';
+                showToast(message, 'success');
+              } else {
+                showToast('Data har sparats!', 'success');
+              }
+            }
           }
+        } else {
+          // No changes to save
+          if (!silent && reason === 'manual') {
+            showToast('Inga ändringar att spara', 'info');
+          }
+          return;
         }
       } catch (error) {
         console.error('[ManualSave] Error saving wheel:', error);
