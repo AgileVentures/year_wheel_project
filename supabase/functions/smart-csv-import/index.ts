@@ -431,6 +431,20 @@ Analyze this CSV with ${csvStructure.totalRows} rows and generate mapping rules 
 **CSV Headers:** ${JSON.stringify(csvStructure.headers)}
 **Sample Data (first 20 rows):** ${JSON.stringify(csvStructure.sampleRows)}
 
+## WHEEL TITLE GENERATION:
+
+Generate a descriptive Swedish title that captures the essence of this data:
+- **Be specific**: Include the domain, team, project, or person if identifiable
+- **Include year**: Add the target year if known (e.g., "2025")
+- **Keep it short**: 3-6 words maximum
+- **Examples**:
+  * "Marie Isidorsson - Klienter 2025"
+  * "Redovisning Deadlines 2025"
+  * "Projektplan Design Team"
+  * "Skattedeklarationer Q1-Q4"
+- **Pattern detection**: If data has a dominant person/team/category, use that
+- **Fallback**: Use generic title like "Årsplanering 2025" if no clear theme
+
 ## CRITICAL INSTRUCTIONS:
 
 ### DATE DETECTION (HIGHEST PRIORITY):
@@ -509,6 +523,7 @@ Analyze BOTH column names AND data values to detect date columns:
 
 \`\`\`typescript
 {
+  suggestedWheelTitle: string,        // Suggested title for the wheel based on data content
   mapping: {
     columns: {
       activityName: string | null,     // EXACT column name for activity/event name
@@ -1085,7 +1100,9 @@ Analyze the data and respond with the complete JSON structure.`
     activityGroups: actualGroups, // Use data-derived groups
     labels: allLabels, // Use extracted labels
     activities, // All activities generated server-side
-    detectedPeople: mapping.detectedPeople || []
+    detectedPeople: mapping.detectedPeople || [],
+    suitabilityWarning: mapping.suitabilityWarning, // Pass through data suitability warning
+    suggestedWheelTitle: mapping.suggestedWheelTitle // Pass through AI-suggested title
   }
   
   return {

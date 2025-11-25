@@ -739,6 +739,24 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
     return (
       <div className="space-y-6 max-h-[60vh] overflow-y-auto">
+        {/* Suggested Wheel Title */}
+        {aiSuggestions.suggestedWheelTitle && (
+          <div className="bg-purple-50 border border-purple-200 rounded-sm p-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-medium text-purple-900">Förslag på hjultitel</h4>
+                <p className="text-lg font-semibold text-purple-900 mt-2">
+                  "{aiSuggestions.suggestedWheelTitle}"
+                </p>
+                <p className="text-xs text-purple-700 mt-1">
+                  Du kan ändra titeln efter importen i hjulinställningarna
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="bg-green-50 border border-green-200 rounded-sm p-4">
           <div className="flex items-start gap-3">
             <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
