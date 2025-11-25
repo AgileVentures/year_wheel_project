@@ -4543,8 +4543,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 setIsSaving(false);
                 setShowSmartImport(false);
                 
-                const totalItems = result.yrwData.pages.reduce((sum, p) => sum + p.items.length, 0);
-                showToast(`CSV importerad! ${totalItems} aktiviteter över ${result.yrwData.pages.length} år.`, 'success');
+                const totalItems = result.stats?.createdItems || result.yrwData?.pages?.reduce((sum, p) => sum + p.items.length, 0) || 0;
+                const pageCount = result.stats?.createdPages || result.yrwData?.pages?.length || 0;
+                showToast(`CSV importerad! ${totalItems} aktiviteter över ${pageCount} år.`, 'success');
                 
               } catch (err) {
                 console.error('[SmartImport] Post-import error:', err);

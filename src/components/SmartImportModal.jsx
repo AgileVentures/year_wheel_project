@@ -59,8 +59,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             metadata: {
               title: csvData?.fileName?.replace(/\.(csv|xlsx|xls)$/i, '') || 'Import',
               year: aiSuggestions?.suggestedYear || new Date().getFullYear()
-            }
+            },
+            pages: [] // Pages are already in database
           },
+          stats: importJobProgress.stats,
           inviteEmails: Array.from(selectedPeople)
         });
       }
