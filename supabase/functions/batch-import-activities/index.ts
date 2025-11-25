@@ -248,10 +248,16 @@ async function processImportJob(jobId: string, supabase: any) {
       createdLabels = labels || []
     }
 
-    // Build ID mappings
-    const ringIdMap = new Map(createdRings?.map((r: any) => [r.name, r.id]))
-    const groupIdMap = new Map(createdGroups?.map((g: any) => [g.name, g.id]))
-    const labelIdMap = new Map(createdLabels.map((l: any) => [l.name, l.id]))
+    // Build ID mappings: frontend ID -> database ID
+    // First create name maps from database records
+    const ringNameToDbId = new Map(createdRings?.map((r: any) => [r.name, r.id]))
+    const groupNameToDbId = new Map(createdGroups?.map((g: any) => [g.name, g.id]))
+    const labelNameToDbId = new Map(createdLabels.map((l: any) => [l.name, l.id]))
+    
+    // Then map frontend IDs to database IDs via names
+    const ringIdMap = new Map(structure.rings.map((r: any) => [r.id, ringNameToDbId.get(r.name)]))
+    const groupIdMap = new Map(structure.activityGroups.map((g: any) => [g.id, groupNameToDbId.get(g.name)]))
+    const labelIdMap = new Map(structure.labels.map((l: any) => [l.id, labelNameToDbId.get(l.name)]))
 
     // STEP 4: Insert pages and items
     let totalCreatedPages = 0
@@ -301,7 +307,7 @@ async function processImportJob(jobId: string, supabase: any) {
       for (let i = 0; i < page.items.length; i += BATCH_SIZE) {
         const batch = page.items.slice(i, i + BATCH_SIZE)
         
-        const itemInserts = batch.map(item => {
+        const itemInserts = batch.map((item: any) => {
           const ringId = ringIdMap.get(item.ringId)
           const activityId = groupIdMap.get(item.activityId)
           
