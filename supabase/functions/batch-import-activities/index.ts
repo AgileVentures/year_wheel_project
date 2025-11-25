@@ -113,10 +113,12 @@ serve(async (req) => {
 
     console.log('[BatchImport] Job created:', job.id, 'starting background processing...')
 
-    // Start background processing (don't await - let it run async)
-    processImportJob(job.id, supabaseServiceClient).catch(err => {
-      console.error('[BatchImport] Background error:', err)
-    })
+    // Start background processing in detached context
+    setTimeout(() => {
+      processImportJob(job.id, supabaseServiceClient).catch(err => {
+        console.error('[BatchImport] Background error:', err)
+      })
+    }, 0)
 
     // Return immediately with job ID
     return new Response(
@@ -185,7 +187,7 @@ async function processImportJob(jobId: string, supabase: any) {
       progress: 20
     })
 
-    const ringInserts = structure.rings.map(ring => ({
+    const ringInserts = structure.rings.map((ring: any) => ({
       wheel_id: wheelId,
       name: ring.name,
       type: ring.type,
@@ -209,7 +211,7 @@ async function processImportJob(jobId: string, supabase: any) {
       created_rings: createdRings?.length || 0
     })
 
-    const groupInserts = structure.activityGroups.map(group => ({
+    const groupInserts = structure.activityGroups.map((group: any) => ({
       wheel_id: wheelId,
       name: group.name,
       color: group.color,
@@ -232,7 +234,7 @@ async function processImportJob(jobId: string, supabase: any) {
         created_groups: createdGroups?.length || 0
       })
 
-      const labelInserts = structure.labels.map(label => ({
+      const labelInserts = structure.labels.map((label: any) => ({
         wheel_id: wheelId,
         name: label.name,
         color: label.color,
