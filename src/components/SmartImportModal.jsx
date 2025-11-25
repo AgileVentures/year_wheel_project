@@ -45,7 +45,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
   // Monitor import job completion
   useEffect(() => {
-    if (!jobId || !importJobProgress) return;
+    if (!jobId) return;
+
+    console.log('[SmartImport] Monitoring job:', jobId, 'status:', importJobProgress.status, 'progress:', importJobProgress.progress);
 
     if (importJobProgress.isComplete) {
       console.log('[SmartImport] Job completed:', importJobProgress.stats);
@@ -524,8 +526,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
       // Store job ID to start tracking progress
       if (result.jobId) {
+        console.log('[SmartImport] Setting jobId:', result.jobId);
         setJobId(result.jobId);
         setProgress('Import startad - följer framsteg...');
+        // Don't set stage to complete here - let the useEffect handle it
       } else {
         throw new Error('No job ID returned from server');
       }
@@ -1495,21 +1499,26 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div 
             className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-            style={{ width: `${importJobProgress?.progress || 0}%` }}
+            style={{ width: `${jobId && importJobProgress?.progress ? importJobProgress.progress : 0}%` }}
           />
         </div>
         <div className="flex justify-between text-xs text-gray-500 mt-2">
-          <span>{importJobProgress?.progress || 0}%</span>
-          <span>{importJobProgress?.stats?.processedItems || 0} / {importJobProgress?.stats?.totalItems || 0} objekt</span>
+          <span>{jobId && importJobProgress?.progress ? importJobProgress.progress : 0}%</span>
+          <span>
+            {jobId && importJobProgress?.stats ? 
+              `${importJobProgress.stats.processedItems || 0} / ${importJobProgress.stats.totalItems || 0} objekt` :
+              '0 / 0 objekt'
+            }
+          </span>
         </div>
       </div>
 
       <p className="text-sm text-gray-500">
-        {importJobProgress?.currentStep || progress || 'Skapar ringar, grupper och aktiviteter'}
+        {jobId && importJobProgress?.currentStep ? importJobProgress.currentStep : (progress || 'Skapar ringar, grupper och aktiviteter')}
       </p>
 
       {/* Stats preview */}
-      {importJobProgress?.stats && (
+      {jobId && importJobProgress?.stats && (
         <div className="mt-6 grid grid-cols-2 gap-4 text-xs text-gray-600 max-w-sm mx-auto">
           {importJobProgress.stats.createdRings > 0 && (
             <div>✓ {importJobProgress.stats.createdRings} ringar</div>
