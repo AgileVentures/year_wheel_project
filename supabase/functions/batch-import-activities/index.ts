@@ -44,21 +44,19 @@ serve(async (req) => {
   }
 
   try {
-    // Create service role client for job management
-    const supabaseServiceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Create user-scoped client for auth
-    const supabaseUserClient = createClient(
+    // Create Supabase client with user auth
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
     )
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabaseUserClient.auth.getUser()
+    // Verify authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
@@ -71,7 +69,7 @@ serve(async (req) => {
     console.log('[BatchImport] Creating async job for wheel:', wheelId, 'user:', user.id)
 
     // Verify user has access to this wheel
-    const { data: wheel, error: wheelError } = await supabaseUserClient
+    const { data: wheel, error: wheelError } = await supabase
       .from('year_wheels')
       .select('id')
       .eq('id', wheelId)
@@ -85,6 +83,12 @@ serve(async (req) => {
     }
 
     const totalItems = pages.reduce((sum, p) => sum + p.items.length, 0)
+
+    // Create service role client for job creation
+    const supabaseServiceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
     // Create import job record
     const { data: job, error: jobError } = await supabaseServiceClient
