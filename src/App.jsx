@@ -4540,6 +4540,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 // Reload wheel data from database
                 await loadWheelData();
                 
+                // Mark as saved to reset unsaved changes counter
+                markSaved();
+                
                 setIsSaving(false);
                 setShowSmartImport(false);
                 
