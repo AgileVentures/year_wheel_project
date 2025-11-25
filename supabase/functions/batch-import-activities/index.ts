@@ -214,7 +214,7 @@ async function processImportJob(jobId: string, supabase: any) {
 
     const { data: createdRings, error: ringsError } = await supabase
       .from('wheel_rings')
-      .upsert(ringInserts, { onConflict: 'wheel_id,name', ignoreDuplicates: false })
+      .insert(ringInserts)
       .select()
 
     if (ringsError) throw new Error(`Ring creation failed: ${ringsError.message}`)
@@ -235,7 +235,7 @@ async function processImportJob(jobId: string, supabase: any) {
 
     const { data: createdGroups, error: groupsError } = await supabase
       .from('activity_groups')
-      .upsert(groupInserts, { onConflict: 'wheel_id,name', ignoreDuplicates: false })
+      .insert(groupInserts)
       .select()
 
     if (groupsError) throw new Error(`Group creation failed: ${groupsError.message}`)
@@ -258,7 +258,7 @@ async function processImportJob(jobId: string, supabase: any) {
 
       const { data: labels, error: labelsError } = await supabase
         .from('labels')
-        .upsert(labelInserts, { onConflict: 'wheel_id,name', ignoreDuplicates: false })
+        .insert(labelInserts)
         .select()
 
       if (labelsError) throw new Error(`Label creation failed: ${labelsError.message}`)
