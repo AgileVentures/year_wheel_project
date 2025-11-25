@@ -607,6 +607,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         body: JSON.stringify({
           wheelId,
           importMode, // 'replace' or 'append'
+          suggestedWheelTitle: aiSuggestions?.suggestedWheelTitle || null, // Apply AI-suggested title
           structure: {
             rings: ringsWithIds,
             activityGroups: groupsWithIds,

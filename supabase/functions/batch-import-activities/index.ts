@@ -14,6 +14,7 @@ interface ImportRequest {
   importMode?: 'replace' | 'append'
   notifyEmail?: string | null
   fileName?: string
+  suggestedWheelTitle?: string
   structure: {
     rings: Array<{id: string, name: string, type: string, visible: boolean, orientation?: string, color?: string}>
     activityGroups: Array<{id: string, name: string, color: string, visible: boolean}>
@@ -75,9 +76,9 @@ serve(async (req) => {
       )
     }
 
-    const { wheelId, importMode = 'append', structure, pages, notifyEmail, fileName } = await req.json() as ImportRequest
+    const { wheelId, importMode = 'append', structure, pages, notifyEmail, fileName, suggestedWheelTitle } = await req.json() as ImportRequest
 
-    console.log('[BatchImport] Creating async job for wheel:', wheelId, 'user:', user.id)
+    console.log('[BatchImport] Creating async job for wheel:', wheelId, 'user:', user.id, 'suggestedTitle:', suggestedWheelTitle)
 
     // Verify user has access to this wheel
     const { data: wheel, error: wheelError } = await supabase
@@ -91,6 +92,19 @@ serve(async (req) => {
         JSON.stringify({ error: 'Wheel not found or access denied' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Apply suggested title to wheel if provided
+    if (suggestedWheelTitle && suggestedWheelTitle.trim()) {
+      console.log('[BatchImport] Updating wheel title to:', suggestedWheelTitle)
+      const { error: titleError } = await supabase
+        .from('year_wheels')
+        .update({ title: suggestedWheelTitle.trim() })
+        .eq('id', wheelId)
+      
+      if (titleError) {
+        console.error('[BatchImport] Failed to update wheel title:', titleError)
+      }
     }
 
     const totalItems = pages.reduce((sum, p) => sum + p.items.length, 0)
