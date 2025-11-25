@@ -4540,7 +4540,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 // Reload wheel data from database
                 await loadWheelData();
                 
-                // Mark as saved to reset unsaved changes counter
+                // Clear change tracker and mark as saved
+                changeTracker.clearChanges();
                 markSaved();
                 
                 setIsSaving(false);
