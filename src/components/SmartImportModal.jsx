@@ -25,6 +25,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [importMode, setImportMode] = useState('replace'); // 'replace' or 'append'
   const [showAdvancedMapping, setShowAdvancedMapping] = useState(false);
   const [jobId, setJobId] = useState(null); // Track async import job
+  const [isBackgroundImport, setIsBackgroundImport] = useState(false); // Track if import running in background
+  const [startTime, setStartTime] = useState(null); // Track import start time for estimation
   const importJobProgress = useImportProgress(jobId); // Subscribe to realtime progress
   const [manualMapping, setManualMapping] = useState({
     activityName: null,
@@ -52,6 +54,17 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     if (importJobProgress.isComplete) {
       console.log('[SmartImport] Job completed:', importJobProgress.stats);
       
+      // Show toast notification for background imports
+      if (isBackgroundImport) {
+        const event = new CustomEvent('showToast', {
+          detail: {
+            message: `Import klar! ${importJobProgress.stats.createdItems || 0} aktiviteter importerade.`,
+            type: 'success'
+          }
+        });
+        window.dispatchEvent(event);
+      }
+      
       // Trigger parent's completion handler
       if (onImportComplete) {
         onImportComplete({
@@ -70,14 +83,92 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       setStage('complete');
       setProgress(null);
       setJobId(null);
+      setIsBackgroundImport(false);
     } else if (importJobProgress.isFailed) {
       console.error('[SmartImport] Job failed:', importJobProgress.error);
+      
+      // Show toast notification for background imports
+      if (isBackgroundImport) {
+        const event = new CustomEvent('showToast', {
+          detail: {
+            message: `Import misslyckades: ${importJobProgress.error || 'Okänt fel'}`,
+            type: 'error'
+          }
+        });
+        window.dispatchEvent(event);
+      }
+      
       setError(importJobProgress.error || 'Import misslyckades');
       setProgress(null);
       setStage('review');
       setJobId(null);
+      setIsBackgroundImport(false);
     }
-  }, [importJobProgress.isComplete, importJobProgress.isFailed, jobId, onImportComplete, selectedPeople, csvData, aiSuggestions]);
+  }, [importJobProgress.isComplete, importJobProgress.isFailed, jobId, onImportComplete, selectedPeople, csvData, aiSuggestions, isBackgroundImport]);
+
+  // Cancel import
+  const handleCancelImport = async () => {
+    if (!jobId) return;
+
+    try {
+      // Update job status to canceled
+      const { error: cancelError } = await supabase
+        .from('import_jobs')
+        .update({ status: 'failed', error_message: 'Import avbruten av användaren' })
+        .eq('id', jobId);
+
+      if (cancelError) throw cancelError;
+
+      setJobId(null);
+      setProgress(null);
+      setStartTime(null);
+      setStage('review');
+      setError('Import avbruten');
+    } catch (err) {
+      console.error('[SmartImport] Cancel failed:', err);
+    }
+  };
+
+  // Close modal but keep import running in background
+  const handleCloseWithBackground = () => {
+    if (jobId && stage === 'importing') {
+      setIsBackgroundImport(true);
+      
+      // Show toast notification
+      const event = new CustomEvent('showToast', {
+        detail: {
+          message: 'Import fortsätter i bakgrunden. Du kommer att få ett meddelande när importen är klar.',
+          type: 'info'
+        }
+      });
+      window.dispatchEvent(event);
+      
+      onClose();
+    } else {
+      onClose();
+    }
+  };
+
+  // Estimate remaining time based on progress
+  const getTimeEstimate = () => {
+    if (!startTime || !importJobProgress.progress || importJobProgress.progress === 0) {
+      return null;
+    }
+
+    const elapsed = Date.now() - startTime;
+    const progressPercent = importJobProgress.progress / 100;
+    const totalEstimated = elapsed / progressPercent;
+    const remaining = totalEstimated - elapsed;
+
+    if (remaining < 60000) {
+      return 'Mindre än 1 minut kvar...';
+    } else if (remaining < 120000) {
+      return 'Cirka 1 minut kvar...';
+    } else {
+      const minutes = Math.ceil(remaining / 60000);
+      return `Cirka ${minutes} minuter kvar...`;
+    }
+  };
 
   // Helper: Get effective rings/groups (AI suggestions or custom overrides)
   const getEffectiveRingsAndGroups = () => {
@@ -212,6 +303,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const handleImport = async () => {
     setStage('importing');
     setProgress('Förbereder import...');
+    setStartTime(Date.now()); // Track start time for estimation
+    setError(null); // Clear any previous errors
 
     try {
       // Apply user's manual overrides to AI suggestions before processing
@@ -1520,6 +1613,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             }
           </span>
         </div>
+        
+        {/* Time estimation */}
+        {getTimeEstimate() && (
+          <p className="text-xs text-gray-500 text-center mt-2">
+            {getTimeEstimate()}
+          </p>
+        )}
       </div>
 
       <p className="text-sm text-gray-500">
@@ -1543,6 +1643,22 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           )}
         </div>
       )}
+      
+      {/* Cancel and background buttons */}
+      <div className="flex gap-3 justify-center mt-6">
+        <button
+          onClick={handleCancelImport}
+          className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
+        >
+          Avbryt import
+        </button>
+        <button
+          onClick={handleCloseWithBackground}
+          className="px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-sm hover:bg-blue-100"
+        >
+          Fortsätt i bakgrunden
+        </button>
+      </div>
     </div>
   );
 
@@ -1600,9 +1716,19 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             <div className="mb-4 bg-red-50 border border-red-200 rounded-sm p-4">
               <div className="flex gap-3">
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <div className="text-sm text-red-800">
-                  <p className="font-medium">Fel uppstod</p>
-                  <p>{error}</p>
+                <div className="flex-1">
+                  <div className="text-sm text-red-800">
+                    <p className="font-medium">Fel uppstod</p>
+                    <p>{error}</p>
+                  </div>
+                  {importJobProgress.canRetry && stage === 'review' && (
+                    <button
+                      onClick={handleImport}
+                      className="mt-3 px-3 py-1.5 text-sm bg-red-600 text-white rounded-sm hover:bg-red-700"
+                    >
+                      Försök igen
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

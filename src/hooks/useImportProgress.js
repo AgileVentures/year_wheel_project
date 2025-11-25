@@ -92,6 +92,7 @@ export function useImportProgress(jobId) {
       createdLabels: job?.created_labels || 0,
       createdPages: job?.created_pages || 0,
       createdItems: job?.created_items || 0
-    }
+    },
+    canRetry: job?.status === 'failed' && !job?.error_message?.includes('avbruten')
   };
 }
