@@ -183,6 +183,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       }
 
       const suggestions = data.suggestions;
+      console.log('[SmartImport] Suggested title:', suggestions.suggestedWheelTitle);
       setAiSuggestions(suggestions);
       setDetectedPeople(suggestions.detectedPeople || []);
       
