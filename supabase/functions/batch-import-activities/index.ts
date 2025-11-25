@@ -191,6 +191,7 @@ async function processImportJob(jobId: string, supabase: any) {
       })
 
       await supabase.from('items').delete().eq('wheel_id', wheelId)
+      await supabase.from('wheel_pages').delete().eq('wheel_id', wheelId)
       await supabase.from('labels').delete().eq('wheel_id', wheelId)
       await supabase.from('activity_groups').delete().eq('wheel_id', wheelId)
       await supabase.from('wheel_rings').delete().eq('wheel_id', wheelId)
