@@ -529,12 +529,20 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             itemsByYear[year] = [];
           }
           itemsByYear[year].push(item);
+        } else {
+          console.warn('[SmartImport] Item missing startDate:', item.name);
         }
       });
       
       // Sort years to create pages in chronological order
       const years = Object.keys(itemsByYear).map(Number).sort((a, b) => a - b);
-      console.log('[SmartImport] Creating pages for years:', years, 'with item counts:', years.map(y => itemsByYear[y].length));
+      console.log('[SmartImport] Creating pages for years:', years);
+      console.log('[SmartImport] Items per year:', years.map(y => ({ year: y, count: itemsByYear[y].length })));
+      console.log('[SmartImport] Sample items from each year:', years.map(y => ({ 
+        year: y, 
+        firstItem: itemsByYear[y][0]?.name, 
+        firstDate: itemsByYear[y][0]?.startDate 
+      })));
       
       // Create a page for each year
       const pages = years.map((year, index) => ({

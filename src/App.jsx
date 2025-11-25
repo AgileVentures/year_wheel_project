@@ -865,7 +865,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           const { data: allItems, error: itemsError } = await supabase
             .from('items')
             .select('*')
-            .eq('wheel_id', wheelId);
+            .eq('wheel_id', wheelId)
+            .limit(10000);
 
           if (itemsError) throw itemsError;
 
