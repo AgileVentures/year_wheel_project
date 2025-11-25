@@ -431,7 +431,9 @@ Analyze this CSV with ${csvStructure.totalRows} rows and generate mapping rules 
 **CSV Headers:** ${JSON.stringify(csvStructure.headers)}
 **Sample Data (first 20 rows):** ${JSON.stringify(csvStructure.sampleRows)}
 
-## WHEEL TITLE GENERATION:
+## WHEEL TITLE GENERATION (REQUIRED):
+
+**You MUST generate a suggestedWheelTitle at the TOP LEVEL of your JSON response.**
 
 Generate a descriptive Swedish title that captures the essence of this data:
 - **Be specific**: Include the domain, team, project, or person if identifiable
@@ -444,6 +446,8 @@ Generate a descriptive Swedish title that captures the essence of this data:
   * "Skattedeklarationer Q1-Q4"
 - **Pattern detection**: If data has a dominant person/team/category, use that
 - **Fallback**: Use generic title like "Årsplanering 2025" if no clear theme
+
+**IMPORTANT**: The suggestedWheelTitle must be a TOP-LEVEL field in the JSON, not inside mapping or any other nested object.
 
 ## CRITICAL INSTRUCTIONS:
 
@@ -617,6 +621,8 @@ Analyze the data and respond with the complete JSON structure.`
   console.log('[analyzeCsvWithAI] OpenAI response length:', responseText.length)
   
   const mapping = JSON.parse(responseText)
+  console.log('[analyzeCsvWithAI] AI response suggestedWheelTitle:', mapping.suggestedWheelTitle)
+  console.log('[analyzeCsvWithAI] AI response keys:', Object.keys(mapping))
   
   // MANUAL MAPPING OVERRIDES: Apply user selections over AI suggestions
   if (manualMapping) {
@@ -658,6 +664,13 @@ Analyze the data and respond with the complete JSON structure.`
     console.log('[analyzeCsvWithAI] Data suitability warning:', suitabilityAnalysis)
   }
   
+  // FALLBACK: Generate title if AI didn't provide one
+  if (!mapping.suggestedWheelTitle) {
+    const year = page?.year || wheel?.year || new Date().getFullYear()
+    mapping.suggestedWheelTitle = `Årsplanering ${year}`
+    console.log('[analyzeCsvWithAI] AI did not provide suggestedWheelTitle, using fallback:', mapping.suggestedWheelTitle)
+  }
+  
   // CRITICAL DEBUG: Log what AI detected for mapping
   console.log('[analyzeCsvWithAI] AI detected mapping:', {
     activityName: mapping.mapping?.columns?.activityName,
@@ -667,7 +680,8 @@ Analyze the data and respond with the complete JSON structure.`
     group: mapping.mapping?.columns?.group,
     dateFormat: mapping.mapping?.dateFormat,
     ringsCount: mapping.rings?.length,
-    groupsCount: mapping.activityGroups?.length
+    groupsCount: mapping.activityGroups?.length,
+    suggestedWheelTitle: mapping.suggestedWheelTitle
   })
   
   // FALLBACK: If AI didn't detect date column, try common Swedish column names

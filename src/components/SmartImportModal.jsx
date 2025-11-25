@@ -183,7 +183,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       }
 
       const suggestions = data.suggestions;
-      console.log('[SmartImport] Suggested title:', suggestions.suggestedWheelTitle);
+      console.log('[SmartImport] AI Suggestions received:', {
+        suggestedWheelTitle: suggestions.suggestedWheelTitle,
+        suitabilityWarning: suggestions.suitabilityWarning,
+        ringsCount: suggestions.rings?.length,
+        groupsCount: suggestions.activityGroups?.length,
+        activitiesCount: suggestions.activities?.length
+      });
       setAiSuggestions(suggestions);
       setDetectedPeople(suggestions.detectedPeople || []);
       

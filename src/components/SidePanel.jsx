@@ -1040,7 +1040,16 @@ function SidePanel({
             {/* List Table */}
             {filteredAktiviteter.length > 0 ? (
               <div className="space-y-1">
-                {getSortedAktiviteter().map((item) => {
+                {(() => {
+                  const sorted = getSortedAktiviteter();
+                  const ids = sorted.map(i => i.id);
+                  const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+                  if (duplicates.length > 0) {
+                    console.warn('[SidePanel] Duplicate item IDs found:', duplicates);
+                    console.warn('[SidePanel] Total items:', sorted.length, 'Unique IDs:', new Set(ids).size);
+                  }
+                  return sorted;
+                })().map((item) => {
                   const ring = wheelStructure.rings.find(r => r.id === item.ringId);
                   const activityGroup = (wheelStructure.activityGroups || []).find(a => a.id === item.activityId);
                   const label = wheelStructure.labels.find(l => l.id === item.labelId);

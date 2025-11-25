@@ -903,6 +903,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }));
 
           const pageItems = normalizedItems.filter(item => item.pageId === pageToLoad.id);
+          
+          // Ensure unique items by ID (safeguard against duplicates)
+          const uniquePageItems = Array.from(
+            new Map(pageItems.map(item => [item.id, item])).values()
+          );
+          
           // Page items prepared
           
           const pageStructure = normalizePageStructure(pageToLoad);
@@ -942,7 +948,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             rings: [],
             activityGroups: [],
             labels: [],
-            items: pageItems
+            items: uniquePageItems
           };
           
           // Rings from database (shared across all pages)
