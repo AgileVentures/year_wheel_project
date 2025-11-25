@@ -2141,6 +2141,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       try {
         // Check if we have tracked changes for delta save
         const hasChanges = changeTracker.hasChanges();
+        console.log('[SaveDebug] handleSave called, hasChanges:', hasChanges, 'reason:', reason);
+        console.log('[SaveDebug] Changes summary:', changeTracker.getChangesSummary());
         
         if (hasChanges) {
           const changes = changeTracker.getChanges();
@@ -4521,6 +4523,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 
                 setIsSaving(true);
                 console.log('[SmartImport] Import complete, reloading wheel data...');
+                console.log('[SmartImport] Change tracker state BEFORE reload:', changeTracker.getChangesSummary());
                 
                 // Handle team invitations if any
                 if (result.inviteEmails && result.inviteEmails.length > 0) {
@@ -4552,9 +4555,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 // Reload wheel data from database
                 await loadWheelData();
                 
+                console.log('[SmartImport] Change tracker state AFTER reload:', changeTracker.getChangesSummary());
+                
                 // Clear change tracker and mark as saved
                 changeTracker.clearChanges();
                 markSaved();
+                
+                console.log('[SmartImport] Change tracker state AFTER clear:', changeTracker.getChangesSummary());
+                console.log('[SmartImport] hasUnsavedChanges should be false now');
                 
                 setIsSaving(false);
                 setShowSmartImport(false);
