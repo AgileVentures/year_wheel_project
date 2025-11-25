@@ -1,4 +1,4 @@
-// Batch import activities with optimized bulk inserts
+// Async batch import with background processing and realtime progress
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
@@ -9,131 +9,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Helper function to send import completion email
-async function sendImportCompletionEmail(params: {
-  email: string
-  wheelId: string
-  fileName: string
-  stats: {
-    rings: number
-    groups: number
-    labels: number
-    pages: number
-    items: number
-  }
-}) {
-  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-  if (!RESEND_API_KEY) {
-    console.warn('[Email] RESEND_API_KEY not configured, skipping email')
-    return
-  }
-
-  const wheelUrl = `${Deno.env.get('APP_URL') || 'https://app.yearwheel.com'}/wheel/${params.wheelId}`
-  
-  const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
-    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-    .stats { background: white; border-radius: 6px; padding: 20px; margin: 20px 0; }
-    .stat-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-    .stat-row:last-child { border-bottom: none; }
-    .stat-label { color: #6b7280; }
-    .stat-value { font-weight: 600; color: #111827; }
-    .button { display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-    .footer { text-align: center; color: #6b7280; font-size: 14px; margin-top: 20px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1 style="margin: 0;">✅ Import Klar!</h1>
-    </div>
-    <div class="content">
-      <p>Din CSV-import har slutförts framgångsrikt.</p>
-      
-      <div class="stats">
-        <h3 style="margin-top: 0;">Import Statistik</h3>
-        <div class="stat-row">
-          <span class="stat-label">Fil</span>
-          <span class="stat-value">${params.fileName}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Ringar</span>
-          <span class="stat-value">${params.stats.rings}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Aktivitetsgrupper</span>
-          <span class="stat-value">${params.stats.groups}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Etiketter</span>
-          <span class="stat-value">${params.stats.labels}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Sidor (år)</span>
-          <span class="stat-value">${params.stats.pages}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Aktiviteter</span>
-          <span class="stat-value">${params.stats.items}</span>
-        </div>
-      </div>
-      
-      <p>Ditt årshjul är nu redo att använda!</p>
-      
-      <a href="${wheelUrl}" class="button">Öppna Årshjul</a>
-      
-      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        Länken är giltig i 30 dagar. Du kan också hitta ditt hjul i din instrumentpanel.
-      </p>
-    </div>
-    <div class="footer">
-      <p>YearWheel - Visualisera ditt år</p>
-    </div>
-  </div>
-</body>
-</html>`
-
-  try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'YearWheel <noreply@yearwheel.com>',
-        to: [params.email],
-        subject: `✅ Din CSV-import är klar! (${params.stats.items} aktiviteter)`,
-        html: htmlContent
-      })
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      console.error('[Email] Resend API error:', error)
-      throw new Error(`Resend API error: ${error}`)
-    }
-
-    const data = await response.json()
-    console.log('[Email] Successfully sent completion email:', data)
-  } catch (error) {
-    console.error('[Email] Failed to send completion email:', error)
-    // Don't throw - email failure shouldn't fail the import
-  }
-}
-
 interface ImportRequest {
   wheelId: string
-  importMode?: 'replace' | 'append'  // Default: 'append' for backwards compatibility
-  notifyEmail?: string | null  // Send email notification when import completes
-  fileName?: string  // Original filename for email
+  importMode?: 'replace' | 'append'
+  notifyEmail?: string | null
+  fileName?: string
   structure: {
     rings: Array<{id: string, name: string, type: string, visible: boolean, orientation?: string, color?: string}>
     activityGroups: Array<{id: string, name: string, color: string, visible: boolean}>
@@ -164,15 +44,21 @@ serve(async (req) => {
   }
 
   try {
-    // Use service role client for job creation (bypasses RLS)
-    const supabaseClient = createClient(
+    // Create service role client for job management
+    const supabaseServiceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Create user-scoped client for auth
+    const supabaseUserClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    // Get user from auth token
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabaseUserClient.auth.getUser()
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
@@ -182,14 +68,13 @@ serve(async (req) => {
 
     const { wheelId, importMode = 'append', structure, pages, notifyEmail, fileName } = await req.json() as ImportRequest
 
-    console.log('[BatchImport] Creating background import job for wheel:', wheelId, 'user:', user.id)
+    console.log('[BatchImport] Creating async job for wheel:', wheelId, 'user:', user.id)
 
     // Verify user has access to this wheel
-    const { data: wheel, error: wheelError } = await supabaseClient
+    const { data: wheel, error: wheelError } = await supabaseUserClient
       .from('year_wheels')
       .select('id')
       .eq('id', wheelId)
-      .eq('user_id', user.id)
       .single()
 
     if (wheelError || !wheel) {
@@ -202,7 +87,7 @@ serve(async (req) => {
     const totalItems = pages.reduce((sum, p) => sum + p.items.length, 0)
 
     // Create import job record
-    const { data: job, error: jobError } = await supabaseClient
+    const { data: job, error: jobError } = await supabaseServiceClient
       .from('import_jobs')
       .insert({
         wheel_id: wheelId,
@@ -213,7 +98,7 @@ serve(async (req) => {
         progress: 0,
         total_items: totalItems,
         processed_items: 0,
-        payload: { structure, pages, notifyEmail }
+        payload: { structure, pages, notifyEmail, userEmail: user.email }
       })
       .select()
       .single()
@@ -226,11 +111,11 @@ serve(async (req) => {
       )
     }
 
-    console.log('[BatchImport] Job created:', job.id, 'processing in background...')
+    console.log('[BatchImport] Job created:', job.id, 'starting background processing...')
 
-    // Start background processing (don't await - return immediately)
-    processImportJob(job.id, supabaseClient, notifyEmail, user.email).catch(err => {
-      console.error('[BatchImport] Background processing error:', err)
+    // Start background processing (don't await - let it run async)
+    processImportJob(job.id, supabaseServiceClient).catch(err => {
+      console.error('[BatchImport] Background error:', err)
     })
 
     // Return immediately with job ID
@@ -238,113 +123,68 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         jobId: job.id,
-        message: `Import job created with ${totalItems} items. Progress will update in realtime.`
+        message: `Import job created with ${totalItems} items. Watch for realtime progress updates.`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     console.error('[BatchImport] Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
 
 // Background job processor
-async function processImportJob(
-  jobId: string,
-  supabaseClient: any,
-  notifyEmail: string | null | undefined,
-  userEmail: string | undefined
-) {
+async function processImportJob(jobId: string, supabase: any) {
   try {
-    console.log('[ProcessJob] Starting processing for job:', jobId)
+    console.log('[ProcessJob', jobId, '] Starting...')
 
     // Fetch job
-    const { data: job, error: fetchError } = await supabaseClient
+    const { data: job, error: fetchError } = await supabase
       .from('import_jobs')
       .select('*')
       .eq('id', jobId)
       .single()
 
     if (fetchError || !job) {
-      console.error('[ProcessJob] Job not found:', jobId, fetchError)
+      console.error('[ProcessJob] Job not found:', fetchError)
       return
     }
 
-    const { wheel_id: wheelId, import_mode: importMode, payload, total_items: totalItems } = job
-    const { structure, pages } = payload
+    const { wheel_id: wheelId, import_mode: importMode, payload } = job
+    const { structure, pages, notifyEmail, userEmail } = payload
 
-    // Update status to processing
-    await supabaseClient
-      .from('import_jobs')
-      .update({
-        status: 'processing',
-        started_at: new Date().toISOString(),
-        current_step: 'Förbereder import...',
-        progress: 5
+    // Update to processing
+    await updateJobProgress(supabase, jobId, {
+      status: 'processing',
+      started_at: new Date().toISOString(),
+      current_step: 'Initierar import...',
+      progress: 5
+    })
+
+    // STEP 0: Delete existing data if replace mode
+    if (importMode === 'replace') {
+      await updateJobProgress(supabase, jobId, {
+        current_step: 'Raderar befintlig data...',
+        progress: 10
       })
-      .eq('id', jobId)
 
-    console.log('[ProcessJob] Processing:', totalItems, 'items across', pages.length, 'pages')
-      
-      // Delete in correct order to avoid FK violations:
-      // 1. Items (references rings, activity_groups, labels, pages)
-      // 2. Labels (references wheel)
-      // 3. Activity groups (references wheel)
-      // 4. Rings (references wheel)
-      // Note: We do NOT delete pages or the wheel itself
-      
-      const { error: itemsDeleteError } = await supabaseClient
-        .from('items')
-        .delete()
-        .eq('wheel_id', wheelId)
-      
-      if (itemsDeleteError) {
-        console.error('[BatchImport] Failed to delete items:', itemsDeleteError)
-        throw new Error(`Failed to delete items: ${itemsDeleteError.message}`)
-      }
-      console.log('[BatchImport] Deleted items')
-      
-      const { error: labelsDeleteError } = await supabaseClient
-        .from('labels')
-        .delete()
-        .eq('wheel_id', wheelId)
-      
-      if (labelsDeleteError) {
-        console.error('[BatchImport] Failed to delete labels:', labelsDeleteError)
-        throw new Error(`Failed to delete labels: ${labelsDeleteError.message}`)
-      }
-      console.log('[BatchImport] Deleted labels')
-      
-      const { error: groupsDeleteError } = await supabaseClient
-        .from('activity_groups')
-        .delete()
-        .eq('wheel_id', wheelId)
-      
-      if (groupsDeleteError) {
-        console.error('[BatchImport] Failed to delete activity groups:', groupsDeleteError)
-        throw new Error(`Failed to delete activity groups: ${groupsDeleteError.message}`)
-      }
-      console.log('[BatchImport] Deleted activity groups')
-      
-      const { error: ringsDeleteError } = await supabaseClient
-        .from('wheel_rings')
-        .delete()
-        .eq('wheel_id', wheelId)
-      
-      if (ringsDeleteError) {
-        console.error('[BatchImport] Failed to delete rings:', ringsDeleteError)
-        throw new Error(`Failed to delete rings: ${ringsDeleteError.message}`)
-      }
-      console.log('[BatchImport] Deleted rings')
-      console.log('[BatchImport] All existing data deleted successfully')
+      await supabase.from('items').delete().eq('wheel_id', wheelId)
+      await supabase.from('labels').delete().eq('wheel_id', wheelId)
+      await supabase.from('activity_groups').delete().eq('wheel_id', wheelId)
+      await supabase.from('wheel_rings').delete().eq('wheel_id', wheelId)
     }
 
-    // STEP 1: Bulk insert rings (let database generate UUIDs)
-    console.log('[BatchImport] Step 1: Inserting rings...')
+    // STEP 1: Insert rings
+    await updateJobProgress(supabase, jobId, {
+      current_step: `Skapar ${structure.rings.length} ringar...`,
+      progress: 20
+    })
+
     const ringInserts = structure.rings.map(ring => ({
       wheel_id: wheelId,
       name: ring.name,
@@ -352,28 +192,23 @@ async function processImportJob(
       visible: ring.visible,
       orientation: ring.orientation || 'vertical',
       color: ring.color || null,
-      ring_order: 0 // Will be updated if needed
+      ring_order: structure.rings.indexOf(ring)
     }))
 
-    const { data: insertedRings, error: ringError } = await supabaseClient
+    const { data: createdRings, error: ringsError } = await supabase
       .from('wheel_rings')
-      .insert(ringInserts)
-      .select('id, name')
+      .upsert(ringInserts, { onConflict: 'wheel_id,name', ignoreDuplicates: false })
+      .select()
 
-    if (ringError) {
-      console.error('[BatchImport] Ring insert error:', ringError)
-      throw new Error(`Failed to insert rings: ${ringError.message}`)
-    }
+    if (ringsError) throw new Error(`Ring creation failed: ${ringsError.message}`)
 
-    // Build ring name -> database ID mapping
-    const ringNameToId = new Map<string, string>()
-    insertedRings.forEach((ring: any) => {
-      ringNameToId.set(ring.name, ring.id)
+    // STEP 2: Insert activity groups
+    await updateJobProgress(supabase, jobId, {
+      current_step: `Skapar ${structure.activityGroups.length} aktivitetsgrupper...`,
+      progress: 30,
+      created_rings: createdRings?.length || 0
     })
-    console.log('[BatchImport] Inserted', insertedRings.length, 'rings with IDs')
 
-    // STEP 2: Bulk insert activity groups
-    console.log('[BatchImport] Step 2: Inserting activity groups...')
     const groupInserts = structure.activityGroups.map(group => ({
       wheel_id: wheelId,
       name: group.name,
@@ -381,27 +216,22 @@ async function processImportJob(
       visible: group.visible
     }))
 
-    const { data: insertedGroups, error: groupError } = await supabaseClient
+    const { data: createdGroups, error: groupsError } = await supabase
       .from('activity_groups')
-      .insert(groupInserts)
-      .select('id, name')
+      .upsert(groupInserts, { onConflict: 'wheel_id,name', ignoreDuplicates: false })
+      .select()
 
-    if (groupError) {
-      console.error('[BatchImport] Group insert error:', groupError)
-      throw new Error(`Failed to insert activity groups: ${groupError.message}`)
-    }
+    if (groupsError) throw new Error(`Group creation failed: ${groupsError.message}`)
 
-    // Build group name -> database ID mapping
-    const groupNameToId = new Map<string, string>()
-    insertedGroups.forEach((group: any) => {
-      groupNameToId.set(group.name, group.id)
-    })
-    console.log('[BatchImport] Inserted', insertedGroups.length, 'activity groups with IDs')
-
-    // STEP 3: Bulk insert labels
-    const labelNameToId = new Map<string, string>()
+    // STEP 3: Insert labels
+    let createdLabels: any[] = []
     if (structure.labels.length > 0) {
-      console.log('[BatchImport] Step 3: Inserting labels...')
+      await updateJobProgress(supabase, jobId, {
+        current_step: `Skapar ${structure.labels.length} etiketter...`,
+        progress: 40,
+        created_groups: createdGroups?.length || 0
+      })
+
       const labelInserts = structure.labels.map(label => ({
         wheel_id: wheelId,
         name: label.name,
@@ -409,231 +239,209 @@ async function processImportJob(
         visible: label.visible
       }))
 
-      const { data: insertedLabels, error: labelError } = await supabaseClient
+      const { data: labels, error: labelsError } = await supabase
         .from('labels')
-        .insert(labelInserts)
-        .select('id, name')
+        .upsert(labelInserts, { onConflict: 'wheel_id,name', ignoreDuplicates: false })
+        .select()
 
-      if (labelError) {
-        console.error('[BatchImport] Label insert error:', labelError)
-        throw new Error(`Failed to insert labels: ${labelError.message}`)
-      }
-
-      insertedLabels.forEach((label: any) => {
-        labelNameToId.set(label.name, label.id)
-      })
-      console.log('[BatchImport] Inserted', insertedLabels.length, 'labels with IDs')
+      if (labelsError) throw new Error(`Label creation failed: ${labelsError.message}`)
+      createdLabels = labels || []
     }
 
-    // STEP 4: Ensure pages exist (don't update structure - it's a cache that will be rebuilt)
-    console.log('[BatchImport] Step 4: Ensuring pages exist...')
-    const pageIdMap = new Map<string, string>() // temp ID -> database ID
-    
-    for (const page of pages) {
-      // Check if page already exists by wheel_id + year (unique constraint)
-      const { data: existingPage, error: selectError } = await supabaseClient
+    // Build ID mappings
+    const ringIdMap = new Map(createdRings?.map((r: any) => [r.name, r.id]))
+    const groupIdMap = new Map(createdGroups?.map((g: any) => [g.name, g.id]))
+    const labelIdMap = new Map(createdLabels.map((l: any) => [l.name, l.id]))
+
+    // STEP 4: Insert pages and items
+    let totalCreatedPages = 0
+    let totalCreatedItems = 0
+
+    for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+      const page = pages[pageIndex]
+      const pageProgress = 40 + ((pageIndex / pages.length) * 50)
+
+      await updateJobProgress(supabase, jobId, {
+        current_step: `Bearbetar sida ${pageIndex + 1}/${pages.length} (${page.year})...`,
+        progress: Math.round(pageProgress),
+        created_labels: createdLabels.length,
+        created_pages: totalCreatedPages
+      })
+
+      // Find or create page
+      const { data: existingPages } = await supabase
         .from('wheel_pages')
         .select('id')
         .eq('wheel_id', wheelId)
         .eq('year', page.year)
-        .maybeSingle()
-      
-      if (existingPage) {
-        // Page already exists, use its ID
-        console.log('[BatchImport] Page for year', page.year, 'already exists with ID:', existingPage.id)
-        pageIdMap.set(page.id, existingPage.id)
+        .order('page_order')
+
+      let pageId: string
+      if (existingPages && existingPages.length > 0) {
+        pageId = existingPages[0].id
       } else {
-        // Page doesn't exist, get next available page_order and create it
-        const { data: nextOrderData, error: orderError } = await supabaseClient
-          .rpc('get_next_page_order', { p_wheel_id: wheelId })
-        
-        if (orderError) {
-          console.error('[BatchImport] Failed to get next page order:', orderError)
-          throw new Error(`Failed to get next page order: ${orderError.message}`)
-        }
-        
-        const nextPageOrder = nextOrderData || 1
-        
-        const { data: newPage, error: insertError } = await supabaseClient
+        const { data: newPage, error: pageError } = await supabase
           .from('wheel_pages')
           .insert({
             wheel_id: wheelId,
             year: page.year,
-            page_order: nextPageOrder,
+            page_order: page.pageOrder,
             title: page.title || `${page.year}`
           })
-          .select('id')
+          .select()
           .single()
-        
-        if (insertError) {
-          console.error('[BatchImport] Page insert error:', insertError)
-          throw new Error(`Failed to insert page ${page.year}: ${insertError.message}`)
-        }
-        
-        console.log('[BatchImport] Created new page for year', page.year, 'with ID:', newPage.id, 'page_order:', nextPageOrder)
-        pageIdMap.set(page.id, newPage.id)
-      }
-    }
-    
-    // CRITICAL: Reorder all pages chronologically after creating new ones
-    console.log('[BatchImport] Reordering pages chronologically...')
-    const { data: allPages, error: fetchError } = await supabaseClient
-      .from('wheel_pages')
-      .select('id, year')
-      .eq('wheel_id', wheelId)
-      .order('year', { ascending: true })
-    
-    if (fetchError) {
-      console.error('[BatchImport] Failed to fetch pages for reordering:', fetchError)
-    } else if (allPages) {
-      // Update page_order sequentially to avoid unique constraint violations
-      // (parallel updates can temporarily create duplicates)
-      for (let index = 0; index < allPages.length; index++) {
-        const pg = allPages[index]
-        const { error: updateError } = await supabaseClient
-          .from('wheel_pages')
-          .update({ page_order: index + 1 })
-          .eq('id', pg.id)
-        
-        if (updateError) {
-          console.error('[BatchImport] Failed to reorder page', pg.id, ':', updateError)
-          // Don't throw - continue with other updates
-        }
-      }
-      console.log('[BatchImport] Reordered', allPages.length, 'pages by year')
-    }
 
-    // STEP 5: Build ID mappings by matching on names (since temp IDs from frontend need to map to DB UUIDs)
-    // Frontend sends: {id: "ring-1", name: "Klientaktiviteter"}
-    // We inserted and got back: {id: "uuid-abc", name: "Klientaktiviteter"}
-    // Map: "ring-1" -> "uuid-abc" by matching names
-    
-    const tempToDbRingId = new Map<string, string>()
-    structure.rings.forEach(tempRing => {
-      const dbId = ringNameToId.get(tempRing.name)
-      if (dbId) {
-        tempToDbRingId.set(tempRing.id, dbId)
+        if (pageError) throw new Error(`Page creation failed: ${pageError.message}`)
+        pageId = newPage.id
+        totalCreatedPages++
       }
-    })
-    
-    const tempToDbGroupId = new Map<string, string>()
-    structure.activityGroups.forEach(tempGroup => {
-      const dbId = groupNameToId.get(tempGroup.name)
-      if (dbId) {
-        tempToDbGroupId.set(tempGroup.id, dbId)
-      }
-    })
-    
-    const tempToDbLabelId = new Map<string, string>()
-    structure.labels.forEach(tempLabel => {
-      const dbId = labelNameToId.get(tempLabel.name)
-      if (dbId) {
-        tempToDbLabelId.set(tempLabel.id, dbId)
-      }
-    })
 
-    // STEP 6: Bulk insert ALL items across all pages with mapped IDs
-    const allItemInserts = []
-    
-    for (const page of pages) {
-      const dbPageId = pageIdMap.get(page.id)
-      
-      for (const item of page.items) {
-        // Use temp-to-DB ID mapping from Step 5
-        const dbRingId = tempToDbRingId.get(item.ringId)
-        const dbActivityId = tempToDbGroupId.get(item.activityId)
-        const dbLabelId = item.labelId ? tempToDbLabelId.get(item.labelId) : null
+      // Insert items in batches
+      const BATCH_SIZE = 100
+      for (let i = 0; i < page.items.length; i += BATCH_SIZE) {
+        const batch = page.items.slice(i, i + BATCH_SIZE)
         
-        if (!dbRingId || !dbActivityId || !dbPageId) {
-          console.warn('[BatchImport] Skipping item with missing IDs:', item.name, {
-            tempRingId: item.ringId,
-            tempActivityId: item.activityId,
-            dbRingId,
-            dbActivityId,
-            dbPageId
-          })
-          continue
+        const itemInserts = batch.map(item => {
+          const ringId = ringIdMap.get(item.ringId)
+          const activityId = groupIdMap.get(item.activityId)
+          
+          if (!ringId || !activityId) {
+            console.warn(`[ProcessJob] Missing IDs for item: ${item.name}`)
+            return null
+          }
+
+          return {
+            wheel_id: wheelId,
+            page_id: pageId,
+            ring_id: ringId,
+            activity_id: activityId,
+            label_id: item.labelId ? labelIdMap.get(item.labelId) : null,
+            name: item.name,
+            start_date: item.startDate,
+            end_date: item.endDate,
+            description: item.description || null,
+            source: 'manual'
+          }
+        }).filter(Boolean)
+
+        if (itemInserts.length > 0) {
+          const { error: itemsError } = await supabase
+            .from('items')
+            .insert(itemInserts)
+
+          if (itemsError) throw new Error(`Items batch insert failed: ${itemsError.message}`)
+          totalCreatedItems += itemInserts.length
         }
-        
-        allItemInserts.push({
-          wheel_id: wheelId,
-          page_id: dbPageId,
-          ring_id: dbRingId,
-          activity_id: dbActivityId,
-          label_id: dbLabelId,
-          name: item.name,
-          start_date: item.startDate,
-          end_date: item.endDate,
-          description: item.description || null,
-          time: null,
-          depends_on_item_id: null,
-          dependency_type: 'finish_to_start',
-          dependency_lag_days: 0
+
+        // Update progress after each batch
+        await updateJobProgress(supabase, jobId, {
+          processed_items: totalCreatedItems
         })
       }
     }
 
-    console.log('[BatchImport] Inserting', allItemInserts.length, 'items in bulk...')
-    console.log('[BatchImport] Sample items (first 3):', allItemInserts.slice(0, 3))
-    console.log('[BatchImport] ID mapping stats:', {
-      totalRingMappings: tempToDbRingId.size,
-      totalGroupMappings: tempToDbGroupId.size,
-      totalLabelMappings: tempToDbLabelId.size,
-      totalPageMappings: pageIdMap.size,
-      pagesWithItems: pages.map(p => ({ pageId: p.id, itemCount: p.items.length }))
+    // Complete the job
+    await updateJobProgress(supabase, jobId, {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      current_step: 'Import slutförd!',
+      progress: 100,
+      created_rings: createdRings?.length || 0,
+      created_groups: createdGroups?.length || 0,
+      created_labels: createdLabels.length,
+      created_pages: totalCreatedPages,
+      created_items: totalCreatedItems
     })
 
-    // Insert items without IDs - let database generate them
-    const { error: itemError, count } = await supabaseClient
-      .from('items')
-      .insert(allItemInserts)
-      .select('id', { count: 'exact', head: true })
+    console.log('[ProcessJob', jobId, '] Completed successfully')
 
-    if (itemError) {
-      console.error('[BatchImport] Item insert error:', itemError)
-      throw new Error(`Failed to insert items: ${itemError.message}`)
-    }
-
-    console.log('[BatchImport] Successfully inserted', count || allItemInserts.length, 'items')
-
-    // Send email notification for large imports
-    if (notifyEmail) {
-      console.log('[BatchImport] Sending completion email to:', notifyEmail)
-      await sendImportCompletionEmail({
-        email: notifyEmail,
+    // Send email notification if requested
+    if (notifyEmail && userEmail) {
+      await sendCompletionEmail({
+        email: userEmail,
         wheelId,
-        fileName: fileName || 'CSV-fil',
+        fileName: job.file_name,
         stats: {
-          rings: insertedRings.length,
-          groups: insertedGroups.length,
-          labels: structure.labels.length,
-          pages: pages.length,
-          items: count || allItemInserts.length
+          rings: createdRings?.length || 0,
+          groups: createdGroups?.length || 0,
+          labels: createdLabels.length,
+          pages: totalCreatedPages,
+          items: totalCreatedItems
         }
       })
     }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: `Import complete: ${count || allItemInserts.length} items saved${notifyEmail ? '. Email notification sent.' : ''}`,
-        stats: {
-          rings: insertedRings.length,
-          groups: insertedGroups.length,
-          labels: structure.labels.length,
-          pages: pages.length,
-          items: count || allItemInserts.length
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error: unknown) {
-    console.error('[BatchImport] Error:', error)
+  } catch (error) {
+    console.error('[ProcessJob', jobId, '] Error:', error)
+    
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    await updateJobProgress(supabase, jobId, {
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error_message: errorMessage,
+      error_details: { error: errorMessage, stack: error instanceof Error ? error.stack : undefined }
+    })
   }
-})
+}
+
+// Helper to update job progress
+async function updateJobProgress(supabase: any, jobId: string, updates: any) {
+  const { error } = await supabase
+    .from('import_jobs')
+    .update(updates)
+    .eq('id', jobId)
+  
+  if (error) {
+    console.error('[UpdateProgress] Failed:', error)
+  }
+}
+
+// Send completion email
+async function sendCompletionEmail(params: {
+  email: string
+  wheelId: string
+  fileName: string
+  stats: { rings: number, groups: number, labels: number, pages: number, items: number }
+}) {
+  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+  if (!RESEND_API_KEY) {
+    console.warn('[Email] RESEND_API_KEY not configured')
+    return
+  }
+
+  const wheelUrl = `${Deno.env.get('APP_URL') || 'https://app.yearwheel.com'}/wheel/${params.wheelId}`
+  
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; padding: 20px;">
+  <h2>✅ CSV Import Slutförd!</h2>
+  <p>Din import av <strong>${params.fileName}</strong> har slutförts.</p>
+  <ul>
+    <li>Ringar: ${params.stats.rings}</li>
+    <li>Aktivitetsgrupper: ${params.stats.groups}</li>
+    <li>Etiketter: ${params.stats.labels}</li>
+    <li>Sidor: ${params.stats.pages}</li>
+    <li>Aktiviteter: ${params.stats.items}</li>
+  </ul>
+  <p><a href="${wheelUrl}" style="background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Öppna Årshjul</a></p>
+</body>
+</html>`
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'YearWheel <noreply@yearwheel.com>',
+        to: [params.email],
+        subject: `✅ CSV Import Klar - ${params.stats.items} aktiviteter`,
+        html: htmlContent
+      })
+    })
+  } catch (error) {
+    console.error('[Email] Send failed:', error)
+  }
+}

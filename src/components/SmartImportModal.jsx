@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Upload, FileSpreadsheet, Sparkles, Check, AlertCircle, Users, Mail } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import { useImportProgress } from '../hooks/useImportProgress';
 
 /**
  * SmartImportModal - AI-powered CSV import with intelligent mapping
@@ -23,6 +24,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [selectedPeople, setSelectedPeople] = useState(new Set());
   const [importMode, setImportMode] = useState('replace'); // 'replace' or 'append'
   const [showAdvancedMapping, setShowAdvancedMapping] = useState(false);
+  const [jobId, setJobId] = useState(null); // Track async import job
+  const importJobProgress = useImportProgress(jobId); // Subscribe to realtime progress
   const [manualMapping, setManualMapping] = useState({
     activityName: null,
     startDate: null,
@@ -39,6 +42,38 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [ringOriginalNames, setRingOriginalNames] = useState(null); // Track which custom ring maps to which AI ring
   const [groupOriginalNames, setGroupOriginalNames] = useState(null); // Track which custom group maps to which AI group
   const fileInputRef = useRef(null);
+
+  // Monitor import job completion
+  useEffect(() => {
+    if (!jobId || !importJobProgress) return;
+
+    if (importJobProgress.isComplete) {
+      console.log('[SmartImport] Job completed:', importJobProgress.stats);
+      
+      // Trigger parent's completion handler
+      if (onImportComplete) {
+        onImportComplete({
+          yrwData: {
+            metadata: {
+              title: csvData?.fileName?.replace(/\.(csv|xlsx|xls)$/i, '') || 'Import',
+              year: aiSuggestions?.suggestedYear || new Date().getFullYear()
+            }
+          },
+          inviteEmails: Array.from(selectedPeople)
+        });
+      }
+
+      setStage('complete');
+      setProgress(null);
+      setJobId(null);
+    } else if (importJobProgress.isFailed) {
+      console.error('[SmartImport] Job failed:', importJobProgress.error);
+      setError(importJobProgress.error || 'Import misslyckades');
+      setProgress(null);
+      setStage('review');
+      setJobId(null);
+    }
+  }, [importJobProgress.isComplete, importJobProgress.isFailed, jobId, onImportComplete, selectedPeople, csvData, aiSuggestions]);
 
   // Helper: Get effective rings/groups (AI suggestions or custom overrides)
   const getEffectiveRingsAndGroups = () => {
@@ -485,30 +520,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       }
       
       const result = await response.json();
-      console.log('[SmartImport] Batch import result:', result);
+      console.log('[SmartImport] Async job created:', result);
 
-      // Trigger the parent's completion handler if provided
-      if (onImportComplete) {
-        setProgress('Uppdaterar gränssnittet...');
-        await onImportComplete({ 
-          yrwData: {
-            metadata: {
-              title: csvData.fileName.replace(/\.(csv|xlsx|xls)$/i, ''),
-              year: pages[0].year
-            },
-            structure: {
-              rings: ringsWithIds,
-              activityGroups: groupsWithIds,
-              labels: labelsWithIds
-            },
-            pages
-          }, 
-          inviteEmails: Array.from(selectedPeople) 
-        });
+      // Store job ID to start tracking progress
+      if (result.jobId) {
+        setJobId(result.jobId);
+        setProgress('Import startad - följer framsteg...');
+      } else {
+        throw new Error('No job ID returned from server');
       }
-
-      setStage('complete');
-      setProgress(null);
 
     } catch (err) {
       console.error('[SmartImport] Import error:', err);
@@ -1469,9 +1489,42 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       <h3 className="text-lg font-medium text-gray-900 mb-2">
         Importerar data...
       </h3>
+      
+      {/* Progress bar */}
+      <div className="max-w-md mx-auto mt-6 mb-4">
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div 
+            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+            style={{ width: `${importJobProgress?.progress || 0}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gray-500 mt-2">
+          <span>{importJobProgress?.progress || 0}%</span>
+          <span>{importJobProgress?.stats?.processedItems || 0} / {importJobProgress?.stats?.totalItems || 0} objekt</span>
+        </div>
+      </div>
+
       <p className="text-sm text-gray-500">
-        {progress || 'Skapar ringar, grupper och aktiviteter'}
+        {importJobProgress?.currentStep || progress || 'Skapar ringar, grupper och aktiviteter'}
       </p>
+
+      {/* Stats preview */}
+      {importJobProgress?.stats && (
+        <div className="mt-6 grid grid-cols-2 gap-4 text-xs text-gray-600 max-w-sm mx-auto">
+          {importJobProgress.stats.createdRings > 0 && (
+            <div>✓ {importJobProgress.stats.createdRings} ringar</div>
+          )}
+          {importJobProgress.stats.createdGroups > 0 && (
+            <div>✓ {importJobProgress.stats.createdGroups} grupper</div>
+          )}
+          {importJobProgress.stats.createdLabels > 0 && (
+            <div>✓ {importJobProgress.stats.createdLabels} etiketter</div>
+          )}
+          {importJobProgress.stats.createdPages > 0 && (
+            <div>✓ {importJobProgress.stats.createdPages} sidor</div>
+          )}
+        </div>
+      )}
     </div>
   );
 
