@@ -469,6 +469,27 @@ Generate a descriptive Swedish title that captures the essence of this data:
 
 ## CRITICAL INSTRUCTIONS:
 
+### ZERO DATA LOSS PRINCIPLE (HIGHEST PRIORITY):
+
+**YOUR PRIMARY OBJECTIVE: Ensure EVERY CSV row becomes an activity.**
+
+Critical requirements:
+- If a CSV row has ring="XYZ", your ringValueMapping MUST include "XYZ": "Some Ring Name"
+- If a CSV row has empty ring value, your ringValueMapping MUST include "": "Övrigt" or "": "Other"
+- Same applies for group values - every distinct value must be mapped
+- Use validation.unmappedRingValues and validation.unmappedGroupValues to verify coverage
+- Set validation.hasCompleteMapping to true only if ALL values are mapped
+
+**If you cannot map all values:**
+- Set validation.hasCompleteMapping to false
+- List unmapped values in validation.unmappedRingValues and validation.unmappedGroupValues
+- Add clear explanations to validation.warnings
+
+**Count validation:**
+- validation.expectedActivityCount should equal totalRows minus any rows with invalid dates
+- If your ringValueMapping has 10 entries but CSV has 12 distinct ring values, you're missing 2
+- Same check for groupValueMapping
+
 ### DATE DETECTION (HIGHEST PRIORITY):
 Analyze BOTH column names AND data values to detect date columns:
 - **Data patterns to recognize**:
@@ -637,6 +658,20 @@ mapping: {
   suggestedGroupingStrategy: string
   ringValueMapping: object | null
   groupValueMapping: object | null
+  ringConsolidationStrategy?: {
+    type: "none" | "alphabetical" | "frequency" | "semantic" | "fallback"
+    description: string
+    sourceValueCount: number
+    targetRingCount: number
+    coverage: string
+  }
+  groupConsolidationStrategy?: {
+    type: "none" | "alphabetical" | "frequency" | "semantic" | "fallback"
+    description: string
+    sourceValueCount: number
+    targetGroupCount: number
+    coverage: string
+  }
 }
 rings: Array<{
   id: string
@@ -681,12 +716,24 @@ alternativeStrategies?: {
     estimatedGroupCount: number
   }>
 }
+validation: {
+  expectedActivityCount: number
+  hasCompleteMapping: boolean
+  unmappedRingValues: string[]
+  unmappedGroupValues: string[]
+  emptyRingCount: number
+  emptyGroupCount: number
+  warnings: string[]
+}
 
 ## VALIDATION RULES:
 ✅ Column names in mapping.columns MUST match CSV headers EXACTLY
 ✅ At least 1 ring, at least 1 activity group
 ✅ Maximum 2-4 rings (consolidate if needed)
 ✅ startDate and endDate fields are CRITICAL - don't guess, use exact column names
+✅ validation.expectedActivityCount should equal CSV totalRows (minus rows with invalid dates)
+✅ validation.hasCompleteMapping must be true
+✅ If validation.unmappedRingValues or unmappedGroupValues is not empty, explain in warnings
 ✅ Respond with ONLY valid JSON, no markdown or extra text
 
 Analyze the data and respond with the complete JSON structure.`

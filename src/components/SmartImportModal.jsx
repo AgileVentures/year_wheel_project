@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Upload, FileSpreadsheet, Sparkles, Check, AlertCircle, Users, Mail } from 'lucide-react';
+import { X, Upload, FileSpreadsheet, Sparkles, Check, AlertCircle, AlertTriangle, Users, Mail } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import { useImportProgress } from '../hooks/useImportProgress';
@@ -287,11 +287,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       // Store CSV rows for large import re-processing
       if (suggestions.totalActivitiesCount > suggestions.activities.length) {
         console.log(`[SmartImport] Large import detected: ${suggestions.totalActivitiesCount} total activities, only ${suggestions.activities.length} returned for preview`);
-        // Store rows and headers from csvData for re-processing during import
+        // Store rows and headers for re-processing during import
         setAiSuggestions({ 
           ...suggestions, 
-          csvRows: csvData.rows,
-          csvHeaders: csvData.headers
+          csvRows: rows,
+          csvHeaders: headers
         });
       } else {
         setAiSuggestions(suggestions);
@@ -714,8 +714,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       return { time: '> 15 minuter', fast: false };
     };
     
-    const timeEstimate = estimateImportTime(csvData.rowCount);
-    const isLargeImport = csvData.rowCount > 200;
+    const timeEstimate = estimateImportTime(csvData?.rowCount || 0);
+    const isLargeImport = (csvData?.rowCount || 0) > 200;
     
     return (
       <div className="space-y-6">
@@ -725,7 +725,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             <div className="flex items-start gap-3">
               <Mail className="w-6 h-6 text-amber-600 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-amber-900 mb-1">Stor import ({csvData.rowCount} rader)</h4>
+                <h4 className="font-semibold text-amber-900 mb-1">Stor import ({csvData?.rowCount || 0} rader)</h4>
                 <p className="text-sm text-amber-800 mb-2">
                   Beräknad tid: <strong>{timeEstimate.time}</strong>
                 </p>
@@ -748,7 +748,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2">Välj importmetod</h3>
                 <p className="text-sm text-gray-700 mb-4">
-                  Du har laddat upp <strong>{csvData.rowCount} rader</strong> från <strong>{csvData.fileName}</strong>
+                  Du har laddat upp <strong>{csvData?.rowCount || 0} rader</strong> från <strong>{csvData?.fileName || 'CSV-fil'}</strong>
                 </p>
               </div>
             
@@ -889,7 +889,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       </p>
       {csvData && (
         <div className="mt-4 text-xs text-gray-400">
-          {csvData.rowCount} rader · {csvData.headers.length} kolumner
+          {csvData?.rowCount || 0} rader · {csvData?.headers?.length || 0} kolumner
         </div>
       )}
     </div>
@@ -963,8 +963,77 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </div>
         </div>
 
+        {/* Validation Warnings */}
+        {aiSuggestions.validation && (!aiSuggestions.validation.hasCompleteMapping || aiSuggestions.validation.warnings?.length > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-sm p-4">
+            <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5" />
+              ⚠️ Valideringsvarningar
+            </h4>
+            
+            {!aiSuggestions.validation.hasCompleteMapping && (
+              <div className="bg-red-100 border border-red-300 rounded p-3 mb-3">
+                <p className="font-medium text-red-900">
+                  ❌ Ofullständig mappning - vissa aktiviteter kan inte importeras
+                </p>
+                <p className="text-sm text-red-700 mt-1">
+                  AI:n kunde inte mappa alla CSV-värden till ringar och aktivitetsgrupper.
+                  Aktiviteter utan giltig mappning kommer att ignoreras.
+                </p>
+              </div>
+            )}
+            
+            {aiSuggestions.validation.warnings?.map((warning, idx) => (
+              <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded p-2 mb-2">
+                <p className="text-sm text-yellow-900">{warning}</p>
+              </div>
+            ))}
+            
+            {(aiSuggestions.validation.unmappedRingValues?.length > 0 || 
+              aiSuggestions.validation.unmappedGroupValues?.length > 0) && (
+              <div className="mt-3">
+                <p className="font-medium text-red-800 mb-2">Ej mappade värden:</p>
+                
+                {aiSuggestions.validation.unmappedRingValues?.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-sm font-medium text-red-700">Ringar:</p>
+                    <div className="text-xs text-red-600 ml-4">
+                      {aiSuggestions.validation.unmappedRingValues.join(', ')}
+                    </div>
+                  </div>
+                )}
+                
+                {aiSuggestions.validation.unmappedGroupValues?.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-red-700">Aktivitetsgrupper:</p>
+                    <div className="text-xs text-red-600 ml-4">
+                      {aiSuggestions.validation.unmappedGroupValues.join(', ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {aiSuggestions.validation.expectedActivityCount && (
+              <div className="mt-3 p-2 bg-white rounded border border-red-200">
+                <p className="text-sm text-red-900">
+                  <span className="font-medium">Förväntat antal aktiviteter:</span> {aiSuggestions.validation.expectedActivityCount}
+                </p>
+                <p className="text-sm text-red-900">
+                  <span className="font-medium">Aktiviteter som kan importeras:</span> {aiSuggestions.activities?.length || 0}
+                </p>
+                {aiSuggestions.validation.expectedActivityCount > (aiSuggestions.activities?.length || 0) && (
+                  <p className="text-sm font-medium text-red-800 mt-1">
+                    ⚠️ {aiSuggestions.validation.expectedActivityCount - (aiSuggestions.activities?.length || 0)} aktiviteter kommer att förloras
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Consolidation Breakdown */}
-        {(aiSuggestions.mapping?.ringValueMapping || aiSuggestions.mapping?.groupValueMapping) && (() => {
+        {csvData && (aiSuggestions.mapping?.ringValueMapping || aiSuggestions.mapping?.groupValueMapping) && (() => {
           const ringColIndex = aiSuggestions.mapping?.columns?.ring 
             ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
             : -1;
@@ -978,6 +1047,37 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 <FileSpreadsheet className="w-5 h-5" />
                 📊 Datakonsolidering
               </h4>
+              
+              {/* Consolidation Strategy Metadata */}
+              {(aiSuggestions.ringConsolidationStrategy || aiSuggestions.groupConsolidationStrategy) && (
+                <div className="mb-4 p-3 bg-blue-100 rounded border border-blue-300">
+                  <p className="text-sm font-medium text-blue-900 mb-2">Konsolideringsstrategi:</p>
+                  
+                  {aiSuggestions.ringConsolidationStrategy && (
+                    <div className="text-xs text-blue-800 mb-2">
+                      <span className="font-medium">Ringar:</span>{' '}
+                      {aiSuggestions.ringConsolidationStrategy.description}
+                      {aiSuggestions.ringConsolidationStrategy.coverage && (
+                        <span className="ml-2 text-blue-700">
+                          ({aiSuggestions.ringConsolidationStrategy.coverage} täckning)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {aiSuggestions.groupConsolidationStrategy && (
+                    <div className="text-xs text-blue-800">
+                      <span className="font-medium">Aktivitetsgrupper:</span>{' '}
+                      {aiSuggestions.groupConsolidationStrategy.description}
+                      {aiSuggestions.groupConsolidationStrategy.coverage && (
+                        <span className="ml-2 text-blue-700">
+                          ({aiSuggestions.groupConsolidationStrategy.coverage} täckning)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               
               {aiSuggestions.mapping?.ringValueMapping && ringColIndex >= 0 && (() => {
                 const uniqueValues = Object.keys(aiSuggestions.mapping.ringValueMapping).length;
@@ -1055,7 +1155,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         })()}
 
         {/* Empty Value Status */}
-        {(() => {
+        {csvData && (() => {
           const ringColIndex = aiSuggestions.mapping?.columns?.ring 
             ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
             : -1;
@@ -1234,7 +1334,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         )}
 
         {/* Advanced Mapping Section */}
-        {showAdvancedMapping && (
+        {showAdvancedMapping && csvData && (
           <div className="bg-blue-50 border border-blue-200 rounded-sm p-6 space-y-4">
             <div>
               <h3 className="font-semibold text-gray-900 mb-1">Anpassa kolumnmappning</h3>
@@ -1908,30 +2008,78 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     </div>
   );
 
-  const renderCompleteStage = () => (
-    <div className="text-center py-12">
-      <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-        <Check className="w-8 h-8 text-green-600" />
-      </div>
-      <h3 className="text-lg font-medium text-gray-900 mb-2">
-        Import klar!
-      </h3>
-      <p className="text-sm text-gray-500">
-        All data har importerats till ditt hjul
-      </p>
-      {selectedPeople.size > 0 && (
-        <p className="text-xs text-gray-500 mt-2">
-          {selectedPeople.size} teameinbjudningar har skickats
+  const renderCompleteStage = () => {
+    const droppedActivities = importJobProgress?.stats?.droppedActivities || [];
+    const validationWarnings = importJobProgress?.stats?.validationWarnings || [];
+    
+    return (
+      <div className="text-center py-12">
+        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <Check className="w-8 h-8 text-green-600" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          Import klar!
+        </h3>
+        <p className="text-sm text-gray-500">
+          All data har importerats till ditt hjul
         </p>
-      )}
-      <button
-        onClick={handleClose}
-        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
-      >
-        Stäng
-      </button>
-    </div>
-  );
+        {selectedPeople.size > 0 && (
+          <p className="text-xs text-gray-500 mt-2">
+            {selectedPeople.size} teameinbjudningar har skickats
+          </p>
+        )}
+        
+        {/* Show dropped activities if any */}
+        {droppedActivities.length > 0 && (
+          <div className="mt-6 max-w-md mx-auto">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-4 text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                <h4 className="font-semibold text-yellow-900">
+                  {droppedActivities.length} aktiviteter kunde inte importeras
+                </h4>
+              </div>
+              
+              <div className="max-h-48 overflow-y-auto space-y-2">
+                {droppedActivities.map((dropped, idx) => (
+                  <div key={idx} className="bg-white border border-yellow-200 rounded p-2 text-sm">
+                    <p className="font-medium text-gray-900">
+                      Rad {dropped.index}: {dropped.name}
+                    </p>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      {dropped.reason}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              
+              <p className="text-xs text-yellow-700 mt-3">
+                💡 Tips: Kontrollera att dina CSV-kolumner innehåller giltiga ring- och gruppnamn
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Show validation warnings if any */}
+        {validationWarnings.length > 0 && droppedActivities.length === 0 && (
+          <div className="mt-6 max-w-md mx-auto">
+            <div className="bg-blue-50 border border-blue-200 rounded-sm p-3 text-left">
+              <p className="text-sm text-blue-900">
+                ℹ️ {validationWarnings.join(', ')}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <button
+          onClick={handleClose}
+          className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
+        >
+          Stäng
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

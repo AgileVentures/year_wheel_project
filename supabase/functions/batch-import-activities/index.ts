@@ -206,6 +206,9 @@ async function processImportJob(jobId: string, supabase: any) {
 
     const { wheel_id: wheelId, import_mode: importMode, payload } = job
     let { structure, pages, notifyEmail, userEmail } = payload
+    
+    // Track validation results
+    let validationResult: ValidationResult | null = null
 
     // Update to processing
     await updateJobProgress(supabase, jobId, {
@@ -235,6 +238,30 @@ async function processImportJob(jobId: string, supabase: any) {
       )
 
       console.log('[ProcessJob] Generated', activities.length, 'activities from', payload.csvData.rows.length, 'CSV rows')
+      
+      // Validate activities mapping to detect dropped activities
+      const ringNameToId = new CaseInsensitiveMap<string>()
+      for (const r of structure.rings) {
+        ringNameToId.set(r.name, r.id)
+      }
+      
+      const groupNameToId = new CaseInsensitiveMap<string>()
+      for (const g of structure.activityGroups) {
+        groupNameToId.set(g.name, g.id)
+      }
+      
+      validationResult = validateActivitiesMapping(
+        payload.csvData.rows,
+        { headers: payload.csvData.headers },
+        payload.mapping,
+        ringNameToId,
+        groupNameToId
+      )
+      
+      if (!validationResult.isValid) {
+        console.warn('[ProcessJob] Validation warnings:', validationResult.warnings)
+        console.warn('[ProcessJob] Dropped activities:', validationResult.droppedActivities)
+      }
 
       // Group activities by year to create pages
       const activitiesByYear = new Map<number, any[]>()
@@ -489,7 +516,9 @@ async function processImportJob(jobId: string, supabase: any) {
       created_groups: createdGroups?.length || 0,
       created_labels: createdLabels.length,
       created_pages: totalCreatedPages,
-      created_items: totalCreatedItems
+      created_items: totalCreatedItems,
+      dropped_activities: validationResult?.droppedActivities || [],
+      validation_warnings: validationResult?.warnings || []
     })
 
     console.log('[ProcessJob', jobId, '] Completed successfully')
@@ -591,6 +620,124 @@ function normalizeForMatching(str: any): string {
   return String(str).trim().toLowerCase()
 }
 
+// Case-insensitive map that tracks both normalized keys and original names
+class CaseInsensitiveMap<T> {
+  private map = new Map<string, { originalKey: string; value: T }>()
+
+  set(key: string, value: T): void {
+    const normalized = normalizeForMatching(key)
+    this.map.set(normalized, { originalKey: key, value })
+  }
+
+  get(key: string): T | undefined {
+    const normalized = normalizeForMatching(key)
+    return this.map.get(normalized)?.value
+  }
+
+  getOriginalKey(key: string): string | undefined {
+    const normalized = normalizeForMatching(key)
+    return this.map.get(normalized)?.originalKey
+  }
+
+  has(key: string): boolean {
+    return this.map.has(normalizeForMatching(key))
+  }
+
+  keys(): string[] {
+    return Array.from(this.map.values()).map(({ originalKey }) => originalKey)
+  }
+
+  size(): number {
+    return this.map.size
+  }
+}
+
+// Validation helper to track dropped activities
+interface ValidationResult {
+  isValid: boolean
+  droppedActivities: Array<{
+    index: number
+    name: string
+    reason: string
+    ringName?: string
+    groupName?: string
+  }>
+  warnings: string[]
+}
+
+function validateActivitiesMapping(
+  allRows: any[],
+  csvStructure: any,
+  mapping: any,
+  ringNameToId: CaseInsensitiveMap<string>,
+  groupNameToId: CaseInsensitiveMap<string>
+): ValidationResult {
+  const droppedActivities: any[] = []
+  const warnings: string[] = []
+  
+  allRows.forEach((row, index) => {
+    // Extract activity name
+    const activityName = mapping.columns.activity
+      ? row[csvStructure.headers.indexOf(mapping.columns.activity)]
+      : `Activity ${index + 1}`
+    
+    // Extract ring and group names (with mappings applied)
+    let ringName = mapping.columns.ring 
+      ? row[csvStructure.headers.indexOf(mapping.columns.ring)]
+      : null
+    
+    let groupName = mapping.columns.group
+      ? row[csvStructure.headers.indexOf(mapping.columns.group)]
+      : null
+    
+    // Apply AI value mappings if provided
+    if (mapping.ringValueMapping && ringName) {
+      ringName = mapping.ringValueMapping[ringName] || ringName
+    }
+    if (mapping.groupValueMapping && groupName) {
+      groupName = mapping.groupValueMapping[groupName] || groupName
+    }
+    
+    // Validate ring mapping
+    const hasRing = ringName && ringNameToId.has(ringName)
+    if (!hasRing) {
+      droppedActivities.push({
+        index: index + 1,
+        name: activityName,
+        reason: ringName 
+          ? `Ring '${ringName}' not found. Available rings: ${Array.from(ringNameToId.keys()).join(', ')}`
+          : 'No ring specified',
+        ringName
+      })
+      return
+    }
+    
+    // Validate group mapping
+    const hasGroup = groupName && groupNameToId.has(groupName)
+    if (!hasGroup) {
+      droppedActivities.push({
+        index: index + 1,
+        name: activityName,
+        reason: groupName
+          ? `Activity group '${groupName}' not found. Available groups: ${Array.from(groupNameToId.keys()).join(', ')}`
+          : 'No activity group specified',
+        groupName
+      })
+    }
+  })
+  
+  // Generate warnings
+  if (droppedActivities.length > 0) {
+    warnings.push(`${droppedActivities.length} activities will be dropped due to missing mappings`)
+  }
+  
+  return {
+    isValid: droppedActivities.length === 0,
+    droppedActivities,
+    warnings
+  }
+}
+
 // CSV reprocessing helper (mirrors smart-csv-import logic)
 async function reprocessActivitiesWithMapping(
   csvStructure: any,
@@ -602,26 +749,20 @@ async function reprocessActivitiesWithMapping(
 ) {
   console.log('[reprocessActivitiesWithMapping] Processing', allRows.length, 'rows')
   
-  // Build lookup maps with normalized keys AND original values for fallback
-  const ringNameToId = new Map()
-  const ringNameToIdNormalized = new Map()
+  // Build case-insensitive lookup maps
+  const ringNameToId = new CaseInsensitiveMap<string>()
   for (const r of ringsWithIds) {
-    ringNameToId.set(r.name, r.id) // Exact match
-    ringNameToIdNormalized.set(normalizeForMatching(r.name), r.id) // Normalized match
+    ringNameToId.set(r.name, r.id)
   }
   
-  const groupNameToId = new Map()
-  const groupNameToIdNormalized = new Map()
+  const groupNameToId = new CaseInsensitiveMap<string>()
   for (const g of groupsWithIds) {
     groupNameToId.set(g.name, g.id)
-    groupNameToIdNormalized.set(normalizeForMatching(g.name), g.id)
   }
   
-  const labelNameToId = new Map()
-  const labelNameToIdNormalized = new Map()
+  const labelNameToId = new CaseInsensitiveMap<string>()
   for (const l of labelsWithIds) {
     labelNameToId.set(l.name, l.id)
-    labelNameToIdNormalized.set(normalizeForMatching(l.name), l.id)
   }
   
   // Apply mapping rules to each row
@@ -675,37 +816,26 @@ async function reprocessActivitiesWithMapping(
       }
     }
     
-    // Try exact match first, then normalized match
-    let ringId = ringNameToId.get(ringName)
-    if (!ringId) {
-      ringId = ringNameToIdNormalized.get(normalizeForMatching(ringName))
-    }
-    
-    let activityId = groupNameToId.get(groupName)
-    if (!activityId) {
-      activityId = groupNameToIdNormalized.get(normalizeForMatching(groupName))
-    }
+    // Use case-insensitive lookup
+    const ringId = ringNameToId.get(ringName)
+    const activityId = groupNameToId.get(groupName)
     
     if (!ringId) {
-      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring '${ringName}' not found. Available:`, Array.from(ringNameToId.keys()))
+      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring '${ringName}' not found. Available:`, ringNameToId.keys())
     }
     if (!activityId) {
-      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Activity group '${groupName}' not found. Available:`, Array.from(groupNameToId.keys()))
+      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Activity group '${groupName}' not found. Available:`, groupNameToId.keys())
     }
     
-    // Extract labels with normalized matching
+    // Extract labels with case-insensitive matching
     const labelCols = mapping.columns.labels || []
     const itemLabels = labelCols
       .map((labelCol: string) => row[csvStructure.headers.indexOf(labelCol)])
       .filter(Boolean)
     
-    // Map label names to IDs with fallback to normalized matching
+    // Map label names to IDs
     const labelIds = itemLabels.map((labelName: string) => {
-      let labelId = labelNameToId.get(labelName)
-      if (!labelId) {
-        labelId = labelNameToIdNormalized.get(normalizeForMatching(labelName))
-      }
-      return labelId
+      return labelNameToId.get(labelName)
     }).filter(Boolean)
     
     // Build description
