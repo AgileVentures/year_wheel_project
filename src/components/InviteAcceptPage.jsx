@@ -96,21 +96,34 @@ export default function InviteAcceptPage() {
       }
 
       // Check if already a member of this team
-      const { data: existingMember, error: checkError } = await supabase
+      const { data: existingMember } = await supabase
         .from('team_members')
         .select('id')
         .eq('team_id', inviteData.team_id)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       // If already a member, just show success and redirect
       if (existingMember) {
         // console.log('User is already a member, skipping insert');
-        const { data: teamData } = await supabase
+        const { data: teamData, error: teamError } = await supabase
           .from('teams')
           .select('name, description')
           .eq('id', inviteData.team_id)
-          .single();
+          .maybeSingle();
+
+        if (teamError) {
+          console.error('Team fetch error:', teamError);
+          setError('Kunde inte hämta teaminformation');
+          setLoading(false);
+          return;
+        }
+
+        if (!teamData) {
+          setError('Teamet hittades inte');
+          setLoading(false);
+          return;
+        }
 
         setInvitation({ ...inviteData, teams: teamData });
         setSuccess(true);
@@ -135,10 +148,19 @@ export default function InviteAcceptPage() {
         .from('teams')
         .select('name, description')
         .eq('id', inviteData.team_id)
-        .single();
+        .maybeSingle();
 
       if (teamError) {
         console.error('Team error:', teamError);
+        setError('Kunde inte hämta teaminformation');
+        setLoading(false);
+        return;
+      }
+
+      if (!teamData) {
+        setError('Teamet hittades inte');
+        setLoading(false);
+        return;
       }
 
       // Combine invitation with team data
