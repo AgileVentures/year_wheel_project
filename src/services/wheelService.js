@@ -293,7 +293,8 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
     const { data: pageItems, error: itemsError } = await supabase
       .from('items')
       .select('*')
-      .eq('page_id', pageId);
+      .eq('page_id', pageId)
+      .limit(2500);
 
     if (itemsError) {
       console.error(`[fetchPageData] ERROR querying items for page_id=${pageId}:`, itemsError);
@@ -313,7 +314,8 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
     const { data: wheelItems, error: wheelItemsError } = await supabase
       .from('items')
       .select('*')
-      .eq('wheel_id', wheelId);
+      .eq('wheel_id', wheelId)
+      .limit(2500);
 
     if (wheelItemsError) throw wheelItemsError;
     items = wheelItems || [];
@@ -332,7 +334,8 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
       .select('*')
       .eq('wheel_id', wheelId)
       .neq('page_id', pageId) // Different page
-      .or(`start_date.lte.${yearEnd},end_date.gte.${yearStart}`); // Overlaps with this year
+      .or(`start_date.lte.${yearEnd},end_date.gte.${yearStart}`) // Overlaps with this year
+      .limit(2500);
     
     if (multiYearError) {
       console.error('[fetchPageData] Error fetching multi-year items:', multiYearError);
@@ -1073,7 +1076,8 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       ? 'id, name, page_id, start_date, end_date, created_at'
       : 'id, name, start_date, end_date, created_at'
     )
-    .eq('wheel_id', wheelId);
+    .eq('wheel_id', wheelId)
+    .limit(2500);
 
   // console.log(`[syncItems] Found ${existing?.length || 0} existing items in database`);
   // if (existing && existing.length > 0) {
@@ -1451,7 +1455,8 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   const { data: persistedItems, error: persistedItemsError } = await supabase
     .from('items')
     .select('*')
-    .eq('wheel_id', wheelId);
+    .eq('wheel_id', wheelId)
+    .limit(2500);
 
   if (persistedItemsError) {
     throw persistedItemsError;

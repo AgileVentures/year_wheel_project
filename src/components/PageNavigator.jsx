@@ -52,15 +52,15 @@ export default function PageNavigator({
   }
 
   return (
-    <div className="relative flex items-center gap-2">
+    <div className="relative flex items-center gap-1.5">
       {/* Previous year button */}
       <button
         onClick={handlePrevPage}
         disabled={!canGoPrev || disabled}
-        className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-1.5 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
         title={t('editor:pageNavigator.previousYear')}
       >
-        <ChevronLeft size={18} className="text-gray-600" />
+        <ChevronLeft size={20} className="text-gray-700" />
       </button>
 
       {/* Current year dropdown */}
@@ -68,11 +68,11 @@ export default function PageNavigator({
         <button
           onClick={() => setShowDropdown(!showDropdown)}
           disabled={disabled}
-          className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-sm hover:border-blue-400 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-gray-300 rounded-sm hover:border-blue-400 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px] flex-shrink-0"
           title={t('editor:pageNavigator.selectYear')}
         >
           <Calendar size={16} className="text-gray-500" />
-          <span className="font-semibold text-gray-900">{currentPage?.year || '2025'}</span>
+          <span className="font-bold text-gray-900">{currentPage?.year || '2025'}</span>
           <span className="text-xs text-gray-500 ml-auto">
             {currentIndex + 1}/{pages.length}
           </span>
@@ -161,10 +161,10 @@ export default function PageNavigator({
       <button
         onClick={handleNextPage}
         disabled={!canGoNext || disabled}
-        className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="p-1.5 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
         title={t('editor:pageNavigator.nextYear')}
       >
-        <ChevronRight size={18} className="text-gray-600" />
+        <ChevronRight size={20} className="text-gray-700" />
       </button>
     </div>
   );

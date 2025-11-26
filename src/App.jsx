@@ -861,14 +861,29 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           // IMPORTANT: Year will be set via setUndoableStates() to avoid creating history entry
           yearToLoad = String(pageToLoad.year || new Date().getFullYear());
           
-          // Fetch all items for the wheel once; per-page filtering happens locally
-          const { data: allItems, error: itemsError } = await supabase
-            .from('items')
-            .select('*')
-            .eq('wheel_id', wheelId)
-            .limit(10000);
+          // Fetch all items for the wheel (pagination to bypass PostgREST 1000-row default)
+          let allItems = [];
+          let fetchedCount = 0;
+          const BATCH_SIZE = 1000;
+          
+          while (true) {
+            const { data: batch, error: itemsError } = await supabase
+              .from('items')
+              .select('*')
+              .eq('wheel_id', wheelId)
+              .range(fetchedCount, fetchedCount + BATCH_SIZE - 1);
 
-          if (itemsError) throw itemsError;
+            if (itemsError) throw itemsError;
+            if (!batch || batch.length === 0) break;
+            
+            allItems.push(...batch);
+            fetchedCount += batch.length;
+            
+            if (batch.length < BATCH_SIZE) break;
+          }
+          
+          console.log(`[loadWheelData] Fetched ${allItems.length} items total`);
+
 
           // Map database fields (snake_case) to client format (camelCase)
           const normalizedItems = (allItems || []).map(dbItem => ({

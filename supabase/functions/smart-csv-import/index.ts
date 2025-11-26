@@ -15,6 +15,12 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Helper to normalize strings for matching (trim + lowercase)
+function normalizeString(str: any): string {
+  if (!str) return ''
+  return String(str).trim().toLowerCase()
+}
+
 serve(async (req: Request) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -45,7 +51,7 @@ serve(async (req: Request) => {
       )
     }
 
-    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions, allRows, manualMapping, customRings, customGroups } = await req.json()
+    const { action, wheelId, currentPageId, csvStructure, csvData, suggestions, inviteEmails, refinementPrompt, previousSuggestions, allRows, manualMapping, customRings, customGroups, mapping, ringsWithIds, groupsWithIds, labelsWithIds } = await req.json()
 
     if (action === 'analyze') {
       // Analyze CSV structure and generate AI mapping rules + apply to ALL rows
@@ -61,6 +67,16 @@ serve(async (req: Request) => {
         JSON.stringify(result),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    } else if (action === 'reprocess') {
+      // Reprocess all CSV rows using existing mapping rules (for large imports)
+      console.log('[smart-csv-import] Reprocessing', allRows?.length, 'rows with existing mapping')
+      
+      const activities = await reprocessActivitiesWithMapping(csvStructure, allRows, mapping, ringsWithIds, groupsWithIds, labelsWithIds)
+      
+      return new Response(
+        JSON.stringify({ success: true, activities }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     } else if (action === 'import') {
       // Execute import using AI Assistant V2 tools
       const result = await executeImport(wheelId, currentPageId, csvData, suggestions, inviteEmails, supabase, user)
@@ -72,6 +88,7 @@ serve(async (req: Request) => {
     } else {
       throw new Error('Invalid action')
     }
+
 
   } catch (error) {
     console.error('[smart-csv-import] Error:', error)
@@ -953,6 +970,16 @@ Analyze the data and respond with the complete JSON structure.`
   console.log('[analyzeCsvWithAI] Generated', activities.length, 'activities from', allRows.length, 'rows')
   console.log('[analyzeCsvWithAI] Label values collected:', Array.from(labelValuesMap.entries()).map(([col, vals]) => ({ column: col, count: vals.size })))
   
+  // CRITICAL: For large imports (>1500 rows), only return sample activities in response
+  // to avoid hitting Supabase Edge Function response size limit (~2MB)
+  // Full activities will be re-generated during import execution
+  const shouldReturnSample = activities.length > 1500
+  const activitiesForResponse = shouldReturnSample ? activities.slice(0, 100) : activities
+  
+  if (shouldReturnSample) {
+    console.log(`[analyzeCsvWithAI] Large import detected (${activities.length} activities). Returning ${activitiesForResponse.length} sample activities to avoid payload limit.`)
+  }
+  
   // PATTERN-BASED GROUPING: Use AI's suggestions if they provided custom groupings
   let consolidatedRings: Array<{id: string, name: string, type: string, color?: string, visible: boolean, orientation: string}>
   let actualGroups: Array<{id: string, name: string, color: string, visible: boolean}>
@@ -1141,7 +1168,8 @@ Analyze the data and respond with the complete JSON structure.`
     rings: consolidatedRings, // Use consolidated rings
     activityGroups: actualGroups, // Use data-derived groups
     labels: allLabels, // Use extracted labels
-    activities, // All activities generated server-side
+    activities: activitiesForResponse, // Sample or all activities depending on size
+    totalActivitiesCount: activities.length, // CRITICAL: Include total count for UI display
     detectedPeople: mapping.detectedPeople || [],
     suitabilityWarning: mapping.suitabilityWarning, // Pass through data suitability warning
     suggestedWheelTitle: mapping.suggestedWheelTitle // Pass through AI-suggested title
@@ -1152,6 +1180,85 @@ Analyze the data and respond with the complete JSON structure.`
     suggestions,
     message: `AI har analyserat ${csvStructure.totalRows} rader och genererat ${activities.length} aktiviteter`
   }
+}
+
+/**
+ * Reprocess CSV rows using existing mapping rules (for large imports >1500 rows)
+ * This avoids the AI API call and response size limits
+ */
+async function reprocessActivitiesWithMapping(
+  csvStructure: any,
+  allRows: any[],
+  mapping: any,
+  ringsWithIds: any[],
+  groupsWithIds: any[],
+  labelsWithIds: any[]
+) {
+  console.log('[reprocessActivitiesWithMapping] Processing', allRows.length, 'rows')
+  
+  // Build lookup maps
+  const ringNameToId = new Map(ringsWithIds.map(r => [r.name, r.id]))
+  const groupNameToId = new Map(groupsWithIds.map(g => [g.name, g.id]))
+  const labelNameToId = new Map(labelsWithIds.map(l => [l.name, l.id]))
+  
+  // Apply mapping rules to each row (same logic as in analyzeCsvWithAI)
+  const activities = allRows.map((row, index) => {
+    const activityName = mapping.columns.activityName 
+      ? row[csvStructure.headers.indexOf(mapping.columns.activityName)]
+      : `Aktivitet ${index + 1}`
+    
+    const startDateColIndex = mapping.columns.startDate 
+      ? csvStructure.headers.indexOf(mapping.columns.startDate)
+      : -1
+    
+    const endDateColIndex = mapping.columns.endDate
+      ? csvStructure.headers.indexOf(mapping.columns.endDate)
+      : startDateColIndex
+    
+    const startDateRaw = startDateColIndex >= 0 ? row[startDateColIndex] : null
+    const endDateRaw = endDateColIndex >= 0 ? row[endDateColIndex] : startDateRaw
+    
+    // Convert dates
+    const startDate = convertDate(startDateRaw, mapping.dateFormat, new Date().getFullYear())
+    const endDate = convertDate(endDateRaw, mapping.dateFormat, new Date().getFullYear())
+    
+    // Extract ring and group
+    const ringName = mapping.columns.ring 
+      ? row[csvStructure.headers.indexOf(mapping.columns.ring)]
+      : ringsWithIds[0]?.name || 'Aktiviteter'
+    
+    const groupName = mapping.columns.group
+      ? row[csvStructure.headers.indexOf(mapping.columns.group)]
+      : groupsWithIds[0]?.name || 'Allmänt'
+    
+    // Extract labels
+    const labelCols = mapping.columns.labels || []
+    const itemLabels = labelCols
+      .map((labelCol: string) => row[csvStructure.headers.indexOf(labelCol)])
+      .filter(Boolean)
+    
+    // Build description
+    let description = ''
+    if (mapping.columns.description) {
+      const primaryDesc = row[csvStructure.headers.indexOf(mapping.columns.description)]
+      if (primaryDesc) description = String(primaryDesc).trim()
+    }
+    
+    return {
+      id: `item-${index + 1}`,
+      name: activityName,
+      startDate,
+      endDate,
+      ringId: ringNameToId.get(ringName),
+      activityId: groupNameToId.get(groupName),
+      labelIds: itemLabels.map((l: string) => labelNameToId.get(l)).filter(Boolean),
+      labelId: itemLabels.length > 0 ? labelNameToId.get(itemLabels[0]) : null,
+      description
+    }
+  }).filter(a => a.ringId && a.activityId) // Remove invalid mappings
+  
+  console.log('[reprocessActivitiesWithMapping] Generated', activities.length, 'activities')
+  return activities
 }
 
 /**

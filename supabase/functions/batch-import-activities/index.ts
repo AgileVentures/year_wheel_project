@@ -20,7 +20,7 @@ interface ImportRequest {
     activityGroups: Array<{id: string, name: string, color: string, visible: boolean}>
     labels: Array<{id: string, name: string, color: string, visible: boolean}>
   }
-  pages: Array<{
+  pages?: Array<{
     id: string
     year: number
     pageOrder: number
@@ -37,6 +37,12 @@ interface ImportRequest {
       description?: string | null
     }>
   }>
+  // For large imports: CSV data + mapping for server-side reprocessing
+  csvData?: {
+    headers: string[]
+    rows: any[][]
+  }
+  mapping?: any
 }
 
 serve(async (req) => {
@@ -76,9 +82,9 @@ serve(async (req) => {
       )
     }
 
-    const { wheelId, importMode = 'append', structure, pages, notifyEmail, fileName, suggestedWheelTitle } = await req.json() as ImportRequest
+    const { wheelId, importMode = 'append', structure, pages, notifyEmail, fileName, suggestedWheelTitle, csvData, mapping } = await req.json() as ImportRequest
 
-    console.log('[BatchImport] Creating async job for wheel:', wheelId, 'user:', user.id, 'suggestedTitle:', suggestedWheelTitle)
+    console.log('[BatchImport] Creating async job for wheel:', wheelId, 'user:', user.id, 'suggestedTitle:', suggestedWheelTitle, 'isLargeImport:', !!csvData)
 
     // Verify user has access to this wheel
     const { data: wheel, error: wheelError } = await supabase
@@ -107,7 +113,19 @@ serve(async (req) => {
       }
     }
 
-    const totalItems = pages.reduce((sum, p) => sum + p.items.length, 0)
+    // Determine if this is a large import requiring server-side reprocessing
+    const isLargeImport = !pages && csvData && mapping
+    let totalItems
+    
+    if (isLargeImport) {
+      totalItems = csvData.rows.length
+      console.log('[BatchImport] Large import detected:', totalItems, 'rows to reprocess')
+    } else if (pages) {
+      totalItems = pages.reduce((sum, p) => sum + p.items.length, 0)
+      console.log('[BatchImport] Normal import:', totalItems, 'pre-processed items')
+    } else {
+      throw new Error('Invalid request: neither pages nor csvData provided')
+    }
 
     // Create service role client for job creation
     const supabaseServiceClient = createClient(
@@ -127,7 +145,7 @@ serve(async (req) => {
         progress: 0,
         total_items: totalItems,
         processed_items: 0,
-        payload: { structure, pages, notifyEmail, userEmail: user.email }
+        payload: { structure, pages, notifyEmail, userEmail: user.email, csvData, mapping, isLargeImport }
       })
       .select()
       .single()
@@ -187,7 +205,7 @@ async function processImportJob(jobId: string, supabase: any) {
     }
 
     const { wheel_id: wheelId, import_mode: importMode, payload } = job
-    const { structure, pages, notifyEmail, userEmail } = payload
+    let { structure, pages, notifyEmail, userEmail } = payload
 
     // Update to processing
     await updateJobProgress(supabase, jobId, {
@@ -197,6 +215,50 @@ async function processImportJob(jobId: string, supabase: any) {
       progress: 5
     })
 
+    // STEP 0a: If large import with CSV data, reprocess on server side
+    if (payload.csvData && payload.mapping && !pages) {
+      console.log('[ProcessJob] Large import detected - reprocessing CSV server-side')
+      
+      await updateJobProgress(supabase, jobId, {
+        current_step: 'Bearbetar CSV-data...',
+        progress: 7
+      })
+
+      // Generate activities from CSV rows using mapping rules
+      const activities = await reprocessActivitiesWithMapping(
+        { headers: payload.csvData.headers },
+        payload.csvData.rows,
+        payload.mapping,
+        structure.rings,
+        structure.activityGroups,
+        structure.labels
+      )
+
+      console.log('[ProcessJob] Generated', activities.length, 'activities from', payload.csvData.rows.length, 'CSV rows')
+
+      // Group activities by year to create pages
+      const activitiesByYear = new Map<number, any[]>()
+      for (const activity of activities) {
+        const year = new Date(activity.startDate).getFullYear()
+        if (!activitiesByYear.has(year)) {
+          activitiesByYear.set(year, [])
+        }
+        activitiesByYear.get(year)!.push(activity)
+      }
+
+      // Create pages structure
+      pages = Array.from(activitiesByYear.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([year, items], index) => ({
+          year,
+          pageOrder: index + 1,
+          title: `${year}`,
+          items
+        }))
+
+      console.log('[ProcessJob] Created', pages.length, 'pages from years:', Array.from(activitiesByYear.keys()))
+    }
+
     // STEP 0: Delete existing data if replace mode
     if (importMode === 'replace') {
       await updateJobProgress(supabase, jobId, {
@@ -204,11 +266,42 @@ async function processImportJob(jobId: string, supabase: any) {
         progress: 10
       })
 
-      await supabase.from('items').delete().eq('wheel_id', wheelId)
-      await supabase.from('wheel_pages').delete().eq('wheel_id', wheelId)
-      await supabase.from('labels').delete().eq('wheel_id', wheelId)
-      await supabase.from('activity_groups').delete().eq('wheel_id', wheelId)
-      await supabase.from('wheel_rings').delete().eq('wheel_id', wheelId)
+      // Delete in batches to avoid 1000 row limit
+      let deletedCount = 0
+      while (true) {
+        const { data: itemsToDelete } = await supabase
+          .from('items')
+          .select('id')
+          .eq('wheel_id', wheelId)
+          .limit(1000)
+        
+        if (!itemsToDelete || itemsToDelete.length === 0) break
+        
+        const { error: deleteError } = await supabase
+          .from('items')
+          .delete()
+          .in('id', itemsToDelete.map((i: any) => i.id))
+        
+        if (deleteError) throw new Error(`Failed to delete items: ${deleteError.message}`)
+        deletedCount += itemsToDelete.length
+        
+        if (itemsToDelete.length < 1000) break
+      }
+      
+      console.log(`[ProcessJob] Deleted ${deletedCount} existing items`)
+      
+      // Delete other wheel data (items are already deleted, so no FK issues)
+      const { error: pagesError } = await supabase.from('wheel_pages').delete().eq('wheel_id', wheelId)
+      if (pagesError) console.warn('[ProcessJob] Pages delete warning:', pagesError)
+      
+      const { error: labelsError } = await supabase.from('labels').delete().eq('wheel_id', wheelId)
+      if (labelsError) console.warn('[ProcessJob] Labels delete warning:', labelsError)
+      
+      const { error: groupsError } = await supabase.from('activity_groups').delete().eq('wheel_id', wheelId)
+      if (groupsError) console.warn('[ProcessJob] Groups delete warning:', groupsError)
+      
+      const { error: ringsError } = await supabase.from('wheel_rings').delete().eq('wheel_id', wheelId)
+      if (ringsError) console.warn('[ProcessJob] Rings delete warning:', ringsError)
     }
 
     // STEP 1: Insert rings
@@ -291,6 +384,7 @@ async function processImportJob(jobId: string, supabase: any) {
     const groupIdMap = new Map(structure.activityGroups.map((g: any) => [g.id, groupNameToDbId.get(g.name)]))
     const labelIdMap = new Map(structure.labels.map((l: any) => [l.id, labelNameToDbId.get(l.name)]))
 
+
     // STEP 4: Insert pages and items
     let totalCreatedPages = 0
     let totalCreatedItems = 0
@@ -363,12 +457,19 @@ async function processImportJob(jobId: string, supabase: any) {
         }).filter(Boolean)
 
         if (itemInserts.length > 0) {
+          console.log(`[ProcessJob] Inserting batch of ${itemInserts.length} items (${i}-${i+itemInserts.length})`)
+          
           const { error: itemsError } = await supabase
             .from('items')
             .insert(itemInserts)
 
-          if (itemsError) throw new Error(`Items batch insert failed: ${itemsError.message}`)
+          if (itemsError) {
+            console.error(`[ProcessJob] Batch insert failed at index ${i}:`, itemsError)
+            throw new Error(`Items batch insert failed (batch starting at ${i}): ${itemsError.message}`)
+          }
+          
           totalCreatedItems += itemInserts.length
+          console.log(`[ProcessJob] Successfully inserted batch. Total so far: ${totalCreatedItems}`)
         }
 
         // Update progress after each batch
@@ -482,4 +583,188 @@ async function sendCompletionEmail(params: {
   } catch (error) {
     console.error('[Email] Send failed:', error)
   }
+}
+
+// Helper to normalize strings for matching
+function normalizeForMatching(str: any): string {
+  if (!str) return ''
+  return String(str).trim().toLowerCase()
+}
+
+// CSV reprocessing helper (mirrors smart-csv-import logic)
+async function reprocessActivitiesWithMapping(
+  csvStructure: any,
+  allRows: any[],
+  mapping: any,
+  ringsWithIds: any[],
+  groupsWithIds: any[],
+  labelsWithIds: any[]
+) {
+  console.log('[reprocessActivitiesWithMapping] Processing', allRows.length, 'rows')
+  
+  // Build lookup maps with normalized keys AND original values for fallback
+  const ringNameToId = new Map()
+  const ringNameToIdNormalized = new Map()
+  for (const r of ringsWithIds) {
+    ringNameToId.set(r.name, r.id) // Exact match
+    ringNameToIdNormalized.set(normalizeForMatching(r.name), r.id) // Normalized match
+  }
+  
+  const groupNameToId = new Map()
+  const groupNameToIdNormalized = new Map()
+  for (const g of groupsWithIds) {
+    groupNameToId.set(g.name, g.id)
+    groupNameToIdNormalized.set(normalizeForMatching(g.name), g.id)
+  }
+  
+  const labelNameToId = new Map()
+  const labelNameToIdNormalized = new Map()
+  for (const l of labelsWithIds) {
+    labelNameToId.set(l.name, l.id)
+    labelNameToIdNormalized.set(normalizeForMatching(l.name), l.id)
+  }
+  
+  // Apply mapping rules to each row
+  const activities = allRows.map((row: any[], index: number) => {
+    const activityName = mapping.columns.activityName 
+      ? row[csvStructure.headers.indexOf(mapping.columns.activityName)]
+      : `Aktivitet ${index + 1}`
+    
+    const startDateColIndex = mapping.columns.startDate 
+      ? csvStructure.headers.indexOf(mapping.columns.startDate)
+      : -1
+    
+    const endDateColIndex = mapping.columns.endDate
+      ? csvStructure.headers.indexOf(mapping.columns.endDate)
+      : startDateColIndex
+    
+    const startDateRaw = startDateColIndex >= 0 ? row[startDateColIndex] : null
+    const endDateRaw = endDateColIndex >= 0 ? row[endDateColIndex] : startDateRaw
+    
+    // Convert dates
+    const startDate = convertDate(startDateRaw, mapping.dateFormat, new Date().getFullYear())
+    const endDate = convertDate(endDateRaw, mapping.dateFormat, new Date().getFullYear())
+    
+    // Extract ring and group with robust matching
+    const ringName = mapping.columns.ring 
+      ? row[csvStructure.headers.indexOf(mapping.columns.ring)]
+      : ringsWithIds[0]?.name || 'Aktiviteter'
+    
+    const groupName = mapping.columns.group
+      ? row[csvStructure.headers.indexOf(mapping.columns.group)]
+      : groupsWithIds[0]?.name || 'Allmänt'
+    
+    // Try exact match first, then normalized match
+    let ringId = ringNameToId.get(ringName)
+    if (!ringId) {
+      ringId = ringNameToIdNormalized.get(normalizeForMatching(ringName))
+    }
+    
+    let activityId = groupNameToId.get(groupName)
+    if (!activityId) {
+      activityId = groupNameToIdNormalized.get(normalizeForMatching(groupName))
+    }
+    
+    if (!ringId) {
+      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring '${ringName}' not found. Available:`, Array.from(ringNameToId.keys()))
+    }
+    if (!activityId) {
+      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Activity group '${groupName}' not found. Available:`, Array.from(groupNameToId.keys()))
+    }
+    
+    // Extract labels with normalized matching
+    const labelCols = mapping.columns.labels || []
+    const itemLabels = labelCols
+      .map((labelCol: string) => row[csvStructure.headers.indexOf(labelCol)])
+      .filter(Boolean)
+    
+    // Map label names to IDs with fallback to normalized matching
+    const labelIds = itemLabels.map((labelName: string) => {
+      let labelId = labelNameToId.get(labelName)
+      if (!labelId) {
+        labelId = labelNameToIdNormalized.get(normalizeForMatching(labelName))
+      }
+      return labelId
+    }).filter(Boolean)
+    
+    // Build description
+    let description = ''
+    if (mapping.columns.description) {
+      const primaryDesc = row[csvStructure.headers.indexOf(mapping.columns.description)]
+      if (primaryDesc) description = String(primaryDesc).trim()
+    }
+    
+    return {
+      id: `item-${index + 1}`,
+      name: activityName,
+      startDate,
+      endDate,
+      ringId: ringId,
+      activityId: activityId,
+      labelIds: labelIds,
+      labelId: labelIds.length > 0 ? labelIds[0] : null,
+      description
+    }
+  }).filter((a: any) => a.ringId && a.activityId) // Remove invalid mappings
+  
+  const filteredOut = allRows.length - activities.length
+  if (filteredOut > 0) {
+    console.warn(`[reprocessActivitiesWithMapping] Filtered out ${filteredOut} activities due to missing ring/activity mappings`)
+  }
+  console.log('[reprocessActivitiesWithMapping] Generated', activities.length, 'valid activities from', allRows.length, 'rows')
+  return activities
+}
+
+// Date conversion helper
+function convertDate(dateValue: any, format: string, defaultYear: number): string {
+  if (!dateValue) {
+    return `${defaultYear}-01-01`
+  }
+  
+  let parsedDate: Date | null = null
+  
+  // Already in YYYY-MM-DD format
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    parsedDate = new Date(dateValue)
+  }
+  
+  // Excel serial date (number between 1 and 60000)
+  else if (typeof dateValue === 'number' && dateValue > 1 && dateValue < 60000) {
+    const excelEpoch = new Date(1899, 11, 30)
+    parsedDate = new Date(excelEpoch.getTime() + dateValue * 86400000)
+  }
+  
+  // Try parsing as string
+  else if (typeof dateValue === 'string') {
+    // ISO 8601 variants
+    const isoMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (isoMatch) {
+      parsedDate = new Date(dateValue)
+    }
+    // Swedish format: DD/MM/YYYY or DD-MM-YYYY
+    else if (/^\d{1,2}[/-]\d{1,2}[/-]\d{4}$/.test(dateValue)) {
+      const parts = dateValue.split(/[/-]/)
+      parsedDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
+    }
+    // US format: MM/DD/YYYY
+    else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+      const parts = dateValue.split('/')
+      parsedDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]))
+    }
+    // Try native Date parsing as fallback
+    else {
+      parsedDate = new Date(dateValue)
+    }
+  }
+  
+  // Validate and format
+  if (parsedDate && !isNaN(parsedDate.getTime())) {
+    const year = parsedDate.getFullYear()
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0')
+    const day = String(parsedDate.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  
+  // Fallback
+  return `${defaultYear}-01-01`
 }

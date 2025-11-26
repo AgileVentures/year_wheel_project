@@ -177,7 +177,7 @@
   "startTour": "Starta snabbguide",
   "aiTour": "Starta AI-guide",
     "template": "Template",
-    "markAsTemplate": "Markera som template",
+    "markAsTemplate": "Skapa som mall",
     "templateWheelVisibleOnLanding": "Template-hjul (synligt på startsidan)",
     "useTemplate": "Använd mall"
   },

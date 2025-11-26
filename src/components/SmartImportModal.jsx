@@ -279,9 +279,23 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         suitabilityWarning: suggestions.suitabilityWarning,
         ringsCount: suggestions.rings?.length,
         groupsCount: suggestions.activityGroups?.length,
-        activitiesCount: suggestions.activities?.length
+        activitiesCount: suggestions.activities?.length,
+        totalActivitiesCount: suggestions.totalActivitiesCount // Total count (may be > activities.length for large imports)
       });
-      setAiSuggestions(suggestions);
+      
+      // Store CSV rows for large import re-processing
+      if (suggestions.totalActivitiesCount > suggestions.activities.length) {
+        console.log(`[SmartImport] Large import detected: ${suggestions.totalActivitiesCount} total activities, only ${suggestions.activities.length} returned for preview`);
+        // Store rows and headers from csvData for re-processing during import
+        setAiSuggestions({ 
+          ...suggestions, 
+          csvRows: csvData.rows,
+          csvHeaders: csvData.headers
+        });
+      } else {
+        setAiSuggestions(suggestions);
+      }
+      
       setDetectedPeople(suggestions.detectedPeople || []);
       
       // Pre-select all people for invitation
@@ -470,7 +484,21 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       });
       
       // Map activities to use proper ringId, activityId, and labelIds
-      const itemsWithIds = effectiveSuggestions.activities.map((activity, index) => {
+      // For large imports where we only got a sample back, skip frontend processing
+      // and send everything directly to batch-import-activities
+      let itemsWithIds;
+      
+      if (effectiveSuggestions.csvRows && effectiveSuggestions.totalActivitiesCount > effectiveSuggestions.activities.length) {
+        console.log(`[SmartImport] Large import detected: ${effectiveSuggestions.totalActivitiesCount} activities`);
+        console.log('[SmartImport] Skipping frontend processing - will reprocess on server during import');
+        
+        // For large imports, we'll send the CSV rows + mapping to batch-import
+        // The batch-import function will regenerate all activities server-side
+        itemsWithIds = null; // Signal to use server-side reprocessing
+        
+      } else {
+        // Normal flow: use activities from analyze response
+        itemsWithIds = effectiveSuggestions.activities.map((activity, index) => {
         const ringId = ringIdMap.get(activity.ring);
         const activityId = groupIdMap.get(activity.group);
         
@@ -507,104 +535,113 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           labelId: labelIds[0] || null, // Keep legacy single labelId for backwards compatibility
           description: activity.description || null
         };
-      });
+        });
+      } // End of large import conditional
+
       
       console.log('[SmartImport] Generated structure:', {
         rings: ringsWithIds.length,
         groups: groupsWithIds.length,
         labels: labelsWithIds.length,
-        items: itemsWithIds.length,
-        sampleRings: ringsWithIds.slice(0, 2),
-        sampleGroups: groupsWithIds.slice(0, 2),
-        sampleLabels: labelsWithIds.slice(0, 3),
-        sampleItems: itemsWithIds.slice(0, 2)
+        items: itemsWithIds?.length || effectiveSuggestions.totalActivitiesCount,
+        isLargeImport: itemsWithIds === null
       });
       
       // CRITICAL: Group items by year to create multi-year pages
-      const itemsByYear = {};
-      itemsWithIds.forEach(item => {
-        if (item.startDate) {
-          const year = new Date(item.startDate).getFullYear();
-          if (!itemsByYear[year]) {
-            itemsByYear[year] = [];
+      let pages;
+      let totalItemCount;
+      
+      if (itemsWithIds === null) {
+        // Large import: pages will be created server-side during batch-import
+        console.log('[SmartImport] Large import - pages will be created server-side');
+        pages = null; // Signal to batch-import to create pages from CSV
+        totalItemCount = effectiveSuggestions.totalActivitiesCount;
+      } else {
+        // Normal flow: create pages from itemsWithIds
+        const itemsByYear = {};
+        itemsWithIds.forEach(item => {
+          if (item.startDate) {
+            const year = new Date(item.startDate).getFullYear();
+            if (!itemsByYear[year]) {
+              itemsByYear[year] = [];
+            }
+            itemsByYear[year].push(item);
+          } else {
+            console.warn('[SmartImport] Item missing startDate:', item.name);
           }
-          itemsByYear[year].push(item);
-        } else {
-          console.warn('[SmartImport] Item missing startDate:', item.name);
-        }
-      });
-      
-      // Sort years to create pages in chronological order
-      const years = Object.keys(itemsByYear).map(Number).sort((a, b) => a - b);
-      console.log('[SmartImport] Creating pages for years:', years);
-      console.log('[SmartImport] Items per year:', years.map(y => ({ year: y, count: itemsByYear[y].length })));
-      console.log('[SmartImport] Sample items from each year:', years.map(y => ({ 
-        year: y, 
-        firstItem: itemsByYear[y][0]?.name, 
-        firstDate: itemsByYear[y][0]?.startDate 
-      })));
-      
-      // Create a page for each year
-      const pages = years.map((year, index) => ({
-        id: `page-${index + 1}`,
-        year,
-        pageOrder: index + 1,
-        title: `${year}`,
-        items: itemsByYear[year]
-      }));
-      
-      // If no items have valid dates, create single page with current year
-      if (pages.length === 0) {
-        console.warn('[SmartImport] No valid dates found, creating single page for current year');
-        pages.push({
-          id: 'page-1',
-          year: new Date().getFullYear(),
-          pageOrder: 1,
-          title: `${new Date().getFullYear()}`,
-          items: itemsWithIds
         });
+        
+        // Sort years to create pages in chronological order
+        const years = Object.keys(itemsByYear).map(Number).sort((a, b) => a - b);
+        console.log('[SmartImport] Creating pages for years:', years);
+        console.log('[SmartImport] Items per year:', years.map(y => ({ year: y, count: itemsByYear[y].length })));
+        
+        // Create a page for each year
+        pages = years.map((year, index) => ({
+          id: `page-${index + 1}`,
+          year,
+          pageOrder: index + 1,
+          title: `${year}`,
+          items: itemsByYear[year]
+        }));
+        
+        // If no items have valid dates, create single page with current year
+        if (pages.length === 0) {
+          console.warn('[SmartImport] No valid dates found, creating single page for current year');
+          pages.push({
+            id: 'page-1',
+            year: new Date().getFullYear(),
+            pageOrder: 1,
+            title: `${new Date().getFullYear()}`,
+            items: itemsWithIds
+          });
+        }
+        
+        totalItemCount = itemsWithIds.length;
       }
-      
-      // Generate a .yrw-compatible structure from AI suggestions
-      const yrwData = {
-        version: '2.0',
-        metadata: {
-          title: csvData.fileName.replace(/\.(csv|xlsx|xls)$/i, ''),
-          year: pages[0].year, // Use first page year as wheel year
-          createdAt: new Date().toISOString().split('T')[0],
-          description: `Importerad från ${csvData.fileName}`
-        },
-        settings: {
-          showWeekRing: true,
-          showMonthRing: true,
-          showRingNames: true,
-          weekRingDisplayMode: 'week-numbers',
-          showLabels: (effectiveSuggestions.labels?.length > 0) || (effectiveSuggestions.detectedPeople?.length > 0)
-        },
-        structure: {
-          rings: ringsWithIds,
-          activityGroups: groupsWithIds,
-          labels: labelsWithIds
-        },
-        pages // Multi-year pages
-      };
 
-      console.log('[SmartImport] Generated .yrw structure with', ringsWithIds.length, 'rings,', groupsWithIds.length, 'groups,', labelsWithIds.length, 'labels,', pages.length, 'pages,', itemsWithIds.length, 'total items');
+      console.log('[SmartImport] Generated .yrw structure with', ringsWithIds.length, 'rings,', groupsWithIds.length, 'groups,', labelsWithIds.length, 'labels,', pages?.length || '(server-side)', 'pages,', totalItemCount, 'total items');
 
       // Show detailed progress for large imports
-      const isLargeImport = itemsWithIds.length > 200;
+      const isLargeImport = totalItemCount > 200;
       if (isLargeImport) {
-        setProgress(`Förbereder stor import (${itemsWithIds.length} aktiviteter över ${pages.length} år)...`);
+        setProgress(`Förbereder stor import (${totalItemCount} aktiviteter)...`);
         await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause to show message
       }
       
       // Use batch import Edge Function for performance
-      setProgress(`Sparar ${itemsWithIds.length} aktiviteter till databas...${isLargeImport ? ' Email skickas när importen är klar.' : ''}`);
+      setProgress(`Sparar ${totalItemCount} aktiviteter till databas...${isLargeImport ? ' Email skickas när importen är klar.' : ''}`);
       
       // Get user email for notification
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // Build request payload
+      const payload = {
+        wheelId,
+        importMode, // 'replace' or 'append'
+        suggestedWheelTitle: aiSuggestions?.suggestedWheelTitle || null,
+        structure: {
+          rings: ringsWithIds,
+          activityGroups: groupsWithIds,
+          labels: labelsWithIds
+        },
+        notifyEmail: isLargeImport ? user?.email : null,
+        fileName: csvData.fileName
+      };
+      
+      // For large imports, send CSV data + mapping for server-side reprocessing
+      if (itemsWithIds === null) {
+        payload.csvData = {
+          headers: effectiveSuggestions.csvHeaders || csvData.headers,
+          rows: effectiveSuggestions.csvRows
+        };
+        payload.mapping = effectiveSuggestions.mapping;
+      } else {
+        // Normal flow: send pre-processed pages
+        payload.pages = pages;
+      }
       
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/batch-import-activities`, {
         method: 'POST',
@@ -612,19 +649,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           'Authorization': `Bearer ${session?.access_token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          wheelId,
-          importMode, // 'replace' or 'append'
-          suggestedWheelTitle: aiSuggestions?.suggestedWheelTitle || null, // Apply AI-suggested title
-          structure: {
-            rings: ringsWithIds,
-            activityGroups: groupsWithIds,
-            labels: labelsWithIds
-          },
-          pages,
-          notifyEmail: isLargeImport ? user?.email : null, // Send email for large imports
-          fileName: csvData.fileName
-        })
+        body: JSON.stringify(payload)
       });
       
       if (!response.ok) {
@@ -1519,7 +1544,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </h4>
           <div className="bg-gray-50 border border-gray-200 rounded-sm p-3">
             <p className="text-sm text-gray-700">
-              {aiSuggestions.activities.length} aktiviteter kommer att importeras
+              {aiSuggestions.totalActivitiesCount || aiSuggestions.activities.length} aktiviteter kommer att importeras
             </p>
             <div className="mt-2 text-xs text-gray-500 space-y-1">
               <p>Första 3 exempel:</p>
