@@ -79,7 +79,7 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent, sendIn
               {t('teams:inviteMemberModal.successTitle')}
             </h4>
             <p className="text-gray-600 text-center mb-6">
-              {t('teams:inviteMemberModal.successDescription', { email })}
+              Ett välkomstmail har skickats till <strong>{email}</strong> med instruktioner för att gå med i teamet.
             </p>
             
             <div className="bg-gray-50 border border-gray-200 rounded-sm p-3 mb-4">
@@ -132,6 +132,11 @@ const InviteMemberModal = ({ teamId, teamName, onClose, onInvitationSent, sendIn
         ) : (
           <>
             <p className="text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: t('teams:inviteMemberModal.description', { teamName }) }} />
+
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm">
+              <p className="font-semibold mb-1">📧 E-postinbjudan</p>
+              <p>När du skickar inbjudan kommer mottagaren att få ett e-postmeddelande med en länk för att gå med i teamet.</p>
+            </div>
 
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">

@@ -201,6 +201,7 @@ export async function sendTeamInvitation(teamId, email) {
 
   await ensureTeamHasCapacity(teamId, user.id);
 
+  // Create the invitation record first
   const { data, error } = await supabase
     .from('team_invitations')
     .insert([
@@ -214,6 +215,47 @@ export async function sendTeamInvitation(teamId, email) {
     .single();
 
   if (error) throw error;
+
+  // Get team details and inviter profile for the email
+  const [teamResult, profileResult] = await Promise.all([
+    supabase.from('teams').select('name').eq('id', teamId).single(),
+    supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
+  ]);
+
+  const teamName = teamResult.data?.name || 'teamet';
+  const inviterName = profileResult.data?.full_name || profileResult.data?.email || 'Ett teammedlem';
+
+  // Send invitation email via Edge Function
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-team-invite`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        invitationId: data.id,
+        teamName,
+        inviterName,
+        recipientEmail: email.toLowerCase().trim(),
+        inviteToken: data.token
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Failed to send invitation email:', errorData);
+      // Don't throw - invitation was created, email failure is non-critical
+    } else {
+      console.log('Invitation email sent successfully');
+    }
+  } catch (emailError) {
+    console.error('Error sending invitation email:', emailError);
+    // Don't throw - invitation was created, email failure is non-critical
+  }
+
   return data;
 }
 
