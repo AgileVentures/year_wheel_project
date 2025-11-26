@@ -4544,7 +4544,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 // CRITICAL: Clear change tracker BEFORE reload to prevent false positives
                 changeTracker.clearChanges();
                 hasUnsavedChangesRef.current = false;
-                setHasUnsavedChanges(false);
                 
                 // Handle team invitations if any
                 if (result.inviteEmails && result.inviteEmails.length > 0) {
@@ -4581,10 +4580,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 // Ensure changes are cleared and marked as saved (redundant but safe)
                 changeTracker.clearChanges();
                 hasUnsavedChangesRef.current = false;
-                setHasUnsavedChanges(false);
                 markSaved();
                 
-                console.log('[SmartImport] hasUnsavedChanges confirmed false');
+                console.log('[SmartImport] Change tracker cleared after reload');
                 
                 setIsSaving(false);
                 setShowSmartImport(false);
