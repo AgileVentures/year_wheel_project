@@ -54,6 +54,8 @@ serve(async (req) => {
       language = 'sv'
     } = await req.json() as TeamInviteRequest
 
+    console.log('Received team invite request with language:', language)
+
     // Validate required fields
     if (!invitationId || !teamName || !recipientEmail || !inviteToken) {
       return new Response(
@@ -84,7 +86,7 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Sending team invite to ${recipientEmail} for team "${teamName}"`)
+    console.log(`Sending team invite to ${recipientEmail} for team "${teamName}" in ${language}`)
     
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',

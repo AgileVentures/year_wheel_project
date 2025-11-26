@@ -226,12 +226,23 @@ export async function sendTeamInvitation(teamId, email) {
   const inviterName = profileResult.data?.full_name || profileResult.data?.email || 'A team member';
 
   // Get user's language preference from localStorage or browser
-  const userLanguage = localStorage.getItem('i18nextLng') || navigator.language.split('-')[0] || 'sv';
+  const storedLang = localStorage.getItem('i18nextLng');
+  const browserLang = navigator.language.split('-')[0];
+  const userLanguage = storedLang || browserLang || 'sv';
   const language = ['en', 'sv'].includes(userLanguage) ? userLanguage : 'sv';
+  
+  console.log('Team invite language detection:', {
+    storedLang,
+    browserLang,
+    userLanguage,
+    finalLanguage: language
+  });
 
   // Send invitation email via Edge Function
   try {
     const { data: { session } } = await supabase.auth.getSession();
+    
+    console.log('Sending team invite with language:', language);
     
     const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-team-invite`, {
       method: 'POST',
