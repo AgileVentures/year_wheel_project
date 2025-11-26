@@ -4541,6 +4541,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 console.log('[SmartImport] Import complete, reloading wheel data...');
                 console.log('[SmartImport] Change tracker state BEFORE reload:', changeTracker.getChangesSummary());
                 
+                // CRITICAL: Clear change tracker BEFORE reload to prevent false positives
+                changeTracker.clearChanges();
+                hasUnsavedChangesRef.current = false;
+                setHasUnsavedChanges(false);
+                
                 // Handle team invitations if any
                 if (result.inviteEmails && result.inviteEmails.length > 0) {
                   const { data: wheel } = await supabase
@@ -4573,12 +4578,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 
                 console.log('[SmartImport] Change tracker state AFTER reload:', changeTracker.getChangesSummary());
                 
-                // Clear change tracker and mark as saved
+                // Ensure changes are cleared and marked as saved (redundant but safe)
                 changeTracker.clearChanges();
+                hasUnsavedChangesRef.current = false;
+                setHasUnsavedChanges(false);
                 markSaved();
                 
-                console.log('[SmartImport] Change tracker state AFTER clear:', changeTracker.getChangesSummary());
-                console.log('[SmartImport] hasUnsavedChanges should be false now');
+                console.log('[SmartImport] hasUnsavedChanges confirmed false');
                 
                 setIsSaving(false);
                 setShowSmartImport(false);
