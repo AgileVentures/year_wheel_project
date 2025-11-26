@@ -645,14 +645,35 @@ async function reprocessActivitiesWithMapping(
     const startDate = convertDate(startDateRaw, mapping.dateFormat, new Date().getFullYear())
     const endDate = convertDate(endDateRaw, mapping.dateFormat, new Date().getFullYear())
     
-    // Extract ring and group with robust matching
-    const ringName = mapping.columns.ring 
+    // Extract raw ring and group values from CSV
+    let ringName = mapping.columns.ring 
       ? row[csvStructure.headers.indexOf(mapping.columns.ring)]
       : ringsWithIds[0]?.name || 'Aktiviteter'
     
-    const groupName = mapping.columns.group
+    let groupName = mapping.columns.group
       ? row[csvStructure.headers.indexOf(mapping.columns.group)]
       : groupsWithIds[0]?.name || 'Allmänt'
+    
+    // CRITICAL: Apply AI value mappings if provided (consolidation)
+    if (mapping.ringValueMapping && ringName) {
+      const mappedRingName = mapping.ringValueMapping[ringName]
+      if (mappedRingName) {
+        console.log(`[reprocessActivitiesWithMapping] Row ${index}: Mapping ring '${ringName}' → '${mappedRingName}'`)
+        ringName = mappedRingName
+      } else {
+        console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring value '${ringName}' not found in ringValueMapping`)
+      }
+    }
+    
+    if (mapping.groupValueMapping && groupName) {
+      const mappedGroupName = mapping.groupValueMapping[groupName]
+      if (mappedGroupName) {
+        console.log(`[reprocessActivitiesWithMapping] Row ${index}: Mapping group '${groupName}' → '${mappedGroupName}'`)
+        groupName = mappedGroupName
+      } else {
+        console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Group value '${groupName}' not found in groupValueMapping`)
+      }
+    }
     
     // Try exact match first, then normalized match
     let ringId = ringNameToId.get(ringName)
