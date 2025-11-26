@@ -223,9 +223,10 @@ function analyzeDataSuitability(
       })
       
       for (const col of prioritized.slice(0, 3)) {
+        const categoryLabel = col.category === 'person' ? 'person/client' : col.category === 'team' ? 'team/department' : 'category'
         suggestions.push({
-          action: `Skapa ett årshjul per ${col.name}`,
-          description: `Kolumnen "${col.name}" har ${col.uniqueCount} unika värden. Filtrera datan och skapa ett separat årshjul för varje ${col.category === 'person' ? 'person' : col.category === 'team' ? 'team' : 'kategori'}.`,
+          action: `Create one wheel per ${col.name}`,
+          description: `The column "${col.name}" has ${col.uniqueCount} unique values. Filter the data and create a separate wheel for each ${categoryLabel}.`,
           filterColumn: col.name,
           filterStrategy: col.category,
           multiWheelStrategy: true
@@ -234,20 +235,20 @@ function analyzeDataSuitability(
       
       // Add suggestion to import filtered subset
       suggestions.push({
-        action: 'Importera endast ett urval',
-        description: `Filtrera CSV-filen utanför YearWheel (t.ex. i Excel) och importera endast de rader som hör till ett specifikt projekt/team/person. Skapa sedan fler årshjul för andra grupper.`,
+        action: 'Import filtered subset only',
+        description: `Filter the CSV file outside YearWheel (e.g., in Excel/Sheets) and import only the rows belonging to a specific project/team/person. Then create additional wheels for other groups.`,
         filterStrategy: 'manual'
       })
     } else {
       suggestions.push({
-        action: 'Dela upp datan manuellt',
-        description: 'Filtrera CSV-filen i Excel/Google Sheets och skapa separata filer för olika kategorier innan import'
+        action: 'Split data manually',
+        description: 'Filter the CSV file in Excel/Google Sheets and create separate files for different categories before importing'
       })
     }
     
     suggestions.push({
-      action: 'Använd länkar mellan årshjul (kommande funktion)',
-      description: 'Skapa ett "huvudhjul" med översikt och länka till detaljerade årshjul för varje kategori. Detta håller varje vy enkel men sammankopplad.',
+      action: 'Use links between wheels (upcoming feature)',
+      description: 'Create a main overview wheel and link it to detailed wheels for each category. This keeps each view simple yet interconnected.',
       isFutureFeature: true
     })
     
@@ -257,11 +258,11 @@ function analyzeDataSuitability(
     return {
       severity,
       title: severity === 'error' 
-        ? '⛔ Import blockerad: Data passar inte för ett enda årshjul'
-        : '⚠️ Varning: Data passar inte bra för ett enda årshjul',
+        ? '⛔ Import blocked: Data unsuitable for single wheel'
+        : '⚠️ Warning: Data may not work well in single wheel',
       message: severity === 'error'
-        ? `Denna CSV innehåller ${totalRows} rader där ${Math.round(fullYearRatio * 100)}% spänner över hela året. Detta skapar en oläslig visualisering med överlappande staplar.\n\n**YearWheel-principen:** Ett årshjul = ett fokusområde (ett team, en person, ett projekt).\n\nDu behöver dela upp datan INNAN import.`
-        : `Denna CSV innehåller ${totalRows} rader där ${Math.round(fullYearRatio * 100)}% spänner över hela året. Detta kan skapa överlappande visualiseringar som är svåra att tyda.\n\n**Rekommendation:** Dela upp datan i flera fokuserade årshjul istället för att importera allt på en gång.`,
+        ? `This CSV contains ${totalRows} rows where ${Math.round(fullYearRatio * 100)}% span the entire year. This creates an unreadable visualization with overlapping items.\n\n**YearWheel principle:** One wheel = one focus area (one team, one person, one project).\n\nYou need to split the data BEFORE importing.`
+        : `This CSV contains ${totalRows} rows where ${Math.round(fullYearRatio * 100)}% span the entire year. This may create overlapping visualizations that are hard to read.\n\n**Recommendation:** Split the data into multiple focused wheels instead of importing everything at once.`,
       suggestions,
       blockImport: severity === 'error'
     }
@@ -271,20 +272,20 @@ function analyzeDataSuitability(
     // All items have same dates - no temporal variation
     return {
       severity: 'error',
-      title: '⛔ Import blockerad: Ingen tidsvariation i data',
-      message: `Alla ${totalRows} rader har identiska start- och slutdatum. YearWheel är till för att visualisera aktiviteter **fördelade över tid** - denna data saknar helt tidsvariation.\n\n**Detta passar inte för YearWheel.** Överväg att använda en tabell, lista eller annan visualisering istället.`,
+      title: '⛔ Import blocked: No time variation in data',
+      message: `All ${totalRows} rows have identical start and end dates. YearWheel is designed to visualize activities **distributed over time** - this data has no temporal variation.\n\n**This is not suitable for YearWheel.** Consider using a table, list, or other visualization instead.`,
       suggestions: [
         {
-          action: 'Kontrollera datumkolumner',
-          description: 'Se till att rätt kolumner är mappade till start- och slutdatum. Kanske finns det andra datumkolumner i CSV:n?'
+          action: 'Check date columns',
+          description: 'Ensure the correct columns are mapped to start and end dates. Maybe there are other date columns in the CSV?'
         },
         {
-          action: 'Lägg till riktiga datum i källdata',
-          description: 'Om aktiviteterna har olika deadlines/milstones, lägg till dessa i CSV-filen innan import'
+          action: 'Add actual dates to source data',
+          description: 'If activities have different deadlines/milestones, add these to the CSV file before importing'
         },
         {
-          action: 'Använd en annan visualisering',
-          description: 'För data utan tidsdimension passar en tabell, Kanban-board eller lista bättre än YearWheel'
+          action: 'Use different visualization',
+          description: 'For data without a time dimension, a table, Kanban board, or list is better suited than YearWheel'
         }
       ],
       blockImport: true
@@ -499,6 +500,14 @@ Analyze BOTH column names AND data values to detect date columns:
 - **When column has 20+ values**: Create generic rings OR analyze other columns
   * Example: 50 clients → don't use client names, use "Company Type" column instead
   * Example: No categorical column → create generic rings: "Huvudaktiviteter", "Stödaktiviteter"
+- **CRITICAL: HANDLE EMPTY VALUES**:
+  * If ANY rows have empty/null ring values, create a fallback ring called "Övrigt" (Swedish) or "Other" (English)
+  * This ensures NO activities are filtered out during import
+  * Example: 85 rows with empty ring → create 4 rings including "Övrigt" as the 4th ring
+- **CRITICAL: ENSURE ALL VALUES MAP**:
+  * If consolidating 10 values into 3 rings, DOCUMENT the mapping in ringAssignmentLogic
+  * Verify that EVERY distinct value from the CSV data maps to one of your consolidated rings
+  * Example: If CSV has "Bokslut", "Inkomstdeklaration", "Kontrolluppgift" → consolidate to "Ekonomisk rapportering" AND explicitly state: "Maps: Bokslut, Inkomstdeklaration, Kontrolluppgift → Ekonomisk rapportering"
 - **Custom ring suggestion**:
   * Provide a "suggestedRingStrategy" field explaining your reasoning
   * Offer alternative ring options if multiple dimensions detected
@@ -516,6 +525,15 @@ Analyze BOTH column names AND data values to detect date columns:
 - **When to use column values directly**:
   * Column has 5-20 distinct categorical values (project types, departments, statuses)
   * Values are meaningful categories, not individual entities
+- **CRITICAL: HANDLE EMPTY VALUES**:
+  * If ANY rows have empty/null group values, create a fallback group called "Övrigt" (Swedish) or "Other" (English)
+  * This ensures NO activities are filtered out during import
+  * Example: 85 rows with empty group → include "Övrigt" in your group list
+- **CRITICAL: ENSURE ALL VALUES MAP**:
+  * If consolidating 38 values into 10 groups, DOCUMENT the mapping in groupAssignmentLogic
+  * Verify that EVERY distinct value from the CSV data maps to one of your consolidated groups
+  * Example: If CSV has 38 client names → group by fiscal year (4 groups) → explicitly list which clients map to which group
+  * Use semantic analysis, data patterns, or intelligent algorithms to assign mappings
 - **Custom group suggestion**:
   * Provide a "suggestedGroupingStrategy" field explaining your reasoning
   * Offer alternative grouping options if multiple patterns detected
@@ -540,76 +558,129 @@ Analyze BOTH column names AND data values to detect date columns:
 - This ensures no data is wasted
 - Priority: If a dedicated description/comments/notes column exists, use it first, then append other unused columns
 
+### CRITICAL: VALUE MAPPING DOCUMENTATION:
+**When you consolidate CSV values into fewer rings/groups, you MUST provide explicit mappings.**
+
+**WHY THIS MATTERS:**
+- During import, each CSV row's ring/group value must match one of your consolidated ring/group names
+- If a CSV row has ring="Bokslut" but you created ring="Ekonomisk rapportering", the import will FAIL unless you document the mapping
+- Empty/null values in CSV rows will also fail unless you provide a fallback ring/group
+
+**REQUIRED MAPPINGS:**
+1. **Ring Value Mapping** (if consolidating):
+   - Analyze ALL distinct ring values in the CSV sample data
+   - For each distinct value, assign it to one of your 2-4 consolidated rings
+   - Include a "ringValueMapping" object in your response: { "CSV Value": "Consolidated Ring Name" }
+   - Example: { "Bokslut": "Ekonomisk rapportering", "Inkomstdeklaration": "Ekonomisk rapportering", "Kontrolluppgift": "Ekonomisk rapportering", "": "Övrigt" }
+   - CRITICAL: Include mapping for empty string "" if any rows have empty ring values
+
+2. **Group Value Mapping** (if consolidating):
+   - Analyze ALL distinct group values in the CSV sample data
+   - For each distinct value, assign it to one of your consolidated groups
+   - Include a "groupValueMapping" object in your response: { "CSV Value": "Consolidated Group Name" }
+   - Example: { "Client A": "Calendar Year Clients", "Client B": "May-April Clients", "": "Övrigt" }
+   - CRITICAL: Include mapping for empty string "" if any rows have empty group values
+
+3. **Validation**:
+   - Count distinct values in sample data to estimate total unique values
+   - Ensure your consolidated rings/groups cover ALL possible values (including empty)
+   - If sample has 10 distinct ring values, your ringValueMapping MUST have 10+ entries (including empty fallback)
+
+**EXAMPLE (Generic value mapping pattern):**
+
+If CSV has 10 distinct ring values that you consolidate into 3 rings:
+
+ringValueMapping: {
+  "ValueA": "Consolidated Ring 1",
+  "ValueB": "Consolidated Ring 1",
+  "ValueC": "Consolidated Ring 1",
+  "ValueD": "Consolidated Ring 2",
+  "ValueE": "Consolidated Ring 2",
+  "ValueF": "Consolidated Ring 3",
+  "ValueG": "Consolidated Ring 3",
+  "ValueH": "Consolidated Ring 3",
+  "Other": "Other",
+  "": "Other"
+}
+
+The mapping should be based on semantic analysis of the actual CSV values.
+
+**DOMAIN-AGNOSTIC APPROACH:**
+- Don't hardcode Swedish accounting terms - analyze the actual CSV data
+- Look for semantic patterns: time-related tasks, admin tasks, reporting tasks, operational tasks
+- Use generic consolidation strategies: frequency-based, alphabetical ranges, hierarchical grouping
+- If no clear pattern emerges, use simple fallback: "Primary Activities", "Secondary Activities", "Other"
+
 ### RESPONSE SCHEMA:
 
-\`\`\`typescript
-{
-  suggestedWheelTitle: string,        // Suggested title for the wheel based on data content
-  mapping: {
-    columns: {
-      activityName: string | null,     // EXACT column name for activity/event name
-      startDate: string | null,        // EXACT column name for date (CRITICAL!)
-      endDate: string | null,          // EXACT column name or same as startDate
-      description: string | null,      // EXACT column name for primary description/notes
-      descriptionColumns: string[],    // Additional columns to append to description
-      ring: string,                    // Column name OR constant value for ring assignment
-      group: string | null,            // EXACT column name for activity grouping (or null if using pattern-based groups)
-      labels: string[],                // EXACT column names for person/status/tags
-      person: string | null,           // Deprecated: use labels array instead
-      comments: string | null          // Deprecated: use descriptionColumns array
-    },
-    dateFormat: string,                // Description of detected date format
-    explanation: string,               // Why you chose these mappings
-    ringAssignmentLogic: string,      // How you're assigning rings (2-4 max)
-    groupAssignmentLogic: string,     // How you're assigning groups
-    suggestedRingStrategy: string,    // EXPLAIN your ring grouping logic with alternatives
-    suggestedGroupingStrategy: string // EXPLAIN your group detection logic with alternatives
-  },
-  rings: Array<{
-    id: string,                        // Format: "ring-1", "ring-2", etc.
-    name: string,                      // Swedish name based on data OR pattern-based
-    type: "outer" | "inner",          // First ring = outer, rest = inner
-    color?: string,                    // Hex color (only for outer ring)
-    visible: boolean,                  // Always true
-    orientation: "vertical" | "horizontal",
-    description: string,              // Why this ring exists
-    isCustom: boolean                 // true if AI generated pattern-based rings
-  }>,
-  activityGroups: Array<{
-    id: string,                        // Format: "ag-1", "ag-2", etc.
-    name: string,                      // Swedish name from data OR pattern-based
-    color: string,                     // Hex color for this group
-    visible: boolean,                  // Always true
-    description: string,              // Purpose of this category
-    isCustom: boolean,                // true if AI detected patterns rather than column values
-    pattern?: string                  // If isCustom, explain the pattern (e.g., "fiscal-year-cycle", "alphabetical", "geographic")
-  }>,
-  labels: Array<{
-    id: string,                        // Format: "label-1", "label-2", etc.
-    name: string,                      // Label text (person name, status, etc.)
-    color: string,                     // Hex color for this label
-    visible: boolean,                  // Always true
-    source: string                     // Which column(s) this label came from
-  }>,
-  detectedPeople: Array<{
-    name: string,                      // Full name
-    email: string | null,             // Email if found
-    context: string                    // Column where found
-  }>,
-  alternativeStrategies?: {           // OPTIONAL: Offer alternative grouping approaches
-    rings?: Array<{
-      strategy: string,                // E.g., "by-team", "by-priority", "by-phase"
-      description: string,             // Why this might work
-      ringNames: string[]              // What the rings would be called
-    }>,
-    groups?: Array<{
-      strategy: string,                // E.g., "by-fiscal-cycle", "alphabetical", "geographic"
-      description: string,             // Why this might work
-      estimatedGroupCount: number      // How many groups this would create
-    }>
+Response format (TypeScript interface):
+
+suggestedWheelTitle: string
+mapping: {
+  columns: {
+    activityName: string | null
+    startDate: string | null
+    endDate: string | null
+    description: string | null
+    descriptionColumns: string[]
+    ring: string
+    group: string | null
+    labels: string[]
+    person: string | null
+    comments: string | null
   }
+  dateFormat: string
+  explanation: string
+  ringAssignmentLogic: string
+  groupAssignmentLogic: string
+  suggestedRingStrategy: string
+  suggestedGroupingStrategy: string
+  ringValueMapping: object | null
+  groupValueMapping: object | null
 }
-\`\`\`
+rings: Array<{
+  id: string
+  name: string
+  type: "outer" | "inner"
+  color?: string
+  visible: boolean
+  orientation: "vertical" | "horizontal"
+  description: string
+  isCustom: boolean
+}>
+activityGroups: Array<{
+  id: string
+  name: string
+  color: string
+  visible: boolean
+  description: string
+  isCustom: boolean
+  pattern?: string
+}>
+labels: Array<{
+  id: string
+  name: string
+  color: string
+  visible: boolean
+  source: string
+}>
+detectedPeople: Array<{
+  name: string
+  email: string | null
+  context: string
+}>
+alternativeStrategies?: {
+  rings?: Array<{
+    strategy: string
+    description: string
+    ringNames: string[]
+  }>
+  groups?: Array<{
+    strategy: string
+    description: string
+    estimatedGroupCount: number
+  }>
+}
 
 ## VALIDATION RULES:
 ✅ Column names in mapping.columns MUST match CSV headers EXACTLY
@@ -840,13 +911,27 @@ Analyze the data and respond with the complete JSON structure.`
         const ringColIndex = csvStructure.headers.indexOf(mapping.mapping.columns.ring)
         if (ringColIndex >= 0) {
           const ringValue = row[ringColIndex]
-          if (ringValue && String(ringValue).trim()) {
-            // Normalize ring value to match existing rings consistently
-            const normalizedValue = String(ringValue).trim()
+          const ringValueStr = ringValue ? String(ringValue).trim() : ''
+          
+          // CRITICAL: Use AI's value mapping if provided (handles consolidation + empty values)
+          if (mapping.mapping.ringValueMapping) {
+            const mappedRing = mapping.mapping.ringValueMapping[ringValueStr]
+            if (mappedRing) {
+              ringName = mappedRing
+              if (index < 3) {
+                console.log(`[analyzeCsvWithAI] Row ${index} ring mapping: "${ringValueStr}" → "${mappedRing}"`)
+              }
+            } else {
+              // No mapping found - try fallback or use default
+              console.warn(`[analyzeCsvWithAI] Row ${index} ring value "${ringValueStr}" not in mapping - using default`)
+              ringName = mapping.rings.find((r: any) => r.name.toLowerCase().includes('övrigt') || r.name.toLowerCase().includes('other'))?.name || ringName
+            }
+          } else if (ringValueStr) {
+            // Legacy approach: Fuzzy matching (less reliable)
             const matchingRing = mapping.rings.find((r: any) => 
-              r.name.toLowerCase() === normalizedValue.toLowerCase() ||
-              r.name.includes(normalizedValue) ||
-              normalizedValue.includes(r.name)
+              r.name.toLowerCase() === ringValueStr.toLowerCase() ||
+              r.name.includes(ringValueStr) ||
+              ringValueStr.includes(r.name)
             )
             ringName = matchingRing ? matchingRing.name : ringName
           }
@@ -858,7 +943,26 @@ Analyze the data and respond with the complete JSON structure.`
       if (mapping.mapping.columns.group) {
         const groupColIndex = csvStructure.headers.indexOf(mapping.mapping.columns.group)
         if (groupColIndex >= 0) {
-          groupName = row[groupColIndex] || groupName
+          const groupValue = row[groupColIndex]
+          const groupValueStr = groupValue ? String(groupValue).trim() : ''
+          
+          // CRITICAL: Use AI's value mapping if provided (handles consolidation + empty values)
+          if (mapping.mapping.groupValueMapping) {
+            const mappedGroup = mapping.mapping.groupValueMapping[groupValueStr]
+            if (mappedGroup) {
+              groupName = mappedGroup
+              if (index < 3) {
+                console.log(`[analyzeCsvWithAI] Row ${index} group mapping: "${groupValueStr}" → "${mappedGroup}"`)
+              }
+            } else {
+              // No mapping found - try fallback or use default
+              console.warn(`[analyzeCsvWithAI] Row ${index} group value "${groupValueStr}" not in mapping - using default`)
+              groupName = mapping.activityGroups.find((g: any) => g.name.toLowerCase().includes('övrigt') || g.name.toLowerCase().includes('other'))?.name || groupName
+            }
+          } else if (groupValueStr) {
+            // Legacy approach: Use raw value (works when not consolidating)
+            groupName = groupValueStr
+          }
         }
       }
       
