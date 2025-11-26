@@ -15,7 +15,7 @@ import { useImportProgress } from '../hooks/useImportProgress';
  * - Comprehensive error handling and rollback
  */
 export default function SmartImportModal({ isOpen, onClose, wheelId, currentPageId, onImportComplete }) {
-  const [stage, setStage] = useState('upload'); // upload, analyzing, review, refining, importing, complete, confirm-delete
+  const [stage, setStage] = useState('upload'); // upload, analyzing, review, refining, importing, complete
   const [csvData, setCsvData] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [error, setError] = useState(null);
@@ -235,8 +235,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         rowCount: rows.length
       });
 
-      // Show confirmation dialog before proceeding
-      setStage('confirm-delete');
+      // Go directly to AI analysis
+      setStage('analyzing');
+      await analyzeWithAI(headers, rows);
 
     } catch (err) {
       console.error('[SmartImport] File upload error:', err);
@@ -962,6 +963,164 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </div>
         </div>
 
+        {/* Consolidation Breakdown */}
+        {(aiSuggestions.mapping?.ringValueMapping || aiSuggestions.mapping?.groupValueMapping) && (() => {
+          const ringColIndex = aiSuggestions.mapping?.columns?.ring 
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
+            : -1;
+          const groupColIndex = aiSuggestions.mapping?.columns?.group
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.group)
+            : -1;
+          
+          return (
+            <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5" />
+                📊 Datakonsolidering
+              </h4>
+              
+              {aiSuggestions.mapping?.ringValueMapping && ringColIndex >= 0 && (() => {
+                const uniqueValues = Object.keys(aiSuggestions.mapping.ringValueMapping).length;
+                const consolidatedCount = aiSuggestions.rings?.length || 0;
+                return (
+                  <div className="mb-4">
+                    <h5 className="font-medium text-blue-800 mb-2">
+                      Ringar: {uniqueValues} CSV-värden → {consolidatedCount} konsoliderade ringar
+                    </h5>
+                    <div className="space-y-2">
+                      {aiSuggestions.rings?.map(ring => {
+                        const mappedValues = Object.entries(aiSuggestions.mapping.ringValueMapping)
+                          .filter(([_, target]) => target === ring.name)
+                          .map(([source, _]) => source);
+                        const count = mappedValues.reduce((sum, val) => 
+                          sum + csvData.rows.filter(row => String(row[ringColIndex] || '') === val).length, 0
+                        );
+                        
+                        if (mappedValues.length === 0) return null;
+                        
+                        return (
+                          <div key={ring.id} className="bg-white rounded p-2">
+                            <div className="font-medium text-gray-900">
+                              {ring.name} <span className="text-sm text-gray-500">({count} aktiviteter)</span>
+                            </div>
+                            <div className="text-xs text-gray-600 ml-4 mt-1">
+                              ← {mappedValues.map(v => v === '' ? '(tom)' : v).join(', ')}
+                            </div>
+                          </div>
+                        );
+                      }).filter(Boolean)}
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              {aiSuggestions.mapping?.groupValueMapping && groupColIndex >= 0 && (() => {
+                const uniqueValues = Object.keys(aiSuggestions.mapping.groupValueMapping).length;
+                const consolidatedCount = aiSuggestions.activityGroups?.length || 0;
+                return (
+                  <div>
+                    <h5 className="font-medium text-blue-800 mb-2">
+                      Aktivitetsgrupper: {uniqueValues} CSV-värden → {consolidatedCount} konsoliderade grupper
+                    </h5>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {aiSuggestions.activityGroups?.map(group => {
+                        const mappedValues = Object.entries(aiSuggestions.mapping.groupValueMapping)
+                          .filter(([_, target]) => target === group.name)
+                          .map(([source, _]) => source);
+                        const count = mappedValues.reduce((sum, val) => 
+                          sum + csvData.rows.filter(row => String(row[groupColIndex] || '') === val).length, 0
+                        );
+                        
+                        if (mappedValues.length === 0) return null;
+                        
+                        return (
+                          <div key={group.id} className="bg-white rounded p-2">
+                            <div className="font-medium text-gray-900 flex items-center gap-2">
+                              <div className="w-4 h-4 rounded" style={{ backgroundColor: group.color }} />
+                              {group.name} <span className="text-sm text-gray-500">({count} aktiviteter)</span>
+                            </div>
+                            <div className="text-xs text-gray-600 ml-8 mt-1">
+                              ← {mappedValues.slice(0, 10).map(v => v === '' ? '(tom)' : v).join(', ')}
+                              {mappedValues.length > 10 && ` ... +${mappedValues.length - 10} fler`}
+                            </div>
+                          </div>
+                        );
+                      }).filter(Boolean)}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
+
+        {/* Empty Value Status */}
+        {(() => {
+          const ringColIndex = aiSuggestions.mapping?.columns?.ring 
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
+            : -1;
+          const groupColIndex = aiSuggestions.mapping?.columns?.group
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.group)
+            : -1;
+          
+          const emptyRingCount = ringColIndex >= 0 
+            ? csvData.rows.filter(row => !row[ringColIndex] || String(row[ringColIndex]).trim() === '').length
+            : 0;
+          const emptyGroupCount = groupColIndex >= 0
+            ? csvData.rows.filter(row => !row[groupColIndex] || String(row[groupColIndex]).trim() === '').length
+            : 0;
+          
+          const ringFallback = aiSuggestions.mapping?.ringValueMapping?.[''] || 'Övrigt';
+          const groupFallback = aiSuggestions.mapping?.groupValueMapping?.[''] || 'Allmänt';
+          
+          if (emptyRingCount === 0 && emptyGroupCount === 0) return null;
+          
+          return (
+            <div className="bg-amber-50 border border-amber-200 rounded-sm p-4">
+              <h5 className="font-medium text-amber-900 flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5" />
+                Tomma värden upptäckta
+              </h5>
+              <ul className="text-sm text-amber-800 space-y-1">
+                {emptyRingCount > 0 && (
+                  <li>
+                    {emptyRingCount} rader med tomt ringvärde → mappas till "{ringFallback}"
+                  </li>
+                )}
+                {emptyGroupCount > 0 && (
+                  <li>
+                    {emptyGroupCount} rader med tomt gruppvärde → mappas till "{groupFallback}"
+                  </li>
+                )}
+              </ul>
+              <p className="text-xs text-amber-700 mt-2">
+                ✅ Dessa {emptyRingCount + emptyGroupCount} rader kommer fortfarande att importeras.
+              </p>
+            </div>
+          );
+        })()}
+
+        {/* Large Import Preview Notice */}
+        {aiSuggestions.totalActivitiesCount > (aiSuggestions.activities?.length || 0) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
+            <h4 className="font-medium text-blue-900 mb-1">📊 Stor dataset upptäckt</h4>
+            <p className="text-sm text-blue-800">
+              Din CSV innehåller <strong>{aiSuggestions.totalActivitiesCount} aktiviteter</strong>.
+            </p>
+            <p className="text-sm text-blue-800 mt-1">
+              För prestanda visar vi en förhandsgranskning av {aiSuggestions.activities?.length || 20} aktiviteter här.
+            </p>
+            <p className="text-sm text-blue-900 font-medium mt-2">
+              ✅ Alla {aiSuggestions.totalActivitiesCount} aktiviteter kommer att importeras när du klickar "Importera".
+            </p>
+            {csvData.rowCount > 200 && (
+              <p className="text-xs text-blue-700 mt-2">
+                ⏰ Import tar uppskattningsvis {csvData.rowCount < 500 ? '3-7 minuter' : csvData.rowCount < 1000 ? '7-15 minuter' : '> 15 minuter'}. Du får ett email när importen är klar.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Data Suitability Warning */}
         {aiSuggestions.suitabilityWarning && (
           <div className={`border rounded-sm p-4 ${
@@ -1617,6 +1776,59 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             </div>
           </div>
         )}
+
+        {/* Import Mode Selection */}
+        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-sm p-4">
+          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-yellow-600" />
+            Välj importmetod
+          </h4>
+          <p className="text-sm text-gray-700 mb-4">
+            Importen kommer att skapa: <strong>{getEffectiveRingsAndGroups().effectiveRings.length} ringar</strong>, 
+            <strong> {getEffectiveRingsAndGroups().effectiveGroups.length} grupper</strong>, 
+            <strong> {aiSuggestions.totalActivitiesCount || aiSuggestions.activities?.length || 0} aktiviteter</strong>
+          </p>
+          
+          <div className="space-y-3">
+            <label className="flex items-start gap-3 p-3 border-2 rounded-sm cursor-pointer hover:bg-yellow-100/50 transition-colors"
+              style={{ borderColor: importMode === 'replace' ? '#EAB308' : '#E5E7EB' }}>
+              <input
+                type="radio"
+                name="importMode"
+                value="replace"
+                checked={importMode === 'replace'}
+                onChange={(e) => setImportMode(e.target.value)}
+                className="mt-0.5"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">Ersätt alla data</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  <strong>VARNING:</strong> Alla befintliga ringar, aktivitetsgrupper, etiketter och aktiviteter raderas permanent.
+                  Endast sidstruktur bevaras.
+                </div>
+              </div>
+            </label>
+            
+            <label className="flex items-start gap-3 p-3 border-2 rounded-sm cursor-pointer hover:bg-green-50 transition-colors"
+              style={{ borderColor: importMode === 'append' ? '#10B981' : '#E5E7EB' }}>
+              <input
+                type="radio"
+                name="importMode"
+                value="append"
+                checked={importMode === 'append'}
+                onChange={(e) => setImportMode(e.target.value)}
+                className="mt-0.5"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">Lägg till befintliga data</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Nya ringar, grupper och aktiviteter läggs till utan att radera befintlig data.
+                  Duplicerade namn kan uppstå.
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
       </div>
     );
   };
@@ -1769,7 +1981,6 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           )}
 
           {stage === 'upload' && renderUploadStage()}
-          {stage === 'confirm-delete' && renderConfirmStage()}
           {stage === 'analyzing' && renderAnalyzingStage()}
           {stage === 'review' && renderReviewStage()}
           {stage === 'importing' && renderImportingStage()}
