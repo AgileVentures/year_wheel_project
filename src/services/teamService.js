@@ -222,8 +222,12 @@ export async function sendTeamInvitation(teamId, email) {
     supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
   ]);
 
-  const teamName = teamResult.data?.name || 'teamet';
-  const inviterName = profileResult.data?.full_name || profileResult.data?.email || 'Ett teammedlem';
+  const teamName = teamResult.data?.name || 'the team';
+  const inviterName = profileResult.data?.full_name || profileResult.data?.email || 'A team member';
+
+  // Get user's language preference from localStorage or browser
+  const userLanguage = localStorage.getItem('i18nextLng') || navigator.language.split('-')[0] || 'sv';
+  const language = ['en', 'sv'].includes(userLanguage) ? userLanguage : 'sv';
 
   // Send invitation email via Edge Function
   try {
@@ -240,7 +244,8 @@ export async function sendTeamInvitation(teamId, email) {
         teamName,
         inviterName,
         recipientEmail: email.toLowerCase().trim(),
-        inviteToken: data.token
+        inviteToken: data.token,
+        language
       })
     });
 

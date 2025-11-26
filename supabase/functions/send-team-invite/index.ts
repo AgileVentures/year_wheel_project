@@ -12,6 +12,7 @@ interface TeamInviteRequest {
   inviterName: string
   recipientEmail: string
   inviteToken: string
+  language?: 'en' | 'sv'
 }
 
 serve(async (req) => {
@@ -49,7 +50,8 @@ serve(async (req) => {
       teamName,
       inviterName,
       recipientEmail,
-      inviteToken
+      inviteToken,
+      language = 'sv'
     } = await req.json() as TeamInviteRequest
 
     // Validate required fields
@@ -66,9 +68,10 @@ serve(async (req) => {
     // Create HTML email using YearWheel brand template
     const htmlContent = generateTeamInviteEmail({
       teamName,
-      inviterName: inviterName || 'Ett teammedlem',
+      inviterName: inviterName || (language === 'en' ? 'A team member' : 'Ett teammedlem'),
       inviteUrl,
-      recipientEmail
+      recipientEmail,
+      language
     })
 
     // Send email via Resend
@@ -93,7 +96,9 @@ serve(async (req) => {
         from: 'YearWheel Team <hello@notify.yearwheel.se>',
         reply_to: 'hey@communitaslabs.io',
         to: [recipientEmail],
-        subject: `Inbjudan till teamet "${teamName}" på YearWheel`,
+        subject: language === 'en' 
+          ? `Invitation to join "${teamName}" on YearWheel`
+          : `Inbjudan till teamet "${teamName}" på YearWheel`,
         html: htmlContent
       })
     })
@@ -166,23 +171,55 @@ function generateTeamInviteEmail({
   teamName,
   inviterName,
   inviteUrl,
-  recipientEmail
+  recipientEmail,
+  language = 'sv'
 }: {
   teamName: string
   inviterName: string
   inviteUrl: string
   recipientEmail: string
+  language?: 'en' | 'sv'
 }): string {
+  const t = language === 'en' ? {
+    title: `Invitation to join "${teamName}" on YearWheel`,
+    tagline: 'Visualize and plan your year!',
+    badge: '🎉 TEAM INVITATION',
+    heading: `You're invited to join "${teamName}"`,
+    greeting: 'Hello!',
+    intro1: `<strong>${inviterName}</strong> has invited you to join the team <strong>"${teamName}"</strong> on YearWheel.`,
+    intro2: 'With YearWheel, you can visualize and plan your activities throughout the year together. Collaborate in real-time, share wheels, and keep your team synced!',
+    ctaButton: 'Accept invitation',
+    tipTitle: '💡 Tip:',
+    tipText: `If you don't already have an account, you can register with this email address (<strong>${recipientEmail}</strong>) when you accept the invitation.`,
+    linkLabel: 'Button not working? Copy and paste this link into your browser:',
+    footerText: 'You are receiving this email because someone invited you to a team on YearWheel.',
+    footerLinks: { support: 'Support', home: 'Home' }
+  } : {
+    title: `Inbjudan till "${teamName}" - YearWheel`,
+    tagline: 'Visualisera och planera ditt år!',
+    badge: '🎉 TEAMINBJUDAN',
+    heading: `Du är inbjuden till "${teamName}"`,
+    greeting: 'Hej!',
+    intro1: `<strong>${inviterName}</strong> har bjudit in dig att bli medlem i teamet <strong>"${teamName}"</strong> på YearWheel.`,
+    intro2: 'Med YearWheel kan ni tillsammans visualisera och planera era aktiviteter genom hela året. Samarbeta i realtid, dela hjul och håll teamet synkat!',
+    ctaButton: 'Acceptera inbjudan',
+    tipTitle: '💡 Tips:',
+    tipText: `Om du inte redan har ett konto kommer du att kunna registrera dig med denna e-postadress (<strong>${recipientEmail}</strong>) när du accepterar inbjudan.`,
+    linkLabel: 'Fungerar inte knappen? Kopiera och klistra in denna länk i din webbläsare:',
+    footerText: 'Du får detta mail eftersom någon har bjudit in dig till ett team på YearWheel.',
+    footerLinks: { support: 'Support', home: 'Hem' }
+  }
+
   return `
 <!DOCTYPE html>
-<html lang="sv" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<html lang="${language}" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8">
   <meta name="x-apple-disable-message-reformatting">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
-  <title>Inbjudan till ${teamName} - YearWheel</title>
+  <title>${t.title}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
     
@@ -265,7 +302,7 @@ function generateTeamInviteEmail({
                 <h1 style="margin: 0; padding: 0; color: #1B2A63; font-size: 32px; font-weight: 700; font-family: 'Poppins', sans-serif;">YearWheel</h1>
               </div>
               <p style="margin: 8px 0 0 0; color: #1B2A63; font-size: 14px; font-weight: 600;">
-                Visualisera och planera ditt år!
+                ${t.tagline}
               </p>
             </td>
           </tr>
@@ -277,45 +314,45 @@ function generateTeamInviteEmail({
               <!-- Invitation Badge -->
               <div style="text-align: center; padding: 16px 24px; background: linear-gradient(135deg, #A4E6E0 0%, #36C2C6 100%); border-radius: 8px; margin-bottom: 32px;">
                 <p style="margin: 0; color: #1B2A63; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                  🎉 Teaminbjudan
+                  ${t.badge}
                 </p>
               </div>
               
               <!-- Main Message -->
               <h1 style="color: #1B2A63; font-size: 28px; font-weight: 700; margin: 0 0 24px 0; line-height: 1.3; text-align: center;">
-                Du är inbjuden till "${teamName}"
+                ${t.heading}
               </h1>
               
               <p style="color: #4b5563; font-size: 16px; line-height: 1.8; margin: 0 0 24px 0;">
-                Hej!
+                ${t.greeting}
               </p>
               
               <p style="color: #4b5563; font-size: 16px; line-height: 1.8; margin: 0 0 24px 0;">
-                <strong>${inviterName}</strong> har bjudit in dig att bli medlem i teamet <strong>"${teamName}"</strong> på YearWheel.
+                ${t.intro1}
               </p>
               
               <p style="color: #4b5563; font-size: 16px; line-height: 1.8; margin: 0 0 32px 0;">
-                Med YearWheel kan ni tillsammans visualisera och planera era aktiviteter genom hela året. Samarbeta i realtid, dela hjul och håll teamet synkat!
+                ${t.intro2}
               </p>
               
               <!-- CTA Button -->
               <div style="text-align: center; margin: 40px 0;">
                 <a href="${inviteUrl}" class="btn" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #00A4A6 0%, #36C2C6 100%); color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 18px; box-shadow: 0 4px 6px rgba(0, 164, 166, 0.2);">
-                  Acceptera inbjudan
+                  ${t.ctaButton}
                 </a>
               </div>
               
               <!-- Info Box -->
               <div style="background-color: #f9fafb; border-left: 4px solid #00A4A6; border-radius: 4px; padding: 20px; margin: 32px 0;">
                 <p style="color: #4b5563; font-size: 14px; line-height: 1.6; margin: 0;">
-                  <strong style="color: #1B2A63;">💡 Tips:</strong> Om du inte redan har ett konto kommer du att kunna registrera dig med denna e-postadress (<strong>${recipientEmail}</strong>) när du accepterar inbjudan.
+                  <strong style="color: #1B2A63;">${t.tipTitle}</strong> ${t.tipText}
                 </p>
               </div>
               
               <!-- Alternative Link -->
               <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
                 <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0;">
-                  Fungerar inte knappen? Kopiera och klistra in denna länk i din webbläsare:
+                  ${t.linkLabel}
                 </p>
                 <p style="color: #00A4A6; font-size: 13px; word-break: break-all; margin: 0;">
                   <a href="${inviteUrl}" style="color: #00A4A6; text-decoration: underline;">${inviteUrl}</a>
@@ -332,11 +369,11 @@ function generateTeamInviteEmail({
                 <a href="https://yearwheel.se" style="color: #00A4A6; text-decoration: none; font-weight: 600;">YearWheel.se</a>
               </p>
               <p style="margin: 0 0 12px 0; color: #9ca3af; font-size: 12px;">
-                Du får detta mail eftersom någon har bjudit in dig till ett team på YearWheel.
+                ${t.footerText}
               </p>
               <p style="margin: 0; font-size: 12px;">
-                <a href="https://yearwheel.se/support" style="color: #9ca3af; text-decoration: underline;">Support</a> •
-                <a href="https://yearwheel.se" style="color: #9ca3af; text-decoration: underline;">Hem</a>
+                <a href="https://yearwheel.se/support" style="color: #9ca3af; text-decoration: underline;">${t.footerLinks.support}</a> •
+                <a href="https://yearwheel.se" style="color: #9ca3af; text-decoration: underline;">${t.footerLinks.home}</a>
               </p>
             </td>
           </tr>
