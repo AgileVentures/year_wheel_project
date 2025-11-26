@@ -19,6 +19,7 @@
   "pendingInvites": "Pending invitations ({{count}})",
   "invited": "Invited {{date}}",
   "cancelInvite": "Cancel invitation",
+  "resendInvite": "Resend",
   "removeMember": "Remove member",
   "you": "(You)",
   "changeRole": {
@@ -62,6 +63,8 @@
     "errorRemoveMember": "Could not remove member",
     "errorChangeRole": "Could not change role",
     "errorCancelInvitation": "Could not cancel invitation",
+    "errorResendInvitation": "Could not resend invitation",
+    "invitationResent": "Invitation resent",
     "errorDeleteTeam": "Could not delete team",
     "loading": "Loading team..."
   },

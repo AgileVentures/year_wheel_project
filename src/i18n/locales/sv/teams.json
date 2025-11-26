@@ -19,6 +19,7 @@
   "pendingInvites": "Väntande inbjudningar ({{count}})",
   "invited": "Inbjuden {{date}}",
   "cancelInvite": "Avbryt inbjudan",
+  "resendInvite": "Skicka igen",
   "removeMember": "Ta bort medlem",
   "you": "(Du)",
   "changeRole": {
@@ -62,6 +63,8 @@
     "errorRemoveMember": "Kunde inte ta bort medlem",
     "errorChangeRole": "Kunde inte ändra roll",
     "errorCancelInvitation": "Kunde inte avbryta inbjudan",
+    "errorResendInvitation": "Kunde inte skicka inbjudan igen",
+    "invitationResent": "Inbjudan skickad igen",
     "errorDeleteTeam": "Kunde inte ta bort team",
     "loading": "Laddar team..."
   },

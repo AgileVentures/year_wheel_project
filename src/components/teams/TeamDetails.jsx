@@ -10,7 +10,8 @@ import {
   updateMemberRole,
   getTeamWheels,
   getTeamInvitations,
-  cancelInvitation
+  cancelInvitation,
+  resendTeamInvitation
 } from '../../services/teamService';
 import { useAuth } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -141,6 +142,17 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
     } catch (err) {
       console.error('Error canceling invitation:', err);
       showToast(t('teams:messages.errorCancelInvitation') + ': ' + err.message, 'error');
+    }
+  };
+
+  const handleResendInvitation = async (inviteId) => {
+    try {
+      setInviteMenuOpen(null);
+      await resendTeamInvitation(inviteId);
+      showToast(t('teams:messages.invitationResent', { defaultValue: 'Inbjudan skickad igen' }), 'success');
+    } catch (err) {
+      console.error('Error resending invitation:', err);
+      showToast(t('teams:messages.errorResendInvitation', { defaultValue: 'Kunde inte skicka inbjudan igen' }) + ': ' + err.message, 'error');
     }
   };
 
@@ -376,6 +388,13 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
                           onClick={() => setInviteMenuOpen(null)}
                         />
                         <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-sm shadow-lg z-20">
+                          <button
+                            onClick={() => handleResendInvitation(invite.id)}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-blue-600"
+                          >
+                            <Mail className="w-4 h-4" />
+                            {t('teams:resendInvite', { defaultValue: 'Skicka igen' })}
+                          </button>
                           <button
                             onClick={() => handleCancelInvitation(invite.id)}
                             className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-red-600"

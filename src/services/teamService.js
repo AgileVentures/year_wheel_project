@@ -276,6 +276,74 @@ export async function sendTeamInvitation(teamId, email) {
 }
 
 /**
+ * Resend an existing team invitation email
+ */
+export async function resendTeamInvitation(invitationId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Get the invitation details
+  const { data: invitation, error: inviteError } = await supabase
+    .from('team_invitations')
+    .select('*, teams(name)')
+    .eq('id', invitationId)
+    .single();
+
+  if (inviteError) throw inviteError;
+  if (!invitation) throw new Error('Invitation not found');
+
+  // Get inviter profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', user.id)
+    .single();
+
+  const teamName = invitation.teams?.name || 'the team';
+  const inviterName = profile?.full_name || profile?.email || 'A team member';
+
+  // Get user's language preference
+  const storedLang = localStorage.getItem('i18nextLng');
+  const browserLang = navigator.language.split('-')[0];
+  const userLanguage = storedLang || browserLang || 'sv';
+  const language = ['en', 'sv'].includes(userLanguage) ? userLanguage : 'sv';
+
+  // Send invitation email via Edge Function
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-team-invite`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        invitationId: invitation.id,
+        teamName,
+        inviterName,
+        recipientEmail: invitation.email,
+        inviteToken: invitation.token,
+        language
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Failed to resend invitation email:', errorData);
+      throw new Error('Failed to resend invitation email');
+    }
+    
+    console.log('Invitation email resent successfully');
+  } catch (emailError) {
+    console.error('Error resending invitation email:', emailError);
+    throw emailError;
+  }
+
+  return invitation;
+}
+
+/**
  * Get pending invitations for a team
  */
 export async function getTeamInvitations(teamId) {
