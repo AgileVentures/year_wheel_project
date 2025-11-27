@@ -447,7 +447,14 @@ Analyze this CSV with ${csvStructure.totalRows} rows and generate mapping rules 
 - Existing Groups: ${existingGroups?.length ? existingGroups.map((g: any) => g.name).join(', ') : 'None'}
 
 **CSV Headers:** ${JSON.stringify(csvStructure.headers)}
+**Total Rows:** ${csvStructure.totalRows}
 **Sample Data (first 20 rows):** ${JSON.stringify(csvStructure.sampleRows)}
+
+**CRITICAL: Analyze the FULL dataset for value mapping:**
+- The sample shows only 20 rows, but the FULL dataset has ${csvStructure.totalRows} rows
+- You must examine ALL ${csvStructure.totalRows} rows to find every distinct ring/group value
+- Use the provided tools/functions to analyze the complete dataset
+- DO NOT assume the sample is representative - missing values in sample = data loss in production
 
 ## WHEEL TITLE GENERATION (REQUIRED):
 
@@ -579,33 +586,47 @@ Analyze BOTH column names AND data values to detect date columns:
 - This ensures no data is wasted
 - Priority: If a dedicated description/comments/notes column exists, use it first, then append other unused columns
 
-### CRITICAL: VALUE MAPPING DOCUMENTATION:
-**When you consolidate CSV values into fewer rings/groups, you MUST provide explicit mappings.**
+### CRITICAL: VALUE MAPPING DOCUMENTATION (ZERO DATA LOSS):
+**ABSOLUTE REQUIREMENT: Every CSV row MUST have both ring and group mappings.**
 
-**WHY THIS MATTERS:**
-- During import, each CSV row's ring/group value must match one of your consolidated ring/group names
-- If a CSV row has ring="Bokslut" but you created ring="Ekonomisk rapportering", the import will FAIL unless you document the mapping
-- Empty/null values in CSV rows will also fail unless you provide a fallback ring/group
+**WHY THIS IS CRITICAL:**
+- Recent production incident: 1,286 out of 1,929 items (66%) were lost due to incomplete value mappings
+- During import, EVERY CSV row's ring/group value must map to one of your consolidated rings/groups
+- Unmapped values result in NULL ringId/activityId → item gets dropped → DATA LOSS
+- Empty/null values in CSV rows will be dropped unless you provide a fallback mapping
 
-**REQUIRED MAPPINGS:**
-1. **Ring Value Mapping** (if consolidating):
-   - Analyze ALL distinct ring values in the CSV sample data
-   - For each distinct value, assign it to one of your 2-4 consolidated rings
-   - Include a "ringValueMapping" object in your response: { "CSV Value": "Consolidated Ring Name" }
-   - Example: { "Bokslut": "Ekonomisk rapportering", "Inkomstdeklaration": "Ekonomisk rapportering", "Kontrolluppgift": "Ekonomisk rapportering", "": "Övrigt" }
-   - CRITICAL: Include mapping for empty string "" if any rows have empty ring values
+**MANDATORY STEPS FOR ZERO DATA LOSS:**
 
-2. **Group Value Mapping** (if consolidating):
-   - Analyze ALL distinct group values in the CSV sample data
-   - For each distinct value, assign it to one of your consolidated groups
-   - Include a "groupValueMapping" object in your response: { "CSV Value": "Consolidated Group Name" }
-   - Example: { "Client A": "Calendar Year Clients", "Client B": "May-April Clients", "": "Övrigt" }
-   - CRITICAL: Include mapping for empty string "" if any rows have empty group values
+1. **Analyze ALL distinct values in FULL dataset** (not just sample):
+   - Step 1: Extract ALL unique values from ring column across ALL ${csvStructure.totalRows} rows
+   - Step 2: Extract ALL unique values from group column across ALL ${csvStructure.totalRows} rows
+   - Step 3: Count empty/null values for both columns
+   - Step 4: Verify your mapping covers 100% of these values
 
-3. **Validation**:
-   - Count distinct values in sample data to estimate total unique values
-   - Ensure your consolidated rings/groups cover ALL possible values (including empty)
-   - If sample has 10 distinct ring values, your ringValueMapping MUST have 10+ entries (including empty fallback)
+2. **Ring Value Mapping** (COMPLETE COVERAGE REQUIRED):
+   - List EVERY distinct ring value found in the CSV data (including empty)
+   - Map each value to one of your 2-4 consolidated rings
+   - Include a "ringValueMapping" object: { "CSV Value": "Consolidated Ring Name" }
+   - MANDATORY: Include mapping for empty string "" → "Övrigt" or "Other"
+   - MANDATORY: Include mapping for null → "Övrigt" or "Other"
+   - Example: { "Bokslut": "Ekonomisk rapportering", "Inkomstdeklaration": "Ekonomisk rapportering", "Kontrolluppgift": "Ekonomisk rapportering", "": "Övrigt", "null": "Övrigt" }
+   - VERIFICATION: Count distinct values, confirm mapping count matches exactly
+
+3. **Group Value Mapping** (COMPLETE COVERAGE REQUIRED):
+   - List EVERY distinct group value found in the CSV data (including empty)
+   - Map each value to one of your consolidated groups
+   - Include a "groupValueMapping" object: { "CSV Value": "Consolidated Group Name" }
+   - MANDATORY: Include mapping for empty string "" → "Allmänt" or "General"
+   - MANDATORY: Include mapping for null → "Allmänt" or "General"
+   - Example: { "Client A": "Calendar Year", "Client B": "May-April", "": "Allmänt", "null": "Allmänt" }
+   - VERIFICATION: Count distinct values, confirm mapping count matches exactly
+
+4. **Validation Requirements**:
+   - validation.hasCompleteMapping = true ONLY if ringValueMapping and groupValueMapping are 100% complete
+   - validation.expectedActivityCount = total CSV rows (${csvStructure.totalRows}) minus rows with invalid dates
+   - validation.unmappedRingValues = [] (empty array means all values mapped)
+   - validation.unmappedGroupValues = [] (empty array means all values mapped)
+   - If you cannot map all values, set hasCompleteMapping = false and list unmapped values
 
 **EXAMPLE (Generic value mapping pattern):**
 
@@ -754,15 +775,21 @@ validation: {
   warnings: string[]
 }
 
-## VALIDATION RULES:
+## VALIDATION RULES (CRITICAL - PREVENT DATA LOSS):
 ✅ Column names in mapping.columns MUST match CSV headers EXACTLY
 ✅ At least 1 ring, at least 1 activity group
 ✅ Maximum 2-4 rings (consolidate if needed)
 ✅ startDate and endDate fields are CRITICAL - don't guess, use exact column names
-✅ validation.expectedActivityCount should equal CSV totalRows (minus rows with invalid dates)
-✅ validation.hasCompleteMapping must be true
-✅ If validation.unmappedRingValues or unmappedGroupValues is not empty, explain in warnings
+✅ validation.expectedActivityCount MUST equal ${csvStructure.totalRows} (minus only rows with invalid dates)
+✅ validation.hasCompleteMapping MUST be true (all values mapped)
+✅ validation.unmappedRingValues MUST be [] (empty array - all ring values mapped)
+✅ validation.unmappedGroupValues MUST be [] (empty array - all group values mapped)
+✅ ringValueMapping MUST include mappings for "" and "null" (empty value fallbacks)
+✅ groupValueMapping MUST include mappings for "" and "null" (empty value fallbacks)
+✅ If you cannot achieve complete mapping, set hasCompleteMapping = false and document WHY in warnings
 ✅ Respond with ONLY valid JSON, no markdown or extra text
+
+**REMEMBER: Missing mappings = Lost data. 66% data loss occurred in production due to incomplete mappings.**
 
 Analyze the data and respond with the complete JSON structure.`
 
