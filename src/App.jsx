@@ -4507,6 +4507,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 year={wheelState.metadata.year}
                 onUpdateItem={handleUpdateAktivitet}
                 onDeleteItem={handleDeleteAktivitet}
+                yearWheelRef={yearWheelRef}
               />
             </div>
           )}

@@ -1,7 +1,7 @@
 /**
  * CalendarDayBox Component
  *
- * Displays a single day in the calendar with activity items
+ * Displays a single day in the calendar with activity indicators as user icons
  *
  * @param {Date} day - The date object representing the day
  * @param {boolean} isToday - Indicates if the day is today
@@ -23,56 +23,67 @@ const CalendarDayBox = ({
   getRing
 }) => {
   const dayNumber = day.getDate();
-  const displayItems = items.slice(0, 3); // Show max 3 items
-  const remainingCount = items.length - 3;
+  const totalItems = items.length;
+  
+  // Debug logging for days with items
+  if (totalItems > 0) {
+    console.log(`[CalendarDayBox] Day ${dayNumber} has ${totalItems} items:`, items.map(i => i.name));
+  }
 
-  return (
-    <div
-      className={`w-full min-h-[120px] p-2 ${
-        isPast ? 'cursor-default' : 'cursor-pointer hover:bg-blue-50'
-      } overflow-hidden relative transition-colors ${
-        isToday ? 'bg-blue-100 border-2 border-blue-500' : 
-        isPast ? 'bg-gray-50' : 'bg-white'
-      }`}
-      onClick={onClick}
-    >
-      {/* Day number in top-left corner */}
-      <div className={`text-sm font-semibold mb-1 ${
-        isToday
-          ? 'text-blue-700'
-          : isPast
-          ? 'text-gray-400'
-          : isCurrentMonth
-          ? 'text-gray-700'
-          : 'text-gray-400'
-      }`}>
-        {dayNumber}
-      </div>
-      
-      {/* Activity items as colored bars */}
-      <div className="space-y-1">
-        {displayItems.map((item, index) => {
+  const renderIcons = () => {
+    if (totalItems === 0) return null;
+    
+    return (
+      <div className="flex justify-center items-center space-x-0">
+        {items.slice(0, 3).map((item, index) => {
           const group = getActivityGroup(item);
           return (
             <div
               key={item.id || index}
-              className="text-[10px] px-1.5 py-0.5 rounded truncate text-white font-medium"
+              className={`w-4 h-4 rounded-full border-2 border-white flex-shrink-0 ${index > 0 ? '-ml-3' : ''}`}
               style={{ 
-                backgroundColor: group?.color || '#9CA3AF'
+                backgroundColor: group?.color || '#EF4444',
+                zIndex: 3 - index 
               }}
               title={item.name}
-            >
-              {item.name}
-            </div>
+            />
           );
         })}
-        
-        {/* Show "+X more" if there are more items */}
-        {remainingCount > 0 && (
-          <div className="text-[10px] text-gray-600 font-semibold px-1">
-            +{remainingCount} {remainingCount === 1 ? 'more' : 'more'}
-          </div>
+        {totalItems > 3 && (
+          <span className="text-xs font-bold text-gray-700 ml-1">
+            +{totalItems - 3}
+          </span>
         )}
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className={`w-full h-[100px] p-3 ${
+        isPast ? 'cursor-default' : 'cursor-pointer hover:bg-gray-100'
+      } overflow-hidden relative ${
+        isToday ? 'bg-blue-50' : 
+        isPast ? 'bg-gray-100' : 'bg-white'
+      }`}
+      onClick={isPast ? undefined : onClick}
+    >
+      <div className="flex flex-col h-full">
+        {/* Day number in center */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className={`text-2xl font-bold ${
+            isToday ? 'text-red-500' : 
+            isPast ? 'text-gray-400' : 
+            isCurrentMonth ? 'text-gray-700' : 'text-gray-400'
+          }`}>
+            {dayNumber}
+          </div>
+        </div>
+        
+        {/* Item icons at bottom */}
+        <div className="h-6 flex items-center justify-center">
+          {renderIcons()}
+        </div>
       </div>
     </div>
   );

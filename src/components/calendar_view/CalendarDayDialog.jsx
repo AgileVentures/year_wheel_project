@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { X } from "lucide-react";
+import { X, ExternalLink } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
  * @param {Function} getRing - Get ring for an item
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
+ * @param {Function} onNavigateToItem - Callback to open item tooltip in wheel
  * @param {Object} locale - date-fns locale object
  */
 const CalendarDayDialog = ({ 
@@ -26,9 +27,14 @@ const CalendarDayDialog = ({
   getRing,
   onUpdateItem,
   onDeleteItem,
+  onNavigateToItem,
   locale
 }) => {
   const { t } = useTranslation();
+  
+  console.log('[CalendarDayDialog] isOpen:', isOpen);
+  console.log('[CalendarDayDialog] items:', items);
+  console.log('[CalendarDayDialog] items length:', items?.length);
   
   if (!isOpen) return null;
 
@@ -118,6 +124,17 @@ const CalendarDayDialog = ({
                             <div className="mt-2 text-sm text-gray-600">
                               {item.description}
                             </div>
+                          )}
+                          
+                          {/* View in wheel button */}
+                          {onNavigateToItem && (
+                            <button
+                              onClick={() => onNavigateToItem(item.id)}
+                              className="mt-3 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              <ExternalLink size={14} />
+                              {t('common:actions.viewInWheel', 'Visa i hjul')}
+                            </button>
                           )}
                         </div>
                       </div>

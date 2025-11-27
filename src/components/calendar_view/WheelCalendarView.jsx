@@ -15,12 +15,14 @@ import CalendarDayDialog from "./CalendarDayDialog";
  * @param {number} year - Current year being displayed
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
+ * @param {Object} yearWheelRef - Reference to YearWheel instance for opening tooltips
  */
 const WheelCalendarView = ({ 
   wheelStructure, 
   year,
   onUpdateItem,
-  onDeleteItem 
+  onDeleteItem,
+  yearWheelRef
 }) => {
   const { body, month, year: calendarYear, navigation } = useCalendar({
     defaultViewType: CalendarViewType.Month,
@@ -34,11 +36,31 @@ const WheelCalendarView = ({
   const locale = useMemo(() => {
     return i18n.language === "sv" ? sv : enUS;
   }, [i18n.language]);
+  
+  // Force calendar to stay in the correct year
+  const currentCalendarDate = new Date(calendarYear, month);
+  const shouldBeYear = year;
+  
+  // If calendar drifted to wrong year, reset it
+  if (calendarYear !== shouldBeYear) {
+    console.log(`[WheelCalendarView] Calendar year mismatch! Calendar: ${calendarYear}, Expected: ${shouldBeYear}. Resetting...`);
+    // Don't reset here, it will cause infinite loop
+  }
 
   // Debug logging
   console.log('[WheelCalendarView] wheelStructure:', wheelStructure);
-  console.log('[WheelCalendarView] year:', year);
+  console.log('[WheelCalendarView] year prop:', year);
+  console.log('[WheelCalendarView] calendar year/month:', calendarYear, month);
   console.log('[WheelCalendarView] items count:', wheelStructure?.items?.length || 0);
+  
+  // Sample a few items to see their dates
+  if (wheelStructure?.items && wheelStructure.items.length > 0) {
+    console.log('[WheelCalendarView] First 3 items:', wheelStructure.items.slice(0, 3).map(i => ({
+      name: i.name,
+      startDate: i.startDate,
+      endDate: i.endDate
+    })));
+  }
 
   // Get items for a specific day
   const getItemsForDay = (day) => {
@@ -47,19 +69,37 @@ const WheelCalendarView = ({
       return [];
     }
     
-    const dayStart = startOfDay(day).getTime();
-    const dayEnd = new Date(day).setHours(23, 59, 59, 999);
+    const dayStart = startOfDay(day);
+    const dayEnd = new Date(day);
+    dayEnd.setHours(23, 59, 59, 999);
+    
+    console.log(`[WheelCalendarView] Checking day: ${format(day, 'yyyy-MM-dd')}`);
+    console.log(`[WheelCalendarView] Day range: ${dayStart.toISOString()} to ${dayEnd.toISOString()}`);
     
     const dayItems = wheelStructure.items.filter((item) => {
-      const itemStart = new Date(item.startDate).getTime();
-      const itemEnd = new Date(item.endDate).getTime();
+      if (!item.startDate || !item.endDate) {
+        console.log('[WheelCalendarView] Item missing dates:', item);
+        return false;
+      }
       
-      // Item overlaps with this day if it starts before day ends and ends after day starts
-      return itemStart <= dayEnd && itemEnd >= dayStart;
+      const itemStart = new Date(item.startDate);
+      const itemEnd = new Date(item.endDate);
+      
+      // Item overlaps with this day if it starts before/on day end and ends after/on day start
+      const overlaps = itemStart <= dayEnd && itemEnd >= dayStart;
+      
+      if (overlaps) {
+        console.log(`[WheelCalendarView] ✓ Item "${item.name}" overlaps:`, {
+          itemStart: itemStart.toISOString(),
+          itemEnd: itemEnd.toISOString()
+        });
+      }
+      
+      return overlaps;
     });
     
     if (dayItems.length > 0) {
-      console.log('[WheelCalendarView] Found', dayItems.length, 'items for', day);
+      console.log(`[WheelCalendarView] Found ${dayItems.length} items for ${format(day, 'yyyy-MM-dd')}`);
     }
     
     return dayItems;
@@ -79,6 +119,9 @@ const WheelCalendarView = ({
 
   const handleDayClick = (dayValue) => {
     const itemsForDay = getItemsForDay(dayValue);
+    console.log('[WheelCalendarView] Day clicked:', dayValue);
+    console.log('[WheelCalendarView] Items for this day:', itemsForDay);
+    console.log('[WheelCalendarView] Items count:', itemsForDay.length);
     setSelectedDay({ date: dayValue, items: itemsForDay });
     setIsDialogOpen(true);
   };
@@ -181,6 +224,12 @@ const WheelCalendarView = ({
             getRing={getRing}
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}
+            onNavigateToItem={(itemId) => {
+              if (yearWheelRef && yearWheelRef.openItemTooltip) {
+                handleCloseDialog(); // Close calendar dialog
+                yearWheelRef.openItemTooltip(itemId);
+              }
+            }}
             locale={locale}
           />
         )}
