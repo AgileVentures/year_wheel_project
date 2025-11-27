@@ -359,6 +359,117 @@ export async function getTeamInvitations(teamId) {
 }
 
 /**
+ * Create a pending invitation (name only, no email yet)
+ * Used by Smart Import when person names are detected but no email
+ */
+export async function createPendingInvitation(teamId, name) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('team_invitations')
+    .insert([
+      {
+        team_id: teamId,
+        pending_name: name.trim(),
+        is_pending: true,
+        invited_by: user.id,
+        status: 'pending'
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Complete a pending invitation by adding email and sending invite
+ */
+export async function completePendingInvitation(invitationId, email) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Get the invitation
+  const { data: invitation, error: inviteError } = await supabase
+    .from('team_invitations')
+    .select('*, teams(name)')
+    .eq('id', invitationId)
+    .eq('is_pending', true)
+    .single();
+
+  if (inviteError) throw inviteError;
+  if (!invitation) throw new Error('Pending invitation not found');
+
+  // Check capacity before completing
+  await ensureTeamHasCapacity(invitation.team_id, user.id);
+
+  // Update invitation with email and generate token
+  const { data: updatedInvite, error: updateError } = await supabase
+    .from('team_invitations')
+    .update({
+      email: email.toLowerCase().trim(),
+      is_pending: false
+    })
+    .eq('id', invitationId)
+    .select()
+    .single();
+
+  if (updateError) throw updateError;
+
+  // Get inviter profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', user.id)
+    .single();
+
+  const teamName = invitation.teams?.name || 'the team';
+  const inviterName = profile?.full_name || profile?.email || 'A team member';
+
+  // Get user's language preference
+  const storedLang = localStorage.getItem('i18nextLng');
+  const browserLang = navigator.language.split('-')[0];
+  const userLanguage = storedLang || browserLang || 'sv';
+  const language = ['en', 'sv'].includes(userLanguage) ? userLanguage : 'sv';
+
+  // Send invitation email
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const response = await fetch(`${supabase.supabaseUrl}/functions/v1/send-team-invite`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        invitationId: updatedInvite.id,
+        teamName,
+        inviterName,
+        recipientEmail: email.toLowerCase().trim(),
+        inviteToken: updatedInvite.token,
+        language
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Failed to send invitation email:', errorData);
+      // Don't throw - invitation is updated, email failure is non-critical
+    } else {
+      console.log('Invitation email sent successfully');
+    }
+  } catch (emailError) {
+    console.error('Error sending invitation email:', emailError);
+    // Don't throw - invitation is updated
+  }
+
+  return updatedInvite;
+}
+
+/**
  * Cancel/delete a pending invitation (for team owners/admins)
  */
 export async function cancelInvitation(invitationId) {

@@ -10,7 +10,9 @@ import { useRef, useCallback } from 'react';
  * 
  * Usage:
  *   const tracker = useChangeTracker();
- *   tracker.trackItemChange(itemId, oldItem, newItem);
+ *   tracker.trackItemChange(itemId, 'added', item);
+ *   tracker.trackItemChange(itemId, 'modified', updatedItem);
+ *   tracker.trackItemChange(itemId, 'deleted', item);
  *   const changes = tracker.getChanges();
  *   tracker.clearChanges();
  */
@@ -23,117 +25,107 @@ export function useChangeTracker() {
     pages: { added: new Map(), modified: new Map(), deleted: new Set() }
   });
 
-  const trackItemChange = useCallback((id, oldItem, newItem) => {
+  const trackItemChange = useCallback((id, action, item) => {
     const changes = changesRef.current.items;
 
-    if (!oldItem && newItem) {
+    if (action === 'added') {
       // New item added
-      changes.added.set(id, newItem);
+      changes.added.set(id, item);
       changes.modified.delete(id);
       changes.deleted.delete(id);
-    } else if (oldItem && !newItem) {
+    } else if (action === 'deleted') {
       // Item deleted
       changes.deleted.add(id);
       changes.added.delete(id);
       changes.modified.delete(id);
-    } else if (oldItem && newItem) {
-      // Item modified - check if actually different
-      if (JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
-        if (!changes.added.has(id)) {
-          // Only track as modified if not a new item
-          changes.modified.set(id, newItem);
-        } else {
-          // Update the added item data
-          changes.added.set(id, newItem);
-        }
+    } else if (action === 'modified') {
+      // Item modified
+      if (!changes.added.has(id)) {
+        // Only track as modified if not a new item
+        changes.modified.set(id, item);
+      } else {
+        // Update the added item data
+        changes.added.set(id, item);
       }
     }
   }, []);
 
-  const trackRingChange = useCallback((id, oldRing, newRing) => {
+  const trackRingChange = useCallback((id, action, ring) => {
     const changes = changesRef.current.rings;
 
-    if (!oldRing && newRing) {
-      changes.added.set(id, newRing);
+    if (action === 'added') {
+      changes.added.set(id, ring);
       changes.modified.delete(id);
       changes.deleted.delete(id);
-    } else if (oldRing && !newRing) {
+    } else if (action === 'deleted') {
       changes.deleted.add(id);
       changes.added.delete(id);
       changes.modified.delete(id);
-    } else if (oldRing && newRing) {
-      if (JSON.stringify(oldRing) !== JSON.stringify(newRing)) {
-        if (!changes.added.has(id)) {
-          changes.modified.set(id, newRing);
-        } else {
-          changes.added.set(id, newRing);
-        }
+    } else if (action === 'modified') {
+      if (!changes.added.has(id)) {
+        changes.modified.set(id, ring);
+      } else {
+        changes.added.set(id, ring);
       }
     }
   }, []);
 
-  const trackActivityGroupChange = useCallback((id, oldGroup, newGroup) => {
+  const trackActivityGroupChange = useCallback((id, action, group) => {
     const changes = changesRef.current.activityGroups;
 
-    if (!oldGroup && newGroup) {
-      changes.added.set(id, newGroup);
+    if (action === 'added') {
+      changes.added.set(id, group);
       changes.modified.delete(id);
       changes.deleted.delete(id);
-    } else if (oldGroup && !newGroup) {
+    } else if (action === 'deleted') {
       changes.deleted.add(id);
       changes.added.delete(id);
       changes.modified.delete(id);
-    } else if (oldGroup && newGroup) {
-      if (JSON.stringify(oldGroup) !== JSON.stringify(newGroup)) {
-        if (!changes.added.has(id)) {
-          changes.modified.set(id, newGroup);
-        } else {
-          changes.added.set(id, newGroup);
-        }
+    } else if (action === 'modified') {
+      if (!changes.added.has(id)) {
+        changes.modified.set(id, group);
+      } else {
+        changes.added.set(id, group);
       }
     }
   }, []);
 
-  const trackLabelChange = useCallback((id, oldLabel, newLabel) => {
+  const trackLabelChange = useCallback((id, action, label) => {
     const changes = changesRef.current.labels;
 
-    if (!oldLabel && newLabel) {
-      changes.added.set(id, newLabel);
+    if (action === 'added') {
+      changes.added.set(id, label);
       changes.modified.delete(id);
       changes.deleted.delete(id);
-    } else if (oldLabel && !newLabel) {
+    } else if (action === 'deleted') {
       changes.deleted.add(id);
       changes.added.delete(id);
       changes.modified.delete(id);
-    } else if (oldLabel && newLabel) {
-      if (JSON.stringify(oldLabel) !== JSON.stringify(newLabel)) {
-        if (!changes.added.has(id)) {
-          changes.modified.set(id, newLabel);
-        } else {
-          changes.added.set(id, newLabel);
-        }
+    } else if (action === 'modified') {
+      if (!changes.added.has(id)) {
+        changes.modified.set(id, label);
+      } else {
+        changes.added.set(id, label);
       }
     }
   }, []);
 
-  const trackPageChange = useCallback((id, oldPage, newPage) => {
+  const trackPageChange = useCallback((id, action, page) => {
     const changes = changesRef.current.pages;
 
-    if (!oldPage && newPage) {
-      changes.added.set(id, newPage);
+    if (action === 'added') {
+      changes.added.set(id, page);
       changes.modified.delete(id);
       changes.deleted.delete(id);
-    } else if (oldPage && !newPage) {
+    } else if (action === 'deleted') {
       changes.deleted.add(id);
       changes.added.delete(id);
       changes.modified.delete(id);
-    } else if (oldPage && newPage) {
-      if (JSON.stringify(oldPage) !== JSON.stringify(newPage)) {
-        if (!changes.added.has(id)) {
-          changes.modified.set(id, newPage);
-        } else {
-          changes.added.set(id, newPage);
-        }
+    } else if (action === 'modified') {
+      if (!changes.added.has(id)) {
+        changes.modified.set(id, page);
+      } else {
+        changes.added.set(id, page);
       }
     }
   }, []);

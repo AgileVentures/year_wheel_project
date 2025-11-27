@@ -1,0 +1,166 @@
+{
+  "title": "Smart Import",
+  "subtitle": "AI-powered CSV import",
+  "stages": {
+    "upload": "Upload",
+    "analyzing": "Analyzing",
+    "review": "Review",
+    "importing": "Importing",
+    "complete": "Complete"
+  },
+  "upload": {
+    "heading": "Smart Import with AI",
+    "description": "Upload a CSV file and AI will analyze the structure and suggest automatic mapping",
+    "selectFile": "Select CSV file",
+    "acceptedFormats": "Accepts .csv, .xlsx, and .xls files",
+    "aiFeatures": "AI will automatically:",
+    "features": {
+      "identifyColumns": "Identify columns for activities, dates, and categories",
+      "createStructure": "Create rings and activity groups based on structure",
+      "mapActivities": "Map activities to correct rings and groups",
+      "findPeople": "Find people in data and offer team invitations",
+      "handleComments": "Handle comments and descriptions"
+    }
+  },
+  "analyzing": {
+    "heading": "AI is analyzing your data...",
+    "progress": "This may take a few seconds",
+    "rowsAndColumns": "{{rows}} rows · {{columns}} columns"
+  },
+  "review": {
+    "suggestedTitle": "Suggested wheel title",
+    "canChangeAfter": "You can change the title after import in wheel settings",
+    "analysisComplete": "AI analysis complete!",
+    "advancedMapping": "Advanced mapping",
+    "advancedMappingDescription": "Customize AI's choice of columns, rings and groups",
+    "rings": "Rings ({{count}})",
+    "activityGroups": "Activity Groups ({{count}})",
+    "activities": "Activities ({{count}})",
+    "activitiesWillBeImported": "{{count}} activities will be imported",
+    "firstExamples": "First 3 examples:",
+    "importMode": {
+      "heading": "Choose import method",
+      "description": "You have uploaded <strong>{{rows}} rows</strong> from <strong>{{fileName}}</strong>",
+      "willCreate": "Import will create: <strong>{{rings}} rings</strong>, <strong>{{groups}} groups</strong>, <strong>{{activities}} activities</strong>",
+      "replace": {
+        "title": "Replace all data",
+        "description": "<strong>WARNING:</strong> All existing rings, activity groups, labels and activities will be permanently deleted. Only page structure is preserved."
+      },
+      "append": {
+        "title": "Add to existing data",
+        "description": "New rings, groups and activities are added without deleting existing data. Duplicate names may occur."
+      }
+    },
+    "largeImport": {
+      "heading": "Large import ({{rows}} rows)",
+      "estimatedTime": "Estimated time: <strong>{{time}}</strong>",
+      "emailNotification": "We will send you an email when the import is complete. You can close this window and continue working.",
+      "emailAddress": "📧 Email will be sent to your registered address"
+    },
+    "dataPreview": {
+      "title": "Large dataset detected",
+      "totalActivities": "Your CSV contains <strong>{{total}} activities</strong>.",
+      "previewCount": "For performance, we show a preview of {{preview}} activities here.",
+      "allWillImport": "✅ All {{total}} activities will be imported when you click \"Import\".",
+      "timeEstimate": "⏰ Import will take approximately {{time}}. You'll receive an email when complete."
+    }
+  },
+  "people": {
+    "heading": "Found people ({{count}})",
+    "createTeam": "Create team for this wheel",
+    "createTeamDescription": "Invite people to collaborate on planning",
+    "teamName": "Team name",
+    "teamNamePlaceholder": "e.g., Project Team 2025",
+    "sendInvites": "Send invitations via email immediately",
+    "sendInvitesEnabled": "✉️ Email sent directly to people with email addresses. People without email are added as pending invitations.",
+    "sendInvitesDisabled": "📋 All people are added as pending invitations. You can add email addresses and send invitations later from team settings.",
+    "selectPeople": "Select people to invite",
+    "emailExists": "Email available",
+    "emailMissing": "Email missing",
+    "selectedCount": "<strong>{{count}}</strong> person(s) selected:",
+    "willSendEmail": "✉️ {{name}} - email will be sent to {{email}}",
+    "willBePending": "📋 {{name}} - prepared as pending invitation{{email}}"
+  },
+  "importing": {
+    "heading": "Importing data...",
+    "progress": "{{percent}}%",
+    "itemsProgress": "{{processed}} / {{total}} items",
+    "timeRemaining": "{{time}} remaining...",
+    "createdRings": "✓ {{count}} rings",
+    "createdGroups": "✓ {{count}} groups",
+    "createdLabels": "✓ {{count}} labels",
+    "createdPages": "✓ {{count}} pages",
+    "cancelImport": "Cancel import",
+    "continueBackground": "Continue in background",
+    "backgroundNotice": "Import continues in background. You will receive a notification when complete."
+  },
+  "complete": {
+    "heading": "Import complete!",
+    "description": "All data has been imported to your wheel",
+    "teamCreated": "Team \"{{teamName}}\" has been created with {{count}} member(s)",
+    "close": "Close",
+    "droppedActivities": {
+      "heading": "{{count}} activities could not be imported",
+      "row": "Row {{index}}: {{name}}",
+      "tip": "💡 Tip: Check that your CSV columns contain valid ring and group names"
+    }
+  },
+  "buttons": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "continueToAnalysis": "Continue to AI analysis",
+    "import": "Import {{count}} activities",
+    "importAnyway": "⚠️ Import anyway ({{count}})",
+    "importBlocked": "Import blocked"
+  },
+  "errors": {
+    "heading": "An error occurred",
+    "tryAgain": "Try again",
+    "fileReadError": "Error reading file",
+    "fileRequirements": "CSV file must have at least one header row and one data row",
+    "aiAnalysisError": "Error during AI analysis",
+    "importError": "Error during import",
+    "teamCreationError": "Could not create team: {{message}}"
+  },
+  "teamSuccess": {
+    "emailsSent": "Team created! {{sent}} email(s) sent, {{pending}} waiting for email",
+    "pendingOnly": "Team created! {{pending}} invitation(s) prepared (emails not sent automatically)"
+  },
+  "consolidation": {
+    "heading": "📊 Data Consolidation",
+    "strategy": "Consolidation strategy:",
+    "rings": "Rings: {{unique}} CSV values → {{consolidated}} consolidated rings",
+    "groups": "Activity groups: {{unique}} CSV values → {{consolidated}} consolidated groups",
+    "mappedFrom": "← {{values}}",
+    "activities": "{{count}} activities"
+  },
+  "customization": {
+    "heading": "Customize Rings and Groups",
+    "current": "Your customizations: {{rings}} rings and {{groups}} activity groups.",
+    "suggested": "AI has suggested {{rings}} rings and {{groups}} activity groups.",
+    "tooManyWarning": "NOTE: {{count}} groups may be confusing - consider reducing the number.",
+    "rings": {
+      "label": "Rings (2-4 recommended)",
+      "editing": "Editing AI's suggestions – activities update automatically",
+      "customize": "Customize",
+      "resetToAI": "Reset to AI suggestions",
+      "addRing": "+ Add ring",
+      "removeAll": "Remove all",
+      "removeAllConfirm": "Remove all {{count}} rings? This cannot be undone.",
+      "remove": "Remove",
+      "inner": "Inner",
+      "outer": "Outer"
+    },
+    "groups": {
+      "label": "Activity Groups",
+      "editing": "Editing AI's suggestions – activities update automatically",
+      "customize": "Customize",
+      "resetToAI": "Reset to AI suggestions",
+      "summary": "{{count}} groups: {{names}}",
+      "addGroup": "+ Add group",
+      "removeAll": "Remove all",
+      "removeAllConfirm": "Remove all {{count}} groups? This cannot be undone.",
+      "remove": "Remove"
+    }
+  }
+}

@@ -125,5 +125,34 @@
     "maxMembersReached": "You have reached the free plan limit of {{max}} team members. Upgrade to add more members.",
     "maxMembersReachedShort": "Free plan limit ({{max}} members)",
     "upgradeCta": "Upgrade to unlock more seats"
+  },
+  "smartImport": {
+    "detectedPeople": "Detected people ({{count}})",
+    "createTeamCheckbox": "Create team for this wheel",
+    "createTeamDescription": "Invite people to collaborate on planning",
+    "teamNameLabel": "Team name",
+    "teamNamePlaceholder": "e.g., Project Team 2025",
+    "selectPeopleLabel": "Select people to invite",
+    "emailAvailable": "Email available",
+    "emailMissing": "Email missing",
+    "peopleSelected": "{{count}} person(s) selected:",
+    "willReceiveEmail": "{{name}} will receive email immediately",
+    "emailAddedLater": "{{name}} - email to be added later",
+    "teamCreated": "Team created! {{sent}} email(s) sent, {{pending}} awaiting email",
+    "errorCreatingTeam": "Could not create team"
+  },
+  "incompleteInvites": {
+    "title": "Need email ({{count}})",
+    "description": "These people were found in Smart Import but are missing email addresses. Add email to send invitation.",
+    "noEmail": "Email missing - ready to send when added",
+    "addEmailButton": "Add email",
+    "removeButton": "Remove",
+    "modalTitle": "Add email for {{name}}",
+    "modalDescription": "When you add an email address, an invitation will be sent automatically.",
+    "emailPlaceholder": "name@example.com",
+    "modalCancel": "Cancel",
+    "modalSend": "Send invitation",
+    "successMessage": "Email sent to {{email}}",
+    "errorMessage": "Could not add email"
   }
 }

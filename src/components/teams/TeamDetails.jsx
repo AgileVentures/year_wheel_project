@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, UserPlus, Trash2, Crown, Shield, User, X, MoreVertical, ExternalLink, Mail, Clock } from 'lucide-react';
+import { ArrowLeft, Settings, UserPlus, Trash2, Crown, Shield, User, X, MoreVertical, ExternalLink, Mail, Clock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { 
   getTeam, 
@@ -11,7 +11,8 @@ import {
   getTeamWheels,
   getTeamInvitations,
   cancelInvitation,
-  resendTeamInvitation
+  resendTeamInvitation,
+  completePendingInvitation
 } from '../../services/teamService';
 import { useAuth } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -26,6 +27,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
   const [pendingInvites, setPendingInvites] = useState([]);
+  const [incompleteInvites, setIncompleteInvites] = useState([]); // Invitations without email
   const [wheels, setWheels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingWheels, setLoadingWheels] = useState(true);
@@ -35,6 +37,8 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [memberMenuOpen, setMemberMenuOpen] = useState(null);
   const [inviteMenuOpen, setInviteMenuOpen] = useState(null);
+  const [addEmailModal, setAddEmailModal] = useState(null); // {inviteId, name}
+  const [emailInput, setEmailInput] = useState('');
 
   const currentUserRole = team?.team_members?.find(m => m.user_id === user?.id)?.role;
   const canManageTeam = currentUserRole === 'owner' || currentUserRole === 'admin';
@@ -58,7 +62,13 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
       ]);
       setTeam(teamData);
       setMembers(membersData);
-      setPendingInvites(invitesData || []);
+      
+      // Separate complete invitations (with email) from incomplete (without email)
+      const complete = invitesData?.filter(inv => !inv.is_pending && inv.email) || [];
+      const incomplete = invitesData?.filter(inv => inv.is_pending && inv.pending_name) || [];
+      setPendingInvites(complete);
+      setIncompleteInvites(incomplete);
+      
       setError(null);
     } catch (err) {
       console.error('Error loading team details:', err);
@@ -138,6 +148,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
     try {
       await cancelInvitation(inviteId);
       setPendingInvites(prev => prev.filter(inv => inv.id !== inviteId));
+      setIncompleteInvites(prev => prev.filter(inv => inv.id !== inviteId));
       setInviteMenuOpen(null);
     } catch (err) {
       console.error('Error canceling invitation:', err);
@@ -153,6 +164,22 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
     } catch (err) {
       console.error('Error resending invitation:', err);
       showToast(t('teams:messages.errorResendInvitation', { defaultValue: 'Kunde inte skicka inbjudan igen' }) + ': ' + err.message, 'error');
+    }
+  };
+
+  const handleAddEmail = async () => {
+    if (!addEmailModal || !emailInput.trim()) return;
+
+    try {
+      await completePendingInvitation(addEmailModal.inviteId, emailInput.trim());
+      showToast(`Email skickat till ${emailInput}`, 'success');
+      setAddEmailModal(null);
+      setEmailInput('');
+      // Refresh to move from incomplete to pending
+      loadTeamDetails();
+    } catch (err) {
+      console.error('Error adding email to invitation:', err);
+      showToast('Kunde inte lägga till email: ' + err.message, 'error');
     }
   };
 
@@ -411,6 +438,58 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
             </div>
           </div>
         )}
+
+        {/* Incomplete Invitations (Need Email) */}
+        {canManageTeam && incompleteInvites.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-orange-600" />
+              Behöver email ({incompleteInvites.length})
+            </h4>
+            <p className="text-xs text-gray-600 mb-3">
+              Dessa personer hittades i Smart Import men saknar emailadress. Lägg till email för att skicka inbjudan.
+            </p>
+            <div className="space-y-2">
+              {incompleteInvites.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="flex items-center justify-between p-3 rounded-sm bg-orange-50 border border-orange-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {invite.pending_name}
+                      </div>
+                      <div className="text-xs text-orange-700">
+                        Email saknas - klar att skicka när den läggs till
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setAddEmailModal({ inviteId: invite.id, name: invite.pending_name })}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center gap-1"
+                    >
+                      <Mail className="w-3 h-3" />
+                      Lägg till email
+                    </button>
+                    <button
+                      onClick={() => handleCancelInvitation(invite.id)}
+                      className="p-1 hover:bg-orange-200 rounded"
+                      title="Ta bort"
+                    >
+                      <X className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Wheels Section */}
@@ -485,6 +564,50 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
             setShowEditModal(false);
           }}
         />
+      )}
+
+      {/* Add Email Modal */}
+      {addEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-sm max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Lägg till email för {addEmailModal.name}
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              När du lägger till emailadress kommer en inbjudan skickas automatiskt.
+            </p>
+            <input
+              type="email"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder="namn@example.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddEmail();
+                if (e.key === 'Escape') setAddEmailModal(null);
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setAddEmailModal(null);
+                  setEmailInput('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50"
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={handleAddEmail}
+                disabled={!emailInput.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Skicka inbjudan
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showDeleteConfirm && (

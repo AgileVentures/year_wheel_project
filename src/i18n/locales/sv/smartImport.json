@@ -1,0 +1,166 @@
+{
+  "title": "Smart Import",
+  "subtitle": "AI-driven CSV-import",
+  "stages": {
+    "upload": "Ladda upp",
+    "analyzing": "Analyserar",
+    "review": "Granska",
+    "importing": "Importerar",
+    "complete": "Klar"
+  },
+  "upload": {
+    "heading": "Smart Import med AI",
+    "description": "Ladda upp en CSV-fil så analyserar AI strukturen och föreslår automatisk mappning",
+    "selectFile": "Välj CSV-fil",
+    "acceptedFormats": "Accepterar .csv, .xlsx, och .xls filer",
+    "aiFeatures": "AI kommer automatiskt att:",
+    "features": {
+      "identifyColumns": "Identifiera kolumner för aktiviteter, datum, och kategorier",
+      "createStructure": "Skapa ringar och aktivitetsgrupper baserat på struktur",
+      "mapActivities": "Mappa aktiviteter till rätt ringar och grupper",
+      "findPeople": "Hitta personer i data och erbjuda teameinbjudningar",
+      "handleComments": "Hantera kommentarer och beskrivningar"
+    }
+  },
+  "analyzing": {
+    "heading": "AI analyserar din data...",
+    "progress": "Detta kan ta några sekunder",
+    "rowsAndColumns": "{{rows}} rader · {{columns}} kolumner"
+  },
+  "review": {
+    "suggestedTitle": "Förslag på hjultitel",
+    "canChangeAfter": "Du kan ändra titeln efter importen i hjulinställningarna",
+    "analysisComplete": "AI-analys klar!",
+    "advancedMapping": "Avancerad mappning",
+    "advancedMappingDescription": "Anpassa AI:s val av kolumner, ringar och grupper",
+    "rings": "Ringar ({{count}})",
+    "activityGroups": "Aktivitetsgrupper ({{count}})",
+    "activities": "Aktiviteter ({{count}})",
+    "activitiesWillBeImported": "{{count}} aktiviteter kommer att importeras",
+    "firstExamples": "Första 3 exempel:",
+    "importMode": {
+      "heading": "Välj importmetod",
+      "description": "Du har laddat upp <strong>{{rows}} rader</strong> från <strong>{{fileName}}</strong>",
+      "willCreate": "Importen kommer att skapa: <strong>{{rings}} ringar</strong>, <strong>{{groups}} grupper</strong>, <strong>{{activities}} aktiviteter</strong>",
+      "replace": {
+        "title": "Ersätt alla data",
+        "description": "<strong>VARNING:</strong> Alla befintliga ringar, aktivitetsgrupper, etiketter och aktiviteter raderas permanent. Endast sidstruktur bevaras."
+      },
+      "append": {
+        "title": "Lägg till befintliga data",
+        "description": "Nya ringar, grupper och aktiviteter läggs till utan att radera befintlig data. Duplicerade namn kan uppstå."
+      }
+    },
+    "largeImport": {
+      "heading": "Stor import ({{rows}} rader)",
+      "estimatedTime": "Beräknad tid: <strong>{{time}}</strong>",
+      "emailNotification": "Vi kommer att skicka ett email till dig när importen är klar. Du kan stänga detta fönster och fortsätta arbeta.",
+      "emailAddress": "📧 Email skickas till din registrerade adress"
+    },
+    "dataPreview": {
+      "title": "Stor dataset upptäckt",
+      "totalActivities": "Din CSV innehåller <strong>{{total}} aktiviteter</strong>.",
+      "previewCount": "För prestanda visar vi en förhandsgranskning av {{preview}} aktiviteter här.",
+      "allWillImport": "✅ Alla {{total}} aktiviteter kommer att importeras när du klickar \"Importera\".",
+      "timeEstimate": "⏰ Import tar uppskattningsvis {{time}}. Du får ett email när importen är klar."
+    }
+  },
+  "people": {
+    "heading": "Hittade personer ({{count}})",
+    "createTeam": "Skapa team för detta hjul",
+    "createTeamDescription": "Bjud in personer att samarbeta på planeringen",
+    "teamName": "Teamnamn",
+    "teamNamePlaceholder": "T.ex. Projektteam 2025",
+    "sendInvites": "Skicka inbjudningar via email omedelbart",
+    "sendInvitesEnabled": "✉️ Email skickas direkt till personer med emailadress. Personer utan email läggs till som väntande inbjudningar.",
+    "sendInvitesDisabled": "📋 Alla personer läggs till som väntande inbjudningar. Du kan lägga till emailadresser och skicka inbjudningar senare från teaminställningarna.",
+    "selectPeople": "Välj personer att bjuda in",
+    "emailExists": "Email finns",
+    "emailMissing": "Email saknas",
+    "selectedCount": "<strong>{{count}}</strong> person(er) valda:",
+    "willSendEmail": "✉️ {{name}} - email skickas till {{email}}",
+    "willBePending": "📋 {{name}} - förberedds som väntande inbjudan{{email}}"
+  },
+  "importing": {
+    "heading": "Importerar data...",
+    "progress": "{{percent}}%",
+    "itemsProgress": "{{processed}} / {{total}} objekt",
+    "timeRemaining": "{{time}} kvar...",
+    "createdRings": "✓ {{count}} ringar",
+    "createdGroups": "✓ {{count}} grupper",
+    "createdLabels": "✓ {{count}} etiketter",
+    "createdPages": "✓ {{count}} sidor",
+    "cancelImport": "Avbryt import",
+    "continueBackground": "Fortsätt i bakgrunden",
+    "backgroundNotice": "Import fortsätter i bakgrunden. Du kommer att få ett meddelande när importen är klar."
+  },
+  "complete": {
+    "heading": "Import klar!",
+    "description": "All data har importerats till ditt hjul",
+    "teamCreated": "Team \"{{teamName}}\" har skapats med {{count}} medlem(mar)",
+    "close": "Stäng",
+    "droppedActivities": {
+      "heading": "{{count}} aktiviteter kunde inte importeras",
+      "row": "Rad {{index}}: {{name}}",
+      "tip": "💡 Tips: Kontrollera att dina CSV-kolumner innehåller giltiga ring- och gruppnamn"
+    }
+  },
+  "buttons": {
+    "back": "Tillbaka",
+    "cancel": "Avbryt",
+    "continueToAnalysis": "Fortsätt till AI-analys",
+    "import": "Importera {{count}} aktiviteter",
+    "importAnyway": "⚠️ Importera ändå ({{count}})",
+    "importBlocked": "Import blockerad"
+  },
+  "errors": {
+    "heading": "Fel uppstod",
+    "tryAgain": "Försök igen",
+    "fileReadError": "Fel vid läsning av fil",
+    "fileRequirements": "CSV-filen måste ha minst en rubrikrad och en datarad",
+    "aiAnalysisError": "Fel vid AI-analys",
+    "importError": "Fel vid import",
+    "teamCreationError": "Kunde inte skapa team: {{message}}"
+  },
+  "teamSuccess": {
+    "emailsSent": "Team skapat! {{sent}} email(s) skickade, {{pending}} väntar på email",
+    "pendingOnly": "Team skapat! {{pending}} inbjudan(ar) förberedda (email skickas inte automatiskt)"
+  },
+  "consolidation": {
+    "heading": "📊 Datakonsolidering",
+    "strategy": "Konsolideringsstrategi:",
+    "rings": "Ringar: {{unique}} CSV-värden → {{consolidated}} konsoliderade ringar",
+    "groups": "Aktivitetsgrupper: {{unique}} CSV-värden → {{consolidated}} konsoliderade grupper",
+    "mappedFrom": "← {{values}}",
+    "activities": "{{count}} aktiviteter"
+  },
+  "customization": {
+    "heading": "Anpassa Ringar och Grupper",
+    "current": "Dina anpassningar: {{rings}} ringar och {{groups}} aktivitetsgrupper.",
+    "suggested": "AI:n har föreslagit {{rings}} ringar och {{groups}} aktivitetsgrupper.",
+    "tooManyWarning": "OBS: {{count}} grupper kan bli rörigt - överväg att minska antalet.",
+    "rings": {
+      "label": "Ringar (2-4 rekommenderat)",
+      "editing": "Redigerar AI:s förslag – aktiviteter uppdateras automatiskt",
+      "customize": "Anpassa",
+      "resetToAI": "Återställ till AI:s förslag",
+      "addRing": "+ Lägg till ring",
+      "removeAll": "Ta bort alla",
+      "removeAllConfirm": "Ta bort alla {{count}} ringar? Detta kan inte ångras.",
+      "remove": "Ta bort",
+      "inner": "Inner",
+      "outer": "Outer"
+    },
+    "groups": {
+      "label": "Aktivitetsgrupper",
+      "editing": "Redigerar AI:s förslag – aktiviteter uppdateras automatiskt",
+      "customize": "Anpassa",
+      "resetToAI": "Återställ till AI:s förslag",
+      "summary": "{{count}} grupper: {{names}}",
+      "addGroup": "+ Lägg till grupp",
+      "removeAll": "Ta bort alla",
+      "removeAllConfirm": "Ta bort alla {{count}} grupper? Detta kan inte ångras.",
+      "remove": "Ta bort"
+    }
+  }
+}

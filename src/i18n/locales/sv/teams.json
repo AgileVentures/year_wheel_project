@@ -126,5 +126,34 @@
     "maxMembersReached": "Du har nått gratis-planens gräns på {{max}} teammedlemmar. Uppgradera för att lägga till fler medlemmar.",
     "maxMembersReachedShort": "Gratis-plan: max {{max}} medlemmar",
     "upgradeCta": "Uppgradera för fler platser"
+  },
+  "smartImport": {
+    "detectedPeople": "Hittade personer ({{count}})",
+    "createTeamCheckbox": "Skapa team för detta hjul",
+    "createTeamDescription": "Bjud in personer att samarbeta på planeringen",
+    "teamNameLabel": "Teamnamn",
+    "teamNamePlaceholder": "T.ex. Projektteam 2025",
+    "selectPeopleLabel": "Välj personer att bjuda in",
+    "emailAvailable": "Email finns",
+    "emailMissing": "Email saknas",
+    "peopleSelected": "{{count}} person(er) valda:",
+    "willReceiveEmail": "{{name}} får email omedelbart",
+    "emailAddedLater": "{{name}} - email läggs till senare",
+    "teamCreated": "Team skapat! {{sent}} email(s) skickade, {{pending}} väntar på email",
+    "errorCreatingTeam": "Kunde inte skapa team"
+  },
+  "incompleteInvites": {
+    "title": "Behöver email ({{count}})",
+    "description": "Dessa personer hittades i Smart Import men saknar emailadress. Lägg till email för att skicka inbjudan.",
+    "noEmail": "Email saknas - klar att skicka när den läggs till",
+    "addEmailButton": "Lägg till email",
+    "removeButton": "Ta bort",
+    "modalTitle": "Lägg till email för {{name}}",
+    "modalDescription": "När du lägger till emailadress kommer en inbjudan skickas automatiskt.",
+    "emailPlaceholder": "namn@example.com",
+    "modalCancel": "Avbryt",
+    "modalSend": "Skicka inbjudan",
+    "successMessage": "Email skickat till {{email}}",
+    "errorMessage": "Kunde inte lägga till email"
   }
 }

@@ -392,18 +392,18 @@ A YearWheel consists of these components:
 
 **1. RINGS** (2-4 concentric circles - STRICT LIMIT):
 - PURPOSE: Organize activities into different tracks or organizational dimensions
-- **BOTH ring types can contain activities** - the difference is visual and conceptual
-- **PREFER "inner" rings** - they are the primary workspace for most YearWheel use cases
-- **"inner" rings** (PREFERRED): Main tracks for activities - strategic initiatives, project phases, team workload, ongoing projects
+- **CRITICAL: Use "inner" rings by default for ALL activities**
+- **"inner" rings** (DEFAULT - USE ALWAYS): Main tracks for activities - strategic initiatives, project phases, team workload, ongoing projects, ALL primary content
   * Visual: Between center and month ring (most visible area)
-  * Use case: Core work streams, primary planning tracks
-  * DEFAULT: First ring should be "inner" type
-- **"outer" rings** (SECONDARY): Smaller or external events - holidays, vacations, deadlines, milestones
-  * Visual: Outside the month ring (on the perimeter)
-  * Use case: Context layers, reference points, external constraints
+  * Use case: Core work streams, primary planning tracks, client projects, team activities, ALL standard use cases
+  * DEFAULT: ALL rings should be "inner" type unless there's an explicit exceptional reason
+- **"outer" rings** (EXCEPTIONAL ONLY): ONLY use if data explicitly contains small recurring events like holidays, vacations, or deadlines that need to be separate from main activities
+  * Visual: Outside the month ring (on the perimeter - limited space)
+  * Use case: ONLY for reference layers like national holidays, office closures, compliance deadlines
+  * WARNING: Outer rings have limited visual space - avoid using them for substantial activities
 - CONSTRAINT: Users get overwhelmed with >4 rings - simplicity is critical
 - DECISION RULE: If data has 50 clients, DON'T make 50 rings - make 2-4 category-based rings
-- TYPE ASSIGNMENT: First ring = "inner", additional rings = "inner" (only use "outer" if explicitly needed for external events)
+- TYPE ASSIGNMENT: ALL rings = "inner" (only use "outer" if data explicitly mentions holidays, vacations, or similar external reference events)
 
 **2. ACTIVITY GROUPS** (5-30 color categories):
 - PURPOSE: Color-code activities for quick visual identification
@@ -704,6 +704,34 @@ detectedPeople: Array<{
   email: string | null
   context: string
 }>
+
+### PERSON DETECTION (TEAM INVITATION FEATURE):
+
+**PURPOSE**: Identify people mentioned in CSV data who should be invited to collaborate on this YearWheel.
+
+**CRITERIA FOR INCLUSION**:
+✅ Include if:
+- Person appears in a "responsible", "owner", "assigned to", "contact", "person", "ansvarig" column
+- Person name appears repeatedly across multiple rows (likely a team member)
+- Person has an associated email address in the CSV
+- Person seems to be a collaborator (not a client or external contact)
+
+❌ Exclude if:
+- Person appears only once or twice (probably a client or external reference)
+- Column suggests external relationship ("klient", "client", "leverantör", "vendor")
+- No clear indication they should collaborate on planning
+
+**EMAIL EXTRACTION**:
+- Look for email patterns in same row as person name
+- Check columns named: "email", "e-post", "kontakt", "contact"
+- If no email found, set email: null (we'll add it later in the UI)
+
+**CONTEXT FIELD**:
+- Explain WHERE you found this person (e.g., "Appears 15 times in 'Ansvarig' column")
+- Help users understand why they might want to invite this person
+
+**EXAMPLE**: detectedPeople should contain objects with name, email (or null), and context explaining frequency/role
+
 alternativeStrategies?: {
   rings?: Array<{
     strategy: string
@@ -1153,7 +1181,7 @@ Analyze the data and respond with the complete JSON structure.`
     consolidatedRings = mapping.rings.map((ring: any, i: number) => ({
       id: ring.id || `ring-${i + 1}`,
       name: ring.name,
-      type: ring.type || (i === 0 ? 'outer' : 'inner'),
+      type: ring.type || 'inner', // Always default to inner
       color: ring.color || (i === 0 ? '#F4A896' : undefined),
       visible: true,
       orientation: ring.orientation || 'vertical'
@@ -1187,7 +1215,7 @@ Analyze the data and respond with the complete JSON structure.`
       consolidatedRings = ringNames.map((name, i) => ({
         id: `ring-${i + 1}`,
         name,
-        type: i === 0 ? 'outer' : 'inner',
+        type: 'inner', // Always use inner rings
         color: i === 0 ? '#F4A896' : undefined,
         visible: true,
         orientation: 'vertical'
@@ -1196,7 +1224,7 @@ Analyze the data and respond with the complete JSON structure.`
       // TOO MANY rings - consolidate into 2 generic rings
       console.warn('[analyzeCsvWithAI] Too many rings detected:', ringNames.length, '- consolidating to 2 rings')
       consolidatedRings = [
-        { id: 'ring-1', name: 'Aktiviteter', type: 'outer', color: '#F4A896', visible: true, orientation: 'vertical' },
+        { id: 'ring-1', name: 'Aktiviteter', type: 'inner', color: '#F4A896', visible: true, orientation: 'vertical' },
         { id: 'ring-2', name: 'Projekt', type: 'inner', visible: true, orientation: 'vertical' }
       ]
       
@@ -1372,6 +1400,8 @@ async function reprocessActivitiesWithMapping(
     // Convert dates
     const startDate = convertDate(startDateRaw, mapping.dateFormat, new Date().getFullYear())
     const endDate = convertDate(endDateRaw, mapping.dateFormat, new Date().getFullYear())
+    
+    console.log(`[generateActivities] Row ${index}: Raw dates: ${startDateRaw} → ${endDateRaw}, Converted: ${startDate} → ${endDate}`)
     
     // Extract ring and group
     const ringName = mapping.columns.ring 

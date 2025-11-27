@@ -264,13 +264,57 @@ async function processImportJob(jobId: string, supabase: any) {
       }
 
       // Group activities by year to create pages
+      // IMPORTANT: Handle multi-year activities by splitting them
       const activitiesByYear = new Map<number, any[]>()
       for (const activity of activities) {
-        const year = new Date(activity.startDate).getFullYear()
-        if (!activitiesByYear.has(year)) {
-          activitiesByYear.set(year, [])
+        const startDate = new Date(activity.startDate)
+        const endDate = new Date(activity.endDate)
+        const startYear = startDate.getFullYear()
+        const endYear = endDate.getFullYear()
+        
+        // Check for invalid dates
+        if (isNaN(startYear) || isNaN(endYear)) {
+          console.error(`[ProcessJob] INVALID DATES for activity: ${activity.name}, Start: ${activity.startDate} (${startYear}), End: ${activity.endDate} (${endYear})`)
+          // Skip this activity
+          continue
         }
-        activitiesByYear.get(year)!.push(activity)
+        
+        console.log(`[ProcessJob] Activity: ${activity.name}, Start: ${activity.startDate} (${startYear}), End: ${activity.endDate} (${endYear})`)
+        
+        if (startYear === endYear) {
+          // Single year activity - add as-is
+          if (!activitiesByYear.has(startYear)) {
+            activitiesByYear.set(startYear, [])
+          }
+          activitiesByYear.get(startYear)!.push(activity)
+          console.log(`[ProcessJob] → Single year activity, added to ${startYear}`)
+        } else {
+          // Multi-year activity - split into segments
+          console.log(`[ProcessJob] → Splitting multi-year activity: ${activity.name} (${startYear}-${endYear})`)
+          
+          for (let year = startYear; year <= endYear; year++) {
+            if (!activitiesByYear.has(year)) {
+              activitiesByYear.set(year, [])
+            }
+            
+            // Calculate segment dates for this year
+            const segmentStart = year === startYear 
+              ? activity.startDate 
+              : `${year}-01-01`
+            
+            const segmentEnd = year === endYear 
+              ? activity.endDate 
+              : `${year}-12-31`
+            
+            // Create a copy of the activity for this year segment
+            activitiesByYear.get(year)!.push({
+              ...activity,
+              startDate: segmentStart,
+              endDate: segmentEnd,
+              name: `${activity.name}` // Keep original name
+            })
+          }
+        }
       }
 
       // Create pages structure
@@ -785,6 +829,8 @@ async function reprocessActivitiesWithMapping(
     // Convert dates
     const startDate = convertDate(startDateRaw, mapping.dateFormat, new Date().getFullYear())
     const endDate = convertDate(endDateRaw, mapping.dateFormat, new Date().getFullYear())
+    
+    console.log(`[reprocessActivitiesWithMapping] Row ${index}: Activity '${activityName}', Raw: ${startDateRaw} → ${endDateRaw}, Converted: ${startDate} → ${endDate}`)
     
     // Extract raw ring and group values from CSV
     let ringName = mapping.columns.ring 

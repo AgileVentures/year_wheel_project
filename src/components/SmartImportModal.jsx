@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Upload, FileSpreadsheet, Sparkles, Check, AlertCircle, AlertTriangle, Users, Mail } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useImportProgress } from '../hooks/useImportProgress';
 import { createPendingInvitation, sendTeamInvitation } from '../services/teamService';
@@ -16,6 +17,7 @@ import { createPendingInvitation, sendTeamInvitation } from '../services/teamSer
  * - Comprehensive error handling and rollback
  */
 export default function SmartImportModal({ isOpen, onClose, wheelId, currentPageId, onImportComplete }) {
+  const { t } = useTranslation(['smartImport']);
   const [stage, setStage] = useState('upload'); // upload, analyzing, review, refining, importing, complete
   const [csvData, setCsvData] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState(null);
@@ -778,8 +780,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
       // Show success toast
       const message = sendInvites 
-        ? `Team skapat! ${invitesSent} email(s) skickade, ${pendingCreated} väntar på email`
-        : `Team skapat! ${pendingCreated} inbjudan(ar) förberedda (email skickas inte automatiskt)`;
+        ? t('teamSuccess.emailsSent', { sent: invitesSent, pending: pendingCreated })
+        : t('teamSuccess.pendingOnly', { pending: pendingCreated });
       const event = new CustomEvent('showToast', {
         detail: {
           message,
@@ -793,7 +795,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       // Non-blocking - show toast but don't fail the import
       const event = new CustomEvent('showToast', {
         detail: {
-          message: `Kunde inte skapa team: ${err.message}`,
+          message: t('errors.teamCreationError', { message: err.message }),
           type: 'error'
         }
       });
@@ -1947,7 +1949,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             <div className="flex items-center gap-2 mb-3">
               <Users className="w-5 h-5 text-blue-700" />
               <h4 className="font-medium text-gray-900">
-                Hittade personer ({detectedPeople.length})
+                {t('people.heading', { count: detectedPeople.length })}
               </h4>
             </div>
             
@@ -1960,9 +1962,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 className="w-4 h-4 text-blue-600 rounded"
               />
               <div className="flex-1">
-                <div className="font-medium text-gray-900">Skapa team för detta hjul</div>
+                <div className="font-medium text-gray-900">{t('people.createTeam')}</div>
                 <div className="text-xs text-gray-600 mt-1">
-                  Bjud in personer att samarbeta på planeringen
+                  {t('people.createTeamDescription')}
                 </div>
               </div>
             </label>
@@ -1972,13 +1974,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 {/* Team name input */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Teamnamn
+                    {t('people.teamName')}
                   </label>
                   <input
                     type="text"
                     value={teamName}
                     onChange={(e) => setTeamName(e.target.value)}
-                    placeholder="T.ex. Projektteam 2025"
+                    placeholder={t('people.teamNamePlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -1994,20 +1996,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     />
                     <div className="flex-1">
                       <div className="font-medium text-gray-900 text-sm">
-                        Skicka inbjudningar via email omedelbart
+                        {t('people.sendInvites')}
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
-                        {sendInvites ? (
-                          <>
-                            ✉️ Email skickas direkt till personer med emailadress. 
-                            Personer utan email läggs till som väntande inbjudningar.
-                          </>
-                        ) : (
-                          <>
-                            📋 Alla personer läggs till som väntande inbjudningar. 
-                            Du kan lägga till emailadresser och skicka inbjudningar senare från teaminställningarna.
-                          </>
-                        )}
+                        {sendInvites ? t('people.sendInvitesEnabled') : t('people.sendInvitesDisabled')}
                       </div>
                     </div>
                   </label>
@@ -2016,7 +2008,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 {/* Person selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Välj personer att bjuda in
+                    {t('people.selectPeople')}
                   </label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {detectedPeople.map((person, idx) => (
@@ -2036,12 +2028,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                             {person.email ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
                                 <Mail className="w-3 h-3" />
-                                Email finns
+                                {t('people.emailExists')}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">
                                 <Mail className="w-3 h-3" />
-                                Email saknas
+                                {t('people.emailMissing')}
                               </span>
                             )}
                           </div>
@@ -2058,22 +2050,21 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   
                   {selectedPeople.size > 0 && (
                     <div className="mt-3 p-3 bg-blue-100 border border-blue-200 rounded-sm">
-                      <p className="text-sm text-blue-900">
-                        <strong>{selectedPeople.size}</strong> person(er) valda:
-                      </p>
+                      <p className="text-sm text-blue-900" dangerouslySetInnerHTML={{ __html: t('people.selectedCount', { count: selectedPeople.size }) }} />
                       <ul className="text-xs text-blue-700 mt-2 space-y-1">
                         {Array.from(selectedPeople).map(idx => {
                           const person = detectedPeople[idx];
                           if (sendInvites && person.email) {
                             return (
                               <li key={idx}>
-                                ✉️ {person.name} - email skickas till {person.email}
+                                {t('people.willSendEmail', { name: person.name, email: person.email })}
                               </li>
                             );
                           } else {
+                            const emailSuffix = person.email ? ` (${person.email})` : t('people.emailMissing', { defaultValue: ' (email saknas)' });
                             return (
                               <li key={idx}>
-                                📋 {person.name} - förberedds som väntande inbjudan{person.email ? ` (${person.email})` : ' (email saknas)'}
+                                {t('people.willBePending', { name: person.name, email: emailSuffix })}
                               </li>
                             );
                           }
@@ -2250,7 +2241,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         </p>
         {createTeam && selectedPeople.size > 0 && (
           <p className="text-xs text-blue-600 mt-2">
-            Team "{teamName}" har skapats med {selectedPeople.size} medlem(mar)
+            {t('complete.teamCreated', { teamName, count: selectedPeople.size })}
           </p>
         )}
         

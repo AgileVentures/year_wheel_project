@@ -3790,6 +3790,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     // Track change for delta save
     if (changeResultRef.actuallyChanged && changeResultRef.updatedItem) {
+      // Track item modification with the updated item
       changeTracker.trackItemChange(changeResultRef.updatedItem.id, 'modified', changeResultRef.updatedItem);
     }
   }, [setWheelState, endBatch, cancelBatch, changeTracker]);
@@ -4307,6 +4308,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     );
   }
 
+  // Calculate actual unsaved changes count from changeTracker (not undo/redo)
+  const actualUnsavedCount = useMemo(() => {
+    const summary = changeTracker.getChangesSummary();
+    return (
+      summary.items.added + summary.items.modified + summary.items.deleted +
+      summary.rings.added + summary.rings.modified + summary.rings.deleted +
+      summary.activityGroups.added + summary.activityGroups.modified + summary.activityGroups.deleted +
+      summary.labels.added + summary.labels.modified + summary.labels.deleted +
+      summary.pages.modified
+    );
+  }, [wheelState]); // Recalculate whenever wheelState changes
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
@@ -4343,7 +4356,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         currentHistoryIndex={currentIndex}
         onJumpToHistory={jumpToIndex}
         undoToSave={undoToSave}
-        unsavedChangesCount={unsavedChangesCount}
+        unsavedChangesCount={actualUnsavedCount}
         isPremium={isPremium}
         // Page navigation props
         pages={pages}
