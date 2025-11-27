@@ -4300,15 +4300,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   }, [hasUnsavedChanges, onBackToDashboard, t]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">{t('common:loading')}</div>
-      </div>
-    );
-  }
-
   // Calculate actual unsaved changes count from changeTracker (not undo/redo)
+  // MUST be called before any conditional returns to follow Rules of Hooks
   const actualUnsavedCount = useMemo(() => {
     const summary = changeTracker.getChangesSummary();
     return (
@@ -4319,6 +4312,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       summary.pages.modified
     );
   }, [wheelState]); // Recalculate whenever wheelState changes
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-lg text-gray-600">{t('common:loading')}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
