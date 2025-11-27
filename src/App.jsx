@@ -4508,6 +4508,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 onUpdateItem={handleUpdateAktivitet}
                 onDeleteItem={handleDeleteAktivitet}
                 yearWheelRef={yearWheelRef}
+                onSwitchToWheelView={() => setViewMode('wheel')}
               />
             </div>
           )}

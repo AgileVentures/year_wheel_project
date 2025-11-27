@@ -16,13 +16,15 @@ import CalendarDayDialog from "./CalendarDayDialog";
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
  * @param {Object} yearWheelRef - Reference to YearWheel instance for opening tooltips
+ * @param {Function} onSwitchToWheelView - Callback to switch back to wheel view
  */
 const WheelCalendarView = ({ 
   wheelStructure, 
   year,
   onUpdateItem,
   onDeleteItem,
-  yearWheelRef
+  yearWheelRef,
+  onSwitchToWheelView
 }) => {
   const { body, month, year: calendarYear, navigation } = useCalendar({
     defaultViewType: CalendarViewType.Month,
@@ -225,10 +227,20 @@ const WheelCalendarView = ({
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}
             onNavigateToItem={(itemId) => {
-              if (yearWheelRef && yearWheelRef.openItemTooltip) {
-                handleCloseDialog(); // Close calendar dialog
-                yearWheelRef.openItemTooltip(itemId);
+              console.log('[WheelCalendarView] Switching to wheel view and opening tooltip for item:', itemId);
+              handleCloseDialog(); // Close calendar dialog first
+              if (onSwitchToWheelView) {
+                onSwitchToWheelView(); // Switch to wheel view
               }
+              // Wait a bit for the view to switch and wheel to mount
+              setTimeout(() => {
+                if (yearWheelRef && yearWheelRef.openItemTooltip) {
+                  console.log('[WheelCalendarView] Opening tooltip');
+                  yearWheelRef.openItemTooltip(itemId);
+                } else {
+                  console.warn('[WheelCalendarView] yearWheelRef.openItemTooltip not available', yearWheelRef);
+                }
+              }, 100);
             }}
             locale={locale}
           />
