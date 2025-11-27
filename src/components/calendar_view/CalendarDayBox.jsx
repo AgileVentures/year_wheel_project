@@ -60,13 +60,11 @@ const CalendarDayBox = ({
 
   return (
     <div
-      className={`w-full h-[100px] p-3 ${
-        isPast ? 'cursor-default' : 'cursor-pointer hover:bg-gray-100'
-      } overflow-hidden relative ${
+      className={`w-full h-[100px] p-3 cursor-pointer hover:bg-gray-100 overflow-hidden relative ${
         isToday ? 'bg-blue-50' : 
         isPast ? 'bg-gray-100' : 'bg-white'
       }`}
-      onClick={isPast ? undefined : onClick}
+      onClick={onClick}
     >
       <div className="flex flex-col h-full">
         {/* Day number in center */}
