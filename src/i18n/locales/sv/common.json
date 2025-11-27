@@ -137,6 +137,12 @@
     "saturday": "Lör",
     "sunday": "Sön"
   },
+  "calendar": {
+    "today": "Idag",
+    "previousMonth": "Föregående månad",
+    "nextMonth": "Nästa månad",
+    "noActivities": "Inga aktiviteter denna dag"
+  },
   "header": {
     "closePanel": "Stäng panel",
     "openPanel": "Öppna panel",
@@ -179,7 +185,9 @@
     "template": "Template",
     "markAsTemplate": "Skapa som mall",
     "templateWheelVisibleOnLanding": "Template-hjul (synligt på startsidan)",
-    "useTemplate": "Använd mall"
+    "useTemplate": "Använd mall",
+    "wheelView": "Hjulvy",
+    "calendarView": "Kalendervy"
   },
   "cookieConsent": {
     "title": "Cookie-inställningar",

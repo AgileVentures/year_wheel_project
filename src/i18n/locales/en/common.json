@@ -138,6 +138,12 @@
     "saturday": "Sat",
     "sunday": "Sun"
   },
+  "calendar": {
+    "today": "Today",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "noActivities": "No activities on this day"
+  },
   "header": {
     "closePanel": "Close panel",
     "openPanel": "Open panel",
@@ -180,7 +186,9 @@
     "template": "Template",
     "markAsTemplate": "Mark as template",
     "templateWheelVisibleOnLanding": "Template wheel (visible on landing page)",
-    "useTemplate": "Use template"
+    "useTemplate": "Use template",
+    "wheelView": "Wheel view",
+    "calendarView": "Calendar view"
   },
   "cookieConsent": {
     "title": "Cookie Settings",

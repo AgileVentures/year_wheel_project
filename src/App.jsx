@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import YearWheel from "./YearWheel";
+import WheelCalendarView from "./components/calendar_view/WheelCalendarView";
 import SidePanel from "./components/SidePanel";
 import Header from "./components/Header";
 import PageNavigator from "./components/PageNavigator";
@@ -411,6 +412,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [wheelRotation, setWheelRotation] = useState(0); // Persist wheel rotation angle
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [wheelData, setWheelData] = useState(null);
+  const [viewMode, setViewMode] = useState('wheel'); // 'wheel' or 'calendar'
 
   // Legacy refs for compatibility (will be removed later)
   const latestValuesRef = useRef({});
@@ -4359,6 +4361,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         undoToSave={undoToSave}
         unsavedChangesCount={actualUnsavedCount}
         isPremium={isPremium}
+        // View mode toggle
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         // Page navigation props
         pages={pages}
         currentPageId={currentPageId}
@@ -4458,42 +4463,53 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
         {/* Main Canvas Area */}
         <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
-          <div className="w-full h-full flex items-center justify-center">
-            <YearWheel
-              key={currentPageId} // Force remount when page changes to clear cached data
-              wheelId={wheelId}
-              wheelData={wheelData}
-              title={wheelState.metadata.title}
-              year={wheelState.metadata.year}
-              colors={wheelState.metadata.colors}
-              ringsData={ringsData}
-              wheelStructure={wheelStructure}
-              completeWheelSnapshot={completeWheelSnapshot}
-              showYearEvents={showYearEvents}
-              showSeasonRing={showSeasonRing}
-              yearEventsCollection={yearEventsCollection}
-              showWeekRing={wheelState.metadata.showWeekRing}
-              showMonthRing={wheelState.metadata.showMonthRing}
-              showRingNames={wheelState.metadata.showRingNames}
-              showLabels={wheelState.metadata.showLabels}
-              weekRingDisplayMode={wheelState.metadata.weekRingDisplayMode}
-              zoomedMonth={zoomedMonth}
-              zoomedQuarter={zoomedQuarter}
-              onSetZoomedMonth={setZoomedMonth}
-              onSetZoomedQuarter={setZoomedQuarter}
-              initialRotation={wheelRotation}
-              onRotationChange={setWheelRotation}
-              onWheelReady={setYearWheelRef}
-              onDragStart={handleDragStart}
-              onUpdateAktivitet={handleUpdateAktivitet}
-              onDeleteAktivitet={handleDeleteAktivitet}
-              onExtendActivityBeyondYear={handleExtendActivityBeyondYear}
-              onExtendActivityToPreviousYear={handleExtendActivityToPreviousYear}
-              broadcastActivity={broadcastActivity}
-              activeEditors={combinedActiveEditors}
-              broadcastOperation={broadcastOperation}
-            />
-          </div>
+          {viewMode === 'wheel' ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <YearWheel
+                key={currentPageId} // Force remount when page changes to clear cached data
+                wheelId={wheelId}
+                wheelData={wheelData}
+                title={wheelState.metadata.title}
+                year={wheelState.metadata.year}
+                colors={wheelState.metadata.colors}
+                ringsData={ringsData}
+                wheelStructure={wheelStructure}
+                completeWheelSnapshot={completeWheelSnapshot}
+                showYearEvents={showYearEvents}
+                showSeasonRing={showSeasonRing}
+                yearEventsCollection={yearEventsCollection}
+                showWeekRing={wheelState.metadata.showWeekRing}
+                showMonthRing={wheelState.metadata.showMonthRing}
+                showRingNames={wheelState.metadata.showRingNames}
+                showLabels={wheelState.metadata.showLabels}
+                weekRingDisplayMode={wheelState.metadata.weekRingDisplayMode}
+                zoomedMonth={zoomedMonth}
+                zoomedQuarter={zoomedQuarter}
+                onSetZoomedMonth={setZoomedMonth}
+                onSetZoomedQuarter={setZoomedQuarter}
+                initialRotation={wheelRotation}
+                onRotationChange={setWheelRotation}
+                onWheelReady={setYearWheelRef}
+                onDragStart={handleDragStart}
+                onUpdateAktivitet={handleUpdateAktivitet}
+                onDeleteAktivitet={handleDeleteAktivitet}
+                onExtendActivityBeyondYear={handleExtendActivityBeyondYear}
+                onExtendActivityToPreviousYear={handleExtendActivityToPreviousYear}
+                broadcastActivity={broadcastActivity}
+                activeEditors={combinedActiveEditors}
+                broadcastOperation={broadcastOperation}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-full">
+              <WheelCalendarView
+                wheelStructure={wheelStructure}
+                year={wheelState.metadata.year}
+                onUpdateItem={handleUpdateAktivitet}
+                onDeleteItem={handleDeleteAktivitet}
+              />
+            </div>
+          )}
         </div>
 
       </div>

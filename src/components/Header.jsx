@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FolderOpen, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, Image, ArrowLeft, ChevronDown, FileDown, FolderOpen, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, LayoutGrid } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
@@ -48,6 +48,9 @@ function Header({
   onJumpToHistory,
   undoToSave,
   unsavedChangesCount = 0,
+  // View mode props
+  viewMode = 'wheel',
+  onViewModeChange,
   // Page navigation props
   pages = [],
   currentPageId,
@@ -219,6 +222,34 @@ function Header({
               className="w-16 sm:w-20 px-1 sm:px-2 py-1.5 text-sm font-medium bg-white border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder={t('common:header.yearPlaceholder')}
             />
+          </div>
+        )}
+
+        {/* View Mode Toggle */}
+        {onViewModeChange && (
+          <div className="hidden md:flex items-center gap-1 bg-gray-100 rounded-sm p-1">
+            <button
+              onClick={() => onViewModeChange('wheel')}
+              className={`p-1.5 rounded-sm transition-colors ${
+                viewMode === 'wheel'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title={t('common:header.wheelView', 'Hjulvy')}
+            >
+              <RotateCcw size={16} />
+            </button>
+            <button
+              onClick={() => onViewModeChange('calendar')}
+              className={`p-1.5 rounded-sm transition-colors ${
+                viewMode === 'calendar'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title={t('common:header.calendarView', 'Kalendervy')}
+            >
+              <LayoutGrid size={16} />
+            </button>
           </div>
         )}
       </div>
