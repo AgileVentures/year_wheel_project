@@ -842,35 +842,39 @@ async function reprocessActivitiesWithMapping(
       : groupsWithIds[0]?.name || 'Allmänt'
     
     // CRITICAL: Apply AI value mappings if provided (consolidation)
-    if (mapping.ringValueMapping && ringName) {
-      const mappedRingName = mapping.ringValueMapping[ringName]
+    if (mapping.ringValueMapping) {
+      const rawRingValue = String(ringName || '')
+      const mappedRingName = mapping.ringValueMapping[rawRingValue]
       if (mappedRingName) {
-        console.log(`[reprocessActivitiesWithMapping] Row ${index}: Mapping ring '${ringName}' → '${mappedRingName}'`)
+        console.log(`[reprocessActivitiesWithMapping] Row ${index}: Mapping ring '${rawRingValue}' → '${mappedRingName}'`)
         ringName = mappedRingName
-      } else {
-        console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring value '${ringName}' not found in ringValueMapping`)
+      } else if (rawRingValue !== '') {
+        console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring value '${rawRingValue}' not found in ringValueMapping, using as-is`)
       }
     }
     
-    if (mapping.groupValueMapping && groupName) {
-      const mappedGroupName = mapping.groupValueMapping[groupName]
+    if (mapping.groupValueMapping) {
+      const rawGroupValue = String(groupName || '')
+      const mappedGroupName = mapping.groupValueMapping[rawGroupValue]
       if (mappedGroupName) {
-        console.log(`[reprocessActivitiesWithMapping] Row ${index}: Mapping group '${groupName}' → '${mappedGroupName}'`)
+        console.log(`[reprocessActivitiesWithMapping] Row ${index}: Mapping group '${rawGroupValue}' → '${mappedGroupName}'`)
         groupName = mappedGroupName
-      } else {
-        console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Group value '${groupName}' not found in groupValueMapping`)
+      } else if (rawGroupValue !== '') {
+        console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Group value '${rawGroupValue}' not found in groupValueMapping, using as-is`)
       }
     }
     
-    // Use case-insensitive lookup
-    const ringId = ringNameToId.get(ringName)
-    const activityId = groupNameToId.get(groupName)
+    // Use case-insensitive lookup with fallback to first available
+    let ringId = ringNameToId.get(ringName)
+    let activityId = groupNameToId.get(groupName)
     
     if (!ringId) {
-      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring '${ringName}' not found. Available:`, ringNameToId.keys())
+      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Ring '${ringName}' not found. Using fallback: ${ringsWithIds[0]?.name}`)
+      ringId = ringsWithIds[0]?.id
     }
     if (!activityId) {
-      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Activity group '${groupName}' not found. Available:`, groupNameToId.keys())
+      console.warn(`[reprocessActivitiesWithMapping] Row ${index}: Activity group '${groupName}' not found. Using fallback: ${groupsWithIds[0]?.name}`)
+      activityId = groupsWithIds[0]?.id
     }
     
     // Extract labels with case-insensitive matching
@@ -902,13 +906,31 @@ async function reprocessActivitiesWithMapping(
       labelId: labelIds.length > 0 ? labelIds[0] : null,
       description
     }
-  }).filter((a: any) => a.ringId && a.activityId) // Remove invalid mappings
+  })
   
-  const filteredOut = allRows.length - activities.length
-  if (filteredOut > 0) {
-    console.warn(`[reprocessActivitiesWithMapping] Filtered out ${filteredOut} activities due to missing ring/activity mappings`)
+  // Count items with fallback values used
+  const itemsWithFallbackRing = activities.filter((a: any) => {
+    const originalRing = mapping.columns.ring 
+      ? allRows[activities.indexOf(a)][csvStructure.headers.indexOf(mapping.columns.ring)]
+      : null
+    return originalRing && !ringNameToId.has(originalRing)
+  }).length
+  
+  const itemsWithFallbackGroup = activities.filter((a: any) => {
+    const originalGroup = mapping.columns.group
+      ? allRows[activities.indexOf(a)][csvStructure.headers.indexOf(mapping.columns.group)]
+      : null
+    return originalGroup && !groupNameToId.has(originalGroup)
+  }).length
+  
+  if (itemsWithFallbackRing > 0) {
+    console.warn(`[reprocessActivitiesWithMapping] ${itemsWithFallbackRing} items used fallback ring`)
   }
-  console.log('[reprocessActivitiesWithMapping] Generated', activities.length, 'valid activities from', allRows.length, 'rows')
+  if (itemsWithFallbackGroup > 0) {
+    console.warn(`[reprocessActivitiesWithMapping] ${itemsWithFallbackGroup} items used fallback group`)
+  }
+  
+  console.log('[reprocessActivitiesWithMapping] Generated', activities.length, 'activities from', allRows.length, 'rows (no items dropped)')
   return activities
 }
 
