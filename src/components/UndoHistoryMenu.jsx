@@ -102,7 +102,7 @@ export default function UndoHistoryMenu({
         className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors group relative"
         title={t('common:actions.history', { defaultValue: 'Historik' })}
       >
-        <History size={14} />
+        <History size={16} />
         <ChevronDown size={12} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         
         {/* Tooltip */}
