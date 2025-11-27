@@ -28,16 +28,27 @@
     "rowsAndColumns": "{{rows}} rows · {{columns}} columns"
   },
   "review": {
-    "suggestedTitle": "Suggested wheel title",
+    "suggestedTitle": "Suggested Wheel Title",
     "canChangeAfter": "You can change the title after import in wheel settings",
-    "analysisComplete": "AI analysis complete!",
-    "advancedMapping": "Advanced mapping",
+    "analysisComplete": "AI Analysis Complete!",
+    "advancedMapping": "Advanced Mapping",
     "advancedMappingDescription": "Customize AI's choice of columns, rings and groups",
     "rings": "Rings ({{count}})",
     "activityGroups": "Activity Groups ({{count}})",
     "activities": "Activities ({{count}})",
     "activitiesWillBeImported": "{{count}} activities will be imported",
     "firstExamples": "First 3 examples:",
+    "summary": {
+      "readyToImport": "Ready to import",
+      "actionNeeded": "Action needed",
+      "quickStats": "{{rings}} rings · {{groups}} groups · {{activities}} activities",
+      "editColumns": "Edit columns",
+      "editRingsGroups": "Edit rings & groups",
+      "viewPreview": "View preview",
+      "hidePreview": "Hide preview",
+      "hideColumns": "Hide columns",
+      "hideRingsGroups": "Hide rings & groups"
+    },
     "importMode": {
       "heading": "Choose import method",
       "description": "You have uploaded <strong>{{rows}} rows</strong> from <strong>{{fileName}}</strong>",

@@ -38,6 +38,17 @@
     "activities": "Aktiviteter ({{count}})",
     "activitiesWillBeImported": "{{count}} aktiviteter kommer att importeras",
     "firstExamples": "Första 3 exempel:",
+    "summary": {
+      "readyToImport": "Redo att importera",
+      "actionNeeded": "Åtgärd krävs",
+      "quickStats": "{{rings}} ringar · {{groups}} grupper · {{activities}} aktiviteter",
+      "editColumns": "Redigera kolumner",
+      "editRingsGroups": "Redigera ringar & grupper",
+      "viewPreview": "Visa förhandsvisning",
+      "hidePreview": "Dölj förhandsvisning",
+      "hideColumns": "Dölj kolumner",
+      "hideRingsGroups": "Dölj ringar & grupper"
+    },
     "importMode": {
       "heading": "Välj importmetod",
       "description": "Du har laddat upp <strong>{{rows}} rader</strong> från <strong>{{fileName}}</strong>",

@@ -51,6 +51,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [ringOriginalNames, setRingOriginalNames] = useState(null); // Track which custom ring maps to which AI ring
   const [groupOriginalNames, setGroupOriginalNames] = useState(null); // Track which custom group maps to which AI group
   const fileInputRef = useRef(null);
+  
+  // Progressive disclosure edit modes
+  const [showColumnMapping, setShowColumnMapping] = useState(false);
+  const [showRingsGroupsEditor, setShowRingsGroupsEditor] = useState(false);
+  const [showDataPreview, setShowDataPreview] = useState(false);
 
   // Monitor import job completion
   useEffect(() => {
@@ -1055,6 +1060,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const renderReviewStage = () => {
     if (!aiSuggestions) return null;
 
+    // Calculate validation status
+    const hasValidationIssues = aiSuggestions.validation && 
+      (!aiSuggestions.validation.hasCompleteMapping || aiSuggestions.validation.warnings?.length > 0);
+    const hasErrors = aiSuggestions.suitabilityWarning?.severity === 'error' || !aiSuggestions.validation?.hasCompleteMapping;
+
+    const { effectiveRings, effectiveGroups } = getEffectiveRingsAndGroups();
+
     return (
       <div className="space-y-6 max-h-[60vh] overflow-y-auto">
         {/* Suggested Wheel Title */}
@@ -1074,54 +1086,54 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             </div>
           </div>
         )}
-        
-        <div className="bg-green-50 border border-green-200 rounded-sm p-4">
+
+        {/* Summary Card - Progressive Disclosure */}
+        <div className={`border rounded-sm p-4 ${hasErrors ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
           <div className="flex items-start gap-3">
-            <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            {hasErrors ? (
+              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            ) : (
+              <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            )}
             <div className="flex-1">
-              <h4 className="font-medium text-green-900">{t('review.analysisComplete')}</h4>
-              <p className="text-sm text-green-700 mt-1">
-                {aiSuggestions.mapping.explanation}
+              <h4 className={`font-semibold ${hasErrors ? 'text-red-900' : 'text-green-900'}`}>
+                {hasErrors ? t('review.summary.actionNeeded') : t('review.summary.readyToImport')}
+              </h4>
+              <p className={`text-sm mt-1 ${hasErrors ? 'text-red-700' : 'text-green-700'}`}>
+                {t('review.summary.quickStats', {
+                  rings: effectiveRings.length,
+                  groups: effectiveGroups.length,
+                  activities: aiSuggestions.totalActivitiesCount || aiSuggestions.activities?.length || 0
+                })}
               </p>
-              
-              {/* Show AI's grouping strategy */}
-              {(aiSuggestions.mapping.suggestedRingStrategy || aiSuggestions.mapping.suggestedGroupingStrategy) && (
-                <div className="mt-3 pt-3 border-t border-green-200 space-y-2">
-                  {aiSuggestions.mapping.suggestedRingStrategy && (
-                    <div>
-                      <h5 className="text-xs font-semibold text-green-900 mb-1">{t('customization.rings.label')}:</h5>
-                      <p className="text-xs text-green-700">{aiSuggestions.mapping.suggestedRingStrategy}</p>
-                    </div>
-                  )}
-                  {aiSuggestions.mapping.suggestedGroupingStrategy && (
-                    <div>
-                      <h5 className="text-xs font-semibold text-green-900 mb-1">{t('customization.groups.label')}:</h5>
-                      <p className="text-xs text-green-700">{aiSuggestions.mapping.suggestedGroupingStrategy}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="mt-3 pt-3 border-t border-green-200">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showAdvancedMapping}
-                    onChange={(e) => setShowAdvancedMapping(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span className="text-sm text-green-900 font-medium">{t('review.advancedMapping')}</span>
-                </label>
-                <p className="text-xs text-green-700 ml-6 mt-1">
-                  {t('review.advancedMappingDescription')}
-                </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  onClick={() => setShowColumnMapping(!showColumnMapping)}
+                  className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                >
+                  {showColumnMapping ? t('review.summary.hideColumns') : t('review.summary.editColumns')}
+                </button>
+                <button
+                  onClick={() => setShowRingsGroupsEditor(!showRingsGroupsEditor)}
+                  className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                >
+                  {showRingsGroupsEditor ? t('review.summary.hideRingsGroups') : t('review.summary.editRingsGroups')}
+                </button>
+                <button
+                  onClick={() => setShowDataPreview(!showDataPreview)}
+                  className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                >
+                  {showDataPreview ? t('review.summary.hidePreview') : t('review.summary.viewPreview')}
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Validation Warnings */}
-        {aiSuggestions.validation && (!aiSuggestions.validation.hasCompleteMapping || aiSuggestions.validation.warnings?.length > 0) && (
+        {/* Validation Warnings - Only show if there are issues */}
+        {hasValidationIssues && (
           <div className="bg-red-50 border border-red-200 rounded-sm p-4">
             <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
@@ -1188,194 +1200,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </div>
         )}
 
-        {/* Consolidation Breakdown */}
-        {csvData && (aiSuggestions.mapping?.ringValueMapping || aiSuggestions.mapping?.groupValueMapping) && (() => {
-          const ringColIndex = aiSuggestions.mapping?.columns?.ring 
-            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
-            : -1;
-          const groupColIndex = aiSuggestions.mapping?.columns?.group
-            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.group)
-            : -1;
-          
-          return (
-            <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
-              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5" />
-                {t('consolidation.heading')}
-              </h4>
-              
-              {/* Consolidation Strategy Metadata */}
-              {(aiSuggestions.ringConsolidationStrategy || aiSuggestions.groupConsolidationStrategy) && (
-                <div className="mb-4 p-3 bg-blue-100 rounded border border-blue-300">
-                  <p className="text-sm font-medium text-blue-900 mb-2">{t('consolidation.strategy')}</p>
-                  
-                  {aiSuggestions.ringConsolidationStrategy && (
-                    <div className="text-xs text-blue-800 mb-2">
-                      <span className="font-medium">{t('consolidation.rings', { unique: '', consolidated: '' }).split(':')[0]}:</span>{' '}
-                      {aiSuggestions.ringConsolidationStrategy.description}
-                      {aiSuggestions.ringConsolidationStrategy.coverage && (
-                        <span className="ml-2 text-blue-700">
-                          ({t('consolidation.coverage', { coverage: aiSuggestions.ringConsolidationStrategy.coverage })})
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  
-                  {aiSuggestions.groupConsolidationStrategy && (
-                    <div className="text-xs text-blue-800">
-                      <span className="font-medium">{t('consolidation.groups', { unique: '', consolidated: '' }).split(':')[0]}:</span>{' '}
-                      {aiSuggestions.groupConsolidationStrategy.description}
-                      {aiSuggestions.groupConsolidationStrategy.coverage && (
-                        <span className="ml-2 text-blue-700">
-                          ({t('consolidation.coverage', { coverage: aiSuggestions.groupConsolidationStrategy.coverage })})
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {aiSuggestions.mapping?.ringValueMapping && ringColIndex >= 0 && (() => {
-                const uniqueValues = Object.keys(aiSuggestions.mapping.ringValueMapping).length;
-                const consolidatedCount = aiSuggestions.rings?.length || 0;
-                return (
-                  <div className="mb-4">
-                    <h5 className="font-medium text-blue-800 mb-2">
-                      {t('consolidation.rings', { unique: uniqueValues, consolidated: consolidatedCount })}
-                    </h5>
-                    <div className="space-y-2">
-                      {aiSuggestions.rings?.map(ring => {
-                        const mappedValues = Object.entries(aiSuggestions.mapping.ringValueMapping)
-                          .filter(([_, target]) => target === ring.name)
-                          .map(([source, _]) => source);
-                        const count = mappedValues.reduce((sum, val) => 
-                          sum + csvData.rows.filter(row => String(row[ringColIndex] || '') === val).length, 0
-                        );
-                        
-                        if (mappedValues.length === 0) return null;
-                        
-                        return (
-                          <div key={ring.id} className="bg-white rounded p-2">
-                            <div className="font-medium text-gray-900">
-                              {ring.name} <span className="text-sm text-gray-500">({t('consolidation.activities', { count })})</span>
-                            </div>
-                            <div className="text-xs text-gray-600 ml-4 mt-1">
-                              ← {mappedValues.map(v => v === '' ? '(tom)' : v).join(', ')}
-                            </div>
-                          </div>
-                        );
-                      }).filter(Boolean)}
-                    </div>
-                  </div>
-                );
-              })()}
-              
-              {aiSuggestions.mapping?.groupValueMapping && groupColIndex >= 0 && (() => {
-                const uniqueValues = Object.keys(aiSuggestions.mapping.groupValueMapping).length;
-                const consolidatedCount = aiSuggestions.activityGroups?.length || 0;
-                return (
-                  <div>
-                    <h5 className="font-medium text-blue-800 mb-2">
-                      {t('consolidation.groups', { unique: uniqueValues, consolidated: consolidatedCount })}
-                    </h5>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {aiSuggestions.activityGroups?.map(group => {
-                        const mappedValues = Object.entries(aiSuggestions.mapping.groupValueMapping)
-                          .filter(([_, target]) => target === group.name)
-                          .map(([source, _]) => source);
-                        const count = mappedValues.reduce((sum, val) => 
-                          sum + csvData.rows.filter(row => String(row[groupColIndex] || '') === val).length, 0
-                        );
-                        
-                        if (mappedValues.length === 0) return null;
-                        
-                        return (
-                          <div key={group.id} className="bg-white rounded p-2">
-                            <div className="font-medium text-gray-900 flex items-center gap-2">
-                              <div className="w-4 h-4 rounded" style={{ backgroundColor: group.color }} />
-                              {group.name} <span className="text-sm text-gray-500">({t('consolidation.activities', { count })})</span>
-                            </div>
-                            <div className="text-xs text-gray-600 ml-8 mt-1">
-                              ← {mappedValues.slice(0, 10).map(v => v === '' ? '(tom)' : v).join(', ')}
-                              {mappedValues.length > 10 && ` ... +${mappedValues.length - 10} fler`}
-                            </div>
-                          </div>
-                        );
-                      }).filter(Boolean)}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          );
-        })()}
-
-        {/* Empty Value Status */}
-        {csvData && (() => {
-          const ringColIndex = aiSuggestions.mapping?.columns?.ring 
-            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
-            : -1;
-          const groupColIndex = aiSuggestions.mapping?.columns?.group
-            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.group)
-            : -1;
-          
-          const emptyRingCount = ringColIndex >= 0 
-            ? csvData.rows.filter(row => !row[ringColIndex] || String(row[ringColIndex]).trim() === '').length
-            : 0;
-          const emptyGroupCount = groupColIndex >= 0
-            ? csvData.rows.filter(row => !row[groupColIndex] || String(row[groupColIndex]).trim() === '').length
-            : 0;
-          
-          const ringFallback = aiSuggestions.mapping?.ringValueMapping?.[''] || 'Övrigt';
-          const groupFallback = aiSuggestions.mapping?.groupValueMapping?.[''] || 'Allmänt';
-          
-          if (emptyRingCount === 0 && emptyGroupCount === 0) return null;
-          
-          return (
-            <div className="bg-amber-50 border border-amber-200 rounded-sm p-4">
-              <h5 className="font-medium text-amber-900 flex items-center gap-2 mb-2">
-                <AlertCircle className="w-5 h-5" />
-                Tomma värden upptäckta
-              </h5>
-              <ul className="text-sm text-amber-800 space-y-1">
-                {emptyRingCount > 0 && (
-                  <li>
-                    {emptyRingCount} rader med tomt ringvärde → mappas till "{ringFallback}"
-                  </li>
-                )}
-                {emptyGroupCount > 0 && (
-                  <li>
-                    {emptyGroupCount} rader med tomt gruppvärde → mappas till "{groupFallback}"
-                  </li>
-                )}
-              </ul>
-              <p className="text-xs text-amber-700 mt-2">
-                ✅ Dessa {emptyRingCount + emptyGroupCount} rader kommer fortfarande att importeras.
-              </p>
-            </div>
-          );
-        })()}
-
-        {/* Large Import Preview Notice */}
-        {aiSuggestions.totalActivitiesCount > (aiSuggestions.activities?.length || 0) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
-            <h4 className="font-medium text-blue-900 mb-1">{t('review.dataPreview.title')}</h4>
-            <p className="text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: t('review.dataPreview.totalActivities', { total: aiSuggestions.totalActivitiesCount }) }} />
-            <p className="text-sm text-blue-800 mt-1">
-              {t('review.dataPreview.previewCount', { preview: aiSuggestions.activities?.length || 20 })}
-            </p>
-            <p className="text-sm text-blue-900 font-medium mt-2">
-              {t('review.dataPreview.allWillImport', { total: aiSuggestions.totalActivitiesCount })}
-            </p>
-            {csvData.rowCount > 200 && (
-              <p className="text-xs text-blue-700 mt-2">
-                {t('review.dataPreview.timeEstimate', { time: csvData.rowCount < 500 ? '3-7 minuter' : csvData.rowCount < 1000 ? '7-15 minuter' : '> 15 minuter' })}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Data Suitability Warning */}
+        {/* Data Suitability Warning - Only show if present */}
         {aiSuggestions.suitabilityWarning && (
           <div className={`border rounded-sm p-4 ${
             aiSuggestions.suitabilityWarning.severity === 'error' 
@@ -1447,14 +1272,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                                 {suggestion.filterColumn && (
                                   <button
                                     onClick={() => {
-                                      // Auto-select this column as a label for easy filtering
                                       if (!manualMapping.labels.includes(suggestion.filterColumn)) {
                                         setManualMapping(prev => ({
                                           ...prev,
                                           labels: [...prev.labels, suggestion.filterColumn]
                                         }));
                                       }
-                                      setShowAdvancedMapping(true);
+                                      setShowColumnMapping(true);
                                     }}
                                     className="text-xs px-2 py-1 bg-amber-200 text-amber-900 rounded hover:bg-amber-300 transition-colors flex-shrink-0"
                                   >
@@ -1483,8 +1307,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </div>
         )}
 
-        {/* Advanced Mapping Section */}
-        {showAdvancedMapping && csvData && (
+        {/* Column Mapping Section - Collapsible */}
+        {showColumnMapping && csvData && (
           <div className="bg-blue-50 border border-blue-200 rounded-sm p-6 space-y-4">
             <div>
               <h3 className="font-semibold text-gray-900 mb-1">{t('advancedMapping.customizeColumnMapping')}</h3>
@@ -1653,481 +1477,383 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               </div>
               <p className="text-xs text-gray-500 mt-2">{t('advancedMapping.labelsHelper')}</p>
             </div>
-            
-            <div className="bg-blue-50 border border-blue-200 rounded-sm p-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">{t('advancedMapping.tips.heading')}</p>
-                  <ul className="text-xs space-y-1 mt-2">
-                    <li>{t('advancedMapping.tips.changeMapping')}</li>
-                    <li>{t('advancedMapping.tips.autoSave')}</li>
-                    <li>{t('advancedMapping.tips.updateActivities')}</li>
-                    <li>{t('advancedMapping.tips.clickImport')}</li>
-                  </ul>
-                </div>
-              </div>
+          </div>
+        )}
+
+        {/* Rings & Groups Editor - Collapsible */}
+        {showRingsGroupsEditor && (
+          <div className="bg-purple-50 border border-purple-200 rounded-sm p-4 space-y-4">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">{t('customization.heading')}</h3>
+              <p className="text-sm text-gray-600">
+                {customRings || customGroups ? (
+                  <>{t('customization.current', { rings: effectiveRings.length, groups: effectiveGroups.length })}</>
+                ) : (
+                  <>{t('customization.suggested', { rings: aiSuggestions.rings.length, groups: aiSuggestions.activityGroups.length })}</>
+                )}
+                {effectiveGroups.length > 20 && (
+                  <span className="text-amber-700 font-medium"> {t('customization.tooManyWarning', { count: effectiveGroups.length })}</span>
+                )}
+              </p>
             </div>
             
-            {/* Custom Ring/Group Editor */}
-            <div className="bg-purple-50 border border-purple-200 rounded-sm p-4 space-y-4">
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2">{t('customization.heading')}</h3>
-                <p className="text-sm text-gray-600">
-                  {customRings || customGroups ? (
-                    <>{t('customization.current', { rings: getEffectiveRingsAndGroups().effectiveRings.length, groups: getEffectiveRingsAndGroups().effectiveGroups.length })}</>
-                  ) : (
-                    <>{t('customization.suggested', { rings: aiSuggestions.rings.length, groups: aiSuggestions.activityGroups.length })}</>
+            {/* Custom Rings */}
+            <div className="bg-white p-3 rounded-sm border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <label className="font-medium text-gray-900">{t('customization.rings.label')}</label>
+                  {customRings && ringOriginalNames && (
+                    <p className="text-xs text-gray-500 mt-0.5">{t('customization.rings.editing')}</p>
                   )}
-                  {getEffectiveRingsAndGroups().effectiveGroups.length > 20 && (
-                    <span className="text-amber-700 font-medium"> {t('customization.tooManyWarning', { count: getEffectiveRingsAndGroups().effectiveGroups.length })}</span>
-                  )}
-                </p>
+                </div>
+                <button
+                  onClick={() => {
+                    if (customRings) {
+                      setCustomRings(null);
+                      setCustomRingTypes(null);
+                      setRingOriginalNames(null);
+                    } else {
+                      setCustomRings(aiSuggestions.rings.map(r => r.name));
+                      setCustomRingTypes(aiSuggestions.rings.map(r => r.type));
+                      setRingOriginalNames(aiSuggestions.rings.map(r => r.name));
+                    }
+                  }}
+                  className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                >
+                  {customRings ? t('customization.rings.resetToAI') : t('customization.rings.customize')}
+                </button>
               </div>
               
-              {/* Custom Rings */}
-              <div className="bg-white p-3 rounded-sm border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <label className="font-medium text-gray-900">{t('customization.rings.label')}</label>
-                    {customRings && ringOriginalNames && (
-                      <p className="text-xs text-gray-500 mt-0.5">{t('customization.rings.editing')}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (customRings) {
-                        // Reset to AI suggestions
-                        setCustomRings(null);
-                        setCustomRingTypes(null);
-                        setRingOriginalNames(null);
-                      } else {
-                        // Enter edit mode - capture original mapping
-                        setCustomRings(aiSuggestions.rings.map(r => r.name));
-                        setCustomRingTypes(aiSuggestions.rings.map(r => r.type));
-                        setRingOriginalNames(aiSuggestions.rings.map(r => r.name)); // Store original AI names
-                      }
-                    }}
-                    className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
-                  >
-                    {customRings ? t('customization.rings.resetToAI') : t('customization.rings.customize')}
-                  </button>
+              {!customRings ? (
+                <div className="text-sm text-gray-600 space-y-1">
+                  {aiSuggestions.rings.map((ring, idx) => (
+                    <div key={idx}>• {ring.name} <span className="text-xs text-gray-500">({ring.type === 'inner' ? 'Inner' : 'Outer'})</span></div>
+                  ))}
                 </div>
-                
-                {!customRings ? (
-                  <div className="text-sm text-gray-600 space-y-1">
-                    {aiSuggestions.rings.map((ring, idx) => (
-                      <div key={idx}>• {ring.name} <span className="text-xs text-gray-500">({ring.type === 'inner' ? 'Inner' : 'Outer'})</span></div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {customRings.map((ringName, idx) => {
-                      const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
-                      return (
-                        <div key={idx} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={ringName}
-                            onChange={(e) => {
-                              const updated = [...customRings];
-                              updated[idx] = e.target.value;
-                              setCustomRings(updated);
-                            }}
-                            placeholder={`Ring ${idx + 1}`}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-                          />
-                          <select
-                            value={types[idx]}
-                            onChange={(e) => {
-                              const updated = [...types];
-                              updated[idx] = e.target.value;
-                              setCustomRingTypes(updated);
-                            }}
-                            className="px-2 py-1 text-sm border border-gray-300 rounded"
-                            title={t('advancedMapping.innerOuterTitle')}
-                          >
-                            <option value="inner">{t('customization.rings.inner')}</option>
-                            <option value="outer">{t('customization.rings.outer')}</option>
-                          </select>
-                          {customRings.length > 1 && (
-                            <button
-                              onClick={() => {
-                                setCustomRings(customRings.filter((_, i) => i !== idx));
-                                if (customRingTypes) {
-                                  setCustomRingTypes(customRingTypes.filter((_, i) => i !== idx));
-                                }
-                                if (ringOriginalNames) {
-                                  setRingOriginalNames(ringOriginalNames.filter((_, i) => i !== idx));
-                                }
-                              }}
-                              className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                            >
-                              {t('customization.rings.remove')}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                    <div className="flex gap-2">
-                      {customRings.length < 4 && (
-                        <button
-                          onClick={() => {
-                            setCustomRings([...customRings, `Ring ${customRings.length + 1}`]);
-                            const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
-                            setCustomRingTypes([...types, 'inner']);
-                            if (ringOriginalNames) {
-                              setRingOriginalNames([...ringOriginalNames, null]); // New ring, no AI mapping
-                            }
-                          }}
-                          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                        >
-                          {t('customization.rings.addRing')}
-                        </button>
-                      )}
-                      {customRings.length > 1 && (
-                        <button
-                          onClick={() => {
-                            if (confirm(t('customization.rings.removeAllConfirm', { count: customRings.length }))) {
-                              setCustomRings([customRings[0]]); // Keep at least one
-                              setCustomRingTypes(customRingTypes ? [customRingTypes[0]] : null);
-                              setRingOriginalNames(ringOriginalNames ? [ringOriginalNames[0]] : null);
-                            }
-                          }}
-                          className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
-                        >
-                          Ta bort alla
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Custom Groups */}
-              <div className="bg-white p-3 rounded-sm border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <label className="font-medium text-gray-900">{t('customization.groups.label')}</label>
-                    {customGroups && groupOriginalNames && (
-                      <p className="text-xs text-gray-500 mt-0.5">{t('customization.groups.editing')}</p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (customGroups) {
-                        setCustomGroups(null);
-                        setGroupOriginalNames(null);
-                      } else {
-                        setCustomGroups(aiSuggestions.activityGroups.map(g => g.name));
-                        setGroupOriginalNames(aiSuggestions.activityGroups.map(g => g.name)); // Store original AI names
-                      }
-                    }}
-                    className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
-                  >
-                    {customGroups ? t('customization.groups.resetToAI') : t('customization.groups.customize')}
-                  </button>
-                </div>
-                
-                {!customGroups ? (
-                  <div className="text-sm text-gray-600">
-                    {t('customization.groups.summary', { count: aiSuggestions.activityGroups.length, names: aiSuggestions.activityGroups.slice(0, 5).map(g => g.name).join(', ') + (aiSuggestions.activityGroups.length > 5 ? '...' : '') })}
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {customGroups.map((groupName, idx) => (
+              ) : (
+                <div className="space-y-2">
+                  {customRings.map((ringName, idx) => {
+                    const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
+                    return (
                       <div key={idx} className="flex gap-2">
                         <input
                           type="text"
-                          value={groupName}
+                          value={ringName}
                           onChange={(e) => {
-                            const updated = [...customGroups];
+                            const updated = [...customRings];
                             updated[idx] = e.target.value;
-                            setCustomGroups(updated);
+                            setCustomRings(updated);
                           }}
-                          placeholder={`Grupp ${idx + 1}`}
+                          placeholder={`Ring ${idx + 1}`}
                           className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
                         />
-                        <button
-                          onClick={() => {
-                            setCustomGroups(customGroups.filter((_, i) => i !== idx));
-                            if (groupOriginalNames) {
-                              setGroupOriginalNames(groupOriginalNames.filter((_, i) => i !== idx));
-                            }
+                        <select
+                          value={types[idx]}
+                          onChange={(e) => {
+                            const updated = [...types];
+                            updated[idx] = e.target.value;
+                            setCustomRingTypes(updated);
                           }}
-                          className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                          className="px-2 py-1 text-sm border border-gray-300 rounded"
+                          title={t('advancedMapping.innerOuterTitle')}
                         >
-                          {t('customization.groups.remove')}
-                        </button>
+                          <option value="inner">{t('customization.rings.inner')}</option>
+                          <option value="outer">{t('customization.rings.outer')}</option>
+                        </select>
+                        {customRings.length > 1 && (
+                          <button
+                            onClick={() => {
+                              setCustomRings(customRings.filter((_, i) => i !== idx));
+                              if (customRingTypes) {
+                                setCustomRingTypes(customRingTypes.filter((_, i) => i !== idx));
+                              }
+                              if (ringOriginalNames) {
+                                setRingOriginalNames(ringOriginalNames.filter((_, i) => i !== idx));
+                              }
+                            }}
+                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                          >
+                            {t('customization.rings.remove')}
+                          </button>
+                        )}
                       </div>
-                    ))}
-                    <div className="flex gap-2">
+                    );
+                  })}
+                  <div className="flex gap-2">
+                    {customRings.length < 4 && (
                       <button
                         onClick={() => {
-                          setCustomGroups([...customGroups, `Grupp ${customGroups.length + 1}`]);
-                          if (groupOriginalNames) {
-                            setGroupOriginalNames([...groupOriginalNames, null]); // New group, no AI mapping
+                          setCustomRings([...customRings, `Ring ${customRings.length + 1}`]);
+                          const types = customRingTypes || customRings.map((_, i) => i === 0 ? 'outer' : 'inner');
+                          setCustomRingTypes([...types, 'inner']);
+                          if (ringOriginalNames) {
+                            setRingOriginalNames([...ringOriginalNames, null]);
                           }
                         }}
                         className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                       >
-                        {t('customization.groups.addGroup')}
+                        {t('customization.rings.addRing')}
                       </button>
-                      {customGroups.length > 1 && (
-                        <button
-                          onClick={() => {
-                            if (confirm(t('customization.groups.removeAllConfirm', { count: customGroups.length }))) {
-                              setCustomGroups([customGroups[0]]); // Keep at least one
-                              setGroupOriginalNames(groupOriginalNames ? [groupOriginalNames[0]] : null);
-                            }
-                          }}
-                          className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
-                        >
-                          Ta bort alla
-                        </button>
-                      )}
-                    </div>
+                    )}
+                    {customRings.length > 1 && (
+                      <button
+                        onClick={() => {
+                          if (confirm(t('customization.rings.removeAllConfirm', { count: customRings.length }))) {
+                            setCustomRings([customRings[0]]);
+                            setCustomRingTypes(customRingTypes ? [customRingTypes[0]] : null);
+                            setRingOriginalNames(ringOriginalNames ? [ringOriginalNames[0]] : null);
+                          }
+                        }}
+                        className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      >
+                        Ta bort alla
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+            
+            {/* Custom Groups */}
+            <div className="bg-white p-3 rounded-sm border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <label className="font-medium text-gray-900">{t('customization.groups.label')}</label>
+                  {customGroups && groupOriginalNames && (
+                    <p className="text-xs text-gray-500 mt-0.5">{t('customization.groups.editing')}</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    if (customGroups) {
+                      setCustomGroups(null);
+                      setGroupOriginalNames(null);
+                    } else {
+                      setCustomGroups(aiSuggestions.activityGroups.map(g => g.name));
+                      setGroupOriginalNames(aiSuggestions.activityGroups.map(g => g.name));
+                    }
+                  }}
+                  className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                >
+                  {customGroups ? t('customization.groups.resetToAI') : t('customization.groups.customize')}
+                </button>
               </div>
+              
+              {!customGroups ? (
+                <div className="text-sm text-gray-600">
+                  {t('customization.groups.summary', { count: aiSuggestions.activityGroups.length, names: aiSuggestions.activityGroups.slice(0, 5).map(g => g.name).join(', ') + (aiSuggestions.activityGroups.length > 5 ? '...' : '') })}
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {customGroups.map((groupName, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={groupName}
+                        onChange={(e) => {
+                          const updated = [...customGroups];
+                          updated[idx] = e.target.value;
+                          setCustomGroups(updated);
+                        }}
+                        placeholder={`Grupp ${idx + 1}`}
+                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+                      />
+                      <button
+                        onClick={() => {
+                          setCustomGroups(customGroups.filter((_, i) => i !== idx));
+                          if (groupOriginalNames) {
+                            setGroupOriginalNames(groupOriginalNames.filter((_, i) => i !== idx));
+                          }
+                        }}
+                        className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      >
+                        {t('customization.groups.remove')}
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      setCustomGroups([...customGroups, `Grupp ${customGroups.length + 1}`]);
+                      if (groupOriginalNames) {
+                        setGroupOriginalNames([...groupOriginalNames, null]);
+                      }
+                    }}
+                    className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    {t('customization.groups.addGroup')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Rings Section */}
-        <div>
-          <h4 className="font-medium text-gray-900 mb-3">{t('review.rings', { count: getEffectiveRingsAndGroups().effectiveRings.length })}</h4>
-          <div className="space-y-2">
-            {getEffectiveRingsAndGroups().effectiveRings.map((ring, idx) => (
-              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-sm p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-medium text-gray-900">{ring.name}</span>
-                    <span className="ml-2 text-xs text-gray-500">
-                      ({ring.type === 'inner' ? 'Inner' : 'Outer'})
-                    </span>
-                  </div>
-                  {ring.color && (
-                    <div 
-                      className="w-6 h-6 rounded border border-gray-300"
-                      style={{ backgroundColor: ring.color }}
-                    />
-                  )}
-                </div>
-                {ring.description && (
-                  <p className="text-xs text-gray-600 mt-1">{ring.description}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Activity Groups Section */}
-        <div>
-          <h4 className="font-medium text-gray-900 mb-3">
-            {t('review.activityGroups', { count: getEffectiveRingsAndGroups().effectiveGroups.length })}
-          </h4>
-          <div className="space-y-2">
-            {getEffectiveRingsAndGroups().effectiveGroups.map((group, idx) => (
-              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-sm p-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{group.name}</span>
-                  <div 
-                    className="w-6 h-6 rounded border border-gray-300"
-                    style={{ backgroundColor: group.color }}
-                  />
-                </div>
-                {group.description && (
-                  <p className="text-xs text-gray-600 mt-1">{group.description}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Activities Preview */}
-        <div>
-          <h4 className="font-medium text-gray-900 mb-3">
-            {t('review.activities', { count: aiSuggestions.activities.length })}
-          </h4>
-          <div className="bg-gray-50 border border-gray-200 rounded-sm p-3">
-            <p className="text-sm text-gray-700">
-              {t('review.activitiesWillBeImported', { count: aiSuggestions.totalActivitiesCount || aiSuggestions.activities.length })}
-            </p>
-            <div className="mt-2 text-xs text-gray-500 space-y-1">
-              <p>{t('review.firstExamples')}</p>
-              {aiSuggestions.activities.slice(0, 3).map((activity, idx) => (
-                <div key={idx} className="pl-2 border-l-2 border-gray-300">
-                  <span className="font-medium">{activity.name}</span> · {activity.startDate} till {activity.endDate}
-                  <br />
-                  <span className="text-gray-400">→ {activity.ring} / {activity.group}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* People Detection & Team Creation */}
-        {detectedPeople.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="w-5 h-5 text-blue-700" />
-              <h4 className="font-medium text-gray-900">
-                {t('people.heading', { count: detectedPeople.length })}
+        {/* Data Preview - Collapsible */}
+        {showDataPreview && csvData && (aiSuggestions.mapping?.ringValueMapping || aiSuggestions.mapping?.groupValueMapping) && (() => {
+          const ringColIndex = aiSuggestions.mapping?.columns?.ring 
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
+            : -1;
+          const groupColIndex = aiSuggestions.mapping?.columns?.group
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.group)
+            : -1;
+          
+          return (
+            <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5" />
+                {t('consolidation.heading')}
               </h4>
-            </div>
-            
-            {/* Team creation toggle */}
-            <label className="flex items-center gap-3 mb-4 p-3 bg-white border border-blue-300 rounded-sm cursor-pointer hover:bg-blue-50">
-              <input
-                type="checkbox"
-                checked={createTeam}
-                onChange={(e) => setCreateTeam(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded"
-              />
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">{t('people.createTeam')}</div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {t('people.createTeamDescription')}
-                </div>
-              </div>
-            </label>
-
-            {createTeam && (
-              <div className="space-y-4">
-                {/* Team name input */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('people.teamName')}
-                  </label>
-                  <input
-                    type="text"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    placeholder={t('people.teamNamePlaceholder')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Send invites checkbox */}
-                <div className="bg-blue-50 border border-blue-200 rounded-sm p-3">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={sendInvites}
-                      onChange={(e) => setSendInvites(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded mt-0.5"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 text-sm">
-                        {t('people.sendInvites')}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {sendInvites ? t('people.sendInvitesEnabled') : t('people.sendInvitesDisabled')}
-                      </div>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Person selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('people.selectPeople')}
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {detectedPeople.map((person, idx) => (
-                      <div 
-                        key={idx}
-                        className="flex items-start gap-3 bg-white border border-gray-200 rounded-sm p-3"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedPeople.has(idx)}
-                          onChange={() => togglePersonSelection(idx)}
-                          className="w-4 h-4 text-blue-600 rounded mt-0.5 cursor-pointer"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900">{person.name}</span>
-                            {person.email ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
-                                <Mail className="w-3 h-3" />
-                                {t('people.emailExists')}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">
-                                <Mail className="w-3 h-3" />
-                                {t('people.emailMissing')}
-                              </span>
-                            )}
+              
+              {aiSuggestions.mapping?.ringValueMapping && ringColIndex >= 0 && (() => {
+                const uniqueValues = Object.keys(aiSuggestions.mapping.ringValueMapping).length;
+                const consolidatedCount = aiSuggestions.rings?.length || 0;
+                return (
+                  <div className="mb-4">
+                    <h5 className="font-medium text-blue-800 mb-2">
+                      {t('consolidation.rings', { unique: uniqueValues, consolidated: consolidatedCount })}
+                    </h5>
+                    <div className="space-y-2">
+                      {aiSuggestions.rings?.map(ring => {
+                        const mappedValues = Object.entries(aiSuggestions.mapping.ringValueMapping)
+                          .filter(([_, target]) => target === ring.name)
+                          .map(([source, _]) => source);
+                        const count = mappedValues.reduce((sum, val) => 
+                          sum + csvData.rows.filter(row => String(row[ringColIndex] || '') === val).length, 0
+                        );
+                        
+                        if (mappedValues.length === 0) return null;
+                        
+                        return (
+                          <div key={ring.id} className="bg-white rounded p-2">
+                            <div className="font-medium text-gray-900">
+                              {ring.name} <span className="text-sm text-gray-500">({t('consolidation.activities', { count })})</span>
+                            </div>
+                            <div className="text-xs text-gray-600 ml-4 mt-1">
+                              ← {mappedValues.map(v => v === '' ? '(tom)' : v).join(', ')}
+                            </div>
                           </div>
-                          {person.email && (
-                            <p className="text-xs text-gray-500 mt-1">{person.email}</p>
-                          )}
-                          {person.context && (
-                            <p className="text-xs text-gray-400 mt-1">{person.context}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {selectedPeople.size > 0 && (
-                    <div className="mt-3 p-3 bg-blue-100 border border-blue-200 rounded-sm">
-                      <p className="text-sm text-blue-900" dangerouslySetInnerHTML={{ __html: t('people.selectedCount', { count: selectedPeople.size }) }} />
-                      <ul className="text-xs text-blue-700 mt-2 space-y-1">
-                        {Array.from(selectedPeople).map(idx => {
-                          const person = detectedPeople[idx];
-                          if (sendInvites && person.email) {
-                            return (
-                              <li key={idx}>
-                                {t('people.willSendEmail', { name: person.name, email: person.email })}
-                              </li>
-                            );
-                          } else {
-                            const emailSuffix = person.email ? ` (${person.email})` : t('people.emailMissing', { defaultValue: ' (email saknas)' });
-                            return (
-                              <li key={idx}>
-                                {t('people.willBePending', { name: person.name, email: emailSuffix })}
-                              </li>
-                            );
-                          }
-                        })}
-                      </ul>
+                        );
+                      }).filter(Boolean)}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
+                );
+              })()}
+              
+              {aiSuggestions.mapping?.groupValueMapping && groupColIndex >= 0 && (() => {
+                const uniqueValues = Object.keys(aiSuggestions.mapping.groupValueMapping).length;
+                const consolidatedCount = aiSuggestions.activityGroups?.length || 0;
+                return (
+                  <div>
+                    <h5 className="font-medium text-blue-800 mb-2">
+                      {t('consolidation.groups', { unique: uniqueValues, consolidated: consolidatedCount })}
+                    </h5>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {aiSuggestions.activityGroups?.map(group => {
+                        const mappedValues = Object.entries(aiSuggestions.mapping.groupValueMapping)
+                          .filter(([_, target]) => target === group.name)
+                          .map(([source, _]) => source);
+                        const count = mappedValues.reduce((sum, val) => 
+                          sum + csvData.rows.filter(row => String(row[groupColIndex] || '') === val).length, 0
+                        );
+                        
+                        if (mappedValues.length === 0) return null;
+                        
+                        return (
+                          <div key={group.id} className="bg-white rounded p-2">
+                            <div className="font-medium text-gray-900 flex items-center gap-2">
+                              <div className="w-4 h-4 rounded" style={{ backgroundColor: group.color }} />
+                              {group.name} <span className="text-sm text-gray-500">({t('consolidation.activities', { count })})</span>
+                            </div>
+                            <div className="text-xs text-gray-600 ml-8 mt-1">
+                              ← {mappedValues.slice(0, 10).map(v => v === '' ? '(tom)' : v).join(', ')}
+                              {mappedValues.length > 10 && ` ... +${mappedValues.length - 10} fler`}
+                            </div>
+                          </div>
+                        );
+                      }).filter(Boolean)}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
+
+        {/* Empty Value Status - Only show if there are empty values */}
+        {csvData && (() => {
+          const ringColIndex = aiSuggestions.mapping?.columns?.ring 
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.ring)
+            : -1;
+          const groupColIndex = aiSuggestions.mapping?.columns?.group
+            ? csvData.headers.indexOf(aiSuggestions.mapping.columns.group)
+            : -1;
+          
+          const emptyRingCount = ringColIndex >= 0 
+            ? csvData.rows.filter(row => !row[ringColIndex] || String(row[ringColIndex]).trim() === '').length
+            : 0;
+          const emptyGroupCount = groupColIndex >= 0
+            ? csvData.rows.filter(row => !row[groupColIndex] || String(row[groupColIndex]).trim() === '').length
+            : 0;
+          
+          const ringFallback = aiSuggestions.mapping?.ringValueMapping?.[''] || 'Övrigt';
+          const groupFallback = aiSuggestions.mapping?.groupValueMapping?.[''] || 'Allmänt';
+          
+          if (emptyRingCount === 0 && emptyGroupCount === 0) return null;
+          
+          return (
+            <div className="bg-amber-50 border border-amber-200 rounded-sm p-4">
+              <h5 className="font-medium text-amber-900 flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5" />
+                Tomma värden upptäckta
+              </h5>
+              <ul className="text-sm text-amber-800 space-y-1">
+                {emptyRingCount > 0 && (
+                  <li>
+                    {emptyRingCount} rader med tomt ringvärde → mappas till "{ringFallback}"
+                  </li>
+                )}
+                {emptyGroupCount > 0 && (
+                  <li>
+                    {emptyGroupCount} rader med tomt gruppvärde → mappas till "{groupFallback}"
+                  </li>
+                )}
+              </ul>
+              <p className="text-xs text-amber-700 mt-2">
+                ✅ Dessa {emptyRingCount + emptyGroupCount} rader kommer fortfarande att importeras.
+              </p>
+            </div>
+          );
+        })()}
+
+        {/* Large Import Preview Notice */}
+        {aiSuggestions.totalActivitiesCount > (aiSuggestions.activities?.length || 0) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
+            <h4 className="font-medium text-blue-900 mb-1">{t('review.dataPreview.title')}</h4>
+            <p className="text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: t('review.dataPreview.totalActivities', { total: aiSuggestions.totalActivitiesCount }) }} />
+            <p className="text-sm text-blue-800 mt-1">
+              {t('review.dataPreview.previewCount', { preview: aiSuggestions.activities?.length || 20 })}
+            </p>
+            <p className="text-sm text-blue-900 font-medium mt-2">
+              {t('review.dataPreview.allWillImport', { total: aiSuggestions.totalActivitiesCount })}
+            </p>
+            {csvData.rowCount > 200 && (
+              <p className="text-xs text-blue-700 mt-2">
+                {t('review.dataPreview.timeEstimate', { time: csvData.rowCount < 500 ? '3-7 minuter' : csvData.rowCount < 1000 ? '7-15 minuter' : '> 15 minuter' })}
+              </p>
             )}
           </div>
         )}
 
-        {/* Column Mapping */}
-        {aiSuggestions.mapping && (
-          <div>
-            <h4 className="font-medium text-gray-900 mb-3">{t('advancedMapping.columnMapping')}</h4>
-            <div className="bg-gray-50 border border-gray-200 rounded-sm p-3 text-xs text-gray-600 space-y-1">
-              {Object.entries(aiSuggestions.mapping.columns).map(([field, column]) => (
-                <div key={field} className="flex justify-between">
-                  <span className="font-medium">{field}:</span>
-                  <span className="text-gray-900">{column || 'Ej mappad'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Import Mode Selection */}
-        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-sm p-4">
-          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-yellow-600" />
-            {t('review.importMode.heading')}
-          </h4>
-          <p className="text-sm text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: t('review.importMode.willCreate', { rings: getEffectiveRingsAndGroups().effectiveRings.length, groups: getEffectiveRingsAndGroups().effectiveGroups.length, activities: aiSuggestions.totalActivitiesCount || aiSuggestions.activities?.length || 0 }) }} />
+        <div className="bg-gray-50 border border-gray-300 rounded-sm p-4">
+          <div className="mb-3">
+            <h4 className="font-semibold text-gray-900 mb-1">{t('review.importMode.heading')}</h4>
+            <p className="text-sm text-gray-600" dangerouslySetInnerHTML={{ __html: t('review.importMode.description', { rows: csvData?.rowCount || 0, fileName: csvData?.fileName || 'CSV' }) }} />
+            <p className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: t('review.importMode.willCreate', { rings: effectiveRings.length, groups: effectiveGroups.length, activities: aiSuggestions.totalActivitiesCount || aiSuggestions.activities?.length || 0 }) }} />
+          </div>
           
           <div className="space-y-3">
-            <label className="flex items-start gap-3 p-3 border-2 rounded-sm cursor-pointer hover:bg-yellow-100/50 transition-colors"
-              style={{ borderColor: importMode === 'replace' ? '#EAB308' : '#E5E7EB' }}>
+            <label className="flex items-start gap-3 p-3 bg-white border-2 border-gray-200 rounded-sm cursor-pointer hover:border-blue-400 transition-colors">
               <input
                 type="radio"
                 name="importMode"
@@ -2136,12 +1862,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 onChange={(e) => setImportMode(e.target.value)}
                 className="mt-0.5"
               />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">{t('review.importMode.replace.title')}</div>
-                  <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: t('review.importMode.replace.description') }} />
-                </div>
-              </label>            <label className="flex items-start gap-3 p-3 border-2 rounded-sm cursor-pointer hover:bg-green-50 transition-colors"
-              style={{ borderColor: importMode === 'append' ? '#10B981' : '#E5E7EB' }}>
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">{t('review.importMode.replace.title')}</div>
+                <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: t('review.importMode.replace.description') }} />
+              </div>
+            </label>
+            
+            <label className="flex items-start gap-3 p-3 bg-white border-2 border-gray-200 rounded-sm cursor-pointer hover:border-blue-400 transition-colors">
               <input
                 type="radio"
                 name="importMode"
@@ -2162,7 +1889,6 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       </div>
     );
   };
-
   const renderImportingStage = () => (
     <div className="text-center py-12">
       <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
