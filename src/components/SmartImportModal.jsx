@@ -3,6 +3,7 @@ import { X, Upload, FileSpreadsheet, Sparkles, Check, AlertCircle, AlertTriangle
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import { useImportProgress } from '../hooks/useImportProgress';
+import { createPendingInvitation, sendTeamInvitation } from '../services/teamService';
 
 /**
  * SmartImportModal - AI-powered CSV import with intelligent mapping
@@ -22,6 +23,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [progress, setProgress] = useState(null);
   const [detectedPeople, setDetectedPeople] = useState([]);
   const [selectedPeople, setSelectedPeople] = useState(new Set());
+  const [createTeam, setCreateTeam] = useState(false); // Whether to create a team
+  const [teamName, setTeamName] = useState(''); // Team name if creating
+  const [sendInvites, setSendInvites] = useState(true); // Whether to send email invitations immediately
+  const teamCreatedRef = useRef(false); // Flag to prevent duplicate team creation
   const [importMode, setImportMode] = useState('replace'); // 'replace' or 'append'
   const [showAdvancedMapping, setShowAdvancedMapping] = useState(false);
   const [jobId, setJobId] = useState(null); // Track async import job
@@ -54,36 +59,46 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     if (importJobProgress.isComplete) {
       console.log('[SmartImport] Job completed:', importJobProgress.stats);
       
-      // Show toast notification for background imports
-      if (isBackgroundImport) {
-        const event = new CustomEvent('showToast', {
-          detail: {
-            message: `Import klar! ${importJobProgress.stats.createdItems || 0} aktiviteter importerade.`,
-            type: 'success'
-          }
-        });
-        window.dispatchEvent(event);
-      }
-      
-      // Trigger parent's completion handler
-      if (onImportComplete) {
-        onImportComplete({
-          yrwData: {
-            metadata: {
-              title: csvData?.fileName?.replace(/\.(csv|xlsx|xls)$/i, '') || 'Import',
-              year: aiSuggestions?.suggestedYear || new Date().getFullYear()
+      // Create team and send invitations if requested (async)
+      const finalizeImport = async () => {
+        if (createTeam && selectedPeople.size > 0 && teamName.trim() && !teamCreatedRef.current) {
+          teamCreatedRef.current = true; // Mark as created to prevent duplicates
+          await handleTeamCreation();
+        }
+        
+        // Show toast notification for background imports
+        if (isBackgroundImport) {
+          const event = new CustomEvent('showToast', {
+            detail: {
+              message: `Import klar! ${importJobProgress.stats.createdItems || 0} aktiviteter importerade.`,
+              type: 'success'
+            }
+          });
+          window.dispatchEvent(event);
+        }
+        
+        // Trigger parent's completion handler
+        if (onImportComplete) {
+          onImportComplete({
+            yrwData: {
+              metadata: {
+                title: csvData?.fileName?.replace(/\.(csv|xlsx|xls)$/i, '') || 'Import',
+                year: aiSuggestions?.suggestedYear || new Date().getFullYear()
+              },
+              pages: [] // Pages are already in database
             },
-            pages: [] // Pages are already in database
-          },
-          stats: importJobProgress.stats,
-          inviteEmails: Array.from(selectedPeople)
-        });
-      }
+            stats: importJobProgress.stats,
+            inviteEmails: Array.from(selectedPeople).map(idx => detectedPeople[idx]?.email).filter(Boolean)
+          });
+        }
 
-      setStage('complete');
-      setProgress(null);
-      setJobId(null);
-      setIsBackgroundImport(false);
+        setStage('complete');
+        setProgress(null);
+        setJobId(null);
+        setIsBackgroundImport(false);
+      };
+      
+      finalizeImport();
     } else if (importJobProgress.isFailed) {
       console.error('[SmartImport] Job failed:', importJobProgress.error);
       
@@ -104,7 +119,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       setJobId(null);
       setIsBackgroundImport(false);
     }
-  }, [importJobProgress.isComplete, importJobProgress.isFailed, jobId, onImportComplete, selectedPeople, csvData, aiSuggestions, isBackgroundImport]);
+  }, [importJobProgress.isComplete, importJobProgress.isFailed, jobId, onImportComplete, selectedPeople, csvData, aiSuggestions, isBackgroundImport, createTeam, teamName, detectedPeople]);
 
   // Cancel import
   const handleCancelImport = async () => {
@@ -301,7 +316,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       
       // Pre-select all people for invitation
       if (suggestions.detectedPeople && suggestions.detectedPeople.length > 0) {
-        setSelectedPeople(new Set(suggestions.detectedPeople.map(p => p.email)));
+        setSelectedPeople(new Set(suggestions.detectedPeople.map((_, idx) => idx)));
+        setCreateTeam(true); // Auto-enable team creation if people found
+        // Suggest team name from wheel title or CSV filename
+        const suggestedName = suggestions.suggestedWheelTitle || csvData?.fileName?.replace(/\.(csv|xlsx|xls)$/i, '') || 'Mitt Team';
+        setTeamName(suggestedName);
       }
 
       setStage('review');
@@ -679,13 +698,116 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     }
   };
 
-  const togglePersonSelection = (email) => {
+  const handleTeamCreation = async () => {
+    if (!createTeam || selectedPeople.size === 0 || !teamName.trim()) {
+      console.log('[SmartImport] Skipping team creation - not requested or no team name');
+      return;
+    }
+
+    try {
+      console.log('[SmartImport] Creating team:', teamName, 'with', selectedPeople.size, 'members', sendInvites ? '(sending invites)' : '(preparing invites only)');
+      
+      // 1. Create the team
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: team, error: teamError } = await supabase
+        .from('teams')
+        .insert({
+          name: teamName.trim(),
+          description: `Team för Smart Import ${csvData?.fileName || ''}`,
+          owner_id: user.id
+        })
+        .select()
+        .single();
+
+      if (teamError) throw teamError;
+      console.log('[SmartImport] Team created:', team.id);
+
+      // 2. Assign wheel to team
+      const { error: wheelUpdateError } = await supabase
+        .from('year_wheels')
+        .update({ team_id: team.id })
+        .eq('id', wheelId);
+
+      if (wheelUpdateError) throw wheelUpdateError;
+      console.log('[SmartImport] Wheel assigned to team');
+
+      // 3. Prepare/send invitations - collect unique emails and names
+      let invitesSent = 0;
+      let pendingCreated = 0;
+
+      console.log('[SmartImport] Selected people indices:', Array.from(selectedPeople));
+      console.log('[SmartImport] Detected people array:', detectedPeople);
+
+      // Deduplicate emails and names
+      const uniqueEmails = new Set();
+      const uniquePendingNames = new Set();
+
+      for (const personIndex of Array.from(selectedPeople)) {
+        const person = detectedPeople[personIndex];
+        console.log('[SmartImport] Processing person at index', personIndex, ':', person);
+        
+        if (!person) {
+          console.warn('[SmartImport] No person found at index', personIndex);
+          continue;
+        }
+        
+        if (person.email && sendInvites) {
+          // Only send email invitations if sendInvites is enabled
+          uniqueEmails.add(person.email.toLowerCase().trim());
+        } else {
+          // Always create pending invitation (either no email OR sendInvites disabled)
+          uniquePendingNames.add(person.name.trim());
+        }
+      }
+
+      // Send invitations for unique emails (only if sendInvites enabled)
+      if (sendInvites) {
+        for (const email of uniqueEmails) {
+          await sendTeamInvitation(team.id, email);
+          invitesSent++;
+          console.log('[SmartImport] Sent invitation to:', email);
+        }
+      }
+
+      // Create pending invitations for all names (either no email OR sendInvites disabled)
+      for (const name of uniquePendingNames) {
+        await createPendingInvitation(team.id, name);
+        pendingCreated++;
+        console.log('[SmartImport] Created pending invitation for:', name);
+      }
+
+      // Show success toast
+      const message = sendInvites 
+        ? `Team skapat! ${invitesSent} email(s) skickade, ${pendingCreated} väntar på email`
+        : `Team skapat! ${pendingCreated} inbjudan(ar) förberedda (email skickas inte automatiskt)`;
+      const event = new CustomEvent('showToast', {
+        detail: {
+          message,
+          type: 'success'
+        }
+      });
+      window.dispatchEvent(event);
+
+    } catch (err) {
+      console.error('[SmartImport] Team creation error:', err);
+      // Non-blocking - show toast but don't fail the import
+      const event = new CustomEvent('showToast', {
+        detail: {
+          message: `Kunde inte skapa team: ${err.message}`,
+          type: 'error'
+        }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
+  const togglePersonSelection = (personIndex) => {
     setSelectedPeople(prevSelected => {
       const newSet = new Set(prevSelected);
-      if (newSet.has(email)) {
-        newSet.delete(email);
+      if (newSet.has(personIndex)) {
+        newSet.delete(personIndex);
       } else {
-        newSet.add(email);
+        newSet.add(personIndex);
       }
       return newSet;
     });
@@ -699,6 +821,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     setDetectedPeople([]);
     setSelectedPeople(new Set());
     setStage('upload');
+    teamCreatedRef.current = false; // Reset team creation flag
     onClose();
   };
 
@@ -1818,47 +1941,149 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </div>
         </div>
 
-        {/* People Detection */}
+        {/* People Detection & Team Creation */}
         {detectedPeople.length > 0 && (
-          <div>
+          <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Users className="w-5 h-5 text-gray-700" />
+              <Users className="w-5 h-5 text-blue-700" />
               <h4 className="font-medium text-gray-900">
                 Hittade personer ({detectedPeople.length})
               </h4>
             </div>
-            <div className="space-y-2">
-              {detectedPeople.map((person, idx) => (
-                <label 
-                  key={idx}
-                  className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-sm p-3 cursor-pointer hover:bg-gray-100"
-                >
+            
+            {/* Team creation toggle */}
+            <label className="flex items-center gap-3 mb-4 p-3 bg-white border border-blue-300 rounded-sm cursor-pointer hover:bg-blue-50">
+              <input
+                type="checkbox"
+                checked={createTeam}
+                onChange={(e) => setCreateTeam(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded"
+              />
+              <div className="flex-1">
+                <div className="font-medium text-gray-900">Skapa team för detta hjul</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  Bjud in personer att samarbeta på planeringen
+                </div>
+              </div>
+            </label>
+
+            {createTeam && (
+              <div className="space-y-4">
+                {/* Team name input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Teamnamn
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={selectedPeople.has(person.email)}
-                    onChange={() => togglePersonSelection(person.email)}
-                    className="w-4 h-4 text-blue-600 rounded"
+                    type="text"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    placeholder="T.ex. Projektteam 2025"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium text-gray-900">{person.email}</span>
+                </div>
+
+                {/* Send invites checkbox */}
+                <div className="bg-blue-50 border border-blue-200 rounded-sm p-3">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sendInvites}
+                      onChange={(e) => setSendInvites(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900 text-sm">
+                        Skicka inbjudningar via email omedelbart
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {sendInvites ? (
+                          <>
+                            ✉️ Email skickas direkt till personer med emailadress. 
+                            Personer utan email läggs till som väntande inbjudningar.
+                          </>
+                        ) : (
+                          <>
+                            📋 Alla personer läggs till som väntande inbjudningar. 
+                            Du kan lägga till emailadresser och skicka inbjudningar senare från teaminställningarna.
+                          </>
+                        )}
+                      </div>
                     </div>
-                    {person.name && (
-                      <p className="text-xs text-gray-500 ml-6">{person.name}</p>
-                    )}
-                    {person.context && (
-                      <p className="text-xs text-gray-400 ml-6">Nämndes i: {person.context}</p>
-                    )}
+                  </label>
+                </div>
+
+                {/* Person selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Välj personer att bjuda in
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {detectedPeople.map((person, idx) => (
+                      <label 
+                        key={idx}
+                        className="flex items-start gap-3 bg-white border border-gray-200 rounded-sm p-3 cursor-pointer hover:bg-gray-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPeople.has(idx)}
+                          onChange={() => togglePersonSelection(idx)}
+                          className="w-4 h-4 text-blue-600 rounded mt-0.5"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900">{person.name}</span>
+                            {person.email ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
+                                <Mail className="w-3 h-3" />
+                                Email finns
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">
+                                <Mail className="w-3 h-3" />
+                                Email saknas
+                              </span>
+                            )}
+                          </div>
+                          {person.email && (
+                            <p className="text-xs text-gray-500 mt-1">{person.email}</p>
+                          )}
+                          {person.context && (
+                            <p className="text-xs text-gray-400 mt-1">{person.context}</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
                   </div>
-                </label>
-              ))}
-              {selectedPeople.size > 0 && (
-                <p className="text-xs text-gray-500 mt-2">
-                  {selectedPeople.size} person(er) kommer att få teameinbjudan via email
-                </p>
-              )}
-            </div>
+                  
+                  {selectedPeople.size > 0 && (
+                    <div className="mt-3 p-3 bg-blue-100 border border-blue-200 rounded-sm">
+                      <p className="text-sm text-blue-900">
+                        <strong>{selectedPeople.size}</strong> person(er) valda:
+                      </p>
+                      <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                        {Array.from(selectedPeople).map(idx => {
+                          const person = detectedPeople[idx];
+                          if (sendInvites && person.email) {
+                            return (
+                              <li key={idx}>
+                                ✉️ {person.name} - email skickas till {person.email}
+                              </li>
+                            );
+                          } else {
+                            return (
+                              <li key={idx}>
+                                📋 {person.name} - förberedds som väntande inbjudan{person.email ? ` (${person.email})` : ' (email saknas)'}
+                              </li>
+                            );
+                          }
+                        })}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -2023,9 +2248,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         <p className="text-sm text-gray-500">
           All data har importerats till ditt hjul
         </p>
-        {selectedPeople.size > 0 && (
-          <p className="text-xs text-gray-500 mt-2">
-            {selectedPeople.size} teameinbjudningar har skickats
+        {createTeam && selectedPeople.size > 0 && (
+          <p className="text-xs text-blue-600 mt-2">
+            Team "{teamName}" har skapats med {selectedPeople.size} medlem(mar)
           </p>
         )}
         
