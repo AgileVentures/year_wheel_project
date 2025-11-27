@@ -2012,15 +2012,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   </label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {detectedPeople.map((person, idx) => (
-                      <label 
+                      <div 
                         key={idx}
-                        className="flex items-start gap-3 bg-white border border-gray-200 rounded-sm p-3 cursor-pointer hover:bg-gray-50"
+                        className="flex items-start gap-3 bg-white border border-gray-200 rounded-sm p-3"
                       >
                         <input
                           type="checkbox"
                           checked={selectedPeople.has(idx)}
                           onChange={() => togglePersonSelection(idx)}
-                          className="w-4 h-4 text-blue-600 rounded mt-0.5"
+                          className="w-4 h-4 text-blue-600 rounded mt-0.5 cursor-pointer"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -2044,7 +2044,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                             <p className="text-xs text-gray-400 mt-1">{person.context}</p>
                           )}
                         </div>
-                      </label>
+                      </div>
                     ))}
                   </div>
                   
