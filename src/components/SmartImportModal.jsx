@@ -582,14 +582,50 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         // Normal flow: create pages from itemsWithIds
         const itemsByYear = {};
         itemsWithIds.forEach(item => {
-          if (item.startDate) {
-            const year = new Date(item.startDate).getFullYear();
-            if (!itemsByYear[year]) {
-              itemsByYear[year] = [];
+          if (item.startDate && item.endDate) {
+            const startYear = new Date(item.startDate).getFullYear();
+            const endYear = new Date(item.endDate).getFullYear();
+            
+            console.log(`[SmartImport] Item: ${item.name}, Start: ${item.startDate} (${startYear}), End: ${item.endDate} (${endYear})`);
+            
+            if (startYear === endYear) {
+              // Single year activity - add as-is
+              if (!itemsByYear[startYear]) {
+                itemsByYear[startYear] = [];
+              }
+              itemsByYear[startYear].push(item);
+              console.log(`[SmartImport] → Single year activity, added to ${startYear}`);
+            } else {
+              // Multi-year activity - split into year segments
+              console.log(`[SmartImport] → Splitting multi-year activity: ${item.name} (${startYear}-${endYear})`);
+              
+              for (let year = startYear; year <= endYear; year++) {
+                if (!itemsByYear[year]) {
+                  itemsByYear[year] = [];
+                }
+                
+                // Calculate segment dates for this year
+                const segmentStart = year === startYear 
+                  ? item.startDate 
+                  : `${year}-01-01`;
+                
+                const segmentEnd = year === endYear 
+                  ? item.endDate 
+                  : `${year}-12-31`;
+                
+                // Create a copy of the item for this year segment
+                itemsByYear[year].push({
+                  ...item,
+                  startDate: segmentStart,
+                  endDate: segmentEnd,
+                  name: `${item.name}` // Keep original name
+                });
+                
+                console.log(`[SmartImport] → Created segment for ${year}: ${segmentStart} to ${segmentEnd}`);
+              }
             }
-            itemsByYear[year].push(item);
           } else {
-            console.warn('[SmartImport] Item missing startDate:', item.name);
+            console.warn('[SmartImport] Item missing startDate or endDate:', item.name);
           }
         });
         
