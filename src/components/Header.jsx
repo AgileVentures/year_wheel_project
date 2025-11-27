@@ -247,11 +247,12 @@ function Header({
         <Dropdown
           trigger={
             <button 
-              className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex-shrink-0"
+              className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex items-center gap-1"
               title={t('common:header.fileOperations')}
               aria-label={t('common:header.fileOperations')}
             >
               <FolderOpen size={18} />
+              <ChevronDown size={14} />
             </button>
           }
         >
