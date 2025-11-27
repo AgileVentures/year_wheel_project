@@ -1,7 +1,7 @@
 /**
  * CalendarDayBox Component
  *
- * Displays a single day in the calendar with activity indicators
+ * Displays a single day in the calendar with activity items
  *
  * @param {Date} day - The date object representing the day
  * @param {boolean} isToday - Indicates if the day is today
@@ -23,59 +23,56 @@ const CalendarDayBox = ({
   getRing
 }) => {
   const dayNumber = day.getDate();
-
-  // Get unique activity groups for this day (max 3 to display)
-  const activityGroups = items
-    .map(item => getActivityGroup(item))
-    .filter(Boolean)
-    .filter((group, index, self) => 
-      index === self.findIndex(g => g.id === group.id)
-    )
-    .slice(0, 3);
-
-  const totalItems = items.length;
+  const displayItems = items.slice(0, 3); // Show max 3 items
+  const remainingCount = items.length - 3;
 
   return (
     <div
-      className={`w-full h-[100px] p-3 ${
-        isPast ? 'cursor-default' : 'cursor-pointer hover:bg-gray-100'
-      } overflow-hidden relative ${
-        isToday ? 'bg-blue-50' : 
-        isPast ? 'bg-gray-100' : 'bg-white'
+      className={`w-full min-h-[120px] p-2 ${
+        isPast ? 'cursor-default' : 'cursor-pointer hover:bg-blue-50'
+      } overflow-hidden relative transition-colors ${
+        isToday ? 'bg-blue-100 border-2 border-blue-500' : 
+        isPast ? 'bg-gray-50' : 'bg-white'
       }`}
-      onClick={isPast ? undefined : onClick}
+      onClick={onClick}
     >
-      <div className="flex flex-col h-full">
-        {/* Day number in center */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className={`text-2xl font-bold ${
-            isToday ? 'text-red-500' : 
-            isPast ? 'text-gray-400' : 
-            isCurrentMonth ? 'text-gray-700' : 'text-gray-400'
-          }`}>
-            {dayNumber}
-          </div>
-        </div>
-        
-        {/* Activity group indicators at bottom */}
-        <div className="h-6 flex items-center justify-center space-x-1">
-          {activityGroups.map((group, index) => (
+      {/* Day number in top-left corner */}
+      <div className={`text-sm font-semibold mb-1 ${
+        isToday
+          ? 'text-blue-700'
+          : isPast
+          ? 'text-gray-400'
+          : isCurrentMonth
+          ? 'text-gray-700'
+          : 'text-gray-400'
+      }`}>
+        {dayNumber}
+      </div>
+      
+      {/* Activity items as colored bars */}
+      <div className="space-y-1">
+        {displayItems.map((item, index) => {
+          const group = getActivityGroup(item);
+          return (
             <div
-              key={group.id}
-              className="w-4 h-4 rounded-full border border-white"
+              key={item.id || index}
+              className="text-[10px] px-1.5 py-0.5 rounded truncate text-white font-medium"
               style={{ 
-                backgroundColor: group.color,
-                zIndex: 3 - index 
+                backgroundColor: group?.color || '#9CA3AF'
               }}
-              title={group.name}
-            />
-          ))}
-          {totalItems > 3 && (
-            <span className="text-xs font-bold text-gray-600 ml-1">
-              +{totalItems - 3}
-            </span>
-          )}
-        </div>
+              title={item.name}
+            >
+              {item.name}
+            </div>
+          );
+        })}
+        
+        {/* Show "+X more" if there are more items */}
+        {remainingCount > 0 && (
+          <div className="text-[10px] text-gray-600 font-semibold px-1">
+            +{remainingCount} {remainingCount === 1 ? 'more' : 'more'}
+          </div>
+        )}
       </div>
     </div>
   );
