@@ -161,10 +161,40 @@
     "empty": "(empty)"
   },
   "advancedMapping": {
-    "title": "Advanced mapping",
+    "title": "Advanced Mapping",
     "description": "Customize AI's choice of columns, rings and groups",
     "ringsLabel": "Rings (2-4 recommended):",
-    "groupsLabel": "Activity Groups:"
+    "groupsLabel": "Activity Groups:",
+    "columnSelection": "Choose which columns to use for each field. Your choices are used directly during import.",
+    "activityName": "Activity Name",
+    "activityGroup": "Activity Group",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "ring": "Ring",
+    "labels": "Labels (filter columns)",
+    "required": "*",
+    "letAIChoose": "Let AI choose ({{value}})",
+    "letAIChooseNone": "Let AI choose (none)",
+    "groupHelper": "Column with categories for color coding",
+    "ringHelper": "Column to create rings (optional)",
+    "labelsHelper": "Select columns with people, status or tags",
+    "descriptionHelper": "Primary description column",
+    "columnMapping": "Column Mapping",
+    "customizeColumnMapping": "Customize Column Mapping",
+    "blockImportReason": {
+      "heading": "⚠️ Why are we blocking the import?",
+      "description": "A year wheel with overlapping year-long bars provides no useful visualization. YearWheel is most valuable when you can <strong>see time patterns and identify conflicts</strong>. By splitting the data into multiple focused wheels you get much better overview."
+    },
+    "innerOuterTitle": "Inner = main area between center and month circle, Outer = outer edge",
+    "blockedTitle": "Import is blocked due to unsuitable data structure",
+    "tips": {
+      "heading": "✨ How it works",
+      "changeMapping": "• Change column mappings, rings or groups as needed",
+      "autoSave": "• All your customizations are saved automatically",
+      "updateActivities": "• When you change ring names, activities are automatically updated",
+      "clickImport": "• Click \"Import\" when you're done",
+      "nextStep": "Next step: AI will analyze your CSV file and suggest mappings automatically. You can then review and adjust the suggestions before import."
+    }
   },
   "customization": {
     "heading": "Customize Rings and Groups",

@@ -916,8 +916,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             
             <div className="pt-4 border-t border-yellow-300">
               <p className="text-xs text-gray-500">
-                Nästa steg: AI kommer att analysera din CSV-fil och föreslå mappningar automatiskt.
-                Du kan sedan granska och justera förslagen innan import.
+                {t('advancedMapping.tips.nextStep')}
               </p>
             </div>
           </div>
@@ -1436,13 +1435,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     {aiSuggestions.suitabilityWarning.severity === 'error' && (
                       <div className="mt-3 pt-3 border-t border-red-300 bg-red-100 rounded p-3">
                         <p className="text-xs font-semibold text-red-900 mb-1">
-                          ⚠️ Varför blockerar vi importen?
+                          {t('advancedMapping.blockImportReason.heading')}
                         </p>
-                        <p className="text-xs text-red-800">
-                          Ett årshjul med överlappande helårsstaplar ger ingen användbar visualisering. 
-                          YearWheel är mest värdefullt när du kan <strong>se tidsmönster och identifiera konflikter</strong>. 
-                          Genom att dela upp datan i flera fokuserade hjul får du betydligt bättre översikt.
-                        </p>
+                        <p className="text-xs text-red-800" dangerouslySetInnerHTML={{ __html: t('advancedMapping.blockImportReason.description') }} />
                       </div>
                     )}
                   </div>
@@ -1456,15 +1451,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {showAdvancedMapping && csvData && (
           <div className="bg-blue-50 border border-blue-200 rounded-sm p-6 space-y-4">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-1">Anpassa kolumnmappning</h3>
-              <p className="text-sm text-gray-600">Välj vilka kolumner som ska användas för varje fält. Dina val används direkt vid import.</p>
+              <h3 className="font-semibold text-gray-900 mb-1">{t('advancedMapping.customizeColumnMapping')}</h3>
+              <p className="text-sm text-gray-600">{t('advancedMapping.columnSelection')}</p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               {/* Activity Name */}
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Aktivitetsnamn <span className="text-red-500">*</span>
+                  {t('advancedMapping.activityName')} <span className="text-red-500">{t('advancedMapping.required')}</span>
                 </label>
                 <select
                   value={manualMapping.activityName ?? ''}
@@ -1476,7 +1471,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   }}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.activityName})</option>
+                  <option value="">{t('advancedMapping.letAIChoose', { value: aiSuggestions.mapping.columns.activityName })}</option>
                   {csvData.headers.map((header, index) => (
                     <option key={index} value={header}>{header}</option>
                   ))}
@@ -1486,7 +1481,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               {/* Group */}
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Aktivitetsgrupp <span className="text-red-500">*</span>
+                  {t('advancedMapping.activityGroup')} <span className="text-red-500">{t('advancedMapping.required')}</span>
                 </label>
                 <select
                   value={manualMapping.group ?? ''}
@@ -1496,18 +1491,18 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.group || 'ingen'})</option>
+                  <option value="">{t('advancedMapping.letAIChoose', { value: aiSuggestions.mapping.columns.group || t('advancedMapping.letAIChooseNone').match(/\((.+)\)/)[1] })}</option>
                   {csvData.headers.map((header, index) => (
                     <option key={index} value={header}>{header}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Kolumn med kategorier för färgkodning</p>
+                <p className="text-xs text-gray-500 mt-1">{t('advancedMapping.groupHelper')}</p>
               </div>
               
               {/* Start Date */}
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Startdatum <span className="text-red-500">*</span>
+                  {t('advancedMapping.startDate')} <span className="text-red-500">{t('advancedMapping.required')}</span>
                 </label>
                 <select
                   value={manualMapping.startDate ?? ''}
@@ -1517,7 +1512,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.startDate})</option>
+                  <option value="">{t('advancedMapping.letAIChoose', { value: aiSuggestions.mapping.columns.startDate })}</option>
                   {csvData.headers.map((header, index) => (
                     <option key={index} value={header}>{header}</option>
                   ))}
@@ -1527,7 +1522,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               {/* End Date */}
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Slutdatum
+                  {t('advancedMapping.endDate')}
                 </label>
                 <select
                   value={manualMapping.endDate ?? ''}
@@ -1537,7 +1532,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.endDate || aiSuggestions.mapping.columns.startDate})</option>
+                  <option value="">{t('advancedMapping.letAIChoose', { value: aiSuggestions.mapping.columns.endDate || aiSuggestions.mapping.columns.startDate })}</option>
                   {csvData.headers.map((header, index) => (
                     <option key={index} value={header}>{header}</option>
                   ))}
@@ -1547,7 +1542,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               {/* Ring Assignment */}
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Ringtilldelning
+                  {t('advancedMapping.ring')}
                 </label>
                 <select
                   value={manualMapping.ring ?? ''}
@@ -1557,12 +1552,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.ring || 'ingen'})</option>
+                  <option value="">{aiSuggestions.mapping.columns.ring ? t('advancedMapping.letAIChoose', { value: aiSuggestions.mapping.columns.ring }) : t('advancedMapping.letAIChooseNone')}</option>
                   {csvData.headers.map((header, index) => (
                     <option key={index} value={header}>{header}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Kolumn för att skapa ringar (valfritt)</p>
+                <p className="text-xs text-gray-500 mt-1">{t('advancedMapping.ringHelper')}</p>
               </div>
               
               {/* Description */}
@@ -1578,19 +1573,19 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   }))}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Låt AI:n välja ({aiSuggestions.mapping.columns.description || 'alla oanvända'})</option>
+                  <option value="">{t('advancedMapping.letAIChoose', { value: aiSuggestions.mapping.columns.description || 'alla oanvända' })}</option>
                   {csvData.headers.map((header, index) => (
                     <option key={index} value={header}>{header}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Primär beskrivningskolumn</p>
+                <p className="text-xs text-gray-500 mt-1">{t('advancedMapping.descriptionHelper')}</p>
               </div>
             </div>
             
             {/* Labels (Multi-select) */}
             <div className="bg-white p-3 rounded-sm border border-gray-200">
               <label className="block text-sm font-medium text-gray-900 mb-2">
-                Etiketter (filtreringskolumner)
+                {t('advancedMapping.labels')}
               </label>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {csvData.headers.map((header, index) => (
@@ -1620,19 +1615,19 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">Välj kolumner med personer, status eller taggar</p>
+              <p className="text-xs text-gray-500 mt-2">{t('advancedMapping.labelsHelper')}</p>
             </div>
             
             <div className="bg-blue-50 border border-blue-200 rounded-sm p-3">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">✨ Så här fungerar det</p>
+                  <p className="font-medium mb-1">{t('advancedMapping.tips.heading')}</p>
                   <ul className="text-xs space-y-1 mt-2">
-                    <li>• Ändra kolumnmappningar, ringar eller grupper efter behov</li>
-                    <li>• Alla dina anpassningar sparas automatiskt</li>
-                    <li>• När du ändrar ringnamn uppdateras aktiviteterna automatiskt</li>
-                    <li>• Klicka "Importera" när du är klar</li>
+                    <li>{t('advancedMapping.tips.changeMapping')}</li>
+                    <li>{t('advancedMapping.tips.autoSave')}</li>
+                    <li>{t('advancedMapping.tips.updateActivities')}</li>
+                    <li>{t('advancedMapping.tips.clickImport')}</li>
                   </ul>
                 </div>
               </div>
@@ -1714,7 +1709,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                               setCustomRingTypes(updated);
                             }}
                             className="px-2 py-1 text-sm border border-gray-300 rounded"
-                            title="Inner = huvudområde mellan center och månadscirkel, Outer = yttre kant"
+                            title={t('advancedMapping.innerOuterTitle')}
                           >
                             <option value="inner">{t('customization.rings.inner')}</option>
                             <option value="outer">{t('customization.rings.outer')}</option>
@@ -2074,7 +2069,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {/* Column Mapping */}
         {aiSuggestions.mapping && (
           <div>
-            <h4 className="font-medium text-gray-900 mb-3">Kolumnmappning</h4>
+            <h4 className="font-medium text-gray-900 mb-3">{t('advancedMapping.columnMapping')}</h4>
             <div className="bg-gray-50 border border-gray-200 rounded-sm p-3 text-xs text-gray-600 space-y-1">
               {Object.entries(aiSuggestions.mapping.columns).map(([field, column]) => (
                 <div key={field} className="flex justify-between">
@@ -2105,16 +2100,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 onChange={(e) => setImportMode(e.target.value)}
                 className="mt-0.5"
               />
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">Ersätt alla data</div>
-                <div className="text-sm text-gray-600 mt-1">
-                  <strong>VARNING:</strong> Alla befintliga ringar, aktivitetsgrupper, etiketter och aktiviteter raderas permanent.
-                  Endast sidstruktur bevaras.
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900">{t('review.importMode.replace.title')}</div>
+                  <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: t('review.importMode.replace.description') }} />
                 </div>
-              </div>
-            </label>
-            
-            <label className="flex items-start gap-3 p-3 border-2 rounded-sm cursor-pointer hover:bg-green-50 transition-colors"
+              </label>            <label className="flex items-start gap-3 p-3 border-2 rounded-sm cursor-pointer hover:bg-green-50 transition-colors"
               style={{ borderColor: importMode === 'append' ? '#10B981' : '#E5E7EB' }}>
               <input
                 type="radio"
@@ -2125,10 +2115,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 className="mt-0.5"
               />
               <div className="flex-1">
-                <div className="font-medium text-gray-900">Lägg till befintliga data</div>
+                <div className="font-medium text-gray-900">{t('review.importMode.append.title')}</div>
                 <div className="text-sm text-gray-600 mt-1">
-                  Nya ringar, grupper och aktiviteter läggs till utan att radera befintlig data.
-                  Duplicerade namn kan uppstå.
+                  {t('review.importMode.append.description')}
                 </div>
               </div>
             </label>
@@ -2356,7 +2345,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   <button
                     disabled
                     className="px-4 py-2 bg-gray-300 text-gray-500 rounded-sm cursor-not-allowed flex items-center gap-2 font-medium"
-                    title="Import är blockerad på grund av olämplig datastruktur"
+                    title={t('advancedMapping.blockedTitle')}
                   >
                     <AlertCircle className="w-4 h-4" />
                     Import blockerad

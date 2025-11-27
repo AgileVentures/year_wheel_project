@@ -164,7 +164,37 @@
     "title": "Avancerad mappning",
     "description": "Anpassa AI:s val av kolumner, ringar och grupper",
     "ringsLabel": "Ringar (2-4 st):",
-    "groupsLabel": "Aktivitetsgrupper:"
+    "groupsLabel": "Aktivitetsgrupper:",
+    "columnSelection": "Välj vilka kolumner som ska användas för varje fält. Dina val används direkt vid import.",
+    "activityName": "Aktivitetsnamn",
+    "activityGroup": "Aktivitetsgrupp",
+    "startDate": "Startdatum",
+    "endDate": "Slutdatum",
+    "ring": "Ring",
+    "labels": "Etiketter (filtreringskolumner)",
+    "required": "*",
+    "letAIChoose": "Låt AI:n välja ({{value}})",
+    "letAIChooseNone": "Låt AI:n välja (ingen)",
+    "groupHelper": "Kolumn med kategorier för färgkodning",
+    "ringHelper": "Kolumn för att skapa ringar (valfritt)",
+    "labelsHelper": "Välj kolumner med personer, status eller taggar",
+    "descriptionHelper": "Primär beskrivningskolumn",
+    "columnMapping": "Kolumnmappning",
+    "customizeColumnMapping": "Anpassa kolumnmappning",
+    "blockImportReason": {
+      "heading": "⚠️ Varför blockerar vi importen?",
+      "description": "Ett årshjul med överlappande helårsstaplar ger ingen användbar visualisering. YearWheel är mest värdefullt när du kan <strong>se tidsmönster och identifiera konflikter</strong>. Genom att dela upp datan i flera fokuserade hjul får du betydligt bättre översikt."
+    },
+    "innerOuterTitle": "Inner = huvudområde mellan center och månadscirkel, Outer = yttre kant",
+    "blockedTitle": "Import är blockerad på grund av olämplig datastruktur",
+    "tips": {
+      "heading": "✨ Så här fungerar det",
+      "changeMapping": "• Ändra kolumnmappningar, ringar eller grupper efter behov",
+      "autoSave": "• Alla dina anpassningar sparas automatiskt",
+      "updateActivities": "• När du ändrar ringnamn uppdateras aktiviteterna automatiskt",
+      "clickImport": "• Klicka \"Importera\" när du är klar",
+      "nextStep": "Nästa steg: AI kommer att analysera din CSV-fil och föreslå mappningar automatiskt. Du kan sedan granska och justera förslagen innan import."
+    }
   },
   "customization": {
     "heading": "Anpassa Ringar och Grupper",
