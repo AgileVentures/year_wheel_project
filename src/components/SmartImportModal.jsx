@@ -874,10 +874,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="space-y-3">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Välj importmetod</h3>
-                <p className="text-sm text-gray-700 mb-4">
-                  Du har laddat upp <strong>{csvData?.rowCount || 0} rader</strong> från <strong>{csvData?.fileName || 'CSV-fil'}</strong>
-                </p>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('review.importMode.heading')}</h3>
+                <p className="text-sm text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: t('review.importMode.description', { rows: csvData?.rowCount || 0, fileName: csvData?.fileName || 'CSV-fil' }) }} />
               </div>
             
             <div className="space-y-3">
@@ -892,11 +890,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   className="mt-0.5"
                 />
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">Ersätt alla data</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    <strong>VARNING:</strong> Alla befintliga ringar, aktivitetsgrupper, etiketter och aktiviteter kommer att raderas permanent.
-                    Endast sidor kommer att behållas för att bevara sidstrukturen.
-                  </div>
+                  <div className="font-medium text-gray-900">{t('review.importMode.replace.title')}</div>
+                  <div className="text-sm text-gray-600 mt-1" dangerouslySetInnerHTML={{ __html: t('review.importMode.replace.description') }} />
                 </div>
               </label>
               
@@ -911,10 +906,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   className="mt-0.5"
                 />
                 <div className="flex-1">
-                  <div className="font-medium text-gray-900">Lägg till befintliga data</div>
+                  <div className="font-medium text-gray-900">{t('review.importMode.append.title')}</div>
                   <div className="text-sm text-gray-600 mt-1">
-                    Nya ringar, grupper och aktiviteter läggs till utan att radera befintliga data.
-                    Duplicerade namn kan uppstå.
+                    {t('review.importMode.append.description')}
                   </div>
                 </div>
               </label>
@@ -935,7 +929,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           onClick={() => setStage('upload')}
           className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
         >
-          Tillbaka
+          {t('buttons.back')}
         </button>
         <button
           onClick={async () => {
@@ -1010,14 +1004,14 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         <Sparkles className="w-8 h-8 text-blue-600" />
       </div>
       <h3 className="text-lg font-medium text-gray-900 mb-2">
-        AI analyserar din data...
+        {t('analyzing.heading')}
       </h3>
       <p className="text-sm text-gray-500">
-        {progress || 'Detta kan ta några sekunder'}
+        {progress || t('analyzing.progress')}
       </p>
       {csvData && (
         <div className="mt-4 text-xs text-gray-400">
-          {csvData?.rowCount || 0} rader · {csvData?.headers?.length || 0} kolumner
+          {t('analyzing.rowsAndColumns', { rows: csvData?.rowCount || 0, columns: csvData?.headers?.length || 0 })}
         </div>
       )}
     </div>
@@ -1034,12 +1028,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             <div className="flex items-start gap-3">
               <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-medium text-purple-900">Förslag på hjultitel</h4>
+                <h4 className="font-medium text-purple-900">{t('review.suggestedTitle')}</h4>
                 <p className="text-lg font-semibold text-purple-900 mt-2">
                   "{aiSuggestions.suggestedWheelTitle}"
                 </p>
                 <p className="text-xs text-purple-700 mt-1">
-                  Du kan ändra titeln efter importen i hjulinställningarna
+                  {t('review.canChangeAfter')}
                 </p>
               </div>
             </div>
@@ -1050,7 +1044,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           <div className="flex items-start gap-3">
             <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-medium text-green-900">AI-analys klar!</h4>
+              <h4 className="font-medium text-green-900">{t('review.analysisComplete')}</h4>
               <p className="text-sm text-green-700 mt-1">
                 {aiSuggestions.mapping.explanation}
               </p>
@@ -1060,13 +1054,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 <div className="mt-3 pt-3 border-t border-green-200 space-y-2">
                   {aiSuggestions.mapping.suggestedRingStrategy && (
                     <div>
-                      <h5 className="text-xs font-semibold text-green-900 mb-1">Ringar (2-4 st):</h5>
+                      <h5 className="text-xs font-semibold text-green-900 mb-1">{t('customization.rings.label')}:</h5>
                       <p className="text-xs text-green-700">{aiSuggestions.mapping.suggestedRingStrategy}</p>
                     </div>
                   )}
                   {aiSuggestions.mapping.suggestedGroupingStrategy && (
                     <div>
-                      <h5 className="text-xs font-semibold text-green-900 mb-1">Aktivitetsgrupper:</h5>
+                      <h5 className="text-xs font-semibold text-green-900 mb-1">{t('customization.groups.label')}:</h5>
                       <p className="text-xs text-green-700">{aiSuggestions.mapping.suggestedGroupingStrategy}</p>
                     </div>
                   )}
@@ -1081,10 +1075,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     onChange={(e) => setShowAdvancedMapping(e.target.checked)}
                     className="rounded"
                   />
-                  <span className="text-sm text-green-900 font-medium">Avancerad mappning</span>
+                  <span className="text-sm text-green-900 font-medium">{t('review.advancedMapping')}</span>
                 </label>
                 <p className="text-xs text-green-700 ml-6 mt-1">
-                  Anpassa AI:s val av kolumner, ringar och grupper
+                  {t('review.advancedMappingDescription')}
                 </p>
               </div>
             </div>
@@ -1096,17 +1090,16 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           <div className="bg-red-50 border border-red-200 rounded-sm p-4">
             <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
-              ⚠️ Valideringsvarningar
+              {t('validation.heading')}
             </h4>
             
             {!aiSuggestions.validation.hasCompleteMapping && (
               <div className="bg-red-100 border border-red-300 rounded p-3 mb-3">
                 <p className="font-medium text-red-900">
-                  ❌ Ofullständig mappning - vissa aktiviteter kan inte importeras
+                  {t('validation.incompleteMappingTitle')}
                 </p>
                 <p className="text-sm text-red-700 mt-1">
-                  AI:n kunde inte mappa alla CSV-värden till ringar och aktivitetsgrupper.
-                  Aktiviteter utan giltig mappning kommer att ignoreras.
+                  {t('validation.incompleteMappingDescription')}
                 </p>
               </div>
             )}
@@ -1120,11 +1113,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             {(aiSuggestions.validation.unmappedRingValues?.length > 0 || 
               aiSuggestions.validation.unmappedGroupValues?.length > 0) && (
               <div className="mt-3">
-                <p className="font-medium text-red-800 mb-2">Ej mappade värden:</p>
+                <p className="font-medium text-red-800 mb-2">{t('validation.unmappedValues')}</p>
                 
                 {aiSuggestions.validation.unmappedRingValues?.length > 0 && (
                   <div className="mb-2">
-                    <p className="text-sm font-medium text-red-700">Ringar:</p>
+                    <p className="text-sm font-medium text-red-700">{t('validation.rings')}</p>
                     <div className="text-xs text-red-600 ml-4">
                       {aiSuggestions.validation.unmappedRingValues.join(', ')}
                     </div>
@@ -1133,7 +1126,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 
                 {aiSuggestions.validation.unmappedGroupValues?.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium text-red-700">Aktivitetsgrupper:</p>
+                    <p className="text-sm font-medium text-red-700">{t('validation.activityGroups')}</p>
                     <div className="text-xs text-red-600 ml-4">
                       {aiSuggestions.validation.unmappedGroupValues.join(', ')}
                     </div>
@@ -1145,14 +1138,14 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             {aiSuggestions.validation.expectedActivityCount && (
               <div className="mt-3 p-2 bg-white rounded border border-red-200">
                 <p className="text-sm text-red-900">
-                  <span className="font-medium">Förväntat antal aktiviteter:</span> {aiSuggestions.validation.expectedActivityCount}
+                  <span className="font-medium">{t('validation.expectedCount')}</span> {aiSuggestions.validation.expectedActivityCount}
                 </p>
                 <p className="text-sm text-red-900">
-                  <span className="font-medium">Aktiviteter som kan importeras:</span> {aiSuggestions.activities?.length || 0}
+                  <span className="font-medium">{t('validation.importableCount')}</span> {aiSuggestions.activities?.length || 0}
                 </p>
                 {aiSuggestions.validation.expectedActivityCount > (aiSuggestions.activities?.length || 0) && (
                   <p className="text-sm font-medium text-red-800 mt-1">
-                    ⚠️ {aiSuggestions.validation.expectedActivityCount - (aiSuggestions.activities?.length || 0)} aktiviteter kommer att förloras
+                    {t('validation.willBeLost', { count: aiSuggestions.validation.expectedActivityCount - (aiSuggestions.activities?.length || 0) })}
                   </p>
                 )}
               </div>
@@ -1173,21 +1166,21 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
               <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5" />
-                📊 Datakonsolidering
+                {t('consolidation.heading')}
               </h4>
               
               {/* Consolidation Strategy Metadata */}
               {(aiSuggestions.ringConsolidationStrategy || aiSuggestions.groupConsolidationStrategy) && (
                 <div className="mb-4 p-3 bg-blue-100 rounded border border-blue-300">
-                  <p className="text-sm font-medium text-blue-900 mb-2">Konsolideringsstrategi:</p>
+                  <p className="text-sm font-medium text-blue-900 mb-2">{t('consolidation.strategy')}</p>
                   
                   {aiSuggestions.ringConsolidationStrategy && (
                     <div className="text-xs text-blue-800 mb-2">
-                      <span className="font-medium">Ringar:</span>{' '}
+                      <span className="font-medium">{t('consolidation.rings', { unique: '', consolidated: '' }).split(':')[0]}:</span>{' '}
                       {aiSuggestions.ringConsolidationStrategy.description}
                       {aiSuggestions.ringConsolidationStrategy.coverage && (
                         <span className="ml-2 text-blue-700">
-                          ({aiSuggestions.ringConsolidationStrategy.coverage} täckning)
+                          ({t('consolidation.coverage', { coverage: aiSuggestions.ringConsolidationStrategy.coverage })})
                         </span>
                       )}
                     </div>
@@ -1195,11 +1188,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                   
                   {aiSuggestions.groupConsolidationStrategy && (
                     <div className="text-xs text-blue-800">
-                      <span className="font-medium">Aktivitetsgrupper:</span>{' '}
+                      <span className="font-medium">{t('consolidation.groups', { unique: '', consolidated: '' }).split(':')[0]}:</span>{' '}
                       {aiSuggestions.groupConsolidationStrategy.description}
                       {aiSuggestions.groupConsolidationStrategy.coverage && (
                         <span className="ml-2 text-blue-700">
-                          ({aiSuggestions.groupConsolidationStrategy.coverage} täckning)
+                          ({t('consolidation.coverage', { coverage: aiSuggestions.groupConsolidationStrategy.coverage })})
                         </span>
                       )}
                     </div>
@@ -1213,7 +1206,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 return (
                   <div className="mb-4">
                     <h5 className="font-medium text-blue-800 mb-2">
-                      Ringar: {uniqueValues} CSV-värden → {consolidatedCount} konsoliderade ringar
+                      {t('consolidation.rings', { unique: uniqueValues, consolidated: consolidatedCount })}
                     </h5>
                     <div className="space-y-2">
                       {aiSuggestions.rings?.map(ring => {
@@ -1229,7 +1222,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                         return (
                           <div key={ring.id} className="bg-white rounded p-2">
                             <div className="font-medium text-gray-900">
-                              {ring.name} <span className="text-sm text-gray-500">({count} aktiviteter)</span>
+                              {ring.name} <span className="text-sm text-gray-500">({t('consolidation.activities', { count })})</span>
                             </div>
                             <div className="text-xs text-gray-600 ml-4 mt-1">
                               ← {mappedValues.map(v => v === '' ? '(tom)' : v).join(', ')}
@@ -1248,7 +1241,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 return (
                   <div>
                     <h5 className="font-medium text-blue-800 mb-2">
-                      Aktivitetsgrupper: {uniqueValues} CSV-värden → {consolidatedCount} konsoliderade grupper
+                      {t('consolidation.groups', { unique: uniqueValues, consolidated: consolidatedCount })}
                     </h5>
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                       {aiSuggestions.activityGroups?.map(group => {
@@ -1265,7 +1258,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                           <div key={group.id} className="bg-white rounded p-2">
                             <div className="font-medium text-gray-900 flex items-center gap-2">
                               <div className="w-4 h-4 rounded" style={{ backgroundColor: group.color }} />
-                              {group.name} <span className="text-sm text-gray-500">({count} aktiviteter)</span>
+                              {group.name} <span className="text-sm text-gray-500">({t('consolidation.activities', { count })})</span>
                             </div>
                             <div className="text-xs text-gray-600 ml-8 mt-1">
                               ← {mappedValues.slice(0, 10).map(v => v === '' ? '(tom)' : v).join(', ')}
@@ -1331,19 +1324,17 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {/* Large Import Preview Notice */}
         {aiSuggestions.totalActivitiesCount > (aiSuggestions.activities?.length || 0) && (
           <div className="bg-blue-50 border border-blue-200 rounded-sm p-4">
-            <h4 className="font-medium text-blue-900 mb-1">📊 Stor dataset upptäckt</h4>
-            <p className="text-sm text-blue-800">
-              Din CSV innehåller <strong>{aiSuggestions.totalActivitiesCount} aktiviteter</strong>.
-            </p>
+            <h4 className="font-medium text-blue-900 mb-1">{t('review.dataPreview.title')}</h4>
+            <p className="text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: t('review.dataPreview.totalActivities', { total: aiSuggestions.totalActivitiesCount }) }} />
             <p className="text-sm text-blue-800 mt-1">
-              För prestanda visar vi en förhandsgranskning av {aiSuggestions.activities?.length || 20} aktiviteter här.
+              {t('review.dataPreview.previewCount', { preview: aiSuggestions.activities?.length || 20 })}
             </p>
             <p className="text-sm text-blue-900 font-medium mt-2">
-              ✅ Alla {aiSuggestions.totalActivitiesCount} aktiviteter kommer att importeras när du klickar "Importera".
+              {t('review.dataPreview.allWillImport', { total: aiSuggestions.totalActivitiesCount })}
             </p>
             {csvData.rowCount > 200 && (
               <p className="text-xs text-blue-700 mt-2">
-                ⏰ Import tar uppskattningsvis {csvData.rowCount < 500 ? '3-7 minuter' : csvData.rowCount < 1000 ? '7-15 minuter' : '> 15 minuter'}. Du får ett email när importen är klar.
+                {t('review.dataPreview.timeEstimate', { time: csvData.rowCount < 500 ? '3-7 minuter' : csvData.rowCount < 1000 ? '7-15 minuter' : '> 15 minuter' })}
               </p>
             )}
           </div>
@@ -1650,15 +1641,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             {/* Custom Ring/Group Editor */}
             <div className="bg-purple-50 border border-purple-200 rounded-sm p-4 space-y-4">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Anpassa Ringar och Grupper</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">{t('customization.heading')}</h3>
                 <p className="text-sm text-gray-600">
                   {customRings || customGroups ? (
-                    <>Dina anpassningar: {getEffectiveRingsAndGroups().effectiveRings.length} ringar och {getEffectiveRingsAndGroups().effectiveGroups.length} aktivitetsgrupper.</>
+                    <>{t('customization.current', { rings: getEffectiveRingsAndGroups().effectiveRings.length, groups: getEffectiveRingsAndGroups().effectiveGroups.length })}</>
                   ) : (
-                    <>AI:n har föreslagit {aiSuggestions.rings.length} ringar och {aiSuggestions.activityGroups.length} aktivitetsgrupper.</>
+                    <>{t('customization.suggested', { rings: aiSuggestions.rings.length, groups: aiSuggestions.activityGroups.length })}</>
                   )}
                   {getEffectiveRingsAndGroups().effectiveGroups.length > 20 && (
-                    <span className="text-amber-700 font-medium"> OBS: {getEffectiveRingsAndGroups().effectiveGroups.length} grupper kan bli rörigt - överväg att minska antalet.</span>
+                    <span className="text-amber-700 font-medium"> {t('customization.tooManyWarning', { count: getEffectiveRingsAndGroups().effectiveGroups.length })}</span>
                   )}
                 </p>
               </div>
@@ -1667,9 +1658,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <label className="font-medium text-gray-900">Ringar (2-4 rekommenderat)</label>
+                    <label className="font-medium text-gray-900">{t('customization.rings.label')}</label>
                     {customRings && ringOriginalNames && (
-                      <p className="text-xs text-gray-500 mt-0.5">Redigerar AI:s förslag – aktiviteter uppdateras automatiskt</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t('customization.rings.editing')}</p>
                     )}
                   </div>
                   <button
@@ -1688,7 +1679,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
-                    {customRings ? 'Återställ till AI:s förslag' : 'Anpassa'}
+                    {customRings ? t('customization.rings.resetToAI') : t('customization.rings.customize')}
                   </button>
                 </div>
                 
@@ -1725,8 +1716,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                             className="px-2 py-1 text-sm border border-gray-300 rounded"
                             title="Inner = huvudområde mellan center och månadscirkel, Outer = yttre kant"
                           >
-                            <option value="inner">Inner</option>
-                            <option value="outer">Outer</option>
+                            <option value="inner">{t('customization.rings.inner')}</option>
+                            <option value="outer">{t('customization.rings.outer')}</option>
                           </select>
                           {customRings.length > 1 && (
                             <button
@@ -1741,7 +1732,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                               }}
                               className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
                             >
-                              Ta bort
+                              {t('customization.rings.remove')}
                             </button>
                           )}
                         </div>
@@ -1760,13 +1751,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                           }}
                           className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                         >
-                          + Lägg till ring
+                          {t('customization.rings.addRing')}
                         </button>
                       )}
                       {customRings.length > 1 && (
                         <button
                           onClick={() => {
-                            if (confirm(`Ta bort alla ${customRings.length} ringar? Detta kan inte ångras.`)) {
+                            if (confirm(t('customization.rings.removeAllConfirm', { count: customRings.length }))) {
                               setCustomRings([customRings[0]]); // Keep at least one
                               setCustomRingTypes(customRingTypes ? [customRingTypes[0]] : null);
                               setRingOriginalNames(ringOriginalNames ? [ringOriginalNames[0]] : null);
@@ -1786,9 +1777,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <div className="bg-white p-3 rounded-sm border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <label className="font-medium text-gray-900">Aktivitetsgrupper</label>
+                    <label className="font-medium text-gray-900">{t('customization.groups.label')}</label>
                     {customGroups && groupOriginalNames && (
-                      <p className="text-xs text-gray-500 mt-0.5">Redigerar AI:s förslag – aktiviteter uppdateras automatiskt</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t('customization.groups.editing')}</p>
                     )}
                   </div>
                   <button
@@ -1803,14 +1794,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                     }}
                     className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
                   >
-                    {customGroups ? 'Återställ till AI:s förslag' : 'Anpassa'}
+                    {customGroups ? t('customization.groups.resetToAI') : t('customization.groups.customize')}
                   </button>
                 </div>
                 
                 {!customGroups ? (
                   <div className="text-sm text-gray-600">
-                    {aiSuggestions.activityGroups.length} grupper: {aiSuggestions.activityGroups.slice(0, 5).map(g => g.name).join(', ')}
-                    {aiSuggestions.activityGroups.length > 5 && '...'}
+                    {t('customization.groups.summary', { count: aiSuggestions.activityGroups.length, names: aiSuggestions.activityGroups.slice(0, 5).map(g => g.name).join(', ') + (aiSuggestions.activityGroups.length > 5 ? '...' : '') })}
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -1836,7 +1826,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                           }}
                           className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
                         >
-                          Ta bort
+                          {t('customization.groups.remove')}
                         </button>
                       </div>
                     ))}
@@ -1850,12 +1840,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                         }}
                         className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                       >
-                        + Lägg till grupp
+                        {t('customization.groups.addGroup')}
                       </button>
                       {customGroups.length > 1 && (
                         <button
                           onClick={() => {
-                            if (confirm(`Ta bort alla ${customGroups.length} grupper? Detta kan inte ångras.`)) {
+                            if (confirm(t('customization.groups.removeAllConfirm', { count: customGroups.length }))) {
                               setCustomGroups([customGroups[0]]); // Keep at least one
                               setGroupOriginalNames(groupOriginalNames ? [groupOriginalNames[0]] : null);
                             }
@@ -1875,7 +1865,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
         {/* Rings Section */}
         <div>
-          <h4 className="font-medium text-gray-900 mb-3">Ringar ({getEffectiveRingsAndGroups().effectiveRings.length})</h4>
+          <h4 className="font-medium text-gray-900 mb-3">{t('review.rings', { count: getEffectiveRingsAndGroups().effectiveRings.length })}</h4>
           <div className="space-y-2">
             {getEffectiveRingsAndGroups().effectiveRings.map((ring, idx) => (
               <div key={idx} className="bg-gray-50 border border-gray-200 rounded-sm p-3">
@@ -1904,7 +1894,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {/* Activity Groups Section */}
         <div>
           <h4 className="font-medium text-gray-900 mb-3">
-            Aktivitetsgrupper ({getEffectiveRingsAndGroups().effectiveGroups.length})
+            {t('review.activityGroups', { count: getEffectiveRingsAndGroups().effectiveGroups.length })}
           </h4>
           <div className="space-y-2">
             {getEffectiveRingsAndGroups().effectiveGroups.map((group, idx) => (
@@ -1927,14 +1917,14 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         {/* Activities Preview */}
         <div>
           <h4 className="font-medium text-gray-900 mb-3">
-            Aktiviteter ({aiSuggestions.activities.length})
+            {t('review.activities', { count: aiSuggestions.activities.length })}
           </h4>
           <div className="bg-gray-50 border border-gray-200 rounded-sm p-3">
             <p className="text-sm text-gray-700">
-              {aiSuggestions.totalActivitiesCount || aiSuggestions.activities.length} aktiviteter kommer att importeras
+              {t('review.activitiesWillBeImported', { count: aiSuggestions.totalActivitiesCount || aiSuggestions.activities.length })}
             </p>
             <div className="mt-2 text-xs text-gray-500 space-y-1">
-              <p>Första 3 exempel:</p>
+              <p>{t('review.firstExamples')}</p>
               {aiSuggestions.activities.slice(0, 3).map((activity, idx) => (
                 <div key={idx} className="pl-2 border-l-2 border-gray-300">
                   <span className="font-medium">{activity.name}</span> · {activity.startDate} till {activity.endDate}
@@ -2100,13 +2090,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         <div className="bg-yellow-50 border-2 border-yellow-300 rounded-sm p-4">
           <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-yellow-600" />
-            Välj importmetod
+            {t('review.importMode.heading')}
           </h4>
-          <p className="text-sm text-gray-700 mb-4">
-            Importen kommer att skapa: <strong>{getEffectiveRingsAndGroups().effectiveRings.length} ringar</strong>, 
-            <strong> {getEffectiveRingsAndGroups().effectiveGroups.length} grupper</strong>, 
-            <strong> {aiSuggestions.totalActivitiesCount || aiSuggestions.activities?.length || 0} aktiviteter</strong>
-          </p>
+          <p className="text-sm text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: t('review.importMode.willCreate', { rings: getEffectiveRingsAndGroups().effectiveRings.length, groups: getEffectiveRingsAndGroups().effectiveGroups.length, activities: aiSuggestions.totalActivitiesCount || aiSuggestions.activities?.length || 0 }) }} />
           
           <div className="space-y-3">
             <label className="flex items-start gap-3 p-3 border-2 rounded-sm cursor-pointer hover:bg-yellow-100/50 transition-colors"
@@ -2158,7 +2144,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         <Sparkles className="w-8 h-8 text-blue-600" />
       </div>
       <h3 className="text-lg font-medium text-gray-900 mb-2">
-        Importerar data...
+        {t('importing.heading')}
       </h3>
       
       {/* Progress bar */}
@@ -2170,11 +2156,11 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           />
         </div>
         <div className="flex justify-between text-xs text-gray-500 mt-2">
-          <span>{jobId && importJobProgress?.progress ? importJobProgress.progress : 0}%</span>
+          <span>{t('importing.progress', { percent: jobId && importJobProgress?.progress ? importJobProgress.progress : 0 })}</span>
           <span>
             {jobId && importJobProgress?.stats ? 
-              `${importJobProgress.stats.processedItems || 0} / ${importJobProgress.stats.totalItems || 0} objekt` :
-              '0 / 0 objekt'
+              t('importing.itemsProgress', { processed: importJobProgress.stats.processedItems || 0, total: importJobProgress.stats.totalItems || 0 }) :
+              t('importing.itemsProgress', { processed: 0, total: 0 })
             }
           </span>
         </div>
@@ -2188,23 +2174,23 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       </div>
 
       <p className="text-sm text-gray-500">
-        {jobId && importJobProgress?.currentStep ? importJobProgress.currentStep : (progress || 'Skapar ringar, grupper och aktiviteter')}
+        {jobId && importJobProgress?.currentStep ? importJobProgress.currentStep : (progress || t('importing.creatingStructure'))}
       </p>
 
       {/* Stats preview */}
       {jobId && importJobProgress?.stats && (
         <div className="mt-6 grid grid-cols-2 gap-4 text-xs text-gray-600 max-w-sm mx-auto">
           {importJobProgress.stats.createdRings > 0 && (
-            <div>✓ {importJobProgress.stats.createdRings} ringar</div>
+            <div>{t('importing.createdRings', { count: importJobProgress.stats.createdRings })}</div>
           )}
           {importJobProgress.stats.createdGroups > 0 && (
-            <div>✓ {importJobProgress.stats.createdGroups} grupper</div>
+            <div>{t('importing.createdGroups', { count: importJobProgress.stats.createdGroups })}</div>
           )}
           {importJobProgress.stats.createdLabels > 0 && (
-            <div>✓ {importJobProgress.stats.createdLabels} etiketter</div>
+            <div>{t('importing.createdLabels', { count: importJobProgress.stats.createdLabels })}</div>
           )}
           {importJobProgress.stats.createdPages > 0 && (
-            <div>✓ {importJobProgress.stats.createdPages} sidor</div>
+            <div>{t('importing.createdPages', { count: importJobProgress.stats.createdPages })}</div>
           )}
         </div>
       )}
@@ -2215,13 +2201,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           onClick={handleCancelImport}
           className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-sm hover:bg-gray-50"
         >
-          Avbryt import
+          {t('importing.cancelImport')}
         </button>
         <button
           onClick={handleCloseWithBackground}
           className="px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-sm hover:bg-blue-100"
         >
-          Fortsätt i bakgrunden
+          {t('importing.continueBackground')}
         </button>
       </div>
     </div>
@@ -2237,10 +2223,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           <Check className="w-8 h-8 text-green-600" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Import klar!
+          {t('complete.heading')}
         </h3>
         <p className="text-sm text-gray-500">
-          All data har importerats till ditt hjul
+          {t('complete.description')}
         </p>
         {createTeam && selectedPeople.size > 0 && (
           <p className="text-xs text-blue-600 mt-2">
@@ -2255,7 +2241,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle className="w-5 h-5 text-yellow-600" />
                 <h4 className="font-semibold text-yellow-900">
-                  {droppedActivities.length} aktiviteter kunde inte importeras
+                  {t('complete.droppedActivities.heading', { count: droppedActivities.length })}
                 </h4>
               </div>
               
@@ -2263,7 +2249,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 {droppedActivities.map((dropped, idx) => (
                   <div key={idx} className="bg-white border border-yellow-200 rounded p-2 text-sm">
                     <p className="font-medium text-gray-900">
-                      Rad {dropped.index}: {dropped.name}
+                      {t('complete.droppedActivities.row', { index: dropped.index, name: dropped.name })}
                     </p>
                     <p className="text-xs text-yellow-700 mt-1">
                       {dropped.reason}
@@ -2273,7 +2259,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               </div>
               
               <p className="text-xs text-yellow-700 mt-3">
-                💡 Tips: Kontrollera att dina CSV-kolumner innehåller giltiga ring- och gruppnamn
+                {t('complete.droppedActivities.tip')}
               </p>
             </div>
           </div>
@@ -2294,7 +2280,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           onClick={handleClose}
           className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
         >
-          Stäng
+          {t('complete.close')}
         </button>
       </div>
     );
@@ -2310,8 +2296,8 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
               <Sparkles className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Smart Import</h2>
-              <p className="text-xs text-gray-500">AI-driven CSV-import</p>
+              <h2 className="text-xl font-semibold text-gray-900">{t('title')}</h2>
+              <p className="text-xs text-gray-500">{t('subtitle')}</p>
             </div>
           </div>
           <button
@@ -2331,7 +2317,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                 <div className="flex-1">
                   <div className="text-sm text-red-800">
-                    <p className="font-medium">Fel uppstod</p>
+                    <p className="font-medium">{t('errors.heading')}</p>
                     <p>{error}</p>
                   </div>
                   {importJobProgress.canRetry && stage === 'review' && (
@@ -2339,7 +2325,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                       onClick={handleImport}
                       className="mt-3 px-3 py-1.5 text-sm bg-red-600 text-white rounded-sm hover:bg-red-700"
                     >
-                      Försök igen
+                      {t('errors.tryAgain')}
                     </button>
                   )}
                 </div>
