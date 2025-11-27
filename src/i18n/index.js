@@ -20,6 +20,7 @@ import svAffiliate from './locales/sv/affiliate.json';
 import svZoom from './locales/sv/zoom.json';
 import svNewsletter from './locales/sv/newsletter.json';
 import svQuiz from './locales/sv/quiz.json';
+import svSmartImport from './locales/sv/smartImport.json';
 
 // Import English translations
 import enCommon from './locales/en/common.json';
@@ -39,6 +40,7 @@ import enAffiliate from './locales/en/affiliate.json';
 import enZoom from './locales/en/zoom.json';
 import enNewsletter from './locales/en/newsletter.json';
 import enQuiz from './locales/en/quiz.json';
+import enSmartImport from './locales/en/smartImport.json';
 
 i18n
   .use(LanguageDetector)
@@ -63,6 +65,7 @@ i18n
         zoom: svZoom,
         newsletter: svNewsletter,
         quiz: svQuiz,
+        smartImport: svSmartImport,
       },
       en: {
         common: enCommon,
@@ -82,6 +85,7 @@ i18n
         zoom: enZoom,
         newsletter: enNewsletter,
         quiz: enQuiz,
+        smartImport: enSmartImport,
       },
     },
     lng: 'sv', // Default language
