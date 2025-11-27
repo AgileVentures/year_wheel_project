@@ -86,6 +86,19 @@
     "progress": "{{percent}}%",
     "itemsProgress": "{{processed}} / {{total}} items",
     "timeRemaining": "{{time}} remaining...",
+    "lessThanMinute": "Less than 1 minute remaining...",
+    "aboutOneMinute": "About 1 minute remaining...",
+    "aboutMinutes": "About {{minutes}} minutes remaining...",
+    "readingFile": "Reading file...",
+    "analyzingStructure": "AI analyzing CSV structure...",
+    "preparingImport": "Preparing import...",
+    "creatingStructure": "Creating structure and activities...",
+    "preparingLargeImport": "Preparing large import ({{count}} activities)...",
+    "savingActivities": "Saving {{count}} activities to database...{{email}}",
+    "emailWhenComplete": " Email will be sent when import is complete.",
+    "importStarted": "Import started - tracking progress...",
+    "importComplete": "Import complete! {{count}} activities imported.",
+    "importCanceled": "Import canceled",
     "createdRings": "✓ {{count}} rings",
     "createdGroups": "✓ {{count}} groups",
     "createdLabels": "✓ {{count}} labels",
@@ -132,7 +145,26 @@
     "rings": "Rings: {{unique}} CSV values → {{consolidated}} consolidated rings",
     "groups": "Activity groups: {{unique}} CSV values → {{consolidated}} consolidated groups",
     "mappedFrom": "← {{values}}",
-    "activities": "{{count}} activities"
+    "activities": "{{count}} activities",
+    "coverage": "{{coverage}} coverage"
+  },
+  "validation": {
+    "heading": "⚠️ Validation Warnings",
+    "incompleteMappingTitle": "❌ Incomplete mapping - some activities cannot be imported",
+    "incompleteMappingDescription": "AI could not map all CSV values to rings and activity groups. Activities without valid mapping will be ignored.",
+    "unmappedValues": "Unmapped values:",
+    "rings": "Rings:",
+    "activityGroups": "Activity Groups:",
+    "expectedCount": "Expected activity count:",
+    "importableCount": "Activities that can be imported:",
+    "willBeLost": "⚠️ {{count}} activities will be lost",
+    "empty": "(empty)"
+  },
+  "advancedMapping": {
+    "title": "Advanced mapping",
+    "description": "Customize AI's choice of columns, rings and groups",
+    "ringsLabel": "Rings (2-4 recommended):",
+    "groupsLabel": "Activity Groups:"
   },
   "customization": {
     "heading": "Customize Rings and Groups",

@@ -86,6 +86,19 @@
     "progress": "{{percent}}%",
     "itemsProgress": "{{processed}} / {{total}} objekt",
     "timeRemaining": "{{time}} kvar...",
+    "lessThanMinute": "Mindre än 1 minut kvar...",
+    "aboutOneMinute": "Cirka 1 minut kvar...",
+    "aboutMinutes": "Cirka {{minutes}} minuter kvar...",
+    "readingFile": "Läser fil...",
+    "analyzingStructure": "AI analyserar CSV-strukturen...",
+    "preparingImport": "Förbereder import...",
+    "creatingStructure": "Skapar struktur och aktiviteter...",
+    "preparingLargeImport": "Förbereder stor import ({{count}} aktiviteter)...",
+    "savingActivities": "Sparar {{count}} aktiviteter till databas...{{email}}",
+    "emailWhenComplete": " Email skickas när importen är klar.",
+    "importStarted": "Import startad - följer framsteg...",
+    "importComplete": "Import klar! {{count}} aktiviteter importerade.",
+    "importCanceled": "Import avbruten",
     "createdRings": "✓ {{count}} ringar",
     "createdGroups": "✓ {{count}} grupper",
     "createdLabels": "✓ {{count}} etiketter",
@@ -132,7 +145,26 @@
     "rings": "Ringar: {{unique}} CSV-värden → {{consolidated}} konsoliderade ringar",
     "groups": "Aktivitetsgrupper: {{unique}} CSV-värden → {{consolidated}} konsoliderade grupper",
     "mappedFrom": "← {{values}}",
-    "activities": "{{count}} aktiviteter"
+    "activities": "{{count}} aktiviteter",
+    "coverage": "{{coverage}} täckning"
+  },
+  "validation": {
+    "heading": "⚠️ Valideringsvarningar",
+    "incompleteMappingTitle": "❌ Ofullständig mappning - vissa aktiviteter kan inte importeras",
+    "incompleteMappingDescription": "AI:n kunde inte mappa alla CSV-värden till ringar och aktivitetsgrupper. Aktiviteter utan giltig mappning kommer att ignoreras.",
+    "unmappedValues": "Ej mappade värden:",
+    "rings": "Ringar:",
+    "activityGroups": "Aktivitetsgrupper:",
+    "expectedCount": "Förväntat antal aktiviteter:",
+    "importableCount": "Aktiviteter som kan importeras:",
+    "willBeLost": "⚠️ {{count}} aktiviteter kommer att förloras",
+    "empty": "(tom)"
+  },
+  "advancedMapping": {
+    "title": "Avancerad mappning",
+    "description": "Anpassa AI:s val av kolumner, ringar och grupper",
+    "ringsLabel": "Ringar (2-4 st):",
+    "groupsLabel": "Aktivitetsgrupper:"
   },
   "customization": {
     "heading": "Anpassa Ringar och Grupper",

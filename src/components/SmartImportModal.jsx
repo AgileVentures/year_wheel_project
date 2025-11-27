@@ -178,12 +178,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     const remaining = totalEstimated - elapsed;
 
     if (remaining < 60000) {
-      return 'Mindre än 1 minut kvar...';
+      return t('importing.lessThanMinute');
     } else if (remaining < 120000) {
-      return 'Cirka 1 minut kvar...';
+      return t('importing.aboutOneMinute');
     } else {
       const minutes = Math.ceil(remaining / 60000);
-      return `Cirka ${minutes} minuter kvar...`;
+      return t('importing.aboutMinutes', { minutes });
     }
   };
 
@@ -220,7 +220,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
     if (!file) return;
 
     setError(null);
-    setProgress('Läser fil...');
+    setProgress(t('importing.readingFile'));
 
     try {
       // Parse CSV using XLSX
@@ -264,7 +264,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   };
 
   const analyzeWithAI = async (headers, rows) => {
-    setProgress('AI analyserar CSV-strukturen...');
+    setProgress(t('importing.analyzingStructure'));
 
     try {
       // Use dedicated smart-csv-import Edge Function for analysis
@@ -338,7 +338,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
 
   const handleImport = async () => {
     setStage('importing');
-    setProgress('Förbereder import...');
+    setProgress(t('importing.preparingImport'));
     setStartTime(Date.now()); // Track start time for estimation
     setError(null); // Clear any previous errors
 
@@ -465,7 +465,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         sampleActivityGroups: effectiveSuggestions.activities.slice(0, 3).map(a => a.group)
       });
       
-      setProgress('Skapar struktur och aktiviteter...');
+      setProgress(t('importing.creatingStructure'));
       
       // Generate consistent IDs for rings and groups (will be remapped by App.jsx import logic)
       const ringIdMap = new Map();
@@ -627,12 +627,15 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       // Show detailed progress for large imports
       const isLargeImport = totalItemCount > 200;
       if (isLargeImport) {
-        setProgress(`Förbereder stor import (${totalItemCount} aktiviteter)...`);
+        setProgress(t('importing.preparingLargeImport', { count: totalItemCount }));
         await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause to show message
       }
       
       // Use batch import Edge Function for performance
-      setProgress(`Sparar ${totalItemCount} aktiviteter till databas...${isLargeImport ? ' Email skickas när importen är klar.' : ''}`);
+      setProgress(t('importing.savingActivities', { 
+        count: totalItemCount, 
+        email: isLargeImport ? t('importing.emailWhenComplete') : ''
+      }));
       
       // Get user email for notification
       const { data: { user } } = await supabase.auth.getUser();
@@ -686,7 +689,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       if (result.jobId) {
         console.log('[SmartImport] Setting jobId:', result.jobId);
         setJobId(result.jobId);
-        setProgress('Import startad - följer framsteg...');
+        setProgress(t('importing.importStarted'));
         // Don't set stage to complete here - let the useEffect handle it
       } else {
         throw new Error('No job ID returned from server');
@@ -956,10 +959,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           <Upload className="w-6 h-6 text-blue-600" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Smart Import med AI
+          {t('upload.heading')}
         </h3>
         <p className="text-sm text-gray-500">
-          Ladda upp en CSV-fil så analyserar AI strukturen och föreslår automatisk mappning
+          {t('upload.description')}
         </p>
       </div>
 
@@ -976,10 +979,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700"
         >
           <FileSpreadsheet className="w-5 h-5" />
-          Välj CSV-fil
+          {t('upload.selectFile')}
         </button>
         <p className="mt-2 text-xs text-gray-500">
-          Accepterar .csv, .xlsx, och .xls filer
+          {t('upload.acceptedFormats')}
         </p>
       </div>
 
@@ -987,13 +990,13 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         <div className="flex gap-3">
           <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800 space-y-2">
-            <p className="font-medium">AI kommer automatiskt att:</p>
+            <p className="font-medium">{t('upload.aiFeatures')}</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Identifiera kolumner för aktiviteter, datum, och kategorier</li>
-              <li>Skapa ringar och aktivitetsgrupper baserat på struktur</li>
-              <li>Mappa aktiviteter till rätt ringar och grupper</li>
-              <li>Hitta personer i data och erbjuda teameinbjudningar</li>
-              <li>Hantera kommentarer och beskrivningar</li>
+              <li>{t('upload.features.identifyColumns')}</li>
+              <li>{t('upload.features.createStructure')}</li>
+              <li>{t('upload.features.mapActivities')}</li>
+              <li>{t('upload.features.findPeople')}</li>
+              <li>{t('upload.features.handleComments')}</li>
             </ul>
           </div>
         </div>
