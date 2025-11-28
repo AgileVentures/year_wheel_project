@@ -24,14 +24,17 @@ const WheelCalendarView = ({
   onDeleteItem,
   onNavigateToItemOnWheel
 }) => {
+  // Convert year to number for comparison
+  const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
+  
   // Start calendar at today's date if it's within the wheel year, otherwise January 1st
   const initialDate = useMemo(() => {
     const today = new Date();
-    if (today.getFullYear() === year) {
+    if (today.getFullYear() === yearNum) {
       return today;
     }
-    return new Date(year, 0, 1);
-  }, [year]);
+    return new Date(yearNum, 0, 1);
+  }, [yearNum]);
 
   const { body, month, year: calendarYear, navigation } = useCalendar({
     defaultViewType: CalendarViewType.Month,
@@ -41,10 +44,10 @@ const WheelCalendarView = ({
   // Navigate to today when component mounts (if today is in the wheel year)
   useEffect(() => {
     const today = new Date();
-    if (today.getFullYear() === year) {
+    if (today.getFullYear() === yearNum) {
       navigation.setToday();
     }
-  }, []); // Only on mount
+  }, [navigation, yearNum]);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -56,33 +59,16 @@ const WheelCalendarView = ({
   
   // Force calendar to stay in the correct year
   const currentCalendarDate = new Date(calendarYear, month);
-  const shouldBeYear = year;
+  const shouldBeYear = yearNum;
   
   // If calendar drifted to wrong year, reset it
   if (calendarYear !== shouldBeYear) {
-    console.log(`[WheelCalendarView] Calendar year mismatch! Calendar: ${calendarYear}, Expected: ${shouldBeYear}. Resetting...`);
     // Don't reset here, it will cause infinite loop
-  }
-
-  // Debug logging
-  console.log('[WheelCalendarView] wheelStructure:', wheelStructure);
-  console.log('[WheelCalendarView] year prop:', year);
-  console.log('[WheelCalendarView] calendar year/month:', calendarYear, month);
-  console.log('[WheelCalendarView] items count:', wheelStructure?.items?.length || 0);
-  
-  // Sample a few items to see their dates
-  if (wheelStructure?.items && wheelStructure.items.length > 0) {
-    console.log('[WheelCalendarView] First 3 items:', wheelStructure.items.slice(0, 3).map(i => ({
-      name: i.name,
-      startDate: i.startDate,
-      endDate: i.endDate
-    })));
   }
 
   // Get items for a specific day
   const getItemsForDay = (day) => {
     if (!wheelStructure?.items) {
-      console.log('[WheelCalendarView] No items in wheelStructure');
       return [];
     }
     
@@ -90,12 +76,8 @@ const WheelCalendarView = ({
     const dayEnd = new Date(day);
     dayEnd.setHours(23, 59, 59, 999);
     
-    console.log(`[WheelCalendarView] Checking day: ${format(day, 'yyyy-MM-dd')}`);
-    console.log(`[WheelCalendarView] Day range: ${dayStart.toISOString()} to ${dayEnd.toISOString()}`);
-    
     const dayItems = wheelStructure.items.filter((item) => {
       if (!item.startDate || !item.endDate) {
-        console.log('[WheelCalendarView] Item missing dates:', item);
         return false;
       }
       
@@ -105,19 +87,8 @@ const WheelCalendarView = ({
       // Item overlaps with this day if it starts before/on day end and ends after/on day start
       const overlaps = itemStart <= dayEnd && itemEnd >= dayStart;
       
-      if (overlaps) {
-        console.log(`[WheelCalendarView] ✓ Item "${item.name}" overlaps:`, {
-          itemStart: itemStart.toISOString(),
-          itemEnd: itemEnd.toISOString()
-        });
-      }
-      
       return overlaps;
     });
-    
-    if (dayItems.length > 0) {
-      console.log(`[WheelCalendarView] Found ${dayItems.length} items for ${format(day, 'yyyy-MM-dd')}`);
-    }
     
     return dayItems;
   };
@@ -136,9 +107,6 @@ const WheelCalendarView = ({
 
   const handleDayClick = (dayValue) => {
     const itemsForDay = getItemsForDay(dayValue);
-    console.log('[WheelCalendarView] Day clicked:', dayValue);
-    console.log('[WheelCalendarView] Items for this day:', itemsForDay);
-    console.log('[WheelCalendarView] Items count:', itemsForDay.length);
     setSelectedDay({ date: dayValue, items: itemsForDay });
     setIsDialogOpen(true);
   };

@@ -4555,6 +4555,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           ) : (
             <div className="w-full h-full">
               <WheelCalendarView
+                key={`calendar-${Date.now()}`}
                 wheelStructure={calendarWheelStructure}
                 year={wheelState.metadata.year}
                 onUpdateItem={handleUpdateAktivitet}
