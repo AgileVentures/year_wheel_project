@@ -690,16 +690,51 @@ function YearWheel({
       if (onWheelReady) {
         // Attach custom methods to yearWheel instance
         yearWheel.openItemTooltip = (itemId) => {
+          // Find item in current wheel structure
           const item = wheelStructure?.items?.find(i => i.id === itemId);
-          if (item) {
-            // Calculate center position for tooltip
-            const tooltipPos = {
+          
+          if (!item) {
+            console.warn('[YearWheel] Item not found:', itemId);
+            return;
+          }
+          
+          // Check if item is rendered on wheel
+          const clickableItem = yearWheel.clickableItems?.find(ci => ci.itemId === itemId);
+          
+          // Highlight the item if rendered
+          if (yearWheel.updateSelection && clickableItem) {
+            yearWheel.updateSelection(false, [itemId]);
+            yearWheel.create();
+          }
+          
+          // Position tooltip
+          let tooltipPos;
+          if (clickableItem && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const averageRadius = (clickableItem.startRadius + clickableItem.endRadius) / 2;
+            const averageAngle = (clickableItem.startAngle + clickableItem.endAngle) / 2;
+            const wheelRadius = rect.width / 4;
+            
+            const angleRad = (averageAngle - 90) * (Math.PI / 180);
+            const displayRadius = (averageRadius / yearWheel.size) * wheelRadius;
+            
+            tooltipPos = {
+              x: centerX + Math.cos(angleRad) * displayRadius,
+              y: centerY + Math.sin(angleRad) * displayRadius,
+            };
+          } else {
+            // Center tooltip if item position unknown
+            tooltipPos = {
               x: window.innerWidth / 2,
               y: window.innerHeight / 2,
             };
-            setSelectedItem(item);
-            setTooltipPosition(tooltipPos);
           }
+          
+          setSelectedItem(item);
+          setTooltipPosition(tooltipPos);
         };
         
         onWheelReady(yearWheel);
@@ -1009,6 +1044,12 @@ function YearWheel({
           onClose={() => {
             setSelectedItem(null);
             setTooltipPosition(null);
+            
+            // Clear item highlighting when tooltip closes
+            if (yearWheel && yearWheel.updateSelection) {
+              yearWheel.updateSelection(false, []); // Clear selection
+              yearWheel.create(); // Redraw to remove selection highlight
+            }
           }}
           onOpenItem={(itemId) => {
             const item = wheelStructure?.items?.find(i => i.id === itemId);

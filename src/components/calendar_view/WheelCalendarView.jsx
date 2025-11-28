@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CalendarViewType, useCalendar } from "@h6s/calendar";
 import { format, isToday, isSameMonth, startOfDay } from "date-fns";
 import { enUS, sv } from "date-fns/locale";
@@ -11,25 +11,40 @@ import CalendarDayDialog from "./CalendarDayDialog";
  * 
  * Displays wheel items (activities) in a calendar view as an alternative to the circular wheel
  * 
- * @param {Object} wheelStructure - Contains rings, activityGroups, labels, and items
+ * @param {Object} wheelStructure - Contains rings, activityGroups, labels, and items (all items across all pages)
  * @param {number} year - Current year being displayed
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
- * @param {Object} yearWheelRef - Reference to YearWheel instance for opening tooltips
- * @param {Function} onSwitchToWheelView - Callback to switch back to wheel view
+ * @param {Function} onNavigateToItemOnWheel - Callback to navigate to item on wheel (handles page switching)
  */
 const WheelCalendarView = ({ 
   wheelStructure, 
   year,
   onUpdateItem,
   onDeleteItem,
-  yearWheelRef,
-  onSwitchToWheelView
+  onNavigateToItemOnWheel
 }) => {
+  // Start calendar at today's date if it's within the wheel year, otherwise January 1st
+  const initialDate = useMemo(() => {
+    const today = new Date();
+    if (today.getFullYear() === year) {
+      return today;
+    }
+    return new Date(year, 0, 1);
+  }, [year]);
+
   const { body, month, year: calendarYear, navigation } = useCalendar({
     defaultViewType: CalendarViewType.Month,
-    defaultDate: new Date(year, 0, 1) // Start at January of the wheel year
+    defaultDate: initialDate
   });
+
+  // Navigate to today when component mounts (if today is in the wheel year)
+  useEffect(() => {
+    const today = new Date();
+    if (today.getFullYear() === year) {
+      navigation.setToday();
+    }
+  }, []); // Only on mount
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -227,20 +242,10 @@ const WheelCalendarView = ({
             onUpdateItem={onUpdateItem}
             onDeleteItem={onDeleteItem}
             onNavigateToItem={(itemId) => {
-              console.log('[WheelCalendarView] Switching to wheel view and opening tooltip for item:', itemId);
-              handleCloseDialog(); // Close calendar dialog first
-              if (onSwitchToWheelView) {
-                onSwitchToWheelView(); // Switch to wheel view
+              handleCloseDialog();
+              if (onNavigateToItemOnWheel) {
+                onNavigateToItemOnWheel(itemId);
               }
-              // Wait a bit for the view to switch and wheel to mount
-              setTimeout(() => {
-                if (yearWheelRef && yearWheelRef.openItemTooltip) {
-                  console.log('[WheelCalendarView] Opening tooltip');
-                  yearWheelRef.openItemTooltip(itemId);
-                } else {
-                  console.warn('[WheelCalendarView] yearWheelRef.openItemTooltip not available', yearWheelRef);
-                }
-              }, 100);
             }}
             locale={locale}
           />

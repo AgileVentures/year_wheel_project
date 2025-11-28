@@ -400,11 +400,23 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     currentPage?.items || [],
     [currentPage]
   );
+
+  // Get all items across all pages for calendar view
+  const allItems = useMemo(() => {
+    if (!pages || pages.length === 0) return [];
+    return pages.flatMap(page => page.items || []);
+  }, [pages]);
   
   const wheelStructure = useMemo(() => ({
     ...structure,
     items: currentPageItems
   }), [structure, currentPageItems]);
+
+  // Calendar needs all items across all pages, not just current page
+  const calendarWheelStructure = useMemo(() => ({
+    ...structure,
+    items: allItems
+  }), [structure, allItems]);
 
   // UI-only state (not part of wheelState)
   const [zoomedMonth, setZoomedMonth] = useState(null);
@@ -413,6 +425,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [wheelData, setWheelData] = useState(null);
   const [viewMode, setViewMode] = useState('wheel'); // 'wheel' or 'calendar'
+  const [pendingTooltipItemId, setPendingTooltipItemId] = useState(null); // Item to show tooltip for after view/page switch
 
   // Legacy refs for compatibility (will be removed later)
   const latestValuesRef = useRef({});
@@ -2315,6 +2328,45 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isNavigatingPagesRef.current = false;
     }, 100);
   };
+
+  // Navigate to an item on the wheel from calendar view
+  // Handles page switching and tooltip opening in sequence
+  const handleNavigateToItemOnWheel = useCallback((itemId) => {
+    // Find which page contains this item
+    let targetPageId = null;
+    for (const page of (wheelState?.pages || [])) {
+      const itemInPage = page.items?.find(i => i.id === itemId);
+      if (itemInPage) {
+        targetPageId = page.id;
+        break;
+      }
+    }
+    
+    // Set pending tooltip to open after wheel is ready
+    setPendingTooltipItemId(itemId);
+    
+    // Switch to wheel view
+    setViewMode('wheel');
+    
+    // If item is on a different page, switch to that page
+    if (targetPageId && targetPageId !== currentPageId) {
+      handlePageChange(targetPageId);
+    }
+  }, [wheelState?.pages, currentPageId]);
+
+  // Effect to open pending tooltip when wheel becomes ready
+  useEffect(() => {
+    if (pendingTooltipItemId && yearWheelRef && viewMode === 'wheel') {
+      // Small delay to ensure wheel is fully rendered
+      const timer = setTimeout(() => {
+        if (yearWheelRef.openItemTooltip) {
+          yearWheelRef.openItemTooltip(pendingTooltipItemId);
+        }
+        setPendingTooltipItemId(null);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingTooltipItemId, yearWheelRef, viewMode]);
 
   // Show add page modal
   const handleAddPage = () => {
@@ -4503,12 +4555,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           ) : (
             <div className="w-full h-full">
               <WheelCalendarView
-                wheelStructure={wheelStructure}
+                wheelStructure={calendarWheelStructure}
                 year={wheelState.metadata.year}
                 onUpdateItem={handleUpdateAktivitet}
                 onDeleteItem={handleDeleteAktivitet}
-                yearWheelRef={yearWheelRef}
-                onSwitchToWheelView={() => setViewMode('wheel')}
+                onNavigateToItemOnWheel={handleNavigateToItemOnWheel}
               />
             </div>
           )}
