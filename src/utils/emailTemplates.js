@@ -137,7 +137,7 @@ export const emailLayout = (content, preheader = '', tagline = 'Visualisera och 
             <td style="background: linear-gradient(135deg, rgba(54, 194, 198, 0.6) 0%, rgba(0, 164, 166, 0.6) 100%); padding: 32px 40px; text-align: center;">
               <!-- Logo -->
               <div style="margin-bottom: 16px;">
-                <h1 style="margin: 0; padding: 0; color: #1B2A63; font-size: 32px; font-weight: 700; font-family: 'Poppins', sans-serif;">YearWheel</h1>
+                <img src="https://yearwheel.se/year_wheel_logo_transparent.png" alt="YearWheel" width="220" style="max-width: 220px; height: auto;" />
               </div>
               <p style="margin: 8px 0 0 0; color: #1B2A63; font-size: 14px; font-weight: 600;">
                 ${tagline}
