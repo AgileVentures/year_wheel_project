@@ -5,7 +5,8 @@ import {
   newsletterTemplate, 
   featureAnnouncementTemplate, 
   tipsTemplate, 
-  simpleAnnouncementTemplate 
+  simpleAnnouncementTemplate,
+  compositeTemplate
 } from '../../utils/emailTemplates';
 import { Send, Users, Mail, Clock, CheckCircle, AlertCircle, Copy, Trash2, Save, X, Eye, ArrowLeft } from 'lucide-react';
 import NewsletterDetail from '../../components/NewsletterDetail';
@@ -27,7 +28,7 @@ export default function NewsletterManager() {
   // Form state
   const [recipientType, setRecipientType] = useState('all');
   const [subject, setSubject] = useState('');
-  const [templateType, setTemplateType] = useState('newsletter');
+  const [templateType, setTemplateType] = useState('composite');
   const [customEmails, setCustomEmails] = useState('');
   const [tagline, setTagline] = useState('Visualisera och planera ditt år!');
   
@@ -59,6 +60,15 @@ export default function NewsletterManager() {
     title: '',
     message: '',
     cta: { text: '', url: '' }
+  });
+
+  // Composite newsletter state - allows mixing different section types
+  const [composite, setComposite] = useState({
+    heading: '',
+    intro: '',
+    sections: [], // Array of { type: 'message' | 'feature' | 'tip', data: {...} }
+    cta: { text: '', url: '' },
+    ps: ''
   });
 
   // Helper functions for UI feedback
@@ -105,6 +115,9 @@ export default function NewsletterManager() {
     let html = '';
     
     switch (templateType) {
+      case 'composite':
+        html = compositeTemplate({ ...composite, tagline });
+        break;
       case 'newsletter':
         html = newsletterTemplate({ ...newsletter, tagline });
         break;
@@ -142,6 +155,9 @@ export default function NewsletterManager() {
       // Get current template data based on type
       let currentTemplateData = null;
       switch (templateType) {
+        case 'composite':
+          currentTemplateData = composite;
+          break;
         case 'newsletter':
           currentTemplateData = newsletter;
           break;
@@ -240,6 +256,9 @@ export default function NewsletterManager() {
       setEditingDraftId(send.is_draft ? send.id : null);
       
       switch (send.template_type) {
+        case 'composite':
+          setComposite(send.template_data);
+          break;
         case 'newsletter':
           setNewsletter(send.template_data);
           break;
@@ -295,6 +314,9 @@ export default function NewsletterManager() {
       // Get current template data based on type
       let currentTemplateData = null;
       switch (templateType) {
+        case 'composite':
+          currentTemplateData = composite;
+          break;
         case 'newsletter':
           currentTemplateData = newsletter;
           break;
@@ -449,6 +471,7 @@ export default function NewsletterManager() {
                 onChange={(e) => setTemplateType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500"
               >
+                <option value="composite">🧩 Modulärt nyhetsbrev</option>
                 <option value="newsletter">{t('templates.newsletter')}</option>
                 <option value="feature">{t('templates.feature')}</option>
                 <option value="tips">{t('templates.tips')}</option>
@@ -457,6 +480,363 @@ export default function NewsletterManager() {
             </div>
 
             {/* Dynamic Template Fields */}
+            {templateType === 'composite' && (
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Tagline (valfritt)"
+                  value={tagline}
+                  onChange={(e) => setTagline(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Rubrik *"
+                  value={composite.heading}
+                  onChange={(e) => setComposite({ ...composite, heading: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                <textarea
+                  placeholder="Intro (valfritt)"
+                  value={composite.intro}
+                  onChange={(e) => setComposite({ ...composite, intro: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                
+                {/* Section Builder */}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-medium text-gray-700">Sektioner</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setComposite({
+                          ...composite,
+                          sections: [...composite.sections, { 
+                            type: 'message', 
+                            data: { title: '', content: '', showLink: false, link: { text: '', url: '' } }
+                          }]
+                        })}
+                        className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                      >
+                        + Meddelande
+                      </button>
+                      <button
+                        onClick={() => setComposite({
+                          ...composite,
+                          sections: [...composite.sections, { 
+                            type: 'feature', 
+                            data: { feature: '', description: '', benefits: [''], screenshot: '' }
+                          }]
+                        })}
+                        className="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded hover:bg-teal-200"
+                      >
+                        + Ny funktion
+                      </button>
+                      <button
+                        onClick={() => setComposite({
+                          ...composite,
+                          sections: [...composite.sections, { 
+                            type: 'tip', 
+                            data: { title: '', description: '', link: { text: '', url: '' } }
+                          }]
+                        })}
+                        className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+                      >
+                        + Tips
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {composite.sections.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded">
+                      Klicka på knapparna ovan för att lägga till sektioner
+                    </p>
+                  )}
+                  
+                  {composite.sections.map((section, idx) => (
+                    <div key={idx} className={`p-4 border rounded-sm mb-3 ${
+                      section.type === 'message' ? 'border-blue-200 bg-blue-50/50' :
+                      section.type === 'feature' ? 'border-teal-200 bg-teal-50/50' :
+                      'border-purple-200 bg-purple-50/50'
+                    }`}>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className={`text-xs font-semibold uppercase tracking-wide ${
+                          section.type === 'message' ? 'text-blue-600' :
+                          section.type === 'feature' ? 'text-teal-600' :
+                          'text-purple-600'
+                        }`}>
+                          {section.type === 'message' ? '📝 Meddelande' :
+                           section.type === 'feature' ? '✨ Ny funktion' :
+                           '💡 Tips'}
+                        </span>
+                        <div className="flex gap-1">
+                          {idx > 0 && (
+                            <button
+                              onClick={() => {
+                                const newSections = [...composite.sections];
+                                [newSections[idx], newSections[idx - 1]] = [newSections[idx - 1], newSections[idx]];
+                                setComposite({ ...composite, sections: newSections });
+                              }}
+                              className="text-xs px-2 py-1 text-gray-500 hover:bg-gray-200 rounded"
+                            >
+                              ↑
+                            </button>
+                          )}
+                          {idx < composite.sections.length - 1 && (
+                            <button
+                              onClick={() => {
+                                const newSections = [...composite.sections];
+                                [newSections[idx], newSections[idx + 1]] = [newSections[idx + 1], newSections[idx]];
+                                setComposite({ ...composite, sections: newSections });
+                              }}
+                              className="text-xs px-2 py-1 text-gray-500 hover:bg-gray-200 rounded"
+                            >
+                              ↓
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const newSections = composite.sections.filter((_, i) => i !== idx);
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            className="text-xs px-2 py-1 text-red-500 hover:bg-red-100 rounded"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Message Section Fields */}
+                      {section.type === 'message' && (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Titel (valfritt)"
+                            value={section.data.title}
+                            onChange={(e) => {
+                              const newSections = [...composite.sections];
+                              newSections[idx].data.title = e.target.value;
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                          />
+                          <textarea
+                            placeholder="Innehåll *"
+                            value={section.data.content}
+                            onChange={(e) => {
+                              const newSections = [...composite.sections];
+                              newSections[idx].data.content = e.target.value;
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                          />
+                          <label className="flex items-center text-sm">
+                            <input
+                              type="checkbox"
+                              checked={section.data.showLink || false}
+                              onChange={(e) => {
+                                const newSections = [...composite.sections];
+                                newSections[idx].data.showLink = e.target.checked;
+                                setComposite({ ...composite, sections: newSections });
+                              }}
+                              className="mr-2"
+                            />
+                            Visa länk
+                          </label>
+                          {section.data.showLink && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="text"
+                                placeholder="Länktext"
+                                value={section.data.link?.text || ''}
+                                onChange={(e) => {
+                                  const newSections = [...composite.sections];
+                                  newSections[idx].data.link = { ...newSections[idx].data.link, text: e.target.value };
+                                  setComposite({ ...composite, sections: newSections });
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                              />
+                              <input
+                                type="text"
+                                placeholder="URL"
+                                value={section.data.link?.url || ''}
+                                onChange={(e) => {
+                                  const newSections = [...composite.sections];
+                                  newSections[idx].data.link = { ...newSections[idx].data.link, url: e.target.value };
+                                  setComposite({ ...composite, sections: newSections });
+                                }}
+                                className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Feature Section Fields */}
+                      {section.type === 'feature' && (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Funktionsnamn *"
+                            value={section.data.feature}
+                            onChange={(e) => {
+                              const newSections = [...composite.sections];
+                              newSections[idx].data.feature = e.target.value;
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                          />
+                          <textarea
+                            placeholder="Beskrivning *"
+                            value={section.data.description}
+                            onChange={(e) => {
+                              const newSections = [...composite.sections];
+                              newSections[idx].data.description = e.target.value;
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            rows={2}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Skärmbild URL (valfritt)"
+                            value={section.data.screenshot || ''}
+                            onChange={(e) => {
+                              const newSections = [...composite.sections];
+                              newSections[idx].data.screenshot = e.target.value;
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                          />
+                          <div className="space-y-1">
+                            <span className="text-xs text-gray-600">Fördelar:</span>
+                            {(section.data.benefits || ['']).map((benefit, bIdx) => (
+                              <div key={bIdx} className="flex gap-1">
+                                <input
+                                  type="text"
+                                  placeholder={`Fördel ${bIdx + 1}`}
+                                  value={benefit}
+                                  onChange={(e) => {
+                                    const newSections = [...composite.sections];
+                                    const benefits = [...(newSections[idx].data.benefits || [''])];
+                                    benefits[bIdx] = e.target.value;
+                                    newSections[idx].data.benefits = benefits;
+                                    setComposite({ ...composite, sections: newSections });
+                                  }}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded-sm text-sm"
+                                />
+                                {(section.data.benefits || ['']).length > 1 && (
+                                  <button
+                                    onClick={() => {
+                                      const newSections = [...composite.sections];
+                                      newSections[idx].data.benefits = (newSections[idx].data.benefits || ['']).filter((_, i) => i !== bIdx);
+                                      setComposite({ ...composite, sections: newSections });
+                                    }}
+                                    className="px-2 text-red-500 text-sm"
+                                  >
+                                    ×
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => {
+                                const newSections = [...composite.sections];
+                                newSections[idx].data.benefits = [...(newSections[idx].data.benefits || ['']), ''];
+                                setComposite({ ...composite, sections: newSections });
+                              }}
+                              className="text-xs text-teal-600 hover:text-teal-700"
+                            >
+                              + Lägg till fördel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Tip Section Fields */}
+                      {section.type === 'tip' && (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Tips titel *"
+                            value={section.data.title}
+                            onChange={(e) => {
+                              const newSections = [...composite.sections];
+                              newSections[idx].data.title = e.target.value;
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                          />
+                          <textarea
+                            placeholder="Tips beskrivning *"
+                            value={section.data.description}
+                            onChange={(e) => {
+                              const newSections = [...composite.sections];
+                              newSections[idx].data.description = e.target.value;
+                              setComposite({ ...composite, sections: newSections });
+                            }}
+                            rows={2}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="Länktext (valfritt)"
+                              value={section.data.link?.text || ''}
+                              onChange={(e) => {
+                                const newSections = [...composite.sections];
+                                newSections[idx].data.link = { ...newSections[idx].data.link, text: e.target.value };
+                                setComposite({ ...composite, sections: newSections });
+                              }}
+                              className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                            />
+                            <input
+                              type="text"
+                              placeholder="URL (valfritt)"
+                              value={section.data.link?.url || ''}
+                              onChange={(e) => {
+                                const newSections = [...composite.sections];
+                                newSections[idx].data.link = { ...newSections[idx].data.link, url: e.target.value };
+                                setComposite({ ...composite, sections: newSections });
+                              }}
+                              className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="CTA Text (valfritt)"
+                    value={composite.cta.text}
+                    onChange={(e) => setComposite({ ...composite, cta: { ...composite.cta, text: e.target.value } })}
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="CTA URL (valfritt)"
+                    value={composite.cta.url}
+                    onChange={(e) => setComposite({ ...composite, cta: { ...composite.cta, url: e.target.value } })}
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
+                  />
+                </div>
+                
+                <input
+                  type="text"
+                  placeholder="P.S. meddelande (valfritt)"
+                  value={composite.ps}
+                  onChange={(e) => setComposite({ ...composite, ps: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+              </div>
+            )}
+
             {templateType === 'newsletter' && (
               <div className="space-y-4">
                 <input
@@ -580,6 +960,193 @@ export default function NewsletterManager() {
                   onChange={(e) => setNewsletter({ ...newsletter, ps: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm"
                 />
+              </div>
+            )}
+
+            {templateType === 'feature' && (
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Funktionsnamn *"
+                  value={feature.feature}
+                  onChange={(e) => setFeature({ ...feature, feature: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                <textarea
+                  placeholder="Beskrivning *"
+                  value={feature.description}
+                  onChange={(e) => setFeature({ ...feature, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Skärmbild URL (valfritt)"
+                  value={feature.screenshot}
+                  onChange={(e) => setFeature({ ...feature, screenshot: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Fördelar</label>
+                  {feature.benefits.map((benefit, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder={`Fördel ${idx + 1}`}
+                        value={benefit}
+                        onChange={(e) => {
+                          const newBenefits = [...feature.benefits];
+                          newBenefits[idx] = e.target.value;
+                          setFeature({ ...feature, benefits: newBenefits });
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-sm"
+                      />
+                      {feature.benefits.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const newBenefits = feature.benefits.filter((_, i) => i !== idx);
+                            setFeature({ ...feature, benefits: newBenefits });
+                          }}
+                          className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-sm"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={addBenefit}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    + Lägg till fördel
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="CTA Text *"
+                    value={feature.cta.text}
+                    onChange={(e) => setFeature({ ...feature, cta: { ...feature.cta, text: e.target.value } })}
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="CTA URL *"
+                    value={feature.cta.url}
+                    onChange={(e) => setFeature({ ...feature, cta: { ...feature.cta, url: e.target.value } })}
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {templateType === 'tips' && (
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Titel *"
+                  value={tips.title}
+                  onChange={(e) => setTips({ ...tips, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                <textarea
+                  placeholder="Intro *"
+                  value={tips.intro}
+                  onChange={(e) => setTips({ ...tips, intro: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                />
+                
+                {tips.tips.map((tip, idx) => (
+                  <div key={idx} className="p-4 border border-gray-200 rounded-sm space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Tips {idx + 1}</span>
+                      {tips.tips.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const newTips = tips.tips.filter((_, i) => i !== idx);
+                            setTips({ ...tips, tips: newTips });
+                          }}
+                          className="text-red-600 hover:text-red-700 text-sm"
+                        >
+                          Ta bort
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Tips titel *"
+                      value={tip.title}
+                      onChange={(e) => {
+                        const newTips = [...tips.tips];
+                        newTips[idx].title = e.target.value;
+                        setTips({ ...tips, tips: newTips });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    />
+                    <textarea
+                      placeholder="Tips beskrivning *"
+                      value={tip.description}
+                      onChange={(e) => {
+                        const newTips = [...tips.tips];
+                        newTips[idx].description = e.target.value;
+                        setTips({ ...tips, tips: newTips });
+                      }}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-sm"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Länktext (valfritt)"
+                        value={tip.link?.text || ''}
+                        onChange={(e) => {
+                          const newTips = [...tips.tips];
+                          newTips[idx].link = { ...newTips[idx].link, text: e.target.value };
+                          setTips({ ...tips, tips: newTips });
+                        }}
+                        className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Länk URL (valfritt)"
+                        value={tip.link?.url || ''}
+                        onChange={(e) => {
+                          const newTips = [...tips.tips];
+                          newTips[idx].link = { ...newTips[idx].link, url: e.target.value };
+                          setTips({ ...tips, tips: newTips });
+                        }}
+                        className="px-3 py-2 border border-gray-300 rounded-sm text-sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+                
+                <button
+                  onClick={addTip}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  + Lägg till tips
+                </button>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="CTA Text (valfritt)"
+                    value={tips.cta.text}
+                    onChange={(e) => setTips({ ...tips, cta: { ...tips.cta, text: e.target.value } })}
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="CTA URL (valfritt)"
+                    value={tips.cta.url}
+                    onChange={(e) => setTips({ ...tips, cta: { ...tips.cta, url: e.target.value } })}
+                    className="px-3 py-2 border border-gray-300 rounded-sm"
+                  />
+                </div>
               </div>
             )}
 

@@ -403,3 +403,150 @@ export const simpleAnnouncementTemplate = ({
 
   return emailLayout(content, title)
 }
+
+/**
+ * Composite newsletter template - allows mixing different section types
+ * @param {string} heading - Main headline
+ * @param {string} intro - Introduction paragraph  
+ * @param {Array} sections - Array of section objects with type and data
+ * @param {Object} cta - Call-to-action button {url, text}
+ * @param {string} ps - Optional P.S. message
+ * @param {string} tagline - Custom tagline for header
+ * 
+ * Section types:
+ * - message: { title, content, showLink, link: { text, url } }
+ * - feature: { feature, description, benefits: [], screenshot }
+ * - tip: { title, description, link: { text, url } }
+ */
+export const compositeTemplate = ({ 
+  heading, 
+  intro, 
+  sections = [], 
+  cta,
+  ps,
+  tagline
+}) => {
+  const renderSection = (section, index) => {
+    switch (section.type) {
+      case 'message':
+        return `
+          <div style="margin-bottom: 32px;">
+            ${section.data.title ? `
+              <h2 style="color: #1B2A63; font-size: 22px; font-weight: 600; margin: 0 0 12px 0;">
+                ${section.data.title}
+              </h2>
+            ` : ''}
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
+              ${section.data.content}
+            </p>
+            ${section.data.showLink && section.data.link?.url ? `
+              <a href="${section.data.link.url}" 
+                 style="color: #00A4A6; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 4px;">
+                ${section.data.link.text} →
+              </a>
+            ` : ''}
+          </div>
+        `
+      
+      case 'feature':
+        const benefitsHtml = (section.data.benefits || []).filter(b => b).map(benefit => `
+          <tr>
+            <td style="padding: 8px 0;">
+              <table role="presentation">
+                <tr>
+                  <td style="width: 28px; vertical-align: top;">
+                    <span style="display: inline-block; width: 20px; height: 20px; background: linear-gradient(135deg, #9FCB3E 0%, #2E9E97 100%); border-radius: 50%; text-align: center; line-height: 20px; color: #ffffff; font-weight: 700; font-size: 10px;">✓</span>
+                  </td>
+                  <td style="color: #4b5563; font-size: 14px; line-height: 1.5; padding-left: 8px;">
+                    ${benefit}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        `).join('')
+
+        return `
+          <div style="margin-bottom: 32px; padding: 24px; background: linear-gradient(135deg, rgba(164, 230, 224, 0.3) 0%, rgba(54, 194, 198, 0.2) 100%); border-radius: 8px;">
+            <p style="margin: 0 0 8px 0; color: #00A4A6; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+              Ny Funktion
+            </p>
+            <h2 style="color: #1B2A63; font-size: 20px; font-weight: 700; margin: 0 0 12px 0;">
+              ${section.data.feature}
+            </h2>
+            <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 16px 0;">
+              ${section.data.description}
+            </p>
+            ${section.data.screenshot ? `
+              <img src="${section.data.screenshot}" alt="${section.data.feature}" 
+                   style="width: 100%; border-radius: 6px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            ` : ''}
+            ${benefitsHtml ? `
+              <table role="presentation" style="width: 100%;">
+                ${benefitsHtml}
+              </table>
+            ` : ''}
+          </div>
+        `
+      
+      case 'tip':
+        const borderColors = ['#00A4A6', '#2D4EC8', '#9FCB3E']
+        return `
+          <div style="margin-bottom: 24px; padding: 20px; background-color: #f9fafb; border-left: 4px solid ${borderColors[index % 3]}; border-radius: 4px;">
+            <p style="margin: 0 0 8px 0; color: #3b82f6; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+              Tips
+            </p>
+            <h3 style="color: #1B2A63; font-size: 17px; font-weight: 600; margin: 0 0 10px 0;">
+              ${section.data.title}
+            </h3>
+            <p style="color: #4b5563; font-size: 14px; line-height: 1.6; margin: 0;">
+              ${section.data.description}
+            </p>
+            ${section.data.link?.url ? `
+              <a href="${section.data.link.url}" 
+                 style="display: inline-block; margin-top: 10px; color: #00A4A6; text-decoration: none; font-weight: 600; font-size: 13px;">
+                ${section.data.link.text || 'Läs mer'} →
+              </a>
+            ` : ''}
+          </div>
+        `
+      
+      default:
+        return ''
+    }
+  }
+
+  const sectionsHtml = sections.map((section, idx) => renderSection(section, idx)).join('')
+
+  const content = `
+    <h1 style="color: #1B2A63; font-size: 28px; font-weight: 700; margin: 0 0 24px 0; line-height: 1.3;">
+      ${heading}
+    </h1>
+    
+    ${intro ? `
+      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 32px 0;">
+        ${intro}
+      </p>
+    ` : ''}
+    
+    ${sectionsHtml}
+    
+    ${cta?.url ? `
+      <div style="text-align: center; margin: 40px 0 32px 0;">
+        <a href="${cta.url}" class="btn" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #00A4A6 0%, #36C2C6 100%); color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+          ${cta.text}
+        </a>
+      </div>
+    ` : ''}
+    
+    ${ps ? `
+      <div style="border-top: 2px solid #A4E6E0; padding-top: 24px; margin-top: 40px;">
+        <p style="color: #2E9E97; font-size: 14px; line-height: 1.6; margin: 0;">
+          <strong>P.S.</strong> ${ps}
+        </p>
+      </div>
+    ` : ''}
+  `
+
+  return emailLayout(content, intro?.substring(0, 100) || heading, tagline)
+}
