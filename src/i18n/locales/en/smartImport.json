@@ -39,9 +39,12 @@
     "activitiesWillBeImported": "{{count}} activities will be imported",
     "firstExamples": "First 3 examples:",
     "summary": {
-      "readyToImport": "Ready to import",
+      "readyToImport": "Ready to import!",
       "actionNeeded": "Action needed",
+      "reviewNeeded": "Review before import",
       "quickStats": "{{rings}} rings · {{groups}} groups · {{activities}} activities",
+      "customize": "Customize rings & groups",
+      "hideCustomize": "Hide customization",
       "editColumns": "Edit columns",
       "editRingsGroups": "Edit rings & groups",
       "viewPreview": "View preview",
@@ -74,6 +77,23 @@
       "previewCount": "For performance, we show a preview of {{preview}} activities here.",
       "allWillImport": "✅ All {{total}} activities will be imported when you click \"Import\".",
       "timeEstimate": "⏰ Import will take approximately {{time}}. You'll receive an email when complete."
+    },
+    "teamSection": {
+      "heading": "People detected in data",
+      "description": "{{count}} people found in your CSV. You can invite them to collaborate.",
+      "enableTeam": "Create/use team and invite",
+      "enableTeamDescription": "Choose to use an existing team or create a new one",
+      "selectTeam": "Select team",
+      "loadingTeams": "Loading teams...",
+      "selectTeamPlaceholder": "-- Select team --",
+      "createNewTeam": "+ Create new team",
+      "teamName": "Team name",
+      "selectPeople": "Select people to invite",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "sendInvites": "Send invitations via email",
+      "sendInvitesOn": "Email invitations are sent immediately",
+      "sendInvitesOff": "People are added as pending (can be invited later)"
     }
   },
   "people": {
@@ -148,7 +168,9 @@
   },
   "teamSuccess": {
     "emailsSent": "Team created! {{sent}} email(s) sent, {{pending}} waiting for email",
-    "pendingOnly": "Team created! {{pending}} invitation(s) prepared (emails not sent automatically)"
+    "pendingOnly": "Team created! {{pending}} invitation(s) prepared (emails not sent automatically)",
+    "reusedTeam": "Using team \"{{teamName}}\". {{sent}} new invitations sent, {{pending}} pending",
+    "alreadyInvited": "already invited/members"
   },
   "consolidation": {
     "heading": "📊 Data Consolidation",

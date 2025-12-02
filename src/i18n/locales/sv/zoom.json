@@ -1,14 +1,18 @@
 {
-  "months": "Månader",
-  "quarters": "Kvartal",
+  "months": {
+    "title": "Månader"
+  },
+  "quarters": {
+    "title": "Kvartal"
+  },
   "activities": "aktiviteter",
   "resetToFullYear": "Återställ till helårsvy",
-  "clickMonthToZoom": "Klicka på en månad för att zooma in",
-  "clickQuarterToZoom": "Klicka på ett kvartal för att zooma in",
+  "clickMonthToFilter": "Klicka på en månad för att filtrera",
+  "clickQuarterToFilter": "Klicka på ett kvartal för att filtrera",
   "q1Months": "Jan-Mar",
   "q2Months": "Apr-Jun",
   "q3Months": "Jul-Sep",
   "q4Months": "Okt-Dec",
-  "zoomedIn": "Zoomad vy aktiv",
+  "filtered": "Filtrerad vy aktiv",
   "clickToReset": "Klicka för att återställa"
 }

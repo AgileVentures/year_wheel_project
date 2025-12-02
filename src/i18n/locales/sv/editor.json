@@ -13,10 +13,10 @@
     "labels": "Etiketter"
   },
   "tabs": {
-    "disc": "Skiva",
+    "structure": "Struktur",
     "list": "Lista",
     "calendar": "Kalender",
-    "zoom": "Zoom"
+    "filter": "Filtrera"
   },
   "zoom": {
     "quarters": "Kvartal",

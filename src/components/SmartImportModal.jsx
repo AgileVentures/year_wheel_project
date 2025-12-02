@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useImportProgress } from '../hooks/useImportProgress';
-import { createPendingInvitation, sendTeamInvitation } from '../services/teamService';
+import { createPendingInvitation, sendTeamInvitation, getUserTeams, createTeam as createTeamService, getTeam } from '../services/teamService';
 
 /**
  * SmartImportModal - AI-powered CSV import with intelligent mapping
@@ -28,6 +28,9 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   const [createTeam, setCreateTeam] = useState(false); // Whether to create a team
   const [teamName, setTeamName] = useState(''); // Team name if creating
   const [sendInvites, setSendInvites] = useState(true); // Whether to send email invitations immediately
+  const [userTeams, setUserTeams] = useState([]); // User's existing teams
+  const [selectedTeamId, setSelectedTeamId] = useState(''); // Selected team ID or 'new' for creating new
+  const [loadingTeams, setLoadingTeams] = useState(false);
   const teamCreatedRef = useRef(false); // Flag to prevent duplicate team creation
   const [importMode, setImportMode] = useState('replace'); // 'replace' or 'append'
   const [showAdvancedMapping, setShowAdvancedMapping] = useState(false);
@@ -127,6 +130,43 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       setIsBackgroundImport(false);
     }
   }, [importJobProgress.isComplete, importJobProgress.isFailed, jobId, onImportComplete, selectedPeople, csvData, aiSuggestions, isBackgroundImport, createTeam, teamName, detectedPeople]);
+
+  // Fetch user's existing teams when people are detected
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (detectedPeople.length === 0) {
+        setUserTeams([]);
+        return;
+      }
+      
+      setLoadingTeams(true);
+      try {
+        const teams = await getUserTeams();
+        setUserTeams(teams || []);
+        
+        // Check if the wheel already has a team associated
+        if (wheelId) {
+          const { data: wheel } = await supabase
+            .from('year_wheels')
+            .select('team_id')
+            .eq('id', wheelId)
+            .single();
+          
+          if (wheel?.team_id) {
+            // Pre-select the wheel's existing team
+            setSelectedTeamId(wheel.team_id);
+            setCreateTeam(true);
+          }
+        }
+      } catch (err) {
+        console.error('[SmartImport] Failed to fetch teams:', err);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+    
+    fetchTeams();
+  }, [detectedPeople.length, wheelId]);
 
   // Cancel import
   const handleCancelImport = async () => {
@@ -745,52 +785,118 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
   };
 
   const handleTeamCreation = async () => {
-    if (!createTeam || selectedPeople.size === 0 || !teamName.trim()) {
-      console.log('[SmartImport] Skipping team creation - not requested or no team name');
+    if (!createTeam || selectedPeople.size === 0) {
+      console.log('[SmartImport] Skipping team creation - not requested or no people selected');
+      return;
+    }
+
+    // Require team selection
+    if (!selectedTeamId) {
+      console.log('[SmartImport] Skipping team creation - no team selected');
+      return;
+    }
+
+    // For new team, require team name
+    if (selectedTeamId === 'new' && !teamName.trim()) {
+      console.log('[SmartImport] Skipping team creation - new team selected but no name');
       return;
     }
 
     try {
-      console.log('[SmartImport] Creating team:', teamName, 'with', selectedPeople.size, 'members', sendInvites ? '(sending invites)' : '(preparing invites only)');
-      
-      // 1. Create the team
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: team, error: teamError } = await supabase
-        .from('teams')
-        .insert({
-          name: teamName.trim(),
-          description: `Team för Smart Import ${csvData?.fileName || ''}`,
-          owner_id: user.id
-        })
-        .select()
-        .single();
+      let team;
+      let isExistingTeam = false;
 
-      if (teamError) throw teamError;
-      console.log('[SmartImport] Team created:', team.id);
+      if (selectedTeamId && selectedTeamId !== 'new') {
+        // User selected an existing team
+        const selectedTeam = userTeams.find(t => t.id === selectedTeamId);
+        if (selectedTeam) {
+          team = selectedTeam;
+          isExistingTeam = true;
+          console.log('[SmartImport] Using selected existing team:', team.name);
+          
+          // Assign wheel to selected team if not already
+          const { data: wheelData } = await supabase
+            .from('year_wheels')
+            .select('team_id')
+            .eq('id', wheelId)
+            .single();
+          
+          if (wheelData?.team_id !== team.id) {
+            const { error: wheelUpdateError } = await supabase
+              .from('year_wheels')
+              .update({ team_id: team.id })
+              .eq('id', wheelId);
 
-      // 2. Assign wheel to team
-      const { error: wheelUpdateError } = await supabase
-        .from('year_wheels')
-        .update({ team_id: team.id })
-        .eq('id', wheelId);
+            if (wheelUpdateError) throw wheelUpdateError;
+            console.log('[SmartImport] Wheel assigned to selected team');
+          }
+        }
+      }
+      
+      if (!team) {
+        // Create new team
+        console.log('[SmartImport] Creating new team:', teamName);
+        
+        const { data: newTeam, error: teamError } = await supabase
+          .from('teams')
+          .insert({
+            name: teamName.trim(),
+            description: `Team för Smart Import ${csvData?.fileName || ''}`,
+            owner_id: user.id
+          })
+          .select()
+          .single();
 
-      if (wheelUpdateError) throw wheelUpdateError;
-      console.log('[SmartImport] Wheel assigned to team');
+        if (teamError) throw teamError;
+        team = newTeam;
+        console.log('[SmartImport] New team created:', team.id);
 
-      // 3. Prepare/send invitations - collect unique emails and names
+        // Assign wheel to new team
+        const { error: wheelUpdateError } = await supabase
+          .from('year_wheels')
+          .update({ team_id: team.id })
+          .eq('id', wheelId);
+
+        if (wheelUpdateError) throw wheelUpdateError;
+        console.log('[SmartImport] Wheel assigned to new team');
+      }
+
+      // Get existing team members and pending invitations to avoid duplicates
+      const [membersResult, invitationsResult] = await Promise.all([
+        supabase.rpc('get_team_members_with_emails', { p_team_id: team.id }),
+        supabase.from('team_invitations')
+          .select('email, pending_name, status')
+          .eq('team_id', team.id)
+          .in('status', ['pending', 'accepted'])
+      ]);
+
+      const existingMemberEmails = new Set(
+        (membersResult.data || []).map(m => m.email?.toLowerCase().trim()).filter(Boolean)
+      );
+      const existingInviteEmails = new Set(
+        (invitationsResult.data || []).filter(i => i.email).map(i => i.email.toLowerCase().trim())
+      );
+      const existingPendingNames = new Set(
+        (invitationsResult.data || []).filter(i => i.pending_name).map(i => i.pending_name.toLowerCase().trim())
+      );
+
+      console.log('[SmartImport] Existing members:', existingMemberEmails.size);
+      console.log('[SmartImport] Existing invites:', existingInviteEmails.size);
+      console.log('[SmartImport] Existing pending names:', existingPendingNames.size);
+
+      // 5. Prepare/send invitations - collect unique emails and names, excluding existing
       let invitesSent = 0;
       let pendingCreated = 0;
+      let skippedExisting = 0;
 
       console.log('[SmartImport] Selected people indices:', Array.from(selectedPeople));
-      console.log('[SmartImport] Detected people array:', detectedPeople);
 
-      // Deduplicate emails and names
       const uniqueEmails = new Set();
       const uniquePendingNames = new Set();
 
       for (const personIndex of Array.from(selectedPeople)) {
         const person = detectedPeople[personIndex];
-        console.log('[SmartImport] Processing person at index', personIndex, ':', person);
         
         if (!person) {
           console.warn('[SmartImport] No person found at index', personIndex);
@@ -798,34 +904,85 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         }
         
         if (person.email && sendInvites) {
-          // Only send email invitations if sendInvites is enabled
-          uniqueEmails.add(person.email.toLowerCase().trim());
-        } else {
-          // Always create pending invitation (either no email OR sendInvites disabled)
+          const normalizedEmail = person.email.toLowerCase().trim();
+          
+          // Skip if already a member or has pending invite
+          if (existingMemberEmails.has(normalizedEmail)) {
+            console.log('[SmartImport] Skipping - already member:', normalizedEmail);
+            skippedExisting++;
+            continue;
+          }
+          if (existingInviteEmails.has(normalizedEmail)) {
+            console.log('[SmartImport] Skipping - already invited:', normalizedEmail);
+            skippedExisting++;
+            continue;
+          }
+          
+          uniqueEmails.add(normalizedEmail);
+        } else if (person.name) {
+          const normalizedName = person.name.toLowerCase().trim();
+          
+          // Skip if already has pending invitation with this name
+          if (existingPendingNames.has(normalizedName)) {
+            console.log('[SmartImport] Skipping - already pending:', person.name);
+            skippedExisting++;
+            continue;
+          }
+          
           uniquePendingNames.add(person.name.trim());
         }
       }
 
-      // Send invitations for unique emails (only if sendInvites enabled)
+      // 6. Send invitations for unique emails
       if (sendInvites) {
         for (const email of uniqueEmails) {
-          await sendTeamInvitation(team.id, email);
-          invitesSent++;
-          console.log('[SmartImport] Sent invitation to:', email);
+          try {
+            await sendTeamInvitation(team.id, email);
+            invitesSent++;
+            console.log('[SmartImport] Sent invitation to:', email);
+          } catch (inviteErr) {
+            // Handle duplicate key error gracefully
+            if (inviteErr.code === '23505') {
+              console.log('[SmartImport] Invitation already exists for:', email);
+              skippedExisting++;
+            } else {
+              console.error('[SmartImport] Failed to invite:', email, inviteErr);
+            }
+          }
         }
       }
 
-      // Create pending invitations for all names (either no email OR sendInvites disabled)
+      // 7. Create pending invitations for names without email
       for (const name of uniquePendingNames) {
-        await createPendingInvitation(team.id, name);
-        pendingCreated++;
-        console.log('[SmartImport] Created pending invitation for:', name);
+        try {
+          await createPendingInvitation(team.id, name);
+          pendingCreated++;
+          console.log('[SmartImport] Created pending invitation for:', name);
+        } catch (inviteErr) {
+          console.error('[SmartImport] Failed to create pending invite:', name, inviteErr);
+        }
       }
 
-      // Show success toast
-      const message = sendInvites 
-        ? t('teamSuccess.emailsSent', { sent: invitesSent, pending: pendingCreated })
-        : t('teamSuccess.pendingOnly', { pending: pendingCreated });
+      // 8. Show success toast with appropriate message
+      let message;
+      if (isExistingTeam) {
+        message = t('teamSuccess.reusedTeam', { 
+          teamName: team.name, 
+          sent: invitesSent, 
+          pending: pendingCreated,
+          skipped: skippedExisting 
+        });
+      } else if (sendInvites) {
+        message = t('teamSuccess.emailsSent', { sent: invitesSent, pending: pendingCreated });
+      } else {
+        message = t('teamSuccess.pendingOnly', { pending: pendingCreated });
+      }
+      
+      // Add note about skipped if any
+      if (skippedExisting > 0) {
+        message += ` (${skippedExisting} ${t('teamSuccess.alreadyInvited')})`;
+      }
+      
       const event = new CustomEvent('showToast', {
         detail: {
           message,
@@ -1087,19 +1244,19 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
           </div>
         )}
 
-        {/* Summary Card - Progressive Disclosure */}
-        <div className={`border rounded-sm p-4 ${hasErrors ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+        {/* Summary Card - Simplified for happy path */}
+        <div className={`border rounded-sm p-4 ${hasErrors ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
           <div className="flex items-start gap-3">
             {hasErrors ? (
-              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             ) : (
               <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             )}
             <div className="flex-1">
-              <h4 className={`font-semibold ${hasErrors ? 'text-red-900' : 'text-green-900'}`}>
-                {hasErrors ? t('review.summary.actionNeeded') : t('review.summary.readyToImport')}
+              <h4 className={`font-semibold ${hasErrors ? 'text-amber-900' : 'text-green-900'}`}>
+                {hasErrors ? t('review.summary.reviewNeeded', 'Kontrollera innan import') : t('review.summary.readyToImport')}
               </h4>
-              <p className={`text-sm mt-1 ${hasErrors ? 'text-red-700' : 'text-green-700'}`}>
+              <p className={`text-sm mt-1 ${hasErrors ? 'text-amber-700' : 'text-green-700'}`}>
                 {t('review.summary.quickStats', {
                   rings: effectiveRings.length,
                   groups: effectiveGroups.length,
@@ -1107,27 +1264,43 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
                 })}
               </p>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2 mt-3">
+              {/* Show customize link only - not intimidating buttons */}
+              {!hasErrors && (
                 <button
-                  onClick={() => setShowColumnMapping(!showColumnMapping)}
-                  className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                  onClick={() => {
+                    setShowColumnMapping(false);
+                    setShowRingsGroupsEditor(!showRingsGroupsEditor);
+                    setShowDataPreview(false);
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 mt-2 underline"
                 >
-                  {showColumnMapping ? t('review.summary.hideColumns') : t('review.summary.editColumns')}
+                  {showRingsGroupsEditor ? t('review.summary.hideCustomize', 'Dölj anpassningar') : t('review.summary.customize', 'Anpassa ringar & grupper')}
                 </button>
-                <button
-                  onClick={() => setShowRingsGroupsEditor(!showRingsGroupsEditor)}
-                  className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
-                >
-                  {showRingsGroupsEditor ? t('review.summary.hideRingsGroups') : t('review.summary.editRingsGroups')}
-                </button>
-                <button
-                  onClick={() => setShowDataPreview(!showDataPreview)}
-                  className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
-                >
-                  {showDataPreview ? t('review.summary.hidePreview') : t('review.summary.viewPreview')}
-                </button>
-              </div>
+              )}
+
+              {/* Show full edit buttons only if there are issues */}
+              {hasErrors && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <button
+                    onClick={() => setShowColumnMapping(!showColumnMapping)}
+                    className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                  >
+                    {showColumnMapping ? t('review.summary.hideColumns') : t('review.summary.editColumns')}
+                  </button>
+                  <button
+                    onClick={() => setShowRingsGroupsEditor(!showRingsGroupsEditor)}
+                    className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                  >
+                    {showRingsGroupsEditor ? t('review.summary.hideRingsGroups') : t('review.summary.editRingsGroups')}
+                  </button>
+                  <button
+                    onClick={() => setShowDataPreview(!showDataPreview)}
+                    className="text-xs px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                  >
+                    {showDataPreview ? t('review.summary.hidePreview') : t('review.summary.viewPreview')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1886,6 +2059,174 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
             </label>
           </div>
         </div>
+
+        {/* Team and People Section - Only show if people detected */}
+        {detectedPeople.length > 0 && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-sm p-4">
+            <div className="flex items-start gap-3 mb-4">
+              <Users className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-indigo-900">{t('review.teamSection.heading', 'Personer upptäckta i data')}</h4>
+                <p className="text-sm text-indigo-700 mt-1">
+                  {t('review.teamSection.description', { count: detectedPeople.length })}
+                </p>
+              </div>
+            </div>
+
+            {/* Enable Team Creation Toggle */}
+            <label className="flex items-center gap-3 p-3 bg-white border border-indigo-200 rounded-sm cursor-pointer hover:bg-indigo-50 transition-colors mb-4">
+              <input
+                type="checkbox"
+                checked={createTeam}
+                onChange={(e) => {
+                  setCreateTeam(e.target.checked);
+                  if (e.target.checked && selectedPeople.size === 0) {
+                    // Auto-select all people when enabling
+                    setSelectedPeople(new Set(detectedPeople.map((_, i) => i)));
+                  }
+                }}
+                className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+              />
+              <div>
+                <span className="font-medium text-gray-900">{t('review.teamSection.enableTeam', 'Skapa/använd team och bjud in')}</span>
+                <p className="text-xs text-gray-500">{t('review.teamSection.enableTeamDescription', 'Välj att använda ett befintligt team eller skapa ett nytt')}</p>
+              </div>
+            </label>
+
+            {createTeam && (
+              <div className="space-y-4">
+                {/* Team Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('review.teamSection.selectTeam', 'Välj team')}
+                  </label>
+                  {loadingTeams ? (
+                    <div className="text-sm text-gray-500">{t('review.teamSection.loadingTeams', 'Laddar team...')}</div>
+                  ) : (
+                    <select
+                      value={selectedTeamId}
+                      onChange={(e) => {
+                        setSelectedTeamId(e.target.value);
+                        if (e.target.value !== 'new') {
+                          // Find the team name and set it
+                          const team = userTeams.find(t => t.id === e.target.value);
+                          if (team) setTeamName(team.name);
+                        } else {
+                          setTeamName('');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <option value="">{t('review.teamSection.selectTeamPlaceholder', '-- Välj team --')}</option>
+                      <option value="new">{t('review.teamSection.createNewTeam', '+ Skapa nytt team')}</option>
+                      {userTeams.map(team => (
+                        <option key={team.id} value={team.id}>
+                          {team.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Team Name Input (only for new team) */}
+                {selectedTeamId === 'new' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('review.teamSection.teamName', 'Teamnamn')}
+                    </label>
+                    <input
+                      type="text"
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder={csvData?.fileName?.replace(/\.(csv|xlsx|xls)$/i, '') || 'Mitt team'}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                )}
+
+                {/* People Selection */}
+                {selectedTeamId && (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          {t('review.teamSection.selectPeople', 'Välj personer att bjuda in')} ({selectedPeople.size}/{detectedPeople.length})
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (selectedPeople.size === detectedPeople.length) {
+                              setSelectedPeople(new Set());
+                            } else {
+                              setSelectedPeople(new Set(detectedPeople.map((_, i) => i)));
+                            }
+                          }}
+                          className="text-xs text-indigo-600 hover:text-indigo-800"
+                        >
+                          {selectedPeople.size === detectedPeople.length 
+                            ? t('review.teamSection.deselectAll', 'Avmarkera alla')
+                            : t('review.teamSection.selectAll', 'Välj alla')}
+                        </button>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-sm divide-y divide-gray-100">
+                        {detectedPeople.map((person, index) => (
+                          <label 
+                            key={index}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedPeople.has(index)}
+                              onChange={(e) => {
+                                const newSet = new Set(selectedPeople);
+                                if (e.target.checked) {
+                                  newSet.add(index);
+                                } else {
+                                  newSet.delete(index);
+                                }
+                                setSelectedPeople(newSet);
+                              }}
+                              className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-900 block truncate">{person.name || person.email}</span>
+                              {person.email && person.name && (
+                                <span className="text-xs text-gray-500 flex items-center gap-1">
+                                  <Mail className="w-3 h-3" />
+                                  {person.email}
+                                </span>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Send Invites Option */}
+                    {detectedPeople.some((p, i) => selectedPeople.has(i) && p.email) && (
+                      <label className="flex items-center gap-3 p-3 bg-white border border-indigo-200 rounded-sm cursor-pointer hover:bg-indigo-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={sendInvites}
+                          onChange={(e) => setSendInvites(e.target.checked)}
+                          className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                        />
+                        <div>
+                          <span className="font-medium text-gray-900">{t('review.teamSection.sendInvites', 'Skicka inbjudningar via e-post')}</span>
+                          <p className="text-xs text-gray-500">
+                            {sendInvites 
+                              ? t('review.teamSection.sendInvitesOn', 'E-postinbjudningar skickas omedelbart')
+                              : t('review.teamSection.sendInvitesOff', 'Personer läggs till som väntande (kan bjudas in senare)')}
+                          </p>
+                        </div>
+                      </label>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };

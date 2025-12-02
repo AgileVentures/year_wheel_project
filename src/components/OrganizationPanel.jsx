@@ -44,7 +44,7 @@ function OrganizationPanel({
 }) {
   const { t } = useTranslation(['editor', 'common']);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeView, setActiveView] = useState('disc'); // disc, liste, kalender
+  const [activeView, setActiveView] = useState('structure'); // structure, liste, filter
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAktivitet, setEditingAktivitet] = useState(null);
   const [integrationRing, setIntegrationRing] = useState(null); // Ring being configured for integration
@@ -212,8 +212,6 @@ function OrganizationPanel({
   
   const [sortBy, setSortBy] = useState('startDate'); // startDate, name, ring
   const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
-  const [selectedMonth, setSelectedMonth] = useState(9); // October (0-indexed)
-  const [selectedYear, setSelectedYear] = useState(2025);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
@@ -224,52 +222,7 @@ function OrganizationPanel({
   });
   const [expandedInnerRings, setExpandedInnerRings] = useState({});
 
-  // Sync calendar view with zoom state
-  useEffect(() => {
-    if (zoomedMonth !== null) {
-      setSelectedMonth(zoomedMonth);
-      setSelectedYear(parseInt(year));
-    }
-  }, [zoomedMonth, year]);
-
-  // Calendar helpers
-  const monthNames = [
-    t('common:monthsFull.january'), t('common:monthsFull.february'), t('common:monthsFull.march'),
-    t('common:monthsFull.april'), t('common:monthsFull.may'), t('common:monthsFull.june'),
-    t('common:monthsFull.july'), t('common:monthsFull.august'), t('common:monthsFull.september'),
-    t('common:monthsFull.october'), t('common:monthsFull.november'), t('common:monthsFull.december')
-  ];
-  const daysOfWeek = [
-    t('common:daysShort.monday'), t('common:daysShort.tuesday'), t('common:daysShort.wednesday'),
-    t('common:daysShort.thursday'), t('common:daysShort.friday'), t('common:daysShort.saturday'),
-    t('common:daysShort.sunday')
-  ];
-  
-  // Calculate current quarter (0-3) from selected month
-  const currentQuarter = Math.floor(selectedMonth / 3);
-
-  const getDaysInMonth = (year, month) => {
-    return new Date(year, month + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (year, month) => {
-    const day = new Date(year, month, 1).getDay();
-    return day === 0 ? 6 : day - 1; // Convert Sunday=0 to Monday=0
-  };
-
-  const getWeekNumber = (date) => {
-    const target = new Date(date.valueOf());
-    const dayNr = (date.getDay() + 6) % 7;
-    target.setDate(target.getDate() - dayNr + 3);
-    const firstThursday = target.valueOf();
-    target.setMonth(0, 1);
-    if (target.getDay() !== 4) {
-      target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
-    }
-    return 1 + Math.ceil((firstThursday - target) / 604800000);
-  };
-
-  // Search filter - must be defined before calendar days
+  // Search filter
   const searchLower = searchQuery.toLowerCase();
   const innerRings = wheelStructure.rings.filter(ring => ring.type === 'inner');
   const outerRings = wheelStructure.rings.filter(ring => ring.type === 'outer');
@@ -317,27 +270,6 @@ function OrganizationPanel({
     const results = fuse.search(searchQuery);
     return results.map(result => result.item);
   }, [wheelStructure.items, searchQuery, activeView, year]);
-
-  // Generate calendar days
-  const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
-  const firstDay = getFirstDayOfMonth(selectedYear, selectedMonth);
-  const calendarDays = [];
-  
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push(null);
-  }
-  for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push(day);
-  }
-
-  // Get aktiviteter for selected month
-  const aktiviteterForMonth = filteredAktiviteter.filter(item => {
-    const monthStart = new Date(selectedYear, selectedMonth, 1);
-    const monthEnd = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59);
-    const itemStart = new Date(item.startDate);
-    const itemEnd = new Date(item.endDate);
-    return itemEnd >= monthStart && itemStart <= monthEnd;
-  });
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -526,7 +458,7 @@ function OrganizationPanel({
     
     // Reset search and filters
     setSearchQuery('');
-    setActiveView('disc');
+    setActiveView('structure');
     
     // Stop spinning after animation
     setTimeout(() => {
@@ -914,15 +846,15 @@ function OrganizationPanel({
         {/* View Tabs */}
         <div className="flex gap-6 mb-4 border-b border-gray-200">
           <button
-            onClick={() => setActiveView('disc')}
+            onClick={() => setActiveView('structure')}
             className={`pb-2 px-1 text-sm font-medium transition-colors relative ${
-              activeView === 'disc'
+              activeView === 'structure'
                 ? 'text-gray-900'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t('editor:tabs.disc')}
-            {activeView === 'disc' && (
+            {t('editor:tabs.structure')}
+            {activeView === 'structure' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
             )}
           </button>
@@ -940,40 +872,27 @@ function OrganizationPanel({
             )}
           </button>
           <button
-            onClick={() => setActiveView('kalender')}
+            onClick={() => setActiveView('filter')}
             className={`pb-2 px-1 text-sm font-medium transition-colors relative ${
-              activeView === 'kalender'
+              activeView === 'filter'
                 ? 'text-gray-900'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t('editor:tabs.calendar')}
-            {activeView === 'kalender' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveView('zoom')}
-            className={`pb-2 px-1 text-sm font-medium transition-colors relative ${
-              activeView === 'zoom'
-                ? 'text-gray-900'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t('editor:tabs.zoom', 'Zoom')}
-            {activeView === 'zoom' && (
+            {t('editor:tabs.filter', 'Filtrera')}
+            {activeView === 'filter' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
             )}
           </button>
         </div>
 
-        {/* Zoom Status Indicator - Show when zoomed in */}
-        {(zoomedMonth !== null || zoomedQuarter !== null) && activeView !== 'zoom' && (
+        {/* Filter Status Indicator - Show when filtered */}
+        {(zoomedMonth !== null || zoomedQuarter !== null) && activeView !== 'filter' && (
           <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-sm flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
               <span className="text-xs font-medium text-blue-900">
-                {t('zoom:zoomedIn')}
+                {t('zoom:filtered')}
                 {zoomedMonth !== null && `: ${t(`common:months.${zoomedMonth}`)}`}
                 {zoomedQuarter !== null && `: Q${zoomedQuarter + 1}`}
               </span>
@@ -1138,140 +1057,7 @@ function OrganizationPanel({
           </div>
         )}
 
-        {activeView === 'kalender' && (
-          <div className="p-4">
-            {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-6">
-              <button
-                onClick={() => {
-                  const newDate = new Date(selectedYear, selectedMonth - 1, 1);
-                  setSelectedMonth(newDate.getMonth());
-                  setSelectedYear(newDate.getFullYear());
-                }}
-                className="p-2 hover:bg-gray-100 rounded transition-colors"
-              >
-                <ChevronLeft size={20} className="text-gray-600" />
-              </button>
-              <h3 className="text-base font-semibold text-gray-900">
-                {monthNames[selectedMonth]} {selectedYear}
-              </h3>
-              <button
-                onClick={() => {
-                  const newDate = new Date(selectedYear, selectedMonth + 1, 1);
-                  setSelectedMonth(newDate.getMonth());
-                  setSelectedYear(newDate.getFullYear());
-                }}
-                className="p-2 hover:bg-gray-100 rounded transition-colors"
-              >
-                <ChevronRight size={20} className="text-gray-600" />
-              </button>
-            </div>
-
-            {/* Timeline View - Activities grouped by day */}
-            <div className="space-y-1">
-              {aktiviteterForMonth.length > 0 ? (
-                (() => {
-                  // Group activities by start date
-                  const activitiesByDate = aktiviteterForMonth.reduce((acc, event) => {
-                    const startDate = new Date(event.startDate);
-                    const dateKey = `${startDate.getFullYear()}-${startDate.getMonth()}-${startDate.getDate()}`;
-                    if (!acc[dateKey]) {
-                      acc[dateKey] = {
-                        date: startDate,
-                        activities: []
-                      };
-                    }
-                    acc[dateKey].activities.push(event);
-                    return acc;
-                  }, {});
-
-                  // Sort by date
-                  const sortedDates = Object.values(activitiesByDate).sort(
-                    (a, b) => a.date - b.date
-                  );
-
-                  return sortedDates.map(({ date, activities }) => {
-                    const weekNumber = getWeekNumber(date);
-                    const dayName = daysOfWeek[date.getDay() === 0 ? 6 : date.getDay() - 1];
-                    
-                    return (
-                      <div key={date.toISOString()} className="mb-4">
-                        {/* Date Header */}
-                        <div className="flex items-baseline gap-2 mb-2 px-2">
-                          <span className="text-xs font-semibold text-gray-900">
-                            {dayName} {date.getDate()} {monthNames[date.getMonth()].slice(0, 3)}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            v.{weekNumber}
-                          </span>
-                        </div>
-                        
-                        {/* Activities for this date */}
-                        <div className="space-y-1 pl-4 border-l-2 border-gray-200">
-                          {activities.map(event => {
-                            const activityGroup = (wheelStructure.activityGroups || []).find(a => a.id === event.activityId);
-                            const ring = wheelStructure.rings.find(r => r.id === event.ringId);
-                            const endDate = new Date(event.endDate);
-                            const isSameDay = date.toDateString() === endDate.toDateString();
-                            
-                            return (
-                              <div
-                                key={event.id}
-                                className="group flex items-start gap-2 p-2 bg-white border border-gray-200 rounded hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
-                                onClick={() => setEditingAktivitet(event)}
-                              >
-                                <div
-                                  className="w-1 h-full rounded flex-shrink-0 -ml-2"
-                                  style={{ backgroundColor: activityGroup?.color || '#D1D5DB' }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-gray-900 mb-0.5">
-                                    {event.name}
-                                  </div>
-                                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <span>{ring?.name}</span>
-                                    {!isSameDay && (
-                                      <>
-                                        <span>•</span>
-                                        <span>till {endDate.getDate()} {monthNames[endDate.getMonth()].slice(0, 3)}</span>
-                                      </>
-                                    )}
-                                    {event.time && (
-                                      <>
-                                        <span>•</span>
-                                        <span>{event.time}</span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                                <Edit2 size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  });
-                })()
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-sm text-gray-500 mb-4">
-                    {t('editor:calendar.noActivities')}
-                  </p>
-                  <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium"
-                  >
-                    <Plus size={16} />
-                    <span>{t('editor:activities.addActivity')}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeView === 'zoom' && (
+        {activeView === 'filter' && (
           <>
             {/* MÅNADER Section */}
             <div className="px-4 py-3 border-b border-gray-200">
@@ -1325,7 +1111,7 @@ function OrganizationPanel({
           </>
         )}
 
-        {activeView === 'disc' && (
+        {activeView === 'structure' && (
         <>
         {/* INNERRINGAR Section */}
         <div className="px-4 py-3 border-b border-gray-200">

@@ -1,14 +1,18 @@
 {
-  "months": "Months",
-  "quarters": "Quarters",
+  "months": {
+    "title": "Months"
+  },
+  "quarters": {
+    "title": "Quarters"
+  },
   "activities": "activities",
   "resetToFullYear": "Reset to full year view",
-  "clickMonthToZoom": "Click on a month to zoom in",
-  "clickQuarterToZoom": "Click on a quarter to zoom in",
+  "clickMonthToFilter": "Click on a month to filter",
+  "clickQuarterToFilter": "Click on a quarter to filter",
   "q1Months": "Jan-Mar",
   "q2Months": "Apr-Jun",
   "q3Months": "Jul-Sep",
   "q4Months": "Oct-Dec",
-  "zoomedIn": "Zoomed view active",
+  "filtered": "Filtered view active",
   "clickToReset": "Click to reset"
 }

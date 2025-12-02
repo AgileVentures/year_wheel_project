@@ -13,10 +13,10 @@
     "labels": "Labels"
   },
   "tabs": {
-    "disc": "Disc",
+    "structure": "Structure",
     "list": "List",
     "calendar": "Calendar",
-    "zoom": "Zoom"
+    "filter": "Filter"
   },
   "zoom": {
     "quarters": "Quarters",

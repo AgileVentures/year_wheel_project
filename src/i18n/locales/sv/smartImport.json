@@ -39,9 +39,12 @@
     "activitiesWillBeImported": "{{count}} aktiviteter kommer att importeras",
     "firstExamples": "Första 3 exempel:",
     "summary": {
-      "readyToImport": "Redo att importera",
+      "readyToImport": "Redo att importera!",
       "actionNeeded": "Åtgärd krävs",
+      "reviewNeeded": "Kontrollera innan import",
       "quickStats": "{{rings}} ringar · {{groups}} grupper · {{activities}} aktiviteter",
+      "customize": "Anpassa ringar & grupper",
+      "hideCustomize": "Dölj anpassningar",
       "editColumns": "Redigera kolumner",
       "editRingsGroups": "Redigera ringar & grupper",
       "viewPreview": "Visa förhandsvisning",
@@ -74,6 +77,23 @@
       "previewCount": "För prestanda visar vi en förhandsgranskning av {{preview}} aktiviteter här.",
       "allWillImport": "✅ Alla {{total}} aktiviteter kommer att importeras när du klickar \"Importera\".",
       "timeEstimate": "⏰ Import tar uppskattningsvis {{time}}. Du får ett email när importen är klar."
+    },
+    "teamSection": {
+      "heading": "Personer upptäckta i data",
+      "description": "{{count}} personer hittades i din CSV. Du kan bjuda in dem att samarbeta.",
+      "enableTeam": "Skapa/använd team och bjud in",
+      "enableTeamDescription": "Välj att använda ett befintligt team eller skapa ett nytt",
+      "selectTeam": "Välj team",
+      "loadingTeams": "Laddar team...",
+      "selectTeamPlaceholder": "-- Välj team --",
+      "createNewTeam": "+ Skapa nytt team",
+      "teamName": "Teamnamn",
+      "selectPeople": "Välj personer att bjuda in",
+      "selectAll": "Välj alla",
+      "deselectAll": "Avmarkera alla",
+      "sendInvites": "Skicka inbjudningar via e-post",
+      "sendInvitesOn": "E-postinbjudningar skickas omedelbart",
+      "sendInvitesOff": "Personer läggs till som väntande (kan bjudas in senare)"
     }
   },
   "people": {
@@ -148,7 +168,9 @@
   },
   "teamSuccess": {
     "emailsSent": "Team skapat! {{sent}} email(s) skickade, {{pending}} väntar på email",
-    "pendingOnly": "Team skapat! {{pending}} inbjudan(ar) förberedda (email skickas inte automatiskt)"
+    "pendingOnly": "Team skapat! {{pending}} inbjudan(ar) förberedda (email skickas inte automatiskt)",
+    "reusedTeam": "Använder team \"{{teamName}}\". {{sent}} nya inbjudningar skickade, {{pending}} väntande",
+    "alreadyInvited": "redan inbjudna/medlemmar"
   },
   "consolidation": {
     "heading": "📊 Datakonsolidering",
