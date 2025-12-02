@@ -190,6 +190,17 @@
     "wheelView": "Wheel view",
     "calendarView": "Calendar view"
   },
+  "template": {
+    "enabled": "Wheel is now marked as template!",
+    "disabled": "Template marking removed"
+  },
+  "page": {
+    "created": "New page for {{year}} created!",
+    "createdWithStructure": "New page for {{year}} created with same structure!"
+  },
+  "smartCopy": {
+    "success": "SmartCopy: {{count}} activities copied to {{year}}!"
+  },
   "cookieConsent": {
     "title": "Cookie Settings",
     "description": "We use cookies to improve your experience on our website, personalize content and ads, provide social media features, and analyze our traffic. We also share information about your use of our website with our social media, advertising, and analytics partners.",
@@ -369,5 +380,9 @@
     "label": "Label",
     "start": "Start",
     "end": "End"
+  },
+  "sharing": {
+    "publicEnabled": "Wheel is now publicly shared!",
+    "publicDisabled": "Wheel is now private"
   }
 }

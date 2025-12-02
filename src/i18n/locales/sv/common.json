@@ -189,6 +189,17 @@
     "wheelView": "Hjulvy",
     "calendarView": "Kalendervy"
   },
+  "template": {
+    "enabled": "Hjulet är nu markerat som template!",
+    "disabled": "Template-markering borttagen"
+  },
+  "page": {
+    "created": "Ny sida för {{year}} skapad!",
+    "createdWithStructure": "Ny sida för {{year}} skapad med samma struktur!"
+  },
+  "smartCopy": {
+    "success": "SmartCopy: {{count}} aktiviteter kopierade till {{year}}!"
+  },
   "cookieConsent": {
     "title": "Cookie-inställningar",
     "description": "Vi använder cookies för att förbättra din upplevelse på vår webbplats, personalisera innehåll och annonser, tillhandahålla funktioner för sociala medier och analysera vår trafik. Vi delar också information om din användning av vår webbplats med våra partners för sociala medier, annonsering och analys.",
@@ -368,5 +379,9 @@
     "label": "Etikett",
     "start": "Start",
     "end": "Slut"
+  },
+  "sharing": {
+    "publicEnabled": "Hjulet är nu publikt delat!",
+    "publicDisabled": "Hjulet är nu privat"
   }
 }

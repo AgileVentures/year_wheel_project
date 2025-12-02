@@ -1,5 +1,6 @@
 import { X, FileText, Copy, Calendar, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { showToast } from '../utils/dialogs';
 
 /**
  * AddPageModal Component
@@ -15,7 +16,7 @@ export default function AddPageModal({
   onSmartCopy,
   isPremium = false
 }) {
-  const { t } = useTranslation(['editor']);
+  const { t } = useTranslation(['editor', 'subscription']);
   const currentYear = currentPage?.year || new Date().getFullYear();
   const nextYear = currentYear + 1;
 
@@ -44,13 +45,7 @@ export default function AddPageModal({
     // Check if option is premium and user doesn't have access
     if (option.isPremium && !isPremium) {
       // Show upgrade prompt instead of executing action
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: 'SmartCopy är en Premium-funktion. Uppgradera för att använda den!', 
-          type: 'info' 
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('subscription:upgradePrompt.smartCopy'), 'info');
       return;
     }
     

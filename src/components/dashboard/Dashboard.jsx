@@ -275,10 +275,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       }
       
       // Show success message
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('subscription:messages.activated'), type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('subscription:messages.activated'), 'success');
       
       // Refresh subscription data
       refreshSubscription();
@@ -303,13 +300,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
           console.log('[Dashboard] Stopped polling subscription status');
           
           // Show final message
-          const finalEvent = new CustomEvent('showToast', { 
-            detail: { 
-              message: t('subscription:messages.activatedFinal'), 
-              type: 'success' 
-            } 
-          });
-          window.dispatchEvent(finalEvent);
+          showToast(t('subscription:messages.activatedFinal'), 'success');
         }
       }, pollInterval);
       
@@ -429,10 +420,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       await refreshSubscription();
       setShowCreateModal(false);
       // Show success feedback
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.created'), type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.created'), 'success');
     } catch (err) {
       console.error('Error creating wheel:', err);
 
@@ -446,10 +434,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
         return;
       }
 
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.createError'), type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.createError'), 'error');
       throw err;
     }
   };
@@ -485,16 +470,10 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       // Refresh subscription to update wheel count
       await refreshSubscription();
       // Show success feedback
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.duplicated'), type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.duplicated'), 'success');
     } catch (err) {
       console.error('Error duplicating wheel:', err);
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.duplicateError'), type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.duplicateError'), 'error');
     }
   };
 
@@ -502,10 +481,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     try {
       await signOut(() => {
         // Show toast message
-        const event = new CustomEvent('showToast', {
-          detail: { message: t('auth:goodbyeMessage'), type: 'success' }
-        });
-        window.dispatchEvent(event);
+        showToast(t('auth:goodbyeMessage'), 'success');
         
         // Navigate to root path
         navigate('/');

@@ -9,7 +9,7 @@ import { MessageCircle, Send, Edit2, Trash2, MoreVertical } from 'lucide-react';
 import MentionInput from './MentionInput';
 import { useTeamMembers } from '../hooks/useTeamMembers';
 import { useAuth } from '../hooks/useAuth';
-import { showConfirmDialog } from '../utils/dialogs';
+import { showConfirmDialog, showToast } from '../utils/dialogs';
 import {
   getComments,
   createComment,
@@ -287,13 +287,7 @@ export function ItemCommentsPanel({ item, wheel }) {
     if (deleteError) {
       console.error('Error deleting comment:', deleteError);
       // Show error toast instead of alert
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: t('comments.error'), 
-          type: 'error' 
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('comments.error'), 'error');
     } else {
       loadComments();
     }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { produce, current, freeze } from 'immer';
+import { showToast } from '../utils/dialogs';
 
 /**
  * useUndoRedo Hook
@@ -502,21 +503,13 @@ export function useUndoRedo(initialState, options = {}) {
           // Redo: Ctrl+Shift+Z or Cmd+Shift+Z
           const label = redo();
           if (label) {
-            // Show toast with descriptive label
-            const event = new CustomEvent('showToast', {
-              detail: { message: `Gör om: ${label}`, type: 'info' }
-            });
-            window.dispatchEvent(event);
+            showToast('toast:redo.action', 'info', { label });
           }
         } else {
           // Undo: Ctrl+Z or Cmd+Z
           const label = undo();
           if (label) {
-            // Show toast with descriptive label
-            const event = new CustomEvent('showToast', {
-              detail: { message: `Ångra: ${label}`, type: 'info' }
-            });
-            window.dispatchEvent(event);
+            showToast('toast:undo.action', 'info', { label });
           }
         }
       }
@@ -526,10 +519,7 @@ export function useUndoRedo(initialState, options = {}) {
         e.preventDefault();
         const label = redo();
         if (label) {
-          const event = new CustomEvent('showToast', {
-            detail: { message: `Gör om: ${label}`, type: 'info' }
-          });
-          window.dispatchEvent(event);
+          showToast('toast:redo.action', 'info', { label });
         }
       }
     };

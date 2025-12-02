@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { X, FileSpreadsheet, FileText, Sheet, Download, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { showToast } from '../utils/dialogs';
 import { 
   exportToExcel, 
   exportToCSV, 
@@ -191,25 +192,19 @@ function ExportDataModal({
       }
 
       // Show success toast
-      const event = new CustomEvent('showToast', { 
-        detail: { 
-          message: selectedFormat === 'google_sheets' 
-            ? t('export:toast.googleSheets')
-            : t('export:toast.fileDownloaded'), 
-          type: 'success' 
-        } 
-      });
-      window.dispatchEvent(event);
+      showToast(
+        selectedFormat === 'google_sheets' 
+          ? t('export:toast.googleSheets')
+          : t('export:toast.fileDownloaded'), 
+        'success'
+      );
 
     } catch (err) {
       console.error('Export error:', err);
       setError(err.message || t('export:errors.exportFailed'));
       
       // Show error toast
-      const event = new CustomEvent('showToast', { 
-        detail: { message: err.message || t('export:errors.exportFailed'), type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast(err.message || t('export:errors.exportFailed'), 'error');
     } finally {
       setExporting(false);
     }

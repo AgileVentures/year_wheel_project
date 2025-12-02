@@ -5,6 +5,8 @@
  * instead of using window.confirm() and window.alert()
  */
 
+import i18n from '../i18n';
+
 /**
  * Show a confirmation dialog and return a promise that resolves with the user's choice
  * 
@@ -54,16 +56,34 @@ export function showConfirmDialog({
 /**
  * Show a toast notification
  * 
- * @param {string} message - Message to display
+ * Supports both direct messages and i18n translation keys.
+ * If the message starts with 'toast:' it will be treated as a translation key.
+ * 
+ * @param {string} message - Message to display OR translation key (e.g., 'toast:save.success')
  * @param {('success'|'error'|'info')} type - Toast type
+ * @param {Object} [interpolation] - Interpolation values for translation
  * 
  * @example
+ * // Direct message
  * showToast('Changes saved successfully!', 'success');
- * showToast('An error occurred', 'error');
+ * 
+ * // Using translation key
+ * showToast('toast:save.success', 'success');
+ * 
+ * // With interpolation
+ * showToast('toast:import.success', 'success', { count: 150 });
  */
-export function showToast(message, type = 'info') {
+export function showToast(message, type = 'info', interpolation = {}) {
+  let resolvedMessage = message;
+  
+  // If message starts with 'toast:', treat it as a translation key
+  if (message && message.startsWith('toast:')) {
+    const key = message.substring(6); // Remove 'toast:' prefix
+    resolvedMessage = i18n.t(`toast:${key}`, interpolation);
+  }
+  
   const event = new CustomEvent('showToast', {
-    detail: { message, type }
+    detail: { message: resolvedMessage, type }
   });
   window.dispatchEvent(event);
 }

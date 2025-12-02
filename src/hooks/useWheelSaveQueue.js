@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useSaveQueue } from './useSaveQueue';
 import { saveWheelSnapshot } from '../services/wheelService';
+import { showToast } from '../utils/dialogs';
 
 /**
  * useWheelSaveQueue Hook
@@ -97,12 +98,7 @@ export function useWheelSaveQueue(wheelId, options = {}) {
         // Keep queued changes flag true on error (retry will happen)
         
         // Show error toast
-        window.dispatchEvent(new CustomEvent('showToast', {
-          detail: { 
-            message: 'Kunde inte spara ändringar. Försöker igen...', 
-            type: 'error' 
-          }
-        }));
+        showToast('toast:save.retrying', 'error');
 
         // Call user callback
         if (onSaveError) {

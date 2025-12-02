@@ -1,0 +1,92 @@
+{
+  "save": {
+    "success": "Ändringar sparade",
+    "error": "Kunde inte spara ändringarna",
+    "autoSaved": "Autosparat",
+    "retrying": "Kunde inte spara ändringar. Försöker igen...",
+    "localChangesError": "Kunde inte spara lokala ändringar innan AI-uppdatering.",
+    "pageDataMissing": "Kunde inte spara eftersom siddata saknas. Ladda om hjulet och försök igen.",
+    "pageVerifyError": "Kunde inte verifiera siddata före sparning. Försök igen senare.",
+    "snapshotPagesError": "Kunde inte spara eftersom befintliga sidor saknas i snapshotet. Ladda om hjulet."
+  },
+  "wheel": {
+    "loadError": "Kunde inte ladda hjul",
+    "createError": "Kunde inte skapa hjul",
+    "deleteSuccess": "Hjul raderat",
+    "deleteError": "Kunde inte radera hjul",
+    "duplicateSuccess": "Hjul duplicerat",
+    "duplicateError": "Kunde inte duplicera hjul"
+  },
+  "page": {
+    "createSuccess": "Sida skapad",
+    "createError": "Kunde inte skapa sida",
+    "deleteSuccess": "Sida raderad",
+    "deleteError": "Kunde inte radera sida",
+    "duplicateSuccess": "Sida duplicerad!",
+    "duplicateError": "Kunde inte duplicera sida",
+    "nextYearError": "Kunde inte skapa nästa års sida"
+  },
+  "sharing": {
+    "updateError": "Kunde inte uppdatera delningsinställning",
+    "linkCopied": "Länk kopierad till urklipp",
+    "copyError": "Kunde inte kopiera länk"
+  },
+  "template": {
+    "updateError": "Kunde inte uppdatera template-status",
+    "loadError": "Kunde inte ladda mallen. Försök igen.",
+    "loadSuccess": "Mall \"{{name}}\" har laddats!"
+  },
+  "version": {
+    "restoreError": "Kunde inte återställa version",
+    "restoreSuccess": "Version återställd"
+  },
+  "file": {
+    "loadError": "Fel vid laddning av fil",
+    "saveError": "Fil laddad men kunde inte sparas",
+    "loadSuccess": "Fil laddad!",
+    "loadSuccessYears": "Fil laddad! {{count}} år importerade",
+    "fileSaved": "Fil sparad!",
+    "exportSuccess": "Export klar",
+    "exportError": "Export misslyckades"
+  },
+  "import": {
+    "success": "Import klar! {{count}} aktiviteter importerade.",
+    "error": "Import misslyckades: {{error}}",
+    "canceled": "Import avbruten",
+    "backgroundContinue": "Import fortsätter i bakgrunden. Du kommer att få ett meddelande när importen är klar."
+  },
+  "team": {
+    "createSuccess": "Team skapat",
+    "createError": "Kunde inte skapa team",
+    "inviteSent": "Inbjudan skickad",
+    "inviteError": "Kunde inte skicka inbjudan",
+    "reusedTeam": "Använder befintligt team \"{{teamName}}\". {{sent}} inbjudningar skickade, {{pending}} väntande.",
+    "alreadyInvited": "redan inbjudna"
+  },
+  "ai": {
+    "saveToLoad": "Spara dina ändringar så laddas AI-uppdateringarna in.",
+    "smartCopyError": "SmartCopy misslyckades: {{error}}"
+  },
+  "undo": {
+    "action": "Ångra: {{label}}",
+    "success": "Ångrat",
+    "error": "Kunde inte ångra",
+    "nothingToUndo": "Inget att ångra"
+  },
+  "redo": {
+    "action": "Gör om: {{label}}",
+    "success": "Gjort om",
+    "error": "Kunde inte göra om",
+    "nothingToRedo": "Inget att göra om"
+  },
+  "clipboard": {
+    "copied": "Kopierat till urklipp",
+    "copyError": "Kunde inte kopiera"
+  },
+  "generic": {
+    "success": "Klart!",
+    "error": "Något gick fel",
+    "loading": "Laddar...",
+    "resetSuccess": "Allt har återställts!"
+  }
+}

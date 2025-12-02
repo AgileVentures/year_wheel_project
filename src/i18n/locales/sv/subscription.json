@@ -87,6 +87,7 @@
   "upgradePrompt": {
     "defaultTitle": "Uppgradera till Premium",
     "aiAssistant": "AI-assistenten är en Premium-funktion. Uppgradera för att låsa upp AI-driven planering och designhjälp!",
+    "smartCopy": "SmartCopy är en Premium-funktion. Uppgradera för att använda den!",
     "currentUsage": "Nuvarande användning",
     "benefitsTitle": "Med Premium får du:",
     "benefit1": "AI-assisterad design och planering",

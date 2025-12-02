@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useImportProgress } from '../hooks/useImportProgress';
 import { createPendingInvitation, sendTeamInvitation, getUserTeams, createTeam as createTeamService, getTeam } from '../services/teamService';
+import { showToast } from '../utils/dialogs';
 
 /**
  * SmartImportModal - AI-powered CSV import with intelligent mapping
@@ -78,13 +79,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         
         // Show toast notification for background imports
         if (isBackgroundImport) {
-          const event = new CustomEvent('showToast', {
-            detail: {
-              message: `Import klar! ${importJobProgress.stats.createdItems || 0} aktiviteter importerade.`,
-              type: 'success'
-            }
-          });
-          window.dispatchEvent(event);
+          showToast('toast:import.success', 'success', { count: importJobProgress.stats.createdItems || 0 });
         }
         
         // Trigger parent's completion handler
@@ -114,13 +109,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       
       // Show toast notification for background imports
       if (isBackgroundImport) {
-        const event = new CustomEvent('showToast', {
-          detail: {
-            message: `Import misslyckades: ${importJobProgress.error || 'Okänt fel'}`,
-            type: 'error'
-          }
-        });
-        window.dispatchEvent(event);
+        showToast('toast:import.error', 'error', { error: importJobProgress.error || 'Unknown error' });
       }
       
       setError(importJobProgress.error || 'Import misslyckades');
@@ -197,13 +186,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
       setIsBackgroundImport(true);
       
       // Show toast notification
-      const event = new CustomEvent('showToast', {
-        detail: {
-          message: 'Import fortsätter i bakgrunden. Du kommer att få ett meddelande när importen är klar.',
-          type: 'info'
-        }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:import.backgroundContinue', 'info');
       
       onClose();
     } else {
@@ -983,24 +966,12 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         message += ` (${skippedExisting} ${t('teamSuccess.alreadyInvited')})`;
       }
       
-      const event = new CustomEvent('showToast', {
-        detail: {
-          message,
-          type: 'success'
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(message, 'success');
 
     } catch (err) {
       console.error('[SmartImport] Team creation error:', err);
       // Non-blocking - show toast but don't fail the import
-      const event = new CustomEvent('showToast', {
-        detail: {
-          message: t('errors.teamCreationError', { message: err.message }),
-          type: 'error'
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('errors.teamCreationError', { message: err.message }), 'error');
     }
   };
 

@@ -4,6 +4,7 @@ import { MoreVertical, Users, Calendar, Star } from 'lucide-react';
 import { getUserTeams, assignWheelToTeam, removeWheelFromTeam } from '../../services/teamService';
 import { fetchPages, toggleShowOnLanding } from '../../services/wheelService';
 import { supabase } from '../../lib/supabase';
+import { showToast } from '../../utils/dialogs';
 
 function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false }) {
   const { t, i18n } = useTranslation(['dashboard', 'common']);
@@ -96,16 +97,10 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
       setShowMenu(false);
       if (onUpdate) onUpdate();
       
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.movedToTeam'), type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.movedToTeam'), 'success');
     } catch (err) {
       console.error('Error moving wheel to team:', err);
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.moveError'), type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.moveError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -118,16 +113,10 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
       setShowMenu(false);
       if (onUpdate) onUpdate();
       
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.madePersonal'), type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.madePersonal'), 'success');
     } catch (err) {
       console.error('Error removing wheel from team:', err);
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.moveError'), type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.moveError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -144,16 +133,10 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
         ? 'dashboard:messages.removedFromLanding' 
         : 'dashboard:messages.addedToLanding';
       
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t(messageKey), type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t(messageKey), 'success');
     } catch (err) {
       console.error('Error toggling show on landing:', err);
-      const event = new CustomEvent('showToast', { 
-        detail: { message: t('dashboard:messages.toggleError'), type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast(t('dashboard:messages.toggleError'), 'error');
     } finally {
       setLoading(false);
     }

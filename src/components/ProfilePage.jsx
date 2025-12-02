@@ -143,10 +143,7 @@ function ProfilePage({ onBack }) {
     try {
       await signOut(() => {
         // Show toast message
-        const event = new CustomEvent('showToast', {
-          detail: { message: t('auth:goodbyeMessage'), type: 'success' }
-        });
-        window.dispatchEvent(event);
+        showToast(t('auth:goodbyeMessage'), 'success');
         
         // Navigate to root path
         navigate('/');

@@ -14,6 +14,7 @@ import { useDeviceDetection } from '../hooks/useDeviceDetection';
 import { CAST_MESSAGE_TYPES, HEARTBEAT_INTERVAL_MS } from '../constants/castMessages';
 import { useRealtimeWheel } from '../hooks/useRealtimeWheel';
 import { useCanonicalUrl } from '../hooks/useCanonicalUrl';
+import { showToast } from '../utils/dialogs';
 
 /**
  * PreviewWheelPage - Public read-only view of a wheel
@@ -249,10 +250,7 @@ function PreviewWheelPage() {
       localStorage.setItem('pendingTemplateCopy', JSON.stringify(templateIntent));
       console.log('[PreviewWheelPage] Stored template copy intent:', templateIntent);
       
-      const event = new CustomEvent('showToast', {
-        detail: { message: t('common:previewWheelPage.loginToCopy'), type: 'info' }
-      });
-      window.dispatchEvent(event);
+      showToast(t('common:previewWheelPage.loginToCopy'), 'info');
       
       // Redirect to auth page
       navigate('/auth');
@@ -378,10 +376,7 @@ function PreviewWheelPage() {
         ? `${t('common:previewWheelPage.templateCopied')} (${totalItemsCopied} aktiviteter)`
         : t('common:previewWheelPage.templateCopied');
       
-      const event = new CustomEvent('showToast', {
-        detail: { message: successMessage, type: 'success' }
-      });
-      window.dispatchEvent(event);
+      showToast(successMessage, 'success');
       
       navigate(`/dashboard/wheel/${newWheelId}`);
     } catch (error) {
@@ -389,18 +384,12 @@ function PreviewWheelPage() {
 
       const isWheelLimitError = error?.code === 'wheel_limit_reached' || error?.message === 'WHEEL_LIMIT_REACHED';
       if (isWheelLimitError) {
-        const limitEvent = new CustomEvent('showToast', {
-          detail: { message: t('subscription:limitReached.upgradePrompt'), type: 'warning' }
-        });
-        window.dispatchEvent(limitEvent);
+        showToast(t('subscription:limitReached.upgradePrompt'), 'warning');
         navigate('/pricing');
         return;
       }
 
-      const event = new CustomEvent('showToast', {
-        detail: { message: t('common:previewWheelPage.copyFailed'), type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast(t('common:previewWheelPage.copyFailed'), 'error');
     } finally {
       setIsCopying(false);
     }
@@ -441,13 +430,7 @@ function PreviewWheelPage() {
           localStorage.removeItem('pendingTemplateCopy');
           
           // Show info toast
-          const event = new CustomEvent('showToast', {
-            detail: { 
-              message: t('common:previewWheelPage.processingTemplate'), 
-              type: 'info' 
-            }
-          });
-          window.dispatchEvent(event);
+          showToast(t('common:previewWheelPage.processingTemplate'), 'info');
           
           // Small delay to ensure all data is loaded
           setTimeout(() => {

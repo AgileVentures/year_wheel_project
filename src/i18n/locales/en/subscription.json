@@ -87,6 +87,7 @@
   "upgradePrompt": {
     "defaultTitle": "Upgrade to Premium",
     "aiAssistant": "AI Assistant is a Premium feature. Upgrade to unlock AI-powered planning and design assistance!",
+    "smartCopy": "SmartCopy is a Premium feature. Upgrade to use it!",
     "currentUsage": "Current usage",
     "benefitsTitle": "With Premium you get:",
     "benefit1": "AI-assisted design and planning",

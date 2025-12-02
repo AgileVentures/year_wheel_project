@@ -726,14 +726,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const premiumFormats = ['png', 'jpeg', 'pdf'];
     
     if (!isPremium && premiumFormats.includes(format)) {
-      // Show toast to inform user
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: t('subscription:upgradePrompt.defaultTitle'), 
-          type: 'info' 
-        }
-      });
-      window.dispatchEvent(event);
+      // Show toast to inform user - using direct t() since key is in subscription namespace
+      showToast(t('subscription:upgradePrompt.defaultTitle'), 'info');
       return; // Don't change the format
     }
     
@@ -818,13 +812,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           handleSaveRef.current({ silent: true, reason: 'ai-assistant-refresh' })
             .catch((autoSaveError) => {
               console.error('[loadWheelData] Auto-save before AI refresh failed:', autoSaveError);
-              const event = new CustomEvent('showToast', {
-                detail: {
-                  message: 'Kunde inte spara lokala ändringar innan AI-uppdatering.',
-                  type: 'error',
-                },
-              });
-              window.dispatchEvent(event);
+              showToast('toast:save.localChangesError', 'error');
             })
             .finally(() => {
               autoSaveInFlightRef.current = false;
@@ -832,13 +820,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
 
         if (!alreadyPending && !silent) {
-          const event = new CustomEvent('showToast', {
-            detail: {
-              message: 'Spara dina ändringar så laddas AI-uppdateringarna in.',
-              type: 'info',
-            },
-          });
-          window.dispatchEvent(event);
+          showToast('toast:ai.saveToLoad', 'info');
         }
         return { status: 'deferred', reason, source, scope };
       }
@@ -1208,10 +1190,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     } catch (error) {
       console.error('Error loading wheel:', error);
-      const event = new CustomEvent('showToast', { 
-        detail: { message: 'Kunde inte ladda hjul', type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast('toast:wheel.loadError', 'error');
       reloadStatus = 'error';
     } finally {
       // CRITICAL: Keep isLoadingData true for a bit longer to prevent
@@ -1709,13 +1688,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const knownPages = Array.isArray(pagesRef.current) ? pagesRef.current : [];
 
         if (knownPages.length > 0) {
-          const event = new CustomEvent('showToast', {
-            detail: {
-              message: 'Kunde inte spara eftersom siddata saknas. Ladda om hjulet och försök igen.',
-              type: 'error',
-            },
-          });
-          window.dispatchEvent(event);
+          showToast('toast:save.pageDataMissing', 'error');
           return null;
         }
 
@@ -1732,24 +1705,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
           existingPagesCount = dbPageCount || 0;
         } catch (pageLookupError) {
-          const event = new CustomEvent('showToast', {
-            detail: {
-              message: 'Kunde inte verifiera siddata före sparning. Försök igen senare.',
-              type: 'error',
-            },
-          });
-          window.dispatchEvent(event);
+          showToast('toast:save.pageVerifyError', 'error');
           return null;
         }
 
         if (existingPagesCount > 0) {
-          const event = new CustomEvent('showToast', {
-            detail: {
-              message: 'Kunde inte spara eftersom befintliga sidor saknas i snapshotet. Ladda om hjulet.',
-              type: 'error',
-            },
-          });
-          window.dispatchEvent(event);
+          showToast('toast:save.snapshotPagesError', 'error');
           return null;
         }
 
@@ -1939,10 +1900,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         validation,
       };
     } catch (error) {
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte spara ändringarna', type: 'error' },
-      });
-      window.dispatchEvent(event);
+      showToast('toast:save.error', 'error');
       throw error;
     } finally {
       isSavingRef.current = false;
@@ -2147,21 +2105,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       await updateWheel(wheelId, { is_public: newIsPublic });
       
       const message = newIsPublic 
-        ? 'Hjulet är nu publikt delat!' 
-        : 'Hjulet är nu privat';
+        ? t('common:sharing.publicEnabled') 
+        : t('common:sharing.publicDisabled');
       
-      const event = new CustomEvent('showToast', { 
-        detail: { message, type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(message, 'success');
     } catch (error) {
       console.error('Error toggling public status:', error);
       setIsPublic(!isPublic); // Revert on error
       
-      const event = new CustomEvent('showToast', { 
-        detail: { message: 'Kunde inte uppdatera delningsinställning', type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast('toast:sharing.updateError', 'error');
     }
   };
 
@@ -2276,21 +2228,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       await toggleTemplateStatus(wheelId, newIsTemplate);
       
       const message = newIsTemplate 
-        ? 'Hjulet är nu markerat som template!' 
-        : 'Template-markering borttagen';
+        ? t('common:template.enabled') 
+        : t('common:template.disabled');
       
-      const event = new CustomEvent('showToast', { 
-        detail: { message, type: 'success' } 
-      });
-      window.dispatchEvent(event);
+      showToast(message, 'success');
     } catch (error) {
       console.error('Error toggling template status:', error);
       setIsTemplate(!isTemplate); // Revert on error
       
-      const event = new CustomEvent('showToast', { 
-        detail: { message: error.message || 'Kunde inte uppdatera template-status', type: 'error' } 
-      });
-      window.dispatchEvent(event);
+      showToast('toast:template.updateError', 'error');
     }
   };
 
@@ -2428,16 +2374,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       setShowAddPageModal(false);
       
-      const event = new CustomEvent('showToast', {
-        detail: { message: `Ny sida för ${newYear} skapad!`, type: 'success' }
-      });
-      window.dispatchEvent(event);
+      showToast(t('common:page.created', { year: newYear }), 'success');
     } catch (error) {
       console.error('Error creating blank page:', error);
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte skapa sida', type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:page.createError', 'error');
     }
   };
 
@@ -2500,16 +2440,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       setShowAddPageModal(false);
       
-      const event = new CustomEvent('showToast', {
-        detail: { message: `Ny sida för ${nextYear} skapad med samma struktur!`, type: 'success' }
-      });
-      window.dispatchEvent(event);
+      showToast(t('common:page.createdWithStructure', { year: nextYear }), 'success');
     } catch (error) {
       console.error('Error creating next year page:', error);
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte skapa nästa års sida', type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:page.nextYearError', 'error');
     }
   };
 
@@ -2599,12 +2533,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       await enqueueFullSave('smart-copy');
 
-      showToast(`SmartCopy: ${itemsToSave.length} aktiviteter kopierade till ${nextYear}!`, 'success');
+      showToast(t('common:smartCopy.success', { count: itemsToSave.length, year: nextYear }), 'success');
     } catch (error) {
-      const event = new CustomEvent('showToast', {
-        detail: { message: `SmartCopy misslyckades: ${error.message}`, type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:ai.smartCopyError', 'error', { error: error.message });
     }
   };
 
@@ -2800,16 +2731,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         };
       });
       
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Sida duplicerad!', type: 'success' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:page.duplicateSuccess', 'success');
     } catch (error) {
       console.error('Error duplicating page:', error);
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte duplicera sida', type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:page.duplicateError', 'error');
     }
   };
 
@@ -2863,16 +2788,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         clearHistory();
       }
       
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Sida raderad', type: 'success' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:page.deleteSuccess', 'success');
     } catch (error) {
       console.error('Error deleting page:', error);
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte radera sida', type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:page.deleteError', 'error');
     }
   };
 
@@ -2994,7 +2913,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isLoadingData.current = false;
       isRestoringVersion.current = false;
 
-      showToast('Version återställd!', 'success');
+      showToast('toast:version.restoreSuccess', 'success');
       setShowVersionHistory(false);
     } catch (error) {
       console.error('Error restoring version:', error);
@@ -3004,10 +2923,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isLoadingData.current = false;
       isRestoringVersion.current = false;
       
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte återställa version', type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:version.restoreError', 'error');
     }
   };
 
@@ -3067,10 +2983,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     localStorage.removeItem("yearWheelData");
     
     // Show success feedback
-    const event = new CustomEvent('showToast', { 
-      detail: { message: 'Allt har återställts!', type: 'success' } 
-    });
-    window.dispatchEvent(event);
+    showToast('toast:generic.resetSuccess', 'success');
   };
 
   const handleTemplateSelect = async (templateId) => {
@@ -3214,18 +3127,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       clearHistory();
       markSaved();
 
-      const successMessage = `Mall "${templateData.title}" har laddats!`;
-      const event = new CustomEvent('showToast', {
-        detail: { message: successMessage, type: 'success' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:template.loadSuccess', 'success', { name: templateData.title });
 
     } catch (error) {
       console.error('Error loading template:', error);
-      const event = new CustomEvent('showToast', {
-        detail: { message: 'Kunde inte ladda mallen. Försök igen.', type: 'error' }
-      });
-      window.dispatchEvent(event);
+      showToast('toast:template.loadError', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -3353,10 +3259,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     URL.revokeObjectURL(url);
 
     // Show success feedback
-    const event = new CustomEvent('showToast', { 
-      detail: { message: 'Fil sparad!', type: 'success' } 
-    });
-    window.dispatchEvent(event);
+    showToast('toast:file.fileSaved', 'success');
   };
 
   const persistItemToDatabase = useCallback((item, options = {}) => {
@@ -4202,10 +4105,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               showToast(`Fil laddad! ${sortedPreparedPages.length} år importerade`, 'success');
             } catch (saveError) {
               saveFailed = true;
-              const errorEvent = new CustomEvent('showToast', { 
-                detail: { message: 'Fil laddad men kunde inte sparas', type: 'error' } 
-              });
-              window.dispatchEvent(errorEvent);
+              showToast('toast:file.saveError', 'error');
               // Continue to update state even if save failed (user can see data, try to save manually)
             }
           }
@@ -4246,10 +4146,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
           if (!wheelId) {
             // localStorage mode - show success after state update
-            const toastEvent = new CustomEvent('showToast', { 
-              detail: { message: 'Fil laddad!', type: 'success' } 
-            });
-            window.dispatchEvent(toastEvent);
+            showToast('toast:file.loadSuccess', 'success');
           }
           
           // Re-enable realtime and auto-save after a short delay
@@ -4265,10 +4162,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           isLoadingData.current = false;
           isRealtimeUpdate.current = false;
           
-          const toastEvent = new CustomEvent('showToast', { 
-            detail: { message: 'Fel vid laddning av fil', type: 'error' } 
-          });
-          window.dispatchEvent(toastEvent);
+          showToast('toast:file.loadError', 'error');
         }
       };
 
@@ -4428,13 +4322,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onToggleAI={wheelId ? () => {
           if (!isPremium) {
             // Show upgrade prompt for non-premium users
-            const event = new CustomEvent('showToast', {
-              detail: { 
-                message: t('subscription:upgradePrompt.aiAssistant'), 
-                type: 'info' 
-              }
-            });
-            window.dispatchEvent(event);
+            showToast(t('subscription:upgradePrompt.aiAssistant'), 'info');
             return;
           }
           setIsAIOpen(!isAIOpen);
@@ -4444,13 +4332,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onStartAIOnboarding={() => {
           if (!isPremium) {
             // Show upgrade prompt for non-premium users
-            const event = new CustomEvent('showToast', {
-              detail: { 
-                message: t('subscription:upgradePrompt.aiAssistant'), 
-                type: 'info' 
-              }
-            });
-            window.dispatchEvent(event);
+            showToast(t('subscription:upgradePrompt.aiAssistant'), 'info');
             return;
           }
           // Ensure AI window is open before starting guide

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, History, User, Clock, RotateCcw, Eye, Trash2, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { listVersions, restoreVersion, deleteVersion, getVersion } from '../services/wheelService';
-import { showConfirmDialog } from '../utils/dialogs';
+import { showConfirmDialog, showToast } from '../utils/dialogs';
 import YearWheel from '../YearWheel';
 
 /**
@@ -63,24 +63,12 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       await onRestore(data);
       
       // Show success message
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: t('editor:versionHistory.restored', { number: version.version_number }), 
-          type: 'success' 
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('editor:versionHistory.restored', { number: version.version_number }), 'success');
       
       onClose();
     } catch (err) {
       console.error('Error restoring version:', err);
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: t('editor:versionHistory.restoreError'), 
-          type: 'error' 
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('editor:versionHistory.restoreError'), 'error');
     } finally {
       setIsRestoring(false);
     }
@@ -92,13 +80,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       setPreviewVersion(fullVersion);
     } catch (err) {
       console.error('Error loading version preview:', err);
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: t('editor:versionHistory.previewError'), 
-          type: 'error' 
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('editor:versionHistory.previewError'), 'error');
     }
   };
 
@@ -119,22 +101,10 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
       await deleteVersion(version.id);
       setVersions(versions.filter(v => v.id !== version.id));
       
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: t('editor:versionHistory.deleted'), 
-          type: 'success' 
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('editor:versionHistory.deleted'), 'success');
     } catch (err) {
       console.error('Error deleting version:', err);
-      const event = new CustomEvent('showToast', {
-        detail: { 
-          message: t('editor:versionHistory.deleteError'), 
-          type: 'error' 
-        }
-      });
-      window.dispatchEvent(event);
+      showToast(t('editor:versionHistory.deleteError'), 'error');
     }
   };
 

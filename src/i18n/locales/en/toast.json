@@ -1,0 +1,92 @@
+{
+  "save": {
+    "success": "Changes saved",
+    "error": "Could not save changes",
+    "autoSaved": "Auto-saved",
+    "retrying": "Could not save changes. Retrying...",
+    "localChangesError": "Could not save local changes before AI update.",
+    "pageDataMissing": "Could not save because page data is missing. Reload the wheel and try again.",
+    "pageVerifyError": "Could not verify page data before saving. Please try again later.",
+    "snapshotPagesError": "Could not save because existing pages are missing from snapshot. Reload the wheel."
+  },
+  "wheel": {
+    "loadError": "Could not load wheel",
+    "createError": "Could not create wheel",
+    "deleteSuccess": "Wheel deleted",
+    "deleteError": "Could not delete wheel",
+    "duplicateSuccess": "Wheel duplicated",
+    "duplicateError": "Could not duplicate wheel"
+  },
+  "page": {
+    "createSuccess": "Page created",
+    "createError": "Could not create page",
+    "deleteSuccess": "Page deleted",
+    "deleteError": "Could not delete page",
+    "duplicateSuccess": "Page duplicated!",
+    "duplicateError": "Could not duplicate page",
+    "nextYearError": "Could not create next year's page"
+  },
+  "sharing": {
+    "updateError": "Could not update sharing settings",
+    "linkCopied": "Link copied to clipboard",
+    "copyError": "Could not copy link"
+  },
+  "template": {
+    "updateError": "Could not update template status",
+    "loadError": "Could not load template. Please try again.",
+    "loadSuccess": "Template \"{{name}}\" has been loaded!"
+  },
+  "version": {
+    "restoreError": "Could not restore version",
+    "restoreSuccess": "Version restored"
+  },
+  "file": {
+    "loadError": "Error loading file",
+    "saveError": "File loaded but could not be saved",
+    "loadSuccess": "File loaded!",
+    "loadSuccessYears": "File loaded! {{count}} years imported",
+    "fileSaved": "File saved!",
+    "exportSuccess": "Export complete",
+    "exportError": "Export failed"
+  },
+  "import": {
+    "success": "Import complete! {{count}} activities imported.",
+    "error": "Import failed: {{error}}",
+    "canceled": "Import canceled",
+    "backgroundContinue": "Import continues in background. You will receive a notification when complete."
+  },
+  "team": {
+    "createSuccess": "Team created",
+    "createError": "Could not create team",
+    "inviteSent": "Invitation sent",
+    "inviteError": "Could not send invitation",
+    "reusedTeam": "Using existing team \"{{teamName}}\". {{sent}} invitations sent, {{pending}} pending.",
+    "alreadyInvited": "already invited"
+  },
+  "ai": {
+    "saveToLoad": "Save your changes to load AI updates.",
+    "smartCopyError": "SmartCopy failed: {{error}}"
+  },
+  "undo": {
+    "action": "Undo: {{label}}",
+    "success": "Undone",
+    "error": "Could not undo",
+    "nothingToUndo": "Nothing to undo"
+  },
+  "redo": {
+    "action": "Redo: {{label}}",
+    "success": "Redone",
+    "error": "Could not redo",
+    "nothingToRedo": "Nothing to redo"
+  },
+  "clipboard": {
+    "copied": "Copied to clipboard",
+    "copyError": "Could not copy"
+  },
+  "generic": {
+    "success": "Done!",
+    "error": "Something went wrong",
+    "loading": "Loading...",
+    "resetSuccess": "Everything has been reset!"
+  }
+}
