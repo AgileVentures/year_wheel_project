@@ -105,4 +105,9 @@ i18n
     },
   });
 
+// Expose i18n for testing
+if (typeof window !== 'undefined') {
+  window.__i18n = i18n;
+}
+
 export default i18n;

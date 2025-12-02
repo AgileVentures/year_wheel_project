@@ -202,6 +202,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
             }}
             className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 bg-white/80 backdrop-blur-sm rounded-sm opacity-0 group-hover:opacity-100"
             title={t('common:actions.more', { defaultValue: 'More options' })}
+            data-cy="wheel-card-menu"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
@@ -273,6 +274,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
                   }}
                   className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
                   disabled={loading}
+                  data-cy="wheel-delete-button"
                 >
                   {t('dashboard:wheel.delete')}
                 </button>

@@ -14,7 +14,9 @@
     "cy:open:component": "cypress open --component",
     "cy:run:component": "cypress run --component",
     "cy:dev": "start-server-and-test dev http://localhost:5173 cy:open",
-    "cy:test": "start-server-and-test dev http://localhost:5173 cy:run"
+    "cy:test": "start-server-and-test dev http://localhost:5173 cy:run",
+    "cy:run:spec": "cypress run --spec $CYPRESS_SPEC",
+    "cy:test:spec": "start-server-and-test dev http://localhost:5173 cy:run:spec"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.48",

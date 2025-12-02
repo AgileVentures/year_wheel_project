@@ -53,6 +53,7 @@ function LanguageSwitcher({ className = '' }) {
       className={`flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors ${className}`}
       title={`${otherLang.name}`}
       aria-label={`Switch language to ${otherLang.name}`}
+      data-cy="language-switcher"
     >
       <span className="flex items-center" role="img" aria-label={currentLang.name}>
         <FlagComponent />

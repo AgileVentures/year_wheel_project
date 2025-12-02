@@ -105,6 +105,7 @@ function ConfirmDialog() {
             <button
               onClick={handleConfirm}
               className={`px-4 py-2 text-sm font-medium rounded-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${dialog.confirmButtonClass}`}
+              data-cy="confirm-dialog-confirm"
             >
               {dialog.confirmText}
             </button>

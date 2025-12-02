@@ -72,7 +72,7 @@ export default function CreateWheelModal({ onClose, onCreate }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-sm shadow-xl max-w-md w-full my-8">
+      <div className="bg-white rounded-sm shadow-xl max-w-md w-full my-8" data-cy="create-wheel-modal">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
           <h2 className="text-xl font-semibold text-gray-900">{t('dashboard:createWheel')}</h2>
           <button
