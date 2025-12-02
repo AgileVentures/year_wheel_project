@@ -354,12 +354,19 @@ export default function NewsletterManager() {
         if (error) throw error;
         showToast(t('messages.draftUpdated'), 'success');
       } else {
-        // Create new draft
-        const { error } = await supabase
+        // Create new draft and capture the ID for future updates
+        const { data, error } = await supabase
           .from('newsletter_sends')
-          .insert([draftData]);
+          .insert([draftData])
+          .select()
+          .single();
 
         if (error) throw error;
+        
+        // Set the editing draft ID so subsequent saves update instead of creating new
+        if (data?.id) {
+          setEditingDraftId(data.id);
+        }
         showToast(t('messages.draftSaved'), 'success');
       }
 
@@ -393,6 +400,49 @@ export default function NewsletterManager() {
     });
   };
 
+  // Reset form to start a new newsletter
+  const resetForm = () => {
+    setEditingDraftId(null);
+    setSubject('');
+    setRecipientType('all');
+    setTemplateType('composite');
+    setCustomEmails('');
+    setTagline('Visualisera och planera ditt år!');
+    setPreview(null);
+    setNewsletter({
+      heading: '',
+      intro: '',
+      sections: [{ title: '', content: '', showLink: false, link: { text: '', url: '' } }],
+      cta: { text: '', url: '' },
+      ps: ''
+    });
+    setFeature({
+      feature: '',
+      description: '',
+      benefits: [''],
+      screenshot: '',
+      cta: { text: '', url: '' }
+    });
+    setTips({
+      title: '',
+      intro: '',
+      tips: [{ title: '', description: '', link: { text: '', url: '' } }],
+      cta: { text: '', url: '' }
+    });
+    setAnnouncement({
+      title: '',
+      message: '',
+      cta: { text: '', url: '' }
+    });
+    setComposite({
+      heading: '',
+      intro: '',
+      sections: [],
+      cta: { text: '', url: '' },
+      ps: ''
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header with back navigation */}
@@ -412,7 +462,29 @@ export default function NewsletterManager() {
         {/* Editor */}
         <div className="space-y-6">
           <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('newNewsletter')}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {editingDraftId ? t('editDraft', 'Redigera utkast') : t('newNewsletter')}
+              </h2>
+              {editingDraftId && (
+                <button
+                  onClick={resetForm}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  <X size={16} />
+                  {t('startNew', 'Skapa nytt')}
+                </button>
+              )}
+            </div>
+            
+            {/* Editing indicator */}
+            {editingDraftId && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-sm">
+                <p className="text-sm text-amber-800">
+                  {t('editingDraftInfo', 'Du redigerar ett sparat utkast. Ändringar sparas till samma utkast.')}
+                </p>
+              </div>
+            )}
             
             {/* Recipients */}
             <div className="mb-4">

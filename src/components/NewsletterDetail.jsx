@@ -1,25 +1,43 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, CheckCircle, AlertCircle, MousePointer, UserMinus, ExternalLink, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { newsletterTemplate, featureAnnouncementTemplate, tipsTemplate, simpleAnnouncementTemplate } from '../utils/emailTemplates';
+import { newsletterTemplate, featureAnnouncementTemplate, tipsTemplate, simpleAnnouncementTemplate, compositeTemplate } from '../utils/emailTemplates';
 
-export default function NewsletterDetail({ send, onClose }) {
+export default function NewsletterDetail({ send: initialSend, onClose }) {
+  const [send, setSend] = useState(initialSend);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [preview, setPreview] = useState('');
 
   useEffect(() => {
+    loadNewsletterData();
     loadEvents();
     generatePreview();
-  }, [send.id]);
+  }, [initialSend.id]);
+
+  // Refresh newsletter data to get latest stats
+  const loadNewsletterData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('newsletter_sends')
+        .select('*')
+        .eq('id', initialSend.id)
+        .single();
+
+      if (error) throw error;
+      if (data) setSend(data);
+    } catch (error) {
+      console.error('Error loading newsletter data:', error);
+    }
+  };
 
   const loadEvents = async () => {
     try {
       const { data, error } = await supabase
         .from('newsletter_events')
         .select('*')
-        .eq('newsletter_send_id', send.id)
+        .eq('newsletter_send_id', initialSend.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -39,6 +57,9 @@ export default function NewsletterDetail({ send, onClose }) {
 
     let html = '';
     switch (send.template_type) {
+      case 'composite':
+        html = compositeTemplate(send.template_data);
+        break;
       case 'newsletter':
         html = newsletterTemplate(send.template_data);
         break;
@@ -52,7 +73,7 @@ export default function NewsletterDetail({ send, onClose }) {
         html = simpleAnnouncementTemplate(send.template_data);
         break;
       default:
-        html = '<p>Okänd malltyp</p>';
+        html = '<p>Okänd malltyp: ' + send.template_type + '</p>';
     }
     setPreview(html);
   };
