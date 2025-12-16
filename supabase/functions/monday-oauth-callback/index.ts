@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 const MONDAY_CLIENT_ID = '82c44e2678c2b6e8723cf2d69b900250' // Public - safe to expose
 const MONDAY_CLIENT_SECRET = Deno.env.get('MONDAY_CLIENT_SECRET') // REQUIRED: Set in Supabase secrets
 const MONDAY_APP_ID = '10727736' // Public - safe to expose
-const REDIRECT_URI = 'https://yearwheel.se/auth/monday/callback'
+const REDIRECT_URI = 'https://mmysvuymzabstnobdfvo.supabase.co/functions/v1/monday-oauth-callback'
 
 if (!MONDAY_CLIENT_SECRET) {
   console.error('MONDAY_CLIENT_SECRET environment variable is required')
