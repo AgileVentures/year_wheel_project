@@ -41,14 +41,6 @@ const WheelCalendarView = ({
     defaultDate: initialDate
   });
 
-  // Navigate to today when component mounts (if today is in the wheel year)
-  useEffect(() => {
-    const today = new Date();
-    if (today.getFullYear() === yearNum) {
-      navigation.setToday();
-    }
-  }, [navigation, yearNum]);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
 

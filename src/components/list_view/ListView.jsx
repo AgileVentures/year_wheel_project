@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 import EditItemModal from '../EditItemModal';
 import AddItemModal from '../AddItemModal';
+import ConfirmDialog from '../ConfirmDialog';
 
 /**
  * ListView Component
@@ -34,6 +35,7 @@ const ListView = ({
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [editingItem, setEditingItem] = useState(null);
   const [addItemRingId, setAddItemRingId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   
   // Convert year to number for comparison
   const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
@@ -136,12 +138,15 @@ const ListView = ({
   };
   
   const handleDeleteSelected = () => {
-    if (window.confirm(t('listView.confirmDelete', `Är du säker på att du vill ta bort ${selectedItems.size} aktiviteter?`))) {
-      selectedItems.forEach(itemId => {
-        onDeleteItem(itemId);
-      });
-      setSelectedItems(new Set());
-    }
+    setConfirmDelete(true);
+  };
+  
+  const confirmDeleteAction = () => {
+    selectedItems.forEach(itemId => {
+      onDeleteItem(itemId);
+    });
+    setSelectedItems(new Set());
+    setConfirmDelete(false);
   };
   
   return (
@@ -421,6 +426,20 @@ const ListView = ({
           }}
           onClose={() => setAddItemRingId(null)}
           preselectedRingId={addItemRingId}
+        />
+      )}
+      
+      {/* Confirm Delete Dialog */}
+      {confirmDelete && (
+        <ConfirmDialog
+          isOpen={confirmDelete}
+          title={t('listView.deleteTitle', 'Ta bort aktiviteter')}
+          message={t('listView.confirmDelete', `Är du säker på att du vill ta bort ${selectedItems.size} aktiviteter?`)}
+          confirmLabel={t('common:actions.delete', 'Ta bort')}
+          cancelLabel={t('common:actions.cancel', 'Avbryt')}
+          onConfirm={confirmDeleteAction}
+          onCancel={() => setConfirmDelete(false)}
+          variant="danger"
         />
       )}
     </div>
