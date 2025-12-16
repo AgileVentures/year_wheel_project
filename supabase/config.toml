@@ -12,3 +12,7 @@ verify_jwt = false
 # Resend webhook - must be publicly accessible (Resend sends webhooks without JWT)
 [functions.resend-webhook]
 verify_jwt = false
+
+# Monday.com webhook - must be publicly accessible (Monday sends webhooks without JWT)
+[functions.monday-webhook]
+verify_jwt = false
