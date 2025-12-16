@@ -600,3 +600,46 @@ export const getNewsletterStats = async () => {
     return null;
   }
 };
+
+/**
+ * Get Monday.com users
+ */
+export const getMondayUsers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('monday_users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching Monday users:', error);
+    return [];
+  }
+};
+
+/**
+ * Get Monday.com subscription events
+ */
+export const getMondayEvents = async (userId = null, limit = 100) => {
+  try {
+    let query = supabase
+      .from('monday_subscription_events')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (userId) {
+      query = query.eq('monday_user_id', userId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching Monday events:', error);
+    return [];
+  }
+};

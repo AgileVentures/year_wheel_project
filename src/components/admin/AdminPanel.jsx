@@ -7,6 +7,7 @@ import AdminUsersTable from './AdminUsersTable';
 import AdminActivity from './AdminActivity';
 import AdminAffiliates from './AdminAffiliates';
 import AdminEmailStats from './AdminEmailStats';
+import AdminMondayUsers from './AdminMondayUsers';
 import {
   Activity,
   TrendingUp,
@@ -14,6 +15,7 @@ import {
   Users,
   DollarSign,
   Mail,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -25,6 +27,7 @@ import {
   getSubscriptionStats,
   getQuizLeadsStats,
   getNewsletterStats,
+  getMondayUsers,
 } from '../../services/adminService';
 import { checkIsAdmin } from '../../services/wheelService';
 
@@ -43,6 +46,7 @@ export default function AdminPanel() {
   const [subscriptionStats, setSubscriptionStats] = useState(null);
   const [quizLeadsStats, setQuizLeadsStats] = useState(null);
   const [newsletterStats, setNewsletterStats] = useState(null);
+  const [mondayUsers, setMondayUsers] = useState([]);
   
   // Pagination & filters
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,6 +95,7 @@ export default function AdminPanel() {
         subStats,
         quizStats,
         emailStats,
+        mondayData,
       ] = await Promise.all([
         getAdminStats(),
         getUsers({ page: currentPage, limit: 50, search: searchQuery, sortBy, sortOrder }),
@@ -100,6 +105,7 @@ export default function AdminPanel() {
         getSubscriptionStats(),
         getQuizLeadsStats(),
         getNewsletterStats(),
+        getMondayUsers(),
       ]);
       
       setStats(statsData);
@@ -111,6 +117,7 @@ export default function AdminPanel() {
       setSubscriptionStats(subStats);
       setQuizLeadsStats(quizStats);
       setNewsletterStats(emailStats);
+      setMondayUsers(mondayData);
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
@@ -219,6 +226,17 @@ export default function AdminPanel() {
               {t('affiliates')}
             </button>
             <button
+              onClick={() => setActiveTab('monday')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'monday'
+                  ? 'border-gray-900 text-gray-900'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Calendar size={16} className="inline mr-2" />
+              Monday.com
+            </button>
+            <button
               onClick={() => navigate('/newsletter')}
               className="px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >
@@ -257,6 +275,13 @@ export default function AdminPanel() {
 
         {activeTab === 'affiliates' && (
           <AdminAffiliates />
+        )}
+
+        {activeTab === 'monday' && (
+          <AdminMondayUsers 
+            mondayUsers={mondayUsers}
+            onRefresh={loadData}
+          />
         )}
       </div>
     </div>
