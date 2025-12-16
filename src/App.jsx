@@ -4455,6 +4455,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 onUpdateItem={handleUpdateAktivitet}
                 onDeleteItem={handleDeleteAktivitet}
                 onAddItems={handleAddItems}
+                currentWheelId={wheelId}
               />
             </div>
           )}

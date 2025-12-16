@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Plus, Trash2, Edit2, Calendar, User } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, Edit2, Calendar, User, MoveVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
+import EditItemModal from '../EditItemModal';
 
 /**
  * ListView Component
@@ -15,16 +16,19 @@ import { sv, enUS } from 'date-fns/locale';
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
  * @param {Function} onAddItems - Callback when new items are added (expects array)
+ * @param {string} currentWheelId - Current wheel ID for edit modal
  */
 const ListView = ({ 
   wheelStructure, 
   year,
   onUpdateItem,
   onDeleteItem,
-  onAddItems
+  onAddItems,
+  currentWheelId
 }) => {
   const { t, i18n } = useTranslation();
   const [expandedRings, setExpandedRings] = useState({});
+  const [selectedItems, setSelectedItems] = useState(new Set());
   const [editingItem, setEditingItem] = useState(null);
   
   // Convert year to number for comparison
@@ -111,17 +115,102 @@ const ListView = ({
       : t('listView.outerRing', 'Ytterring');
   };
   
+  const handleToggleItem = (itemId) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+  
+  const handleToggleAll = (ringItems) => {
+    const allSelected = ringItems.every(item => selectedItems.has(item.id));
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      ringItems.forEach(item => {
+        if (allSelected) {
+          newSet.delete(item.id);
+        } else {
+          newSet.add(item.id);
+        }
+      });
+      return newSet;
+    });
+  };
+  
+  const handleMoveToRing = (itemIds, targetRingId) => {
+    itemIds.forEach(itemId => {
+      const item = wheelStructure.items.find(i => i.id === itemId);
+      if (item) {
+        onUpdateItem({ ...item, ringId: targetRingId });
+      }
+    });
+    setSelectedItems(new Set());
+  };
+  
+  const handleDeleteSelected = () => {
+    if (window.confirm(t('listView.confirmDelete', `Är du säker på att du vill ta bort ${selectedItems.size} aktiviteter?`))) {
+      selectedItems.forEach(itemId => {
+        onDeleteItem(itemId);
+      });
+      setSelectedItems(new Set());
+    }
+  };
+  
   return (
     <div className="w-full h-full bg-gray-50 overflow-auto p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            {t('listView.title', 'Listvy')}
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {t('listView.subtitle', 'Aktiviteter grupperade efter ringar')}
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">
+                {t('listView.title', 'Listvy')}
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('listView.subtitle', 'Aktiviteter grupperade efter ringar')}
+              </p>
+            </div>
+            
+            {/* Bulk Actions */}
+            {selectedItems.size > 0 && (
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                <span className="text-sm font-medium text-blue-900">
+                  {selectedItems.size} {t('listView.selected', 'valda')}
+                </span>
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleMoveToRing(Array.from(selectedItems), e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                  className="text-sm border border-blue-300 rounded px-2 py-1"
+                >
+                  <option value="">{t('listView.moveToRing', 'Flytta till ring...')}</option>
+                  {wheelStructure.rings.map(ring => (
+                    <option key={ring.id} value={ring.id}>{ring.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleDeleteSelected}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  {t('common:actions.delete', 'Ta bort')}
+                </button>
+                <button
+                  onClick={() => setSelectedItems(new Set())}
+                  className="text-sm text-gray-600 hover:text-gray-700"
+                >
+                  {t('listView.clearSelection', 'Rensa')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Rings List */}
@@ -176,12 +265,19 @@ const ListView = ({
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
+                          <th className="px-4 py-2 text-left w-8">
+                            <input 
+                              type="checkbox" 
+                              checked={items.every(item => selectedItems.has(item.id))}
+                              onChange={() => handleToggleAll(items)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.item', 'Aktivitet')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {t('listView.person', 'Person')}
+                            {t('listView.ringType', 'Ring-typ')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.status', 'Status')}
@@ -192,19 +288,24 @@ const ListView = ({
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.timeline', 'Tidslinje')}
                           </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                            {t('listView.actions', 'Åtgärder')}
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
                         {items.map((item) => {
                           const itemActivityGroup = getActivityGroup(item.activityId);
                           const startDate = new Date(item.startDate);
+                          const isSelected = selectedItems.has(item.id);
                           
                           return (
-                            <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
+                            <tr key={item.id} className={`hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-blue-50' : ''}`}>
                               <td className="px-4 py-3">
                                 <input 
                                   type="checkbox" 
+                                  checked={isSelected}
+                                  onChange={() => handleToggleItem(item.id)}
                                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                               </td>
@@ -216,21 +317,32 @@ const ListView = ({
                                     className="w-3 h-3 rounded flex-shrink-0"
                                     style={{ backgroundColor: itemActivityGroup?.color || '#D1D5DB' }}
                                   />
-                                  <span className="text-sm font-medium text-gray-900">
+                                  <button
+                                    onClick={() => setEditingItem(item)}
+                                    className="text-sm font-medium text-gray-900 hover:text-blue-600 text-left"
+                                  >
                                     {item.name}
-                                  </span>
+                                  </button>
                                 </div>
                               </td>
                               
-                              {/* Person (placeholder) */}
+                              {/* Ring Type Selector */}
                               <td className="px-4 py-3">
-                                <div className="flex items-center gap-2 text-gray-400">
-                                  <User size={16} />
-                                  <span className="text-sm">-</span>
-                                </div>
+                                <select
+                                  value={item.ringId}
+                                  onChange={(e) => onUpdateItem({ ...item, ringId: e.target.value })}
+                                  className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {wheelStructure.rings.map(r => (
+                                    <option key={r.id} value={r.id}>
+                                      {r.name} ({getRingTypeLabel(r.type)})
+                                    </option>
+                                  ))}
+                                </select>
                               </td>
                               
-                              {/* Status (placeholder) */}
+                              {/* Status */}
                               <td className="px-4 py-3">
                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
                                   {itemActivityGroup?.name || t('listView.noStatus', 'Ingen status')}
@@ -254,13 +366,22 @@ const ListView = ({
                               
                               {/* Actions */}
                               <td className="px-4 py-3">
-                                <button
-                                  onClick={() => onDeleteItem(item.id)}
-                                  className="text-gray-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                                  title={t('listView.delete', 'Ta bort')}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => setEditingItem(item)}
+                                    className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                                    title={t('listView.edit', 'Redigera')}
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => onDeleteItem(item.id)}
+                                    className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                                    title={t('listView.delete', 'Ta bort')}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -296,6 +417,18 @@ const ListView = ({
           </div>
         )}
       </div>
+      
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          wheelStructure={wheelStructure}
+          onUpdateItem={onUpdateItem}
+          onDeleteItem={onDeleteItem}
+          onClose={() => setEditingItem(null)}
+          currentWheelId={currentWheelId}
+        />
+      )}
     </div>
   );
 };

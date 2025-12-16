@@ -400,12 +400,19 @@
     "date": "Date",
     "timeline": "Timeline",
     "delete": "Delete",
+    "edit": "Edit",
+    "actions": "Actions",
+    "ringType": "Ring type",
     "innerRing": "Inner ring",
     "outerRing": "Outer ring",
     "noRings": "No rings found. Create rings to get started.",
     "noActivityGroups": "You must create at least one activity group first",
     "noStatus": "No status",
-    "newItem": "New item"
+    "newItem": "New item",
+    "selected": "selected",
+    "moveToRing": "Move to ring...",
+    "clearSelection": "Clear",
+    "confirmDelete": "Are you sure you want to delete {{count}} items?"
   },
   "sharing": {
     "publicEnabled": "Wheel is now publicly shared!",

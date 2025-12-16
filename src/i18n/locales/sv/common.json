@@ -399,12 +399,19 @@
     "date": "Datum",
     "timeline": "Tidslinje",
     "delete": "Ta bort",
+    "edit": "Redigera",
+    "actions": "Åtgärder",
+    "ringType": "Ring-typ",
     "innerRing": "Innerring",
     "outerRing": "Ytterring",
     "noRings": "Inga ringar hittades. Skapa ringar för att komma igång.",
     "noActivityGroups": "Du måste skapa minst en aktivitetsgrupp först",
     "noStatus": "Ingen status",
-    "newItem": "Ny aktivitet"
+    "newItem": "Ny aktivitet",
+    "selected": "valda",
+    "moveToRing": "Flytta till ring...",
+    "clearSelection": "Rensa",
+    "confirmDelete": "Är du säker på att du vill ta bort {{count}} aktiviteter?"
   },
   "sharing": {
     "publicEnabled": "Hjulet är nu publikt delat!",
