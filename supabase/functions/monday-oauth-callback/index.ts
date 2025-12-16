@@ -113,15 +113,26 @@ serve(async (req) => {
       console.log('Found existing profile:', existingProfile.id)
       userId = existingProfile.id
       
-      // Update Monday user link
-      await supabaseAdmin
+      // Upsert Monday user record (create or update)
+      const { error: upsertError } = await supabaseAdmin
         .from('monday_users')
-        .update({ 
+        .upsert({ 
+          monday_user_id: parseInt(me.id),
+          monday_email: me.email,
+          name: me.name,
+          monday_account_id: parseInt(me.account?.id || '0'),
+          monday_account_name: me.account?.name || '',
+          monday_account_slug: me.account?.slug || '',
           profile_id: existingProfile.id,
           monday_access_token: access_token,
           last_active_at: new Date().toISOString()
+        }, {
+          onConflict: 'monday_user_id'
         })
-        .eq('monday_user_id', parseInt(me.id))
+      
+      if (upsertError) {
+        console.error('Failed to upsert Monday user:', upsertError)
+      }
     } else {
       // Create new Supabase user
       console.log('Creating new user...')
@@ -143,15 +154,26 @@ serve(async (req) => {
       userId = newUser.user.id
       console.log('Created new user:', userId)
       
-      // Update Monday user link
-      await supabaseAdmin
+      // Upsert Monday user record
+      const { error: upsertError } = await supabaseAdmin
         .from('monday_users')
-        .update({ 
+        .upsert({ 
+          monday_user_id: parseInt(me.id),
+          monday_email: me.email,
+          name: me.name,
+          monday_account_id: parseInt(me.account?.id || '0'),
+          monday_account_name: me.account?.name || '',
+          monday_account_slug: me.account?.slug || '',
           profile_id: userId,
           monday_access_token: access_token,
           last_active_at: new Date().toISOString()
+        }, {
+          onConflict: 'monday_user_id'
         })
-        .eq('monday_user_id', parseInt(me.id))
+      
+      if (upsertError) {
+        console.error('Failed to upsert Monday user:', upsertError)
+      }
     }
     
     // Create session using generateLink
