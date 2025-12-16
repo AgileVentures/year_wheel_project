@@ -11,7 +11,6 @@ import ConfirmDialog from '../ConfirmDialog';
  * ListView Component
  * 
  * Displays wheel items (activities) in a list/table view grouped by rings
- * Similar to Monday.com-style board view
  * 
  * @param {Object} wheelStructure - Contains rings, activityGroups, labels, and items
  * @param {number} year - Current year being displayed

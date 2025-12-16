@@ -1,7 +1,7 @@
 /**
  * CalendarDayBox Component
  *
- * Displays a single day in the calendar with activity indicators as user icons
+ * Displays a single day in the calendar with activity indicators as colored dots
  *
  * @param {Date} day - The date object representing the day
  * @param {boolean} isToday - Indicates if the day is today
@@ -24,11 +24,6 @@ const CalendarDayBox = ({
 }) => {
   const dayNumber = day.getDate();
   const totalItems = items.length;
-  
-  // Debug logging for days with items
-  if (totalItems > 0) {
-    console.log(`[CalendarDayBox] Day ${dayNumber} has ${totalItems} items:`, items.map(i => i.name));
-  }
 
   const renderIcons = () => {
     if (totalItems === 0) return null;
