@@ -172,8 +172,10 @@ serve(async (req) => {
     // Extract token from hashed_token
     const token = linkData.properties.hashed_token
     
-    // Redirect to app with token
-    const redirectUrl = `https://yearwheel.se/auth/callback?token_hash=${token}&type=magiclink`
+    // Redirect to app with token and Monday user marker
+    const redirectUrl = `https://yearwheel.se/auth/callback?token_hash=${token}&type=magiclink&monday_user=true`
+    
+    console.log('Redirecting to:', redirectUrl)
     
     return new Response(null, {
       status: 302,
