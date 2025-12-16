@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Plus, Trash2, Edit2, Calendar, User, MoveVertical } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, Edit2, Calendar, User, MoveVertical, Eye } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
@@ -19,6 +19,7 @@ import ConfirmDialog from '../ConfirmDialog';
  * @param {Function} onDeleteItem - Callback when item is deleted
  * @param {Function} onAddItems - Callback when new items are added (expects array)
  * @param {Function} onOrganizationChange - Callback when organization structure changes
+ * @param {Function} onNavigateToItemOnWheel - Callback to navigate to item on wheel
  * @param {string} currentWheelId - Current wheel ID for edit modal
  */
 const ListView = ({ 
@@ -28,6 +29,7 @@ const ListView = ({
   onDeleteItem,
   onAddItems,
   onOrganizationChange,
+  onNavigateToItemOnWheel,
   currentWheelId
 }) => {
   const { t, i18n } = useTranslation();
@@ -36,6 +38,7 @@ const ListView = ({
   const [editingItem, setEditingItem] = useState(null);
   const [addItemRingId, setAddItemRingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
   
   // Convert year to number for comparison
   const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
@@ -147,6 +150,17 @@ const ListView = ({
     });
     setSelectedItems(new Set());
     setConfirmDelete(false);
+  };
+  
+  const handleDeleteSingleItem = (item) => {
+    setItemToDelete(item);
+  };
+  
+  const confirmDeleteSingleItem = () => {
+    if (itemToDelete) {
+      onDeleteItem(itemToDelete.id);
+      setItemToDelete(null);
+    }
   };
   
   return (
@@ -352,6 +366,15 @@ const ListView = ({
                               {/* Actions */}
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {onNavigateToItemOnWheel && (
+                                    <button
+                                      onClick={() => onNavigateToItemOnWheel(item.id)}
+                                      className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                                      title={t('listView.showInWheel', 'Visa i hjul')}
+                                    >
+                                      <Eye size={16} />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => setEditingItem(item)}
                                     className="text-gray-400 hover:text-blue-600 transition-colors p-1"
@@ -360,7 +383,7 @@ const ListView = ({
                                     <Edit2 size={16} />
                                   </button>
                                   <button
-                                    onClick={() => onDeleteItem(item.id)}
+                                    onClick={() => handleDeleteSingleItem(item)}
                                     className="text-gray-400 hover:text-red-600 transition-colors p-1"
                                     title={t('listView.delete', 'Ta bort')}
                                   >
@@ -439,6 +462,20 @@ const ListView = ({
           cancelLabel={t('common:actions.cancel', 'Avbryt')}
           onConfirm={confirmDeleteAction}
           onCancel={() => setConfirmDelete(false)}
+          variant="danger"
+        />
+      )}
+      
+      {/* Confirm Delete Single Item Dialog */}
+      {itemToDelete && (
+        <ConfirmDialog
+          isOpen={!!itemToDelete}
+          title={t('listView.deleteTitle', 'Ta bort aktivitet')}
+          message={t('listView.confirmDeleteSingle', `Är du säker på att du vill ta bort "${itemToDelete.name}"?`)}
+          confirmLabel={t('common:actions.delete', 'Ta bort')}
+          cancelLabel={t('common:actions.cancel', 'Avbryt')}
+          onConfirm={confirmDeleteSingleItem}
+          onCancel={() => setItemToDelete(null)}
           variant="danger"
         />
       )}

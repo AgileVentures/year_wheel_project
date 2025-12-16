@@ -411,7 +411,10 @@
     "selected": "valda",
     "moveToRing": "Flytta till ring...",
     "clearSelection": "Rensa",
-    "confirmDelete": "Är du säker på att du vill ta bort {{count}} aktiviteter?"
+    "confirmDelete": "Är du säker på att du vill ta bort {{count}} aktiviteter?",
+    "deleteTitle": "Ta bort aktiviteter",
+    "confirmDeleteSingle": "Är du säker på att du vill ta bort aktiviteten?",
+    "showInWheel": "Visa i hjul"
   },
   "sharing": {
     "publicEnabled": "Hjulet är nu publikt delat!",

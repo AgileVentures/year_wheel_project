@@ -412,7 +412,10 @@
     "selected": "selected",
     "moveToRing": "Move to ring...",
     "clearSelection": "Clear",
-    "confirmDelete": "Are you sure you want to delete {{count}} items?"
+    "confirmDelete": "Are you sure you want to delete {{count}} activities?",
+    "deleteTitle": "Delete activities",
+    "confirmDeleteSingle": "Are you sure you want to delete this activity?",
+    "showInWheel": "Show in wheel"
   },
   "sharing": {
     "publicEnabled": "Wheel is now publicly shared!",

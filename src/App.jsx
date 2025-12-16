@@ -4456,6 +4456,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 onDeleteItem={handleDeleteAktivitet}
                 onAddItems={handleAddItems}
                 onOrganizationChange={setWheelStructure}
+                onNavigateToItemOnWheel={handleNavigateToItemOnWheel}
                 currentWheelId={wheelId}
               />
             </div>
