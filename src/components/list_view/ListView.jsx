@@ -177,19 +177,29 @@ const ListView = ({
     setDropTargetRingId(null);
   };
   
-  const handleDragOver = (e, ringId) => {
+  const handleDragEnter = (e, ringId) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
     setDropTargetRingId(ringId);
   };
   
-  const handleDragLeave = () => {
-    setDropTargetRingId(null);
+  const handleDragOver = (e, ringId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+  
+  const handleDragLeave = (e, ringId) => {
+    // Only clear if we're leaving the ring container itself, not child elements
+    if (e.currentTarget === e.target) {
+      setDropTargetRingId(null);
+    }
   };
   
   const handleDrop = (e, targetRingId) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('Drop event:', { draggedItem, targetRingId });
     if (draggedItem && draggedItem.ringId !== targetRingId) {
+      console.log('Updating item ring from', draggedItem.ringId, 'to', targetRingId);
       onUpdateItem({ ...draggedItem, ringId: targetRingId });
     }
     setDraggedItem(null);
@@ -255,16 +265,22 @@ const ListView = ({
             const activityGroup = getActivityGroup(items[0]?.activityId);
             
             return (
-              <div key={ringId} className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+              <div 
+                key={ringId} 
+                className={`bg-white rounded-sm shadow-sm border overflow-hidden transition-all ${
+                  dropTargetRingId === ringId ? 'border-blue-400 ring-2 ring-blue-200 bg-blue-50' : 'border-gray-200'
+                }`}
+                onDragEnter={(e) => handleDragEnter(e, ringId)}
+                onDragOver={(e) => handleDragOver(e, ringId)}
+                onDragLeave={(e) => handleDragLeave(e, ringId)}
+                onDrop={(e) => handleDrop(e, ringId)}
+              >
                 {/* Ring Header */}
                 <div 
                   className={`flex items-center justify-between px-4 py-3 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors ${
-                    dropTargetRingId === ringId ? 'bg-blue-100 border-blue-400' : 'bg-gray-50'
+                    dropTargetRingId === ringId ? 'bg-blue-100' : 'bg-gray-50'
                   }`}
                   onClick={() => toggleRing(ringId)}
-                  onDragOver={(e) => handleDragOver(e, ringId)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, ringId)}
                 >
                   <div className="flex items-center gap-3">
                     <button 
