@@ -18,6 +18,10 @@ serve(async (req) => {
     authUrl.searchParams.set('client_id', MONDAY_CLIENT_ID)
     authUrl.searchParams.set('redirect_uri', REDIRECT_URI)
     authUrl.searchParams.set('state', state)
+    // Add required scopes - Monday requires at least one scope
+    authUrl.searchParams.set('scope', 'me:read')
+    
+    console.log('OAuth URL:', authUrl.toString())
     
     // Redirect to Monday OAuth
     headers.set('Location', authUrl.toString())
