@@ -161,7 +161,7 @@ const ListView = ({
             
             {/* Bulk Actions */}
             {selectedItems.size > 0 && (
-              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-sm px-4 py-2">
                 <span className="text-sm font-medium text-blue-900">
                   {selectedItems.size} {t('listView.selected', 'valda')}
                 </span>
@@ -203,7 +203,7 @@ const ListView = ({
             const activityGroup = getActivityGroup(items[0]?.activityId);
             
             return (
-              <div key={ringId} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div key={ringId} className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
                 {/* Ring Header */}
                 <div 
                   className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
@@ -267,7 +267,7 @@ const ListView = ({
                           <th className="px-4 py-2 text-left w-8">
                             <input 
                               type="checkbox" 
-                              checked={items.every(item => selectedItems.has(item.id))}
+                              checked={items.length > 0 && items.every(item => selectedItems.has(item.id))}
                               onChange={() => handleToggleAll(items)}
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
@@ -339,7 +339,7 @@ const ListView = ({
                               
                               {/* Timeline */}
                               <td className="px-4 py-3">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white">
                                   {formatDateRange(item.startDate, item.endDate)}
                                 </span>
                               </td>
