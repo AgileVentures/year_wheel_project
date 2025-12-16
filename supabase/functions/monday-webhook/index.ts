@@ -125,6 +125,13 @@ serve(async (req) => {
 async function handleInstall(payload: MondayWebhookPayload, supabaseAdmin: any) {
   console.log('Handling install for user:', payload.data.user_id)
 
+  // Check if a YearWheel user exists with this email
+  const { data: existingProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('email', payload.data.user_email)
+    .single()
+
   const userData = {
     monday_user_id: payload.data.user_id,
     monday_account_id: payload.data.account_id,
@@ -138,7 +145,9 @@ async function handleInstall(payload: MondayWebhookPayload, supabaseAdmin: any) 
     subscription_status: 'active',
     current_plan: 'free',
     uninstalled_at: null,
-    last_active_at: new Date().toISOString()
+    last_active_at: new Date().toISOString(),
+    // Auto-link to existing YearWheel account if found
+    profile_id: existingProfile?.id || null
   }
 
   // Upsert user (update if exists, insert if new)
@@ -154,6 +163,9 @@ async function handleInstall(payload: MondayWebhookPayload, supabaseAdmin: any) 
   }
 
   console.log('User installed successfully:', data.id)
+  if (existingProfile) {
+    console.log('Auto-linked to existing profile:', existingProfile.id)
+  }
 }
 
 async function handleUninstall(payload: MondayWebhookPayload, supabaseAdmin: any) {
