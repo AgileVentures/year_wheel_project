@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 import EditItemModal from '../EditItemModal';
+import AddItemModal from '../AddItemModal';
 
 /**
  * ListView Component
@@ -30,6 +31,7 @@ const ListView = ({
   const [expandedRings, setExpandedRings] = useState({});
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [editingItem, setEditingItem] = useState(null);
+  const [addItemRingId, setAddItemRingId] = useState(null);
   
   // Convert year to number for comparison
   const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
@@ -69,28 +71,7 @@ const ListView = ({
   };
   
   const handleAddItemToRing = (ringId) => {
-    // Get the ring's first activity group, or the first available one
-    const firstActivityGroup = (wheelStructure.activityGroups || [])[0];
-    if (!firstActivityGroup) {
-      alert(t('listView.noActivityGroups', 'Du måste skapa minst en aktivitetsgrupp först'));
-      return;
-    }
-    
-    const newItem = {
-      id: `item-${Date.now()}`,
-      name: t('listView.newItem', 'Ny aktivitet'),
-      ringId: ringId,
-      activityId: firstActivityGroup.id,
-      labelId: null,
-      startDate: new Date(yearNum, 0, 1).toISOString().split('T')[0],
-      endDate: new Date(yearNum, 0, 7).toISOString().split('T')[0],
-      time: '',
-      description: ''
-    };
-    
-    if (onAddItems) {
-      onAddItems([newItem]); // Wrap in array since handler expects array
-    }
+    setAddItemRingId(ringId);
   };
   
   const formatDateRange = (startDate, endDate) => {
@@ -247,16 +228,18 @@ const ListView = ({
                     </span>
                   </div>
                   
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddItemToRing(ringId);
-                    }}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                  >
-                    <Plus size={16} />
-                    {t('listView.addItem', 'Lägg till')}
-                  </button>
+                  {isExpanded && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddItemToRing(ringId);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                    >
+                      <Plus size={16} />
+                      {t('listView.addItem', 'Lägg till')}
+                    </button>
+                  )}
                 </div>
                 
                 {/* Items Table */}
@@ -427,6 +410,20 @@ const ListView = ({
           onDeleteItem={onDeleteItem}
           onClose={() => setEditingItem(null)}
           currentWheelId={currentWheelId}
+        />
+      )}
+      
+      {/* Add Item Modal */}
+      {addItemRingId && (
+        <AddItemModal
+          wheelStructure={wheelStructure}
+          year={yearNum}
+          onAddItem={(items) => {
+            onAddItems(Array.isArray(items) ? items : [items]);
+            setAddItemRingId(null);
+          }}
+          onClose={() => setAddItemRingId(null)}
+          preselectedRingId={addItemRingId}
         />
       )}
     </div>

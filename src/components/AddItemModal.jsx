@@ -5,7 +5,7 @@ import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelSe
 import { wouldCreateCircularDependency, getDependencyChain, calculateDependentDates } from '../services/dependencyService';
 import ErrorDisplay from './ErrorDisplay';
 
-function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, currentPageId, year }) {
+function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, currentPageId, year, preselectedRingId }) {
   const { t } = useTranslation(['editor']);
   
   // Use page year for default dates (fall back to current year if not provided)
@@ -14,7 +14,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
   
   const [formData, setFormData] = useState({
     name: '',
-    ringId: wheelStructure.rings[0]?.id || '',
+    ringId: preselectedRingId || wheelStructure.rings[0]?.id || '',
     activityId: wheelStructure.activityGroups[0]?.id || '',
     labelId: wheelStructure.labels[0]?.id || '',
     startDate: defaultDate,
