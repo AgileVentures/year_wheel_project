@@ -92,8 +92,10 @@ i18n
         toast: enToast,
       },
     },
-    lng: 'sv', // Default language
-    fallbackLng: 'sv', // Fallback to Swedish
+    lng: undefined, // Don't set default - let detector choose
+    fallbackLng: 'en', // Fallback to English for all non-Swedish languages
+    supportedLngs: ['sv', 'en'], // Only support Swedish and English
+    load: 'languageOnly', // Load 'sv' instead of 'sv-SE'
     defaultNS: 'common',
     interpolation: {
       escapeValue: false, // React already escapes
@@ -102,6 +104,11 @@ i18n
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
       lookupLocalStorage: 'yearwheel_language',
+      convertDetectedLanguage: (lng) => {
+        // If detected language starts with 'sv', use Swedish
+        // Otherwise, use English
+        return lng.toLowerCase().startsWith('sv') ? 'sv' : 'en';
+      },
     },
   });
 
