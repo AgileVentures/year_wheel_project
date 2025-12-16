@@ -118,13 +118,12 @@ serve(async (req) => {
         .from('monday_users')
         .upsert({ 
           monday_user_id: parseInt(me.id),
-          monday_email: me.email,
+          email: me.email,
           name: me.name,
           monday_account_id: parseInt(me.account?.id || '0'),
           monday_account_name: me.account?.name || '',
           monday_account_slug: me.account?.slug || '',
           profile_id: existingProfile.id,
-          monday_access_token: access_token,
           last_active_at: new Date().toISOString()
         }, {
           onConflict: 'monday_user_id'
@@ -132,6 +131,8 @@ serve(async (req) => {
       
       if (upsertError) {
         console.error('Failed to upsert Monday user:', upsertError)
+      } else {
+        console.log('Successfully upserted Monday user for profile:', existingProfile.id)
       }
     } else {
       // Create new Supabase user
@@ -159,13 +160,12 @@ serve(async (req) => {
         .from('monday_users')
         .upsert({ 
           monday_user_id: parseInt(me.id),
-          monday_email: me.email,
+          email: me.email,
           name: me.name,
           monday_account_id: parseInt(me.account?.id || '0'),
           monday_account_name: me.account?.name || '',
           monday_account_slug: me.account?.slug || '',
           profile_id: userId,
-          monday_access_token: access_token,
           last_active_at: new Date().toISOString()
         }, {
           onConflict: 'monday_user_id'
@@ -173,6 +173,8 @@ serve(async (req) => {
       
       if (upsertError) {
         console.error('Failed to upsert Monday user:', upsertError)
+      } else {
+        console.log('Successfully upserted Monday user for new profile:', userId)
       }
     }
     

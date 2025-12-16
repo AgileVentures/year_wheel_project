@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { User, Mail, Key, ArrowLeft, Link as LinkIcon, Calendar, Sheet, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getMondayUserDetails } from '../services/mondayService';
 import { useTranslation } from 'react-i18next';
 import { 
   getUserIntegrations, 
@@ -27,10 +28,15 @@ function ProfilePage({ onBack }) {
   const [integrations, setIntegrations] = useState([]);
   const [integrationsLoading, setIntegrationsLoading] = useState(true);
   const [connectingProvider, setConnectingProvider] = useState(null);
+  
+  // Monday user state
+  const [mondayUser, setMondayUser] = useState(null);
+  const [mondayLoading, setMondayLoading] = useState(true);
 
   // Load integrations on mount and check for OAuth callback
   useEffect(() => {
     loadIntegrations();
+    loadMondayUser();
     
     // Check for OAuth callback in URL
     const params = new URLSearchParams(window.location.search);
@@ -60,6 +66,18 @@ function ProfilePage({ onBack }) {
       console.error('Error loading integrations:', err);
     } finally {
       setIntegrationsLoading(false);
+    }
+  };
+
+  const loadMondayUser = async () => {
+    try {
+      setMondayLoading(true);
+      const data = await getMondayUserDetails();
+      setMondayUser(data);
+    } catch (err) {
+      console.error('Error loading Monday user:', err);
+    } finally {
+      setMondayLoading(false);
     }
   };
 
@@ -245,6 +263,73 @@ function ProfilePage({ onBack }) {
             </div>
           </div>
         </div>
+
+        {/* Monday.com Integration */}
+        {mondayLoading ? (
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={24} className="animate-spin text-gray-400" />
+            </div>
+          </div>
+        ) : mondayUser ? (
+          <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-purple-600">
+                <path d="M0 14.472V9.528L12 2.056l12 7.472v4.944L12 21.944z"/>
+              </svg>
+              Monday.com Integration
+            </h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-sm">
+                <CheckCircle size={16} className="text-green-600" />
+                <span className="text-green-700 font-medium">Connected</span>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Monday User ID
+                </label>
+                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
+                  <span className="text-sm text-gray-600 font-mono">{mondayUser.monday_user_id}</span>
+                </div>
+              </div>
+              
+              {mondayUser.monday_account_name && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Account
+                  </label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
+                    <span className="text-gray-900">{mondayUser.monday_account_name}</span>
+                  </div>
+                </div>
+              )}
+              
+              {mondayUser.subscription_status && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subscription Status
+                  </label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
+                    <span className="text-gray-900 capitalize">{mondayUser.subscription_status}</span>
+                  </div>
+                </div>
+              )}
+              
+              {mondayUser.current_plan && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Plan
+                  </label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
+                    <span className="text-gray-900 capitalize">{mondayUser.current_plan}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
 
         {/* Google Integrations */}
         <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
