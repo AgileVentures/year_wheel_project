@@ -39,6 +39,8 @@ const ListView = ({
   const [addItemRingId, setAddItemRingId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dropTargetRingId, setDropTargetRingId] = useState(null);
   
   // Convert year to number for comparison
   const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
@@ -163,6 +165,37 @@ const ListView = ({
     }
   };
   
+  // Drag and drop handlers
+  const handleDragStart = (e, item) => {
+    setDraggedItem(item);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.currentTarget);
+  };
+  
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDropTargetRingId(null);
+  };
+  
+  const handleDragOver = (e, ringId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropTargetRingId(ringId);
+  };
+  
+  const handleDragLeave = () => {
+    setDropTargetRingId(null);
+  };
+  
+  const handleDrop = (e, targetRingId) => {
+    e.preventDefault();
+    if (draggedItem && draggedItem.ringId !== targetRingId) {
+      onUpdateItem({ ...draggedItem, ringId: targetRingId });
+    }
+    setDraggedItem(null);
+    setDropTargetRingId(null);
+  };
+  
   return (
     <div className="w-full h-full bg-gray-50 overflow-auto p-6">
       <div className="max-w-7xl mx-auto">
@@ -225,8 +258,13 @@ const ListView = ({
               <div key={ringId} className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
                 {/* Ring Header */}
                 <div 
-                  className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
+                  className={`flex items-center justify-between px-4 py-3 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors ${
+                    dropTargetRingId === ringId ? 'bg-blue-100 border-blue-400' : 'bg-gray-50'
+                  }`}
                   onClick={() => toggleRing(ringId)}
+                  onDragOver={(e) => handleDragOver(e, ringId)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, ringId)}
                 >
                   <div className="flex items-center gap-3">
                     <button 
@@ -315,7 +353,17 @@ const ListView = ({
                           const isSelected = selectedItems.has(item.id);
                           
                           return (
-                            <tr key={item.id} className={`hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-blue-50' : ''}`}>
+                            <tr 
+                              key={item.id} 
+                              className={`hover:bg-gray-50 transition-colors group cursor-move ${
+                                isSelected ? 'bg-blue-50' : ''
+                              } ${
+                                draggedItem?.id === item.id ? 'opacity-50' : ''
+                              }`}
+                              draggable={true}
+                              onDragStart={(e) => handleDragStart(e, item)}
+                              onDragEnd={handleDragEnd}
+                            >
                               <td className="px-4 py-3">
                                 <input 
                                   type="checkbox" 
