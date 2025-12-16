@@ -277,18 +277,18 @@ function ProfilePage({ onBack }) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-purple-600">
                 <path d="M0 14.472V9.528L12 2.056l12 7.472v4.944L12 21.944z"/>
               </svg>
-              Monday.com Integration
+              {t('common:profilePage.mondayIntegration')}
             </h2>
             
             <div className="space-y-4">
               <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-sm">
                 <CheckCircle size={16} className="text-green-600" />
-                <span className="text-green-700 font-medium">Connected</span>
+                <span className="text-green-700 font-medium">{t('common:profilePage.mondayConnected')}</span>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Monday User ID
+                  {t('common:profilePage.mondayUserId')}
                 </label>
                 <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
                   <span className="text-sm text-gray-600 font-mono">{mondayUser.monday_user_id}</span>
@@ -298,7 +298,7 @@ function ProfilePage({ onBack }) {
               {mondayUser.monday_account_name && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Account
+                    {t('common:profilePage.mondayAccount')}
                   </label>
                   <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
                     <span className="text-gray-900">{mondayUser.monday_account_name}</span>
@@ -309,7 +309,7 @@ function ProfilePage({ onBack }) {
               {mondayUser.subscription_status && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Subscription Status
+                    {t('common:profilePage.mondaySubscriptionStatus')}
                   </label>
                   <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
                     <span className="text-gray-900 capitalize">{mondayUser.subscription_status}</span>
@@ -320,7 +320,7 @@ function ProfilePage({ onBack }) {
               {mondayUser.current_plan && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Plan
+                    {t('common:profilePage.mondayPlan')}
                   </label>
                   <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
                     <span className="text-gray-900 capitalize">{mondayUser.current_plan}</span>

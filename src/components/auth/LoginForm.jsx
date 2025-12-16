@@ -133,7 +133,7 @@ function LoginForm({ onToggleMode }) {
             <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#FFCC00"/>
             <path d="M2 12L12 17L22 12" stroke="#6C6CFF" strokeWidth="2"/>
           </svg>
-          {t('auth:login.monday', 'Sign in with Monday.com')}
+          {t('auth:login.monday')}
         </button>
 
         <div className="mt-6 text-center">
