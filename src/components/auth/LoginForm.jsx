@@ -114,6 +114,28 @@ function LoginForm({ onToggleMode }) {
           {t('auth:login.google')}
         </button>
 
+        <button
+          onClick={async () => {
+            setError('');
+            setLoading(true);
+            try {
+              await signIn(null, null, 'monday');
+            } catch (err) {
+              setError(err.message);
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
+          className="mt-3 w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 border border-gray-300 rounded-sm shadow-sm flex items-center justify-center gap-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#FF3D57"/>
+            <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="#FFCC00"/>
+            <path d="M2 12L12 17L22 12" stroke="#6C6CFF" strokeWidth="2"/>
+          </svg>
+          {t('auth:login.monday', 'Sign in with Monday.com')}
+        </button>
+
         <div className="mt-6 text-center">
           <button
             onClick={onToggleMode}

@@ -16,3 +16,11 @@ verify_jwt = false
 # Monday.com webhook - must be publicly accessible (Monday sends webhooks without JWT)
 [functions.monday-webhook]
 verify_jwt = false
+
+# Monday.com OAuth init - must be publicly accessible (users redirect from Monday)
+[functions.monday-oauth-init]
+verify_jwt = false
+
+# Monday.com OAuth callback - must be publicly accessible (Monday redirects without JWT)
+[functions.monday-oauth-callback]
+verify_jwt = false

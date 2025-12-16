@@ -154,6 +154,13 @@ export function AuthProvider({ children }) {
       return data;
     }
     
+    if (provider === 'monday') {
+      // Redirect to Monday OAuth edge function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      window.location.href = `${supabaseUrl}/functions/v1/monday-oauth-init`;
+      return { provider: 'monday' };
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
