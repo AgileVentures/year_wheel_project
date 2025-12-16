@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams, useNavigate, useLoca
 import { useTranslation } from 'react-i18next';
 import YearWheel from "./YearWheel";
 import WheelCalendarView from "./components/calendar_view/WheelCalendarView";
+import ListView from "./components/list_view/ListView";
 import SidePanel from "./components/SidePanel";
 import Header from "./components/Header";
 import PageNavigator from "./components/PageNavigator";
@@ -424,7 +425,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [wheelRotation, setWheelRotation] = useState(0); // Persist wheel rotation angle
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [wheelData, setWheelData] = useState(null);
-  const [viewMode, setViewMode] = useState('wheel'); // 'wheel' or 'calendar'
+  const [viewMode, setViewMode] = useState('wheel'); // 'wheel', 'calendar', or 'list'
   const [pendingTooltipItemId, setPendingTooltipItemId] = useState(null); // Item to show tooltip for after view/page switch
 
   // Legacy refs for compatibility (will be removed later)
@@ -4434,7 +4435,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 broadcastOperation={broadcastOperation}
               />
             </div>
-          ) : (
+          ) : viewMode === 'calendar' ? (
             <div className="w-full h-full">
               <WheelCalendarView
                 key={`calendar-${Date.now()}`}
@@ -4443,6 +4444,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 onUpdateItem={handleUpdateAktivitet}
                 onDeleteItem={handleDeleteAktivitet}
                 onNavigateToItemOnWheel={handleNavigateToItemOnWheel}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-full">
+              <ListView
+                key={`list-${Date.now()}`}
+                wheelStructure={calendarWheelStructure}
+                year={wheelState.metadata.year}
+                onUpdateItem={handleUpdateAktivitet}
+                onDeleteItem={handleDeleteAktivitet}
+                onAddItem={handleAddAktivitet}
               />
             </div>
           )}

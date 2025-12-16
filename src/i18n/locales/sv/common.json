@@ -187,7 +187,8 @@
     "templateWheelVisibleOnLanding": "Template-hjul (synligt på startsidan)",
     "useTemplate": "Använd mall",
     "wheelView": "Hjulvy",
-    "calendarView": "Kalendervy"
+    "calendarView": "Kalendervy",
+    "listView": "Listvy"
   },
   "template": {
     "enabled": "Hjulet är nu markerat som template!",
@@ -385,6 +386,25 @@
     "label": "Etikett",
     "start": "Start",
     "end": "Slut"
+  },
+  "listView": {
+    "title": "Listvy",
+    "subtitle": "Aktiviteter grupperade efter ringar",
+    "items": "aktiviteter",
+    "addItem": "Lägg till",
+    "addItemButton": "+ Lägg till aktivitet",
+    "item": "Aktivitet",
+    "person": "Person",
+    "status": "Status",
+    "date": "Datum",
+    "timeline": "Tidslinje",
+    "delete": "Ta bort",
+    "innerRing": "Innerring",
+    "outerRing": "Ytterring",
+    "noRings": "Inga ringar hittades. Skapa ringar för att komma igång.",
+    "noActivityGroups": "Du måste skapa minst en aktivitetsgrupp först",
+    "noStatus": "Ingen status",
+    "newItem": "Ny aktivitet"
   },
   "sharing": {
     "publicEnabled": "Hjulet är nu publikt delat!",

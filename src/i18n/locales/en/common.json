@@ -188,7 +188,8 @@
     "templateWheelVisibleOnLanding": "Template wheel (visible on landing page)",
     "useTemplate": "Use template",
     "wheelView": "Wheel view",
-    "calendarView": "Calendar view"
+    "calendarView": "Calendar view",
+    "listView": "List view"
   },
   "template": {
     "enabled": "Wheel is now marked as template!",
@@ -386,6 +387,25 @@
     "label": "Label",
     "start": "Start",
     "end": "End"
+  },
+  "listView": {
+    "title": "List View",
+    "subtitle": "Activities grouped by rings",
+    "items": "items",
+    "addItem": "Add",
+    "addItemButton": "+ Add item",
+    "item": "Item",
+    "person": "Person",
+    "status": "Status",
+    "date": "Date",
+    "timeline": "Timeline",
+    "delete": "Delete",
+    "innerRing": "Inner ring",
+    "outerRing": "Outer ring",
+    "noRings": "No rings found. Create rings to get started.",
+    "noActivityGroups": "You must create at least one activity group first",
+    "noStatus": "No status",
+    "newItem": "New item"
   },
   "sharing": {
     "publicEnabled": "Wheel is now publicly shared!",
