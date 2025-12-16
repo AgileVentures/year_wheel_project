@@ -14,14 +14,14 @@ import { sv, enUS } from 'date-fns/locale';
  * @param {number} year - Current year being displayed
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
- * @param {Function} onAddItem - Callback when new item is added
+ * @param {Function} onAddItems - Callback when new items are added (expects array)
  */
 const ListView = ({ 
   wheelStructure, 
   year,
   onUpdateItem,
   onDeleteItem,
-  onAddItem
+  onAddItems
 }) => {
   const { t, i18n } = useTranslation();
   const [expandedRings, setExpandedRings] = useState({});
@@ -84,8 +84,8 @@ const ListView = ({
       description: ''
     };
     
-    if (onAddItem) {
-      onAddItem(newItem);
+    if (onAddItems) {
+      onAddItems([newItem]); // Wrap in array since handler expects array
     }
   };
   
