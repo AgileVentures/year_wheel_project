@@ -17,6 +17,7 @@ import AddItemModal from '../AddItemModal';
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
  * @param {Function} onAddItems - Callback when new items are added (expects array)
+ * @param {Function} onOrganizationChange - Callback when organization structure changes
  * @param {string} currentWheelId - Current wheel ID for edit modal
  */
 const ListView = ({ 
@@ -25,6 +26,7 @@ const ListView = ({
   onUpdateItem,
   onDeleteItem,
   onAddItems,
+  onOrganizationChange,
   currentWheelId
 }) => {
   const { t, i18n } = useTranslation();
@@ -220,9 +222,23 @@ const ListView = ({
                     <h3 className="text-lg font-semibold text-gray-900">
                       {ring.name}
                     </h3>
-                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                      {getRingTypeLabel(ring.type)}
-                    </span>
+                    <select
+                      value={ring.type}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        const updatedRings = wheelStructure.rings.map(r => 
+                          r.id === ringId ? { ...r, type: e.target.value } : r
+                        );
+                        if (onOrganizationChange) {
+                          onOrganizationChange({ ...wheelStructure, rings: updatedRings });
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs px-2 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="inner">{t('listView.innerRing', 'Innerring')}</option>
+                      <option value="outer">{t('listView.outerRing', 'Ytterring')}</option>
+                    </select>
                     <span className="text-sm text-gray-500">
                       {items.length} {t('listView.items', 'aktiviteter')}
                     </span>
@@ -258,9 +274,6 @@ const ListView = ({
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.item', 'Aktivitet')}
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {t('listView.ringType', 'Ring-typ')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.status', 'Status')}
@@ -307,22 +320,6 @@ const ListView = ({
                                     {item.name}
                                   </button>
                                 </div>
-                              </td>
-                              
-                              {/* Ring Type Selector */}
-                              <td className="px-4 py-3">
-                                <select
-                                  value={item.ringId}
-                                  onChange={(e) => onUpdateItem({ ...item, ringId: e.target.value })}
-                                  className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {wheelStructure.rings.map(r => (
-                                    <option key={r.id} value={r.id}>
-                                      {r.name} ({getRingTypeLabel(r.type)})
-                                    </option>
-                                  ))}
-                                </select>
                               </td>
                               
                               {/* Status */}
@@ -372,7 +369,7 @@ const ListView = ({
                         
                         {/* Add Item Row */}
                         <tr className="hover:bg-gray-50">
-                          <td colSpan="7" className="px-4 py-2">
+                          <td colSpan="6" className="px-4 py-2">
                             <button
                               onClick={() => handleAddItemToRing(ringId)}
                               className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
