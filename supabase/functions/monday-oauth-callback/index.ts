@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const MONDAY_CLIENT_ID = Deno.env.get('MONDAY_CLIENT_ID') || '82c44e2678c2b6e8723cf2d69b900250'
-const MONDAY_CLIENT_SECRET = Deno.env.get('MONDAY_CLIENT_SECRET') || ''
+const MONDAY_CLIENT_SECRET = Deno.env.get('MONDAY_CLIENT_SECRET') || 'ab5efcf8a28dcaaec604ad0a678db3ae'
+const MONDAY_APP_ID = '10727736'
 const REDIRECT_URI = 'https://yearwheel.se/auth/monday/callback'
 
 serve(async (req) => {
