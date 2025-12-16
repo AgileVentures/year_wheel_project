@@ -244,7 +244,7 @@ const ListView = ({
                     </span>
                   </div>
                   
-                  {isExpanded && (
+                  {!isExpanded && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -253,7 +253,7 @@ const ListView = ({
                       className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                     >
                       <Plus size={16} />
-                      {t('listView.addItem', 'Lägg till')}
+                      {t('listView.addItemButton', '+ Lägg till aktivitet')}
                     </button>
                   )}
                 </div>
