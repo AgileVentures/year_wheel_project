@@ -22,9 +22,10 @@ import Footer from '../Footer';
 import MobileNav from './MobileNav';
 import { showConfirmDialog, showToast } from '../../utils/dialogs';
 import { trackPurchase } from '../../utils/gtm';
+import { isMondayUser } from '../../services/mondayService';
 
 // User Menu Dropdown Component
-function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffiliateMember, onManageSubscription }) {
+function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffiliateMember, onManageSubscription, mondayUserData }) {
   const { t } = useTranslation(['dashboard', 'common', 'subscription']);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -60,7 +61,15 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffili
                     {t('subscription:subscription.admin')}
                   </span>
                 )}
-                {isPremium && !isAdmin && (
+                {mondayUserData?.isMondayUser && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-sm text-xs font-semibold">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M0 14.472V9.528L12 2.056l12 7.472v4.944L12 21.944z"/>
+                    </svg>
+                    Monday.com
+                  </span>
+                )}
+                {isPremium && !isAdmin && !mondayUserData?.isMondayUser && (
                   <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-sm text-xs font-semibold">
                     <Crown size={12} />
                     {t('dashboard:subscription.premium')}
@@ -80,8 +89,8 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffili
               {t('dashboard:profile.title')}
             </button>
             
-            {/* Subscription Management (for premium users) */}
-            {(isPremium || isAdmin) && onManageSubscription && (
+            {/* Subscription Management (for premium users, not Monday users) */}
+            {(isPremium || isAdmin) && !mondayUserData?.isMondayUser && onManageSubscription && (
               <button
                 onClick={() => {
                   setIsOpen(false);
@@ -222,6 +231,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isAffiliateMember, setIsAffiliateMember] = useState(false);
+  const [mondayUserData, setMondayUserData] = useState(null);
   
   // Subscription state
   const { 
@@ -237,6 +247,21 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
+
+  // Check if user is a Monday user
+  useEffect(() => {
+    const checkMondayUser = async () => {
+      const mondayData = await isMondayUser();
+      if (mondayData.isMondayUser) {
+        setMondayUserData(mondayData);
+        console.log('[Dashboard] Monday user detected:', mondayData);
+      }
+    };
+    
+    if (user) {
+      checkMondayUser();
+    }
+  }, [user]);
 
   // Check for successful Stripe checkout on mount
   useEffect(() => {
@@ -402,6 +427,12 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   };
 
   const handleCreateWheelClick = () => {
+    // Monday users don't have wheel limits
+    if (mondayUserData?.isMondayUser) {
+      setShowCreateModal(true);
+      return;
+    }
+    
     // Check if user has reached wheel limit
     if (hasReachedWheelLimit) {
       setShowUpgradePrompt(true);
@@ -612,6 +643,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
                 isAdmin={isAdminUser}
                 isAffiliateMember={isAffiliateMember}
                 onManageSubscription={() => setShowSubscriptionSettings(true)}
+                mondayUserData={mondayUserData}
               />
             </div>
           </div>
@@ -801,8 +833,8 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
         />
       )}
 
-      {/* Upgrade Prompt Modal */}
-      {showUpgradePrompt && (
+      {/* Upgrade Prompt Modal - Hidden for Monday users */}
+      {showUpgradePrompt && !mondayUserData?.isMondayUser && (
         <UpgradePrompt
           title={t('subscription:limitReached.title')}
           message={t('subscription:limitReached.message', { current: wheelCount, max: maxWheels })}

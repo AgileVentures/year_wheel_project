@@ -52,6 +52,35 @@ export function AuthProvider({ children }) {
       return;
     }
 
+    // Check for OAuth callback tokens in URL (Monday.com OAuth)
+    const handleOAuthCallback = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      
+      if (accessToken && refreshToken) {
+        console.log('Found OAuth tokens in URL, setting session...');
+        try {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (error) {
+            console.error('Failed to set OAuth session:', error);
+          } else {
+            console.log('OAuth session set successfully');
+            // Clean URL without reloading
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+        } catch (err) {
+          console.error('Error setting OAuth session:', err);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);

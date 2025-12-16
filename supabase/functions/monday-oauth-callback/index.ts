@@ -154,14 +154,11 @@ serve(async (req) => {
         .eq('monday_user_id', parseInt(me.id))
     }
     
-    // Generate magic link for seamless login
-    console.log('Generating auth link...')
+    // Create session using generateLink
+    console.log('Creating auth link for user:', userId)
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
-      email: me.email,
-      options: {
-        redirectTo: 'https://yearwheel.se/dashboard'
-      }
+      email: me.email
     })
     
     if (linkError || !linkData) {
@@ -169,29 +166,38 @@ serve(async (req) => {
       return redirectWithError('Failed to create session')
     }
     
-    // Extract token from hashed_token
-    const token = linkData.properties.hashed_token
+    // Use the hashed token from the response
+    const tokenHash = linkData.properties.hashed_token
     
-    // Redirect to app with token and Monday user marker
-    const redirectUrl = `https://yearwheel.se/auth/callback?token_hash=${token}&type=magiclink&monday_user=true`
+    if (!tokenHash) {
+      console.error('No hashed_token in link response:', linkData)
+      return redirectWithError('Failed to create session token')
+    }
     
-    console.log('Redirecting to:', redirectUrl)
+    // Redirect to Supabase auth verification endpoint
+    const authUrl = `https://mmysvuymzabstnobdfvo.supabase.co/auth/v1/verify?token=${tokenHash}&type=magiclink&redirect_to=${encodeURIComponent('https://yearwheel.se/dashboard?monday_user=true')}`
+    
+    console.log('Redirecting to Supabase auth verification')
     
     return new Response(null, {
       status: 302,
       headers: {
-        'Location': redirectUrl,
-        'Set-Cookie': 'monday_oauth_state=; Path=/; Max-Age=0' // Clear state cookie
+        'Location': authUrl,
+        'Set-Cookie': 'monday_oauth_state=; Path=/; Max-Age=0'
       }
     })
     
   } catch (error) {
     console.error('OAuth callback error:', error)
-    return redirectWithError('Authentication failed')
+    const errorMessage = error instanceof Error ? error.message : 'Authentication failed'
+    const errorDetails = error instanceof Error ? error.stack : String(error)
+    console.error('Error details:', errorDetails)
+    return redirectWithError(`Authentication failed: ${errorMessage}`)
   }
 })
 
 function redirectWithError(message: string) {
+  console.error('Redirecting with error:', message)
   const errorUrl = `https://yearwheel.se/?error=${encodeURIComponent(message)}`
   return new Response(null, {
     status: 302,
