@@ -56,15 +56,6 @@ const WheelCalendarView = ({
   const locale = useMemo(() => {
     return i18n.language === "sv" ? sv : enUS;
   }, [i18n.language]);
-  
-  // Force calendar to stay in the correct year
-  const currentCalendarDate = new Date(calendarYear, month);
-  const shouldBeYear = yearNum;
-  
-  // If calendar drifted to wrong year, reset it
-  if (calendarYear !== shouldBeYear) {
-    // Don't reset here, it will cause infinite loop
-  }
 
   // Get items for a specific day
   const getItemsForDay = (day) => {
