@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const MONDAY_CLIENT_ID = Deno.env.get('MONDAY_CLIENT_ID') || '82c44e2678c2b6e8723cf2d69b900250'
-const MONDAY_APP_ID = '10727736'
+const MONDAY_CLIENT_ID = '82c44e2678c2b6e8723cf2d69b900250' // Public - safe to expose
+const MONDAY_APP_ID = '10727736' // Public - safe to expose
 const REDIRECT_URI = 'https://yearwheel.se/auth/monday/callback'
 
 serve(async (req) => {

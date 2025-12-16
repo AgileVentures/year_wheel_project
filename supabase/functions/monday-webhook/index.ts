@@ -1,10 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
-// Monday.com app credentials
-const MONDAY_CLIENT_ID = '82c44e2678c2b6e8723cf2d69b900250'
-const MONDAY_APP_ID = '10727736'
-const MONDAY_SIGNING_SECRET = Deno.env.get('MONDAY_SIGNING_SECRET') || '73884bdca237109fd13fb82784bfd8df'
+// Monday.com app credentials (public)
+const MONDAY_CLIENT_ID = '82c44e2678c2b6e8723cf2d69b900250' // Public - safe to expose
+const MONDAY_APP_ID = '10727736' // Public - safe to expose
+const MONDAY_SIGNING_SECRET = Deno.env.get('MONDAY_SIGNING_SECRET') // Optional: For webhook signature verification
+
+// Note: Signing secret is optional but recommended for production
 
 interface MondayWebhookPayload {
   type: string
