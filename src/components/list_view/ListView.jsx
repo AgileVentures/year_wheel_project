@@ -98,6 +98,11 @@ const ListView = ({
     return (wheelStructure.activityGroups || []).find(ag => ag.id === activityId);
   };
   
+  const getLabel = (labelId) => {
+    if (!labelId) return null;
+    return (wheelStructure.labels || []).find(l => l.id === labelId);
+  };
+  
   const getRingTypeLabel = (type) => {
     return type === 'inner' 
       ? t('listView.innerRing', 'Innerring') 
@@ -348,7 +353,10 @@ const ListView = ({
                             {t('listView.item', 'Aktivitet')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {t('listView.status', 'Status')}
+                            {t('listView.type', 'Typ')}
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('listView.label', 'Etikett')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.date', 'Datum')}
@@ -364,6 +372,7 @@ const ListView = ({
                       <tbody className="bg-white divide-y divide-gray-100">
                         {items.map((item) => {
                           const itemActivityGroup = getActivityGroup(item.activityId);
+                          const itemLabel = getLabel(item.labelId);
                           const startDate = new Date(item.startDate);
                           const isSelected = selectedItems.has(item.id);
                           
@@ -404,11 +413,35 @@ const ListView = ({
                                 </div>
                               </td>
                               
-                              {/* Status */}
+                              {/* Type (Activity Group) */}
                               <td className="px-4 py-3">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                                  {itemActivityGroup?.name || t('listView.noStatus', 'Ingen status')}
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                  {itemActivityGroup?.name || t('listView.noType', 'Ingen typ')}
                                 </span>
+                              </td>
+                              
+                              {/* Label */}
+                              <td className="px-4 py-3">
+                                {itemLabel ? (
+                                  <span 
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                    style={{ 
+                                      backgroundColor: itemLabel.color || '#94A3B8',
+                                      color: (() => {
+                                        const hexColor = itemLabel.color || '#94A3B8';
+                                        const r = parseInt(hexColor.slice(1, 3), 16);
+                                        const g = parseInt(hexColor.slice(3, 5), 16);
+                                        const b = parseInt(hexColor.slice(5, 7), 16);
+                                        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                                        return luminance > 0.5 ? '#000000' : '#FFFFFF';
+                                      })()
+                                    }}
+                                  >
+                                    {itemLabel.name}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">—</span>
+                                )}
                               </td>
                               
                               {/* Date */}
@@ -460,7 +493,7 @@ const ListView = ({
                         
                         {/* Add Item Row */}
                         <tr className="hover:bg-gray-50">
-                          <td colSpan="6" className="px-4 py-2">
+                          <td colSpan="7" className="px-4 py-2">
                             <button
                               onClick={() => handleAddItemToRing(ringId)}
                               className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
