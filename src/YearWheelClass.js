@@ -5527,20 +5527,10 @@ class YearWheel {
       });
     }
 
-    // FIRST draw all label indicators (below ring names)
-    if (this.labelsToDraw && this.labelsToDraw.length > 0) {
-      for (const labelData of this.labelsToDraw) {
-        this.drawLabelIndicator(
-          labelData.item,
-          labelData.startRadius,
-          labelData.width,
-          labelData.startAngle,
-          labelData.endAngle
-        );
-      }
-    }
+    // LABELS ARE NO LONGER DRAWN ON ACTIVITIES - only shown in center on hover
+    // (labelsToDraw array is still populated for potential future use)
 
-    // SECOND draw all linked wheel indicators (chain link icons)
+    // FIRST draw all linked wheel indicators (chain link icons)
     if (this.linkedWheelsToDraw && this.linkedWheelsToDraw.length > 0) {
       for (const linkData of this.linkedWheelsToDraw) {
         this.drawLinkedWheelIndicator(

@@ -16,7 +16,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
     name: '',
     ringId: preselectedRingId || wheelStructure.rings[0]?.id || '',
     activityId: wheelStructure.activityGroups[0]?.id || '',
-    labelId: wheelStructure.labels[0]?.id || '',
+    labelId: '',
     startDate: defaultDate,
     endDate: defaultDate,
     description: '',

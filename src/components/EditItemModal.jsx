@@ -340,6 +340,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                     onChange={(e) => handleChange('labelId', e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
+                    <option value="">{t('editor:editItemModal.noLabel', 'Ingen etikett')}</option>
                     {wheelStructure.labels.map((label) => (
                       <option key={label.id} value={label.id}>
                         {label.name}
