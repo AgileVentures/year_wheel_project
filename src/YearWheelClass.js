@@ -3821,77 +3821,196 @@ class YearWheel {
     this.context.closePath();
 
     if (this.hoveredItem) {
-      // Show hovered activity info - all text must fit inside circle
+      // Show hovered activity info with improved visual hierarchy
       const ring = this.wheelStructure.rings.find(
         (r) => r.id === this.hoveredItem.ringId
       );
+      const activityGroup = this.wheelStructure.activityGroups.find(
+        (ag) => ag.id === this.hoveredItem.activityId
+      );
+      const label = this.hoveredItem.labelId
+        ? this.wheelStructure.labels.find((l) => l.id === this.hoveredItem.labelId)
+        : null;
 
-      // Use smaller fonts and tighter spacing to fit inside circle
-      const lineHeight = this.size / 55; // Reduced line height
-      const maxWidth = this.minRadius * 1.4; // Keep text well within circle (70% of diameter with padding)
-
-      // Activity name (bold) - smaller font
-      this.context.fillStyle = "#1E293B";
+      // Base settings
+      const baseFontSize = this.size / 70;
+      const maxWidth = this.minRadius * 1.4; // Keep text well within circle
       this.context.textAlign = "center";
-      this.context.font = `700 ${this.size / 65}px Arial, sans-serif`;
       this.context.textBaseline = "middle";
 
-      // Text wrapping for activity name - split on spaces and hyphens
-      const parts = this.hoveredItem.name.split(/(-|\s+)/); // Split on hyphens and spaces, keep delimiters
-      const lines = [];
-      let currentLine = "";
+      // Calculate spacing between elements
+      const spacing = {
+        ringName: baseFontSize * 0.75, // 75% of base
+        badge: baseFontSize * 0.85, // 85% of base
+        itemName: baseFontSize * 1.3, // 130% of base (bold)
+        date: baseFontSize * 0.8, // 80% of base
+        gap: baseFontSize * 0.6, // Proportional gap between elements
+      };
 
-      for (let part of parts) {
-        if (!part) continue; // Skip empty strings
-        const testLine = currentLine + part;
-        const metrics = this.context.measureText(testLine);
-        if (metrics.width > maxWidth && currentLine) {
-          lines.push(currentLine);
-          currentLine = part;
-        } else {
-          currentLine = testLine;
+      // Smart date formatting helper
+      const formatSmartDate = (start, end) => {
+        const monthNames = [
+          "jan",
+          "feb",
+          "mar",
+          "apr",
+          "maj",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "okt",
+          "nov",
+          "dec",
+        ];
+
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const startDay = startDate.getDate();
+        const endDay = endDate.getDate();
+        const startMonth = startDate.getMonth();
+        const endMonth = endDate.getMonth();
+        const startYear = startDate.getFullYear();
+        const endYear = endDate.getFullYear();
+
+        // Same day
+        if (
+          startDay === endDay &&
+          startMonth === endMonth &&
+          startYear === endYear
+        ) {
+          return `${startDay} ${monthNames[startMonth]} ${startYear}`;
         }
-      }
-      if (currentLine) lines.push(currentLine);
 
-      // Limit to 3 lines to prevent overflow
-      if (lines.length > 3) {
-        lines[2] = lines[2].substring(0, 15) + "...";
-        lines.length = 3;
-      }
+        // Same month
+        if (startMonth === endMonth && startYear === endYear) {
+          return `${startDay}-${endDay} ${monthNames[startMonth]} ${startYear}`;
+        }
 
-      // Calculate total height needed
-      const totalHeight = lines.length * lineHeight + lineHeight * 2; // Space for dates and ring
-      const startY = this.center.y - totalHeight / 2;
+        // Same year
+        if (startYear === endYear) {
+          return `${startDay} ${monthNames[startMonth]} - ${endDay} ${monthNames[endMonth]} ${startYear}`;
+        }
 
-      // Draw wrapped activity name
-      for (let i = 0; i < lines.length; i++) {
-        this.context.fillText(lines[i], this.center.x, startY + i * lineHeight);
-      }
+        // Different years
+        return `${startDay} ${monthNames[startMonth]} ${startYear} - ${endDay} ${monthNames[endMonth]} ${endYear}`;
+      };
 
-      // Date range (smaller, less prominent)
-      this.context.fillStyle = "#F4A896";
-      this.context.font = `500 ${this.size / 85}px Arial, sans-serif`;
-      const startDate = new Date(this.hoveredItem.startDate).toLocaleDateString(
-        "sv-SE"
+      // Text wrapping helper - limit to 2 lines with smart ellipsis
+      const wrapText = (text, font, maxWidth, maxLines = 2) => {
+        this.context.font = font;
+        const parts = text.split(/(-|\s+)/); // Split on hyphens and spaces
+        const lines = [];
+        let currentLine = "";
+
+        for (let part of parts) {
+          if (!part) continue;
+          const testLine = currentLine + part;
+          const metrics = this.context.measureText(testLine);
+          if (metrics.width > maxWidth && currentLine) {
+            lines.push(currentLine);
+            currentLine = part;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+
+        // Limit to maxLines with ellipsis
+        if (lines.length > maxLines) {
+          const lastLine = lines[maxLines - 1];
+          const ellipsis = "...";
+          let truncated = lastLine;
+          while (
+            this.context.measureText(truncated + ellipsis).width > maxWidth &&
+            truncated.length > 0
+          ) {
+            truncated = truncated.slice(0, -1);
+          }
+          lines[maxLines - 1] = truncated + ellipsis;
+          lines.length = maxLines;
+        }
+
+        return lines;
+      };
+
+      // Wrap item name text (max 2 lines)
+      const itemNameLines = wrapText(
+        this.hoveredItem.name,
+        `700 ${spacing.itemName}px Arial, sans-serif`,
+        maxWidth,
+        2
       );
-      const endDate = new Date(this.hoveredItem.endDate).toLocaleDateString(
-        "sv-SE"
-      );
-      this.context.fillText(
-        `${startDate} - ${endDate}`,
-        this.center.x,
-        startY + lines.length * lineHeight + lineHeight * 0.5
-      );
 
-      // Ring name only (skip activity group - too much info)
+      // Calculate total height needed for all elements
+      let totalHeight = 0;
+      totalHeight += spacing.ringName; // Ring name
+      totalHeight += spacing.gap;
+      if (label) {
+        totalHeight += spacing.badge + spacing.gap * 1.5; // Badge with padding
+      }
+      totalHeight += spacing.itemName * itemNameLines.length; // Item name (1-2 lines)
+      totalHeight += spacing.gap;
+      totalHeight += spacing.date; // Date
+
+      // Start position (vertically centered as a group)
+      let currentY = this.center.y - totalHeight / 2;
+
+      // 1. Ring name (small, discrete, light gray)
+      this.context.fillStyle = "#94A3B8";
+      this.context.font = `400 ${spacing.ringName}px Arial, sans-serif`;
       if (ring) {
-        this.context.fillText(
-          ring.name,
-          this.center.x,
-          startY + lines.length * lineHeight + lineHeight * 1.2
-        );
+        this.context.fillText(ring.name, this.center.x, currentY);
       }
+      currentY += spacing.ringName + spacing.gap;
+
+      // 2. Status badge (colored pill with label name)
+      if (label && label.visible) {
+        const badgeHeight = spacing.badge;
+        const badgePadding = badgeHeight * 0.5;
+        this.context.font = `500 ${spacing.badge}px Arial, sans-serif`;
+        const badgeTextWidth = this.context.measureText(label.name).width;
+        const badgeWidth = badgeTextWidth + badgePadding * 2;
+        const badgeRadius = badgeHeight / 2;
+
+        // Draw rounded pill background
+        const badgeX = this.center.x - badgeWidth / 2;
+        const badgeY = currentY - badgeHeight / 2;
+
+        this.context.fillStyle = label.color || "#94A3B8";
+        this.context.beginPath();
+        this.context.roundRect(
+          badgeX,
+          badgeY,
+          badgeWidth,
+          badgeHeight,
+          badgeRadius
+        );
+        this.context.fill();
+
+        // Draw badge text (contrasting color)
+        this.context.fillStyle = this.getContrastColor(label.color || "#94A3B8");
+        this.context.fillText(label.name, this.center.x, currentY);
+        currentY += badgeHeight + spacing.gap * 1.5;
+      }
+
+      // 3. Item name (main focus, large and bold, dark)
+      this.context.fillStyle = "#1E293B";
+      this.context.font = `700 ${spacing.itemName}px Arial, sans-serif`;
+      for (let i = 0; i < itemNameLines.length; i++) {
+        this.context.fillText(itemNameLines[i], this.center.x, currentY);
+        currentY += spacing.itemName;
+      }
+      currentY += spacing.gap;
+
+      // 4. Date range (small, medium gray, smart format)
+      this.context.fillStyle = "#64748B";
+      this.context.font = `400 ${spacing.date}px Arial, sans-serif`;
+      const dateText = formatSmartDate(
+        this.hoveredItem.startDate,
+        this.hoveredItem.endDate
+      );
+      this.context.fillText(dateText, this.center.x, currentY);
     } else {
       // Draw year or filtered period text in center (bold, large)
       this.context.fillStyle = "#1E293B";
