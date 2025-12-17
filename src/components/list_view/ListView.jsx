@@ -440,7 +440,7 @@ const ListView = ({
                                     {itemLabel.name}
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-gray-400">—</span>
+                                  <span className="text-xs text-gray-400">{t('listView.noLabel', '—')}</span>
                                 )}
                               </td>
                               
