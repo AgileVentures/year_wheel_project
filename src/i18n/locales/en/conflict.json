@@ -1,0 +1,29 @@
+{
+  "title": "Conflicting changes",
+  "subtitle": "Others made changes while you were editing",
+  "info": {
+    "title": "Collaboration conflict detected",
+    "description": "Your changes have been saved, but a team member made changes to the same items. Choose how to handle this."
+  },
+  "tables": {
+    "rings": "Rings",
+    "activityGroups": "Activity groups",
+    "labels": "Labels",
+    "items": "Activities"
+  },
+  "actions": {
+    "add": "added",
+    "modify": "modified",
+    "delete": "deleted"
+  },
+  "yourChange": "You",
+  "theirChange": "Other",
+  "conflictCount": "{{count}} conflict(s)",
+  "conflictCount_one": "1 conflict",
+  "conflictCount_other": "{{count}} conflicts",
+  "keepMine": "Keep my changes",
+  "acceptTheirs": "Reload with their changes",
+  "hint": "\"Keep mine\" preserves your changes. \"Reload\" fetches the latest version from the server.",
+  "resolving": "Resolving conflict...",
+  "resolved": "Conflict resolved"
+}

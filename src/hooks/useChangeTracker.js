@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 
 /**
  * useChangeTracker - Tracks changes to wheel data for efficient delta saves
@@ -17,6 +17,9 @@ import { useRef, useCallback } from 'react';
  *   tracker.clearChanges();
  */
 export function useChangeTracker() {
+  // Version counter to trigger React re-renders when changes are tracked or cleared
+  const [version, setVersion] = useState(0);
+  
   const changesRef = useRef({
     items: { added: new Map(), modified: new Map(), deleted: new Set() },
     rings: { added: new Map(), modified: new Map(), deleted: new Set() },
@@ -48,6 +51,8 @@ export function useChangeTracker() {
         changes.added.set(id, item);
       }
     }
+    // Increment version to trigger React re-render
+    setVersion(v => v + 1);
   }, []);
 
   const trackRingChange = useCallback((id, action, ring) => {
@@ -67,8 +72,7 @@ export function useChangeTracker() {
       } else {
         changes.added.set(id, ring);
       }
-    }
-  }, []);
+    }    setVersion(v => v + 1);  }, []);
 
   const trackActivityGroupChange = useCallback((id, action, group) => {
     const changes = changesRef.current.activityGroups;
@@ -87,8 +91,7 @@ export function useChangeTracker() {
       } else {
         changes.added.set(id, group);
       }
-    }
-  }, []);
+    }    setVersion(v => v + 1);  }, []);
 
   const trackLabelChange = useCallback((id, action, label) => {
     const changes = changesRef.current.labels;
@@ -108,6 +111,7 @@ export function useChangeTracker() {
         changes.added.set(id, label);
       }
     }
+    setVersion(v => v + 1);
   }, []);
 
   const trackPageChange = useCallback((id, action, page) => {
@@ -128,6 +132,7 @@ export function useChangeTracker() {
         changes.added.set(id, page);
       }
     }
+    setVersion(v => v + 1);
   }, []);
 
   const getChanges = useCallback(() => {
@@ -190,6 +195,8 @@ export function useChangeTracker() {
       labels: { added: new Map(), modified: new Map(), deleted: new Set() },
       pages: { added: new Map(), modified: new Map(), deleted: new Set() }
     };
+    // Increment version to trigger React re-render
+    setVersion(v => v + 1);
   }, []);
 
   const getChangesSummary = useCallback(() => {
@@ -232,6 +239,5 @@ export function useChangeTracker() {
     getChanges,
     hasChanges,
     clearChanges,
-    getChangesSummary
-  };
-}
+    getChangesSummary,
+    version // Expose version so components can use it as a dependency

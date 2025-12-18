@@ -60,6 +60,7 @@ const SmartImportModal = lazyWithRetry(() => import("./components/SmartImportMod
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
+const ConflictResolutionModal = lazyWithRetry(() => import("./components/ConflictResolutionModal"));
 import { fetchWheel, fetchPageData, saveWheelSnapshot, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, reorderPages, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
@@ -69,6 +70,7 @@ import { useThrottledCallback, useDebouncedCallback } from "./hooks/useCallbackU
 import { useMultiStateUndoRedo } from "./hooks/useUndoRedo";
 import { useWheelSaveQueue } from "./hooks/useWheelSaveQueue";
 import { useChangeTracker } from "./hooks/useChangeTracker";
+import { useOptimisticSync } from "./hooks/useOptimisticSync";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -123,7 +125,7 @@ const normalizePageStructure = (pageLike) => {
 };
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
-  const { t, i18n } = useTranslation(['common']);
+  const { t, i18n } = useTranslation(['common', 'conflict']);
   const { user } = useAuth();
   const { isPremium, loading: subscriptionLoading } = useSubscription();
   
@@ -348,6 +350,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Change tracking for delta saves
   const changeTracker = useChangeTracker();
   const prevStateRef = useRef(null);
+
+  // ==========================================
+  // OPTIMISTIC SYNC: Manages dirty state, conflict detection, and debounced saves
+  // This replaces the old debounced auto-save with proper optimistic update handling
+  // ==========================================
+  const optimisticSync = useOptimisticSync({
+    debounceMs: 500, // Reduced from 1.5s for faster feedback
+    conflictWindowMs: 2000,
+    onConflictDetected: (conflicts) => {
+      console.log('[OptimisticSync] Conflicts detected:', conflicts);
+      setConflictDetails(conflicts);
+      setShowConflictModal(true);
+    }
+  });
 
   // ==========================================
   // SAVE QUEUE: Prevents data loss during rapid changes
@@ -613,7 +629,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       structure: nextStructure,
     };
 
-    // Track changes for delta saves
+    // Track changes for delta saves AND optimistic sync
     if (structureChanged && !isLoadingData.current) {
       // Track ring changes
       const currentRingMap = new Map(currentStructure.rings.map(r => [r.id, r]));
@@ -623,14 +639,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const oldRing = currentRingMap.get(ring.id);
         if (!oldRing) {
           changeTracker.trackRingChange(ring.id, 'added', ring);
+          // Also track in optimistic sync for conflict detection
+          optimisticSync.markChange('structure', 'rings', 'add', ring.id, ring);
         } else if (JSON.stringify(oldRing) !== JSON.stringify(ring)) {
           changeTracker.trackRingChange(ring.id, 'modified', ring);
+          optimisticSync.markChange('structure', 'rings', 'modify', ring.id, ring);
         }
       });
       
       currentStructure.rings.forEach(ring => {
         if (!nextRingMap.has(ring.id)) {
           changeTracker.trackRingChange(ring.id, 'deleted', ring);
+          optimisticSync.markChange('structure', 'rings', 'delete', ring.id, ring);
         }
       });
 
@@ -642,14 +662,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const oldActivity = currentActivityMap.get(activity.id);
         if (!oldActivity) {
           changeTracker.trackActivityGroupChange(activity.id, 'added', activity);
+          optimisticSync.markChange('structure', 'activityGroups', 'add', activity.id, activity);
         } else if (JSON.stringify(oldActivity) !== JSON.stringify(activity)) {
           changeTracker.trackActivityGroupChange(activity.id, 'modified', activity);
+          optimisticSync.markChange('structure', 'activityGroups', 'modify', activity.id, activity);
         }
       });
       
       currentStructure.activityGroups.forEach(activity => {
         if (!nextActivityMap.has(activity.id)) {
           changeTracker.trackActivityGroupChange(activity.id, 'deleted', activity);
+          optimisticSync.markChange('structure', 'activityGroups', 'delete', activity.id, activity);
         }
       });
 
@@ -661,14 +684,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const oldLabel = currentLabelMap.get(label.id);
         if (!oldLabel) {
           changeTracker.trackLabelChange(label.id, 'added', label);
+          optimisticSync.markChange('structure', 'labels', 'add', label.id, label);
         } else if (JSON.stringify(oldLabel) !== JSON.stringify(label)) {
           changeTracker.trackLabelChange(label.id, 'modified', label);
+          optimisticSync.markChange('structure', 'labels', 'modify', label.id, label);
         }
       });
       
       currentStructure.labels.forEach(label => {
         if (!nextLabelMap.has(label.id)) {
           changeTracker.trackLabelChange(label.id, 'deleted', label);
+          optimisticSync.markChange('structure', 'labels', 'delete', label.id, label);
         }
       });
       
@@ -677,7 +703,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         triggerAutoSaveRef.current();
       }
     }
-  }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange, changeTracker]);
+  }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange, changeTracker, optimisticSync]);
   
   // Track changes for delta saves (compare previous state to current)
   // Note: Change tracking happens directly in mutation handlers (handleUpdateAktivitet, handleAddItems, etc.)
@@ -706,6 +732,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showVersionHistory, setShowVersionHistory] = useState(false); // Version history modal
   const [showExportModal, setShowExportModal] = useState(false); // Export data modal
   const [showSmartImport, setShowSmartImport] = useState(false); // Smart CSV import modal
+  const [showConflictModal, setShowConflictModal] = useState(false); // Conflict resolution modal
+  const [conflictDetails, setConflictDetails] = useState(null); // Details of conflicts to resolve
   
   
   // AI Assistant state
@@ -1268,6 +1296,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     
+    // CRITICAL: Use optimistic sync to check if we should block remote updates
+    // This properly tracks dirty state and queues remote updates for conflict checking
+    if (optimisticSync.shouldBlockRemoteUpdates()) {
+      // Queue the update for potential conflict detection after save
+      optimisticSync.queueRemoteUpdate(tableName, eventType, payload);
+      // console.log('[Realtime] Queued update for conflict check - local changes pending');
+      return;
+    }
+    
     // CRITICAL: Check if we have queued changes - don't overwrite optimistic local state!
     if (hasQueuedChanges()) {
       // console.log('[Realtime] Ignoring update - queued changes waiting to save');
@@ -1303,7 +1340,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Reload the wheel data when any change occurs
     // Throttled to prevent too many reloads
     throttledReload();
-  }, [throttledReload, hasQueuedChanges, hasUnsavedChanges]);
+  }, [throttledReload, hasQueuedChanges, hasUnsavedChanges, optimisticSync]);
 
   // Enable realtime sync for this wheel (ALL pages)
   // Page navigation is frontend-only, so we subscribe to the entire wheel
@@ -2226,10 +2263,29 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   }, [handleSave]);
 
   // ========================================
-  // DEBOUNCED AUTO-SAVE
-  // Automatically saves changes after 1.5 seconds of inactivity
-  // Used for all changes that should persist (sidepanel, listview, etc.)
+  // DEBOUNCED AUTO-SAVE (via Optimistic Sync)
+  // Automatically saves changes after 500ms of inactivity (reduced from 1.5s)
+  // Uses optimistic sync for proper dirty state tracking and conflict detection
   // ========================================
+  
+  // Register the save callback with optimistic sync
+  useEffect(() => {
+    optimisticSync.setSaveCallback(async (changes) => {
+      // Don't auto-save during initial load, data loading, or realtime updates
+      if (!wheelId || isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+        return;
+      }
+      
+      console.log('[OptimisticSync] Executing save with changes:', changes);
+      
+      // Use the existing handleSave which does delta saves
+      if (handleSaveRef.current) {
+        await handleSaveRef.current({ silent: true, reason: 'optimistic-sync' });
+      }
+    });
+  }, [wheelId, optimisticSync]);
+
+  // Legacy debounced auto-save (kept for backward compatibility, redirects to optimistic sync)
   const debouncedAutoSave = useDebouncedCallback(async () => {
     // Don't auto-save during initial load, data loading, or realtime updates
     if (!wheelId || isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
@@ -2245,7 +2301,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (handleSaveRef.current) {
       await handleSaveRef.current({ silent: true, reason: 'auto-change' });
     }
-  }, 1500);
+  }, 500); // Reduced from 1500 to 500ms for faster feedback
 
   // Trigger auto-save whenever changeTracker has changes
   // This is called from setWheelStructure and other handlers
@@ -2253,8 +2309,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!wheelId || isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
       return;
     }
+    
+    // Use optimistic sync's debounced save instead of legacy debounce
+    // This ensures proper dirty state tracking
+    optimisticSync.scheduleSave();
+    
+    // Also trigger legacy for backward compatibility during transition
     debouncedAutoSave();
-  }, [wheelId, debouncedAutoSave]);
+  }, [wheelId, debouncedAutoSave, optimisticSync]);
 
   // Keep ref updated for early callers
   useEffect(() => {
@@ -4325,7 +4387,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       summary.labels.added + summary.labels.modified + summary.labels.deleted +
       summary.pages.modified
     );
-  }, [wheelState]); // Recalculate whenever wheelState changes
+  }, [changeTracker.version]); // Recalculate when changeTracker version changes (cleared or updated)
 
   if (isLoading) {
     return (
@@ -4694,6 +4756,30 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           onToggle={() => setIsAIOpen(!isAIOpen)}
           isPremium={isPremium}
         />
+        </Suspense>
+      )}
+
+      {/* Conflict Resolution Modal */}
+      {showConflictModal && conflictDetails && (
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <ConflictResolutionModal
+            conflicts={conflictDetails}
+            onResolve={async (resolution) => {
+              if (resolution === 'remote') {
+                // User chose to accept remote changes - reload from database
+                await loadWheelData({ force: true, reason: 'conflict-resolution' });
+                showToast(t('conflict:resolved', 'Konflikt löst - data laddades om'), 'success');
+              } else {
+                // User chose to keep local - our changes are already saved
+                showToast(t('conflict:resolved', 'Konflikt löst - dina ändringar behölls'), 'success');
+              }
+              optimisticSync.resolveConflict(resolution, null);
+            }}
+            onClose={() => {
+              setShowConflictModal(false);
+              setConflictDetails(null);
+            }}
+          />
         </Suspense>
       )}
 

@@ -1,0 +1,29 @@
+{
+  "title": "Ändringar i konflikt",
+  "subtitle": "Andra har gjort ändringar medan du redigerade",
+  "info": {
+    "title": "Samarbetskonflikt upptäckt",
+    "description": "Dina ändringar har sparats, men en teammedlem har gjort ändringar på samma objekt. Välj hur du vill hantera detta."
+  },
+  "tables": {
+    "rings": "Ringar",
+    "activityGroups": "Aktivitetsgrupper",
+    "labels": "Etiketter",
+    "items": "Aktiviteter"
+  },
+  "actions": {
+    "add": "lade till",
+    "modify": "ändrade",
+    "delete": "tog bort"
+  },
+  "yourChange": "Du",
+  "theirChange": "Annan",
+  "conflictCount": "{{count}} konflikt(er)",
+  "conflictCount_one": "1 konflikt",
+  "conflictCount_other": "{{count}} konflikter",
+  "keepMine": "Behåll mina ändringar",
+  "acceptTheirs": "Ladda om med deras ändringar",
+  "hint": "\"Behåll mina\" bevarar dina ändringar. \"Ladda om\" hämtar den senaste versionen från servern.",
+  "resolving": "Löser konflikt...",
+  "resolved": "Konflikt löst"
+}
