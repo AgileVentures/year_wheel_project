@@ -1,10 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { createClient } from 'npm:@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
 interface PremiumGiftRequest {
   recipientEmail: string
@@ -14,18 +9,17 @@ interface PremiumGiftRequest {
   language?: 'en' | 'sv'
 }
 
-serve(async (req) => {
+/**
+ * Send Premium Gift Email
+ * Sends notification email when admin grants premium access
+ */
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Verify authentication
+    // Get auth header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -34,8 +28,16 @@ serve(async (req) => {
       )
     }
 
+    // Create admin client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    // Verify user
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
     
     if (authError || !user) {
       return new Response(
@@ -44,14 +46,14 @@ serve(async (req) => {
       )
     }
 
-    // Verify user is admin
-    const { data: profile, error: profileError } = await supabase
+    // Check if user is admin
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile?.is_admin) {
+    if (!profile?.is_admin) {
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
