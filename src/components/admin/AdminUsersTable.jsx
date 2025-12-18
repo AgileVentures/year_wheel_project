@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Search, ChevronLeft, ChevronRight, Crown, Chrome, Github, Mail, Shield, Gift, X } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Crown, Chrome, Github, Mail, Shield, Gift, X, CheckSquare, Square, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { grantPremiumAccess } from '../../services/adminService';
+import { grantPremiumAccess, sendPremiumGiftEmail } from '../../services/adminService';
 
 export default function AdminUsersTable({ 
   users, 
@@ -16,11 +16,15 @@ export default function AdminUsersTable({
   const { t } = useTranslation(['admin']);
   const [showGrantModal, setShowGrantModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUsers, setSelectedUsers] = useState([]); // For bulk selection
   const [grantDuration, setGrantDuration] = useState('1'); // months
   const [customDate, setCustomDate] = useState('');
   const [grantReason, setGrantReason] = useState('');
+  const [customMessage, setCustomMessage] = useState('');
+  const [sendEmail, setSendEmail] = useState(true);
   const [isGranting, setIsGranting] = useState(false);
   const [grantError, setGrantError] = useState('');
+  const [grantProgress, setGrantProgress] = useState({ current: 0, total: 0 });
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -116,20 +120,66 @@ export default function AdminUsersTable({
     );
   };
 
+  // Check if user has active premium (not free)
+  const hasActivePremium = (user) => {
+    if (!user.subscriptions || user.subscriptions.length === 0) return false;
+    const sub = user.subscriptions[0];
+    return sub.status === 'active' && ['monthly', 'yearly', 'gift'].includes(sub.plan_type);
+  };
+
+  // Get eligible users (no active premium)
+  const eligibleUsers = users.filter(u => !hasActivePremium(u));
+
+  // Toggle single user selection
+  const toggleUserSelection = (userId) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  // Toggle all eligible users
+  const toggleAllUsers = () => {
+    if (selectedUsers.length === eligibleUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(eligibleUsers.map(u => u.id));
+    }
+  };
+
   const openGrantModal = (user) => {
     setSelectedUser(user);
+    setSelectedUsers([]);
     setShowGrantModal(true);
     setGrantDuration('1');
     setCustomDate('');
     setGrantReason('');
+    setCustomMessage('');
+    setSendEmail(true);
     setGrantError('');
+    setGrantProgress({ current: 0, total: 0 });
+  };
+
+  const openBulkGrantModal = () => {
+    setSelectedUser(null);
+    setShowGrantModal(true);
+    setGrantDuration('1');
+    setCustomDate('');
+    setGrantReason('');
+    setCustomMessage('');
+    setSendEmail(true);
+    setGrantError('');
+    setGrantProgress({ current: 0, total: 0 });
   };
 
   const handleGrantPremium = async () => {
-    if (!selectedUser) return;
+    const usersToGrant = selectedUser ? [selectedUser] : users.filter(u => selectedUsers.includes(u.id));
+    if (usersToGrant.length === 0) return;
     
     setIsGranting(true);
     setGrantError('');
+    setGrantProgress({ current: 0, total: usersToGrant.length });
     
     try {
       let expiresAt;
@@ -141,8 +191,44 @@ export default function AdminUsersTable({
         expiresAt = date.toISOString();
       }
       
-      await grantPremiumAccess(selectedUser.id, expiresAt, grantReason);
-      setShowGrantModal(false);
+      let successCount = 0;
+      let errors = [];
+      
+      for (let i = 0; i < usersToGrant.length; i++) {
+        const user = usersToGrant[i];
+        setGrantProgress({ current: i + 1, total: usersToGrant.length });
+        
+        try {
+          await grantPremiumAccess(user.id, expiresAt, grantReason);
+          
+          // Send email if enabled
+          if (sendEmail) {
+            try {
+              await sendPremiumGiftEmail(
+                user.email,
+                user.full_name || user.email.split('@')[0],
+                expiresAt,
+                customMessage || undefined
+              );
+            } catch (emailError) {
+              console.error(`Failed to send email to ${user.email}:`, emailError);
+              // Don't fail the whole operation if email fails
+            }
+          }
+          
+          successCount++;
+        } catch (error) {
+          errors.push(`${user.email}: ${error.message}`);
+        }
+      }
+      
+      if (errors.length > 0) {
+        setGrantError(`${successCount} av ${usersToGrant.length} lyckades. Fel: ${errors.join(', ')}`);
+      } else {
+        setShowGrantModal(false);
+        setSelectedUsers([]);
+      }
+      
       onRefresh(); // Refresh the user list
     } catch (error) {
       setGrantError(error.message || 'Failed to grant premium access');
@@ -154,12 +240,12 @@ export default function AdminUsersTable({
   return (
     <div className="space-y-6">
       {/* Grant Premium Modal */}
-      {showGrantModal && selectedUser && (
+      {showGrantModal && (selectedUser || selectedUsers.length > 0) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold text-gray-900">
-                Ge Premium-åtkomst
+                {selectedUser ? 'Ge Premium-åtkomst' : `Ge Premium till ${selectedUsers.length} användare`}
               </h3>
               <button 
                 onClick={() => setShowGrantModal(false)}
@@ -170,12 +256,27 @@ export default function AdminUsersTable({
             </div>
             
             <div className="p-4 space-y-4">
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-sm text-gray-600">Användare:</p>
-                <p className="font-medium text-gray-900">{selectedUser.full_name || 'Inget namn'}</p>
-                <p className="text-sm text-gray-500">{selectedUser.email}</p>
-              </div>
+              {/* User info */}
+              {selectedUser ? (
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-sm text-gray-600">Användare:</p>
+                  <p className="font-medium text-gray-900">{selectedUser.full_name || 'Inget namn'}</p>
+                  <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                </div>
+              ) : (
+                <div className="bg-blue-50 p-3 rounded">
+                  <p className="text-sm text-blue-800 font-medium flex items-center gap-2">
+                    <Users size={16} />
+                    {selectedUsers.length} användare valda
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {users.filter(u => selectedUsers.includes(u.id)).map(u => u.email).slice(0, 3).join(', ')}
+                    {selectedUsers.length > 3 && ` +${selectedUsers.length - 3} till`}
+                  </p>
+                </div>
+              )}
               
+              {/* Duration */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Varaktighet
@@ -214,6 +315,7 @@ export default function AdminUsersTable({
                 </div>
               </div>
               
+              {/* Reason */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Anledning (valfritt)
@@ -222,10 +324,59 @@ export default function AdminUsersTable({
                   type="text"
                   value={grantReason}
                   onChange={(e) => setGrantReason(e.target.value)}
-                  placeholder="T.ex. Beta-testare, Samarbetspartner..."
+                  placeholder="T.ex. Beta-testare, Julklapp, Samarbetspartner..."
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
                 />
               </div>
+              
+              {/* Send email toggle */}
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                <button
+                  type="button"
+                  onClick={() => setSendEmail(!sendEmail)}
+                  className="text-gray-700"
+                >
+                  {sendEmail ? <CheckSquare size={20} className="text-green-600" /> : <Square size={20} />}
+                </button>
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Skicka mail till mottagaren</p>
+                  <p className="text-xs text-gray-500">Informera användaren om sin premium-gåva</p>
+                </div>
+              </div>
+              
+              {/* Custom message (shown when send email is enabled) */}
+              {sendEmail && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Personligt meddelande (valfritt)
+                  </label>
+                  <textarea
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    placeholder="T.ex. God Jul! 🎄 Vi vill tacka dig för att du använder YearWheel genom att ge dig Premium i julklapp!"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Detta meddelande visas i mailet till mottagaren
+                  </p>
+                </div>
+              )}
+              
+              {/* Progress indicator for bulk */}
+              {isGranting && grantProgress.total > 1 && (
+                <div className="p-3 bg-blue-50 rounded">
+                  <p className="text-sm text-blue-700">
+                    Bearbetar {grantProgress.current} av {grantProgress.total}...
+                  </p>
+                  <div className="mt-2 h-2 bg-blue-200 rounded overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-600 transition-all"
+                      style={{ width: `${(grantProgress.current / grantProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
               
               {grantError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
@@ -254,7 +405,7 @@ export default function AdminUsersTable({
                 ) : (
                   <>
                     <Gift size={16} />
-                    Ge Premium
+                    {selectedUser ? 'Ge Premium' : `Ge Premium (${selectedUsers.length})`}
                   </>
                 )}
               </button>
@@ -276,6 +427,15 @@ export default function AdminUsersTable({
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
             />
           </div>
+          {selectedUsers.length > 0 && (
+            <button
+              onClick={openBulkGrantModal}
+              className="px-4 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <Gift size={18} />
+              Ge Premium ({selectedUsers.length})
+            </button>
+          )}
           <button
             onClick={onRefresh}
             className="px-4 py-2 bg-gray-900 text-white rounded-sm hover:bg-gray-800 transition-colors"
@@ -291,6 +451,19 @@ export default function AdminUsersTable({
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-4 py-3 text-left">
+                  <button
+                    onClick={toggleAllUsers}
+                    className="text-gray-500 hover:text-gray-700"
+                    title={eligibleUsers.length > 0 ? `Välj alla ${eligibleUsers.length} utan premium` : 'Inga valbara användare'}
+                  >
+                    {selectedUsers.length > 0 && selectedUsers.length === eligibleUsers.length ? (
+                      <CheckSquare size={18} className="text-green-600" />
+                    ) : (
+                      <Square size={18} />
+                    )}
+                  </button>
+                </th>
                 <th 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => onSort('full_name')}
@@ -318,38 +491,59 @@ export default function AdminUsersTable({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{user.full_name || 'No name'}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {getProviderDisplay(user)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getSubscriptionBadge(user.subscriptions)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(user.created_at)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatLastSeen(user.last_sign_in_at)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => openGrantModal(user)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors"
-                      title="Ge premium-åtkomst"
-                    >
-                      <Gift size={14} />
-                      Ge Premium
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map((user) => {
+                const hasPremium = hasActivePremium(user);
+                const isSelected = selectedUsers.includes(user.id);
+                
+                return (
+                  <tr key={user.id} className={`hover:bg-gray-50 ${isSelected ? 'bg-green-50' : ''}`}>
+                    <td className="px-4 py-4">
+                      {!hasPremium && (
+                        <button
+                          onClick={() => toggleUserSelection(user.id)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          {isSelected ? (
+                            <CheckSquare size={18} className="text-green-600" />
+                          ) : (
+                            <Square size={18} />
+                          )}
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{user.full_name || 'No name'}</div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getProviderDisplay(user)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getSubscriptionBadge(user.subscriptions)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(user.created_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatLastSeen(user.last_sign_in_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {!hasPremium && (
+                        <button
+                          onClick={() => openGrantModal(user)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors"
+                          title="Ge premium-åtkomst"
+                        >
+                          <Gift size={14} />
+                          Ge Premium
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -689,3 +689,31 @@ export const revokePremiumAccess = async (targetUserId) => {
     throw error;
   }
 };
+
+/**
+ * Send premium gift notification email
+ * @param {string} recipientEmail - Email to send to
+ * @param {string} recipientName - Name of recipient
+ * @param {string} expiresAt - ISO date string for when premium expires
+ * @param {string} customMessage - Optional custom message to include in email
+ * @param {string} language - Language for email ('sv' or 'en')
+ */
+export const sendPremiumGiftEmail = async (recipientEmail, recipientName, expiresAt, customMessage = '', language = 'sv') => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-premium-gift', {
+      body: {
+        recipientEmail,
+        recipientName,
+        expiresAt,
+        customMessage,
+        language
+      }
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error sending premium gift email:', error);
+    throw error;
+  }
+};
