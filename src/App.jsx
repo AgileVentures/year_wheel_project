@@ -3750,6 +3750,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (changeResultRef.actuallyChanged && changeResultRef.updatedItem) {
       // Track item modification with the updated item
       changeTracker.trackItemChange(changeResultRef.updatedItem.id, 'modified', changeResultRef.updatedItem);
+      
+      // Auto-save after drag end
+      if (wasDragging && handleSaveRef.current) {
+        handleSaveRef.current({ silent: true, reason: 'drag-end' });
+      }
     }
   }, [setWheelState, endBatch, cancelBatch, changeTracker]);
 
