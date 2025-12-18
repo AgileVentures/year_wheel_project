@@ -30,4 +30,4 @@ dist-ssr
 docs/*
 cypress/downloads/*
 cypress/videos/*
-cypress/screenshots/*
+cypress/screenshots/*supabase/.temp/
