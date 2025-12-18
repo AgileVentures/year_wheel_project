@@ -630,7 +630,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     };
 
     // Track changes for delta saves AND optimistic sync
-    if (structureChanged && !isLoadingData.current) {
+    // CRITICAL: Don't track during initial load or data loading
+    if (structureChanged && !isLoadingData.current && !isInitialLoad.current) {
       // Track ring changes
       const currentRingMap = new Map(currentStructure.rings.map(r => [r.id, r]));
       const nextRingMap = new Map(nextStructure.rings.map(r => [r.id, r]));
@@ -826,14 +827,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     let reloadStatus = 'loaded';
 
     if (!force) {
+      // Check multiple sources for local changes
+      const hasTrackedChanges = changeTracker.hasChanges();
+      const isOptimisticDirty = optimisticSync.isDirty;
       const hasLocalChanges =
         hasUnsavedChangesRef.current ||
+        hasTrackedChanges ||
+        isOptimisticDirty ||
         isSavingRef.current ||
         isDraggingRef.current;
 
       if (hasLocalChanges) {
         const alreadyPending = pendingRefreshRef.current?.needed;
-        console.log(`[loadWheelData] Skip reload (${reason}) from ${source} - local changes pending.`);
+        console.log(`[loadWheelData] Skip reload (${reason}) from ${source} - local changes pending. hasUnsaved=${hasUnsavedChangesRef.current}, tracked=${hasTrackedChanges}, dirty=${isOptimisticDirty}, saving=${isSavingRef.current}`);
 
         pendingRefreshRef.current = {
           needed: true,
@@ -1296,12 +1302,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     
+    // CRITICAL: Check if change tracker has pending changes
+    if (changeTracker.hasChanges()) {
+      console.log('[Realtime] Ignoring update - changeTracker has pending changes');
+      return;
+    }
+    
     // CRITICAL: Use optimistic sync to check if we should block remote updates
     // This properly tracks dirty state and queues remote updates for conflict checking
     if (optimisticSync.shouldBlockRemoteUpdates()) {
       // Queue the update for potential conflict detection after save
       optimisticSync.queueRemoteUpdate(tableName, eventType, payload);
-      // console.log('[Realtime] Queued update for conflict check - local changes pending');
+      console.log('[Realtime] Queued update for conflict check - optimistic sync dirty');
       return;
     }
     
@@ -1340,7 +1352,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Reload the wheel data when any change occurs
     // Throttled to prevent too many reloads
     throttledReload();
-  }, [throttledReload, hasQueuedChanges, hasUnsavedChanges, optimisticSync]);
+  }, [throttledReload, hasQueuedChanges, hasUnsavedChanges, optimisticSync, changeTracker]);
 
   // Enable realtime sync for this wheel (ALL pages)
   // Page navigation is frontend-only, so we subscribe to the entire wheel
@@ -1351,6 +1363,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // COMPLETELY IGNORE all page updates if we're in the middle of saving
     // This prevents the database's slightly-stale data from overwriting our local changes
     if (isSavingRef.current) {
+      return;
+    }
+    
+    // CRITICAL: Check if change tracker has pending changes
+    if (changeTracker.hasChanges()) {
       return;
     }
     
@@ -2166,6 +2183,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const { silent = false, reason = 'manual' } = options;
 
     if (wheelId) {
+      // CRITICAL: Set saving flag BEFORE any async operations
+      isSavingRef.current = true;
+      setIsSaving(true);
+      
       try {
         // Check if we have tracked changes for delta save
         const hasChanges = changeTracker.hasChanges();
@@ -2185,8 +2206,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             // Broadcast delta changes for realtime collaboration
             await broadcastDeltaChanges(wheelId, changes, user?.id);
             
+            // CRITICAL: Update lastSaveTimestamp to block realtime updates from our own save
+            lastSaveTimestamp.current = Date.now();
+            
             // Clear tracked changes after successful save
             changeTracker.clearChanges();
+            optimisticSync.clearPendingChanges();
             
             if (!silent) {
               const { items, rings, activityGroups, labels, pages } = result;
@@ -2232,6 +2257,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       } catch (error) {
         console.error('[ManualSave] Error saving wheel:', error);
         showToast('Kunde inte spara', 'error');
+      } finally {
+        // CRITICAL: Always reset saving flag
+        isSavingRef.current = false;
+        setIsSaving(false);
       }
 
       return;
