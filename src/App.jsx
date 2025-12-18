@@ -826,7 +826,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     let reloadStatus = 'loaded';
 
-    if (!force) {
+    // CRITICAL: AI assistant writes directly to database, must always reload
+    // The AI creates items server-side, so local state has no knowledge of them
+    const forceForAI = source === 'ai-assistant';
+
+    if (!force && !forceForAI) {
       // Check multiple sources for local changes
       const hasTrackedChanges = changeTracker.hasChanges();
       const isOptimisticDirty = optimisticSync.isDirty;
@@ -841,6 +845,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const alreadyPending = pendingRefreshRef.current?.needed;
         console.log(`[loadWheelData] Skip reload (${reason}) from ${source} - local changes pending. hasUnsaved=${hasUnsavedChangesRef.current}, tracked=${hasTrackedChanges}, dirty=${isOptimisticDirty}, saving=${isSavingRef.current}`);
 
+        // For AI assistant, save local changes first then reload
+        if (source === 'ai-assistant' && handleSaveRef.current && !autoSaveInFlightRef.current) {
+          autoSaveInFlightRef.current = true;
+          try {
+            console.log('[loadWheelData] AI assistant - saving local changes before reload');
+            await handleSaveRef.current({ silent: true, reason: 'ai-assistant-refresh' });
+            console.log('[loadWheelData] AI assistant - save complete, now reloading');
+            // After save completes, proceed with reload (recursively call with force)
+            autoSaveInFlightRef.current = false;
+            return loadWheelData({ ...options, force: true });
+          } catch (autoSaveError) {
+            console.error('[loadWheelData] Auto-save before AI refresh failed:', autoSaveError);
+            showToast('toast:save.localChangesError', 'error');
+            autoSaveInFlightRef.current = false;
+            return { status: 'error', reason, source, scope };
+          }
+        }
+
         pendingRefreshRef.current = {
           needed: true,
           reason,
@@ -848,18 +870,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           scope,
           options: { ...options, force: true },
         };
-
-        if (source === 'ai-assistant' && handleSaveRef.current && !autoSaveInFlightRef.current) {
-          autoSaveInFlightRef.current = true;
-          handleSaveRef.current({ silent: true, reason: 'ai-assistant-refresh' })
-            .catch((autoSaveError) => {
-              console.error('[loadWheelData] Auto-save before AI refresh failed:', autoSaveError);
-              showToast('toast:save.localChangesError', 'error');
-            })
-            .finally(() => {
-              autoSaveInFlightRef.current = false;
-            });
-        }
 
         if (!alreadyPending && !silent) {
           showToast('toast:ai.saveToLoad', 'info');
