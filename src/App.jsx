@@ -671,6 +671,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           changeTracker.trackLabelChange(label.id, 'deleted', label);
         }
       });
+      
+      // Trigger auto-save after structure changes
+      if (triggerAutoSaveRef.current) {
+        triggerAutoSaveRef.current();
+      }
     }
   }, [setWheelState, wheelState, currentPageItems, currentPageId, detectOrganizationChange, changeTracker]);
   
@@ -756,6 +761,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const autoSaveInFlightRef = useRef(false);
   // Expose handleSave for code paths defined above its declaration
   const handleSaveRef = useRef(null);
+  // Expose triggerAutoSave for code paths defined above its declaration
+  const triggerAutoSaveRef = useRef(null);
   // Queue item persistence operations to avoid race conditions
 
   // Complete wheel snapshot in the format: { metadata, structure, pages }
@@ -2217,6 +2224,42 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   useEffect(() => {
     handleSaveRef.current = handleSave;
   }, [handleSave]);
+
+  // ========================================
+  // DEBOUNCED AUTO-SAVE
+  // Automatically saves changes after 1.5 seconds of inactivity
+  // Used for all changes that should persist (sidepanel, listview, etc.)
+  // ========================================
+  const debouncedAutoSave = useDebouncedCallback(async () => {
+    // Don't auto-save during initial load, data loading, or realtime updates
+    if (!wheelId || isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+      return;
+    }
+    
+    // Only save if there are tracked changes
+    if (!changeTracker.hasChanges()) {
+      return;
+    }
+    
+    console.log('[AutoSave] Triggering debounced auto-save');
+    if (handleSaveRef.current) {
+      await handleSaveRef.current({ silent: true, reason: 'auto-change' });
+    }
+  }, 1500);
+
+  // Trigger auto-save whenever changeTracker has changes
+  // This is called from setWheelStructure and other handlers
+  const triggerAutoSave = useCallback(() => {
+    if (!wheelId || isInitialLoad.current || isLoadingData.current || isRealtimeUpdate.current) {
+      return;
+    }
+    debouncedAutoSave();
+  }, [wheelId, debouncedAutoSave]);
+
+  // Keep ref updated for early callers
+  useEffect(() => {
+    triggerAutoSaveRef.current = triggerAutoSave;
+  }, [triggerAutoSave]);
 
   const handleToggleTemplate = async () => {
     if (!wheelId || !isAdmin) return;
@@ -3751,9 +3794,16 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Track item modification with the updated item
       changeTracker.trackItemChange(changeResultRef.updatedItem.id, 'modified', changeResultRef.updatedItem);
       
-      // Auto-save after drag end
-      if (wasDragging && handleSaveRef.current) {
-        handleSaveRef.current({ silent: true, reason: 'drag-end' });
+      if (wasDragging) {
+        // Auto-save after drag end (immediate, not debounced)
+        if (handleSaveRef.current) {
+          handleSaveRef.current({ silent: true, reason: 'drag-end' });
+        }
+      } else {
+        // Auto-save after regular update (debounced)
+        if (triggerAutoSaveRef.current) {
+          triggerAutoSaveRef.current();
+        }
       }
     }
   }, [setWheelState, endBatch, cancelBatch, changeTracker]);
@@ -3783,6 +3833,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     itemsToAdd.forEach(item => {
       changeTracker.trackItemChange(item.id, 'added', item);
     });
+    
+    // Trigger auto-save after adding items
+    if (triggerAutoSaveRef.current) {
+      triggerAutoSaveRef.current();
+    }
   }, [currentPageId, wheelId, setWheelState, changeTracker]);
 
   const handleDeleteAktivitet = useCallback((itemId) => {
@@ -3815,6 +3870,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Track deletion for delta save
     if (deletedItem) {
       changeTracker.trackItemChange(itemId, 'deleted', deletedItem);
+      
+      // Trigger auto-save after deletion
+      if (triggerAutoSaveRef.current) {
+        triggerAutoSaveRef.current();
+      }
     }
 
     showToast(itemName ? `${itemName} raderad` : 'Aktivitet raderad', 'success');
