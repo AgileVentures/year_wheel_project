@@ -643,3 +643,49 @@ export const getMondayEvents = async (userId = null, limit = 100) => {
     return [];
   }
 };
+
+/**
+ * Grant premium access to a user (admin only)
+ * @param {string} targetUserId - The user ID to grant premium to
+ * @param {string} expiresAt - ISO date string for when premium expires
+ * @param {string} reason - Optional reason for granting premium
+ */
+export const grantPremiumAccess = async (targetUserId, expiresAt, reason = '') => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-grant-premium', {
+      body: {
+        targetUserId,
+        expiresAt,
+        reason
+      }
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error granting premium access:', error);
+    throw error;
+  }
+};
+
+/**
+ * Revoke premium access from a user (admin only)
+ * @param {string} targetUserId - The user ID to revoke premium from
+ */
+export const revokePremiumAccess = async (targetUserId) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-grant-premium', {
+      body: {
+        targetUserId,
+        expiresAt: new Date().toISOString(), // Expire immediately
+        reason: 'Admin revoked premium access'
+      }
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error revoking premium access:', error);
+    throw error;
+  }
+};

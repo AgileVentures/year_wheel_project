@@ -1,5 +1,7 @@
-import { Search, ChevronLeft, ChevronRight, Crown, Chrome, Github, Mail, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { Search, ChevronLeft, ChevronRight, Crown, Chrome, Github, Mail, Shield, Gift, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { grantPremiumAccess } from '../../services/adminService';
 
 export default function AdminUsersTable({ 
   users, 
@@ -12,6 +14,13 @@ export default function AdminUsersTable({
   onRefresh 
 }) {
   const { t } = useTranslation(['admin']);
+  const [showGrantModal, setShowGrantModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [grantDuration, setGrantDuration] = useState('1'); // months
+  const [customDate, setCustomDate] = useState('');
+  const [grantReason, setGrantReason] = useState('');
+  const [isGranting, setIsGranting] = useState(false);
+  const [grantError, setGrantError] = useState('');
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -87,6 +96,17 @@ export default function AdminUsersTable({
       return <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full capitalize">{sub.status}</span>;
     }
     
+    // Gift subscription (admin granted)
+    if (sub.plan_type === 'gift') {
+      const expiresAt = sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('sv-SE') : '';
+      return (
+        <span className="px-2 py-1 text-xs rounded-full inline-flex items-center gap-1 bg-green-100 text-green-700" title={`Expires: ${expiresAt}`}>
+          <Gift size={12} />
+          <span>Gift</span>
+        </span>
+      );
+    }
+    
     const planColor = sub.plan_type === 'yearly' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
     return (
       <span className={`px-2 py-1 text-xs rounded-full inline-flex items-center gap-1 ${planColor}`}>
@@ -96,8 +116,153 @@ export default function AdminUsersTable({
     );
   };
 
+  const openGrantModal = (user) => {
+    setSelectedUser(user);
+    setShowGrantModal(true);
+    setGrantDuration('1');
+    setCustomDate('');
+    setGrantReason('');
+    setGrantError('');
+  };
+
+  const handleGrantPremium = async () => {
+    if (!selectedUser) return;
+    
+    setIsGranting(true);
+    setGrantError('');
+    
+    try {
+      let expiresAt;
+      if (customDate) {
+        expiresAt = new Date(customDate).toISOString();
+      } else {
+        const date = new Date();
+        date.setMonth(date.getMonth() + parseInt(grantDuration));
+        expiresAt = date.toISOString();
+      }
+      
+      await grantPremiumAccess(selectedUser.id, expiresAt, grantReason);
+      setShowGrantModal(false);
+      onRefresh(); // Refresh the user list
+    } catch (error) {
+      setGrantError(error.message || 'Failed to grant premium access');
+    } finally {
+      setIsGranting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Grant Premium Modal */}
+      {showGrantModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Ge Premium-åtkomst
+              </h3>
+              <button 
+                onClick={() => setShowGrantModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div className="bg-gray-50 p-3 rounded">
+                <p className="text-sm text-gray-600">Användare:</p>
+                <p className="font-medium text-gray-900">{selectedUser.full_name || 'Inget namn'}</p>
+                <p className="text-sm text-gray-500">{selectedUser.email}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Varaktighet
+                </label>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {[
+                    { value: '1', label: '1 månad' },
+                    { value: '2', label: '2 månader' },
+                    { value: '3', label: '3 månader' },
+                    { value: '6', label: '6 månader' },
+                    { value: '12', label: '1 år' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setGrantDuration(opt.value); setCustomDate(''); }}
+                      className={`px-3 py-2 text-sm rounded border transition-colors ${
+                        grantDuration === opt.value && !customDate
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">eller välj datum:</span>
+                  <input
+                    type="date"
+                    value={customDate}
+                    onChange={(e) => setCustomDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Anledning (valfritt)
+                </label>
+                <input
+                  type="text"
+                  value={grantReason}
+                  onChange={(e) => setGrantReason(e.target.value)}
+                  placeholder="T.ex. Beta-testare, Samarbetspartner..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+                />
+              </div>
+              
+              {grantError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                  {grantError}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-3 p-4 border-t bg-gray-50">
+              <button
+                onClick={() => setShowGrantModal(false)}
+                className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900"
+              >
+                Avbryt
+              </button>
+              <button
+                onClick={handleGrantPremium}
+                disabled={isGranting}
+                className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isGranting ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Bearbetar...
+                  </>
+                ) : (
+                  <>
+                    <Gift size={16} />
+                    Ge Premium
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search and Filters */}
       <div className="bg-white rounded-sm shadow-sm p-4 border border-gray-200">
         <div className="flex items-center gap-4">
@@ -147,6 +312,9 @@ export default function AdminUsersTable({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t('lastSeen')}
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Åtgärder
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -169,6 +337,16 @@ export default function AdminUsersTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatLastSeen(user.last_sign_in_at)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => openGrantModal(user)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors"
+                      title="Ge premium-åtkomst"
+                    >
+                      <Gift size={14} />
+                      Ge Premium
+                    </button>
                   </td>
                 </tr>
               ))}
