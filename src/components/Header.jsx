@@ -25,6 +25,7 @@ function Header({
   year = "2025", 
   onYearChange,
   onDownloadImage,
+  onDownloadPDFReport,
   downloadFormat = "png",
   onDownloadFormatChange,
   onBackToDashboard,
@@ -550,7 +551,7 @@ function Header({
                 </div>
 
                 {/* PDF */}
-                <div className={`${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
+                <div className={`border-b border-gray-200 ${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
                   <div className="px-4 py-2 flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
                       <FileDown className="w-5 h-5 text-gray-600" />
@@ -580,6 +581,42 @@ function Header({
                     </button>
                   </div>
                 </div>
+
+                {/* PDF Report with Activity List */}
+                {onDownloadPDFReport && (
+                  <div className={`${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
+                    <div className="px-4 py-2 flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <FileSpreadsheet className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {t('common:header.pdfReport', 'PDF Rapport')}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {t('common:header.pdfReportDesc', 'Aktivitetslista + hjulbild')}
+                          </div>
+                        </div>
+                      </div>
+                      {!isPremium && (
+                        <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
+                          {t('subscription:premium')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex border-t border-gray-200">
+                      <button
+                        onClick={() => { onDownloadPDFReport(); setShowImageExportMenu(false); }}
+                        disabled={!isPremium}
+                        className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
+                          !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
+                        }`}
+                      >
+                        <Download size={14} />
+                        {t('common:actions.download')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

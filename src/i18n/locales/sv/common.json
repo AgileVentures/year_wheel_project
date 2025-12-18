@@ -170,6 +170,8 @@
     "jpegDesc": "Mindre filstorlek",
     "svgDesc": "Skalbar vektorgrafik",
     "pdfDesc": "Utskriftsklar fil",
+    "pdfReport": "PDF Rapport",
+    "pdfReportDesc": "Aktivitetslista + hjulbild",
     "copyToClipboard": "Kopiera till urklipp",
     "downloadImage": "Ladda ner bild",
     "versionHistory": "Visa versionshistorik",

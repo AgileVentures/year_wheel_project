@@ -171,6 +171,8 @@
     "jpegDesc": "Smaller file size",
     "svgDesc": "Scalable vector graphics",
     "pdfDesc": "Print-ready document",
+    "pdfReport": "PDF Report",
+    "pdfReportDesc": "Activity list + wheel image",
     "copyToClipboard": "Copy to clipboard",
     "downloadImage": "Download image",
     "versionHistory": "Show version history",

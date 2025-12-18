@@ -5742,6 +5742,10 @@ class YearWheel {
     return this.exportManager.downloadAsPDF();
   }
 
+  async downloadPDFReport(options = {}) {
+    return this.exportManager.downloadPDFReport(options);
+  }
+
   async copyPNGToClipboard(whiteBackground = false) {
     return this.exportManager.copyPNGToClipboard(whiteBackground);
   }

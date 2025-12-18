@@ -123,7 +123,7 @@ const normalizePageStructure = (pageLike) => {
 };
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
-  const { t } = useTranslation(['common']);
+  const { t, i18n } = useTranslation(['common']);
   const { user } = useAuth();
   const { isPremium, loading: subscriptionLoading } = useSubscription();
   
@@ -4351,6 +4351,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         year={year}
         onYearChange={setYear}
         onDownloadImage={(toClipboard = false) => yearWheelRef && yearWheelRef.downloadImage(downloadFormat, toClipboard)}
+        onDownloadPDFReport={() => yearWheelRef && yearWheelRef.downloadPDFReport({
+          wheelStructure,
+          title,
+          year,
+          translations: { t, language: i18n.language }
+        })}
         downloadFormat={downloadFormat}
         onDownloadFormatChange={handleDownloadFormatChange}
         activeUsers={activeUsers}
