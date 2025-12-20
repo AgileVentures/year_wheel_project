@@ -1353,17 +1353,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     
-    // CRITICAL: Check if we have unsaved changes - don't overwrite local work!
-    if (hasUnsavedChanges) {
-      // console.log('[Realtime] Ignoring update - unsaved local changes exist');
-      return;
-    }
-    
-    // Don't reload during active save operation
-    if (isSavingRef.current) {
-      return;
-    }
-    
     // Mark as realtime update to prevent auto-save loop
     // This flag will be reset in loadWheelData's finally block
     isRealtimeUpdate.current = true;
