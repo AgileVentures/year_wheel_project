@@ -5,13 +5,11 @@ import LanguageSwitcher from '../LanguageSwitcher';
 import AdminStats from './AdminStats';
 import AdminUsersTable from './AdminUsersTable';
 import AdminWheelsTable from './AdminWheelsTable';
-import AdminActivity from './AdminActivity';
 import AdminAffiliates from './AdminAffiliates';
 import AdminEmailStats from './AdminEmailStats';
 import AdminMondayUsers from './AdminMondayUsers';
 import {
   Activity,
-  TrendingUp,
   Shield,
   Users,
   DollarSign,
@@ -26,7 +24,6 @@ import {
   getAdminWheels,
   getUserGrowthData,
   getWheelGrowthData,
-  getRecentActivity,
   getSubscriptionStats,
   getQuizLeadsStats,
   getNewsletterStats,
@@ -45,7 +42,6 @@ export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [userGrowth, setUserGrowth] = useState([]);
   const [wheelGrowth, setWheelGrowth] = useState([]);
-  const [recentActivity, setRecentActivity] = useState(null);
   const [subscriptionStats, setSubscriptionStats] = useState(null);
   const [quizLeadsStats, setQuizLeadsStats] = useState(null);
   const [newsletterStats, setNewsletterStats] = useState(null);
@@ -129,7 +125,6 @@ export default function AdminPanel() {
         usersData,
         userGrowthData,
         wheelGrowthData,
-        activityData,
         subStats,
         quizStats,
         emailStats,
@@ -139,7 +134,6 @@ export default function AdminPanel() {
         getUsers({ page: currentPage, limit: 50, search: searchQuery, sortBy, sortOrder }),
         getUserGrowthData(30),
         getWheelGrowthData(30),
-        getRecentActivity(10),
         getSubscriptionStats(),
         getQuizLeadsStats(),
         getNewsletterStats(),
@@ -151,7 +145,6 @@ export default function AdminPanel() {
       setTotalPages(usersData.totalPages);
       setUserGrowth(userGrowthData);
       setWheelGrowth(wheelGrowthData);
-      setRecentActivity(activityData);
       setSubscriptionStats(subStats);
       setQuizLeadsStats(quizStats);
       setNewsletterStats(emailStats);
@@ -264,17 +257,6 @@ export default function AdminPanel() {
               Hjul
             </button>
             <button
-              onClick={() => setActiveTab('activity')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'activity'
-                  ? 'border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <TrendingUp size={16} className="inline mr-2" />
-              {t('activity')}
-            </button>
-            <button
               onClick={() => setActiveTab('affiliates')}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'affiliates'
@@ -340,10 +322,6 @@ export default function AdminPanel() {
             onPageChange={setWheelsPage}
             loading={wheelsLoading}
           />
-        )}
-
-        {activeTab === 'activity' && (
-          <AdminActivity recentActivity={recentActivity} />
         )}
 
         {activeTab === 'affiliates' && (

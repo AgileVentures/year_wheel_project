@@ -241,3 +241,5 @@ export function useChangeTracker() {
     clearChanges,
     getChangesSummary,
     version // Expose version so components can use it as a dependency
+  };
+}

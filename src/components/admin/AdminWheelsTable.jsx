@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronLeft, ChevronRight, ExternalLink, Users, Globe, Star, Calendar, FileText } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ExternalLink, Users, Globe, Star, Calendar, Layers, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function AdminWheelsTable({ 
@@ -103,7 +103,10 @@ export default function AdminWheelsTable({
                   Team
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sidor
+                  Ringar
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Aktiviteter
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -118,7 +121,7 @@ export default function AdminWheelsTable({
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center">
+                  <td colSpan={10} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
                       <p className="text-gray-500 text-sm">Laddar hjul...</p>
@@ -127,7 +130,7 @@ export default function AdminWheelsTable({
                 </tr>
               ) : wheels.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={10} className="px-4 py-12 text-center text-gray-500">
                     {searchQuery ? 'Inga hjul hittades för sökningen' : 'Inga hjul i systemet'}
                   </td>
                 </tr>
@@ -179,11 +182,19 @@ export default function AdminWheelsTable({
                       )}
                     </td>
                     
-                    {/* Page count */}
+                    {/* Ring count */}
                     <td className="px-4 py-3 text-sm text-gray-700">
                       <span className="flex items-center gap-1">
-                        <FileText size={14} className="text-gray-400" />
-                        {wheel.page_count || 0}
+                        <Layers size={14} className="text-gray-400" />
+                        {wheel.ring_count || 0}
+                      </span>
+                    </td>
+                    
+                    {/* Activity count */}
+                    <td className="px-4 py-3 text-sm text-gray-700">
+                      <span className="flex items-center gap-1">
+                        <Activity size={14} className="text-gray-400" />
+                        {wheel.activity_count || 0}
                       </span>
                     </td>
                     

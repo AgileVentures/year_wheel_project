@@ -131,18 +131,67 @@ Deno.serve(async (req: Request) => {
     // Fetch page counts for each wheel
     const wheelIds = (wheels || []).map(w => w.id)
     let pageCountMap: Record<string, number> = {}
+    let ringCountMap: Record<string, number> = {}
+    let activityGroupCountMap: Record<string, number> = {}
     
     if (wheelIds.length > 0) {
-      const { data: pageCounts } = await supabaseAdmin
+      // Fetch page counts
+      const { data: pageCounts, error: pageError } = await supabaseAdmin
         .from('wheel_pages')
         .select('wheel_id')
         .in('wheel_id', wheelIds)
+
+      if (pageError) {
+        console.error('Error fetching page counts:', pageError)
+      }
 
       // Count pages per wheel
       pageCountMap = (pageCounts || []).reduce((acc, page) => {
         acc[page.wheel_id] = (acc[page.wheel_id] || 0) + 1
         return acc
       }, {} as Record<string, number>)
+
+      // Fetch ring counts
+      const { data: ringCounts, error: ringError } = await supabaseAdmin
+        .from('wheel_rings')
+        .select('wheel_id')
+        .in('wheel_id', wheelIds)
+
+      if (ringError) {
+        console.error('Error fetching ring counts:', ringError)
+      }
+      console.log('Ring counts raw:', ringCounts?.length, 'for', wheelIds.length, 'wheels')
+
+      ringCountMap = (ringCounts || []).reduce((acc, ring) => {
+        acc[ring.wheel_id] = (acc[ring.wheel_id] || 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+
+      // Fetch activity counts using SQL aggregation for efficiency
+      // Items have wheel_id directly, so we can count by wheel_id
+      const { data: itemCountData, error: itemCountError } = await supabaseAdmin
+        .rpc('admin_count_items_by_wheel', { wheel_ids: wheelIds })
+
+      if (itemCountError) {
+        console.error('Error fetching item counts via RPC:', itemCountError)
+        // Fallback: try direct count query
+        const { data: fallbackCounts, error: fallbackError } = await supabaseAdmin
+          .from('items')
+          .select('wheel_id')
+          .in('wheel_id', wheelIds)
+        
+        if (!fallbackError && fallbackCounts) {
+          fallbackCounts.forEach(item => {
+            activityGroupCountMap[item.wheel_id] = (activityGroupCountMap[item.wheel_id] || 0) + 1
+          })
+        }
+      } else if (itemCountData) {
+        itemCountData.forEach((row: { wheel_id: string; count: number }) => {
+          activityGroupCountMap[row.wheel_id] = row.count
+        })
+      }
+      
+      console.log('Activity counts:', activityGroupCountMap)
     }
 
     // Combine data
@@ -150,7 +199,9 @@ Deno.serve(async (req: Request) => {
       ...wheel,
       owner: profileMap[wheel.user_id] || null,
       team: teamMap[wheel.team_id] || null,
-      page_count: pageCountMap[wheel.id] || 0
+      page_count: pageCountMap[wheel.id] || 0,
+      ring_count: ringCountMap[wheel.id] || 0,
+      activity_count: activityGroupCountMap[wheel.id] || 0
     }))
 
     return new Response(

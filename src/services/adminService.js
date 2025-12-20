@@ -5,122 +5,36 @@ import { supabase } from '../lib/supabase';
  */
 
 /**
- * Get dashboard statistics
+ * Get dashboard statistics (uses edge function to bypass RLS)
  */
 export const getAdminStats = async () => {
   try {
-    // Use UTC for consistent timezone handling
-    const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const sevenDaysAgo = new Date(todayStart);
-    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const { data, error } = await supabase.functions.invoke('admin-get-stats', {
+      body: {}
+    });
 
-    // Get total users
-    const { count: totalUsers } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
-
-    // Get new users today
-    const { count: usersToday } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', todayStart.toISOString());
-
-    // Get new users last 7 days
-    const { count: usersLast7Days } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', sevenDaysAgo.toISOString());
-
-    // Get new users this month
-    const { count: usersThisMonth } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', monthStart.toISOString());
-
-    // Get total wheels (excluding templates)
-    const { count: totalWheels } = await supabase
-      .from('year_wheels')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_template', false);
-
-    // Get wheels created today (excluding templates)
-    const { count: wheelsToday } = await supabase
-      .from('year_wheels')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_template', false)
-      .gte('created_at', todayStart.toISOString());
-
-    // Get wheels created last 7 days (excluding templates)
-    const { count: wheelsLast7Days } = await supabase
-      .from('year_wheels')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_template', false)
-      .gte('created_at', sevenDaysAgo.toISOString());
-
-    // Get wheels created this month (excluding templates)
-    const { count: wheelsThisMonth } = await supabase
-      .from('year_wheels')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_template', false)
-      .gte('created_at', monthStart.toISOString());
-
-    // Get premium users count via Edge Function (bypasses RLS)
-    let premiumUsers = 0;
-    try {
-      const { data: statsResponse } = await supabase.functions.invoke('admin-get-user-data', {
-        body: { userIds: [] } // Empty array to skip user-specific data
-      });
-      
-      if (statsResponse?.subscriptions) {
-        premiumUsers = statsResponse.subscriptions.filter(
-          sub => sub.status === 'active' && (sub.plan_type === 'monthly' || sub.plan_type === 'yearly')
-        ).length;
-      }
-    } catch (error) {
-      console.error('Failed to fetch premium count:', error);
-    }
-
-    // Get public wheels count (excluding templates)
-    const { count: publicWheels } = await supabase
-      .from('year_wheels')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_public', true)
-      .eq('is_template', false);
-
-    // Get template wheels count
-    const { count: templateWheels } = await supabase
-      .from('year_wheels')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_template', true);
-
-    // Get active teams
-    const { count: activeTeams } = await supabase
-      .from('teams')
-      .select('*', { count: 'exact', head: true });
-
-    return {
-      users: {
-        total: totalUsers || 0,
-        today: usersToday || 0,
-        last7Days: usersLast7Days || 0,
-        thisMonth: usersThisMonth || 0,
-      },
-      wheels: {
-        total: totalWheels || 0,
-        today: wheelsToday || 0,
-        last7Days: wheelsLast7Days || 0,
-        thisMonth: wheelsThisMonth || 0,
-      },
-      premium: premiumUsers || 0,
-      publicWheels: publicWheels || 0,
-      templates: templateWheels || 0,
-      teams: activeTeams || 0,
-    };
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error fetching admin stats:', error);
     throw error;
+  }
+};
+
+/**
+ * Get subscription statistics (included in admin-get-stats now)
+ */
+export const getSubscriptionStats = async () => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-get-stats', {
+      body: {}
+    });
+
+    if (error) throw error;
+    return data?.subscriptionStats || { monthly: 0, yearly: 0, total: 0 };
+  } catch (error) {
+    console.error('Error fetching subscription stats:', error);
+    return { monthly: 0, yearly: 0, total: 0 };
   }
 };
 
@@ -438,45 +352,6 @@ export const deleteUser = async (userId) => {
 
 /**
  * Get subscription statistics
- * Uses Edge Function to bypass RLS (consistent with premium count)
- */
-export const getSubscriptionStats = async () => {
-  try {
-    // Use Edge Function to bypass RLS (same as premium count)
-    const { data: response, error } = await supabase.functions.invoke('admin-get-user-data', {
-      body: { userIds: [] } // Empty array to get all subscriptions
-    });
-
-    if (error) {
-      console.error('Error fetching subscription stats:', error);
-      return { monthly: 0, yearly: 0, total: 0 };
-    }
-
-    const subscriptions = response?.subscriptions || [];
-    
-    // Filter active/trialing subscriptions
-    const activeSubscriptions = subscriptions.filter(
-      sub => sub.status === 'active' || sub.status === 'trialing'
-    );
-
-    const stats = {
-      monthly: 0,
-      yearly: 0,
-      total: activeSubscriptions.length,
-    };
-
-    activeSubscriptions.forEach(sub => {
-      if (sub.plan_type === 'monthly') stats.monthly++;
-      if (sub.plan_type === 'yearly') stats.yearly++;
-    });
-
-    return stats;
-  } catch (error) {
-    console.error('Error fetching subscription stats:', error);
-    return { monthly: 0, yearly: 0, total: 0 };
-  }
-};
-
 /**
  * Get quiz leads statistics
  */
