@@ -2109,9 +2109,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       // CRITICAL: Check actual tracker state to avoid false positives
+      // Also check if save is in progress - if saving, don't block unload
       const actuallyHasChanges = changeTracker.hasChanges();
+      const currentlySaving = isSavingRef.current;
       
-      if (actuallyHasChanges) {
+      if (actuallyHasChanges && !currentlySaving) {
         e.preventDefault();
         e.returnValue = ''; // Chrome requires returnValue to be set
         return ''; // Some browsers show this message
@@ -4403,11 +4405,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Wrapper for back to dashboard that checks for unsaved changes
   const handleBackToDashboard = useCallback(() => {
-    // CRITICAL: Check BOTH the memo AND the actual tracker state to avoid false positives
-    // The memo might not have recalculated yet if user acts immediately after save
+    // CRITICAL: Check actual tracker state to avoid false positives
+    // Also check if save is in progress - if saving, don't block navigation
     const actuallyHasChanges = changeTracker.hasChanges();
+    const currentlySaving = isSavingRef.current;
     
-    if (actuallyHasChanges) {
+    if (actuallyHasChanges && !currentlySaving) {
       // Show custom confirm dialog
       const event = new CustomEvent('showConfirmDialog', {
         detail: {
