@@ -405,7 +405,7 @@ const ListView = ({
                         e.stopPropagation();
                         handleAddItemToRing(ringId);
                       }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-sm transition-colors"
                     >
                       <Plus size={16} />
                       {t('listView.addItemButton', '+ Lägg till aktivitet')}

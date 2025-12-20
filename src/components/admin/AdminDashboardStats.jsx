@@ -59,9 +59,9 @@ const TrendIndicator = ({ current, previous, suffix = '', inverse = false }) => 
 };
 
 const StatCard = ({ icon: Icon, iconColor, title, value, subtitle, trend, trendLabel, children }) => (
-  <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200 hover:shadow-md transition-shadow">
+  <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200 hover:shadow-md transition-shadow">
     <div className="flex items-start justify-between mb-3">
-      <div className={`p-2 rounded-lg ${iconColor}`}>
+      <div className={`p-2 rounded-sm ${iconColor}`}>
         <Icon size={20} className="text-white" />
       </div>
       {trend !== undefined && (
@@ -205,7 +205,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           <select
             value={selectedPeriod === 'custom' ? 'custom' : selectedPeriod}
             onChange={(e) => handlePeriodChange(e.target.value)}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="text-sm border border-gray-300 rounded-sm px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             {PERIODS.map(period => (
               <option key={period.value} value={period.value}>{period.label}</option>
@@ -219,7 +219,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
+                className="text-sm border border-gray-300 rounded-sm px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
                 max={customEnd || undefined}
               />
               <span className="text-gray-400">—</span>
@@ -227,7 +227,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
+                className="text-sm border border-gray-300 rounded-sm px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
                 min={customStart || undefined}
                 max={new Date().toISOString().split('T')[0]}
               />
@@ -235,7 +235,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
                 <button
                   onClick={applyCustomRange}
                   disabled={!customStart || !customEnd}
-                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Visa
                 </button>
@@ -246,7 +246,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           <button
             onClick={loadStats}
             disabled={loading}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-sm disabled:opacity-50"
             title="Uppdatera"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -401,42 +401,42 @@ export default function AdminDashboardStats({ onPeriodChange }) {
 
       {/* Churn & Retention */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+        <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200">
           <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
             <UserPlus size={16} className="text-green-500" />
             Tillväxt & Retention
           </h4>
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-green-50 rounded-lg">
+            <div className="text-center p-3 bg-green-50 rounded-sm">
               <div className="text-xl font-bold text-green-600">{stats?.retention.newUsers || 0}</div>
               <div className="text-xs text-gray-600 mt-1">Nya användare</div>
             </div>
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <div className="text-center p-3 bg-blue-50 rounded-sm">
               <div className="text-xl font-bold text-blue-600">{(metrics?.activeUserRate || 0).toFixed(0)}%</div>
               <div className="text-xs text-gray-600 mt-1">Aktiva</div>
             </div>
-            <div className="text-center p-3 bg-purple-50 rounded-lg">
+            <div className="text-center p-3 bg-purple-50 rounded-sm">
               <div className="text-xl font-bold text-purple-600">{(metrics?.conversionRate || 0).toFixed(1)}%</div>
               <div className="text-xs text-gray-600 mt-1">Konvertering</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+        <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200">
           <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
             <UserMinus size={16} className="text-red-500" />
             Churn
           </h4>
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-red-50 rounded-lg">
+            <div className="text-center p-3 bg-red-50 rounded-sm">
               <div className="text-xl font-bold text-red-600">{stats?.churn.canceled || 0}</div>
               <div className="text-xs text-gray-600 mt-1">Avslutade</div>
             </div>
-            <div className="text-center p-3 bg-orange-50 rounded-lg">
+            <div className="text-center p-3 bg-orange-50 rounded-sm">
               <div className="text-xl font-bold text-orange-600">{(stats?.churn.rate || 0).toFixed(1)}%</div>
               <div className="text-xs text-gray-600 mt-1">Churn rate</div>
             </div>
-            <div className="text-center p-3 bg-yellow-50 rounded-lg">
+            <div className="text-center p-3 bg-yellow-50 rounded-sm">
               <div className="text-xl font-bold text-yellow-600">{stats?.churn.atRisk || 0}</div>
               <div className="text-xs text-gray-600 mt-1">I riskzonen</div>
             </div>
@@ -445,26 +445,26 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       </div>
 
       {/* Lead Generation */}
-      <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200">
+      <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200">
         <h4 className="text-sm font-medium text-gray-900 mb-4">Lead-generering & Konvertering</h4>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <div className="text-center p-3 bg-gray-50 rounded-sm">
             <div className="text-xl font-bold text-gray-900">{stats?.leads.quizStarts || 0}</div>
             <div className="text-xs text-gray-600 mt-1">Quiz startat</div>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <div className="text-center p-3 bg-gray-50 rounded-sm">
             <div className="text-xl font-bold text-gray-900">{stats?.leads.quizCompleted || 0}</div>
             <div className="text-xs text-gray-600 mt-1">Quiz klart</div>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <div className="text-center p-3 bg-gray-50 rounded-sm">
             <div className="text-xl font-bold text-gray-900">{stats?.leads.signups || 0}</div>
             <div className="text-xs text-gray-600 mt-1">Registreringar</div>
           </div>
-          <div className="text-center p-3 bg-gray-50 rounded-lg">
+          <div className="text-center p-3 bg-gray-50 rounded-sm">
             <div className="text-xl font-bold text-gray-900">{stats?.leads.newsletter || 0}</div>
             <div className="text-xs text-gray-600 mt-1">Nyhetsbrev</div>
           </div>
-          <div className="text-center p-3 bg-emerald-50 rounded-lg">
+          <div className="text-center p-3 bg-emerald-50 rounded-sm">
             <div className="text-xl font-bold text-emerald-600">
               {stats?.leads.signups > 0 && stats?.leads.quizCompleted > 0 
                 ? ((stats.leads.signups / stats.leads.quizCompleted) * 100).toFixed(0) 
