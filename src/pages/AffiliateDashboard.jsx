@@ -18,6 +18,7 @@ export default function AffiliateDashboard() {
     totalClicks: 0,
     totalSignups: 0,
     totalUpgrades: 0,
+    unverifiedCommission: 0,
     pendingCommission: 0,
     approvedCommission: 0,
     paidCommission: 0,
@@ -100,6 +101,10 @@ export default function AffiliateDashboard() {
 
     if (commError) throw commError;
 
+    const unverifiedCommission = commissionsData
+      .filter(c => c.status === 'unverified')
+      .reduce((sum, c) => sum + parseFloat(c.commission_amount), 0);
+
     const pendingCommission = commissionsData
       .filter(c => c.status === 'pending')
       .reduce((sum, c) => sum + parseFloat(c.commission_amount), 0);
@@ -116,6 +121,7 @@ export default function AffiliateDashboard() {
       totalClicks,
       totalSignups,
       totalUpgrades,
+      unverifiedCommission,
       pendingCommission,
       approvedCommission,
       paidCommission,
@@ -466,9 +472,13 @@ export default function AffiliateDashboard() {
                 {/* Commission Breakdown */}
                 <div className="bg-gray-50 rounded-sm p-6 mb-8">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Commission Breakdown</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                      <div className="text-sm text-gray-600">Pending Review</div>
+                      <div className="text-sm text-gray-600">Awaiting Verification*</div>
+                      <div className="text-2xl font-bold text-orange-500">{formatCurrency(stats.unverifiedCommission)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">Verified & Pending</div>
                       <div className="text-2xl font-bold text-gray-900">{formatCurrency(stats.pendingCommission)}</div>
                     </div>
                     <div>
@@ -478,6 +488,25 @@ export default function AffiliateDashboard() {
                     <div>
                       <div className="text-sm text-gray-600">Paid Out</div>
                       <div className="text-2xl font-bold text-blue-600">{formatCurrency(stats.paidCommission)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Commission Terms Info */}
+                <div className="bg-amber-50 border border-amber-200 rounded-sm p-4 mb-8">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="text-sm text-amber-800">
+                      <p className="font-medium mb-1">*Commission Verification Policy</p>
+                      <p>Free signup commissions (€2) are verified after 14 days, provided the referred user has:</p>
+                      <ul className="list-disc ml-5 mt-1 space-y-0.5">
+                        <li>Created at least 1 year wheel</li>
+                        <li>Added at least 3 activities/items</li>
+                        <li>Logged in more than once</li>
+                      </ul>
+                      <p className="mt-2">Premium upgrade commissions (50%) are verified immediately upon payment.</p>
                     </div>
                   </div>
                 </div>

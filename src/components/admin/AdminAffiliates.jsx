@@ -141,10 +141,12 @@ export default function AdminAffiliates() {
     // Calculate stats
     const stats = {
       total: data?.length || 0,
+      unverified: data?.filter(c => c.status === 'unverified').length || 0,
       pending: data?.filter(c => c.status === 'pending').length || 0,
       approved: data?.filter(c => c.status === 'approved').length || 0,
       paid: data?.filter(c => c.status === 'paid').length || 0,
       totalAmount: data?.reduce((sum, c) => sum + parseFloat(c.commission_amount || 0), 0) || 0,
+      unverifiedAmount: data?.filter(c => c.status === 'unverified').reduce((sum, c) => sum + parseFloat(c.commission_amount || 0), 0) || 0,
       pendingAmount: data?.filter(c => c.status === 'pending').reduce((sum, c) => sum + parseFloat(c.commission_amount || 0), 0) || 0,
     };
     setCommissionStats(stats);
@@ -199,6 +201,25 @@ export default function AdminAffiliates() {
     }
 
     loadCommissions();
+  };
+
+  // Run batch verification for eligible commissions (14+ days old)
+  const runBatchVerification = async () => {
+    try {
+      const { data, error } = await supabase.rpc('verify_eligible_affiliate_commissions');
+      
+      if (error) throw error;
+      
+      showToast(
+        `Verification complete: ${data.verified} verified, ${data.failed} failed`,
+        data.verified > 0 ? 'success' : 'info'
+      );
+      
+      loadCommissions();
+    } catch (err) {
+      console.error('Batch verification error:', err);
+      showToast('Failed to run verification', 'error');
+    }
   };
 
   const toggleAffiliateStatus = async (orgId, currentStatus) => {
@@ -821,10 +842,17 @@ export default function AdminAffiliates() {
         <div className="space-y-4">
           {/* Stats Cards */}
           {commissionStats && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200">
                 <div className="text-sm text-gray-600">{t('affiliate:admin.stats.totalCommissions')}</div>
                 <div className="text-2xl font-bold text-gray-900 mt-1">{commissionStats.total}</div>
+              </div>
+              <div className="bg-orange-50 p-4 rounded-sm shadow-sm border border-orange-200">
+                <div className="text-sm text-orange-700">Awaiting Verification</div>
+                <div className="text-2xl font-bold text-orange-900 mt-1">
+                  €{(commissionStats.unverifiedAmount || 0).toFixed(2)}
+                </div>
+                <div className="text-xs text-orange-600 mt-1">{commissionStats.unverified || 0} commissions</div>
               </div>
               <div className="bg-yellow-50 p-4 rounded-sm shadow-sm border border-yellow-200">
                 <div className="text-sm text-yellow-700">{t('affiliate:admin.stats.pendingAmount')}</div>
@@ -845,6 +873,29 @@ export default function AdminAffiliates() {
             </div>
           )}
 
+          {/* Batch Verification */}
+          {commissionStats?.unverified > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-sm p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <div>
+                  <p className="font-medium text-amber-900">
+                    {commissionStats.unverified} unverified commissions awaiting activity verification
+                  </p>
+                  <p className="text-sm text-amber-700">
+                    Commissions are verified after 14 days if the user has created a wheel with 3+ items
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={runBatchVerification}
+                className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 font-medium text-sm"
+              >
+                Run Verification
+              </button>
+            </div>
+          )}
+
           {/* Filter */}
           <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200">
             <div className="flex gap-2">
@@ -857,6 +908,16 @@ export default function AdminAffiliates() {
                 }`}
               >
                 {t('affiliate:admin.status.all')}
+              </button>
+              <button
+                onClick={() => setStatusFilter('unverified')}
+                className={`px-4 py-2 text-sm rounded ${
+                  statusFilter === 'unverified'
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Unverified
               </button>
               <button
                 onClick={() => setStatusFilter('pending')}
@@ -925,6 +986,7 @@ export default function AdminAffiliates() {
                           </td>
                           <td className="px-4 py-4">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              commission.status === 'unverified' ? 'bg-orange-100 text-orange-800' :
                               commission.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                               commission.status === 'approved' ? 'bg-green-100 text-green-800' :
                               commission.status === 'paid' ? 'bg-blue-100 text-blue-800' :
@@ -938,6 +1000,9 @@ export default function AdminAffiliates() {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex gap-2">
+                              {commission.status === 'unverified' && (
+                                <span className="text-xs text-gray-500">Awaiting 14 days</span>
+                              )}
                               {commission.status === 'pending' && (
                                 <button
                                   onClick={() => updateCommissionStatus(commission.id, 'approved')}
