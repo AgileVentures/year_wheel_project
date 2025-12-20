@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronRight, Plus, Trash2, Edit2, Calendar, User, MoveVertical, Eye } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, Edit2, Calendar, User, MoveVertical, Eye, Pencil, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
@@ -40,6 +40,8 @@ const ListView = ({
   const [itemToDelete, setItemToDelete] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dropTargetRingId, setDropTargetRingId] = useState(null);
+  const [editingRingId, setEditingRingId] = useState(null);
+  const [editingRingName, setEditingRingName] = useState('');
   
   // Convert year to number for comparison
   const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
@@ -210,6 +212,39 @@ const ListView = ({
     setDropTargetRingId(null);
   };
   
+  // Ring name editing handlers
+  const handleStartEditRingName = (e, ring) => {
+    e.stopPropagation();
+    setEditingRingId(ring.id);
+    setEditingRingName(ring.name);
+  };
+  
+  const handleSaveRingName = (e, ringId) => {
+    e.stopPropagation();
+    if (editingRingName.trim() && onOrganizationChange) {
+      const updatedRings = wheelStructure.rings.map(r => 
+        r.id === ringId ? { ...r, name: editingRingName.trim() } : r
+      );
+      onOrganizationChange({ ...wheelStructure, rings: updatedRings });
+    }
+    setEditingRingId(null);
+    setEditingRingName('');
+  };
+  
+  const handleCancelEditRingName = (e) => {
+    e.stopPropagation();
+    setEditingRingId(null);
+    setEditingRingName('');
+  };
+  
+  const handleRingNameKeyDown = (e, ringId) => {
+    if (e.key === 'Enter') {
+      handleSaveRingName(e, ringId);
+    } else if (e.key === 'Escape') {
+      handleCancelEditRingName(e);
+    }
+  };
+  
   return (
     <div className="w-full h-full bg-gray-50 overflow-auto p-6">
       <div className="max-w-7xl mx-auto">
@@ -296,9 +331,52 @@ const ListView = ({
                     >
                       {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                     </button>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {ring.name}
-                    </h3>
+                    
+                    {/* Editable Ring Name */}
+                    {editingRingId === ringId ? (
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={editingRingName}
+                          onChange={(e) => setEditingRingName(e.target.value)}
+                          onKeyDown={(e) => handleRingNameKeyDown(e, ringId)}
+                          autoFocus
+                          className="text-lg font-semibold text-gray-900 px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={(e) => handleSaveRingName(e, ringId)}
+                          className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
+                          title={t('common:actions.save', 'Spara')}
+                        >
+                          <Check size={18} />
+                        </button>
+                        <button
+                          onClick={handleCancelEditRingName}
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                          title={t('common:actions.cancel', 'Avbryt')}
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group/name">
+                        <h3 
+                          className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"
+                          onClick={(e) => handleStartEditRingName(e, ring)}
+                          title={t('listView.clickToEditRingName', 'Klicka för att redigera ringnamn')}
+                        >
+                          {ring.name}
+                        </h3>
+                        <button
+                          onClick={(e) => handleStartEditRingName(e, ring)}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover/name:opacity-100 transition-opacity"
+                          title={t('listView.editRingName', 'Redigera ringnamn')}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      </div>
+                    )}
+                    
                     <select
                       value={ring.type}
                       onChange={(e) => {
