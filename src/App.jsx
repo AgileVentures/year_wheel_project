@@ -358,11 +358,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Change tracking for delta saves
   const changeTracker = useChangeTracker();
   const prevStateRef = useRef(null);
-  
-  // Calculate hasUnsavedChanges from changeTracker (used by save system and navigation guards)
-  const hasUnsavedChanges = useMemo(() => {
-    return changeTracker.hasChanges();
-  }, [changeTracker.version]); // Recalculate when changeTracker version changes
 
   // ==========================================
   // OPTIMISTIC SYNC: Manages dirty state, conflict detection, and debounced saves
