@@ -114,7 +114,7 @@ export const fetchTeamWheels = async () => {
 /**
  * Fetch a single wheel with all related data
  */
-export const fetchWheel = async (wheelId) => {
+export const fetchWheel = async (wheelId, { adminFallback = true } = {}) => {
   // console.log('=== fetchWheel SERVICE CALLED ===');
   // console.log('[wheelService] Fetching wheel:', wheelId);
   
@@ -127,6 +127,20 @@ export const fetchWheel = async (wheelId) => {
 
   if (wheelError) {
     console.error('[wheelService] ERROR fetching wheel:', wheelError);
+    
+    // If wheel not found or access denied, try admin endpoint for admins
+    if (adminFallback && (wheelError.code === 'PGRST116' || wheelError.message?.includes('not found'))) {
+      try {
+        const isAdminUser = await checkIsAdmin();
+        if (isAdminUser) {
+          console.log('[wheelService] Access denied, trying admin endpoint...');
+          return await fetchWheelAsAdmin(wheelId);
+        }
+      } catch (adminError) {
+        console.error('[wheelService] Admin fallback failed:', adminError);
+      }
+    }
+    
     throw wheelError;
   }
   
@@ -2730,4 +2744,54 @@ export const broadcastDeltaChanges = async (wheelId, changes, userId) => {
 
   // Similar broadcasts for rings, groups, labels, pages...
   // (Add as needed)
+};
+
+/**
+ * Fetch a wheel as admin (bypasses RLS via edge function)
+ * Used when an admin wants to view a wheel they don't have normal access to
+ * 
+ * @param {string} wheelId - The wheel ID to fetch
+ * @returns {Promise<Object>} Wheel data in the same format as fetchWheel
+ */
+export const fetchWheelAsAdmin = async (wheelId) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-view-wheel', {
+      body: { wheelId }
+    });
+
+    if (error) throw error;
+    if (!data) throw new Error('No data returned from admin-view-wheel');
+
+    // Transform the admin response to match fetchWheel's format
+    const { wheel, structure, pages, items } = data;
+    
+    return {
+      id: wheel.id,
+      user_id: wheel.owner?.id || null,
+      team_id: wheel.team?.id || null,
+      title: wheel.title,
+      year: (wheel.year || new Date().getFullYear()).toString(),
+      colors: wheel.colors || ['#F5E6D3', '#A8DCD1', '#F4A896', '#B8D4E8'],
+      is_public: wheel.isPublic || false,
+      is_template: wheel.isTemplate || false,
+      show_on_landing: wheel.showOnLanding || false,
+      showWeekRing: wheel.showWeekRing,
+      showMonthRing: wheel.showMonthRing,
+      showRingNames: wheel.showRingNames,
+      showLabels: wheel.showLabels !== undefined ? wheel.showLabels : false,
+      weekRingDisplayMode: wheel.weekRingDisplayMode || 'week-numbers',
+      structure: structure || { rings: [], activityGroups: [], labels: [] },
+      wheelStructure: {
+        ...structure,
+        items: items || [],
+      },
+      // Admin-specific metadata
+      _adminView: true,
+      _owner: wheel.owner,
+      _team: wheel.team,
+    };
+  } catch (error) {
+    console.error('[wheelService] fetchWheelAsAdmin failed:', error);
+    throw error;
+  }
 };

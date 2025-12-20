@@ -717,3 +717,39 @@ export const sendPremiumGiftEmail = async (recipientEmail, recipientName, expire
     throw error;
   }
 };
+
+/**
+ * Get all wheels (admin only) - bypasses RLS
+ * Returns all wheels in the system with owner and team information
+ */
+export const getAdminWheels = async ({ page = 1, limit = 50, search = '', sortBy = 'created_at', sortOrder = 'desc' }) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-get-wheels', {
+      body: { page, limit, search, sortBy, sortOrder }
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching admin wheels:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch a single wheel as admin (bypasses RLS)
+ * Used to preview any wheel in the system
+ */
+export const fetchWheelAsAdmin = async (wheelId) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-view-wheel', {
+      body: { wheelId }
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching wheel as admin:', error);
+    throw error;
+  }
+};

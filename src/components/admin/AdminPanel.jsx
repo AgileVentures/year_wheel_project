@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../LanguageSwitcher';
 import AdminStats from './AdminStats';
 import AdminUsersTable from './AdminUsersTable';
+import AdminWheelsTable from './AdminWheelsTable';
 import AdminActivity from './AdminActivity';
 import AdminAffiliates from './AdminAffiliates';
 import AdminEmailStats from './AdminEmailStats';
@@ -16,11 +17,13 @@ import {
   DollarSign,
   Mail,
   Calendar,
+  Circle,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
   getAdminStats,
   getUsers,
+  getAdminWheels,
   getUserGrowthData,
   getWheelGrowthData,
   getRecentActivity,
@@ -47,13 +50,22 @@ export default function AdminPanel() {
   const [quizLeadsStats, setQuizLeadsStats] = useState(null);
   const [newsletterStats, setNewsletterStats] = useState(null);
   const [mondayUsers, setMondayUsers] = useState([]);
+  const [wheels, setWheels] = useState([]);
+  const [wheelsLoading, setWheelsLoading] = useState(false);
   
-  // Pagination & filters
+  // Pagination & filters for users
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
+  
+  // Pagination & filters for wheels
+  const [wheelsPage, setWheelsPage] = useState(1);
+  const [wheelsTotalPages, setWheelsTotalPages] = useState(1);
+  const [wheelsSearch, setWheelsSearch] = useState('');
+  const [wheelsSortBy, setWheelsSortBy] = useState('created_at');
+  const [wheelsSortOrder, setWheelsSortOrder] = useState('desc');
   
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -67,6 +79,13 @@ export default function AdminPanel() {
     }
   }, [isAdmin, currentPage, searchQuery, sortBy, sortOrder]);
 
+  // Load wheels when on wheels tab or when wheel filters change
+  useEffect(() => {
+    if (isAdmin && activeTab === 'wheels') {
+      loadWheels();
+    }
+  }, [isAdmin, activeTab, wheelsPage, wheelsSearch, wheelsSortBy, wheelsSortOrder]);
+
   const checkAdminAccess = async () => {
     try {
       const adminStatus = await checkIsAdmin();
@@ -78,6 +97,25 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Error checking admin access:', error);
       navigate('/dashboard');
+    }
+  };
+
+  const loadWheels = async () => {
+    try {
+      setWheelsLoading(true);
+      const wheelsData = await getAdminWheels({
+        page: wheelsPage,
+        limit: 50,
+        search: wheelsSearch,
+        sortBy: wheelsSortBy,
+        sortOrder: wheelsSortOrder,
+      });
+      setWheels(wheelsData.wheels || []);
+      setWheelsTotalPages(wheelsData.totalPages || 1);
+    } catch (error) {
+      console.error('Error loading wheels:', error);
+    } finally {
+      setWheelsLoading(false);
     }
   };
 
@@ -138,6 +176,17 @@ export default function AdminPanel() {
       setSortOrder('desc');
     }
     setCurrentPage(1);
+  };
+
+  const handleWheelsSearch = (e) => {
+    setWheelsSearch(e.target.value);
+    setWheelsPage(1);
+  };
+
+  const handleWheelsSort = (column, order) => {
+    setWheelsSortBy(column);
+    setWheelsSortOrder(order);
+    setWheelsPage(1);
   };
 
   if (loading && !stats) {
@@ -204,6 +253,17 @@ export default function AdminPanel() {
               {t('users')}
             </button>
             <button
+              onClick={() => setActiveTab('wheels')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'wheels'
+                  ? 'border-gray-900 text-gray-900'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Circle size={16} className="inline mr-2" />
+              Hjul
+            </button>
+            <button
               onClick={() => setActiveTab('activity')}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'activity'
@@ -266,6 +326,19 @@ export default function AdminPanel() {
             onSort={handleSort}
             onPageChange={setCurrentPage}
             onRefresh={loadData}
+          />
+        )}
+
+        {activeTab === 'wheels' && (
+          <AdminWheelsTable
+            wheels={wheels}
+            currentPage={wheelsPage}
+            totalPages={wheelsTotalPages}
+            searchQuery={wheelsSearch}
+            onSearch={handleWheelsSearch}
+            onSort={handleWheelsSort}
+            onPageChange={setWheelsPage}
+            loading={wheelsLoading}
           />
         )}
 
