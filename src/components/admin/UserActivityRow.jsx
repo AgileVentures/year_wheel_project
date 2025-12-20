@@ -82,7 +82,7 @@ export function UserActivityContent({ activity, error, colSpan = 7 }) {
             </div>
             <div className="text-lg font-bold text-gray-900">
               {activity.wheels_count}
-              <span className="text-xs font-normal text-gray-500 ml-1">/ 1 krav</span>
+              <span className="text-xs font-normal text-gray-500 ml-1">(min 1)</span>
             </div>
           </div>
           
@@ -94,7 +94,7 @@ export function UserActivityContent({ activity, error, colSpan = 7 }) {
             </div>
             <div className="text-lg font-bold text-gray-900">
               {activity.items_count}
-              <span className="text-xs font-normal text-gray-500 ml-1">/ 3 krav</span>
+              <span className="text-xs font-normal text-gray-500 ml-1">(min 3)</span>
             </div>
           </div>
           

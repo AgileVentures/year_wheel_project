@@ -21,12 +21,15 @@ import {
 } from 'lucide-react';
 
 const PERIODS = [
+  { value: 'today', label: 'Idag', days: 1 },
+  { value: 'week', label: 'Denna vecka', days: 7 },
   { value: '7d', label: '7 dagar', days: 7 },
   { value: '30d', label: '30 dagar', days: 30 },
   { value: '90d', label: '90 dagar', days: 90 },
   { value: 'mtd', label: 'Denna månad', days: null },
   { value: 'ytd', label: 'Detta år', days: null },
   { value: 'all', label: 'All tid', days: null },
+  { value: 'custom', label: 'Anpassad...', days: null },
 ];
 
 const TrendIndicator = ({ current, previous, suffix = '', inverse = false }) => {
@@ -91,17 +94,22 @@ export default function AdminDashboardStats({ onPeriodChange }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [comparisonStats, setComparisonStats] = useState(null);
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
   useEffect(() => {
-    loadStats();
-  }, [selectedPeriod]);
+    if (selectedPeriod !== 'custom' || (customStart && customEnd)) {
+      loadStats();
+    }
+  }, [selectedPeriod, customStart, customEnd]);
 
   const loadStats = async () => {
     setLoading(true);
     try {
       // Import dynamically to avoid circular deps
       const { getEnhancedAdminStats } = await import('../../services/adminService');
-      const data = await getEnhancedAdminStats(selectedPeriod);
+      const data = await getEnhancedAdminStats(selectedPeriod, customStart, customEnd);
       setStats(data.current);
       setComparisonStats(data.previous);
     } catch (error) {
@@ -112,8 +120,22 @@ export default function AdminDashboardStats({ onPeriodChange }) {
   };
 
   const handlePeriodChange = (period) => {
-    setSelectedPeriod(period);
-    onPeriodChange?.(period);
+    if (period === 'custom') {
+      setShowCustomPicker(true);
+      // Don't change selectedPeriod until dates are picked
+    } else {
+      setShowCustomPicker(false);
+      setSelectedPeriod(period);
+      onPeriodChange?.(period);
+    }
+  };
+
+  const applyCustomRange = () => {
+    if (customStart && customEnd) {
+      setSelectedPeriod('custom');
+      setShowCustomPicker(false);
+      onPeriodChange?.('custom');
+    }
   };
 
   // Calculate derived metrics
@@ -178,10 +200,10 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           <h3 className="text-lg font-semibold text-gray-900">Nyckeltal</h3>
           <p className="text-sm text-gray-500">Jämfört med föregående period</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Calendar size={16} className="text-gray-400" />
           <select
-            value={selectedPeriod}
+            value={selectedPeriod === 'custom' ? 'custom' : selectedPeriod}
             onChange={(e) => handlePeriodChange(e.target.value)}
             className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
@@ -189,6 +211,38 @@ export default function AdminDashboardStats({ onPeriodChange }) {
               <option key={period.value} value={period.value}>{period.label}</option>
             ))}
           </select>
+          
+          {/* Custom date range picker */}
+          {(showCustomPicker || selectedPeriod === 'custom') && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
+                max={customEnd || undefined}
+              />
+              <span className="text-gray-400">—</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
+                min={customStart || undefined}
+                max={new Date().toISOString().split('T')[0]}
+              />
+              {showCustomPicker && (
+                <button
+                  onClick={applyCustomRange}
+                  disabled={!customStart || !customEnd}
+                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Visa
+                </button>
+              )}
+            </div>
+          )}
+          
           <button
             onClick={loadStats}
             disabled={loading}

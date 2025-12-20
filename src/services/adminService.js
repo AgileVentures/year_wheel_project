@@ -631,13 +631,21 @@ export const fetchWheelAsAdmin = async (wheelId) => {
 
 /**
  * Get enhanced admin stats with period selection and comparison data
- * @param {string} period - '7d', '30d', '90d', 'mtd', 'ytd', 'all'
+ * @param {string} period - 'today', 'week', '7d', '30d', '90d', 'mtd', 'ytd', 'all', 'custom'
+ * @param {string} customStart - Start date for custom period (YYYY-MM-DD)
+ * @param {string} customEnd - End date for custom period (YYYY-MM-DD)
  * @returns {Object} { current: {...stats}, previous: {...stats} }
  */
-export const getEnhancedAdminStats = async (period = '30d') => {
+export const getEnhancedAdminStats = async (period = '30d', customStart = null, customEnd = null) => {
   try {
+    const body = { period };
+    if (period === 'custom' && customStart && customEnd) {
+      body.customStart = customStart;
+      body.customEnd = customEnd;
+    }
+    
     const { data, error } = await supabase.functions.invoke('admin-enhanced-stats', {
-      body: { period }
+      body
     });
 
     if (error) throw error;

@@ -8,7 +8,7 @@ interface PeriodDates {
   prevEnd: Date
 }
 
-const getPeriodDates = (period: string): PeriodDates => {
+const getPeriodDates = (period: string, customStart?: string, customEnd?: string): PeriodDates => {
   const now = new Date()
   const end = new Date(now)
   let start: Date
@@ -16,6 +16,23 @@ const getPeriodDates = (period: string): PeriodDates => {
   let prevEnd: Date
 
   switch (period) {
+    case 'today':
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      prevEnd = new Date(start)
+      prevEnd.setDate(prevEnd.getDate() - 1)
+      prevStart = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate())
+      break
+    case 'week': // This week (Monday to now)
+      const dayOfWeek = now.getDay()
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Monday = 0 days back
+      start = new Date(now)
+      start.setDate(start.getDate() - daysFromMonday)
+      start.setHours(0, 0, 0, 0)
+      prevEnd = new Date(start)
+      prevEnd.setDate(prevEnd.getDate() - 1)
+      prevStart = new Date(prevEnd)
+      prevStart.setDate(prevStart.getDate() - 6)
+      break
     case '7d':
       start = new Date(now)
       start.setDate(start.getDate() - 7)
@@ -49,6 +66,18 @@ const getPeriodDates = (period: string): PeriodDates => {
       prevEnd.setDate(prevEnd.getDate() - 1)
       prevStart = new Date(prevEnd.getFullYear(), 0, 1)
       break
+    case 'custom':
+      if (customStart && customEnd) {
+        start = new Date(customStart)
+        const customEndDate = new Date(customEnd)
+        const daysDiff = Math.ceil((customEndDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        prevEnd = new Date(start)
+        prevEnd.setDate(prevEnd.getDate() - 1)
+        prevStart = new Date(prevEnd)
+        prevStart.setDate(prevStart.getDate() - daysDiff)
+        return { start, end: customEndDate, prevStart, prevEnd }
+      }
+      // Fall through to default if no custom dates
     case 'all':
     default:
       start = new Date('2024-01-01') // App launch date
@@ -116,8 +145,8 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const { period = '30d' } = await req.json()
-    const dates = getPeriodDates(period)
+    const { period = '30d', customStart, customEnd } = await req.json()
+    const dates = getPeriodDates(period, customStart, customEnd)
 
     // Helper function to get stats for a period
     const getStatsForPeriod = async (startDate: Date, endDate: Date, isAllTime: boolean = false) => {
