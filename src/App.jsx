@@ -358,6 +358,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Change tracking for delta saves
   const changeTracker = useChangeTracker();
   const prevStateRef = useRef(null);
+  
+  // Calculate hasUnsavedChanges from changeTracker (used by save system and navigation guards)
+  const hasUnsavedChanges = useMemo(() => {
+    return changeTracker.hasChanges();
+  }, [changeTracker.version]); // Recalculate when changeTracker version changes
 
   // ==========================================
   // OPTIMISTIC SYNC: Manages dirty state, conflict detection, and debounced saves
@@ -2103,7 +2108,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Warn user before closing/reloading page with unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges) {
+      // CRITICAL: Check actual tracker state to avoid false positives
+      const actuallyHasChanges = changeTracker.hasChanges();
+      
+      if (actuallyHasChanges) {
         e.preventDefault();
         e.returnValue = ''; // Chrome requires returnValue to be set
         return ''; // Some browsers show this message
@@ -2112,7 +2120,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [changeTracker]); // Depend on changeTracker to get fresh reference
 
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
@@ -2230,6 +2238,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             // Clear tracked changes after successful save
             changeTracker.clearChanges();
             optimisticSync.clearPendingChanges();
+            
+            // CRITICAL: Immediately update the ref to prevent false positives in navigation guards
+            hasUnsavedChangesRef.current = false;
             
             if (!silent) {
               const { items, rings, activityGroups, labels, pages } = result;
@@ -4392,7 +4403,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Wrapper for back to dashboard that checks for unsaved changes
   const handleBackToDashboard = useCallback(() => {
-    if (hasUnsavedChanges) {
+    // CRITICAL: Check BOTH the memo AND the actual tracker state to avoid false positives
+    // The memo might not have recalculated yet if user acts immediately after save
+    const actuallyHasChanges = changeTracker.hasChanges();
+    
+    if (actuallyHasChanges) {
       // Show custom confirm dialog
       const event = new CustomEvent('showConfirmDialog', {
         detail: {
@@ -4421,7 +4436,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         onBackToDashboard();
       }
     }
-  }, [hasUnsavedChanges, onBackToDashboard, t]);
+  }, [onBackToDashboard, t, changeTracker]);
 
   // Calculate actual unsaved changes count from changeTracker (not undo/redo)
   // MUST be called before any conditional returns to follow Rules of Hooks
