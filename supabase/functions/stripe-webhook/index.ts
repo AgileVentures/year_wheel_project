@@ -150,7 +150,7 @@ async function handleCheckoutCompleted(session: any, supabaseAdmin: any) {
 }
 
 async function handleSubscriptionChange(subscription: any, supabaseAdmin: any) {
-  console.log('Handling subscription change:', subscription.id)
+  console.log('Handling subscription change:', subscription.id, 'status:', subscription.status)
 
   // Get user ID from customer metadata
   const customer = await stripe.customers.retrieve(subscription.customer)
@@ -161,14 +161,31 @@ async function handleSubscriptionChange(subscription: any, supabaseAdmin: any) {
     return
   }
 
+  // Check if this is a NEW active subscription (upgrade from free)
+  const isNewSubscription = subscription.status === 'active'
+  
+  // Get existing subscription to check if this is truly an upgrade
+  const { data: existingSub } = await supabaseAdmin
+    .from('subscriptions')
+    .select('status, plan_type')
+    .eq('user_id', userId)
+    .single()
+  
+  const wasFreeBefore = !existingSub || existingSub.plan_type === 'free' || existingSub.status !== 'active'
+
   // Determine plan type from price
   const priceId = subscription.items.data[0]?.price.id
   let planType = 'free'
+  let subscriptionAmount = 0
   
   if (subscription.status === 'active') {
     // Check if monthly or yearly based on interval
     const interval = subscription.items.data[0]?.price.recurring?.interval
     planType = interval === 'month' ? 'monthly' : 'yearly'
+    
+    // Get amount from the price
+    const priceAmount = subscription.items.data[0]?.price.unit_amount
+    subscriptionAmount = priceAmount ? priceAmount / 100 : (planType === 'monthly' ? 99 : 948)
   }
 
   // Upsert subscription
@@ -193,6 +210,12 @@ async function handleSubscriptionChange(subscription: any, supabaseAdmin: any) {
     console.error('Error upserting subscription:', error)
   } else {
     console.log('Subscription updated successfully')
+    
+    // Track affiliate upgrade if this is a new premium subscription
+    if (isNewSubscription && wasFreeBefore && planType !== 'free') {
+      console.log('New premium subscription detected, checking for affiliate conversion...')
+      await trackAffiliateUpgrade(userId, planType, subscriptionAmount, supabaseAdmin)
+    }
   }
 }
 
@@ -290,4 +313,82 @@ async function logEvent(event: any, supabaseAdmin: any) {
       stripe_event_id: event.id,
       event_data: event.data.object,
     })
+}
+
+/**
+ * Track affiliate upgrade - called when user upgrades to premium
+ * This checks if the user has an affiliate conversion record and updates it
+ */
+async function trackAffiliateUpgrade(userId: string, planType: string, amount: number, supabaseAdmin: any) {
+  try {
+    console.log(`[Affiliate] Checking upgrade for user ${userId}, plan: ${planType}, amount: ${amount}`)
+    
+    // Find conversion for this user that has signed_up but not upgraded
+    // Table uses timestamps (signed_up_at, upgraded_at) and conversion_type, not status column
+    const { data: conversion, error: findError } = await supabaseAdmin
+      .from('affiliate_conversions')
+      .select('id, organization_id, affiliate_link_id, signed_up_at, upgraded_at')
+      .eq('user_id', userId)
+      .is('upgraded_at', null) // Not yet upgraded
+      .not('signed_up_at', 'is', null) // Has signed up
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    
+    if (findError || !conversion) {
+      console.log('[Affiliate] No eligible affiliate conversion found for this user (findError:', findError?.message, ')')
+      return false
+    }
+    
+    console.log(`[Affiliate] Found conversion ${conversion.id}, signed_up_at: ${conversion.signed_up_at}, updating to upgraded...`)
+    
+    // Get organization commission rate
+    const { data: org } = await supabaseAdmin
+      .from('organizations')
+      .select('commission_rate_premium')
+      .eq('id', conversion.organization_id)
+      .single()
+    
+    const commissionRate = org?.commission_rate_premium || 0.50 // Default 50% (matching migration)
+    const commissionAmount = amount * commissionRate
+    
+    // Update conversion with upgrade info
+    const { error: updateError } = await supabaseAdmin
+      .from('affiliate_conversions')
+      .update({
+        conversion_type: 'premium_upgrade',
+        subscription_plan: planType,
+        subscription_amount: amount,
+        upgraded_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', conversion.id)
+    
+    if (updateError) {
+      console.error('[Affiliate] Error updating conversion:', updateError)
+      return false
+    }
+    
+    // Create commission record for premium upgrade
+    const { error: commissionError } = await supabaseAdmin
+      .from('affiliate_commissions')
+      .insert({
+        organization_id: conversion.organization_id,
+        conversion_id: conversion.id,
+        commission_type: 'premium_upgrade',
+        commission_amount: commissionAmount,
+        status: 'pending',
+      })
+    
+    if (commissionError) {
+      console.error('[Affiliate] Error creating commission:', commissionError)
+    }
+    
+    console.log(`[Affiliate] Upgrade tracked! Commission: ${commissionAmount} SEK (${(commissionRate * 100).toFixed(0)}% of ${amount})`)
+    return true
+    
+  } catch (err) {
+    console.error('[Affiliate] Error tracking upgrade:', err)
+    return false
+  }
 }

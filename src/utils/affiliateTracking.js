@@ -6,12 +6,29 @@ const INITIAL_COOKIE_DAYS = 30;
 const EXTENDED_COOKIE_DAYS = 90; // 30 + 60 more days
 
 /**
+ * Check if we're on a production domain
+ */
+function isProduction() {
+  return window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1');
+}
+
+/**
  * Set a cookie with expiration
+ * Uses Secure flag on production (HTTPS)
  */
 function setCookie(name, value, days) {
   const expires = new Date();
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  
+  let cookieString = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  
+  // Add Secure flag on production (HTTPS)
+  if (isProduction()) {
+    cookieString += ';Secure';
+  }
+  
+  console.log('[Affiliate] Setting cookie:', cookieString.substring(0, 80) + '...');
+  document.cookie = cookieString;
 }
 
 /**
@@ -138,20 +155,34 @@ export async function trackAffiliateClick(affiliateCode, supabase) {
  * @param {object} supabase - Supabase client instance
  */
 export async function trackAffiliateSignup(userId, supabase) {
+  console.log('[Affiliate] trackAffiliateSignup called for user:', userId);
+  
   const affiliateData = parseAffiliateCookie();
-  if (!affiliateData) return false;
+  console.log('[Affiliate] Cookie data:', affiliateData);
+  
+  if (!affiliateData) {
+    console.log('[Affiliate] No affiliate cookie found, skipping signup tracking');
+    return false;
+  }
 
   try {
+    console.log('[Affiliate] Calling record_affiliate_signup RPC...');
     const { data, error } = await supabase.rpc('record_affiliate_signup', {
       p_user_id: userId,
       p_conversion_id: affiliateData.conversionId,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Affiliate] RPC error:', error);
+      throw error;
+    }
+    
+    console.log('[Affiliate] RPC result:', data);
 
     if (data) {
       // Extend cookie for 90 days total
       extendAffiliateCookie();
+      console.log('[Affiliate] Cookie extended to 90 days');
 
       // Send analytics event
       if (window.gtag) {
