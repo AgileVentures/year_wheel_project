@@ -9,6 +9,7 @@ export default function AdminWheelsPage() {
   const [wheels, setWheels] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -29,6 +30,7 @@ export default function AdminWheelsPage() {
       });
       setWheels(wheelsData.wheels || []);
       setTotalPages(wheelsData.totalPages || 1);
+      setTotal(wheelsData.total || 0);
     } catch (error) {
       console.error('Error loading wheels:', error);
     } finally {
@@ -57,6 +59,7 @@ export default function AdminWheelsPage() {
         wheels={wheels}
         currentPage={currentPage}
         totalPages={totalPages}
+        total={total}
         searchQuery={searchQuery}
         onSearch={handleSearch}
         onSort={handleSort}

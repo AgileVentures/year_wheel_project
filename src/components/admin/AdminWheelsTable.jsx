@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 export default function AdminWheelsTable({ 
   wheels = [], 
   currentPage, 
-  totalPages, 
+  totalPages,
+  total = 0,
   searchQuery, 
   onSearch, 
   onSort, 
@@ -72,7 +73,9 @@ export default function AdminWheelsTable({
         <div>
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Alla hjul</h2>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Totalt {wheels.length > 0 ? `${(currentPage - 1) * 50 + 1}-${Math.min(currentPage * 50, wheels.length)} av` : ''} alla hjul i systemet
+            {total > 0 
+              ? `Visar ${(currentPage - 1) * 50 + 1}-${Math.min(currentPage * 50, total)} av ${total} hjul`
+              : 'Inga hjul i systemet'}
           </p>
         </div>
         
@@ -342,7 +345,7 @@ export default function AdminWheelsTable({
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
             <div className="text-sm text-gray-500">
-              Sida {currentPage} av {totalPages}
+              Sida {currentPage} av {totalPages} ({total} hjul totalt)
             </div>
             <div className="flex gap-2">
               <button
