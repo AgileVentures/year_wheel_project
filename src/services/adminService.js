@@ -628,3 +628,41 @@ export const fetchWheelAsAdmin = async (wheelId) => {
     throw error;
   }
 };
+
+/**
+ * Get enhanced admin stats with period selection and comparison data
+ * @param {string} period - '7d', '30d', '90d', 'mtd', 'ytd', 'all'
+ * @returns {Object} { current: {...stats}, previous: {...stats} }
+ */
+export const getEnhancedAdminStats = async (period = '30d') => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-enhanced-stats', {
+      body: { period }
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching enhanced admin stats:', error);
+    // Return fallback structure
+    return {
+      current: getEmptyStatsStructure(),
+      previous: getEmptyStatsStructure()
+    };
+  }
+};
+
+// Helper to create empty stats structure for fallback
+const getEmptyStatsStructure = () => ({
+  users: { total: 0, new: 0, active: 0, today: 0 },
+  wheels: { total: 0, new: 0, withActivities: 0 },
+  premium: { total: 0, monthly: 0, yearly: 0, new: 0 },
+  revenue: { mrr: 0, arpu: 0 },
+  activities: { total: 0, new: 0 },
+  ai: { requests: 0, uniqueUsers: 0 },
+  teams: { total: 0, new: 0, members: 0 },
+  sharing: { publicWheels: 0, templates: 0, exports: 0, onLanding: 0 },
+  retention: { newUsers: 0, returning: 0 },
+  churn: { canceled: 0, rate: 0, atRisk: 0 },
+  leads: { quizStarts: 0, quizCompleted: 0, signups: 0, newsletter: 0 }
+});
