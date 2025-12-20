@@ -242,7 +242,7 @@ export default function AdminUsersTable({
       {/* Grant Premium Modal */}
       {showGrantModal && (selectedUser || selectedUsers.length > 0) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-sm shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="text-lg font-semibold text-gray-900">
                 {selectedUser ? 'Ge Premium-åtkomst' : `Ge Premium till ${selectedUsers.length} användare`}
@@ -415,8 +415,8 @@ export default function AdminUsersTable({
       )}
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-sm shadow-sm p-4 border border-gray-200">
-        <div className="flex items-center gap-4">
+      <div className="bg-white rounded-sm shadow-sm p-3 sm:p-4 border border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -427,26 +427,85 @@ export default function AdminUsersTable({
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
             />
           </div>
-          {selectedUsers.length > 0 && (
+          <div className="flex gap-2">
+            {selectedUsers.length > 0 && (
+              <button
+                onClick={openBulkGrantModal}
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-green-600 text-white text-sm rounded-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Gift size={18} />
+                <span className="hidden sm:inline">Ge Premium</span> ({selectedUsers.length})
+              </button>
+            )}
             <button
-              onClick={openBulkGrantModal}
-              className="px-4 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 transition-colors flex items-center gap-2"
+              onClick={onRefresh}
+              className="px-3 sm:px-4 py-2 bg-gray-900 text-white text-sm rounded-sm hover:bg-gray-800 transition-colors"
             >
-              <Gift size={18} />
-              Ge Premium ({selectedUsers.length})
+              {t('refresh')}
             </button>
-          )}
-          <button
-            onClick={onRefresh}
-            className="px-4 py-2 bg-gray-900 text-white rounded-sm hover:bg-gray-800 transition-colors"
-          >
-            {t('refresh')}
-          </button>
+          </div>
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="sm:hidden space-y-3">
+        {users.map((user) => {
+          const hasPremium = hasActivePremium(user);
+          const isSelected = selectedUsers.includes(user.id);
+          
+          return (
+            <div key={user.id} className={`bg-white rounded-sm shadow p-4 ${isSelected ? 'ring-2 ring-green-500' : ''}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    {!hasPremium && (
+                      <button
+                        onClick={() => toggleUserSelection(user.id)}
+                        className="text-gray-500 hover:text-gray-700 flex-shrink-0"
+                      >
+                        {isSelected ? (
+                          <CheckSquare size={18} className="text-green-600" />
+                        ) : (
+                          <Square size={18} />
+                        )}
+                      </button>
+                    )}
+                    <div className="font-medium text-gray-900 truncate">
+                      {user.full_name || 'No name'}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-500 truncate mt-0.5">{user.email}</div>
+                </div>
+                {getSubscriptionBadge(user.subscriptions)}
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mb-3">
+                {getProviderDisplay(user)}
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-2">
+                <div className="flex gap-3">
+                  <span>Skapad: {formatDate(user.created_at)}</span>
+                  <span>Senast: {formatLastSeen(user.last_sign_in_at)}</span>
+                </div>
+              </div>
+              
+              {!hasPremium && (
+                <button
+                  onClick={() => openGrantModal(user)}
+                  className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors"
+                >
+                  <Gift size={14} />
+                  Ge Premium
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden sm:block bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -548,7 +607,7 @@ export default function AdminUsersTable({
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Desktop Pagination */}
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-700">
             Page {currentPage} of {totalPages}
@@ -571,6 +630,31 @@ export default function AdminUsersTable({
           </div>
         </div>
       </div>
+
+      {/* Mobile Pagination */}
+      {totalPages > 1 && (
+        <div className="sm:hidden flex items-center justify-between p-3 bg-white rounded-sm shadow">
+          <button
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            <ChevronLeft size={16} />
+            Föreg.
+          </button>
+          <span className="text-sm text-gray-600">
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            Nästa
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

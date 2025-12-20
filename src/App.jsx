@@ -28,13 +28,21 @@ const PricingPage = lazy(() => import("./components/PricingPage"));
 const LegalPage = lazy(() => import("./components/LegalPage"));
 const SupportPage = lazy(() => import("./components/SupportPage"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
-const AdminPanel = lazy(() => import("./components/admin/AdminPanel"));
-const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
-const NewsletterManager = lazy(() => import("./pages/admin/NewsletterManager"));
 const EmbedWheel = lazy(() => import("./components/EmbedWheel"));
 const CastReceiverPage = lazy(() => import("./pages/CastReceiverPage"));
 const AffiliateDashboard = lazy(() => import("./pages/AffiliateDashboard"));
 const AffiliateApplicationForm = lazy(() => import("./pages/AffiliateApplicationForm"));
+
+// Admin components (lazy loaded)
+const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
+const AdminGuard = lazy(() => import("./components/admin/AdminGuard"));
+const AdminOverview = lazy(() => import("./components/admin/AdminOverview"));
+const AdminUsersPage = lazy(() => import("./components/admin/AdminUsersPage"));
+const AdminWheelsPage = lazy(() => import("./components/admin/AdminWheelsPage"));
+const AdminAffiliatesPage = lazy(() => import("./components/admin/AdminAffiliatesPage"));
+const AdminMondayPage = lazy(() => import("./components/admin/AdminMondayPage"));
+const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
+const NewsletterManager = lazy(() => import("./pages/admin/NewsletterManager"));
 
 // Keyword-optimized landing pages
 const HRPlanering = lazy(() => import("./pages/landing/HRPlanering"));
@@ -4987,21 +4995,24 @@ function AppContent() {
             <DashboardRoute />
           </ProtectedRoute>
         } />
+        
+        {/* Admin routes with nested layout */}
         <Route path="/admin" element={
-          <ProtectedRoute>
-            <AdminPanel />
-          </ProtectedRoute>
-        } />
-        <Route path="/forecasts" element={
-          <ProtectedRoute>
-            <RevenueForecast />
-          </ProtectedRoute>
-        } />
-        <Route path="/newsletter" element={
-          <ProtectedRoute>
-            <NewsletterManager />
-          </ProtectedRoute>
-        } />
+          <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div></div>}>
+            <AdminGuard>
+              <AdminLayout />
+            </AdminGuard>
+          </Suspense>
+        }>
+          <Route index element={<AdminOverview />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="wheels" element={<AdminWheelsPage />} />
+          <Route path="affiliates" element={<AdminAffiliatesPage />} />
+          <Route path="monday" element={<AdminMondayPage />} />
+          <Route path="newsletter" element={<NewsletterManager />} />
+          <Route path="forecasts" element={<RevenueForecast />} />
+        </Route>
+        
         <Route path="/affiliate" element={
           <ProtectedRoute>
             <AffiliateDashboard />

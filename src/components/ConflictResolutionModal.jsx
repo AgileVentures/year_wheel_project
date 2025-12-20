@@ -45,7 +45,7 @@ function ConflictDetailRow({ conflict, isExpanded, onToggle, t }) {
   const formatted = formatConflict(conflict, t);
   
   return (
-    <div className="border border-amber-200 dark:border-amber-800 rounded-lg overflow-hidden">
+    <div className="border border-amber-200 dark:border-amber-800 rounded-sm overflow-hidden">
       {/* Summary row */}
       <button
         onClick={onToggle}
@@ -167,7 +167,7 @@ function ConflictResolutionModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-sm">
               <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
@@ -181,7 +181,7 @@ function ConflictResolutionModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-sm transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -190,7 +190,7 @@ function ConflictResolutionModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Info banner */}
-          <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+          <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-sm">
             <Users className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
               <p className="font-medium mb-1">
@@ -230,7 +230,7 @@ function ConflictResolutionModal({
             <button
               onClick={() => handleResolve('local')}
               disabled={isResolving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-sm transition-colors"
             >
               <Check className="w-4 h-4" />
               {t('conflict:keepMine', 'Behåll mina ändringar')}
@@ -240,7 +240,7 @@ function ConflictResolutionModal({
             <button
               onClick={() => handleResolve('remote')}
               disabled={isResolving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium rounded-lg transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium rounded-sm transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               {t('conflict:acceptTheirs', 'Ladda om med deras ändringar')}

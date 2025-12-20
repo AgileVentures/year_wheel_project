@@ -197,20 +197,21 @@ export default function AdminPanel() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Shield className="text-gray-900" size={32} />
+              <Shield className="text-gray-900 hidden sm:block" size={32} />
+              <Shield className="text-gray-900 sm:hidden" size={24} />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-                <p className="text-sm text-gray-600 mt-1">{t('subtitle')}</p>
+                <h1 className="text-xl sm:text-3xl font-bold text-gray-900">{t('title')}</h1>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">{t('subtitle')}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <LanguageSwitcher />
               <button
                 onClick={() => navigate('/dashboard')}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
               >
                 {t('backToDashboard')}
               </button>
@@ -222,75 +223,80 @@ export default function AdminPanel() {
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-6">
+          <div className="flex gap-2 sm:gap-6 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'overview'
                   ? 'border-gray-900 text-gray-900'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Activity size={16} className="inline mr-2" />
-              {t('overview')}
+              <Activity size={16} className="inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('overview')}</span>
+              <span className="sm:hidden">Översikt</span>
             </button>
             <button
               onClick={() => setActiveTab('users')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'users'
                   ? 'border-gray-900 text-gray-900'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Users size={16} className="inline mr-2" />
-              {t('users')}
+              <Users size={16} className="inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('users')}</span>
+              <span className="sm:hidden">Användare</span>
             </button>
             <button
               onClick={() => setActiveTab('wheels')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'wheels'
                   ? 'border-gray-900 text-gray-900'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Circle size={16} className="inline mr-2" />
+              <Circle size={16} className="inline mr-1 sm:mr-2" />
               Hjul
             </button>
             <button
               onClick={() => setActiveTab('affiliates')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'affiliates'
                   ? 'border-gray-900 text-gray-900'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <DollarSign size={16} className="inline mr-2" />
-              {t('affiliates')}
+              <DollarSign size={16} className="inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('affiliates')}</span>
+              <span className="sm:hidden">Affiliates</span>
             </button>
             <button
               onClick={() => setActiveTab('monday')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === 'monday'
                   ? 'border-gray-900 text-gray-900'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Calendar size={16} className="inline mr-2" />
-              Monday.com
+              <Calendar size={16} className="inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Monday.com</span>
+              <span className="sm:hidden">Monday</span>
             </button>
             <button
               onClick={() => navigate('/newsletter')}
-              className="px-4 py-3 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              className="px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
             >
-              <Mail size={16} className="inline mr-2" />
-              {t('newsletter')}
+              <Mail size={16} className="inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{t('newsletter')}</span>
+              <span className="sm:hidden">Nyhetsbrev</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <AdminStats stats={stats} subscriptionStats={subscriptionStats} />

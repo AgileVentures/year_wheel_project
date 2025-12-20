@@ -66,12 +66,12 @@ export default function AdminWheelsTable({
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with search */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Alla hjul</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Alla hjul</h2>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Totalt {wheels.length > 0 ? `${(currentPage - 1) * 50 + 1}-${Math.min(currentPage * 50, wheels.length)} av` : ''} alla hjul i systemet
           </p>
         </div>
@@ -83,13 +83,95 @@ export default function AdminWheelsTable({
             placeholder="Sök på titel..."
             value={searchQuery}
             onChange={(e) => onSearch?.(e)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
           />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="sm:hidden space-y-3">
+        {loading ? (
+          <div className="bg-white rounded-sm shadow p-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto"></div>
+            <p className="text-gray-500 text-sm mt-3">Laddar hjul...</p>
+          </div>
+        ) : wheels.length === 0 ? (
+          <div className="bg-white rounded-sm shadow p-6 text-center text-gray-500">
+            {searchQuery ? 'Inga hjul hittades för sökningen' : 'Inga hjul i systemet'}
+          </div>
+        ) : (
+          wheels.map((wheel) => (
+            <div key={wheel.id} className="bg-white rounded-sm shadow p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-gray-900 truncate" title={wheel.title}>
+                    {wheel.title || 'Namnlöst hjul'}
+                  </h3>
+                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                    <Calendar size={12} />
+                    {wheel.year || '-'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handlePreview(wheel.id)}
+                  className="ml-2 px-3 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded flex items-center gap-1"
+                >
+                  <ExternalLink size={14} />
+                  Visa
+                </button>
+              </div>
+              
+              {wheel.owner && (
+                <div className="text-sm text-gray-600 mb-2">
+                  <span className="font-medium">{wheel.owner.full_name || wheel.owner.email?.split('@')[0]}</span>
+                  <span className="text-gray-400 text-xs block truncate">{wheel.owner.email}</span>
+                </div>
+              )}
+              
+              <div className="flex flex-wrap gap-2 mb-3">
+                {wheel.team && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
+                    <Users size={10} />
+                    {wheel.team.name}
+                  </span>
+                )}
+                {wheel.is_public && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
+                    <Globe size={10} />
+                    Publik
+                  </span>
+                )}
+                {wheel.is_template && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded-full">
+                    <Star size={10} />
+                    Mall
+                  </span>
+                )}
+                {!wheel.is_public && !wheel.is_template && (
+                  <span className="text-gray-400 text-xs">Privat</span>
+                )}
+              </div>
+              
+              <div className="flex justify-between text-xs text-gray-500 border-t border-gray-100 pt-2">
+                <div className="flex gap-3">
+                  <span className="flex items-center gap-1">
+                    <Layers size={12} />
+                    {wheel.ring_count || 0} ringar
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Activity size={12} />
+                    {wheel.activity_count || 0} akt.
+                  </span>
+                </div>
+                <span>{formatRelativeTime(wheel.updated_at)}</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden sm:block bg-white rounded-sm shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -256,7 +338,7 @@ export default function AdminWheelsTable({
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Desktop Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
             <div className="text-sm text-gray-500">
@@ -283,6 +365,31 @@ export default function AdminWheelsTable({
           </div>
         )}
       </div>
+
+      {/* Mobile Pagination */}
+      {totalPages > 1 && (
+        <div className="sm:hidden flex items-center justify-between p-3 bg-white rounded-sm shadow">
+          <button
+            onClick={() => onPageChange?.(currentPage - 1)}
+            disabled={currentPage <= 1}
+            className="px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            <ChevronLeft size={16} />
+            Föreg.
+          </button>
+          <span className="text-sm text-gray-600">
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => onPageChange?.(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            className="px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            Nästa
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
