@@ -1,7 +1,168 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { Search, ChevronLeft, ChevronRight, Crown, Chrome, Github, Mail, Shield, Gift, X, CheckSquare, Square, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { grantPremiumAccess, sendPremiumGiftEmail } from '../../services/adminService';
+import { UserActivityToggle, UserActivityContent, useUserActivity } from './UserActivityRow';
+
+// Wrapper component to handle user activity state for each row
+function UserRow({ user, hasPremium, isSelected, toggleUserSelection, openGrantModal }) {
+  const activityState = useUserActivity(user.id);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('sv-SE');
+  };
+
+  const formatLastSeen = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 5) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('sv-SE');
+  };
+
+  const getProviderIcon = (provider) => {
+    switch (provider) {
+      case 'google':
+        return <Chrome size={14} className="text-blue-600" />;
+      case 'github':
+        return <Github size={14} className="text-gray-800" />;
+      case 'email':
+        return <Mail size={14} className="text-gray-600" />;
+      default:
+        return <Shield size={14} className="text-gray-400" />;
+    }
+  };
+
+  const getProviderDisplay = (user) => {
+    if (user.providers && user.providers.length > 1) {
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {user.providers.map((prov, idx) => (
+            <span key={idx} className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
+              {getProviderIcon(prov)}
+              <span className="capitalize">{prov}</span>
+            </span>
+          ))}
+        </div>
+      );
+    }
+    const provider = user.provider || 'email';
+    return (
+      <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+        {getProviderIcon(provider)}
+        <span className="capitalize">{provider}</span>
+      </span>
+    );
+  };
+
+  const getSubscriptionBadge = (subscriptions) => {
+    if (!subscriptions || subscriptions.length === 0) {
+      return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">Free</span>;
+    }
+    
+    const sub = subscriptions[0];
+    
+    if (sub.plan_type === 'free') {
+      return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">Free</span>;
+    }
+    
+    if (sub.status !== 'active') {
+      return <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full capitalize">{sub.status}</span>;
+    }
+    
+    if (sub.plan_type === 'gift') {
+      const expiresAt = sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('sv-SE') : '';
+      return (
+        <span className="px-2 py-1 text-xs rounded-full inline-flex items-center gap-1 bg-green-100 text-green-700" title={`Expires: ${expiresAt}`}>
+          <Gift size={12} />
+          <span>Gift</span>
+        </span>
+      );
+    }
+    
+    const planColor = sub.plan_type === 'yearly' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+    return (
+      <span className={`px-2 py-1 text-xs rounded-full inline-flex items-center gap-1 ${planColor}`}>
+        <Crown size={12} />
+        <span className="capitalize">{sub.plan_type}</span>
+      </span>
+    );
+  };
+
+  return (
+    <Fragment>
+      <tr className={`hover:bg-gray-50 ${isSelected ? 'bg-green-50' : ''} ${activityState.isExpanded ? 'border-b-0' : ''}`}>
+        <td className="px-4 py-4">
+          {!hasPremium && (
+            <button
+              onClick={() => toggleUserSelection(user.id)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              {isSelected ? (
+                <CheckSquare size={18} className="text-green-600" />
+              ) : (
+                <Square size={18} />
+              )}
+            </button>
+          )}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div>
+            <div className="text-sm font-medium text-gray-900">{user.full_name || 'No name'}</div>
+            <div className="text-sm text-gray-500">{user.email}</div>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          {getProviderDisplay(user)}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          {getSubscriptionBadge(user.subscriptions)}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {formatDate(user.created_at)}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {formatLastSeen(user.last_sign_in_at)}
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex items-center gap-2">
+            <UserActivityToggle
+              isExpanded={activityState.isExpanded}
+              onToggle={activityState.toggle}
+              loading={activityState.loading}
+            />
+            {!hasPremium && (
+              <button
+                onClick={() => openGrantModal(user)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors"
+                title="Ge premium-åtkomst"
+              >
+                <Gift size={14} />
+                Ge Premium
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+      {activityState.isExpanded && (
+        <UserActivityContent
+          activity={activityState.activity}
+          error={activityState.error}
+          colSpan={7}
+        />
+      )}
+    </Fragment>
+  );
+}
 
 export default function AdminUsersTable({ 
   users, 
@@ -555,52 +716,14 @@ export default function AdminUsersTable({
                 const isSelected = selectedUsers.includes(user.id);
                 
                 return (
-                  <tr key={user.id} className={`hover:bg-gray-50 ${isSelected ? 'bg-green-50' : ''}`}>
-                    <td className="px-4 py-4">
-                      {!hasPremium && (
-                        <button
-                          onClick={() => toggleUserSelection(user.id)}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          {isSelected ? (
-                            <CheckSquare size={18} className="text-green-600" />
-                          ) : (
-                            <Square size={18} />
-                          )}
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{user.full_name || 'No name'}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getProviderDisplay(user)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getSubscriptionBadge(user.subscriptions)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(user.created_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatLastSeen(user.last_sign_in_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {!hasPremium && (
-                        <button
-                          onClick={() => openGrantModal(user)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors"
-                          title="Ge premium-åtkomst"
-                        >
-                          <Gift size={14} />
-                          Ge Premium
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    hasPremium={hasPremium}
+                    isSelected={isSelected}
+                    toggleUserSelection={toggleUserSelection}
+                    openGrantModal={openGrantModal}
+                  />
                 );
               })}
             </tbody>
