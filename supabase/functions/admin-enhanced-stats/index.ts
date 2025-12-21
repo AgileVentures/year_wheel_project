@@ -205,9 +205,14 @@ Deno.serve(async (req: Request) => {
         .select('*')
         .eq('status', 'active')
 
-      const totalPremium = subscriptions?.length || 0
       const monthlyPremium = subscriptions?.filter(s => s.plan_type === 'monthly').length || 0
       const yearlyPremium = subscriptions?.filter(s => s.plan_type === 'yearly').length || 0
+      const giftPremium = subscriptions?.filter(s => s.plan_type === 'gift').length || 0
+      
+      // Paying subscribers = monthly + yearly (excludes gift)
+      const payingSubscribers = monthlyPremium + yearlyPremium
+      // Total premium includes gift subscriptions
+      const totalPremium = payingSubscribers + giftPremium
 
       const { count: newPremium } = await supabase
         .from('subscriptions')
@@ -216,10 +221,11 @@ Deno.serve(async (req: Request) => {
         .gte('created_at', startStr)
         .lte('created_at', endStr)
 
-      // Calculate MRR (Monthly Recurring Revenue)
-      // Assume: monthly = 99 SEK, yearly = 79 SEK/month (948/12)
-      const mrr = (monthlyPremium * 99) + (yearlyPremium * 79)
-      const arpu = totalPremium > 0 ? mrr / totalPremium : 0
+      // Calculate MRR (Monthly Recurring Revenue) - only from paying subscribers
+      // Pricing: monthly = 79 SEK, yearly = 768 SEK/year (64 SEK/month)
+      const mrr = (monthlyPremium * 79) + (yearlyPremium * 64)
+      // ARPU based on paying subscribers only (gift subs don't generate revenue)
+      const arpu = payingSubscribers > 0 ? mrr / payingSubscribers : 0
 
       // Activities/Items
       const { count: totalActivities } = await supabase
@@ -363,8 +369,10 @@ Deno.serve(async (req: Request) => {
         },
         premium: {
           total: totalPremium,
+          paying: payingSubscribers,
           monthly: monthlyPremium,
           yearly: yearlyPremium,
+          gift: giftPremium,
           new: newPremium || 0
         },
         revenue: {

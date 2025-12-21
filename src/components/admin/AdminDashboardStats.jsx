@@ -213,9 +213,12 @@ export default function AdminDashboardStats({ onPeriodChange }) {
   const metrics = useMemo(() => {
     if (!stats) return null;
     
-    // Conversion rate: premium / total users
+    // Paying subscribers (excludes gift)
+    const payingSubscribers = stats.premium.paying || (stats.premium.monthly + stats.premium.yearly);
+    
+    // Conversion rate: paying premium / total users (excludes gift subscribers)
     const conversionRate = stats.users.total > 0 
-      ? (stats.premium.total / stats.users.total) * 100
+      ? (payingSubscribers / stats.users.total) * 100
       : 0;
     
     // Active rate: active / total users  
@@ -223,19 +226,22 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       ? (stats.users.active / stats.users.total) * 100
       : 0;
 
-    // ARPU: MRR / paying users
-    const arpu = stats.premium.total > 0
-      ? stats.revenue.mrr / stats.premium.total
+    // ARPU: MRR / paying users (not gift subscribers)
+    const arpu = payingSubscribers > 0
+      ? stats.revenue.mrr / payingSubscribers
       : 0;
 
-    // Annual ratio: yearly / total premium
-    const annualRatio = stats.premium.total > 0
-      ? (stats.premium.yearly / stats.premium.total) * 100
+    // Annual ratio: yearly / paying subscribers (excludes gift)
+    const annualRatio = payingSubscribers > 0
+      ? (stats.premium.yearly / payingSubscribers) * 100
       : 0;
 
     // Previous period metrics for comparison (with null safety)
+    const prevPayingSubscribers = comparisonStats?.premium?.paying || 
+      ((comparisonStats?.premium?.monthly || 0) + (comparisonStats?.premium?.yearly || 0));
+    
     const prevConversionRate = comparisonStats?.users?.total > 0
-      ? (comparisonStats.premium.total / comparisonStats.users.total) * 100
+      ? (prevPayingSubscribers / comparisonStats.users.total) * 100
       : null;
 
     const prevActiveRate = comparisonStats?.users?.total > 0
@@ -249,6 +255,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       annualRatio,
       prevConversionRate,
       prevActiveRate,
+      payingSubscribers,
     };
   }, [stats, comparisonStats]);
 
@@ -379,7 +386,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           targetLabel="Mål: 70%"
           icon={Target}
           color="green"
-          subtitle={`${stats.premium.yearly} av ${stats.premium.total}`}
+          subtitle={`${stats.premium.yearly} av ${metrics.payingSubscribers} betalande`}
         />
         
         <StatCard
@@ -390,9 +397,9 @@ export default function AdminDashboardStats({ onPeriodChange }) {
         />
         
         <StatCard
-          label="Totalt Premium"
-          value={formatNumber(stats.premium.total)}
-          sublabel={`${stats.premium.monthly} mån / ${stats.premium.yearly} år`}
+          label="Betalande"
+          value={formatNumber(stats.premium.paying || (stats.premium.monthly + stats.premium.yearly))}
+          sublabel={`${stats.premium.monthly} mån / ${stats.premium.yearly} år${stats.premium.gift ? ` + ${stats.premium.gift} gåvor` : ''}`}
           icon={Crown}
         />
       </div>
