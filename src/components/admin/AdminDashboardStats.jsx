@@ -329,33 +329,3 @@ export default function AdminDashboardStats({ onPeriodChange }) {
     </div>
   );
 }
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="text-center p-3 bg-gray-50 rounded-sm">
-            <div className="text-xl font-bold text-gray-900">{stats?.leads.quizStarts || 0}</div>
-            <div className="text-xs text-gray-600 mt-1">Quiz startat</div>
-          </div>
-          <div className="text-center p-3 bg-gray-50 rounded-sm">
-            <div className="text-xl font-bold text-gray-900">{stats?.leads.quizCompleted || 0}</div>
-            <div className="text-xs text-gray-600 mt-1">Quiz klart</div>
-          </div>
-          <div className="text-center p-3 bg-gray-50 rounded-sm">
-            <div className="text-xl font-bold text-gray-900">{stats?.leads.signups || 0}</div>
-            <div className="text-xs text-gray-600 mt-1">Registreringar</div>
-          </div>
-          <div className="text-center p-3 bg-gray-50 rounded-sm">
-            <div className="text-xl font-bold text-gray-900">{stats?.leads.newsletter || 0}</div>
-            <div className="text-xs text-gray-600 mt-1">Nyhetsbrev</div>
-          </div>
-          <div className="text-center p-3 bg-emerald-50 rounded-sm">
-            <div className="text-xl font-bold text-emerald-600">
-              {stats?.leads.signups > 0 && stats?.leads.quizCompleted > 0 
-                ? ((stats.leads.signups / stats.leads.quizCompleted) * 100).toFixed(0) 
-                : 0}%
-            </div>
-            <div className="text-xs text-gray-600 mt-1">Quiz → Signup</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
