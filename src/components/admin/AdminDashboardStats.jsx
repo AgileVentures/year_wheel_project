@@ -1,125 +1,180 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
   Users,
   Circle,
   Crown,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   DollarSign,
   Zap,
-  UserCheck,
   Target,
-  Calendar,
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
+  CheckCircle,
+  AlertCircle,
+  Percent,
+  TrendingUp,
 } from 'lucide-react';
+import { FORECAST_SCENARIOS } from './RevenueForecast';
+
+// Use moderate scenario as default targets
+const FORECAST_TARGETS = {
+  monthlySignups: FORECAST_SCENARIOS.moderate.monthlySignups,
+  conversionRate: FORECAST_SCENARIOS.moderate.conversionRate,
+  churnRate: FORECAST_SCENARIOS.moderate.churnRate,
+  annualRatio: FORECAST_SCENARIOS.moderate.annualRatio,
+};
 
 const PERIODS = [
-  { value: '7d', label: '7 dagar' },
-  { value: '30d', label: '30 dagar' },
-  { value: '90d', label: '90 dagar' },
-  { value: 'mtd', label: 'Denna månad' },
-  { value: 'ytd', label: 'Detta år' },
-  { value: 'all', label: 'All tid' },
+  { value: '7d', label: '7 dagar', days: 7 },
+  { value: '30d', label: '30 dagar', days: 30 },
+  { value: '90d', label: '90 dagar', days: 90 },
+  { value: 'mtd', label: 'Denna månad', days: null },
+  { value: 'ytd', label: 'Detta år', days: null },
+  { value: 'all', label: 'All tid', days: null },
 ];
 
 const formatNumber = (num) => {
-  if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}k`;
-  }
-  return num.toString();
+  if (num === null || num === undefined || isNaN(num)) return '0';
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
+  return Math.round(num).toString();
 };
 
 const formatCurrency = (amount) => {
+  if (amount === null || amount === undefined || isNaN(amount)) return '0 kr';
   return `${Math.round(amount).toLocaleString('sv-SE')} kr`;
 };
 
-const TrendBadge = ({ current, previous, inverse = false }) => {
-  if (previous === 0 || previous === null || previous === undefined || current === previous) {
-    return null;
+
+const formatPercent = (value, decimals = 1) => {
+  if (value === null || value === undefined || isNaN(value)) return '0%';
+  return `${Number(value).toFixed(decimals)}%`;
+};
+
+// Calculate period-adjusted target
+const getAdjustedTarget = (monthlyTarget, periodDays) => {
+  if (!periodDays) return monthlyTarget; // For mtd/ytd/all, use monthly as-is
+  return Math.round((monthlyTarget / 30) * periodDays);
+};
+
+// Status indicator based on performance vs target
+const TargetStatus = ({ actual, target, inverse = false }) => {
+  if (!target || target === 0) return null;
+  
+  const ratio = actual / target;
+  const isGood = inverse ? ratio <= 1 : ratio >= 1;
+  const isClose = inverse ? ratio <= 1.2 && ratio > 1 : ratio >= 0.7 && ratio < 1;
+  
+  if (isGood) {
+    return <CheckCircle size={16} className="text-green-500" />;
+  } else if (isClose) {
+    return <AlertCircle size={16} className="text-yellow-500" />;
+  }
+  return <AlertCircle size={16} className="text-red-500" />;
+};
+
+// Change indicator with safe NaN handling
+const ChangeIndicator = ({ current, previous, inverse = false }) => {
+  if (previous === null || previous === undefined || previous === 0) {
+    return <span className="text-xs text-gray-400">—</span>;
   }
   
   const change = ((current - previous) / previous) * 100;
-  const isPositive = inverse ? change < 0 : change > 0;
+  if (isNaN(change) || !isFinite(change)) {
+    return <span className="text-xs text-gray-400">—</span>;
+  }
   
-  if (Math.abs(change) < 0.5) return null;
+  const isPositive = inverse ? change < 0 : change > 0;
+  const Icon = isPositive ? ArrowUpRight : ArrowDownRight;
   
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-      isPositive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+      isPositive ? 'text-green-600' : 'text-red-600'
     }`}>
-      {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+      <Icon size={12} />
       {Math.abs(change).toFixed(0)}%
     </span>
   );
 };
 
-const MetricCard = ({ title, value, subtitle, change, icon: Icon, trend, color = 'blue' }) => {
+// Main KPI Card with target comparison
+const KPICard = ({ 
+  title, 
+  value, 
+  target, 
+  targetLabel,
+  previousValue,
+  icon: Icon, 
+  color = 'blue',
+  inverse = false,
+  subtitle
+}) => {
   const colorClasses = {
-    blue: 'from-blue-500 to-blue-600',
-    green: 'from-green-500 to-green-600',
-    purple: 'from-purple-500 to-purple-600',
-    orange: 'from-orange-500 to-orange-600',
-    pink: 'from-pink-500 to-pink-600',
+    blue: { bg: 'bg-blue-500', light: 'bg-blue-50', text: 'text-blue-600' },
+    green: { bg: 'bg-green-500', light: 'bg-green-50', text: 'text-green-600' },
+    purple: { bg: 'bg-purple-500', light: 'bg-purple-50', text: 'text-purple-600' },
+    orange: { bg: 'bg-orange-500', light: 'bg-orange-50', text: 'text-orange-600' },
+    pink: { bg: 'bg-pink-500', light: 'bg-pink-50', text: 'text-pink-600' },
   };
+  
+  const c = colorClasses[color];
+  const numericValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
+  const progress = target ? Math.min((numericValue / target) * 100, 150) : 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClasses[color]}`}>
-          <Icon size={24} className="text-white" />
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
+      <div className="flex items-start justify-between mb-3">
+        <div className={`p-2.5 rounded-lg ${c.bg}`}>
+          <Icon size={20} className="text-white" />
         </div>
-        {change !== undefined && (
-          <TrendBadge current={value} previous={value - change} inverse={trend === 'inverse'} />
-        )}
+        <div className="flex items-center gap-2">
+          {target && <TargetStatus actual={numericValue} target={target} inverse={inverse} />}
+          <ChangeIndicator current={numericValue} previous={previousValue} inverse={inverse} />
+        </div>
       </div>
-      <div className="space-y-1">
-        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-        <div className="text-3xl font-bold text-gray-900">{value}</div>
-        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
-      </div>
+      
+      <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
+      <div className="text-2xl font-bold text-gray-900 mb-2">{value}</div>
+      
+      {target && (
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500">{targetLabel || 'Mål'}</span>
+            <span className={`font-medium ${progress >= 100 ? 'text-green-600' : 'text-gray-600'}`}>
+              {formatPercent(progress, 0)} av mål
+            </span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-500 ${
+                progress >= 100 ? 'bg-green-500' : progress >= 70 ? 'bg-yellow-500' : 'bg-red-400'
+              }`}
+              style={{ width: `${Math.min(progress, 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+      
+      {subtitle && !target && (
+        <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+      )}
     </div>
   );
 };
 
-const ProgressCard = ({ title, current, target, subtitle, icon: Icon, color = 'blue' }) => {
-  const percentage = Math.min((current / target) * 100, 100);
-  const colorClasses = {
-    blue: 'bg-blue-500',
-    green: 'bg-green-500',
-    purple: 'bg-purple-500',
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${colorClasses[color]} bg-opacity-10`}>
-            <Icon size={20} className={`${colorClasses[color].replace('bg-', 'text-')}`} />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-900">{title}</h3>
-            {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold text-gray-900">{current}</div>
-          <div className="text-xs text-gray-500">av {target}</div>
-        </div>
-      </div>
-      <div className="relative w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div 
-          className={`absolute top-0 left-0 h-full ${colorClasses[color]} transition-all duration-500`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-      <div className="mt-2 text-xs text-gray-600 text-right">{percentage.toFixed(0)}%</div>
+// Simple stat card for secondary metrics
+const StatCard = ({ label, value, sublabel, icon: Icon }) => (
+  <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-4 border border-gray-100">
+    <div className="flex items-center gap-2 mb-2">
+      {Icon && <Icon size={14} className="text-gray-400" />}
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
     </div>
-  );
-};
+    <div className="text-2xl font-bold text-gray-900">{value}</div>
+    {sublabel && <div className="text-xs text-gray-500 mt-1">{sublabel}</div>}
+  </div>
+);
 
 export default function AdminDashboardStats({ onPeriodChange }) {
   const { t } = useTranslation(['admin']);
@@ -127,6 +182,9 @@ export default function AdminDashboardStats({ onPeriodChange }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [comparisonStats, setComparisonStats] = useState(null);
+
+  const periodConfig = PERIODS.find(p => p.value === selectedPeriod);
+  const periodDays = periodConfig?.days || 30;
 
   useEffect(() => {
     loadStats();
@@ -151,44 +209,55 @@ export default function AdminDashboardStats({ onPeriodChange }) {
     onPeriodChange?.(period);
   };
 
-  // Calculate key metrics
+  // Calculate derived metrics with safe NaN handling
   const metrics = useMemo(() => {
     if (!stats) return null;
     
+    // Conversion rate: premium / total users
     const conversionRate = stats.users.total > 0 
-      ? ((stats.premium.total / stats.users.total) * 100).toFixed(1)
-      : '0.0';
+      ? (stats.premium.total / stats.users.total) * 100
+      : 0;
     
+    // Active rate: active / total users  
     const activeRate = stats.users.total > 0 
-      ? ((stats.users.active / stats.users.total) * 100).toFixed(0)
-      : '0';
+      ? (stats.users.active / stats.users.total) * 100
+      : 0;
 
-    const avgRevenuePerUser = stats.premium.total > 0
+    // ARPU: MRR / paying users
+    const arpu = stats.premium.total > 0
       ? stats.revenue.mrr / stats.premium.total
       : 0;
 
-    const growthRate = comparisonStats?.users.total > 0
-      ? ((stats.users.new - comparisonStats.users.new) / comparisonStats.users.new) * 100
+    // Annual ratio: yearly / total premium
+    const annualRatio = stats.premium.total > 0
+      ? (stats.premium.yearly / stats.premium.total) * 100
       : 0;
+
+    // Previous period metrics for comparison (with null safety)
+    const prevConversionRate = comparisonStats?.users?.total > 0
+      ? (comparisonStats.premium.total / comparisonStats.users.total) * 100
+      : null;
+
+    const prevActiveRate = comparisonStats?.users?.total > 0
+      ? (comparisonStats.users.active / comparisonStats.users.total) * 100
+      : null;
 
     return {
       conversionRate,
       activeRate,
-      avgRevenuePerUser,
-      growthRate,
-      totalRevenue: stats.revenue.mrr,
-      activeUsers: stats.users.active,
-      newUsers: stats.users.new,
-      newPremium: stats.premium.new,
+      arpu,
+      annualRatio,
+      prevConversionRate,
+      prevActiveRate,
     };
   }, [stats, comparisonStats]);
 
   if (loading && !stats) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <RefreshCw className="animate-spin h-8 w-8 text-blue-500 mx-auto mb-3" />
-          <p className="text-gray-600 text-sm">Laddar statistik...</p>
+          <p className="text-gray-500 text-sm">Laddar statistik...</p>
         </div>
       </div>
     );
@@ -196,25 +265,41 @@ export default function AdminDashboardStats({ onPeriodChange }) {
 
   if (!stats || !metrics) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-16">
+        <AlertCircle className="h-10 w-10 text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500">Kunde inte ladda statistik</p>
+        <button 
+          onClick={loadStats}
+          className="mt-3 text-sm text-blue-600 hover:text-blue-700"
+        >
+          Försök igen
+        </button>
       </div>
     );
   }
 
+  // Adjusted targets based on selected period
+  const signupTarget = getAdjustedTarget(FORECAST_TARGETS.monthlySignups, periodDays);
+  const premiumTarget = getAdjustedTarget(
+    Math.round(FORECAST_TARGETS.monthlySignups * (FORECAST_TARGETS.conversionRate / 100)), 
+    periodDays
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header with period selector */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Översikt</h3>
-          <p className="text-sm text-gray-500 mt-1">Plattformens nyckeltal och tillväxt</p>
+          <h2 className="text-xl font-bold text-gray-900">Prestanda vs Prognos</h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Jämför faktisk prestanda mot prognosmodellen (moderat scenario)
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={selectedPeriod}
             onChange={(e) => handlePeriodChange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm font-medium text-gray-700 hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {PERIODS.map(period => (
               <option key={period.value} value={period.value}>{period.label}</option>
@@ -223,7 +308,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           <button
             onClick={loadStats}
             disabled={loading}
-            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50"
+            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50"
             title="Uppdatera"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -231,101 +316,144 @@ export default function AdminDashboardStats({ onPeriodChange }) {
         </div>
       </div>
 
-      {/* Top KPIs - Most Important Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Månatlig Intäkt (MRR)"
-          value={formatCurrency(metrics.totalRevenue)}
-          subtitle={`${stats.premium.total} betalande`}
-          change={comparisonStats ? metrics.totalRevenue - comparisonStats.revenue.mrr : 0}
+      {/* Primary KPIs with Targets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="MRR"
+          value={formatCurrency(stats.revenue.mrr)}
+          target={Math.round(FORECAST_TARGETS.mrr12Month / 12)}
+          targetLabel="Prognos (mån)"
+          previousValue={comparisonStats?.revenue?.mrr}
           icon={DollarSign}
           color="green"
+          subtitle={`${stats.premium.total} betalande`}
         />
         
-        <MetricCard
+        <KPICard
           title="Nya Användare"
-          value={formatNumber(metrics.newUsers)}
-          subtitle={`${metrics.growthRate > 0 ? '+' : ''}${metrics.growthRate.toFixed(0)}% vs föregående`}
-          change={comparisonStats ? metrics.newUsers - comparisonStats.users.new : 0}
+          value={formatNumber(stats.users.new)}
+          target={signupTarget}
+          targetLabel={`Mål (${periodDays}d)`}
+          previousValue={comparisonStats?.users?.new}
           icon={Users}
           color="blue"
         />
         
-        <MetricCard
+        <KPICard
           title="Konvertering"
-          value={`${metrics.conversionRate}%`}
-          subtitle={`${metrics.newPremium} nya premium`}
-          change={comparisonStats ? stats.premium.new - comparisonStats.premium.new : 0}
-          icon={Crown}
+          value={formatPercent(metrics.conversionRate)}
+          target={FORECAST_TARGETS.conversionRate}
+          targetLabel="Mål: 5%"
+          previousValue={metrics.prevConversionRate}
+          icon={Percent}
           color="purple"
+          subtitle={`${stats.premium.new} nya premium`}
         />
         
-        <MetricCard
+        <KPICard
           title="Aktiva Användare"
-          value={`${metrics.activeRate}%`}
-          subtitle={`${metrics.activeUsers} av ${stats.users.total} användare`}
-          change={comparisonStats ? stats.users.active - comparisonStats.users.active : 0}
+          value={formatPercent(metrics.activeRate, 0)}
+          previousValue={metrics.prevActiveRate}
           icon={Zap}
           color="orange"
+          subtitle={`${stats.users.active} av ${stats.users.total}`}
         />
       </div>
 
-      {/* Growth & Engagement */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ProgressCard
-          title="Tillväxtmål"
-          current={stats.users.new}
-          target={100}
-          subtitle="Nya användare denna period"
-          icon={Target}
-          color="blue"
-        />
-        
-        <ProgressCard
-          title="Premiummål"
-          current={stats.premium.new}
-          target={20}
-          subtitle="Nya premium denna period"
-          icon={Crown}
-          color="purple"
-        />
-        
-        <ProgressCard
-          title="Engagemang"
-          current={stats.wheels.withActivities}
-          target={stats.wheels.total}
-          subtitle="Hjul med aktiviteter"
-          icon={UserCheck}
-          color="green"
-        />
-      </div>
-
-      {/* Detailed Stats Grid */}
+      {/* Secondary KPIs - Business Health */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
-          <div className="text-sm text-gray-600 mb-1">Totalt Användare</div>
-          <div className="text-3xl font-bold text-gray-900">{formatNumber(stats.users.total)}</div>
-          <div className="text-xs text-gray-500 mt-2">{stats.users.active} aktiva</div>
-        </div>
+        <KPICard
+          title="Nya Premium"
+          value={formatNumber(stats.premium.new)}
+          target={premiumTarget}
+          targetLabel={`Mål (${periodDays}d)`}
+          previousValue={comparisonStats?.premium?.new}
+          icon={Crown}
+          color="pink"
+        />
         
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
-          <div className="text-sm text-gray-600 mb-1">Totalt Hjul</div>
-          <div className="text-3xl font-bold text-gray-900">{formatNumber(stats.wheels.total)}</div>
-          <div className="text-xs text-gray-500 mt-2">{stats.wheels.new} nya</div>
-        </div>
+        <KPICard
+          title="Årsprenumeranter"
+          value={formatPercent(metrics.annualRatio, 0)}
+          target={FORECAST_TARGETS.annualRatio}
+          targetLabel="Mål: 70%"
+          icon={Target}
+          color="green"
+          subtitle={`${stats.premium.yearly} av ${stats.premium.total}`}
+        />
         
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
-          <div className="text-sm text-gray-600 mb-1">Aktiviteter</div>
-          <div className="text-3xl font-bold text-gray-900">{formatNumber(stats.activities.total)}</div>
-          <div className="text-xs text-gray-500 mt-2">{stats.activities.new} nya</div>
-        </div>
+        <StatCard
+          label="ARPU"
+          value={formatCurrency(metrics.arpu)}
+          sublabel="per betalande användare"
+          icon={DollarSign}
+        />
         
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
-          <div className="text-sm text-gray-600 mb-1">ARPU</div>
-          <div className="text-3xl font-bold text-gray-900">{formatCurrency(metrics.avgRevenuePerUser)}</div>
-          <div className="text-xs text-gray-500 mt-2">per premium-användare</div>
-        </div>
+        <StatCard
+          label="Totalt Premium"
+          value={formatNumber(stats.premium.total)}
+          sublabel={`${stats.premium.monthly} mån / ${stats.premium.yearly} år`}
+          icon={Crown}
+        />
       </div>
+
+      {/* Volume Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard
+          label="Användare"
+          value={formatNumber(stats.users.total)}
+          sublabel={`${stats.users.new} nya denna period`}
+          icon={Users}
+        />
+        
+        <StatCard
+          label="Hjul"
+          value={formatNumber(stats.wheels.total)}
+          sublabel={`${stats.wheels.new} nya`}
+          icon={Circle}
+        />
+        
+        <StatCard
+          label="Med aktiviteter"
+          value={formatNumber(stats.wheels.withActivities)}
+          sublabel={`${stats.wheels.total > 0 ? Math.round((stats.wheels.withActivities / stats.wheels.total) * 100) : 0}% av hjul`}
+          icon={CheckCircle}
+        />
+        
+        <StatCard
+          label="Aktiviteter"
+          value={formatNumber(stats.activities.total)}
+          sublabel={`${stats.activities.new} nya`}
+          icon={Target}
+        />
+        
+        <StatCard
+          label="Team"
+          value={formatNumber(stats.teams?.total || 0)}
+          sublabel={`${stats.teams?.members || 0} medlemmar`}
+          icon={Users}
+        />
+      </div>
+
+      {/* Forecast Link */}
+      <Link 
+        to="/admin/forecasts"
+        className="block bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-3">
+            <TrendingUp className="text-blue-500 flex-shrink-0 mt-0.5" size={18} />
+            <div className="text-sm">
+              <span className="font-medium text-blue-900">Prognosmål (Moderat): </span>
+              <span className="text-blue-700">
+                {FORECAST_TARGETS.monthlySignups} registreringar/mån, {FORECAST_TARGETS.conversionRate}% konvertering, 
+                {' '}{FORECAST_TARGETS.annualRatio}% årspren.
+              </span>
+            </div>
+          </div>
+          <ArrowUpRight className="text-blue-400" size={16} />
+        </div>
+      </Link>
     </div>
   );
 }
