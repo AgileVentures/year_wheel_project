@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Percent,
   TrendingUp,
+  Gift,
 } from 'lucide-react';
 import { FORECAST_SCENARIOS } from './RevenueForecast';
 
@@ -398,11 +399,29 @@ export default function AdminDashboardStats({ onPeriodChange }) {
         
         <StatCard
           label="Betalande"
-          value={formatNumber(stats.premium.paying || (stats.premium.monthly + stats.premium.yearly))}
-          sublabel={`${stats.premium.monthly} mån / ${stats.premium.yearly} år${stats.premium.gift ? ` + ${stats.premium.gift} gåvor` : ''}`}
+          value={formatNumber(metrics.payingSubscribers)}
+          sublabel={`${stats.premium.monthly || 0} mån / ${stats.premium.yearly || 0} år`}
           icon={Crown}
         />
       </div>
+
+      {/* Gift Subscriptions - only show if there are any */}
+      {(stats.premium.gift > 0 || stats.premium.total > metrics.payingSubscribers) && (
+        <div className="bg-purple-50 border border-purple-100 rounded-sm p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-500 rounded-sm">
+              <Gift size={18} className="text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-purple-900">Gåvoprenumerationer</div>
+              <div className="text-2xl font-bold text-purple-700">
+                {formatNumber(stats.premium.gift || (stats.premium.total - metrics.payingSubscribers))}
+              </div>
+              <div className="text-xs text-purple-600">Administratörstilldelade (genererar ingen intäkt)</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Volume Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
