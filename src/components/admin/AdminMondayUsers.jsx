@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Calendar, 
@@ -8,12 +8,22 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  RefreshCw
+  RefreshCw,
+  Activity,
+  Eye,
+  Download,
+  Share2,
+  Edit,
+  Trash2
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
-export default function AdminMondayUsers({ mondayUsers, onRefresh }) {
+export default function AdminMondayUsers({ mondayUsers, onRefresh, loading }) {
   const { t } = useTranslation(['admin', 'common']);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userActivities, setUserActivities] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
 
   const getStatusBadge = (status) => {
     const badges = {
@@ -64,6 +74,79 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh }) {
       minute: '2-digit'
     });
   };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('sv-SE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  const getActivityIcon = (activityType) => {
+    const icons = {
+      board_viewed: Eye,
+      wheel_created: Edit,
+      wheel_updated: Edit,
+      wheel_deleted: Trash2,
+      export_pdf: Download,
+      export_png: Download,
+      export_svg: Download,
+      export_jpg: Download,
+      share_wheel: Share2,
+    };
+    return icons[activityType] || Activity;
+  };
+
+  const getActivityColor = (activityType) => {
+    const colors = {
+      board_viewed: 'text-blue-600 bg-blue-50',
+      wheel_created: 'text-green-600 bg-green-50',
+      wheel_updated: 'text-yellow-600 bg-yellow-50',
+      wheel_deleted: 'text-red-600 bg-red-50',
+      export_pdf: 'text-purple-600 bg-purple-50',
+      export_png: 'text-purple-600 bg-purple-50',
+      export_svg: 'text-purple-600 bg-purple-50',
+      export_jpg: 'text-purple-600 bg-purple-50',
+      share_wheel: 'text-indigo-600 bg-indigo-50',
+    };
+    return colors[activityType] || 'text-gray-600 bg-gray-50';
+  };
+
+  const loadUserActivities = async (userId) => {
+    if (!userId) return;
+    
+    setLoadingActivities(true);
+    try {
+      const { data, error } = await supabase
+        .from('monday_user_activities')
+        .select('*')
+        .eq('monday_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setUserActivities(data || []);
+    } catch (error) {
+      console.error('Error loading user activities:', error);
+      setUserActivities([]);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedUser) {
+      loadUserActivities(selectedUser.id);
+      setActiveTab('details');
+    } else {
+      setUserActivities([]);
+    }
+  }, [selectedUser]);
 
   // Calculate stats
   const stats = {
@@ -124,9 +207,10 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh }) {
           <h3 className="text-lg font-semibold text-gray-900">Monday.com Users</h3>
           <button
             onClick={onRefresh}
-            className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2"
+            disabled={loading}
+            className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw size={16} />
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             Refresh
           </button>
         </div>
@@ -170,7 +254,11 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh }) {
                   <tr 
                     key={user.id}
                     onClick={() => setSelectedUser(selectedUser?.id === user.id ? null : user)}
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className={`cursor-pointer transition-colors ${
+                      selectedUser?.id === user.id 
+                        ? 'bg-blue-50 hover:bg-blue-100' 
+                        : 'hover:bg-gray-50'
+                    }`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -215,61 +303,163 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh }) {
 
         {/* Expanded User Details */}
         {selectedUser && (
-          <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Subscription Details</h4>
-                <dl className="space-y-1">
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Billing Period:</dt>
-                    <dd className="text-gray-900">{selectedUser.billing_period || '-'}</dd>
+          <div className="border-t border-gray-200 bg-gray-50">
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200 bg-white">
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'details'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Details
+              </button>
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                  activeTab === 'activity'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Activity size={16} />
+                Activity Log ({userActivities.length})
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="px-6 py-4">
+              {activeTab === 'details' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Subscription Details</h4>
+                    <dl className="space-y-1">
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Billing Period:</dt>
+                        <dd className="text-gray-900">{selectedUser.billing_period || '-'}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Renewal Date:</dt>
+                        <dd className="text-gray-900">{formatDate(selectedUser.renewal_date)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Boards Used:</dt>
+                        <dd className="text-gray-900">{selectedUser.boards_used}</dd>
+                      </div>
+                    </dl>
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Renewal Date:</dt>
-                    <dd className="text-gray-900">{formatDate(selectedUser.renewal_date)}</dd>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Account Info</h4>
+                    <dl className="space-y-1">
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Account ID:</dt>
+                        <dd className="text-gray-900">{selectedUser.monday_account_id}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Country:</dt>
+                        <dd className="text-gray-900">{selectedUser.country_code || '-'}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Cluster:</dt>
+                        <dd className="text-gray-900">{selectedUser.user_cluster}</dd>
+                      </div>
+                    </dl>
                   </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Boards Used:</dt>
-                    <dd className="text-gray-900">{selectedUser.boards_used}</dd>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Activity</h4>
+                    <dl className="space-y-1">
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Created:</dt>
+                        <dd className="text-gray-900">{formatDate(selectedUser.created_at)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-gray-600">Updated:</dt>
+                        <dd className="text-gray-900">{formatDate(selectedUser.updated_at)}</dd>
+                      </div>
+                      {selectedUser.uninstalled_at && (
+                        <div className="flex justify-between">
+                          <dt className="text-gray-600">Uninstalled:</dt>
+                          <dd className="text-red-600">{formatDate(selectedUser.uninstalled_at)}</dd>
+                        </div>
+                      )}
+                    </dl>
                   </div>
-                </dl>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Account Info</h4>
-                <dl className="space-y-1">
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Account ID:</dt>
-                    <dd className="text-gray-900">{selectedUser.monday_account_id}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Country:</dt>
-                    <dd className="text-gray-900">{selectedUser.country_code || '-'}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Cluster:</dt>
-                    <dd className="text-gray-900">{selectedUser.user_cluster}</dd>
-                  </div>
-                </dl>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Activity</h4>
-                <dl className="space-y-1">
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Created:</dt>
-                    <dd className="text-gray-900">{formatDate(selectedUser.created_at)}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-600">Updated:</dt>
-                    <dd className="text-gray-900">{formatDate(selectedUser.updated_at)}</dd>
-                  </div>
-                  {selectedUser.uninstalled_at && (
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Uninstalled:</dt>
-                      <dd className="text-red-600">{formatDate(selectedUser.uninstalled_at)}</dd>
+                </div>
+              )}
+
+              {activeTab === 'activity' && (
+                <div className="space-y-4">
+                  {loadingActivities ? (
+                    <div className="text-center py-8">
+                      <RefreshCw className="animate-spin mx-auto mb-2 text-gray-400" size={24} />
+                      <p className="text-sm text-gray-600">Loading activities...</p>
+                    </div>
+                  ) : userActivities.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Activity className="mx-auto mb-2 text-gray-400" size={32} />
+                      <p className="text-sm text-gray-600">No activities recorded yet</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-100 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                              Activity
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                              Details
+                            </th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                              Timestamp
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {userActivities.map((activity) => {
+                            const Icon = getActivityIcon(activity.activity_type);
+                            const colorClass = getActivityColor(activity.activity_type);
+                            
+                            return (
+                              <tr key={activity.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+                                    <Icon size={12} />
+                                    {activity.activity_type}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="text-xs text-gray-600 space-y-0.5">
+                                    {activity.board_id && (
+                                      <div>Board: <span className="font-mono">{activity.board_id}</span></div>
+                                    )}
+                                    {activity.item_id && (
+                                      <div>Item: <span className="font-mono">{activity.item_id}</span></div>
+                                    )}
+                                    {activity.wheel_id && (
+                                      <div>Wheel: <span className="font-mono">{activity.wheel_id}</span></div>
+                                    )}
+                                    {activity.metadata && (
+                                      <div className="text-gray-500">
+                                        {JSON.stringify(activity.metadata)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
+                                  {formatDateTime(activity.created_at)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   )}
-                </dl>
-              </div>
+                </div>
+              )}
             </div>
           </div>
         )}
