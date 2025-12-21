@@ -4,89 +4,122 @@ import {
   Users,
   Circle,
   Crown,
-  Globe,
   TrendingUp,
   TrendingDown,
   Minus,
-  Activity,
-  Calendar,
   DollarSign,
-  UserPlus,
-  UserMinus,
-  Layers,
-  Bot,
-  Share2,
-  Download,
+  Zap,
+  UserCheck,
+  Target,
+  Calendar,
   RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 
 const PERIODS = [
-  { value: 'today', label: 'Idag', days: 1 },
-  { value: 'week', label: 'Denna vecka', days: 7 },
-  { value: '7d', label: '7 dagar', days: 7 },
-  { value: '30d', label: '30 dagar', days: 30 },
-  { value: '90d', label: '90 dagar', days: 90 },
-  { value: 'mtd', label: 'Denna månad', days: null },
-  { value: 'ytd', label: 'Detta år', days: null },
-  { value: 'all', label: 'All tid', days: null },
-  { value: 'custom', label: 'Anpassad...', days: null },
+  { value: '7d', label: '7 dagar' },
+  { value: '30d', label: '30 dagar' },
+  { value: '90d', label: '90 dagar' },
+  { value: 'mtd', label: 'Denna månad' },
+  { value: 'ytd', label: 'Detta år' },
+  { value: 'all', label: 'All tid' },
 ];
 
-const TrendIndicator = ({ current, previous, suffix = '', inverse = false }) => {
-  if (previous === 0 || previous === null || previous === undefined) {
-    return <span className="text-gray-400 text-xs">—</span>;
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k`;
+  }
+  return num.toString();
+};
+
+const formatCurrency = (amount) => {
+  return `${Math.round(amount).toLocaleString('sv-SE')} kr`;
+};
+
+const TrendBadge = ({ current, previous, inverse = false }) => {
+  if (previous === 0 || previous === null || previous === undefined || current === previous) {
+    return null;
   }
   
   const change = ((current - previous) / previous) * 100;
   const isPositive = inverse ? change < 0 : change > 0;
-  const isNeutral = Math.abs(change) < 1;
   
-  if (isNeutral) {
-    return (
-      <span className="flex items-center gap-1 text-gray-500 text-xs">
-        <Minus size={12} />
-        <span>0%</span>
-      </span>
-    );
-  }
+  if (Math.abs(change) < 0.5) return null;
   
   return (
-    <span className={`flex items-center gap-1 text-xs ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-      {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-      <span>{change > 0 ? '+' : ''}{change.toFixed(1)}%{suffix}</span>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+      isPositive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+    }`}>
+      {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+      {Math.abs(change).toFixed(0)}%
     </span>
   );
 };
 
-const StatCard = ({ icon: Icon, iconColor, title, value, subtitle, trend, trendLabel, children }) => (
-  <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200 hover:shadow-md transition-shadow">
-    <div className="flex items-start justify-between mb-3">
-      <div className={`p-2 rounded-sm ${iconColor}`}>
-        <Icon size={20} className="text-white" />
-      </div>
-      {trend !== undefined && (
-        <div className="text-right">
-          <TrendIndicator current={trend.current} previous={trend.previous} />
-          {trendLabel && <div className="text-[10px] text-gray-400 mt-0.5">{trendLabel}</div>}
-        </div>
-      )}
-    </div>
-    <div className="text-2xl font-bold text-gray-900">{value}</div>
-    <div className="text-sm text-gray-600 mt-1">{title}</div>
-    {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
-    {children}
-  </div>
-);
+const MetricCard = ({ title, value, subtitle, change, icon: Icon, trend, color = 'blue' }) => {
+  const colorClasses = {
+    blue: 'from-blue-500 to-blue-600',
+    green: 'from-green-500 to-green-600',
+    purple: 'from-purple-500 to-purple-600',
+    orange: 'from-orange-500 to-orange-600',
+    pink: 'from-pink-500 to-pink-600',
+  };
 
-const MiniStat = ({ label, value, trend }) => (
-  <div className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-    <span className="text-xs text-gray-500">{label}</span>
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium text-gray-900">{value}</span>
-      {trend && <TrendIndicator current={trend.current} previous={trend.previous} />}
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 rounded-lg bg-gradient-to-br ${colorClasses[color]}`}>
+          <Icon size={24} className="text-white" />
+        </div>
+        {change !== undefined && (
+          <TrendBadge current={value} previous={value - change} inverse={trend === 'inverse'} />
+        )}
+      </div>
+      <div className="space-y-1">
+        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+        <div className="text-3xl font-bold text-gray-900">{value}</div>
+        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+const ProgressCard = ({ title, current, target, subtitle, icon: Icon, color = 'blue' }) => {
+  const percentage = Math.min((current / target) * 100, 100);
+  const colorClasses = {
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    purple: 'bg-purple-500',
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${colorClasses[color]} bg-opacity-10`}>
+            <Icon size={20} className={`${colorClasses[color].replace('bg-', 'text-')}`} />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-900">{title}</h3>
+            {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-gray-900">{current}</div>
+          <div className="text-xs text-gray-500">av {target}</div>
+        </div>
+      </div>
+      <div className="relative w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div 
+          className={`absolute top-0 left-0 h-full ${colorClasses[color]} transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+      <div className="mt-2 text-xs text-gray-600 text-right">{percentage.toFixed(0)}%</div>
+    </div>
+  );
+};
 
 export default function AdminDashboardStats({ onPeriodChange }) {
   const { t } = useTranslation(['admin']);
@@ -94,22 +127,16 @@ export default function AdminDashboardStats({ onPeriodChange }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [comparisonStats, setComparisonStats] = useState(null);
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
   useEffect(() => {
-    if (selectedPeriod !== 'custom' || (customStart && customEnd)) {
-      loadStats();
-    }
-  }, [selectedPeriod, customStart, customEnd]);
+    loadStats();
+  }, [selectedPeriod]);
 
   const loadStats = async () => {
     setLoading(true);
     try {
-      // Import dynamically to avoid circular deps
       const { getEnhancedAdminStats } = await import('../../services/adminService');
-      const data = await getEnhancedAdminStats(selectedPeriod, customStart, customEnd);
+      const data = await getEnhancedAdminStats(selectedPeriod);
       setStats(data.current);
       setComparisonStats(data.previous);
     } catch (error) {
@@ -120,59 +147,39 @@ export default function AdminDashboardStats({ onPeriodChange }) {
   };
 
   const handlePeriodChange = (period) => {
-    if (period === 'custom') {
-      setShowCustomPicker(true);
-      // Don't change selectedPeriod until dates are picked
-    } else {
-      setShowCustomPicker(false);
-      setSelectedPeriod(period);
-      onPeriodChange?.(period);
-    }
+    setSelectedPeriod(period);
+    onPeriodChange?.(period);
   };
 
-  const applyCustomRange = () => {
-    if (customStart && customEnd) {
-      setSelectedPeriod('custom');
-      setShowCustomPicker(false);
-      onPeriodChange?.('custom');
-    }
-  };
-
-  // Calculate derived metrics
+  // Calculate key metrics
   const metrics = useMemo(() => {
     if (!stats) return null;
     
     const conversionRate = stats.users.total > 0 
-      ? (stats.premium.total / stats.users.total) * 100 
-      : 0;
+      ? ((stats.premium.total / stats.users.total) * 100).toFixed(1)
+      : '0.0';
     
-    const avgActivitiesPerWheel = stats.wheels.total > 0 
-      ? stats.activities.total / stats.wheels.total 
-      : 0;
-    
-    const activeUserRate = stats.users.total > 0 
-      ? (stats.users.active / stats.users.total) * 100 
+    const activeRate = stats.users.total > 0 
+      ? ((stats.users.active / stats.users.total) * 100).toFixed(0)
+      : '0';
+
+    const avgRevenuePerUser = stats.premium.total > 0
+      ? stats.revenue.mrr / stats.premium.total
       : 0;
 
-    const prevConversionRate = comparisonStats?.users.total > 0 
-      ? (comparisonStats.premium.total / comparisonStats.users.total) * 100 
-      : 0;
-
-    const prevAvgActivities = comparisonStats?.wheels.total > 0 
-      ? comparisonStats.activities.total / comparisonStats.wheels.total 
-      : 0;
-
-    const prevActiveRate = comparisonStats?.users.total > 0 
-      ? (comparisonStats.users.active / comparisonStats.users.total) * 100 
+    const growthRate = comparisonStats?.users.total > 0
+      ? ((stats.users.new - comparisonStats.users.new) / comparisonStats.users.new) * 100
       : 0;
 
     return {
       conversionRate,
-      avgActivitiesPerWheel,
-      activeUserRate,
-      prevConversionRate,
-      prevAvgActivities,
-      prevActiveRate,
+      activeRate,
+      avgRevenuePerUser,
+      growthRate,
+      totalRevenue: stats.revenue.mrr,
+      activeUsers: stats.users.active,
+      newUsers: stats.users.new,
+      newPremium: stats.premium.new,
     };
   }, [stats, comparisonStats]);
 
@@ -180,273 +187,148 @@ export default function AdminDashboardStats({ onPeriodChange }) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <RefreshCw className="animate-spin h-8 w-8 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">Laddar statistik...</p>
+          <RefreshCw className="animate-spin h-8 w-8 text-blue-500 mx-auto mb-3" />
+          <p className="text-gray-600 text-sm">Laddar statistik...</p>
         </div>
       </div>
     );
   }
 
-  const getPeriodLabel = () => {
-    const period = PERIODS.find(p => p.value === selectedPeriod);
-    return period?.label || selectedPeriod;
-  };
+  if (!stats || !metrics) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">Kunde inte ladda statistik</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Period Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header with period selector */}
+      <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Nyckeltal</h3>
-          <p className="text-sm text-gray-500">Jämfört med föregående period</p>
+          <h3 className="text-xl font-bold text-gray-900">Översikt</h3>
+          <p className="text-sm text-gray-500 mt-1">Plattformens nyckeltal och tillväxt</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Calendar size={16} className="text-gray-400" />
+        <div className="flex items-center gap-3">
           <select
-            value={selectedPeriod === 'custom' ? 'custom' : selectedPeriod}
+            value={selectedPeriod}
             onChange={(e) => handlePeriodChange(e.target.value)}
-            className="text-sm border border-gray-300 rounded-sm px-3 py-2 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           >
             {PERIODS.map(period => (
               <option key={period.value} value={period.value}>{period.label}</option>
             ))}
           </select>
-          
-          {/* Custom date range picker */}
-          {(showCustomPicker || selectedPeriod === 'custom') && (
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-                className="text-sm border border-gray-300 rounded-sm px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
-                max={customEnd || undefined}
-              />
-              <span className="text-gray-400">—</span>
-              <input
-                type="date"
-                value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
-                className="text-sm border border-gray-300 rounded-sm px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500"
-                min={customStart || undefined}
-                max={new Date().toISOString().split('T')[0]}
-              />
-              {showCustomPicker && (
-                <button
-                  onClick={applyCustomRange}
-                  disabled={!customStart || !customEnd}
-                  className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Visa
-                </button>
-              )}
-            </div>
-          )}
-          
           <button
             onClick={loadStats}
             disabled={loading}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-sm disabled:opacity-50"
+            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50"
             title="Uppdatera"
           >
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Users */}
-        <StatCard
-          icon={Users}
-          iconColor="bg-blue-500"
-          title="Användare"
-          value={stats?.users.total || 0}
-          subtitle={`${stats?.users.new || 0} nya under ${getPeriodLabel().toLowerCase()}`}
-          trend={stats && comparisonStats ? { current: stats.users.new, previous: comparisonStats.users.new } : undefined}
-          trendLabel="vs förra perioden"
-        >
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <MiniStat 
-              label="Aktiva" 
-              value={stats?.users.active || 0}
-              trend={stats && comparisonStats ? { current: stats.users.active, previous: comparisonStats.users.active } : undefined}
-            />
-            <MiniStat 
-              label="Idag" 
-              value={stats?.users.today || 0}
-            />
-          </div>
-        </StatCard>
-
-        {/* Wheels */}
-        <StatCard
-          icon={Circle}
-          iconColor="bg-green-500"
-          title="Hjul"
-          value={stats?.wheels.total || 0}
-          subtitle={`${stats?.wheels.new || 0} nya under ${getPeriodLabel().toLowerCase()}`}
-          trend={stats && comparisonStats ? { current: stats.wheels.new, previous: comparisonStats.wheels.new } : undefined}
-          trendLabel="vs förra perioden"
-        >
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <MiniStat 
-              label="Med aktiviteter" 
-              value={stats?.wheels.withActivities || 0}
-            />
-            <MiniStat 
-              label="Snitt akt./hjul" 
-              value={(metrics?.avgActivitiesPerWheel || 0).toFixed(1)}
-              trend={metrics ? { current: metrics.avgActivitiesPerWheel, previous: metrics.prevAvgActivities } : undefined}
-            />
-          </div>
-        </StatCard>
-
-        {/* Premium / Revenue */}
-        <StatCard
-          icon={Crown}
-          iconColor="bg-purple-500"
-          title="Premium"
-          value={stats?.premium.total || 0}
-          subtitle={`${(metrics?.conversionRate || 0).toFixed(1)}% konverteringsgrad`}
-          trend={stats && comparisonStats ? { current: stats.premium.total, previous: comparisonStats.premium.total } : undefined}
-          trendLabel="vs förra perioden"
-        >
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <MiniStat 
-              label="Månadsvis" 
-              value={stats?.premium.monthly || 0}
-            />
-            <MiniStat 
-              label="Årsvis" 
-              value={stats?.premium.yearly || 0}
-            />
-            <MiniStat 
-              label="Nya" 
-              value={stats?.premium.new || 0}
-              trend={stats && comparisonStats ? { current: stats.premium.new, previous: comparisonStats.premium.new } : undefined}
-            />
-          </div>
-        </StatCard>
-
-        {/* MRR */}
-        <StatCard
+      {/* Top KPIs - Most Important Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <MetricCard
+          title="Månatlig Intäkt (MRR)"
+          value={formatCurrency(metrics.totalRevenue)}
+          subtitle={`${stats.premium.total} betalande`}
+          change={comparisonStats ? metrics.totalRevenue - comparisonStats.revenue.mrr : 0}
           icon={DollarSign}
-          iconColor="bg-emerald-500"
-          title="MRR"
-          value={`${(stats?.revenue.mrr || 0).toLocaleString('sv-SE')} kr`}
-          subtitle="Månatlig återkommande intäkt"
-          trend={stats && comparisonStats ? { current: stats.revenue.mrr, previous: comparisonStats.revenue.mrr } : undefined}
-          trendLabel="vs förra perioden"
-        >
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <MiniStat 
-              label="ARR" 
-              value={`${((stats?.revenue.mrr || 0) * 12).toLocaleString('sv-SE')} kr`}
-            />
-            <MiniStat 
-              label="Avg. per användare" 
-              value={`${(stats?.revenue.arpu || 0).toFixed(0)} kr`}
-            />
-          </div>
-        </StatCard>
-      </div>
-
-      {/* Secondary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Engagement */}
-        <StatCard
-          icon={Activity}
-          iconColor="bg-orange-500"
-          title="Aktiviteter"
-          value={(stats?.activities.total || 0).toLocaleString('sv-SE')}
-          subtitle={`${stats?.activities.new || 0} nya under perioden`}
-          trend={stats && comparisonStats ? { current: stats.activities.new, previous: comparisonStats.activities.new } : undefined}
+          color="green"
         />
-
-        {/* AI Usage */}
-        <StatCard
-          icon={Bot}
-          iconColor="bg-indigo-500"
-          title="AI-användning"
-          value={stats?.ai.requests || 0}
-          subtitle={`${stats?.ai.uniqueUsers || 0} unika användare`}
-          trend={stats && comparisonStats ? { current: stats.ai.requests, previous: comparisonStats.ai.requests } : undefined}
-        />
-
-        {/* Teams & Collaboration */}
-        <StatCard
+        
+        <MetricCard
+          title="Nya Användare"
+          value={formatNumber(metrics.newUsers)}
+          subtitle={`${metrics.growthRate > 0 ? '+' : ''}${metrics.growthRate.toFixed(0)}% vs föregående`}
+          change={comparisonStats ? metrics.newUsers - comparisonStats.users.new : 0}
           icon={Users}
-          iconColor="bg-cyan-500"
-          title="Team"
-          value={stats?.teams.total || 0}
-          subtitle={`${stats?.teams.members || 0} totala medlemmar`}
-          trend={stats && comparisonStats ? { current: stats.teams.new, previous: comparisonStats.teams.new } : undefined}
+          color="blue"
         />
-
-        {/* Public & Sharing */}
-        <StatCard
-          icon={Share2}
-          iconColor="bg-pink-500"
-          title="Delning"
-          value={stats?.sharing.publicWheels || 0}
-          subtitle={`${stats?.sharing.exports || 0} exporter under perioden`}
-        >
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <MiniStat label="Mallar" value={stats?.sharing.templates || 0} />
-            <MiniStat label="På landningssida" value={stats?.sharing.onLanding || 0} />
-          </div>
-        </StatCard>
+        
+        <MetricCard
+          title="Konvertering"
+          value={`${metrics.conversionRate}%`}
+          subtitle={`${metrics.newPremium} nya premium`}
+          change={comparisonStats ? stats.premium.new - comparisonStats.premium.new : 0}
+          icon={Crown}
+          color="purple"
+        />
+        
+        <MetricCard
+          title="Aktiva Användare"
+          value={`${metrics.activeRate}%`}
+          subtitle={`${metrics.activeUsers} av ${stats.users.total} användare`}
+          change={comparisonStats ? stats.users.active - comparisonStats.users.active : 0}
+          icon={Zap}
+          color="orange"
+        />
       </div>
 
-      {/* Churn & Retention */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <UserPlus size={16} className="text-green-500" />
-            Tillväxt & Retention
-          </h4>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-green-50 rounded-sm">
-              <div className="text-xl font-bold text-green-600">{stats?.retention.newUsers || 0}</div>
-              <div className="text-xs text-gray-600 mt-1">Nya användare</div>
-            </div>
-            <div className="text-center p-3 bg-blue-50 rounded-sm">
-              <div className="text-xl font-bold text-blue-600">{(metrics?.activeUserRate || 0).toFixed(0)}%</div>
-              <div className="text-xs text-gray-600 mt-1">Aktiva</div>
-            </div>
-            <div className="text-center p-3 bg-purple-50 rounded-sm">
-              <div className="text-xl font-bold text-purple-600">{(metrics?.conversionRate || 0).toFixed(1)}%</div>
-              <div className="text-xs text-gray-600 mt-1">Konvertering</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <UserMinus size={16} className="text-red-500" />
-            Churn
-          </h4>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-red-50 rounded-sm">
-              <div className="text-xl font-bold text-red-600">{stats?.churn.canceled || 0}</div>
-              <div className="text-xs text-gray-600 mt-1">Avslutade</div>
-            </div>
-            <div className="text-center p-3 bg-orange-50 rounded-sm">
-              <div className="text-xl font-bold text-orange-600">{(stats?.churn.rate || 0).toFixed(1)}%</div>
-              <div className="text-xs text-gray-600 mt-1">Churn rate</div>
-            </div>
-            <div className="text-center p-3 bg-yellow-50 rounded-sm">
-              <div className="text-xl font-bold text-yellow-600">{stats?.churn.atRisk || 0}</div>
-              <div className="text-xs text-gray-600 mt-1">I riskzonen</div>
-            </div>
-          </div>
-        </div>
+      {/* Growth & Engagement */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <ProgressCard
+          title="Tillväxtmål"
+          current={stats.users.new}
+          target={100}
+          subtitle="Nya användare denna period"
+          icon={Target}
+          color="blue"
+        />
+        
+        <ProgressCard
+          title="Premiummål"
+          current={stats.premium.new}
+          target={20}
+          subtitle="Nya premium denna period"
+          icon={Crown}
+          color="purple"
+        />
+        
+        <ProgressCard
+          title="Engagemang"
+          current={stats.wheels.withActivities}
+          target={stats.wheels.total}
+          subtitle="Hjul med aktiviteter"
+          icon={UserCheck}
+          color="green"
+        />
       </div>
 
-      {/* Lead Generation */}
-      <div className="bg-white rounded-sm shadow-sm p-5 border border-gray-200">
-        <h4 className="text-sm font-medium text-gray-900 mb-4">Lead-generering & Konvertering</h4>
+      {/* Detailed Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
+          <div className="text-sm text-gray-600 mb-1">Totalt Användare</div>
+          <div className="text-3xl font-bold text-gray-900">{formatNumber(stats.users.total)}</div>
+          <div className="text-xs text-gray-500 mt-2">{stats.users.active} aktiva</div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
+          <div className="text-sm text-gray-600 mb-1">Totalt Hjul</div>
+          <div className="text-3xl font-bold text-gray-900">{formatNumber(stats.wheels.total)}</div>
+          <div className="text-xs text-gray-500 mt-2">{stats.wheels.new} nya</div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
+          <div className="text-sm text-gray-600 mb-1">Aktiviteter</div>
+          <div className="text-3xl font-bold text-gray-900">{formatNumber(stats.activities.total)}</div>
+          <div className="text-xs text-gray-500 mt-2">{stats.activities.new} nya</div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
+          <div className="text-sm text-gray-600 mb-1">ARPU</div>
+          <div className="text-3xl font-bold text-gray-900">{formatCurrency(metrics.avgRevenuePerUser)}</div>
+          <div className="text-xs text-gray-500 mt-2">per premium-användare</div>
+        </div>
+      </div>
+    </div>
+  );
+}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="text-center p-3 bg-gray-50 rounded-sm">
             <div className="text-xl font-bold text-gray-900">{stats?.leads.quizStarts || 0}</div>
