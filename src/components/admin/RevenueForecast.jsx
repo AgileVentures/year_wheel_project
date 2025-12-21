@@ -172,7 +172,7 @@ const MetricCard = ({ icon: Icon, label, value, target, subtitle, status }) => {
   };
   
   return (
-    <div className={`rounded-lg p-5 border-l-4 ${statusColors[status || 'neutral']}`}>
+    <div className={`rounded-sm p-5 border-l-4 ${statusColors[status || 'neutral']}`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-600">{label}</span>
         <Icon className="text-gray-400" size={18} />
@@ -193,6 +193,7 @@ export default function RevenueForecast() {
   const [actualStats, setActualStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customScenarios, setCustomScenarios] = useState(FORECAST_SCENARIOS);
+  const [cac, setCac] = useState(500); // Customer Acquisition Cost in SEK
   
   const currentScenario = customScenarios[scenario];
   const forecast = useMemo(() => calculateForecast(currentScenario), [currentScenario]);
@@ -240,6 +241,29 @@ export default function RevenueForecast() {
   // Current month target (based on how many months into the year we are)
   const currentMonth = new Date().getMonth() + 1;
   const currentTarget = forecast[Math.min(currentMonth - 1, 11)];
+  
+  // Calculate LTV (Customer Lifetime Value)
+  const ltv = useMemo(() => {
+    const churnRate = currentScenario.churnRate / 100;
+    const annualRatio = currentScenario.annualRatio / 100;
+    
+    // Average lifespan in months (capped at 36 months)
+    const avgLifespanMonthly = churnRate > 0 ? Math.min(1 / churnRate, 36) : 36;
+    const avgLifespanAnnual = churnRate > 0 ? Math.min(1 / (churnRate / 12), 36) : 36;
+    
+    // LTV per customer type
+    const ltvMonthly = PRICING.monthly * avgLifespanMonthly * (1 - annualRatio);
+    const ltvAnnual = PRICING.annualMonthly * avgLifespanAnnual * annualRatio;
+    
+    const total = ltvMonthly + ltvAnnual;
+    const ltvCacRatio = cac > 0 ? total / cac : 0;
+    
+    return {
+      total: Math.round(total),
+      ltvCacRatio: ltvCacRatio.toFixed(1),
+      avgLifespan: Math.round((avgLifespanMonthly * (1 - annualRatio) + avgLifespanAnnual * annualRatio) * 10) / 10,
+    };
+  }, [currentScenario.churnRate, currentScenario.annualRatio, cac]);
   
   // Performance status
   const getStatus = (actual, target, inverse = false) => {
@@ -326,7 +350,7 @@ export default function RevenueForecast() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+            className={`px-3 py-2 rounded-sm text-sm font-medium flex items-center gap-2 transition-colors ${
               showSettings ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -336,7 +360,7 @@ export default function RevenueForecast() {
           <button
             onClick={loadActualStats}
             disabled={loading}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50"
+            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-sm transition-all disabled:opacity-50"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -349,7 +373,7 @@ export default function RevenueForecast() {
           <button
             key={key}
             onClick={() => setScenario(key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-sm text-sm font-medium transition-all ${
               scenario === key 
                 ? 'text-white shadow-md' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -363,11 +387,11 @@ export default function RevenueForecast() {
 
       {/* Settings panel */}
       {showSettings && (
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div className="bg-gray-50 rounded-sm p-4 border border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">
             Justera {currentScenario.name} scenario
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
               { key: 'monthlySignups', label: 'Registreringar/mån', suffix: '' },
               { key: 'growthRate', label: 'Tillväxt', suffix: '%/år' },
@@ -382,18 +406,30 @@ export default function RevenueForecast() {
                     type="number"
                     value={currentScenario[key]}
                     onChange={(e) => updateScenario(key, e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {suffix && <span className="text-xs text-gray-500">{suffix}</span>}
                 </div>
               </div>
             ))}
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">CAC</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  value={cac}
+                  onChange={(e) => setCac(parseFloat(e.target.value) || 0)}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <span className="text-xs text-gray-500">kr</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* Actual vs Forecast metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <MetricCard
           icon={DollarSign}
           label="MRR (Faktisk)"
@@ -423,6 +459,13 @@ export default function RevenueForecast() {
           status={getStatus(actual?.annualRatio, currentScenario.annualRatio)}
         />
         <MetricCard
+          icon={DollarSign}
+          label="LTV:CAC"
+          value={`${ltv.ltvCacRatio}:1`}
+          subtitle={`LTV ${formatCurrency(ltv.total)}`}
+          status={parseFloat(ltv.ltvCacRatio) >= 3 ? 'good' : parseFloat(ltv.ltvCacRatio) >= 2 ? 'warning' : 'bad'}
+        />
+        <MetricCard
           icon={TrendingUp}
           label="År 1 MRR mål"
           value={formatCurrency(forecast[11]?.mrr || 0)}
@@ -433,7 +476,7 @@ export default function RevenueForecast() {
 
       {/* Progress to targets */}
       {actual && (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-white rounded-sm border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
             <Target size={16} />
             Framsteg mot mål (Månad {currentMonth})
@@ -464,7 +507,7 @@ export default function RevenueForecast() {
       )}
 
       {/* MRR Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="bg-white rounded-sm border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-700">
             MRR Prognos vs Faktisk
@@ -489,7 +532,7 @@ export default function RevenueForecast() {
 
       {/* Year-end projection */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-sm p-5 border border-blue-100">
           <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
             <Target size={16} />
             År 1 Mål ({currentScenario.name})
@@ -514,7 +557,7 @@ export default function RevenueForecast() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-5 border border-gray-200">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-sm p-5 border border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
             <CheckCircle size={16} />
             Fokusområden
@@ -549,7 +592,7 @@ export default function RevenueForecast() {
       </div>
 
       {/* Monthly breakdown table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-sm border border-gray-200 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700">Månadsuppdelning</h3>
         </div>

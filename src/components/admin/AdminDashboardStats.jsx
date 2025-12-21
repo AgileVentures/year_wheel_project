@@ -124,9 +124,9 @@ const KPICard = ({
   const progress = target ? Math.min((numericValue / target) * 100, 150) : 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
+    <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all">
       <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-lg ${c.bg}`}>
+        <div className={`p-2.5 rounded-sm ${c.bg}`}>
           <Icon size={20} className="text-white" />
         </div>
         <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ const KPICard = ({
 
 // Simple stat card for secondary metrics
 const StatCard = ({ label, value, sublabel, icon: Icon }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-4 border border-gray-100">
+  <div className="bg-gradient-to-br from-gray-50 to-white rounded-sm p-4 border border-gray-100">
     <div className="flex items-center gap-2 mb-2">
       {Icon && <Icon size={14} className="text-gray-400" />}
       <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
@@ -299,7 +299,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           <select
             value={selectedPeriod}
             onChange={(e) => handlePeriodChange(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm font-medium text-gray-700 hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-3 py-2 border border-gray-200 rounded-sm bg-white text-sm font-medium text-gray-700 hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {PERIODS.map(period => (
               <option key={period.value} value={period.value}>{period.label}</option>
@@ -308,7 +308,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           <button
             onClick={loadStats}
             disabled={loading}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50"
+            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-sm transition-all disabled:opacity-50"
             title="Uppdatera"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -438,7 +438,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       {/* Forecast Link */}
       <Link 
         to="/admin/forecasts"
-        className="block bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors"
+        className="block bg-gradient-to-r from-blue-50 to-indigo-50 rounded-sm p-4 border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-colors"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-start gap-3">
