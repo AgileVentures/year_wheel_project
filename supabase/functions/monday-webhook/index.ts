@@ -170,10 +170,16 @@ async function handleInstall(payload: MondayWebhookPayload, supabaseAdmin: any) 
   if (existingProfile) {
     console.log('Auto-linked to existing profile:', existingProfile.id)
   }
+
+  // Log activity
+  await logActivity(payload, 'app_installed', supabaseAdmin)
 }
 
 async function handleUninstall(payload: MondayWebhookPayload, supabaseAdmin: any) {
   console.log('Handling uninstall for user:', payload.data.user_id)
+
+  // Log activity BEFORE updating status (to ensure monday_user_id still exists)
+  await logActivity(payload, 'app_uninstalled', supabaseAdmin)
 
   const { error } = await supabaseAdmin
     .from('monday_users')
@@ -220,6 +226,9 @@ async function handleSubscriptionCreated(payload: MondayWebhookPayload, supabase
     console.error('Error updating subscription created:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'subscription_created', supabaseAdmin, { subscription })
 }
 
 async function handleSubscriptionChanged(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -246,6 +255,9 @@ async function handleSubscriptionChanged(payload: MondayWebhookPayload, supabase
     console.error('Error updating subscription changed:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'subscription_changed', supabaseAdmin, { subscription })
 }
 
 async function handleSubscriptionCancelledByUser(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -263,6 +275,9 @@ async function handleSubscriptionCancelledByUser(payload: MondayWebhookPayload, 
     console.error('Error updating cancelled subscription:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'subscription_cancelled_by_user', supabaseAdmin)
 }
 
 async function handleSubscriptionRenewed(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -287,6 +302,9 @@ async function handleSubscriptionRenewed(payload: MondayWebhookPayload, supabase
     console.error('Error updating renewed subscription:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'subscription_renewed', supabaseAdmin, { subscription })
 }
 
 async function handleTrialStarted(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -314,6 +332,9 @@ async function handleTrialStarted(payload: MondayWebhookPayload, supabaseAdmin: 
     console.error('Error updating trial started:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'trial_started', supabaseAdmin, { subscription })
 }
 
 async function handleTrialEnded(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -333,6 +354,9 @@ async function handleTrialEnded(payload: MondayWebhookPayload, supabaseAdmin: an
     console.error('Error updating trial ended:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'trial_ended', supabaseAdmin)
 }
 
 async function handleSubscriptionCancelled(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -351,6 +375,9 @@ async function handleSubscriptionCancelled(payload: MondayWebhookPayload, supaba
     console.error('Error updating cancelled subscription:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'subscription_cancelled', supabaseAdmin)
 }
 
 async function handleCancellationRevoked(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -376,6 +403,9 @@ async function handleCancellationRevoked(payload: MondayWebhookPayload, supabase
     console.error('Error updating revoked cancellation:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'cancellation_revoked', supabaseAdmin, { subscription })
 }
 
 async function handleRenewalAttemptFailed(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -393,6 +423,9 @@ async function handleRenewalAttemptFailed(payload: MondayWebhookPayload, supabas
     console.error('Error updating renewal attempt failed:', error)
     throw error
   }
+
+  // Log activity
+  await logActivity(payload, 'renewal_attempt_failed', supabaseAdmin)
 }
 
 async function handleRenewalFailed(payload: MondayWebhookPayload, supabaseAdmin: any) {
@@ -410,6 +443,42 @@ async function handleRenewalFailed(payload: MondayWebhookPayload, supabaseAdmin:
   if (error) {
     console.error('Error updating renewal failed:', error)
     throw error
+  }
+  // Log activity
+  await logActivity(payload, 'renewal_failed', supabaseAdmin)}
+
+async function logActivity(payload: MondayWebhookPayload, activityType: string, supabaseAdmin: any, metadata?: any) {
+  // Find the monday_users record first
+  const { data: user } = await supabaseAdmin
+    .from('monday_users')
+    .select('id')
+    .eq('monday_user_id', payload.data.user_id)
+    .single()
+
+  if (!user) {
+    console.warn('User not found for activity logging:', payload.data.user_id)
+    return
+  }
+
+  const activityData = {
+    monday_user_id: user.id,
+    activity_type: activityType,
+    metadata: metadata || {
+      account_name: payload.data.account_name,
+      account_tier: payload.data.account_tier,
+      user_email: payload.data.user_email,
+      user_name: payload.data.user_name,
+      ...(payload.data.subscription && { subscription: payload.data.subscription })
+    }
+  }
+
+  const { error } = await supabaseAdmin
+    .from('monday_user_activities')
+    .insert(activityData)
+
+  if (error) {
+    console.error('Error logging user activity:', error)
+    // Don't throw - logging failure shouldn't break webhook processing
   }
 }
 
