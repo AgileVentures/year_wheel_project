@@ -304,6 +304,36 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh, loading }) {
         {/* Expanded User Details */}
         {selectedUser && (
           <div className="border-t border-gray-200 bg-gray-50">
+            {/* User Header */}
+            <div className="px-6 py-4 bg-white border-b border-gray-200">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-lg font-bold text-blue-600">
+                      {selectedUser.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">{selectedUser.name}</h3>
+                    <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs text-gray-500">
+                        Monday ID: {selectedUser.monday_user_id}
+                      </span>
+                      <span className="text-gray-300">•</span>
+                      <span className="text-xs text-gray-500">
+                        Account: {selectedUser.monday_account_name}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {getStatusBadge(selectedUser.subscription_status)}
+                  {getPlanBadge(selectedUser.current_plan)}
+                </div>
+              </div>
+            </div>
+
             {/* Tabs */}
             <div className="flex border-b border-gray-200 bg-white">
               <button
