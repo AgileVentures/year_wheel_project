@@ -342,13 +342,6 @@ function SidePanel({
   const handleAddAktivitet = (newAktivitet) => {
     // Handle both single item and batch array of items
     const itemsToAdd = Array.isArray(newAktivitet) ? newAktivitet : [newAktivitet];
-    console.log(`[handleAddAktivitet] Adding ${itemsToAdd.length} items:`, itemsToAdd.map(i => ({
-      id: i.id?.substring(0, 8),
-      name: i.name,
-      pageId: i.pageId?.substring(0, 8) || 'UNDEFINED',
-      ringId: i.ringId?.substring(0, 8),
-      activityId: i.activityId?.substring(0, 8)
-    })));
     
     // Use new handler that updates pages state
     if (onAddItems) {

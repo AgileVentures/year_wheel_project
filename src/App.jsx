@@ -919,15 +919,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       if (hasLocalChanges) {
         const alreadyPending = pendingRefreshRef.current?.needed;
-        console.log(`[loadWheelData] Skip reload (${reason}) from ${source} - local changes pending. hasUnsaved=${hasUnsavedChangesRef.current}, tracked=${hasTrackedChanges}, dirty=${isOptimisticDirty}, saving=${isSavingRef.current}`);
 
         // For AI assistant, save local changes first then reload
         if (source === 'ai-assistant' && handleSaveRef.current && !autoSaveInFlightRef.current) {
           autoSaveInFlightRef.current = true;
           try {
-            console.log('[loadWheelData] AI assistant - saving local changes before reload');
             await handleSaveRef.current({ silent: true, reason: 'ai-assistant-refresh' });
-            console.log('[loadWheelData] AI assistant - save complete, now reloading');
             // After save completes, proceed with reload (recursively call with force)
             autoSaveInFlightRef.current = false;
             return loadWheelData({ ...options, force: true });
@@ -1006,9 +1003,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             
             if (batch.length < BATCH_SIZE) break;
           }
-          
-          console.log(`[loadWheelData] Fetched ${allItems.length} items total`);
-
 
           // Map database fields (snake_case) to client format (camelCase)
           const normalizedItems = (allItems || []).map(dbItem => ({
@@ -1037,8 +1031,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           const uniqueItems = Array.from(
             new Map(normalizedItems.map(item => [item.id, item])).values()
           );
-          
-          console.log('[loadWheelData] Total items:', normalizedItems.length, 'Unique:', uniqueItems.length);
           
           // Build pages array with UNIQUE items attached
           const pagesWithItems = pagesData.map((page) => {
@@ -1341,7 +1333,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!hasUnsavedChanges) {
       const pending = pendingRefreshRef.current;
       if (pending?.needed) {
-        console.log(`[loadWheelData] Applying deferred reload (${pending.reason || 'deferred'})`);
         const options = pending.options || {
           force: true,
           reason: pending.reason || 'deferred',
@@ -1390,7 +1381,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     // CRITICAL: Check if change tracker has pending changes
     if (changeTracker.hasChanges()) {
-      console.log('[Realtime] Ignoring update - changeTracker has pending changes');
       return;
     }
     
@@ -1399,7 +1389,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (optimisticSync.shouldBlockRemoteUpdates()) {
       // Queue the update for potential conflict detection after save
       optimisticSync.queueRemoteUpdate(tableName, eventType, payload);
-      console.log('[Realtime] Queued update for conflict check - optimistic sync dirty');
       return;
     }
     
@@ -2270,8 +2259,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       try {
         // Check if we have tracked changes for delta save
         const hasChanges = changeTracker.hasChanges();
-        console.log('[SaveDebug] handleSave called, hasChanges:', hasChanges, 'reason:', reason);
-        console.log('[SaveDebug] Changes summary:', changeTracker.getChangesSummary());
         
         if (hasChanges) {
           const changes = changeTracker.getChanges();
@@ -2409,7 +2396,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     
-    console.log('[AutoSave] Triggering debounced auto-save');
     if (handleSaveRef.current) {
       await handleSaveRef.current({ silent: true, reason: 'auto-change' });
     }
@@ -3908,8 +3894,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Handle updating all items in a cross-year group when one is resized
   const handleUpdateCrossYearGroup = useCallback(({ groupId, itemId, newStartDate, newEndDate, ringId }) => {
-    console.log('[handleUpdateCrossYearGroup] Updating group:', groupId, 'with full range:', newStartDate, '→', newEndDate);
-    
     // Calculate segments for each year the activity spans
     const startDate = new Date(newStartDate);
     const endDate = new Date(newEndDate);
@@ -3930,8 +3914,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         endDate: formatDateOnly(segmentEnd),
       });
     }
-    
-    console.log('[handleUpdateCrossYearGroup] Calculated segments:', segments);
     
     // Get current pages to pre-calculate changes BEFORE setWheelState
     const currentPages = latestValuesRef.current?.pages || wheelState?.pages || [];
@@ -3988,12 +3970,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     }
     
-    console.log('[handleUpdateCrossYearGroup] Pre-calculated changes:', {
-      modified: trackedChanges.modified.length,
-      added: trackedChanges.added.length,
-      deleted: trackedChanges.deleted.length,
-    });
-    
     // Track changes BEFORE state update (synchronously)
     trackedChanges.modified.forEach(item => {
       changeTracker.trackItemChange(item.id, 'modified', item);
@@ -4007,8 +3983,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     // Now update state
     setWheelState((prev) => {
-      console.log('[handleUpdateCrossYearGroup] INSIDE setWheelState - updating pages');
-      
       let updatedPages = prev.pages.map((page) => {
         const currentItems = page.items || [];
         const linkedItems = currentItems.filter(i => i.crossYearGroupId === groupId);
@@ -4018,11 +3992,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const pageYear = parseInt(page.year);
         const segment = segments.find(s => s.year === pageYear);
         
-        console.log(`[handleUpdateCrossYearGroup] Page ${pageYear}: ${linkedItems.length} linked items, segment:`, segment);
-        
         if (!segment) {
           // Remove items from this year
-          console.log(`[handleUpdateCrossYearGroup] Removing items from page ${pageYear}`);
           return {
             ...page,
             items: currentItems.filter(i => i.crossYearGroupId !== groupId),
@@ -4030,7 +4001,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
         
         // Update items
-        console.log(`[handleUpdateCrossYearGroup] Updating items on page ${pageYear} to:`, segment.startDate, '→', segment.endDate);
         return {
           ...page,
           items: currentItems.map((item) => {
@@ -4066,10 +4036,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                                trackedChanges.added.length > 0 || 
                                trackedChanges.deleted.length > 0;
       if (hasActualChanges) {
-        console.log('[handleUpdateCrossYearGroup] Calling endBatch()');
         endBatch();
       } else {
-        console.log('[handleUpdateCrossYearGroup] Calling cancelBatch()');
         cancelBatch();
       }
     }

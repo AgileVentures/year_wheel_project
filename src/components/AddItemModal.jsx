@@ -226,7 +226,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
       }));
       
       // Add all items at once
-      console.log(`[AddItemModal] Creating ${newItems.length} recurring items with pageId=${currentPageId?.substring(0, 8)}`);
+
       onAddItem(newItems);
     } else {
       // Create single item
@@ -250,7 +250,6 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
           lagDays: parseInt(formData.lagDays)
         })
       };
-      console.log(`[AddItemModal] Creating single item with pageId=${currentPageId?.substring(0, 8)}:`, newItem);
       onAddItem(newItem);
     }
     
