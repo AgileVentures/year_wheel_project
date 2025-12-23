@@ -469,7 +469,7 @@ function OrganizationPanel({
   // Ring management
   const handleAddInnerRing = async () => {
     const newRing = {
-      id: `ring-${Date.now()}`, // Temporary ID - will be replaced with UUID after save
+      id: crypto.randomUUID(),
       name: `Innerring ${innerRings.length + 1}`,
       type: 'inner',
       visible: true,
@@ -485,7 +485,7 @@ function OrganizationPanel({
 
   const handleAddOuterRing = async () => {
     const newRing = {
-      id: `ring-${Date.now()}`, // Temporary ID - will be replaced with UUID after save
+      id: crypto.randomUUID(),
       name: `Ytterring ${outerRings.length + 1}`,
       type: 'outer',
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
