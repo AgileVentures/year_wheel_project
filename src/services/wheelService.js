@@ -2560,8 +2560,14 @@ export const applyDeltaChanges = async (wheelId, changes) => {
       const { error } = await supabase
         .from('wheel_rings')
         .insert(changes.rings.added.map(ring => ({
-          ...ring,
-          wheel_id: wheelId
+          id: ring.id,
+          wheel_id: wheelId,
+          name: ring.name,
+          type: ring.type,
+          color: ring.color || null,
+          visible: ring.visible !== undefined ? ring.visible : true,
+          ring_order: ring.ring_order !== undefined ? ring.ring_order : 0,
+          orientation: ring.orientation || null
         })));
       if (error) throw new Error(`Rings insert failed: ${error.message}`);
       results.rings.inserted = changes.rings.added.length;
@@ -2571,8 +2577,11 @@ export const applyDeltaChanges = async (wheelId, changes) => {
       const { error } = await supabase
         .from('activity_groups')
         .insert(changes.activityGroups.added.map(group => ({
-          ...group,
-          wheel_id: wheelId
+          id: group.id,
+          wheel_id: wheelId,
+          name: group.name,
+          color: group.color,
+          visible: group.visible !== undefined ? group.visible : true
         })));
       if (error) throw new Error(`Activity groups insert failed: ${error.message}`);
       results.activityGroups.inserted = changes.activityGroups.added.length;
@@ -2582,8 +2591,11 @@ export const applyDeltaChanges = async (wheelId, changes) => {
       const { error } = await supabase
         .from('labels')
         .insert(changes.labels.added.map(label => ({
-          ...label,
-          wheel_id: wheelId
+          id: label.id,
+          wheel_id: wheelId,
+          name: label.name,
+          color: label.color,
+          visible: label.visible !== undefined ? label.visible : true
         })));
       if (error) throw new Error(`Labels insert failed: ${error.message}`);
       results.labels.inserted = changes.labels.added.length;
