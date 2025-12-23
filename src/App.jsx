@@ -3491,6 +3491,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     const overflowDate = new Date(overflowEndDate);
     const currentYearEndDate = new Date(currentYearEnd);
+    
+    console.log('[App] handleExtendActivityBeyondYear - dates:', {
+      overflowDate: overflowDate.toISOString(),
+      currentYearEndDate: currentYearEndDate.toISOString(),
+      comparison: overflowDate <= currentYearEndDate
+    });
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
       console.log('[App] handleExtendActivityBeyondYear - invalid overflow date');
@@ -3498,18 +3504,27 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
 
     if (overflowDate <= currentYearEndDate) {
+      console.log('[App] handleExtendActivityBeyondYear - overflow not past year end, returning');
       return;
     }
 
     // Calculate segments for each year the item spans into
     const segments = [];
-    // Start from Jan 1 of the next year (not the day after Dec 31 which could be Jan 2 due to timezone)
-    const nextYear = currentYearEndDate.getFullYear() + 1;
-    let segmentStart = new Date(nextYear, 0, 1); // Jan 1 of next year
+    // Use UTC year to avoid timezone issues (currentYearEnd is in UTC)
+    const currentYear = currentYearEndDate.getUTCFullYear();
+    const nextYear = currentYear + 1;
+    let segmentStart = new Date(Date.UTC(nextYear, 0, 1)); // Jan 1 of next year (UTC)
+    
+    console.log('[App] handleExtendActivityBeyondYear - calculating segments:', {
+      currentYear,
+      nextYear,
+      segmentStart: segmentStart.toISOString(),
+      overflowDate: overflowDate.toISOString()
+    });
 
     while (segmentStart <= overflowDate) {
-      const segmentYear = segmentStart.getFullYear();
-      const segmentYearEnd = new Date(segmentYear, 11, 31);
+      const segmentYear = segmentStart.getUTCFullYear();
+      const segmentYearEnd = new Date(Date.UTC(segmentYear, 11, 31, 23, 59, 59));
       const segmentEnd = overflowDate <= segmentYearEnd ? overflowDate : segmentYearEnd;
 
       segments.push({
@@ -3517,16 +3532,28 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         startDate: formatDateOnly(segmentStart),
         endDate: formatDateOnly(segmentEnd),
       });
+      
+      console.log('[App] handleExtendActivityBeyondYear - added segment:', segments[segments.length - 1]);
 
       if (segmentEnd >= overflowDate) break;
-      segmentStart = new Date(segmentYear + 1, 0, 1);
+      segmentStart = new Date(Date.UTC(segmentYear + 1, 0, 1));
     }
 
-    if (segments.length === 0) return;
+    console.log('[App] handleExtendActivityBeyondYear - total segments:', segments.length);
+    
+    if (segments.length === 0) {
+      console.log('[App] handleExtendActivityBeyondYear - no segments, returning');
+      return;
+    }
 
     const targetYear = segments[segments.length - 1].year;
-    const currentYear = currentYearEndDate.getFullYear();
     const yearsSpanned = targetYear - currentYear;
+    
+    console.log('[App] handleExtendActivityBeyondYear - showing dialog:', {
+      targetYear,
+      currentYear,
+      yearsSpanned
+    });
 
     const confirmed = await showConfirmDialog({
       title: 'Förläng över årsskiftet?',
@@ -3683,13 +3710,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     // Calculate segments for each year the item spans backward into
     const segments = [];
-    // Start from Dec 31 of the previous year (not the day before Jan 1 which could be Dec 30 due to timezone)
-    const prevYear = currentYearStartDate.getFullYear() - 1;
-    let segmentEnd = new Date(prevYear, 11, 31); // Dec 31 of previous year
+    // Use UTC year to avoid timezone issues (currentYearStart is in UTC)
+    const currentYear = currentYearStartDate.getUTCFullYear();
+    const prevYear = currentYear - 1;
+    let segmentEnd = new Date(Date.UTC(prevYear, 11, 31, 23, 59, 59)); // Dec 31 of previous year (UTC)
 
     while (segmentEnd >= overflowDate) {
-      const segmentYear = segmentEnd.getFullYear();
-      const segmentYearStart = new Date(segmentYear, 0, 1);
+      const segmentYear = segmentEnd.getUTCFullYear();
+      const segmentYearStart = new Date(Date.UTC(segmentYear, 0, 1));
       const segmentStart = overflowDate >= segmentYearStart ? overflowDate : segmentYearStart;
 
       segments.push({
@@ -3699,7 +3727,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
 
       if (segmentStart <= overflowDate) break;
-      segmentEnd = new Date(segmentYear - 1, 11, 31);
+      segmentEnd = new Date(Date.UTC(segmentYear - 1, 11, 31, 23, 59, 59));
     }
 
     if (segments.length === 0) return;
@@ -3708,7 +3736,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     segments.reverse();
 
     const targetYear = segments[0].year;
-    const currentYear = currentYearStartDate.getFullYear();
     const yearsSpanned = currentYear - targetYear;
 
     const confirmed = await showConfirmDialog({
