@@ -517,15 +517,15 @@ function YearWheel({
 
   const handleUpdateAktivitet = stableHandleUpdateAktivitet; // Alias
 
-  const stableOnExtendActivityBeyondYear = useCallback((item, newDates) => {
+  const stableOnExtendActivityBeyondYear = useCallback((params) => {
     if (onExtendActivityBeyondYearRef.current) {
-      onExtendActivityBeyondYearRef.current(item, newDates);
+      onExtendActivityBeyondYearRef.current(params);
     }
   }, []); // No dependencies - stable forever
 
-  const stableOnExtendActivityToPreviousYear = useCallback((item, newDates) => {
+  const stableOnExtendActivityToPreviousYear = useCallback((params) => {
     if (onExtendActivityToPreviousYearRef.current) {
-      onExtendActivityToPreviousYearRef.current(item, newDates);
+      onExtendActivityToPreviousYearRef.current(params);
     }
   }, []); // No dependencies - stable forever
 

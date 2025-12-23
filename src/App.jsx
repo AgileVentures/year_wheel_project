@@ -3482,7 +3482,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Since items are PAGE-SCOPED, we create linked items on each year's page
   // Items are linked via crossYearGroupId for synchronized updates
   const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd }) => {
+    console.log('[App] handleExtendActivityBeyondYear called:', { item, overflowEndDate, currentYearEnd });
+    
     if (!wheelId || !item || !overflowEndDate || !currentYearEnd) {
+      console.log('[App] handleExtendActivityBeyondYear - missing required params:', { wheelId, hasItem: !!item, overflowEndDate, currentYearEnd });
       return;
     }
 
@@ -3490,6 +3493,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const currentYearEndDate = new Date(currentYearEnd);
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
+      console.log('[App] handleExtendActivityBeyondYear - invalid overflow date');
       return;
     }
 

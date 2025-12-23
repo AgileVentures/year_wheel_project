@@ -802,11 +802,22 @@ class InteractionHandler {
 
       // Call extend callback for BOTH new cross-year items AND existing ones being extended further
       // The extend handler will use the existing crossYearGroupId if present
+      console.log('[InteractionHandler] Checking extend callback:', {
+        hasOriginalItem: !!originalItem,
+        dragMode: this.dragState.dragMode,
+        hasCallback: !!this.options.onExtendActivityToNextYear
+      });
+      
       if (
         originalItem &&
         (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
+        console.log('[InteractionHandler] Calling onExtendActivityToNextYear with:', {
+          itemId: originalItem.id,
+          itemName: originalItem.name,
+          overflowEndDate: overflowEndDate.toISOString()
+        });
         try {
           await this.options.onExtendActivityToNextYear({
             item: originalItem,
@@ -814,9 +825,12 @@ class InteractionHandler {
             currentYearEnd: yearEnd,
             dragMode: this.dragState.dragMode,
           });
+          console.log('[InteractionHandler] onExtendActivityToNextYear completed');
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
         }
+      } else {
+        console.log('[InteractionHandler] Skipping extend callback - conditions not met');
       }
 
       // Always clamp to year end for display in current year
