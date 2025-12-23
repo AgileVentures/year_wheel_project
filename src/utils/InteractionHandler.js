@@ -923,11 +923,61 @@ class InteractionHandler {
       // update all linked items with the new full date range
       if (originalItem.crossYearGroupId && this.options.onUpdateCrossYearGroup) {
         console.log('[InteractionHandler] Updating cross-year group:', originalItem.crossYearGroupId);
+        
+        // Calculate the FULL range for cross-year items
+        // If we have _originalStartDate/_originalEndDate, use those as the base
+        // and apply the move/resize delta to get the new full range
+        let fullStartDate, fullEndDate;
+        
+        if (this.dragState.dragMode === 'move') {
+          // For MOVE: Calculate delta and apply to the full original range
+          const originalStart = new Date(originalItem.startDate);
+          const newStart = newStartDate;
+          const moveDeltaMs = newStart.getTime() - originalStart.getTime();
+          
+          // Get the full original range (from _original dates if available)
+          const fullOriginalStart = originalItem._originalStartDate 
+            ? new Date(originalItem._originalStartDate) 
+            : new Date(originalItem.startDate);
+          const fullOriginalEnd = originalItem._originalEndDate 
+            ? new Date(originalItem._originalEndDate) 
+            : new Date(originalItem.endDate);
+          
+          // Apply the delta to get the new full range
+          fullStartDate = new Date(fullOriginalStart.getTime() + moveDeltaMs);
+          fullEndDate = new Date(fullOriginalEnd.getTime() + moveDeltaMs);
+          
+          console.log('[InteractionHandler] Cross-year MOVE - applying delta:', {
+            moveDeltaMs,
+            moveDeltaDays: Math.round(moveDeltaMs / (1000 * 60 * 60 * 24)),
+            fullOriginalStart: fullOriginalStart.toISOString(),
+            fullOriginalEnd: fullOriginalEnd.toISOString(),
+            newFullStart: fullStartDate.toISOString(),
+            newFullEnd: fullEndDate.toISOString()
+          });
+        } else if (this.dragState.dragMode === 'resize-start') {
+          // For RESIZE-START: New start date, keep the original full end
+          fullStartDate = newStartDate;
+          fullEndDate = originalItem._originalEndDate 
+            ? new Date(originalItem._originalEndDate) 
+            : newEndDate;
+        } else if (this.dragState.dragMode === 'resize-end') {
+          // For RESIZE-END: Keep the original full start, new end date
+          fullStartDate = originalItem._originalStartDate 
+            ? new Date(originalItem._originalStartDate) 
+            : newStartDate;
+          fullEndDate = newEndDate;
+        } else {
+          // Fallback to current segment dates
+          fullStartDate = newStartDate;
+          fullEndDate = newEndDate;
+        }
+        
         this.options.onUpdateCrossYearGroup({
           groupId: originalItem.crossYearGroupId,
           itemId: originalItem.id,
-          newStartDate: formatDate(newStartDate),
-          newEndDate: formatDate(newEndDate),
+          newStartDate: formatDate(fullStartDate),
+          newEndDate: formatDate(fullEndDate),
           ringId: updatedItem.ringId,
         });
       }

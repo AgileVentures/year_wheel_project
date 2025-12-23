@@ -3927,7 +3927,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             console.log('[handleUpdateCrossYearGroup] Creating new linked item for year:', segment.year);
             const newItem = {
               ...templateItem,
-              id: `item-${crypto.randomUUID()}`,
+              id: crypto.randomUUID(),
               pageId: pageForYear.id,
               startDate: segment.startDate,
               endDate: segment.endDate,
