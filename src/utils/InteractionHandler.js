@@ -921,6 +921,12 @@ class InteractionHandler {
 
       // CROSS-YEAR LINKED ITEMS: If this item is part of a cross-year group,
       // update all linked items with the new full date range
+      console.log('[InteractionHandler] Checking cross-year group:', {
+        crossYearGroupId: originalItem.crossYearGroupId,
+        hasCallback: !!this.options.onUpdateCrossYearGroup,
+        itemName: originalItem.name,
+      });
+      
       if (originalItem.crossYearGroupId && this.options.onUpdateCrossYearGroup) {
         console.log('[InteractionHandler] Updating cross-year group:', originalItem.crossYearGroupId);
         
@@ -1067,7 +1073,8 @@ class InteractionHandler {
       }
 
       // Update the primary item last (after dependents)
-      if (this.wheel.options?.onUpdateAktivitet) {
+      // SKIP for cross-year items - handleUpdateCrossYearGroup handles all updates
+      if (this.wheel.options?.onUpdateAktivitet && !originalItem.crossYearGroupId) {
         this.wheel.options.onUpdateAktivitet(updatedItem);
       }
     }

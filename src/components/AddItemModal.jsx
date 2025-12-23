@@ -208,7 +208,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
       // Batch create all recurring items at once (more efficient than forEach)
       const recurringGroupId = `recurring-${Date.now()}`;
       const newItems = recurringDates.map((dates, index) => ({
-        id: `item-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+        id: crypto.randomUUID(),
         pageId: currentPageId, // CRITICAL: Assign current page ID
         name: formData.name,
         ringId: formData.ringId,
@@ -231,7 +231,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
     } else {
       // Create single item
       const newItem = {
-        id: `item-${Date.now()}`,
+        id: crypto.randomUUID(),
         pageId: currentPageId, // CRITICAL: Assign current page ID
         name: formData.name,
         ringId: formData.ringId,

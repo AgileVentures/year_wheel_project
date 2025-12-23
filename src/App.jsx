@@ -2691,7 +2691,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Keep original references to rings, activityGroups, and labels (shared at wheel level)
       const copiedItems = wheelStructure.items.map(item => ({
         ...item,
-        id: `item-copy-${nextYear}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique temporary ID
+        id: crypto.randomUUID(), // Generate unique UUID
         startDate: adjustDateToNewYear(item.startDate, nextYear - currentYear),
         endDate: adjustDateToNewYear(item.endDate, nextYear - currentYear),
         pageId: null // Will be set when saving
@@ -3280,7 +3280,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (orgData.items) {
           orgData.items = orgData.items.map((item, index) => ({
             ...item,
-            id: `item-${index + 1}`, // Use client-side ID
+            id: crypto.randomUUID(), // Use proper UUID
             pageId: null, // Clear page reference
             // Update references using the mapping
             ringId: ringIdMap.get(item.ringId) || item.ringId,
@@ -3927,73 +3927,47 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     console.log('[handleUpdateCrossYearGroup] Calculated segments:', segments);
     
-    // Track changes outside of setWheelState
+    // Get current pages to pre-calculate changes BEFORE setWheelState
+    const currentPages = latestValuesRef.current?.pages || wheelState?.pages || [];
+    
+    // Pre-calculate all changes synchronously
     const trackedChanges = { modified: [], added: [], deleted: [] };
     
-    // Update all linked items across all pages
-    setWheelState((prev) => {
-      let updatedPages = prev.pages.map((page) => {
-        const currentItems = page.items || [];
-        const linkedItems = currentItems.filter(i => i.crossYearGroupId === groupId);
-        
-        if (linkedItems.length === 0) return page;
-        
-        // Find which segment this page's year corresponds to
-        const pageYear = parseInt(page.year);
-        const segment = segments.find(s => s.year === pageYear);
-        
+    currentPages.forEach(page => {
+      const currentItems = page.items || [];
+      const linkedItems = currentItems.filter(i => i.crossYearGroupId === groupId);
+      const pageYear = parseInt(page.year);
+      const segment = segments.find(s => s.year === pageYear);
+      
+      if (linkedItems.length > 0) {
         if (!segment) {
-          // This page's year is no longer covered by the resized range - remove linked items
-          console.log('[handleUpdateCrossYearGroup] Removing items from year', pageYear);
-          // Track deleted items
+          // Items will be deleted
+          linkedItems.forEach(item => trackedChanges.deleted.push(item));
+        } else {
+          // Items will be modified
           linkedItems.forEach(item => {
-            trackedChanges.deleted.push(item);
-          });
-          return {
-            ...page,
-            items: currentItems.filter(i => i.crossYearGroupId !== groupId),
-          };
-        }
-        
-        // Update existing linked items with new dates for this segment
-        return {
-          ...page,
-          items: currentItems.map((item) => {
-            if (item.crossYearGroupId !== groupId) return item;
-            
-            const updatedItem = {
+            trackedChanges.modified.push({
               ...item,
               startDate: segment.startDate,
               endDate: segment.endDate,
               ringId: ringId !== undefined ? ringId : item.ringId,
-            };
-            // Track modified items
-            trackedChanges.modified.push(updatedItem);
-            return updatedItem;
-          }),
-        };
-      });
-      
-      // Create new items for years that didn't exist before
-      for (const segment of segments) {
-        const pageForYear = updatedPages.find(p => parseInt(p.year) === segment.year);
-        
-        if (!pageForYear) {
-          // Need to create page for this year (will happen async via ensurePageForYear)
-          console.log('[handleUpdateCrossYearGroup] Need to create page for year:', segment.year);
-          continue;
+            });
+          });
         }
-        
+      }
+    });
+    
+    // Check for new items needed
+    for (const segment of segments) {
+      const pageForYear = currentPages.find(p => parseInt(p.year) === segment.year);
+      if (pageForYear) {
         const hasLinkedItem = (pageForYear.items || []).some(i => i.crossYearGroupId === groupId);
-        
         if (!hasLinkedItem) {
-          // This is a new year added by the resize - create a linked item
-          const templateItem = prev.pages
+          const templateItem = currentPages
             .flatMap(p => p.items || [])
             .find(i => i.crossYearGroupId === groupId);
           
           if (templateItem) {
-            console.log('[handleUpdateCrossYearGroup] Creating new linked item for year:', segment.year);
             const newItem = {
               ...templateItem,
               id: crypto.randomUUID(),
@@ -4002,24 +3976,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               endDate: segment.endDate,
               ringId: ringId !== undefined ? ringId : templateItem.ringId,
             };
-            // Track added items
             trackedChanges.added.push(newItem);
-            
-            updatedPages = updatedPages.map(p => {
-              if (p.id !== pageForYear.id) return p;
-              return {
-                ...p,
-                items: [...(p.items || []), newItem],
-              };
-            });
           }
         }
       }
-      
-      return { ...prev, pages: updatedPages };
-    }, { type: 'updateCrossYearGroup' });
+    }
     
-    // CRITICAL: Track all changes for persistence after state update
+    console.log('[handleUpdateCrossYearGroup] Pre-calculated changes:', {
+      modified: trackedChanges.modified.length,
+      added: trackedChanges.added.length,
+      deleted: trackedChanges.deleted.length,
+    });
+    
+    // Track changes BEFORE state update (synchronously)
     trackedChanges.modified.forEach(item => {
       changeTracker.trackItemChange(item.id, 'modified', item);
     });
@@ -4030,9 +3999,76 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       changeTracker.trackItemChange(item.id, 'deleted', item);
     });
     
-    console.log('[handleUpdateCrossYearGroup] Tracked changes:', trackedChanges);
+    // Now update state
+    setWheelState((prev) => {
+      console.log('[handleUpdateCrossYearGroup] INSIDE setWheelState - updating pages');
+      
+      let updatedPages = prev.pages.map((page) => {
+        const currentItems = page.items || [];
+        const linkedItems = currentItems.filter(i => i.crossYearGroupId === groupId);
+        
+        if (linkedItems.length === 0) return page;
+        
+        const pageYear = parseInt(page.year);
+        const segment = segments.find(s => s.year === pageYear);
+        
+        console.log(`[handleUpdateCrossYearGroup] Page ${pageYear}: ${linkedItems.length} linked items, segment:`, segment);
+        
+        if (!segment) {
+          // Remove items from this year
+          console.log(`[handleUpdateCrossYearGroup] Removing items from page ${pageYear}`);
+          return {
+            ...page,
+            items: currentItems.filter(i => i.crossYearGroupId !== groupId),
+          };
+        }
+        
+        // Update items
+        console.log(`[handleUpdateCrossYearGroup] Updating items on page ${pageYear} to:`, segment.startDate, '→', segment.endDate);
+        return {
+          ...page,
+          items: currentItems.map((item) => {
+            if (item.crossYearGroupId !== groupId) return item;
+            return {
+              ...item,
+              startDate: segment.startDate,
+              endDate: segment.endDate,
+              ringId: ringId !== undefined ? ringId : item.ringId,
+            };
+          }),
+        };
+      });
+      
+      // Add new items
+      for (const newItem of trackedChanges.added) {
+        updatedPages = updatedPages.map(p => {
+          if (p.id !== newItem.pageId) return p;
+          return {
+            ...p,
+            items: [...(p.items || []), newItem],
+          };
+        });
+      }
+      
+      return { ...prev, pages: updatedPages };
+    }, { type: 'updateCrossYearGroup' });
     
-  }, [setWheelState, changeTracker]);
+    // End drag mode and batch
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      const hasActualChanges = trackedChanges.modified.length > 0 || 
+                               trackedChanges.added.length > 0 || 
+                               trackedChanges.deleted.length > 0;
+      if (hasActualChanges) {
+        console.log('[handleUpdateCrossYearGroup] Calling endBatch()');
+        endBatch();
+      } else {
+        console.log('[handleUpdateCrossYearGroup] Calling cancelBatch()');
+        cancelBatch();
+      }
+    }
+    
+  }, [setWheelState, changeTracker, wheelState, latestValuesRef, endBatch, cancelBatch]);
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {

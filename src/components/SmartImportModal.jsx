@@ -575,7 +575,7 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         }
         
         return {
-          id: `item-${index + 1}`,
+          id: crypto.randomUUID(),
           name: activity.name,
           startDate: activity.startDate,
           endDate: activity.endDate,

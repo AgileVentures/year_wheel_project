@@ -287,6 +287,12 @@ class YearWheel {
       this.canvas.style.cursor = "default";
     }
     
+    // CRITICAL: Clear pending item updates when structure changes from external source
+    // This ensures cross-year updates show correctly
+    if (!this.dragState || !this.dragState.isDragging) {
+      this.pendingItemUpdates.clear();
+    }
+    
     // DON'T redraw during drag - it will cause wheel to go blank
     // The drag handler (dragActivity) already calls create() to show preview
     if (!this.dragState || !this.dragState.isDragging) {
