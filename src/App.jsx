@@ -3682,6 +3682,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return { ...prev, pages: updatedPages };
     }, { type: 'extendCrossYear' });
 
+    // CRITICAL: Track changes for persistence to database
+    changeTracker.trackItemChange(item.id, 'modified', updatedCurrentItem);
+    
+    newItems.forEach(newItem => {
+      const { isUpdate, ...itemData } = newItem;
+      if (isUpdate) {
+        changeTracker.trackItemChange(itemData.id, 'modified', itemData);
+      } else {
+        changeTracker.trackItemChange(itemData.id, 'added', itemData);
+      }
+    });
+
     if (broadcastOperation) {
       broadcastOperation('update', item.id, updatedCurrentItem);
       newItems.filter(i => !i.isUpdate).forEach(newItem => {
@@ -3691,7 +3703,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
 
     showToast(`Aktiviteten sträcker sig nu till ${formatDateOnly(overflowDate)}.`, 'success');
-  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef]);
+  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef, changeTracker]);
 
   // Handle extending activity to PREVIOUS year(s) - OPTION B: Linked items across pages
   // Since items are PAGE-SCOPED, we create linked items on each year's page
@@ -3865,6 +3877,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return { ...prev, pages: updatedPages };
     }, { type: 'extendCrossYear' });
 
+    // CRITICAL: Track changes for persistence to database
+    changeTracker.trackItemChange(item.id, 'modified', updatedCurrentItem);
+    
+    newItems.forEach(newItem => {
+      const { isUpdate, ...itemData } = newItem;
+      if (isUpdate) {
+        changeTracker.trackItemChange(itemData.id, 'modified', itemData);
+      } else {
+        changeTracker.trackItemChange(itemData.id, 'added', itemData);
+      }
+    });
+
     if (broadcastOperation) {
       broadcastOperation('update', item.id, updatedCurrentItem);
       newItems.filter(i => !i.isUpdate).forEach(newItem => {
@@ -3874,7 +3898,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
 
     showToast(`Aktiviteten börjar nu ${formatDateOnly(overflowDate)}.`, 'success');
-  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef]);
+  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef, changeTracker]);
 
   // Handle updating all items in a cross-year group when one is resized
   const handleUpdateCrossYearGroup = useCallback(({ groupId, itemId, newStartDate, newEndDate, ringId }) => {
@@ -3903,6 +3927,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     
     console.log('[handleUpdateCrossYearGroup] Calculated segments:', segments);
     
+    // Track changes outside of setWheelState
+    const trackedChanges = { modified: [], added: [], deleted: [] };
+    
     // Update all linked items across all pages
     setWheelState((prev) => {
       let updatedPages = prev.pages.map((page) => {
@@ -3918,6 +3945,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         if (!segment) {
           // This page's year is no longer covered by the resized range - remove linked items
           console.log('[handleUpdateCrossYearGroup] Removing items from year', pageYear);
+          // Track deleted items
+          linkedItems.forEach(item => {
+            trackedChanges.deleted.push(item);
+          });
           return {
             ...page,
             items: currentItems.filter(i => i.crossYearGroupId !== groupId),
@@ -3930,12 +3961,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           items: currentItems.map((item) => {
             if (item.crossYearGroupId !== groupId) return item;
             
-            return {
+            const updatedItem = {
               ...item,
               startDate: segment.startDate,
               endDate: segment.endDate,
               ringId: ringId !== undefined ? ringId : item.ringId,
             };
+            // Track modified items
+            trackedChanges.modified.push(updatedItem);
+            return updatedItem;
           }),
         };
       });
@@ -3968,6 +4002,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               endDate: segment.endDate,
               ringId: ringId !== undefined ? ringId : templateItem.ringId,
             };
+            // Track added items
+            trackedChanges.added.push(newItem);
             
             updatedPages = updatedPages.map(p => {
               if (p.id !== pageForYear.id) return p;
@@ -3983,7 +4019,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return { ...prev, pages: updatedPages };
     }, { type: 'updateCrossYearGroup' });
     
-  }, [setWheelState]);
+    // CRITICAL: Track all changes for persistence after state update
+    trackedChanges.modified.forEach(item => {
+      changeTracker.trackItemChange(item.id, 'modified', item);
+    });
+    trackedChanges.added.forEach(item => {
+      changeTracker.trackItemChange(item.id, 'added', item);
+    });
+    trackedChanges.deleted.forEach(item => {
+      changeTracker.trackItemChange(item.id, 'deleted', item);
+    });
+    
+    console.log('[handleUpdateCrossYearGroup] Tracked changes:', trackedChanges);
+    
+  }, [setWheelState, changeTracker]);
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
@@ -4868,6 +4917,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 colors={wheelState.metadata.colors}
                 ringsData={ringsData}
                 wheelStructure={wheelStructure}
+                allItemsAcrossPages={allItems}
                 completeWheelSnapshot={completeWheelSnapshot}
                 showYearEvents={showYearEvents}
                 showSeasonRing={showSeasonRing}

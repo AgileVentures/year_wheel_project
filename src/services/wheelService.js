@@ -397,6 +397,8 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
     // Wheel linking fields
     linkedWheelId: i.linked_wheel_id,
     linkType: i.link_type,
+    // Cross-year linking field
+    crossYearGroupId: i.cross_year_group_id || null,
     // Dependency fields
     dependsOn: i.depends_on_item_id || null,
     dependencyType: i.dependency_type || 'finish_to_start',
@@ -2535,8 +2537,20 @@ export const applyDeltaChanges = async (wheelId, changes) => {
       const { error } = await supabase
         .from('items')
         .insert(changes.items.added.map(item => ({
-          ...item,
-          wheel_id: wheelId
+          id: item.id,
+          wheel_id: wheelId,
+          page_id: item.page_id || item.pageId,
+          ring_id: item.ring_id || item.ringId,
+          activity_id: item.activity_id || item.activityId,
+          label_id: item.label_id || item.labelId || null,
+          name: item.name,
+          start_date: item.start_date || item.startDate,
+          end_date: item.end_date || item.endDate,
+          time: item.time || null,
+          description: item.description || null,
+          linked_wheel_id: item.linked_wheel_id || item.linkedWheelId || null,
+          link_type: item.link_type || item.linkType || null,
+          cross_year_group_id: item.cross_year_group_id || item.crossYearGroupId || null,
         })));
       if (error) throw new Error(`Items insert failed: ${error.message}`);
       results.items.inserted = changes.items.added.length;
@@ -2603,7 +2617,10 @@ export const applyDeltaChanges = async (wheelId, changes) => {
           description: item.description || null,
           source: item.source || 'manual',
           external_id: item.external_id || item.externalId || null,
-          sync_metadata: item.sync_metadata || item.syncMetadata || null
+          sync_metadata: item.sync_metadata || item.syncMetadata || null,
+          cross_year_group_id: item.cross_year_group_id || item.crossYearGroupId || null,
+          linked_wheel_id: item.linked_wheel_id || item.linkedWheelId || null,
+          link_type: item.link_type || item.linkType || null,
         };
         
         const { error } = await supabase

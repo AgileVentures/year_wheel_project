@@ -31,6 +31,7 @@ function YearWheel({
   year,
   colors,
   wheelStructure,
+  allItemsAcrossPages = [], // ALL items from ALL pages for cross-year range calculation
   completeWheelSnapshot, // NEW: Complete snapshot with { metadata, structure, pages }
   showYearEvents,
   showSeasonRing,
@@ -174,10 +175,11 @@ function YearWheel({
     const yearEnd = new Date(currentYear, 11, 31);
     
     // Build a map of crossYearGroupId -> full range for linked items
+    // CRITICAL: Use allItemsAcrossPages to find ALL linked segments, not just current page
     const crossYearGroupRanges = new Map();
     
-    // Calculate full range for each cross-year group from ALL items
-    (wheelStructure.items || []).forEach(item => {
+    // Calculate full range for each cross-year group from ALL items across ALL pages
+    (allItemsAcrossPages || []).forEach(item => {
       if (!item.crossYearGroupId) return;
       
       const groupId = item.crossYearGroupId;
@@ -254,7 +256,7 @@ function YearWheel({
       ...wheelStructure,
       items: filteredItems
     };
-  }, [wheelStructure, year]);
+  }, [wheelStructure, year, allItemsAcrossPages]);
   
   const monthNames = useMemo(() => [
     t('common:monthsFull.january'),
