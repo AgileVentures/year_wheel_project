@@ -500,8 +500,6 @@ function SidePanel({
     // CRITICAL: Also remove all items on this ring to prevent orphaned items
     const updatedItems = wheelStructure.items.filter(item => item.ringId !== ringId);
     
-    console.log(`[handleRemoveRing] Removing ring ${ringId} and ${wheelStructure.items.length - updatedItems.length} items`);
-    
     onOrganizationChange({ 
       ...wheelStructure, 
       rings: updatedRings,

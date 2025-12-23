@@ -230,9 +230,7 @@ const ListView = ({
   const handleDrop = (e, targetRingId) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Drop event:', { draggedItem, targetRingId });
     if (draggedItem && draggedItem.ringId !== targetRingId) {
-      console.log('Updating item ring from', draggedItem.ringId, 'to', targetRingId);
       onUpdateItem({ ...draggedItem, ringId: targetRingId });
     }
     setDraggedItem(null);
