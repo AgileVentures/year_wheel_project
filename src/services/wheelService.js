@@ -2551,7 +2551,7 @@ export const applyDeltaChanges = async (wheelId, changes) => {
           linked_wheel_id: item.linked_wheel_id || item.linkedWheelId || null,
           link_type: item.link_type || item.linkType || null,
           cross_year_group_id: item.cross_year_group_id || item.crossYearGroupId || null,
-        }))), { onConflict: 'id' });
+        })), { onConflict: 'id' });
       if (error) throw new Error(`Items insert failed: ${error.message}`);
       results.items.inserted = changes.items.added.length;
     }
@@ -2568,7 +2568,7 @@ export const applyDeltaChanges = async (wheelId, changes) => {
           visible: ring.visible !== undefined ? ring.visible : true,
           ring_order: ring.ring_order !== undefined ? ring.ring_order : 0,
           orientation: ring.orientation || null
-        }))), { onConflict: 'id' });
+        })), { onConflict: 'id' });
       if (error) throw new Error(`Rings insert failed: ${error.message}`);
       results.rings.inserted = changes.rings.added.length;
     }
