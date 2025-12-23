@@ -478,9 +478,6 @@ const ListView = ({
                             {t('listView.label', 'Etikett')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {t('listView.date', 'Datum')}
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.timeline', 'Tidslinje')}
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
@@ -561,14 +558,6 @@ const ListView = ({
                                 ) : (
                                   <span className="text-xs text-gray-400">{t('listView.noLabel', '—')}</span>
                                 )}
-                              </td>
-                              
-                              {/* Date */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                  <Calendar size={14} />
-                                  {format(startDate, 'MMM d', { locale: i18n.language === 'sv' ? sv : enUS })}
-                                </div>
                               </td>
                               
                               {/* Timeline */}
