@@ -5080,12 +5080,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 key={`list-${Date.now()}`}
                 wheelStructure={calendarWheelStructure}
                 year={wheelState.metadata.year}
+                pages={wheelState.pages || []}
                 onUpdateItem={handleUpdateAktivitet}
                 onDeleteItem={handleDeleteAktivitet}
                 onAddItems={handleAddItems}
                 onOrganizationChange={setWheelStructure}
                 onNavigateToItemOnWheel={handleNavigateToItemOnWheel}
                 currentWheelId={wheelId}
+                currentPageId={currentPageId}
               />
             </div>
           )}

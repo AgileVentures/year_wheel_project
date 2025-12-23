@@ -14,22 +14,26 @@ import ConfirmDialog from '../ConfirmDialog';
  * 
  * @param {Object} wheelStructure - Contains rings, activityGroups, labels, and items
  * @param {number} year - Current year being displayed
+ * @param {Array} pages - All pages (years) with their items
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
  * @param {Function} onAddItems - Callback when new items are added (expects array)
  * @param {Function} onOrganizationChange - Callback when organization structure changes
  * @param {Function} onNavigateToItemOnWheel - Callback to navigate to item on wheel
  * @param {string} currentWheelId - Current wheel ID for edit modal
+ * @param {string} currentPageId - Current page ID for add item modal
  */
 const ListView = ({ 
   wheelStructure, 
   year,
+  pages = [],
   onUpdateItem,
   onDeleteItem,
   onAddItems,
   onOrganizationChange,
   onNavigateToItemOnWheel,
-  currentWheelId
+  currentWheelId,
+  currentPageId
 }) => {
   const { t, i18n } = useTranslation();
   const [expandedRings, setExpandedRings] = useState({});
@@ -42,26 +46,44 @@ const ListView = ({
   const [dropTargetRingId, setDropTargetRingId] = useState(null);
   const [editingRingId, setEditingRingId] = useState(null);
   const [editingRingName, setEditingRingName] = useState('');
+  const [yearFilter, setYearFilter] = useState('all'); // 'all' or specific year
   
   // Convert year to number for comparison
   const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
   
+  // Get available years from pages
+  const availableYears = useMemo(() => {
+    const years = pages.map(p => parseInt(p.year, 10)).filter(y => !isNaN(y));
+    return [...new Set(years)].sort((a, b) => a - b);
+  }, [pages]);
+  
+  // Get all items from all pages or filter by selected year
+  const filteredItems = useMemo(() => {
+    if (yearFilter === 'all') {
+      // Combine items from all pages
+      return pages.flatMap(page => (page.items || []).map(item => ({
+        ...item,
+        _pageYear: parseInt(page.year, 10)
+      })));
+    } else {
+      // Filter by specific year
+      const filterYear = parseInt(yearFilter, 10);
+      const page = pages.find(p => parseInt(p.year, 10) === filterYear);
+      return (page?.items || []).map(item => ({
+        ...item,
+        _pageYear: filterYear
+      }));
+    }
+  }, [pages, yearFilter]);
+  
   // Filter items by year and group by rings
   const itemsByRing = useMemo(() => {
     const rings = wheelStructure.rings || [];
-    const items = wheelStructure.items || [];
-    const activityGroups = wheelStructure.activityGroups || [];
-    
-    // Filter items for the current year
-    const yearItems = items.filter(item => {
-      const itemYear = new Date(item.startDate).getFullYear();
-      return itemYear === yearNum;
-    });
     
     // Group items by ring
     const grouped = {};
     rings.forEach(ring => {
-      const ringItems = yearItems.filter(item => item.ringId === ring.id);
+      const ringItems = filteredItems.filter(item => item.ringId === ring.id);
       grouped[ring.id] = {
         ring,
         items: ringItems.sort((a, b) => 
@@ -71,7 +93,7 @@ const ListView = ({
     });
     
     return grouped;
-  }, [wheelStructure, yearNum]);
+  }, [wheelStructure, filteredItems]);
   
   const toggleRing = (ringId) => {
     setExpandedRings(prev => ({
@@ -89,9 +111,14 @@ const ListView = ({
     const start = new Date(startDate);
     const end = new Date(endDate);
     
-    // Format: "Oct 7 - Nov 2" or "Jul 15 - Aug 8"
-    const startFormatted = format(start, 'MMM d', { locale });
-    const endFormatted = format(end, 'MMM d', { locale });
+    // Include year when showing all years, or when dates span multiple years
+    const startYear = start.getFullYear();
+    const endYear = end.getFullYear();
+    const showYear = yearFilter === 'all' || startYear !== endYear;
+    
+    const dateFormat = showYear ? 'MMM d, yyyy' : 'MMM d';
+    const startFormatted = format(start, dateFormat, { locale });
+    const endFormatted = format(end, dateFormat, { locale });
     
     return `${startFormatted} - ${endFormatted}`;
   };
@@ -251,13 +278,27 @@ const ListView = ({
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-gray-900">
-                {t('listView.title', 'Listvy')}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {t('listView.subtitle', 'Aktiviteter grupperade efter ringar')}
-              </p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  {t('listView.title', 'Listvy')}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {t('listView.subtitle', 'Aktiviteter grupperade efter ringar')}
+                </p>
+              </div>
+              
+              {/* Year Filter */}
+              <select
+                value={yearFilter}
+                onChange={(e) => setYearFilter(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">{t('listView.allYears', 'Alla år')}</option>
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
             
             {/* Bulk Actions */}
