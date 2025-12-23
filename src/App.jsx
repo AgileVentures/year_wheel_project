@@ -140,9 +140,33 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Helper: Filter items to only those belonging to a specific year
   // CRITICAL for maintaining page isolation in wheel_pages.structure JSONB
   // CROSS-YEAR SUPPORT: Preserves original dates before clamping to year boundaries
-  const filterItemsByYear = useCallback((items, yearNum) => {
+  // For LINKED cross-year items (with crossYearGroupId), calculates the FULL range across all linked segments
+  const filterItemsByYear = useCallback((items, yearNum, allItemsAcrossPages = []) => {
     const yearStart = new Date(yearNum, 0, 1);
     const yearEnd = new Date(yearNum, 11, 31);
+    
+    // Build a map of crossYearGroupId -> full range for linked items
+    const crossYearGroupRanges = new Map();
+    
+    // Calculate full range for each cross-year group from ALL items across ALL pages
+    (allItemsAcrossPages || items || []).forEach(item => {
+      if (!item.crossYearGroupId) return;
+      
+      const groupId = item.crossYearGroupId;
+      const itemStart = new Date(item.startDate);
+      const itemEnd = new Date(item.endDate);
+      
+      if (!crossYearGroupRanges.has(groupId)) {
+        crossYearGroupRanges.set(groupId, {
+          startDate: itemStart,
+          endDate: itemEnd,
+        });
+      } else {
+        const range = crossYearGroupRanges.get(groupId);
+        if (itemStart < range.startDate) range.startDate = itemStart;
+        if (itemEnd > range.endDate) range.endDate = itemEnd;
+      }
+    });
     
     return (items || [])
       .filter(item => {
@@ -155,27 +179,38 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const startDate = new Date(item.startDate);
         const endDate = new Date(item.endDate);
         
-        // Check if this is a cross-year item
+        // Check if this is a cross-year item (either by dates OR by having a crossYearGroupId)
         const startsBeforeYear = startDate < yearStart;
         const endsAfterYear = endDate > yearEnd;
-        const isCrossYear = startsBeforeYear || endsAfterYear;
+        const hasLinkedGroup = !!item.crossYearGroupId;
+        const isCrossYear = startsBeforeYear || endsAfterYear || hasLinkedGroup;
         
         // If not cross-year, return item as-is (no clamping needed)
         if (!isCrossYear) {
           return item;
         }
         
-        // Store original dates BEFORE clamping for cross-year items
-        const clampedStartDate = startsBeforeYear ? yearStart : startDate;
-        const clampedEndDate = endsAfterYear ? yearEnd : endDate;
+        // For linked cross-year items, get the FULL range from all linked segments
+        let fullRangeStart = startDate;
+        let fullRangeEnd = endDate;
+        
+        if (hasLinkedGroup && crossYearGroupRanges.has(item.crossYearGroupId)) {
+          const groupRange = crossYearGroupRanges.get(item.crossYearGroupId);
+          fullRangeStart = groupRange.startDate;
+          fullRangeEnd = groupRange.endDate;
+        }
+        
+        // Clamp display dates to current year boundaries
+        const clampedStartDate = startDate < yearStart ? yearStart : startDate;
+        const clampedEndDate = endDate > yearEnd ? yearEnd : endDate;
         
         return {
           ...item,
           startDate: formatDateOnly(clampedStartDate),
           endDate: formatDateOnly(clampedEndDate),
-          // Preserve original dates for cross-year resize handling
-          _originalStartDate: item.startDate,
-          _originalEndDate: item.endDate,
+          // Preserve FULL range dates for cross-year resize handling (across ALL linked segments)
+          _originalStartDate: formatDateOnly(fullRangeStart),
+          _originalEndDate: formatDateOnly(fullRangeEnd),
           _isCrossYear: true,
         };
       });
