@@ -854,7 +854,6 @@ class InteractionHandler {
 
       // Always clamp to year start for display in current year
       newStartDate = yearStart;
-      }
     }
 
     // Ensure end is after start when not intentionally wrapping forward or backward
