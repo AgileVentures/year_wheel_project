@@ -791,33 +791,14 @@ class InteractionHandler {
     let overflowEndDate = null;
 
     if (newEndDate > yearEnd) {
-      console.log('[InteractionHandler] OVERFLOW FORWARD detected:', {
-        newEndDate: newEndDate.toISOString(),
-        yearEnd: yearEnd.toISOString(),
-        comparison: newEndDate > yearEnd,
-        dragMode: this.dragState.dragMode,
-        hasCrossYearGroupId: !!originalItem?.crossYearGroupId
-      });
       overflowEndDate = new Date(newEndDate.getTime());
 
       // Call extend callback for BOTH new cross-year items AND existing ones being extended further
-      // The extend handler will use the existing crossYearGroupId if present
-      console.log('[InteractionHandler] Checking extend callback:', {
-        hasOriginalItem: !!originalItem,
-        dragMode: this.dragState.dragMode,
-        hasCallback: !!this.options.onExtendActivityToNextYear
-      });
-      
       if (
         originalItem &&
         (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
-        console.log('[InteractionHandler] Calling onExtendActivityToNextYear with:', {
-          itemId: originalItem.id,
-          itemName: originalItem.name,
-          overflowEndDate: overflowEndDate.toISOString()
-        });
         try {
           await this.options.onExtendActivityToNextYear({
             item: originalItem,
@@ -825,12 +806,9 @@ class InteractionHandler {
             currentYearEnd: yearEnd,
             dragMode: this.dragState.dragMode,
           });
-          console.log('[InteractionHandler] onExtendActivityToNextYear completed');
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
         }
-      } else {
-        console.log('[InteractionHandler] Skipping extend callback - conditions not met');
       }
 
       // Always clamp to year end for display in current year
@@ -839,21 +817,12 @@ class InteractionHandler {
 
     // Handle backward overflow (before January 1)
     if (overflowStartDate) {
-      console.log('[InteractionHandler] BACKWARD OVERFLOW - checking callback:', {
-        hasCallback: !!this.options.onExtendActivityToPreviousYear,
-        dragMode: this.dragState.dragMode,
-        hasOriginalItem: !!originalItem,
-        hasCrossYearGroupId: !!originalItem?.crossYearGroupId
-      });
-      
       // Call extend callback for BOTH new cross-year items AND existing ones being extended further
-      // The extend handler will use the existing crossYearGroupId if present
       if (
         originalItem &&
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
-        console.log('[InteractionHandler] Calling onExtendActivityToPreviousYear');
         try {
           await this.options.onExtendActivityToPreviousYear({
             item: originalItem,

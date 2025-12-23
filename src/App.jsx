@@ -3482,29 +3482,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Since items are PAGE-SCOPED, we create linked items on each year's page
   // Items are linked via crossYearGroupId for synchronized updates
   const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd }) => {
-    console.log('[App] handleExtendActivityBeyondYear called:', { item, overflowEndDate, currentYearEnd });
-    
     if (!wheelId || !item || !overflowEndDate || !currentYearEnd) {
-      console.log('[App] handleExtendActivityBeyondYear - missing required params:', { wheelId, hasItem: !!item, overflowEndDate, currentYearEnd });
       return;
     }
 
     const overflowDate = new Date(overflowEndDate);
     const currentYearEndDate = new Date(currentYearEnd);
-    
-    console.log('[App] handleExtendActivityBeyondYear - dates:', {
-      overflowDate: overflowDate.toISOString(),
-      currentYearEndDate: currentYearEndDate.toISOString(),
-      comparison: overflowDate <= currentYearEndDate
-    });
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
-      console.log('[App] handleExtendActivityBeyondYear - invalid overflow date');
       return;
     }
 
     if (overflowDate <= currentYearEndDate) {
-      console.log('[App] handleExtendActivityBeyondYear - overflow not past year end, returning');
       return;
     }
 
@@ -3514,13 +3503,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const currentYear = currentYearEndDate.getUTCFullYear();
     const nextYear = currentYear + 1;
     let segmentStart = new Date(Date.UTC(nextYear, 0, 1)); // Jan 1 of next year (UTC)
-    
-    console.log('[App] handleExtendActivityBeyondYear - calculating segments:', {
-      currentYear,
-      nextYear,
-      segmentStart: segmentStart.toISOString(),
-      overflowDate: overflowDate.toISOString()
-    });
 
     while (segmentStart <= overflowDate) {
       const segmentYear = segmentStart.getUTCFullYear();
@@ -3532,28 +3514,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         startDate: formatDateOnly(segmentStart),
         endDate: formatDateOnly(segmentEnd),
       });
-      
-      console.log('[App] handleExtendActivityBeyondYear - added segment:', segments[segments.length - 1]);
 
       if (segmentEnd >= overflowDate) break;
       segmentStart = new Date(Date.UTC(segmentYear + 1, 0, 1));
     }
 
-    console.log('[App] handleExtendActivityBeyondYear - total segments:', segments.length);
-    
-    if (segments.length === 0) {
-      console.log('[App] handleExtendActivityBeyondYear - no segments, returning');
-      return;
-    }
+    if (segments.length === 0) return;
 
     const targetYear = segments[segments.length - 1].year;
     const yearsSpanned = targetYear - currentYear;
-    
-    console.log('[App] handleExtendActivityBeyondYear - showing dialog:', {
-      targetYear,
-      currentYear,
-      yearsSpanned
-    });
 
     const confirmed = await showConfirmDialog({
       title: 'Förläng över årsskiftet?',

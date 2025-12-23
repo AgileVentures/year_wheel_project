@@ -518,16 +518,12 @@ function YearWheel({
   const handleUpdateAktivitet = stableHandleUpdateAktivitet; // Alias
 
   const stableOnExtendActivityBeyondYear = useCallback((params) => {
-    console.log('[YearWheel] stableOnExtendActivityBeyondYear called:', params);
-    console.log('[YearWheel] ref.current exists:', !!onExtendActivityBeyondYearRef.current);
     if (onExtendActivityBeyondYearRef.current) {
       onExtendActivityBeyondYearRef.current(params);
     }
   }, []); // No dependencies - stable forever
 
   const stableOnExtendActivityToPreviousYear = useCallback((params) => {
-    console.log('[YearWheel] stableOnExtendActivityToPreviousYear called:', params);
-    console.log('[YearWheel] ref.current exists:', !!onExtendActivityToPreviousYearRef.current);
     if (onExtendActivityToPreviousYearRef.current) {
       onExtendActivityToPreviousYearRef.current(params);
     }

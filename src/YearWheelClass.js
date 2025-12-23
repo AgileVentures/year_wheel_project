@@ -169,6 +169,7 @@ class YearWheel {
       readonly: this.readonly,
       selectionMode: this.selectionMode,
       onItemClick: options.onItemClick,
+      onDragStart: options.onDragStart,
       onExtendActivityToNextYear: options.onExtendActivityToNextYear,
       onExtendActivityToPreviousYear: options.onExtendActivityToPreviousYear,
       onUpdateCrossYearGroup: options.onUpdateCrossYearGroup
