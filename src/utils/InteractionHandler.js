@@ -683,11 +683,21 @@ class InteractionHandler {
     let newStartDate = this.wheel.angleToDate(startDegrees);
     let newEndDate = this.wheel.angleToDate(endDegrees);
 
+    // Get the angle delta to determine move direction
+    const angleDelta = this.dragState.currentAngleDelta ?? 0;
+
     // CRITICAL FIX FOR MOVE: When moving an item across year boundary, 
-    // the end date wraps to January but stays in the same year.
-    // If end < start in a MOVE operation, the end has wrapped to the next year.
+    // dates wrap around. We need to determine WHICH direction the user moved:
+    // - Positive angleDelta (clockwise/forward) = moved past Dec 31 → end goes to next year
+    // - Negative angleDelta (counter-clockwise/backward) = moved past Jan 1 → start goes to previous year
     if (this.dragState.dragMode === 'move' && newEndDate < newStartDate) {
-      newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+      if (angleDelta > 0) {
+        // Moved FORWARD past December 31 - end date should be in next year
+        newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+      } else {
+        // Moved BACKWARD past January 1 - start date should be in previous year
+        newStartDate.setFullYear(newStartDate.getFullYear() - 1);
+      }
     }
 
     // CRITICAL FIX: In resize-start mode, preserve the original end date
@@ -734,8 +744,6 @@ class InteractionHandler {
 
     if (newStartDate < yearStart) newStartDate = yearStart;
     if (newStartDate > yearEnd) newStartDate = yearEnd;
-
-    const angleDelta = this.dragState.currentAngleDelta ?? 0;
 
     // FIXED: Use unwrapped angles to determine if we're actually wrapping forward
     // Don't use normalized angles as they can give false positives
