@@ -3537,7 +3537,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!confirmed) return;
 
     // Generate a cross-year group ID to link all segments
-    const crossYearGroupId = item.crossYearGroupId || `crossyear-${crypto.randomUUID()}`;
+    const crossYearGroupId = item.crossYearGroupId || crypto.randomUUID();
 
     // First, update the current item with the group ID and clamp to year end
     const updatedCurrentItem = {
@@ -3546,7 +3546,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       crossYearGroupId,
     };
 
-    const generateItemId = () => `item-${crypto.randomUUID()}`;
+    const generateItemId = () => crypto.randomUUID();
 
     // Create linked items for each segment (future years)
     const newItems = [];
@@ -3720,7 +3720,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (!confirmed) return;
 
     // Generate a cross-year group ID to link all segments
-    const crossYearGroupId = item.crossYearGroupId || `crossyear-${crypto.randomUUID()}`;
+    const crossYearGroupId = item.crossYearGroupId || crypto.randomUUID();
 
     // First, update the current item with the group ID and clamp to year start
     const updatedCurrentItem = {
@@ -3729,7 +3729,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       crossYearGroupId,
     };
 
-    const generateItemId = () => `item-${crypto.randomUUID()}`;
+    const generateItemId = () => crypto.randomUUID();
 
     // Create linked items for each segment (previous years)
     const newItems = [];
