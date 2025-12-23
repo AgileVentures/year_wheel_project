@@ -392,6 +392,7 @@
   "listView": {
     "title": "Listvy",
     "subtitle": "Aktiviteter grupperade efter ringar",
+    "allYears": "Alla år",
     "items": "aktiviteter",
     "addItem": "Lägg till",
     "addItemButton": "+ Lägg till aktivitet",
@@ -420,7 +421,27 @@
     "confirmDelete": "Är du säker på att du vill ta bort {{count}} aktiviteter?",
     "deleteTitle": "Ta bort aktiviteter",
     "confirmDeleteSingle": "Är du säker på att du vill ta bort aktiviteten?",
-    "showInWheel": "Visa i hjul"
+    "showInWheel": "Visa i hjul",
+    "clickToEditRingName": "Klicka för att redigera ringnamn",
+    "editRingName": "Redigera ringnamn"
+  },
+  "crossYear": {
+    "extendForwardTitle": "Förläng över årsskiftet?",
+    "extendForwardMessageSingle": "Aktiviteten \"{{name}}\" kommer att sträcka sig till {{date}} ({{year}}). En länkad kopia skapas på nästa års sida.",
+    "extendForwardMessageMultiple": "Aktiviteten \"{{name}}\" kommer att sträcka sig till {{date}}. Länkade kopior skapas på {{count}} års sidor.",
+    "extendBackwardTitle": "Förläng bakåt över årsskiftet?",
+    "extendBackwardMessageSingle": "Aktiviteten \"{{name}}\" kommer att börja {{date}} ({{year}}). En länkad kopia skapas på föregående års sida.",
+    "extendBackwardMessageMultiple": "Aktiviteten \"{{name}}\" kommer att börja {{date}}. Länkade kopior skapas på {{count}} års sidor.",
+    "extendConfirm": "Förläng aktivitet",
+    "extendCancel": "Endast detta år",
+    "createTitle": "Skapa flerårsaktivitet?",
+    "createMessageSingle": "Aktiviteten \"{{name}}\" sträcker sig från {{startYear}} till {{endYear}}. Länkade kopior skapas på båda årens sidor.",
+    "createMessageMultiple": "Aktiviteten \"{{name}}\" sträcker sig över {{count}} år ({{startYear}}-{{endYear}}). Länkade kopior skapas på alla årens sidor.",
+    "createConfirm": "Skapa flerårsaktivitet",
+    "extendedToast": "Aktiviteten sträcker sig nu till {{date}}.",
+    "startsFromToast": "Aktiviteten börjar nu {{date}}.",
+    "createdToast": "Flerårsaktivitet skapad över {{count}} år.",
+    "maxYearsError": "Aktiviteten kan inte sträcka sig över mer än 10 år ({{count}} år angivet)"
   },
   "sharing": {
     "publicEnabled": "Hjulet är nu publikt delat!",

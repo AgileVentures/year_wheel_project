@@ -393,6 +393,7 @@
   "listView": {
     "title": "List View",
     "subtitle": "Activities grouped by rings",
+    "allYears": "All years",
     "items": "items",
     "addItem": "Add",
     "addItemButton": "+ Add item",
@@ -421,7 +422,27 @@
     "confirmDelete": "Are you sure you want to delete {{count}} activities?",
     "deleteTitle": "Delete activities",
     "confirmDeleteSingle": "Are you sure you want to delete this activity?",
-    "showInWheel": "Show in wheel"
+    "showInWheel": "Show in wheel",
+    "clickToEditRingName": "Click to edit ring name",
+    "editRingName": "Edit ring name"
+  },
+  "crossYear": {
+    "extendForwardTitle": "Extend across year boundary?",
+    "extendForwardMessageSingle": "Activity \"{{name}}\" will extend to {{date}} ({{year}}). A linked copy will be created on next year's page.",
+    "extendForwardMessageMultiple": "Activity \"{{name}}\" will extend to {{date}}. Linked copies will be created on {{count}} year pages.",
+    "extendBackwardTitle": "Extend backward across year boundary?",
+    "extendBackwardMessageSingle": "Activity \"{{name}}\" will start on {{date}} ({{year}}). A linked copy will be created on previous year's page.",
+    "extendBackwardMessageMultiple": "Activity \"{{name}}\" will start on {{date}}. Linked copies will be created on {{count}} year pages.",
+    "extendConfirm": "Extend activity",
+    "extendCancel": "This year only",
+    "createTitle": "Create multi-year activity?",
+    "createMessageSingle": "Activity \"{{name}}\" spans from {{startYear}} to {{endYear}}. Linked copies will be created on both year pages.",
+    "createMessageMultiple": "Activity \"{{name}}\" spans {{count}} years ({{startYear}}-{{endYear}}). Linked copies will be created on all year pages.",
+    "createConfirm": "Create multi-year activity",
+    "extendedToast": "Activity now extends to {{date}}.",
+    "startsFromToast": "Activity now starts from {{date}}.",
+    "createdToast": "Multi-year activity created across {{count}} years.",
+    "maxYearsError": "Activity cannot span more than 10 years ({{count}} years specified)"
   },
   "sharing": {
     "publicEnabled": "Wheel is now publicly shared!",

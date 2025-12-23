@@ -3527,7 +3527,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const nextYear = currentYear + 1;
     let segmentStart = new Date(Date.UTC(nextYear, 0, 1)); // Jan 1 of next year (UTC)
 
+    // Safety limit counter
+    let safetyCounter = 0;
+    const MAX_YEARS = 10;
+
     while (segmentStart <= overflowDate) {
+      safetyCounter++;
+      if (safetyCounter > MAX_YEARS) {
+        console.error('[handleExtendActivityBeyondYear] Safety limit reached - too many years');
+        showToast(t('crossYear.maxYearsError', { count: safetyCounter }), 'error');
+        return;
+      }
+      
       const segmentYear = segmentStart.getUTCFullYear();
       const segmentYearEnd = new Date(Date.UTC(segmentYear, 11, 31, 23, 59, 59));
       const segmentEnd = overflowDate <= segmentYearEnd ? overflowDate : segmentYearEnd;
@@ -3548,12 +3559,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const yearsSpanned = targetYear - currentYear;
 
     const confirmed = await showConfirmDialog({
-      title: 'Förläng över årsskiftet?',
+      title: t('crossYear.extendForwardTitle'),
       message: yearsSpanned === 1
-        ? `Aktiviteten "${item.name}" kommer att sträcka sig till ${formatDateOnly(overflowDate)} (${targetYear}). En länkad kopia skapas på nästa års sida.`
-        : `Aktiviteten "${item.name}" kommer att sträcka sig till ${formatDateOnly(overflowDate)}. Länkade kopior skapas på ${yearsSpanned} års sidor.`,
-      confirmText: 'Förläng aktivitet',
-      cancelText: 'Endast detta år',
+        ? t('crossYear.extendForwardMessageSingle', { name: item.name, date: formatDateOnly(overflowDate), year: targetYear })
+        : t('crossYear.extendForwardMessageMultiple', { name: item.name, date: formatDateOnly(overflowDate), count: yearsSpanned }),
+      confirmText: t('crossYear.extendConfirm'),
+      cancelText: t('crossYear.extendCancel'),
       confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
     });
 
@@ -3691,8 +3702,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
     }
 
-    showToast(`Aktiviteten sträcker sig nu till ${formatDateOnly(overflowDate)}.`, 'success');
-  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef, changeTracker]);
+    showToast(t('crossYear.extendedToast', { date: formatDateOnly(overflowDate) }), 'success');
+  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef, changeTracker, t]);
 
   // Handle extending activity to PREVIOUS year(s) - OPTION B: Linked items across pages
   // Since items are PAGE-SCOPED, we create linked items on each year's page
@@ -3722,7 +3733,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const prevYear = currentYear - 1;
     let segmentEnd = new Date(Date.UTC(prevYear, 11, 31, 23, 59, 59)); // Dec 31 of previous year (UTC)
 
+    // Safety limit counter
+    let safetyCounter = 0;
+    const MAX_YEARS = 10;
+
     while (segmentEnd >= overflowDate) {
+      safetyCounter++;
+      if (safetyCounter > MAX_YEARS) {
+        console.error('[handleExtendActivityToPreviousYear] Safety limit reached - too many years');
+        showToast(t('crossYear.maxYearsError', { count: safetyCounter }), 'error');
+        return;
+      }
+      
       const segmentYear = segmentEnd.getUTCFullYear();
       const segmentYearStart = new Date(Date.UTC(segmentYear, 0, 1));
       const segmentStart = overflowDate >= segmentYearStart ? overflowDate : segmentYearStart;
@@ -3746,12 +3768,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const yearsSpanned = currentYear - targetYear;
 
     const confirmed = await showConfirmDialog({
-      title: 'Förläng bakåt över årsskiftet?',
+      title: t('crossYear.extendBackwardTitle'),
       message: yearsSpanned === 1
-        ? `Aktiviteten "${item.name}" kommer att börja ${formatDateOnly(overflowDate)} (${targetYear}). En länkad kopia skapas på föregående års sida.`
-        : `Aktiviteten "${item.name}" kommer att börja ${formatDateOnly(overflowDate)}. Länkade kopior skapas på ${yearsSpanned} års sidor.`,
-      confirmText: 'Förläng aktivitet',
-      cancelText: 'Endast detta år',
+        ? t('crossYear.extendBackwardMessageSingle', { name: item.name, date: formatDateOnly(overflowDate), year: targetYear })
+        : t('crossYear.extendBackwardMessageMultiple', { name: item.name, date: formatDateOnly(overflowDate), count: yearsSpanned }),
+      confirmText: t('crossYear.extendConfirm'),
+      cancelText: t('crossYear.extendCancel'),
       confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
     });
 
@@ -3889,8 +3911,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       });
     }
 
-    showToast(`Aktiviteten börjar nu ${formatDateOnly(overflowDate)}.`, 'success');
-  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef, changeTracker]);
+    showToast(t('crossYear.startsFromToast', { date: formatDateOnly(overflowDate) }), 'success');
+  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef, changeTracker, t]);
 
   // Handle updating all items in a cross-year group when one is resized
   const handleUpdateCrossYearGroup = useCallback(({ groupId, itemId, newStartDate, newEndDate, ringId }) => {
@@ -3899,6 +3921,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const endDate = new Date(newEndDate);
     const startYear = startDate.getFullYear();
     const endYear = endDate.getFullYear();
+    
+    // Validate year range
+    if (startYear < 1900 || startYear > 2200 || endYear < 1900 || endYear > 2200) {
+      console.error('[handleUpdateCrossYearGroup] Year out of reasonable range:', startYear, endYear);
+      return;
+    }
+    
+    // Safety limit: max 10 years span
+    const yearsSpanned = endYear - startYear;
+    if (yearsSpanned > 10) {
+      console.error('[handleUpdateCrossYearGroup] Year span too large:', yearsSpanned);
+      showToast(t('crossYear.maxYearsError', { count: yearsSpanned }), 'error');
+      return;
+    }
     
     const segments = [];
     for (let year = startYear; year <= endYear; year++) {
@@ -4042,7 +4078,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     }
     
-  }, [setWheelState, changeTracker, wheelState, latestValuesRef, endBatch, cancelBatch]);
+  }, [setWheelState, changeTracker, wheelState, latestValuesRef, endBatch, cancelBatch, showToast, t]);
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
@@ -4209,23 +4245,56 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const processedItems = [];
     const linkedItemsForOtherPages = [];
     
+    // Helper to parse date string safely (avoids timezone issues)
+    const parseDateString = (dateStr) => {
+      if (!dateStr) return null;
+      // Parse YYYY-MM-DD format directly to avoid timezone shifts
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      }
+      return new Date(dateStr);
+    };
+    
     for (const item of itemsToAdd) {
-      const startDate = new Date(item.startDate);
-      const endDate = new Date(item.endDate);
+      const startDate = parseDateString(item.startDate);
+      const endDate = parseDateString(item.endDate);
+      
+      // Validate dates
+      if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error('[handleAddItems] Invalid dates:', item.startDate, item.endDate);
+        processedItems.push(item); // Add as-is, let validation catch it later
+        continue;
+      }
+      
       const startYear = startDate.getFullYear();
       const endYear = endDate.getFullYear();
+      
+      // Validate year range is reasonable (between 1900 and 2200)
+      if (startYear < 1900 || startYear > 2200 || endYear < 1900 || endYear > 2200) {
+        console.error('[handleAddItems] Year out of reasonable range:', startYear, endYear);
+        processedItems.push(item); // Add as-is
+        continue;
+      }
       
       if (startYear !== endYear) {
         // Cross-year item detected - ask user if they want to create linked items
         const yearsSpanned = endYear - startYear;
         
+        // Safety limit: max 10 years span to prevent runaway page creation
+        if (yearsSpanned > 10) {
+          console.error('[handleAddItems] Year span too large:', yearsSpanned, 'years');
+          showToast(t('crossYear.maxYearsError', { count: yearsSpanned }), 'error');
+          continue;
+        }
+        
         const confirmed = await showConfirmDialog({
-          title: 'Skapa flerårsaktivitet?',
+          title: t('crossYear.createTitle'),
           message: yearsSpanned === 1
-            ? `Aktiviteten "${item.name}" sträcker sig från ${startYear} till ${endYear}. Länkade kopior skapas på båda årens sidor.`
-            : `Aktiviteten "${item.name}" sträcker sig över ${yearsSpanned + 1} år (${startYear}-${endYear}). Länkade kopior skapas på alla årens sidor.`,
-          confirmText: 'Skapa flerårsaktivitet',
-          cancelText: 'Endast detta år',
+            ? t('crossYear.createMessageSingle', { name: item.name, startYear, endYear })
+            : t('crossYear.createMessageMultiple', { name: item.name, count: yearsSpanned + 1, startYear, endYear }),
+          confirmText: t('crossYear.createConfirm'),
+          cancelText: t('crossYear.extendCancel'),
           confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
         });
         
@@ -4333,14 +4402,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const page = wheelState?.pages?.find(p => p.id === i.pageId);
         return page?.year;
       })).size;
-      showToast(`Flerårsaktivitet skapad över ${yearsCreated} år.`, 'success');
+      showToast(t('crossYear.createdToast', { count: yearsCreated }), 'success');
     }
     
     // Trigger auto-save after adding items
     if (triggerAutoSaveRef.current) {
       triggerAutoSaveRef.current();
     }
-  }, [currentPageId, wheelId, setWheelState, changeTracker, showConfirmDialog, ensurePageForYear, structure, wheelState, showToast]);
+  }, [currentPageId, wheelId, setWheelState, changeTracker, showConfirmDialog, ensurePageForYear, structure, wheelState, showToast, t]);
 
   const handleDeleteAktivitet = useCallback(async (itemId) => {
     if (!itemId || !currentPageId) return;
