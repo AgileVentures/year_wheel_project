@@ -170,7 +170,8 @@ class YearWheel {
       selectionMode: this.selectionMode,
       onItemClick: options.onItemClick,
       onExtendActivityToNextYear: options.onExtendActivityToNextYear,
-      onExtendActivityToPreviousYear: options.onExtendActivityToPreviousYear
+      onExtendActivityToPreviousYear: options.onExtendActivityToPreviousYear,
+      onUpdateCrossYearGroup: options.onUpdateCrossYearGroup
     });
     
     this.exportManager = new ExportManager(this);

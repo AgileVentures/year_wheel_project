@@ -799,8 +799,11 @@ class InteractionHandler {
       });
       overflowEndDate = new Date(newEndDate.getTime());
 
+      // For items already in a cross-year group, don't call extend callback
+      // The onUpdateCrossYearGroup will handle updating all linked segments
       if (
         originalItem &&
+        !originalItem.crossYearGroupId && // Only for NEW cross-year items
         (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
@@ -816,7 +819,10 @@ class InteractionHandler {
         }
       }
 
-      newEndDate = yearEnd;
+      // Only clamp if NOT in a cross-year group (cross-year items use onUpdateCrossYearGroup)
+      if (!originalItem?.crossYearGroupId) {
+        newEndDate = yearEnd;
+      }
     }
 
     // Handle backward overflow (before January 1)
@@ -827,8 +833,11 @@ class InteractionHandler {
         hasOriginalItem: !!originalItem
       });
       
+      // For items already in a cross-year group, don't call extend callback
+      // The onUpdateCrossYearGroup will handle updating all linked segments
       if (
         originalItem &&
+        !originalItem.crossYearGroupId && // Only for NEW cross-year items
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
@@ -845,7 +854,10 @@ class InteractionHandler {
         }
       }
 
-      newStartDate = yearStart;
+      // Only clamp if NOT in a cross-year group (cross-year items use onUpdateCrossYearGroup)
+      if (!originalItem?.crossYearGroupId) {
+        newStartDate = yearStart;
+      }
     }
 
     // Ensure end is after start when not intentionally wrapping forward or backward
