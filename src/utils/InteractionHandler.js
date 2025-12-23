@@ -509,17 +509,6 @@ class InteractionHandler {
       const logicalAngleRad = this.normalizeAngle(screenAngle - this.wheel.rotationAngle);
       const logicalAngleDeg = LayoutCalculator.radiansToDegrees(logicalAngleRad);
       
-      // Log for debugging rotation issues
-      if (Math.abs(this.wheel.rotationAngle) > 0.01) {
-        console.log('[angleToDate]', {
-          screenAngleRad: screenAngle,
-          rotationAngleRad: this.wheel.rotationAngle,
-          logicalAngleRad,
-          logicalAngleDeg,
-          initAngle: this.wheel.initAngle
-        });
-      }
-      
       // Use wheel's angleToDate which handles initAngle and zoom correctly
       return this.wheel.angleToDate(logicalAngleDeg);
     };
@@ -550,7 +539,6 @@ class InteractionHandler {
         if (!validation.valid) {
           // Constraint violated - don't update preview, show visual feedback
           this.canvas.style.cursor = 'not-allowed';
-          console.log('[InteractionHandler] Drag constrained:', validation.reason);
           return; // Don't update preview position
         }
       }
@@ -586,7 +574,6 @@ class InteractionHandler {
           
           if (!validation.valid) {
             this.canvas.style.cursor = 'not-allowed';
-            console.log('[InteractionHandler] Resize constrained:', validation.reason);
             return;
           }
         }
@@ -689,31 +676,17 @@ class InteractionHandler {
       const candidate = unwrappedStartDegrees;
       if (candidate < -CROSS_EPSILON) {
         backwardWrapCount = Math.floor(candidate / 360); // Use floor for negative numbers
-        console.log('[InteractionHandler] BACKWARD WRAP detected:', {
-          unwrappedStartDegrees: candidate,
-          backwardWrapCount,
-          normalizedStartAngle: startDegrees
-        });
       }
     }
 
     // Use wheel's angleToDate method which handles zoom levels and initAngle
     let newStartDate = this.wheel.angleToDate(startDegrees);
     let newEndDate = this.wheel.angleToDate(endDegrees);
-    
-    console.log('[InteractionHandler] Initial dates from angles:', {
-      startDegrees,
-      endDegrees,
-      newStartDate: newStartDate.toISOString(),
-      newEndDate: newEndDate.toISOString(),
-      dragMode: this.dragState.dragMode
-    });
 
     // CRITICAL FIX FOR MOVE: When moving an item across year boundary, 
     // the end date wraps to January but stays in the same year.
     // If end < start in a MOVE operation, the end has wrapped to the next year.
     if (this.dragState.dragMode === 'move' && newEndDate < newStartDate) {
-      console.log('[InteractionHandler] MOVE WRAP detected - adjusting end date to next year');
       newEndDate.setFullYear(newEndDate.getFullYear() + 1);
     }
 
@@ -742,23 +715,12 @@ class InteractionHandler {
     const yearStart = new Date(Date.UTC(itemYear, 0, 1, 0, 0, 0));
     const yearEnd = new Date(Date.UTC(itemYear, 11, 31, 23, 59, 59));
     
-    console.log('[InteractionHandler] Date bounds check:', { 
-      itemYear,
-      yearStart: yearStart.toISOString(), 
-      yearEnd: yearEnd.toISOString(),
-      newStartDate: newStartDate.toISOString(),
-      newEndDate: newEndDate.toISOString(),
-      startBeforeYearStart: newStartDate < yearStart,
-      endAfterYearEnd: newEndDate > yearEnd,
-    });
-
     // BACKWARD WRAP: Apply year offset if start was dragged backwards past January 1
     const wrappedBackward =
       this.dragState.dragMode === 'resize-start' &&
       backwardWrapCount < 0;
 
     if (wrappedBackward) {
-      console.log('[InteractionHandler] Applying backward wrap to start date');
       const wrappedStart = new Date(newStartDate.getTime());
       wrappedStart.setFullYear(wrappedStart.getFullYear() + backwardWrapCount); // backwardWrapCount is negative
       newStartDate = wrappedStart;
@@ -767,11 +729,6 @@ class InteractionHandler {
     // Check for backward overflow BEFORE clamping
     let overflowStartDate = null;
     if (newStartDate < yearStart) {
-      console.log('[InteractionHandler] OVERFLOW BACKWARD detected:', {
-        newStartDate: newStartDate.toISOString(),
-        yearStart: yearStart.toISOString(),
-        comparison: newStartDate < yearStart
-      });
       overflowStartDate = new Date(newStartDate.getTime());
     }
 
@@ -802,13 +759,6 @@ class InteractionHandler {
 
     if (newEndDate > yearEnd) {
       overflowEndDate = new Date(newEndDate.getTime());
-      console.log('[InteractionHandler] OVERFLOW FORWARD detected:', {
-        newEndDate: newEndDate.toISOString(),
-        yearEnd: yearEnd.toISOString(),
-        dragMode: this.dragState.dragMode,
-        hasCallback: !!this.options.onExtendActivityToNextYear,
-        hasCrossYearGroupId: !!originalItem?.crossYearGroupId,
-      });
 
       // Call extend callback for BOTH new cross-year items AND existing ones being extended further
       if (
@@ -816,7 +766,6 @@ class InteractionHandler {
         (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
-        console.log('[InteractionHandler] Calling onExtendActivityToNextYear...');
         try {
           await this.options.onExtendActivityToNextYear({
             item: originalItem,
@@ -827,16 +776,9 @@ class InteractionHandler {
             // Without this, the current item keeps its original start date
             newStartDate: this.dragState.dragMode === 'move' ? newStartDate : null,
           });
-          console.log('[InteractionHandler] onExtendActivityToNextYear returned');
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
         }
-      } else {
-        console.log('[InteractionHandler] NOT calling onExtendActivityToNextYear:', {
-          hasOriginalItem: !!originalItem,
-          dragMode: this.dragState.dragMode,
-          hasCallback: !!this.options.onExtendActivityToNextYear,
-        });
       }
 
       // Always clamp to year end for display in current year
@@ -845,20 +787,12 @@ class InteractionHandler {
 
     // Handle backward overflow (before January 1)
     if (overflowStartDate) {
-      console.log('[InteractionHandler] Processing BACKWARD overflow:', {
-        overflowStartDate: overflowStartDate.toISOString(),
-        dragMode: this.dragState.dragMode,
-        hasCallback: !!this.options.onExtendActivityToPreviousYear,
-        hasCrossYearGroupId: !!originalItem?.crossYearGroupId,
-      });
-      
       // Call extend callback for BOTH new cross-year items AND existing ones being extended further
       if (
         originalItem &&
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
-        console.log('[InteractionHandler] Calling onExtendActivityToPreviousYear...');
         try {
           await this.options.onExtendActivityToPreviousYear({
             item: originalItem,
@@ -868,16 +802,9 @@ class InteractionHandler {
             // CRITICAL: Pass the NEW end date for move operations
             newEndDate: this.dragState.dragMode === 'move' ? newEndDate : null,
           });
-          console.log('[InteractionHandler] onExtendActivityToPreviousYear returned');
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity to previous year:', extensionError);
         }
-      } else {
-        console.log('[InteractionHandler] NOT calling onExtendActivityToPreviousYear:', {
-          hasOriginalItem: !!originalItem,
-          dragMode: this.dragState.dragMode,
-          hasCallback: !!this.options.onExtendActivityToPreviousYear,
-        });
       }
 
       // Always clamp to year start for display in current year
@@ -942,7 +869,6 @@ class InteractionHandler {
       this.dragState.targetRing.id !== originalItem.ringId
     ) {
       updates.ringId = this.dragState.targetRing.id;
-      console.log(`[InteractionHandler] Also moving to ring: ${this.dragState.targetRing.id}`);
     }
 
     const updatedItem = {
@@ -966,14 +892,7 @@ class InteractionHandler {
 
       // CROSS-YEAR LINKED ITEMS: If this item is part of a cross-year group,
       // update all linked items with the new full date range
-      console.log('[InteractionHandler] Checking cross-year group:', {
-        crossYearGroupId: originalItem.crossYearGroupId,
-        hasCallback: !!this.options.onUpdateCrossYearGroup,
-        itemName: originalItem.name,
-      });
-      
       if (originalItem.crossYearGroupId && this.options.onUpdateCrossYearGroup) {
-        console.log('[InteractionHandler] Updating cross-year group:', originalItem.crossYearGroupId);
         
         // Calculate the FULL range for cross-year items
         // IMPORTANT: Use UNCLAMPED dates (overflowStartDate/overflowEndDate) when overflow occurred
@@ -1006,36 +925,16 @@ class InteractionHandler {
           fullStartDate = new Date(fullOriginalStart.getTime() + moveDeltaMs);
           fullEndDate = new Date(fullOriginalEnd.getTime() + moveDeltaMs);
           
-          console.log('[InteractionHandler] Cross-year MOVE - applying delta:', {
-            moveDeltaMs,
-            moveDeltaDays: Math.round(moveDeltaMs / (1000 * 60 * 60 * 24)),
-            fullOriginalStart: fullOriginalStart.toISOString(),
-            fullOriginalEnd: fullOriginalEnd.toISOString(),
-            newFullStart: fullStartDate.toISOString(),
-            newFullEnd: fullEndDate.toISOString()
-          });
         } else if (this.dragState.dragMode === 'resize-start') {
           // For RESIZE-START: Use UNCLAMPED start date if overflow occurred
           fullStartDate = overflowStartDate || newStartDate;
           fullEndDate = fullOriginalEnd; // Keep the original full end
           
-          console.log('[InteractionHandler] Cross-year RESIZE-START:', {
-            overflowStartDate: overflowStartDate?.toISOString(),
-            newStartDate: newStartDate.toISOString(),
-            fullStartDate: fullStartDate.toISOString(),
-            fullEndDate: fullEndDate.toISOString()
-          });
         } else if (this.dragState.dragMode === 'resize-end') {
           // For RESIZE-END: Use UNCLAMPED end date if overflow occurred
           fullStartDate = fullOriginalStart; // Keep the original full start
           fullEndDate = overflowEndDate || newEndDate;
           
-          console.log('[InteractionHandler] Cross-year RESIZE-END:', {
-            overflowEndDate: overflowEndDate?.toISOString(),
-            newEndDate: newEndDate.toISOString(),
-            fullStartDate: fullStartDate.toISOString(),
-            fullEndDate: fullEndDate.toISOString()
-          });
         } else {
           // Fallback to current segment dates
           fullStartDate = newStartDate;
@@ -1077,8 +976,6 @@ class InteractionHandler {
       cascadedUpdates.forEach(({ id, newDates }) => {
         const dependentItem = allItems.find(i => i.id === id);
         if (dependentItem) {
-          console.log(`[InteractionHandler] Cascading update to "${dependentItem.name}": ${newDates.startDate} → ${newDates.endDate}`);
-          
           const updatedDependent = {
             ...dependentItem,
             startDate: newDates.startDate,
@@ -1505,18 +1402,11 @@ class InteractionHandler {
                 x: event.clientX,
                 y: event.clientY
               }, event);
-            } else {
-              console.warn('[InteractionHandler] Item not found in wheelStructure:', itemRegion.itemId);
             }
             return;
           }
         }
-        console.log('[InteractionHandler] Click was not on any item region');
-      } else {
-        console.log('[InteractionHandler] No clickableItems available');
       }
-    } else {
-      console.log('[InteractionHandler] No onItemClick callback');
     }
   }
 

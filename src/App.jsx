@@ -3517,17 +3517,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Since items are PAGE-SCOPED, we create linked items on each year's page
   // Items are linked via crossYearGroupId for synchronized updates
   const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd, newStartDate }) => {
-    console.log('[handleExtendActivityBeyondYear] Called with:', {
-      itemName: item?.name,
-      itemId: item?.id,
-      overflowEndDate,
-      currentYearEnd,
-      newStartDate: newStartDate?.toISOString?.() || newStartDate,
-      hasCrossYearGroupId: !!item?.crossYearGroupId,
-    });
-    
     if (!wheelId || !item || !overflowEndDate || !currentYearEnd) {
-      console.log('[handleExtendActivityBeyondYear] Missing required params, returning early');
       return;
     }
 
@@ -3537,12 +3527,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const actualStartDate = newStartDate ? new Date(newStartDate) : new Date(item.startDate);
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
-      console.log('[handleExtendActivityBeyondYear] Invalid overflow date');
       return;
     }
 
     if (overflowDate <= currentYearEndDate) {
-      console.log('[handleExtendActivityBeyondYear] Overflow date not past year end');
       return;
     }
 
@@ -4175,14 +4163,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     if (wasDragging) {
       isDraggingRef.current = false;
       if (changeResultRef.actuallyChanged) {
-        console.log('[handleUpdateAktivitet] Calling endBatch()');
         const newHistoryIndex = endBatch();
         if (newHistoryIndex !== null) {
           // DON'T mark as saved yet - wait for save queue to complete
           // markSaved(newHistoryIndex);
         }
       } else {
-        console.log('[handleUpdateAktivitet] Calling cancelBatch()');
         cancelBatch();
       }
     }
