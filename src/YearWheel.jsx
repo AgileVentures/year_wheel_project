@@ -52,6 +52,7 @@ function YearWheel({
   onDeleteAktivitet,
   onExtendActivityBeyondYear,
   onExtendActivityToPreviousYear,
+  onUpdateCrossYearGroup,
   onItemClick, // External callback for item clicks (e.g., cast to TV)
   readonly = false,
   hideControls = false,
@@ -163,16 +164,55 @@ function YearWheel({
   
   // CRITICAL: Filter wheelStructure to only include items for the current year
   // This prevents cross-page pollution in the canvas rendering
+  // CROSS-YEAR SUPPORT: Preserves original dates before clamping to year boundaries
   const yearFilteredOrgData = useMemo(() => {
     if (!wheelStructure || !wheelStructure.items) return wheelStructure;
     
     const currentYear = parseInt(year);
-    const filteredItems = wheelStructure.items.filter(item => {
-      const startYear = new Date(item.startDate).getFullYear();
-      const endYear = new Date(item.endDate).getFullYear();
-      // Include item if it overlaps with the year
-      return startYear <= currentYear && endYear >= currentYear;
-    });
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear, 11, 31);
+    
+    const filteredItems = wheelStructure.items
+      .filter(item => {
+        const startYear = new Date(item.startDate).getFullYear();
+        const endYear = new Date(item.endDate).getFullYear();
+        // Include item if it overlaps with the year
+        return startYear <= currentYear && endYear >= currentYear;
+      })
+      .map(item => {
+        const startDate = new Date(item.startDate);
+        const endDate = new Date(item.endDate);
+        
+        // Check if this is a cross-year item
+        const startsBeforeYear = startDate < yearStart;
+        const endsAfterYear = endDate > yearEnd;
+        const isCrossYear = startsBeforeYear || endsAfterYear;
+        
+        // If not cross-year, return item as-is
+        if (!isCrossYear) {
+          return item;
+        }
+        
+        // Store original dates BEFORE clamping
+        const clampedStartDate = startsBeforeYear ? yearStart : startDate;
+        const clampedEndDate = endsAfterYear ? yearEnd : endDate;
+        
+        const formatDate = (d) => {
+          const yr = d.getFullYear();
+          const mo = String(d.getMonth() + 1).padStart(2, '0');
+          const da = String(d.getDate()).padStart(2, '0');
+          return `${yr}-${mo}-${da}`;
+        };
+        
+        return {
+          ...item,
+          startDate: formatDate(clampedStartDate),
+          endDate: formatDate(clampedEndDate),
+          _originalStartDate: item.startDate,
+          _originalEndDate: item.endDate,
+          _isCrossYear: true,
+        };
+      });
     
     return {
       ...wheelStructure,
@@ -306,6 +346,7 @@ function YearWheel({
   const onItemClickRef = useRef(onItemClick);
   const onExtendActivityBeyondYearRef = useRef(onExtendActivityBeyondYear);
   const onExtendActivityToPreviousYearRef = useRef(onExtendActivityToPreviousYear);
+  const onUpdateCrossYearGroupRef = useRef(onUpdateCrossYearGroup);
 
   // Keep refs up to date
   useEffect(() => {
@@ -315,7 +356,8 @@ function YearWheel({
     onItemClickRef.current = onItemClick;
     onExtendActivityBeyondYearRef.current = onExtendActivityBeyondYear;
     onExtendActivityToPreviousYearRef.current = onExtendActivityToPreviousYear;
-  }, [onDragStart, onUpdateAktivitet, onDeleteAktivitet, onItemClick, onExtendActivityBeyondYear, onExtendActivityToPreviousYear]);
+    onUpdateCrossYearGroupRef.current = onUpdateCrossYearGroup;
+  }, [onDragStart, onUpdateAktivitet, onDeleteAktivitet, onItemClick, onExtendActivityBeyondYear, onExtendActivityToPreviousYear, onUpdateCrossYearGroup]);
 
   // Toggle selection mode
   const toggleSelectionMode = useCallback(() => {
@@ -487,6 +529,12 @@ function YearWheel({
     }
   }, []); // No dependencies - stable forever
 
+  const stableOnUpdateCrossYearGroup = useCallback((params) => {
+    if (onUpdateCrossYearGroupRef.current) {
+      onUpdateCrossYearGroupRef.current(params);
+    }
+  }, []); // No dependencies - stable forever
+
   // DEPRECATED: Old non-stable versions (removed - now using stable versions above)
 
   const handleDeleteAktivitet = useCallback((itemId) => {
@@ -592,6 +640,7 @@ function YearWheel({
     onUpdateAktivitet: stableHandleUpdateAktivitet, // Use stable version
     onExtendActivityToNextYear: stableOnExtendActivityBeyondYear, // Use stable version
     onExtendActivityToPreviousYear: stableOnExtendActivityToPreviousYear, // Use stable version
+    onUpdateCrossYearGroup: stableOnUpdateCrossYearGroup, // Use stable version
         onRotationChange, // Pass rotation callback for casting sync
         selectionMode,
         selectedItems: Array.from(selectedItems),
@@ -635,6 +684,7 @@ function YearWheel({
     stableHandleUpdateAktivitet,
     stableOnExtendActivityBeyondYear,
     stableOnExtendActivityToPreviousYear,
+    stableOnUpdateCrossYearGroup,
     // wheelStructure excluded - updated via updateWheelStructure to prevent wheel recreation during drag
   ]);
 

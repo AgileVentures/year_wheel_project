@@ -4313,6 +4313,136 @@ class YearWheel {
     this.context.restore();
   }
 
+  /**
+   * Draw cross-year overflow indicators for items that extend beyond the current year view
+   * Shows visual cues at January (for items starting before this year) 
+   * and December (for items ending after this year)
+   * 
+   * @param {Object} item - The item with _originalStartDate/_originalEndDate
+   * @param {number} startRadius - Inner radius of the item
+   * @param {number} width - Radial width of the item
+   * @param {number} adjustedStartAngle - Start angle in degrees (already adjusted with initAngle)
+   * @param {number} adjustedEndAngle - End angle in degrees (already adjusted with initAngle)
+   * @param {string} itemColor - Color of the item
+   */
+  drawCrossYearIndicators(item, startRadius, width, adjustedStartAngle, adjustedEndAngle, itemColor) {
+    if (!item._isCrossYear) return;
+    
+    this.context.save();
+    
+    const currentYear = parseInt(this.year);
+    const indicatorHeight = width * 0.7; // Slightly smaller than item height
+    const indicatorOffset = width * 0.15; // Center vertically
+    
+    // Check if item extends BEFORE this year (starts in previous year)
+    if (item._originalStartDate) {
+      const originalStartYear = new Date(item._originalStartDate).getFullYear();
+      if (originalStartYear < currentYear) {
+        // Draw indicator at January position (start of year)
+        const januaryAngle = this.initAngle; // January 1st position
+        const indicatorAngleSpan = 8; // Small arc width in degrees
+        
+        this.context.beginPath();
+        this.context.arc(
+          this.center.x,
+          this.center.y,
+          startRadius + indicatorOffset,
+          this.toRadians(januaryAngle - indicatorAngleSpan),
+          this.toRadians(januaryAngle)
+        );
+        this.context.arc(
+          this.center.x,
+          this.center.y,
+          startRadius + indicatorOffset + indicatorHeight,
+          this.toRadians(januaryAngle),
+          this.toRadians(januaryAngle - indicatorAngleSpan),
+          true
+        );
+        this.context.closePath();
+        
+        // Dashed fill pattern to indicate continuation
+        this.context.fillStyle = itemColor;
+        this.context.globalAlpha = 0.4;
+        this.context.fill();
+        this.context.globalAlpha = 1.0;
+        
+        // Dashed border
+        this.context.strokeStyle = itemColor;
+        this.context.lineWidth = this.size / 400;
+        this.context.setLineDash([this.size / 150, this.size / 200]);
+        this.context.stroke();
+        this.context.setLineDash([]);
+        
+        // Draw arrow pointing left (← previous year)
+        const arrowRadius = startRadius + width / 2;
+        const arrowAngle = this.toRadians(januaryAngle - indicatorAngleSpan / 2);
+        const arrowX = this.center.x + Math.cos(arrowAngle) * arrowRadius;
+        const arrowY = this.center.y + Math.sin(arrowAngle) * arrowRadius;
+        
+        this.context.fillStyle = '#ffffff';
+        this.context.font = `bold ${this.size / 80}px Arial`;
+        this.context.textAlign = 'center';
+        this.context.textBaseline = 'middle';
+        this.context.fillText('←', arrowX, arrowY);
+      }
+    }
+    
+    // Check if item extends AFTER this year (ends in next year)
+    if (item._originalEndDate) {
+      const originalEndYear = new Date(item._originalEndDate).getFullYear();
+      if (originalEndYear > currentYear) {
+        // Draw indicator at December position (end of year)
+        const decemberEndAngle = this.initAngle + 360; // December 31st wraps to January
+        const indicatorAngleSpan = 8; // Small arc width in degrees
+        
+        this.context.beginPath();
+        this.context.arc(
+          this.center.x,
+          this.center.y,
+          startRadius + indicatorOffset,
+          this.toRadians(decemberEndAngle),
+          this.toRadians(decemberEndAngle + indicatorAngleSpan)
+        );
+        this.context.arc(
+          this.center.x,
+          this.center.y,
+          startRadius + indicatorOffset + indicatorHeight,
+          this.toRadians(decemberEndAngle + indicatorAngleSpan),
+          this.toRadians(decemberEndAngle),
+          true
+        );
+        this.context.closePath();
+        
+        // Dashed fill pattern
+        this.context.fillStyle = itemColor;
+        this.context.globalAlpha = 0.4;
+        this.context.fill();
+        this.context.globalAlpha = 1.0;
+        
+        // Dashed border
+        this.context.strokeStyle = itemColor;
+        this.context.lineWidth = this.size / 400;
+        this.context.setLineDash([this.size / 150, this.size / 200]);
+        this.context.stroke();
+        this.context.setLineDash([]);
+        
+        // Draw arrow pointing right (→ next year)
+        const arrowRadius = startRadius + width / 2;
+        const arrowAngle = this.toRadians(decemberEndAngle + indicatorAngleSpan / 2);
+        const arrowX = this.center.x + Math.cos(arrowAngle) * arrowRadius;
+        const arrowY = this.center.y + Math.sin(arrowAngle) * arrowRadius;
+        
+        this.context.fillStyle = '#ffffff';
+        this.context.font = `bold ${this.size / 80}px Arial`;
+        this.context.textAlign = 'center';
+        this.context.textBaseline = 'middle';
+        this.context.fillText('→', arrowX, arrowY);
+      }
+    }
+    
+    this.context.restore();
+  }
+
   // Helper to draw rounded rectangle (if not available)
   roundRect(x, y, width, height, radius) {
     if (typeof this.context.roundRect === "function") {
@@ -4944,6 +5074,18 @@ class YearWheel {
                 itemColor
               );
             }
+            
+            // Draw cross-year overflow indicators for items extending beyond this year
+            if (itemToRender._isCrossYear && (isHovered || this.selectedItems.includes(item.id))) {
+              this.drawCrossYearIndicators(
+                itemToRender,
+                itemStartRadius,
+                itemWidth,
+                adjustedStartAngle,
+                adjustedEndAngle,
+                activityGroup ? activityGroup.color : ring.color
+              );
+            }
           });
 
           // Name band is drawn at the outer edge of content area (no gap)
@@ -5347,6 +5489,18 @@ class YearWheel {
               adjustedStartAngle,
               adjustedEndAngle,
               itemColor
+            );
+          }
+          
+          // Draw cross-year overflow indicators for items extending beyond this year
+          if (itemToRender._isCrossYear && (isHovered || this.selectedItems.includes(item.id))) {
+            this.drawCrossYearIndicators(
+              itemToRender,
+              itemStartRadius,
+              itemWidth,
+              adjustedStartAngle,
+              adjustedEndAngle,
+              activityGroup ? activityGroup.color : ring.color
             );
           }
         });

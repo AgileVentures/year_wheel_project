@@ -139,13 +139,46 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   
   // Helper: Filter items to only those belonging to a specific year
   // CRITICAL for maintaining page isolation in wheel_pages.structure JSONB
+  // CROSS-YEAR SUPPORT: Preserves original dates before clamping to year boundaries
   const filterItemsByYear = useCallback((items, yearNum) => {
-    return (items || []).filter(item => {
-      const itemStartYear = new Date(item.startDate).getFullYear();
-      const itemEndYear = new Date(item.endDate).getFullYear();
-      // Include item if it overlaps with the year
-      return itemStartYear <= yearNum && itemEndYear >= yearNum;
-    });
+    const yearStart = new Date(yearNum, 0, 1);
+    const yearEnd = new Date(yearNum, 11, 31);
+    
+    return (items || [])
+      .filter(item => {
+        const itemStartYear = new Date(item.startDate).getFullYear();
+        const itemEndYear = new Date(item.endDate).getFullYear();
+        // Include item if it overlaps with the year
+        return itemStartYear <= yearNum && itemEndYear >= yearNum;
+      })
+      .map(item => {
+        const startDate = new Date(item.startDate);
+        const endDate = new Date(item.endDate);
+        
+        // Check if this is a cross-year item
+        const startsBeforeYear = startDate < yearStart;
+        const endsAfterYear = endDate > yearEnd;
+        const isCrossYear = startsBeforeYear || endsAfterYear;
+        
+        // If not cross-year, return item as-is (no clamping needed)
+        if (!isCrossYear) {
+          return item;
+        }
+        
+        // Store original dates BEFORE clamping for cross-year items
+        const clampedStartDate = startsBeforeYear ? yearStart : startDate;
+        const clampedEndDate = endsAfterYear ? yearEnd : endDate;
+        
+        return {
+          ...item,
+          startDate: formatDateOnly(clampedStartDate),
+          endDate: formatDateOnly(clampedEndDate),
+          // Preserve original dates for cross-year resize handling
+          _originalStartDate: item.startDate,
+          _originalEndDate: item.endDate,
+          _isCrossYear: true,
+        };
+      });
   }, []);
 
   const validateSnapshotPages = useCallback((snapshot, latestState) => {
@@ -3445,6 +3478,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     return persistItemDeletion(itemId, { reason: 'item-delete' });
   }, [persistItemDeletion]);
 
+  // Handle extending activity beyond current year - OPTION B: Linked items across pages
+  // Since items are PAGE-SCOPED, we create linked items on each year's page
+  // Items are linked via crossYearGroupId for synchronized updates
   const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd }) => {
     if (!wheelId || !item || !overflowEndDate || !currentYearEnd) {
       return;
@@ -3461,6 +3497,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
 
+    // Calculate segments for each year the item spans into
     const segments = [];
     const nextDay = new Date(currentYearEndDate);
     nextDay.setDate(nextDay.getDate() + 1);
@@ -3478,88 +3515,78 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         endDate: formatDateOnly(segmentEnd),
       });
 
-      if (segmentEnd >= overflowDate) {
-        break;
-      }
-
+      if (segmentEnd >= overflowDate) break;
       segmentStart = new Date(segmentYear + 1, 0, 1);
     }
 
-    if (segments.length === 0) {
-      return;
-    }
+    if (segments.length === 0) return;
 
-    const firstContinuationYear = segments[0].year;
-    const lastContinuationYear = segments[segments.length - 1].year;
+    const targetYear = segments[segments.length - 1].year;
+    const currentYear = currentYearEndDate.getFullYear();
+    const yearsSpanned = targetYear - currentYear;
 
     const confirmed = await showConfirmDialog({
-      title: 'Fortsätt över årsskiftet?',
-      message: segments.length === 1
-        ? `Aktiviteten "${item.name}" fortsätter in i ${firstContinuationYear}. Vill du skapa en fortsättning på nästa års sida?`
-        : `Aktiviteten "${item.name}" sträcker sig ända till ${lastContinuationYear}. Vill du skapa fortsättningar för varje år?`,
-      confirmText: 'Skapa fortsättning',
+      title: 'Förläng över årsskiftet?',
+      message: yearsSpanned === 1
+        ? `Aktiviteten "${item.name}" kommer att sträcka sig till ${formatDateOnly(overflowDate)} (${targetYear}). En länkad kopia skapas på nästa års sida.`
+        : `Aktiviteten "${item.name}" kommer att sträcka sig till ${formatDateOnly(overflowDate)}. Länkade kopior skapas på ${yearsSpanned} års sidor.`,
+      confirmText: 'Förläng aktivitet',
       cancelText: 'Endast detta år',
       confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
     });
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
-    const createdSegments = [];
+    // Generate a cross-year group ID to link all segments
+    const crossYearGroupId = item.crossYearGroupId || `crossyear-${crypto.randomUUID()}`;
 
-    const ensureArray = (value) => (Array.isArray(value) ? value : []);
-
-    const generateItemId = () => {
-      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return `item-${crypto.randomUUID()}`;
-      }
-      return `item-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    // First, update the current item with the group ID and clamp to year end
+    const updatedCurrentItem = {
+      ...item,
+      endDate: formatDateOnly(currentYearEndDate),
+      crossYearGroupId,
     };
 
-    const isMatchingContinuation = (candidate, startDate, endDate) =>
-      candidate &&
-      candidate.name === item.name &&
-      candidate.ringId === item.ringId &&
-      candidate.activityId === item.activityId &&
-      (candidate.labelId || null) === (item.labelId || null) &&
-      candidate.startDate === startDate &&
-      candidate.endDate === endDate;
+    const generateItemId = () => `item-${crypto.randomUUID()}`;
+
+    // Create linked items for each segment (future years)
+    const newItems = [];
 
     for (const segment of segments) {
-      try {
-        // Pass current page's structure (rings, activityGroups, labels) to new page
-        const currentStructure = {
-          rings: structure.rings || [],
-          activityGroups: structure.activityGroups || [],
-          labels: structure.labels || [],
-          items: [], // New page starts with no items
-        };
-        
-        const ensured = await ensurePageForYear(segment.year, {
-          templateWheelStructure: currentStructure,
+      // Ensure page exists for this year
+      const currentStructure = {
+        rings: structure.rings || [],
+        activityGroups: structure.activityGroups || [],
+        labels: structure.labels || [],
+        items: [],
+      };
+
+      const ensured = await ensurePageForYear(segment.year, {
+        templateWheelStructure: currentStructure,
+      });
+
+      if (!ensured?.page) continue;
+
+      const targetPageId = ensured.page.id;
+
+      // Check if a linked item already exists on this page
+      const latestPages = latestValuesRef.current?.pages || wheelState?.pages || [];
+      const targetPage = latestPages.find(p => p.id === targetPageId);
+      const existingLinked = (targetPage?.items || []).find(
+        i => i.crossYearGroupId === crossYearGroupId && i.id !== item.id
+      );
+
+      if (existingLinked) {
+        // Update existing linked item
+        newItems.push({
+          ...existingLinked,
+          startDate: segment.startDate,
+          endDate: segment.endDate,
+          isUpdate: true,
         });
-        const targetPage = ensured?.page;
-        if (!targetPage) {
-          continue;
-        }
-
-        const pageId = targetPage.id;
-
-  // Get the latest pages from wheelState
-  const latestPages = latestValuesRef.current?.pages || wheelState?.pages || [];
-  const pageEntry = latestPages.find((page) => page.id === pageId);
-  const existingItems = ensureArray(pageEntry?.items);
-        const existingMatch = existingItems.find((candidate) =>
-          isMatchingContinuation(candidate, segment.startDate, segment.endDate)
-        );
-
-        if (existingMatch) {
-          createdSegments.push({ year: segment.year, item: existingMatch, alreadyExisted: true });
-          continue;
-        }
-
-        const newItem = {
+      } else {
+        // Create new linked item
+        newItems.push({
           id: generateItemId(),
           ringId: item.ringId,
           activityId: item.activityId,
@@ -3569,59 +3596,72 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           endDate: segment.endDate,
           time: item.time || null,
           description: item.description || null,
-          pageId,
+          pageId: targetPageId,
           linkedWheelId: item.linkedWheelId || null,
           linkType: item.linkType || null,
-        };
-
-        // Update wheelState to add the new item to the target page
-        setWheelState((prev) => ({
-          ...prev,
-          pages: prev.pages.map((page) => {
-            if (page.id !== pageId) {
-              return page;
-            }
-
-            const currentItems = Array.isArray(page.items) ? page.items : [];
-
-            return {
-              ...page,
-              items: [...currentItems, newItem],
-            };
-          })
-        }), { type: 'appendContinuation' });
-        
-        // Note: No need to update wheelStructure separately - it's computed from wheelState
-
-        createdSegments.push({ year: segment.year, item: newItem, alreadyExisted: false });
-
-        if (broadcastOperation) {
-          broadcastOperation('create', newItem.id, newItem);
-        }
-      } catch (segmentError) {
-        console.error('[MultiYear] Failed to queue continuation segment:', segmentError);
-        showToast('Kunde inte skapa fortsättning för aktiviteten.', 'error');
-        break;
+          crossYearGroupId,
+          isUpdate: false,
+        });
       }
     }
 
-    if (createdSegments.length > 0) {
-      // Don't save here - let handleUpdateAktivitet save after the current item is clamped
-      // This prevents saving stale data before the current year's item is updated to Dec 31
-      
-      const continuationYears = createdSegments.map((segment) => segment.year);
-      const minYear = Math.min(...continuationYears);
-      const maxYear = Math.max(...continuationYears);
+    // Update wheelState with current item update and new linked items
+    setWheelState((prev) => {
+      let updatedPages = prev.pages.map((page) => {
+        // Update current item on its page
+        if (page.id === item.pageId) {
+          return {
+            ...page,
+            items: (page.items || []).map((pageItem) =>
+              pageItem.id === item.id ? updatedCurrentItem : pageItem
+            ),
+          };
+        }
+        return page;
+      });
 
-      const successMessage = minYear === maxYear
-        ? `Aktiviteten fortsätter nu i ${minYear}.`
-        : `Aktiviteten fortsätter nu i ${minYear}–${maxYear}.`;
+      // Add/update linked items on their respective pages
+      for (const newItem of newItems) {
+        updatedPages = updatedPages.map((page) => {
+          if (page.id !== newItem.pageId) return page;
 
-      showToast(successMessage, 'success');
+          const currentItems = page.items || [];
+          if (newItem.isUpdate) {
+            // Update existing linked item
+            return {
+              ...page,
+              items: currentItems.map((i) =>
+                i.id === newItem.id ? { ...newItem, isUpdate: undefined } : i
+              ),
+            };
+          } else {
+            // Add new linked item
+            const { isUpdate, ...itemToAdd } = newItem;
+            return {
+              ...page,
+              items: [...currentItems, itemToAdd],
+            };
+          }
+        });
+      }
+
+      return { ...prev, pages: updatedPages };
+    }, { type: 'extendCrossYear' });
+
+    if (broadcastOperation) {
+      broadcastOperation('update', item.id, updatedCurrentItem);
+      newItems.filter(i => !i.isUpdate).forEach(newItem => {
+        const { isUpdate, ...itemData } = newItem;
+        broadcastOperation('create', newItem.id, itemData);
+      });
     }
-  }, [wheelId, ensurePageForYear, currentPageId, setWheelState, broadcastOperation, showToast, showConfirmDialog, wheelState, latestValuesRef, structure]);
 
-  // Handle extending activity to PREVIOUS year(s) when dragging/resizing before January 1
+    showToast(`Aktiviteten sträcker sig nu till ${formatDateOnly(overflowDate)}.`, 'success');
+  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef]);
+
+  // Handle extending activity to PREVIOUS year(s) - OPTION B: Linked items across pages
+  // Since items are PAGE-SCOPED, we create linked items on each year's page
+  // Items are linked via crossYearGroupId for synchronized updates
   const handleExtendActivityToPreviousYear = useCallback(async ({ item, overflowStartDate, currentYearStart }) => {
     if (!wheelId || !item || !overflowStartDate || !currentYearStart) {
       return;
@@ -3638,6 +3678,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
 
+    // Calculate segments for each year the item spans backward into
     const segments = [];
     const prevDay = new Date(currentYearStartDate);
     prevDay.setDate(prevDay.getDate() - 1);
@@ -3655,91 +3696,81 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         endDate: formatDateOnly(segmentEnd),
       });
 
-      if (segmentStart <= overflowDate) {
-        break;
-      }
-
+      if (segmentStart <= overflowDate) break;
       segmentEnd = new Date(segmentYear - 1, 11, 31);
     }
 
-    if (segments.length === 0) {
-      return;
-    }
+    if (segments.length === 0) return;
 
     // Reverse segments so they go from earliest to latest year
     segments.reverse();
 
-    const firstContinuationYear = segments[0].year;
-    const lastContinuationYear = segments[segments.length - 1].year;
+    const targetYear = segments[0].year;
+    const currentYear = currentYearStartDate.getFullYear();
+    const yearsSpanned = currentYear - targetYear;
 
     const confirmed = await showConfirmDialog({
-      title: 'Fortsätt bakåt över årsskiftet?',
-      message: segments.length === 1
-        ? `Aktiviteten "${item.name}" börjar i ${firstContinuationYear}. Vill du skapa en fortsättning på föregående års sida?`
-        : `Aktiviteten "${item.name}" sträcker sig tillbaka till ${firstContinuationYear}. Vill du skapa fortsättningar för varje år?`,
-      confirmText: 'Skapa fortsättning',
+      title: 'Förläng bakåt över årsskiftet?',
+      message: yearsSpanned === 1
+        ? `Aktiviteten "${item.name}" kommer att börja ${formatDateOnly(overflowDate)} (${targetYear}). En länkad kopia skapas på föregående års sida.`
+        : `Aktiviteten "${item.name}" kommer att börja ${formatDateOnly(overflowDate)}. Länkade kopior skapas på ${yearsSpanned} års sidor.`,
+      confirmText: 'Förläng aktivitet',
       cancelText: 'Endast detta år',
       confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
     });
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
-    const createdSegments = [];
+    // Generate a cross-year group ID to link all segments
+    const crossYearGroupId = item.crossYearGroupId || `crossyear-${crypto.randomUUID()}`;
 
-    const ensureArray = (value) => (Array.isArray(value) ? value : []);
-
-    const generateItemId = () => {
-      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return `item-${crypto.randomUUID()}`;
-      }
-      return `item-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    // First, update the current item with the group ID and clamp to year start
+    const updatedCurrentItem = {
+      ...item,
+      startDate: formatDateOnly(currentYearStartDate),
+      crossYearGroupId,
     };
 
-    const isMatchingContinuation = (candidate, startDate, endDate) =>
-      candidate &&
-      candidate.name === item.name &&
-      candidate.ringId === item.ringId &&
-      candidate.activityId === item.activityId &&
-      (candidate.labelId || null) === (item.labelId || null) &&
-      candidate.startDate === startDate &&
-      candidate.endDate === endDate;
+    const generateItemId = () => `item-${crypto.randomUUID()}`;
+
+    // Create linked items for each segment (previous years)
+    const newItems = [];
 
     for (const segment of segments) {
-      try {
-        // Pass current page's structure (rings, activityGroups, labels) to new page
-        const currentStructure = {
-          rings: structure.rings || [],
-          activityGroups: structure.activityGroups || [],
-          labels: structure.labels || [],
-          items: [], // New page starts with no items
-        };
-        
-        const ensured = await ensurePageForYear(segment.year, {
-          templateWheelStructure: currentStructure,
+      // Ensure page exists for this year
+      const currentStructure = {
+        rings: structure.rings || [],
+        activityGroups: structure.activityGroups || [],
+        labels: structure.labels || [],
+        items: [],
+      };
+
+      const ensured = await ensurePageForYear(segment.year, {
+        templateWheelStructure: currentStructure,
+      });
+
+      if (!ensured?.page) continue;
+
+      const targetPageId = ensured.page.id;
+
+      // Check if a linked item already exists on this page
+      const latestPages = latestValuesRef.current?.pages || wheelState?.pages || [];
+      const targetPage = latestPages.find(p => p.id === targetPageId);
+      const existingLinked = (targetPage?.items || []).find(
+        i => i.crossYearGroupId === crossYearGroupId && i.id !== item.id
+      );
+
+      if (existingLinked) {
+        // Update existing linked item
+        newItems.push({
+          ...existingLinked,
+          startDate: segment.startDate,
+          endDate: segment.endDate,
+          isUpdate: true,
         });
-        const targetPage = ensured?.page;
-        if (!targetPage) {
-          continue;
-        }
-
-        const pageId = targetPage.id;
-
-        // Get the latest pages from wheelState
-        const latestPages = latestValuesRef.current?.pages || wheelState?.pages || [];
-        const pageEntry = latestPages.find((page) => page.id === pageId);
-        const existingItems = ensureArray(pageEntry?.items);
-        const existingMatch = existingItems.find((candidate) =>
-          isMatchingContinuation(candidate, segment.startDate, segment.endDate)
-        );
-
-        if (existingMatch) {
-          createdSegments.push({ year: segment.year, item: existingMatch, alreadyExisted: true });
-          continue;
-        }
-
-        const newItem = {
+      } else {
+        // Create new linked item
+        newItems.push({
           id: generateItemId(),
           ringId: item.ringId,
           activityId: item.activityId,
@@ -3749,52 +3780,177 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           endDate: segment.endDate,
           time: item.time || null,
           description: item.description || null,
-          pageId,
+          pageId: targetPageId,
           linkedWheelId: item.linkedWheelId || null,
           linkType: item.linkType || null,
-        };
-
-        // Update wheelState to add the new item to the target page
-        setWheelState((prev) => ({
-          ...prev,
-          pages: prev.pages.map((page) => {
-            if (page.id !== pageId) {
-              return page;
-            }
-
-            const currentItems = Array.isArray(page.items) ? page.items : [];
-
-            return {
-              ...page,
-              items: [...currentItems, newItem],
-            };
-          })
-        }), { type: 'appendContinuation' });
-
-        createdSegments.push({ year: segment.year, item: newItem, alreadyExisted: false });
-
-        if (broadcastOperation) {
-          broadcastOperation('create', newItem.id, newItem);
-        }
-      } catch (segmentError) {
-        console.error('[MultiYear] Failed to queue continuation segment (backward):', segmentError);
-        showToast('Kunde inte skapa fortsättning för aktiviteten.', 'error');
-        break;
+          crossYearGroupId,
+          isUpdate: false,
+        });
       }
     }
 
-    if (createdSegments.length > 0) {
-      const continuationYears = createdSegments.map((segment) => segment.year);
-      const minYear = Math.min(...continuationYears);
-      const maxYear = Math.max(...continuationYears);
+    // Update wheelState with current item update and new linked items
+    setWheelState((prev) => {
+      let updatedPages = prev.pages.map((page) => {
+        // Update current item on its page
+        if (page.id === item.pageId) {
+          return {
+            ...page,
+            items: (page.items || []).map((pageItem) =>
+              pageItem.id === item.id ? updatedCurrentItem : pageItem
+            ),
+          };
+        }
+        return page;
+      });
 
-      const successMessage = minYear === maxYear
-        ? `Aktiviteten börjar nu i ${minYear}.`
-        : `Aktiviteten sträcker sig tillbaka till ${minYear}.`;
+      // Add/update linked items on their respective pages
+      for (const newItem of newItems) {
+        updatedPages = updatedPages.map((page) => {
+          if (page.id !== newItem.pageId) return page;
 
-      showToast(successMessage, 'success');
+          const currentItems = page.items || [];
+          if (newItem.isUpdate) {
+            // Update existing linked item
+            return {
+              ...page,
+              items: currentItems.map((i) =>
+                i.id === newItem.id ? { ...newItem, isUpdate: undefined } : i
+              ),
+            };
+          } else {
+            // Add new linked item
+            const { isUpdate, ...itemToAdd } = newItem;
+            return {
+              ...page,
+              items: [...currentItems, itemToAdd],
+            };
+          }
+        });
+      }
+
+      return { ...prev, pages: updatedPages };
+    }, { type: 'extendCrossYear' });
+
+    if (broadcastOperation) {
+      broadcastOperation('update', item.id, updatedCurrentItem);
+      newItems.filter(i => !i.isUpdate).forEach(newItem => {
+        const { isUpdate, ...itemData } = newItem;
+        broadcastOperation('create', newItem.id, itemData);
+      });
     }
-  }, [wheelId, ensurePageForYear, currentPageId, setWheelState, broadcastOperation, showToast, showConfirmDialog, wheelState, latestValuesRef, structure]);
+
+    showToast(`Aktiviteten börjar nu ${formatDateOnly(overflowDate)}.`, 'success');
+  }, [wheelId, setWheelState, broadcastOperation, showToast, showConfirmDialog, ensurePageForYear, structure, wheelState, latestValuesRef]);
+
+  // Handle updating all items in a cross-year group when one is resized
+  const handleUpdateCrossYearGroup = useCallback(({ groupId, itemId, newStartDate, newEndDate, ringId }) => {
+    console.log('[handleUpdateCrossYearGroup] Updating group:', groupId, 'with full range:', newStartDate, '→', newEndDate);
+    
+    // Calculate segments for each year the activity spans
+    const startDate = new Date(newStartDate);
+    const endDate = new Date(newEndDate);
+    const startYear = startDate.getFullYear();
+    const endYear = endDate.getFullYear();
+    
+    const segments = [];
+    for (let year = startYear; year <= endYear; year++) {
+      const yearStart = new Date(year, 0, 1);
+      const yearEnd = new Date(year, 11, 31);
+      
+      const segmentStart = year === startYear ? startDate : yearStart;
+      const segmentEnd = year === endYear ? endDate : yearEnd;
+      
+      segments.push({
+        year,
+        startDate: formatDateOnly(segmentStart),
+        endDate: formatDateOnly(segmentEnd),
+      });
+    }
+    
+    console.log('[handleUpdateCrossYearGroup] Calculated segments:', segments);
+    
+    // Update all linked items across all pages
+    setWheelState((prev) => {
+      let updatedPages = prev.pages.map((page) => {
+        const currentItems = page.items || [];
+        const linkedItems = currentItems.filter(i => i.crossYearGroupId === groupId);
+        
+        if (linkedItems.length === 0) return page;
+        
+        // Find which segment this page's year corresponds to
+        const pageYear = parseInt(page.year);
+        const segment = segments.find(s => s.year === pageYear);
+        
+        if (!segment) {
+          // This page's year is no longer covered by the resized range - remove linked items
+          console.log('[handleUpdateCrossYearGroup] Removing items from year', pageYear);
+          return {
+            ...page,
+            items: currentItems.filter(i => i.crossYearGroupId !== groupId),
+          };
+        }
+        
+        // Update existing linked items with new dates for this segment
+        return {
+          ...page,
+          items: currentItems.map((item) => {
+            if (item.crossYearGroupId !== groupId) return item;
+            
+            return {
+              ...item,
+              startDate: segment.startDate,
+              endDate: segment.endDate,
+              ringId: ringId !== undefined ? ringId : item.ringId,
+            };
+          }),
+        };
+      });
+      
+      // Create new items for years that didn't exist before
+      for (const segment of segments) {
+        const pageForYear = updatedPages.find(p => parseInt(p.year) === segment.year);
+        
+        if (!pageForYear) {
+          // Need to create page for this year (will happen async via ensurePageForYear)
+          console.log('[handleUpdateCrossYearGroup] Need to create page for year:', segment.year);
+          continue;
+        }
+        
+        const hasLinkedItem = (pageForYear.items || []).some(i => i.crossYearGroupId === groupId);
+        
+        if (!hasLinkedItem) {
+          // This is a new year added by the resize - create a linked item
+          const templateItem = prev.pages
+            .flatMap(p => p.items || [])
+            .find(i => i.crossYearGroupId === groupId);
+          
+          if (templateItem) {
+            console.log('[handleUpdateCrossYearGroup] Creating new linked item for year:', segment.year);
+            const newItem = {
+              ...templateItem,
+              id: `item-${crypto.randomUUID()}`,
+              pageId: pageForYear.id,
+              startDate: segment.startDate,
+              endDate: segment.endDate,
+              ringId: ringId !== undefined ? ringId : templateItem.ringId,
+            };
+            
+            updatedPages = updatedPages.map(p => {
+              if (p.id !== pageForYear.id) return p;
+              return {
+                ...p,
+                items: [...(p.items || []), newItem],
+              };
+            });
+          }
+        }
+      }
+      
+      return { ...prev, pages: updatedPages };
+    }, { type: 'updateCrossYearGroup' });
+    
+  }, [setWheelState]);
 
   // Handle drag start - begin batch mode for undo/redo
   const handleDragStart = useCallback((item) => {
@@ -3900,6 +4056,46 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Track item modification with the updated item
       changeTracker.trackItemChange(changeResultRef.updatedItem.id, 'modified', changeResultRef.updatedItem);
       
+      // CROSS-YEAR SYNC: Propagate non-date changes to linked items
+      // (Date changes are handled separately to maintain each segment's year bounds)
+      const crossYearGroupId = changeResultRef.updatedItem.crossYearGroupId;
+      if (crossYearGroupId) {
+        const syncableFields = ['name', 'ringId', 'activityId', 'labelId', 'time', 'description', 'linkedWheelId', 'linkType'];
+        
+        setWheelState((prev) => {
+          let hasLinkedUpdates = false;
+          const nextPages = prev.pages.map((page) => {
+            const currentItems = page.items || [];
+            const linkedItems = currentItems.filter(
+              i => i.crossYearGroupId === crossYearGroupId && i.id !== changeResultRef.updatedItem.id
+            );
+            
+            if (linkedItems.length === 0) return page;
+            
+            hasLinkedUpdates = true;
+            return {
+              ...page,
+              items: currentItems.map((item) => {
+                if (item.crossYearGroupId !== crossYearGroupId || item.id === changeResultRef.updatedItem.id) {
+                  return item;
+                }
+                // Sync non-date fields
+                const updates = {};
+                syncableFields.forEach(field => {
+                  if (changeResultRef.updatedItem[field] !== undefined) {
+                    updates[field] = changeResultRef.updatedItem[field];
+                  }
+                });
+                return { ...item, ...updates };
+              }),
+            };
+          });
+          
+          if (!hasLinkedUpdates) return prev;
+          return { ...prev, pages: nextPages };
+        }, { type: 'syncLinkedItems' });
+      }
+      
       if (wasDragging) {
         // Auto-save after drag end (immediate, not debounced)
         if (handleSaveRef.current) {
@@ -3946,24 +4142,71 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   }, [currentPageId, wheelId, setWheelState, changeTracker]);
 
-  const handleDeleteAktivitet = useCallback((itemId) => {
+  const handleDeleteAktivitet = useCallback(async (itemId) => {
     if (!itemId || !currentPageId) return;
 
     let itemName = '';
     let deletedItem = null;
+    
+    // Find the item first to check for cross-year links
+    const currentPage = wheelState?.pages?.find(p => p.id === currentPageId);
+    const itemToDelete = currentPage?.items?.find(i => i.id === itemId);
+    
+    // If item has cross-year links, ask user what to do
+    if (itemToDelete?.crossYearGroupId) {
+      const allLinkedItems = (wheelState?.pages || []).flatMap(page => 
+        (page.items || []).filter(i => i.crossYearGroupId === itemToDelete.crossYearGroupId)
+      );
+      
+      if (allLinkedItems.length > 1) {
+        const deleteAll = await showConfirmDialog({
+          title: 'Radera länkade aktiviteter?',
+          message: `Denna aktivitet är länkad över ${allLinkedItems.length} år. Vill du radera alla länkade delar eller bara denna?`,
+          confirmText: 'Radera alla',
+          cancelText: 'Endast denna',
+          confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+        });
+        
+        if (deleteAll) {
+          // Delete all linked items across all pages
+          setWheelState((prev) => ({
+            ...prev,
+            pages: prev.pages.map((page) => ({
+              ...page,
+              items: (page.items || []).filter(
+                (item) => item.crossYearGroupId !== itemToDelete.crossYearGroupId
+              ),
+            })),
+          }), { type: 'deleteLinkedItems' });
+          
+          // Track all deletions
+          allLinkedItems.forEach(item => {
+            changeTracker.trackItemChange(item.id, 'deleted', item);
+          });
+          
+          if (triggerAutoSaveRef.current) {
+            triggerAutoSaveRef.current();
+          }
+          
+          showToast(`${itemToDelete.name} och ${allLinkedItems.length - 1} länkade delar raderade`, 'success');
+          return;
+        }
+        // If user chose "only this", fall through to delete just this one
+      }
+    }
 
-    // Update wheelState.pages directly
+    // Delete just this item (or non-linked item)
     setWheelState((prev) => ({
       ...prev,
       pages: prev.pages.map((page) => {
         if (page.id !== currentPageId) return page;
 
         const currentItems = Array.isArray(page.items) ? page.items : [];
-        const itemToDelete = currentItems.find((item) => item.id === itemId);
+        const foundItem = currentItems.find((item) => item.id === itemId);
 
-        if (itemToDelete) {
-          itemName = itemToDelete.name;
-          deletedItem = itemToDelete;
+        if (foundItem) {
+          itemName = foundItem.name;
+          deletedItem = foundItem;
         }
 
         return {
@@ -3984,7 +4227,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
 
     showToast(itemName ? `${itemName} raderad` : 'Aktivitet raderad', 'success');
-  }, [currentPageId, wheelId, setWheelState, showToast, changeTracker]);
+  }, [currentPageId, wheelId, setWheelState, showToast, changeTracker, wheelState, showConfirmDialog]);
 
   const handleLoadFromFile = () => {
     const input = document.createElement('input');
@@ -4612,6 +4855,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 onDeleteAktivitet={handleDeleteAktivitet}
                 onExtendActivityBeyondYear={handleExtendActivityBeyondYear}
                 onExtendActivityToPreviousYear={handleExtendActivityToPreviousYear}
+                onUpdateCrossYearGroup={handleUpdateCrossYearGroup}
                 broadcastActivity={broadcastActivity}
                 activeEditors={combinedActiveEditors}
                 broadcastOperation={broadcastOperation}

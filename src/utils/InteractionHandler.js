@@ -711,14 +711,18 @@ class InteractionHandler {
 
     // CRITICAL FIX: In resize-start mode, preserve the original end date
     // Only the start should change, end stays the same
+    // CROSS-YEAR SUPPORT: Use _originalEndDate if available (for cross-year items that were clamped)
     if (this.dragState.dragMode === 'resize-start' && originalItem) {
-      newEndDate = new Date(originalItem.endDate);
+      const originalEndDate = originalItem._originalEndDate || originalItem.endDate;
+      newEndDate = new Date(originalEndDate);
     }
 
     // CRITICAL FIX: In resize-end mode, preserve the original start date
     // Only the end should change, start stays the same
+    // CROSS-YEAR SUPPORT: Use _originalStartDate if available (for cross-year items that were clamped)
     if (this.dragState.dragMode === 'resize-end' && originalItem) {
-      newStartDate = new Date(originalItem.startDate);
+      const originalStartDate = originalItem._originalStartDate || originalItem.startDate;
+      newStartDate = new Date(originalStartDate);
     }
 
     // CRITICAL FIX: Use the wheel's current year (from page), not the item's startDate year
@@ -923,6 +927,19 @@ class InteractionHandler {
         item: updatedItem,
         timestamp: Date.now(),
       });
+
+      // CROSS-YEAR LINKED ITEMS: If this item is part of a cross-year group,
+      // update all linked items with the new full date range
+      if (originalItem.crossYearGroupId && this.options.onUpdateCrossYearGroup) {
+        console.log('[InteractionHandler] Updating cross-year group:', originalItem.crossYearGroupId);
+        this.options.onUpdateCrossYearGroup({
+          groupId: originalItem.crossYearGroupId,
+          itemId: originalItem.id,
+          newStartDate: formatDate(newStartDate),
+          newEndDate: formatDate(newEndDate),
+          ringId: updatedItem.ringId,
+        });
+      }
 
       // CASCADE DEPENDENCY UPDATES: Find and update all dependent items
       const allItems = this.wheel.wheelStructure.items;
