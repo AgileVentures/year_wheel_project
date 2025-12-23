@@ -4096,6 +4096,40 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
 
+    // Handle cross-year edits - delegate to handleUpdateCrossYearGroup
+    if (updatedItem._isCrossYearEdit) {
+      const { _isCrossYearEdit, ...cleanItem } = updatedItem;
+      
+      // If item already has crossYearGroupId, update the whole group
+      if (cleanItem.crossYearGroupId) {
+        handleUpdateCrossYearGroup({
+          groupId: cleanItem.crossYearGroupId,
+          itemId: cleanItem.id,
+          newStartDate: cleanItem.startDate,
+          newEndDate: cleanItem.endDate,
+          ringId: cleanItem.ringId
+        });
+        // Also update the non-date fields
+        setWheelState((prev) => ({
+          ...prev,
+          pages: prev.pages.map(page => ({
+            ...page,
+            items: (page.items || []).map(item => 
+              item.crossYearGroupId === cleanItem.crossYearGroupId
+                ? { ...item, name: cleanItem.name, activityId: cleanItem.activityId, labelId: cleanItem.labelId, description: cleanItem.description }
+                : item
+            )
+          }))
+        }), { type: 'updateCrossYearItem' });
+        return;
+      } else {
+        // New cross-year item - ask user if they want to create linked items
+        // For now, just update the single item (clamp to current year)
+        // TODO: Show dialog asking if user wants to create multi-year item
+        console.warn('[handleUpdateAktivitet] Cross-year edit detected but item has no crossYearGroupId - clamping to current year');
+      }
+    }
+
     const wasDragging = isDraggingRef.current;
     
     // Use ref to capture result from inside setWheelState callback

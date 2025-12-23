@@ -137,6 +137,11 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
       return;
     }
 
+    // Check for cross-year changes
+    const startYear = new Date(formData.startDate).getFullYear();
+    const endYear = new Date(formData.endDate).getFullYear();
+    const isCrossYear = startYear !== endYear;
+    
     // Update item
     const updatedItem = {
       ...item,
@@ -151,7 +156,9 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
       linkType: formData.linkedWheelId ? formData.linkType : null,
       dependsOn: formData.dependsOn || null,
       dependencyType: formData.dependsOn ? formData.dependencyType : 'finish_to_start',
-      lagDays: formData.dependsOn ? parseInt(formData.lagDays) : 0
+      lagDays: formData.dependsOn ? parseInt(formData.lagDays) : 0,
+      // Flag to indicate this is a cross-year edit for App.jsx to handle
+      _isCrossYearEdit: isCrossYear
     };
 
     onUpdateItem(updatedItem);
