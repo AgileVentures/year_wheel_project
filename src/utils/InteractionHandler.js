@@ -925,23 +925,31 @@ class InteractionHandler {
         console.log('[InteractionHandler] Updating cross-year group:', originalItem.crossYearGroupId);
         
         // Calculate the FULL range for cross-year items
-        // If we have _originalStartDate/_originalEndDate, use those as the base
-        // and apply the move/resize delta to get the new full range
+        // IMPORTANT: Use UNCLAMPED dates (overflowStartDate/overflowEndDate) when overflow occurred
+        // because newStartDate/newEndDate have been clamped to year boundaries
         let fullStartDate, fullEndDate;
         
+        // Get the full original range (from _original dates if available)
+        const fullOriginalStart = originalItem._originalStartDate 
+          ? new Date(originalItem._originalStartDate) 
+          : new Date(originalItem.startDate);
+        const fullOriginalEnd = originalItem._originalEndDate 
+          ? new Date(originalItem._originalEndDate) 
+          : new Date(originalItem.endDate);
+        
         if (this.dragState.dragMode === 'move') {
-          // For MOVE: Calculate delta and apply to the full original range
+          // For MOVE: Calculate delta based on angle change and apply to the full original range
+          // Use the DISPLAYED dates to calculate delta (startDate is what was visible)
           const originalStart = new Date(originalItem.startDate);
-          const newStart = newStartDate;
-          const moveDeltaMs = newStart.getTime() - originalStart.getTime();
+          const originalEnd = new Date(originalItem.endDate);
+          const originalDuration = originalEnd.getTime() - originalStart.getTime();
           
-          // Get the full original range (from _original dates if available)
-          const fullOriginalStart = originalItem._originalStartDate 
-            ? new Date(originalItem._originalStartDate) 
-            : new Date(originalItem.startDate);
-          const fullOriginalEnd = originalItem._originalEndDate 
-            ? new Date(originalItem._originalEndDate) 
-            : new Date(originalItem.endDate);
+          // Calculate where the item would end up (using unclamped dates if overflow)
+          const actualNewStart = overflowStartDate || newStartDate;
+          const actualNewEnd = overflowEndDate || newEndDate;
+          
+          // Calculate move delta from the visible segment's movement
+          const moveDeltaMs = actualNewStart.getTime() - originalStart.getTime();
           
           // Apply the delta to get the new full range
           fullStartDate = new Date(fullOriginalStart.getTime() + moveDeltaMs);
@@ -956,17 +964,27 @@ class InteractionHandler {
             newFullEnd: fullEndDate.toISOString()
           });
         } else if (this.dragState.dragMode === 'resize-start') {
-          // For RESIZE-START: New start date, keep the original full end
-          fullStartDate = newStartDate;
-          fullEndDate = originalItem._originalEndDate 
-            ? new Date(originalItem._originalEndDate) 
-            : newEndDate;
+          // For RESIZE-START: Use UNCLAMPED start date if overflow occurred
+          fullStartDate = overflowStartDate || newStartDate;
+          fullEndDate = fullOriginalEnd; // Keep the original full end
+          
+          console.log('[InteractionHandler] Cross-year RESIZE-START:', {
+            overflowStartDate: overflowStartDate?.toISOString(),
+            newStartDate: newStartDate.toISOString(),
+            fullStartDate: fullStartDate.toISOString(),
+            fullEndDate: fullEndDate.toISOString()
+          });
         } else if (this.dragState.dragMode === 'resize-end') {
-          // For RESIZE-END: Keep the original full start, new end date
-          fullStartDate = originalItem._originalStartDate 
-            ? new Date(originalItem._originalStartDate) 
-            : newStartDate;
-          fullEndDate = newEndDate;
+          // For RESIZE-END: Use UNCLAMPED end date if overflow occurred
+          fullStartDate = fullOriginalStart; // Keep the original full start
+          fullEndDate = overflowEndDate || newEndDate;
+          
+          console.log('[InteractionHandler] Cross-year RESIZE-END:', {
+            overflowEndDate: overflowEndDate?.toISOString(),
+            newEndDate: newEndDate.toISOString(),
+            fullStartDate: fullStartDate.toISOString(),
+            fullEndDate: fullEndDate.toISOString()
+          });
         } else {
           // Fallback to current segment dates
           fullStartDate = newStartDate;
