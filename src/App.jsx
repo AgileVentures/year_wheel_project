@@ -3516,19 +3516,33 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Handle extending activity beyond current year - OPTION B: Linked items across pages
   // Since items are PAGE-SCOPED, we create linked items on each year's page
   // Items are linked via crossYearGroupId for synchronized updates
-  const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd }) => {
+  const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd, newStartDate }) => {
+    console.log('[handleExtendActivityBeyondYear] Called with:', {
+      itemName: item?.name,
+      itemId: item?.id,
+      overflowEndDate,
+      currentYearEnd,
+      newStartDate: newStartDate?.toISOString?.() || newStartDate,
+      hasCrossYearGroupId: !!item?.crossYearGroupId,
+    });
+    
     if (!wheelId || !item || !overflowEndDate || !currentYearEnd) {
+      console.log('[handleExtendActivityBeyondYear] Missing required params, returning early');
       return;
     }
 
     const overflowDate = new Date(overflowEndDate);
     const currentYearEndDate = new Date(currentYearEnd);
+    // Use newStartDate if provided (for move operations), otherwise keep original
+    const actualStartDate = newStartDate ? new Date(newStartDate) : new Date(item.startDate);
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
+      console.log('[handleExtendActivityBeyondYear] Invalid overflow date');
       return;
     }
 
     if (overflowDate <= currentYearEndDate) {
+      console.log('[handleExtendActivityBeyondYear] Overflow date not past year end');
       return;
     }
 
@@ -3574,9 +3588,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Generate a cross-year group ID to link all segments
     const crossYearGroupId = item.crossYearGroupId || crypto.randomUUID();
 
-    // First, update the current item with the group ID and clamp to year end
+    // First, update the current item with the group ID, new start date, and clamp end to year end
     const updatedCurrentItem = {
       ...item,
+      startDate: formatDateOnly(actualStartDate), // Use new start date for move operations
       endDate: formatDateOnly(currentYearEndDate),
       crossYearGroupId,
     };
@@ -3708,13 +3723,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Handle extending activity to PREVIOUS year(s) - OPTION B: Linked items across pages
   // Since items are PAGE-SCOPED, we create linked items on each year's page
   // Items are linked via crossYearGroupId for synchronized updates
-  const handleExtendActivityToPreviousYear = useCallback(async ({ item, overflowStartDate, currentYearStart }) => {
+  const handleExtendActivityToPreviousYear = useCallback(async ({ item, overflowStartDate, currentYearStart, newEndDate }) => {
     if (!wheelId || !item || !overflowStartDate || !currentYearStart) {
       return;
     }
 
     const overflowDate = new Date(overflowStartDate);
     const currentYearStartDate = new Date(currentYearStart);
+    // Use newEndDate if provided (for move operations), otherwise keep original
+    const actualEndDate = newEndDate ? new Date(newEndDate) : new Date(item.endDate);
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
       return;
@@ -3769,10 +3786,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Generate a cross-year group ID to link all segments
     const crossYearGroupId = item.crossYearGroupId || crypto.randomUUID();
 
-    // First, update the current item with the group ID and clamp to year start
+    // First, update the current item with the group ID, new end date, and clamp start to year start
     const updatedCurrentItem = {
       ...item,
       startDate: formatDateOnly(currentYearStartDate),
+      endDate: formatDateOnly(actualEndDate), // Use new end date for move operations
       crossYearGroupId,
     };
 

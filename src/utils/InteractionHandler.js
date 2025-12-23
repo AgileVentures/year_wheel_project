@@ -701,13 +701,21 @@ class InteractionHandler {
     let newStartDate = this.wheel.angleToDate(startDegrees);
     let newEndDate = this.wheel.angleToDate(endDegrees);
     
-    // console.log('[InteractionHandler] Initial dates from angles:', {
-    //   startDegrees,
-    //   endDegrees,
-    //   newStartDate: newStartDate.toISOString(),
-    //   newEndDate: newEndDate.toISOString(),
-    //   dragMode: this.dragState.dragMode
-    // });
+    console.log('[InteractionHandler] Initial dates from angles:', {
+      startDegrees,
+      endDegrees,
+      newStartDate: newStartDate.toISOString(),
+      newEndDate: newEndDate.toISOString(),
+      dragMode: this.dragState.dragMode
+    });
+
+    // CRITICAL FIX FOR MOVE: When moving an item across year boundary, 
+    // the end date wraps to January but stays in the same year.
+    // If end < start in a MOVE operation, the end has wrapped to the next year.
+    if (this.dragState.dragMode === 'move' && newEndDate < newStartDate) {
+      console.log('[InteractionHandler] MOVE WRAP detected - adjusting end date to next year');
+      newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+    }
 
     // CRITICAL FIX: In resize-start mode, preserve the original end date
     // Only the start should change, end stays the same
@@ -728,19 +736,21 @@ class InteractionHandler {
     // CRITICAL FIX: Use the wheel's current year (from page), not the item's startDate year
     // The wheel.year represents the current page being viewed/edited
     const itemYear = Number(this.wheel.year);
-    // console.log('[InteractionHandler] Wheel year:', this.wheel.year, 'parsed as:', itemYear);
     
     // Create year boundaries using UTC to avoid timezone issues
     // Use Date.UTC to create timestamps, then convert to Date objects
     const yearStart = new Date(Date.UTC(itemYear, 0, 1, 0, 0, 0));
     const yearEnd = new Date(Date.UTC(itemYear, 11, 31, 23, 59, 59));
     
-    // console.log('[InteractionHandler] Calculated bounds:', { 
-    //   yearStart: yearStart.toISOString(), 
-    //   yearEnd: yearEnd.toISOString()
-    // });
-
-    // console.log(`[InteractionHandler] Year bounds for item "${originalItem?.name}": ${yearStart.toISOString().split('T')[0]} to ${yearEnd.toISOString().split('T')[0]}`);
+    console.log('[InteractionHandler] Date bounds check:', { 
+      itemYear,
+      yearStart: yearStart.toISOString(), 
+      yearEnd: yearEnd.toISOString(),
+      newStartDate: newStartDate.toISOString(),
+      newEndDate: newEndDate.toISOString(),
+      startBeforeYearStart: newStartDate < yearStart,
+      endAfterYearEnd: newEndDate > yearEnd,
+    });
 
     // BACKWARD WRAP: Apply year offset if start was dragged backwards past January 1
     const wrappedBackward =
@@ -792,6 +802,13 @@ class InteractionHandler {
 
     if (newEndDate > yearEnd) {
       overflowEndDate = new Date(newEndDate.getTime());
+      console.log('[InteractionHandler] OVERFLOW FORWARD detected:', {
+        newEndDate: newEndDate.toISOString(),
+        yearEnd: yearEnd.toISOString(),
+        dragMode: this.dragState.dragMode,
+        hasCallback: !!this.options.onExtendActivityToNextYear,
+        hasCrossYearGroupId: !!originalItem?.crossYearGroupId,
+      });
 
       // Call extend callback for BOTH new cross-year items AND existing ones being extended further
       if (
@@ -799,16 +816,27 @@ class InteractionHandler {
         (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
+        console.log('[InteractionHandler] Calling onExtendActivityToNextYear...');
         try {
           await this.options.onExtendActivityToNextYear({
             item: originalItem,
             overflowEndDate,
             currentYearEnd: yearEnd,
             dragMode: this.dragState.dragMode,
+            // CRITICAL: Pass the NEW start date for move operations
+            // Without this, the current item keeps its original start date
+            newStartDate: this.dragState.dragMode === 'move' ? newStartDate : null,
           });
+          console.log('[InteractionHandler] onExtendActivityToNextYear returned');
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
         }
+      } else {
+        console.log('[InteractionHandler] NOT calling onExtendActivityToNextYear:', {
+          hasOriginalItem: !!originalItem,
+          dragMode: this.dragState.dragMode,
+          hasCallback: !!this.options.onExtendActivityToNextYear,
+        });
       }
 
       // Always clamp to year end for display in current year
@@ -817,22 +845,39 @@ class InteractionHandler {
 
     // Handle backward overflow (before January 1)
     if (overflowStartDate) {
+      console.log('[InteractionHandler] Processing BACKWARD overflow:', {
+        overflowStartDate: overflowStartDate.toISOString(),
+        dragMode: this.dragState.dragMode,
+        hasCallback: !!this.options.onExtendActivityToPreviousYear,
+        hasCrossYearGroupId: !!originalItem?.crossYearGroupId,
+      });
+      
       // Call extend callback for BOTH new cross-year items AND existing ones being extended further
       if (
         originalItem &&
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
+        console.log('[InteractionHandler] Calling onExtendActivityToPreviousYear...');
         try {
           await this.options.onExtendActivityToPreviousYear({
             item: originalItem,
             overflowStartDate,
             currentYearStart: yearStart,
             dragMode: this.dragState.dragMode,
+            // CRITICAL: Pass the NEW end date for move operations
+            newEndDate: this.dragState.dragMode === 'move' ? newEndDate : null,
           });
+          console.log('[InteractionHandler] onExtendActivityToPreviousYear returned');
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity to previous year:', extensionError);
         }
+      } else {
+        console.log('[InteractionHandler] NOT calling onExtendActivityToPreviousYear:', {
+          hasOriginalItem: !!originalItem,
+          dragMode: this.dragState.dragMode,
+          hasCallback: !!this.options.onExtendActivityToPreviousYear,
+        });
       }
 
       // Always clamp to year start for display in current year
