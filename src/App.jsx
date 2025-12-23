@@ -4232,37 +4232,147 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     }
   }, [setWheelState, endBatch, cancelBatch, changeTracker]);
 
-  const handleAddItems = useCallback((newItems) => {
+  const handleAddItems = useCallback(async (newItems) => {
     if (!currentPageId) return;
     
     const itemsToAdd = Array.isArray(newItems) ? newItems : [newItems];
-    console.log('[handleAddItems] Adding items to page', currentPageId, ':', itemsToAdd.map(i => i.name));
+    
+    // Check for cross-year items and create linked segments if needed
+    const processedItems = [];
+    const linkedItemsForOtherPages = [];
+    
+    for (const item of itemsToAdd) {
+      const startDate = new Date(item.startDate);
+      const endDate = new Date(item.endDate);
+      const startYear = startDate.getFullYear();
+      const endYear = endDate.getFullYear();
+      
+      if (startYear !== endYear) {
+        // Cross-year item detected - ask user if they want to create linked items
+        const yearsSpanned = endYear - startYear;
+        
+        const confirmed = await showConfirmDialog({
+          title: 'Skapa flerårsaktivitet?',
+          message: yearsSpanned === 1
+            ? `Aktiviteten "${item.name}" sträcker sig från ${startYear} till ${endYear}. Länkade kopior skapas på båda årens sidor.`
+            : `Aktiviteten "${item.name}" sträcker sig över ${yearsSpanned + 1} år (${startYear}-${endYear}). Länkade kopior skapas på alla årens sidor.`,
+          confirmText: 'Skapa flerårsaktivitet',
+          cancelText: 'Endast detta år',
+          confirmButtonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white'
+        });
+        
+        if (confirmed) {
+          // Generate cross-year group ID
+          const crossYearGroupId = crypto.randomUUID();
+          
+          // Calculate segments for each year
+          for (let year = startYear; year <= endYear; year++) {
+            const yearStart = new Date(Date.UTC(year, 0, 1));
+            const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
+            
+            const segmentStart = startDate > yearStart ? startDate : yearStart;
+            const segmentEnd = endDate < yearEnd ? endDate : yearEnd;
+            
+            // Ensure page exists for this year
+            const currentStructure = {
+              rings: structure.rings || [],
+              activityGroups: structure.activityGroups || [],
+              labels: structure.labels || [],
+              items: [],
+            };
+            
+            const ensured = await ensurePageForYear(year, {
+              templateWheelStructure: currentStructure,
+            });
+            
+            if (!ensured?.page) continue;
+            
+            const targetPageId = ensured.page.id;
+            
+            const segmentItem = {
+              id: crypto.randomUUID(),
+              pageId: targetPageId,
+              ringId: item.ringId,
+              activityId: item.activityId,
+              labelId: item.labelId || null,
+              name: item.name,
+              startDate: formatDateOnly(segmentStart),
+              endDate: formatDateOnly(segmentEnd),
+              time: item.time || null,
+              description: item.description || null,
+              linkedWheelId: item.linkedWheelId || null,
+              linkType: item.linkType || null,
+              crossYearGroupId,
+            };
+            
+            if (targetPageId === currentPageId) {
+              processedItems.push(segmentItem);
+            } else {
+              linkedItemsForOtherPages.push(segmentItem);
+            }
+          }
+        } else {
+          // User chose to keep only current year - clamp dates to current year
+          const currentPage = wheelState?.pages?.find(p => p.id === currentPageId);
+          const currentYear = currentPage?.year || new Date().getFullYear();
+          const yearStart = new Date(Date.UTC(currentYear, 0, 1));
+          const yearEnd = new Date(Date.UTC(currentYear, 11, 31));
+          
+          const clampedStart = startDate < yearStart ? yearStart : startDate;
+          const clampedEnd = endDate > yearEnd ? yearEnd : endDate;
+          
+          processedItems.push({
+            ...item,
+            startDate: formatDateOnly(clampedStart),
+            endDate: formatDateOnly(clampedEnd),
+          });
+        }
+      } else {
+        // Single year item - add as-is
+        processedItems.push(item);
+      }
+    }
+    
+    // Add all items to their respective pages
+    const allItemsToAdd = [...processedItems, ...linkedItemsForOtherPages];
+    
+    if (allItemsToAdd.length === 0) return;
 
     // Update wheelState.pages directly (source of truth)
     setWheelState((prev) => ({
       ...prev,
       pages: prev.pages.map((page) => {
-        if (page.id !== currentPageId) return page;
+        const itemsForThisPage = allItemsToAdd.filter(item => item.pageId === page.id);
+        if (itemsForThisPage.length === 0) return page;
 
         const currentItems = Array.isArray(page.items) ? page.items : [];
 
         return {
           ...page,
-          items: [...currentItems, ...itemsToAdd],
+          items: [...currentItems, ...itemsForThisPage],
         };
       })
     }), { type: 'addItem' });
 
     // Track changes for delta save
-    itemsToAdd.forEach(item => {
+    allItemsToAdd.forEach(item => {
       changeTracker.trackItemChange(item.id, 'added', item);
     });
+    
+    // Show success message for cross-year items
+    if (linkedItemsForOtherPages.length > 0) {
+      const yearsCreated = new Set(allItemsToAdd.map(i => {
+        const page = wheelState?.pages?.find(p => p.id === i.pageId);
+        return page?.year;
+      })).size;
+      showToast(`Flerårsaktivitet skapad över ${yearsCreated} år.`, 'success');
+    }
     
     // Trigger auto-save after adding items
     if (triggerAutoSaveRef.current) {
       triggerAutoSaveRef.current();
     }
-  }, [currentPageId, wheelId, setWheelState, changeTracker]);
+  }, [currentPageId, wheelId, setWheelState, changeTracker, showConfirmDialog, ensurePageForYear, structure, wheelState, showToast]);
 
   const handleDeleteAktivitet = useCallback(async (itemId) => {
     if (!itemId || !currentPageId) return;
