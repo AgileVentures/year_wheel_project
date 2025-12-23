@@ -795,15 +795,15 @@ class InteractionHandler {
         newEndDate: newEndDate.toISOString(),
         yearEnd: yearEnd.toISOString(),
         comparison: newEndDate > yearEnd,
-        dragMode: this.dragState.dragMode
+        dragMode: this.dragState.dragMode,
+        hasCrossYearGroupId: !!originalItem?.crossYearGroupId
       });
       overflowEndDate = new Date(newEndDate.getTime());
 
-      // For items already in a cross-year group, don't call extend callback
-      // The onUpdateCrossYearGroup will handle updating all linked segments
+      // Call extend callback for BOTH new cross-year items AND existing ones being extended further
+      // The extend handler will use the existing crossYearGroupId if present
       if (
         originalItem &&
-        !originalItem.crossYearGroupId && // Only for NEW cross-year items
         (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
@@ -819,10 +819,8 @@ class InteractionHandler {
         }
       }
 
-      // Only clamp if NOT in a cross-year group (cross-year items use onUpdateCrossYearGroup)
-      if (!originalItem?.crossYearGroupId) {
-        newEndDate = yearEnd;
-      }
+      // Always clamp to year end for display in current year
+      newEndDate = yearEnd;
     }
 
     // Handle backward overflow (before January 1)
@@ -830,14 +828,14 @@ class InteractionHandler {
       console.log('[InteractionHandler] BACKWARD OVERFLOW - checking callback:', {
         hasCallback: !!this.options.onExtendActivityToPreviousYear,
         dragMode: this.dragState.dragMode,
-        hasOriginalItem: !!originalItem
+        hasOriginalItem: !!originalItem,
+        hasCrossYearGroupId: !!originalItem?.crossYearGroupId
       });
       
-      // For items already in a cross-year group, don't call extend callback
-      // The onUpdateCrossYearGroup will handle updating all linked segments
+      // Call extend callback for BOTH new cross-year items AND existing ones being extended further
+      // The extend handler will use the existing crossYearGroupId if present
       if (
         originalItem &&
-        !originalItem.crossYearGroupId && // Only for NEW cross-year items
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
@@ -854,9 +852,8 @@ class InteractionHandler {
         }
       }
 
-      // Only clamp if NOT in a cross-year group (cross-year items use onUpdateCrossYearGroup)
-      if (!originalItem?.crossYearGroupId) {
-        newStartDate = yearStart;
+      // Always clamp to year start for display in current year
+      newStartDate = yearStart;
       }
     }
 

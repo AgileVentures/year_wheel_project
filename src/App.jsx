@@ -3499,10 +3499,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     // Calculate segments for each year the item spans into
     const segments = [];
-    const nextDay = new Date(currentYearEndDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    let segmentStart = nextDay;
+    // Start from Jan 1 of the next year (not the day after Dec 31 which could be Jan 2 due to timezone)
+    const nextYear = currentYearEndDate.getFullYear() + 1;
+    let segmentStart = new Date(nextYear, 0, 1); // Jan 1 of next year
 
     while (segmentStart <= overflowDate) {
       const segmentYear = segmentStart.getFullYear();
@@ -3680,10 +3679,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
     // Calculate segments for each year the item spans backward into
     const segments = [];
-    const prevDay = new Date(currentYearStartDate);
-    prevDay.setDate(prevDay.getDate() - 1);
-
-    let segmentEnd = prevDay;
+    // Start from Dec 31 of the previous year (not the day before Jan 1 which could be Dec 30 due to timezone)
+    const prevYear = currentYearStartDate.getFullYear() - 1;
+    let segmentEnd = new Date(prevYear, 11, 31); // Dec 31 of previous year
 
     while (segmentEnd >= overflowDate) {
       const segmentYear = segmentEnd.getFullYear();
@@ -4161,9 +4159,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if (allLinkedItems.length > 1) {
         const deleteAll = await showConfirmDialog({
           title: 'Radera länkade aktiviteter?',
-          message: `Denna aktivitet är länkad över ${allLinkedItems.length} år. Vill du radera alla länkade delar eller bara denna?`,
+          message: `Denna aktivitet är länkad över ${allLinkedItems.length} år. En flerårsaktivitet måste raderas i sin helhet.`,
           confirmText: 'Radera alla',
-          cancelText: 'Endast denna',
+          cancelText: 'Avbryt',
           confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
         });
         
@@ -4191,11 +4189,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           showToast(`${itemToDelete.name} och ${allLinkedItems.length - 1} länkade delar raderade`, 'success');
           return;
         }
-        // If user chose "only this", fall through to delete just this one
+        // User cancelled - don't delete anything
+        return;
       }
     }
 
-    // Delete just this item (or non-linked item)
+    // Delete just this item (non-linked item or last remaining linked item)
     setWheelState((prev) => ({
       ...prev,
       pages: prev.pages.map((page) => {

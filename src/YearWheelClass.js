@@ -3679,6 +3679,134 @@ class YearWheel {
     this.context.setLineDash([]);
 
     this.context.restore();
+    
+    // Draw overflow indicators if dragging beyond year boundaries
+    this.drawDragPreviewOverflow(itemColor, startRadius, endRadius);
+  }
+  
+  // Draw overflow indicators when drag preview extends beyond year boundaries
+  drawDragPreviewOverflow(itemColor, startRadius, endRadius) {
+    const rawStart = this.dragState.rawPreviewStartAngle;
+    const rawEnd = this.dragState.rawPreviewEndAngle;
+    
+    if (rawStart === undefined || rawEnd === undefined) return;
+    
+    // Convert raw angles to logical (remove rotation)
+    const logicalStartRaw = rawStart - this.rotationAngle;
+    const logicalEndRaw = rawEnd - this.rotationAngle;
+    
+    // January angle in radians (initAngle converted)
+    const januaryAngleRad = this.toRadians(this.initAngle);
+    // December end angle (initAngle + 360)
+    const decemberEndAngleRad = this.toRadians(this.initAngle + 360);
+    
+    const width = endRadius - startRadius;
+    const indicatorHeight = width * 0.7;
+    const indicatorOffset = width * 0.15;
+    const indicatorAngleSpan = 8;
+    
+    this.context.save();
+    
+    // Check for BACKWARD overflow (before January 1)
+    // In logical angle space, January 1 is at initAngle
+    // If start angle is less than January angle, it's overflowing backward
+    const startDegrees = this.toDegrees(logicalStartRaw);
+    if (startDegrees < this.initAngle - 1) { // Allow small tolerance
+      // Draw indicator at January position
+      const januaryAngle = this.initAngle;
+      
+      this.context.beginPath();
+      this.context.arc(
+        this.center.x,
+        this.center.y,
+        startRadius + indicatorOffset,
+        this.toRadians(januaryAngle - indicatorAngleSpan),
+        this.toRadians(januaryAngle)
+      );
+      this.context.arc(
+        this.center.x,
+        this.center.y,
+        startRadius + indicatorOffset + indicatorHeight,
+        this.toRadians(januaryAngle),
+        this.toRadians(januaryAngle - indicatorAngleSpan),
+        true
+      );
+      this.context.closePath();
+      
+      this.context.fillStyle = itemColor;
+      this.context.globalAlpha = 0.5;
+      this.context.fill();
+      this.context.globalAlpha = 1.0;
+      
+      this.context.strokeStyle = '#3B82F6'; // Blue like drag border
+      this.context.lineWidth = this.size / 400;
+      this.context.setLineDash([this.size / 150, this.size / 200]);
+      this.context.stroke();
+      this.context.setLineDash([]);
+      
+      // Draw arrow pointing left (← previous year)
+      const arrowRadius = startRadius + width / 2;
+      const arrowAngle = this.toRadians(januaryAngle - indicatorAngleSpan / 2);
+      const arrowX = this.center.x + Math.cos(arrowAngle) * arrowRadius;
+      const arrowY = this.center.y + Math.sin(arrowAngle) * arrowRadius;
+      
+      this.context.fillStyle = '#ffffff';
+      this.context.font = `bold ${this.size / 80}px Arial`;
+      this.context.textAlign = 'center';
+      this.context.textBaseline = 'middle';
+      this.context.fillText('←', arrowX, arrowY);
+    }
+    
+    // Check for FORWARD overflow (after December 31)
+    // If end angle is greater than December end angle, it's overflowing forward
+    const endDegrees = this.toDegrees(logicalEndRaw);
+    if (endDegrees > this.initAngle + 360 + 1) { // Allow small tolerance
+      // Draw indicator at December position
+      const decemberEndAngle = this.initAngle + 360;
+      
+      this.context.beginPath();
+      this.context.arc(
+        this.center.x,
+        this.center.y,
+        startRadius + indicatorOffset,
+        this.toRadians(decemberEndAngle),
+        this.toRadians(decemberEndAngle + indicatorAngleSpan)
+      );
+      this.context.arc(
+        this.center.x,
+        this.center.y,
+        startRadius + indicatorOffset + indicatorHeight,
+        this.toRadians(decemberEndAngle + indicatorAngleSpan),
+        this.toRadians(decemberEndAngle),
+        true
+      );
+      this.context.closePath();
+      
+      this.context.fillStyle = itemColor;
+      this.context.globalAlpha = 0.5;
+      this.context.fill();
+      this.context.globalAlpha = 1.0;
+      
+      this.context.strokeStyle = '#3B82F6'; // Blue like drag border
+      this.context.lineWidth = this.size / 400;
+      this.context.setLineDash([this.size / 150, this.size / 200]);
+      this.context.stroke();
+      this.context.setLineDash([]);
+      
+      // Draw arrow pointing right (→ next year)
+      const arrowRadius = startRadius + width / 2;
+      const arrowAngle = this.toRadians(decemberEndAngle + indicatorAngleSpan / 2);
+      const arrowX = this.center.x + Math.cos(arrowAngle) * arrowRadius;
+      const arrowY = this.center.y + Math.sin(arrowAngle) * arrowRadius;
+      
+      this.context.fillStyle = '#ffffff';
+      this.context.font = `bold ${this.size / 80}px Arial`;
+      this.context.textAlign = 'center';
+      this.context.textBaseline = 'middle';
+      this.context.fillText('→', arrowX, arrowY);
+    }
+    
+    this.context.restore();
   }
 
   // Draw dependency arrows between connected activities
