@@ -4448,6 +4448,9 @@ class YearWheel {
    * Shows visual cues at January (for items starting before this year) 
    * and December (for items ending after this year)
    * 
+   * IMPORTANT: Only shows indicators if the item ACTUALLY touches the year boundary
+   * (starts on Jan 1 for previous year indicator, ends on Dec 31 for next year indicator)
+   * 
    * @param {Object} item - The item with _originalStartDate/_originalEndDate
    * @param {number} startRadius - Inner radius of the item
    * @param {number} width - Radial width of the item
@@ -4464,8 +4467,20 @@ class YearWheel {
     const indicatorHeight = width * 0.7; // Slightly smaller than item height
     const indicatorOffset = width * 0.15; // Center vertically
     
-    // Check if item extends BEFORE this year (starts in previous year)
-    if (item._originalStartDate) {
+    // Parse the item's actual displayed dates
+    const itemStartDate = new Date(item.startDate);
+    const itemEndDate = new Date(item.endDate);
+    
+    // Check if item ACTUALLY starts on January 1st of current year (continues from previous year)
+    const startsOnJan1 = itemStartDate.getMonth() === 0 && itemStartDate.getDate() === 1 && 
+                         itemStartDate.getFullYear() === currentYear;
+    
+    // Check if item ACTUALLY ends on December 31st of current year (continues to next year)
+    const endsOnDec31 = itemEndDate.getMonth() === 11 && itemEndDate.getDate() === 31 &&
+                        itemEndDate.getFullYear() === currentYear;
+    
+    // Check if item extends BEFORE this year (starts in previous year) AND current segment starts at Jan 1
+    if (item._originalStartDate && startsOnJan1) {
       const originalStartYear = new Date(item._originalStartDate).getFullYear();
       if (originalStartYear < currentYear) {
         // Draw indicator at January position (start of year)
@@ -4517,8 +4532,8 @@ class YearWheel {
       }
     }
     
-    // Check if item extends AFTER this year (ends in next year)
-    if (item._originalEndDate) {
+    // Check if item extends AFTER this year (ends in next year) AND current segment ends at Dec 31
+    if (item._originalEndDate && endsOnDec31) {
       const originalEndYear = new Date(item._originalEndDate).getFullYear();
       if (originalEndYear > currentYear) {
         // Draw indicator at December position (end of year)
