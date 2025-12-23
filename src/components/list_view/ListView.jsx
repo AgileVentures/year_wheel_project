@@ -569,10 +569,13 @@ const ListView = ({
                               
                               {/* Actions */}
                               <td className="px-4 py-3">
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-1">
                                   {onNavigateToItemOnWheel && (
                                     <button
-                                      onClick={() => onNavigateToItemOnWheel(item.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onNavigateToItemOnWheel(item.id);
+                                      }}
                                       className="text-gray-400 hover:text-blue-600 transition-colors p-1"
                                       title={t('listView.showInWheel', 'Visa i hjul')}
                                     >
@@ -580,14 +583,20 @@ const ListView = ({
                                     </button>
                                   )}
                                   <button
-                                    onClick={() => setEditingItem(item)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingItem(item);
+                                    }}
                                     className="text-gray-400 hover:text-blue-600 transition-colors p-1"
                                     title={t('listView.edit', 'Redigera')}
                                   >
                                     <Edit2 size={16} />
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteSingleItem(item)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteSingleItem(item);
+                                    }}
                                     className="text-gray-400 hover:text-red-600 transition-colors p-1"
                                     title={t('listView.delete', 'Ta bort')}
                                   >
@@ -601,7 +610,7 @@ const ListView = ({
                         
                         {/* Add Item Row */}
                         <tr className="hover:bg-gray-50">
-                          <td colSpan="7" className="px-4 py-2">
+                          <td colSpan="6" className="px-4 py-2">
                             <button
                               onClick={() => handleAddItemToRing(ringId)}
                               className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
