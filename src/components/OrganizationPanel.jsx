@@ -702,7 +702,7 @@ function OrganizationPanel({
   // Activity Group management
   const handleAddActivityGroup = () => {
     const newGroup = {
-      id: `group-${Date.now()}`,
+      id: crypto.randomUUID(),
       name: `Aktivitetsgrupp ${(wheelStructure.activityGroups || []).length + 1}`,
       color: '#3B82F6', // Default blue - user can change with color picker
       visible: true
@@ -749,7 +749,7 @@ function OrganizationPanel({
   // Label management
   const handleAddLabel = () => {
     const newLabel = {
-      id: `label-${Date.now()}`,
+      id: crypto.randomUUID(),
       name: `Etikett ${wheelStructure.labels.length + 1}`,
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       visible: true
