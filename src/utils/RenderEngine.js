@@ -13,6 +13,7 @@
 
 import LayoutCalculator from './LayoutCalculator.js';
 import ColorUtils from './ColorUtils.js';
+import LRUCache from './LRUCache.js';
 
 class RenderEngine {
   constructor(context, size, center, options = {}) {
@@ -21,8 +22,8 @@ class RenderEngine {
     this.center = center;
     this.options = options;
     
-    // Text measurement cache for performance
-    this.textMeasurementCache = new Map();
+    // Text measurement cache with LRU eviction (max 500 entries)
+    this.textMeasurementCache = new LRUCache(500);
   }
 
   // ============================================================================

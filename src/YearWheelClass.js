@@ -6,6 +6,7 @@ import RenderEngine from "./utils/RenderEngine.js";
 import InteractionHandler from "./utils/InteractionHandler.js";
 import ExportManager from "./utils/ExportManager.js";
 import ConfigValidator from "./utils/ConfigValidator.js";
+import LRUCache from "./utils/LRUCache.js";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -150,8 +151,8 @@ class YearWheel {
     this.cacheValid = false; // Track if cache needs regeneration
     this.lastCacheKey = ""; // Track what's cached to detect changes
 
-    // Performance optimization: Text measurement cache
-    this.textMeasurementCache = new Map();
+    // Performance optimization: Text measurement cache with LRU eviction (max 500 entries)
+    this.textMeasurementCache = new LRUCache(500);
 
     // Performance optimization: Throttle hover detection
     this.lastHoverCheck = 0;
