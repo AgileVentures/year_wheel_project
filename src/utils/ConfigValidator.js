@@ -4,6 +4,8 @@
  * Validates and normalizes wheelStructure structure for YearWheel.
  * Ensures data integrity and provides sensible defaults.
  * 
+ * Now uses Zod schemas for robust validation with clear error messages.
+ * 
  * Expected Structure:
  * {
  *   rings: [{ id, name, type: 'inner'|'outer', visible, orientation }],
@@ -13,22 +15,50 @@
  * }
  * 
  * Created: 2025-10-30
+ * Updated: 2024-12-24 - Added Zod schema validation
  */
+
+import { validateWheelStructure } from './WheelStructureSchema.js';
 
 class ConfigValidator {
   /**
-   * Validate and normalize wheelStructure
+   * Validate and normalize wheelStructure using Zod schemas
    * @param {Object} data - Raw wheelStructure from database or file
    * @returns {Object} Validated and normalized data
    */
   static validate(data) {
     if (!data || typeof data !== 'object') {
+      console.warn('[ConfigValidator] Invalid data provided, returning defaults');
       return this.getDefaults();
     }
 
+    // Use Zod validation with better error messages
+    const result = validateWheelStructure(data);
+    
+    if (result.success) {
+      return result.data;
+    }
+    
+    // Log validation errors for debugging
+    console.error('[ConfigValidator] Validation errors:', result.errors);
+    result.errors.forEach(err => {
+      console.error(`  - ${err.path}: ${err.message}`);
+    });
+    
+    // Attempt fallback to manual validation for legacy data
+    console.warn('[ConfigValidator] Falling back to legacy validation');
+    return this.validateLegacy(data);
+  }
+
+  /**
+   * Legacy validation (fallback for old data that doesn't match schema)
+   * @param {Object} data - Raw data
+   * @returns {Object} Best-effort validated data
+   */
+  static validateLegacy(data) {
     const validated = {
       rings: this.validateRings(data.rings),
-      activityGroups: this.validateActivityGroups(data.activityGroups || data.activities), // Backward compatibility
+      activityGroups: this.validateActivityGroups(data.activityGroups || data.activities),
       labels: this.validateLabels(data.labels),
       items: this.validateItems(data.items)
     };
