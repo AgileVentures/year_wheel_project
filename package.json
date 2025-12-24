@@ -58,6 +58,7 @@
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.21",
+    "baseline-browser-mapping": "^2.9.11",
     "cypress": "^13.13.1",
     "cypress-recurse": "^1.37.1",
     "dotenv": "^17.2.3",

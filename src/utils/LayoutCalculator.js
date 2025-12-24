@@ -31,14 +31,9 @@ class LayoutCalculator {
   static QUARTERS_PER_YEAR = 4;
   static ISO_WEEK_THURSDAY_OFFSET = 4;
   
-  static MONTH_NAMES_SV = [
-    'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
-    'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'
-  ];
-  
-  static MONTH_NAMES_EN = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+  static MONTH_KEYS = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'
   ];
 
   // ============================================================================
@@ -350,10 +345,14 @@ class LayoutCalculator {
   /**
    * Get month segments with start/end days
    * @param {number} year - Year
+   * @param {Function} t - Translation function from i18n (e.g., t('monthsFull.january'))
    * @returns {Array<Object>} Array of { month, name, startDay, endDay, daysInMonth }
    */
-  static getMonthSegments(year, locale = 'sv') {
-    const monthNames = locale === 'en' ? this.MONTH_NAMES_EN : this.MONTH_NAMES_SV;
+  static getMonthSegments(year, t) {
+    if (!t || typeof t !== 'function') {
+      throw new Error('Translation function (t) is required for getMonthSegments');
+    }
+    
     const segments = [];
     let dayCounter = 1;
     
@@ -364,7 +363,7 @@ class LayoutCalculator {
       
       segments.push({
         month,
-        name: monthNames[month],
+        name: t(`monthsFull.${this.MONTH_KEYS[month]}`),
         startDay,
         endDay,
         daysInMonth
@@ -379,11 +378,12 @@ class LayoutCalculator {
   /**
    * Get quarter segments with start/end days
    * @param {number} year - Year
+   * @param {Function} t - Translation function from i18n (e.g., t('monthsFull.january'))
    * @returns {Array<Object>} Array of { quarter, startDay, endDay, months, daysInQuarter }
    */
-  static getQuarterSegments(year) {
+  static getQuarterSegments(year, t) {
     const segments = [];
-    const monthSegments = this.getMonthSegments(year);
+    const monthSegments = this.getMonthSegments(year, t);
     
     for (let quarter = 0; quarter < this.QUARTERS_PER_YEAR; quarter++) {
       const quarterMonthStart = quarter * this.MONTHS_PER_QUARTER;
