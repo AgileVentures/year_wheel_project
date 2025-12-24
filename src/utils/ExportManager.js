@@ -26,24 +26,25 @@ class ExportManager {
   /**
    * Export to specified format (download file)
    * @param {string} format - 'png'|'png-white'|'jpeg'|'svg'|'pdf'
+   * @param {Function} onProgress - Optional progress callback (percent, message)
    */
-  async exportImage(format) {
+  async exportImage(format, onProgress = null) {
     try {
       switch (format) {
         case "png":
-          this.downloadAsPNG(false);
+          this.downloadAsPNG(false, onProgress);
           break;
         case "png-white":
-          this.downloadAsPNG(true);
+          this.downloadAsPNG(true, onProgress);
           break;
         case "jpeg":
-          this.downloadAsJPEG();
+          this.downloadAsJPEG(onProgress);
           break;
         case "svg":
-          this.downloadAsSVG();
+          this.downloadAsSVG(onProgress);
           break;
         case "pdf":
-          await this.downloadAsPDF();
+          await this.downloadAsPDF(onProgress);
           break;
         default:
           console.error("Unsupported format:", format);
@@ -96,12 +97,17 @@ class ExportManager {
   /**
    * Download canvas as PNG
    * @param {boolean} whiteBackground - Use white background instead of transparent
+   * @param {Function} onProgress - Optional progress callback
    */
-  downloadAsPNG(whiteBackground = false) {
+  downloadAsPNG(whiteBackground = false, onProgress = null) {
+    if (onProgress) onProgress(0, 'Creating PNG...');
     const pngCanvas = this.copyCanvas(whiteBackground);
+    if (onProgress) onProgress(50, 'Converting to blob...');
     pngCanvas.toBlob((blob) => {
+      if (onProgress) onProgress(90, 'Preparing download...');
       const fileName = this.generateFileName("png");
       this.downloadFile(blob, fileName, "image/png");
+      if (onProgress) onProgress(100, 'Complete!');
     });
   }
 
@@ -121,13 +127,18 @@ class ExportManager {
 
   /**
    * Download canvas as JPEG (always with white background)
+   * @param {Function} onProgress - Optional progress callback
    */
-  downloadAsJPEG() {
+  downloadAsJPEG(onProgress = null) {
+    if (onProgress) onProgress(0, 'Creating JPEG...');
     const jpegCanvas = this.copyCanvas(true); // Always use white background for JPEG
+    if (onProgress) onProgress(50, 'Converting to blob...');
     jpegCanvas.toBlob(
       (blob) => {
+        if (onProgress) onProgress(90, 'Preparing download...');
         const fileName = this.generateFileName("jpg");
         this.downloadFile(blob, fileName, "image/jpeg");
+        if (onProgress) onProgress(100, 'Complete!');
       },
       "image/jpeg",
       1.0
@@ -155,22 +166,29 @@ class ExportManager {
 
   /**
    * Download canvas as SVG (re-renders using canvas2svg context)
+   * @param {Function} onProgress - Optional progress callback
    */
-  downloadAsSVG() {
+  downloadAsSVG(onProgress = null) {
+    if (onProgress) onProgress(0, 'Creating SVG context...');
     const svgContext = this.createSVGContext();
     const originalContext = this.wheel.context;
     
+    if (onProgress) onProgress(20, 'Rendering to SVG...');
     // Temporarily switch to SVG context and re-render
     this.wheel.context = svgContext;
     this.wheel.create();
+    if (onProgress) onProgress(70, 'Serializing SVG...');
     const svgData = svgContext.getSerializedSvg();
 
     // Restore original context and re-render to canvas
+    if (onProgress) onProgress(85, 'Restoring canvas...');
     this.wheel.context = originalContext;
     this.wheel.create();
 
+    if (onProgress) onProgress(95, 'Preparing download...');
     const fileName = this.generateFileName("svg");
     this.downloadFile(svgData, fileName, "image/svg+xml");
+    if (onProgress) onProgress(100, 'Complete!');
   }
 
   /**
@@ -197,15 +215,19 @@ class ExportManager {
 
   /**
    * Download canvas as PDF (dynamic jsPDF import)
+   * @param {Function} onProgress - Optional progress callback
    */
-  async downloadAsPDF() {
+  async downloadAsPDF(onProgress = null) {
     // Dynamically import jsPDF only when PDF export is needed
+    if (onProgress) onProgress(0, 'Loading PDF library...');
     const { jsPDF } = await import("jspdf");
 
     // Create a high-quality canvas for PDF export
+    if (onProgress) onProgress(10, 'Creating high-quality canvas...');
     const pdfCanvas = this.copyCanvas(true); // White background for PDF
 
     // Calculate dimensions for PDF (A4 landscape or custom size based on wheel)
+    if (onProgress) onProgress(25, 'Calculating dimensions...');
     const imgWidth = this.wheel.canvas.width;
     const imgHeight = this.wheel.canvas.height;
 
@@ -232,6 +254,7 @@ class ExportManager {
     }
 
     // Create PDF document
+    if (onProgress) onProgress(40, 'Creating PDF document...');
     const pdf = new jsPDF({
       orientation: aspectRatio > 1 ? "landscape" : "portrait",
       unit: "mm",
@@ -239,14 +262,18 @@ class ExportManager {
     });
 
     // Convert canvas to image data
+    if (onProgress) onProgress(60, 'Converting to image data...');
     const imgData = pdfCanvas.toDataURL("image/jpeg", 1.0);
 
     // Add image to PDF (fill the entire page)
+    if (onProgress) onProgress(80, 'Adding image to PDF...');
     pdf.addImage(imgData, "JPEG", 0, 0, finalWidth, finalHeight);
 
     // Download the PDF
+    if (onProgress) onProgress(95, 'Preparing download...');
     const fileName = this.generateFileName("pdf");
     pdf.save(fileName);
+    if (onProgress) onProgress(100, 'Complete!');
   }
 
   // ==================== HELPER METHODS ====================
