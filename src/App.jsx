@@ -4104,6 +4104,56 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
 
+    // CRITICAL FIX: Detect when item dates no longer match pageId's year
+    // This can happen when dependency cascades push dates into a different year
+    const itemPage = pages.find(p => p.id === updatedItem.pageId);
+    if (itemPage && updatedItem.startDate) {
+      const itemStartYear = new Date(updatedItem.startDate).getFullYear();
+      const itemEndYear = updatedItem.endDate ? new Date(updatedItem.endDate).getFullYear() : itemStartYear;
+      const pageYear = itemPage.year;
+      
+      // Check if item's dates fall completely outside its current page's year
+      const fallsOutsidePageYear = itemEndYear < pageYear || itemStartYear > pageYear;
+      
+      if (fallsOutsidePageYear) {
+        // Find correct page for the item based on start date
+        const correctPage = pages.find(p => p.year === itemStartYear);
+        
+        if (correctPage && correctPage.id !== updatedItem.pageId) {
+          console.log(`[handleUpdateAktivitet] Item "${updatedItem.name}" dates (${itemStartYear}) mismatch page year (${pageYear}). Moving to correct page.`);
+          
+          // Move item to correct page
+          setWheelState((prev) => ({
+            ...prev,
+            pages: prev.pages.map(page => {
+              // Remove from old page
+              if (page.id === updatedItem.pageId) {
+                return {
+                  ...page,
+                  items: (page.items || []).filter(item => item.id !== updatedItem.id)
+                };
+              }
+              // Add to new page with updated pageId
+              if (page.id === correctPage.id) {
+                return {
+                  ...page,
+                  items: [...(page.items || []), { ...updatedItem, pageId: correctPage.id }]
+                };
+              }
+              return page;
+            })
+          }), { type: 'moveItemBetweenPages' });
+          
+          // Track the change for save
+          changeTracker.trackItemChange(updatedItem.id, 'modified', { ...updatedItem, pageId: correctPage.id });
+          return;
+        } else if (!correctPage) {
+          console.warn(`[handleUpdateAktivitet] No page exists for year ${itemStartYear}. Item "${updatedItem.name}" may become orphaned.`);
+          // TODO: Consider auto-creating the page or clamping dates back to page year
+        }
+      }
+    }
+
     // Handle cross-year edits - delegate to handleUpdateCrossYearGroup
     if (updatedItem._isCrossYearEdit) {
       const { _isCrossYearEdit, ...cleanItem } = updatedItem;
@@ -4276,7 +4326,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       }
     }
-  }, [setWheelState, endBatch, cancelBatch, changeTracker]);
+  }, [setWheelState, endBatch, cancelBatch, changeTracker, pages]);
 
   const handleAddItems = useCallback(async (newItems) => {
     if (!currentPageId) return;
