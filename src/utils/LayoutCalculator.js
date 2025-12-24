@@ -12,6 +12,8 @@
  * @license MIT
  */
 
+import AngleUtils from './AngleUtils.js';
+
 class LayoutCalculator {
   // ============================================================================
   // CONSTANTS
@@ -473,9 +475,7 @@ class LayoutCalculator {
    * @returns {number} Normalized angle (0-360)
    */
   static normalizeAngle(degrees) {
-    let normalized = degrees % 360;
-    if (normalized < 0) normalized += 360;
-    return normalized;
+    return AngleUtils.normalizeDegrees(degrees);
   }
 
   /**

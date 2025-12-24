@@ -15,6 +15,7 @@
  */
 
 import LayoutCalculator from './LayoutCalculator.js';
+import AngleUtils from './AngleUtils.js';
 import { cascadeUpdateDependents, validateDateChange } from '../services/dependencyService.js';
 
 class InteractionHandler {
@@ -155,10 +156,7 @@ class InteractionHandler {
    * @returns {number} Normalized angle
    */
   normalizeAngle(angle) {
-    let normalized = angle;
-    while (normalized < 0) normalized += Math.PI * 2;
-    while (normalized >= Math.PI * 2) normalized -= Math.PI * 2;
-    return normalized;
+    return AngleUtils.normalizeRadians(angle);
   }
 
   // ============================================================================

@@ -12,6 +12,7 @@
  */
 
 import LayoutCalculator from './LayoutCalculator.js';
+import ColorUtils from './ColorUtils.js';
 
 class RenderEngine {
   constructor(context, size, center, options = {}) {
@@ -25,7 +26,7 @@ class RenderEngine {
   }
 
   // ============================================================================
-  // COLOR UTILITIES
+  // COLOR UTILITIES (Delegating to ColorUtils)
   // ============================================================================
 
   /**
@@ -34,17 +35,7 @@ class RenderEngine {
    * @returns {string} '#FFFFFF' or '#0F172A'
    */
   getContrastColor(hexColor) {
-    // Convert hex to RGB
-    const hex = hexColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-
-    // Calculate relative luminance (WCAG formula)
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-    // Return black for light backgrounds, white for dark backgrounds
-    return luminance > 0.5 ? '#0F172A' : '#FFFFFF';
+    return ColorUtils.getContrastColor(hexColor);
   }
 
   /**
@@ -53,30 +44,7 @@ class RenderEngine {
    * @returns {string} Hover color
    */
   getHoverColor(baseColor) {
-    const hex = baseColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-
-    // Calculate luminance
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-    let newR, newG, newB;
-    if (luminance > 0.5) {
-      // Light color - darken by 20%
-      const darkenFactor = 0.8;
-      newR = Math.round(r * darkenFactor);
-      newG = Math.round(g * darkenFactor);
-      newB = Math.round(b * darkenFactor);
-    } else {
-      // Dark color - lighten by 30%
-      const lightenFactor = 1.3;
-      newR = Math.min(255, Math.round(r * lightenFactor));
-      newG = Math.min(255, Math.round(g * lightenFactor));
-      newB = Math.min(255, Math.round(b * lightenFactor));
-    }
-
-    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    return ColorUtils.getHoverColor(baseColor);
   }
 
   // ============================================================================
