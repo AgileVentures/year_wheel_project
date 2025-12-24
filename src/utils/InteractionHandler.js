@@ -5,17 +5,22 @@
  * - Activity drag and drop (move)
  * - Activity resize (start/end edges)
  * - Ring switching during drag
- * - Wheel rotation
- * - Hover detection
- * - Click detection
+ * - Wheel rotation (via RotationHandler)
+ * - Hover detection (via HoverHandler)
+ * - Click detection (via ClickHandler)
  * 
  * Maintains pixel-perfect drag accuracy with screen coordinate system
+ * 
+ * Refactored: 2024-12-24 - Delegating to sub-handlers for rotation, hover, click
  * 
  * @license MIT
  */
 
 import LayoutCalculator from './LayoutCalculator.js';
 import AngleUtils from './AngleUtils.js';
+import RotationHandler from './interaction/RotationHandler.js';
+import HoverHandler from './interaction/HoverHandler.js';
+import ClickHandler from './interaction/ClickHandler.js';
 import { cascadeUpdateDependents, validateDateChange } from '../services/dependencyService.js';
 
 class InteractionHandler {
@@ -24,7 +29,47 @@ class InteractionHandler {
     this.wheel = wheelInstance;
     this.options = options;
     
-    // Drag state
+    // Initialize sub-handlers
+    this.rotationHandler = new RotationHandler(canvas, {
+      onRotationChange: (angle) => {
+        this.wheel.rotationAngle = angle;
+        if (this.wheel.onRotationChange) {
+          this.wheel.onRotationChange(angle);
+        }
+      },
+      requestRedraw: () => {
+        if (this.wheel.create) {
+          this.wheel.create();
+        }
+      }
+    });
+    
+    this.hoverHandler = new HoverHandler(canvas, {
+      hoverThrottleMs: 16, // ~60fps
+      onHoverChange: (item) => {
+        this.wheel.hoveredItem = item;
+        if (this.wheel.onHoverChange) {
+          this.wheel.onHoverChange(item);
+        }
+      },
+      requestRedraw: () => {
+        if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+          this.wheel.hoverRedrawPending = true;
+          requestAnimationFrame(() => {
+            if (this.wheel.create) this.wheel.create();
+            this.wheel.hoverRedrawPending = false;
+          });
+        }
+      }
+    });
+    
+    this.clickHandler = new ClickHandler(canvas, {
+      clickThresholdPx: 5,
+      clickTimeoutMs: 300,
+      onItemClick: this.options.onItemClick
+    });
+    
+    // Drag state (remains in main handler - too complex to extract)
     this.dragState = {
       isDragging: false,
       dragMode: null, // 'move', 'resize-start', 'resize-end'
@@ -41,24 +86,24 @@ class InteractionHandler {
       targetRingInfo: null,
     };
     
-    // Wheel rotation state
-    this.isRotating = false;
-    this.lastMouseAngle = 0;
+    // Compatibility properties (delegate to sub-handlers)
+    Object.defineProperty(this, 'hoveredItem', {
+      get: () => this.hoverHandler.getHoveredItem(),
+      set: (value) => { /* setter not needed, managed by HoverHandler */ }
+    });
     
-    // Hover state
-    this.hoveredItem = null;
-    this.lastHoverCheck = 0;
-    this.hoverThrottleMs = 16; // ~60fps
+    Object.defineProperty(this, 'isRotating', {
+      get: () => this.rotationHandler.isActive()
+    });
     
-    // Click detection (distinguish clicks from drags)
+    // Click detection compatibility
     this.mouseDownPos = null;
     this.mouseDownTime = 0;
     this.mouseDownItem = null;
-    this.mouseDownDragMode = null; // Store drag mode detected on mouseDown
-    this.dragJustCompleted = false; // Flag to prevent click after drag completes
-    // REMOVED: this.hadDragInCurrentCycle - now stored in wheel instance for persistence
-    this.CLICK_THRESHOLD_PX = 5; // Max movement in pixels to count as click
-    this.CLICK_TIMEOUT_MS = 300; // Max time for click (prevent slow drags from clicking)
+    this.mouseDownDragMode = null;
+    this.dragJustCompleted = false;
+    this.CLICK_THRESHOLD_PX = 5;
+    this.CLICK_TIMEOUT_MS = 300;
     
     // Bind event handlers
     this.boundHandlers = {
@@ -1068,13 +1113,13 @@ class InteractionHandler {
    * @param {MouseEvent} event - Mouse event
    */
   startWheelRotation(event) {
-    if (this.wheel.isAnimating) {
-      this.wheel.stopSpinning();
-    }
-
-    this.isRotating = true;
-    this.lastMouseAngle = this.getMouseAngle(event);
-    this.canvas.style.cursor = 'grabbing';
+    this.rotationHandler.start(
+      event,
+      this.wheel.center,
+      this.getCanvasCoordinates.bind(this),
+      this.wheel.isAnimating,
+      this.wheel.stopSpinning ? this.wheel.stopSpinning.bind(this.wheel) : null
+    );
   }
 
   /**
@@ -1082,25 +1127,15 @@ class InteractionHandler {
    * @param {MouseEvent} event - Mouse event
    */
   updateWheelRotation(event) {
-    if (!this.isRotating) return;
-
-    const currentMouseAngle = this.getMouseAngle(event);
-    let angleDifference = currentMouseAngle - this.lastMouseAngle;
-
-    // Normalize to shortest path
-    while (angleDifference <= -Math.PI) angleDifference += Math.PI * 2;
-    while (angleDifference > Math.PI) angleDifference -= Math.PI * 2;
-
-    this.wheel.rotationAngle += angleDifference;
-    this.lastMouseAngle = currentMouseAngle;
-
-    if (this.wheel.onRotationChange) {
-      this.wheel.onRotationChange(this.wheel.rotationAngle);
-    }
-
-    // Trigger redraw
-    if (this.wheel.create) {
-      this.wheel.create();
+    const newAngle = this.rotationHandler.update(
+      event,
+      this.wheel.center,
+      this.getCanvasCoordinates.bind(this),
+      this.wheel.rotationAngle
+    );
+    
+    if (newAngle !== null) {
+      this.wheel.rotationAngle = newAngle;
     }
   }
 
@@ -1108,14 +1143,7 @@ class InteractionHandler {
    * Stop wheel rotation
    */
   stopWheelRotation() {
-    if (!this.isRotating) return;
-
-    this.isRotating = false;
-    this.canvas.style.cursor = 'default';
-
-    if (this.wheel.onRotationChange) {
-      this.wheel.onRotationChange(this.wheel.rotationAngle);
-    }
+    this.rotationHandler.stop(this.wheel.rotationAngle);
   }
 
   // ============================================================================
@@ -1162,7 +1190,7 @@ class InteractionHandler {
 
   handleMouseMove(event) {
     // Check if we should start dragging (mouseDown on item + moved beyond threshold)
-    if (this.mouseDownItem && !this.dragState.isDragging && !this.isRotating) {
+    if (this.mouseDownItem && !this.dragState.isDragging && !this.rotationHandler.isActive()) {
       const dx = event.clientX - this.mouseDownPos.x;
       const dy = event.clientY - this.mouseDownPos.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1182,114 +1210,31 @@ class InteractionHandler {
       return;
     }
 
-    if (this.isRotating) {
+    if (this.rotationHandler.isActive()) {
       this.updateWheelRotation(event);
       return;
     }
 
+    // Handle hover (delegated to HoverHandler)
     if (this.options.selectionMode) {
-      if (this.hoveredItem || this.wheel.hoveredItem) {
-        this.hoveredItem = null;
-        this.wheel.hoveredItem = null;
-        if (this.wheel.create && !this.wheel.hoverRedrawPending) {
-          this.wheel.hoverRedrawPending = true;
-          requestAnimationFrame(() => {
-            if (this.wheel.create) this.wheel.create();
-            this.wheel.hoverRedrawPending = false;
-          });
-        }
-      }
-      if (this.canvas.style.cursor !== 'default') {
-        this.canvas.style.cursor = 'default';
-      }
+      this.hoverHandler.clear();
       return;
     }
 
-    // Handle hover (throttled)
-    const now = Date.now();
-    if (now - this.lastHoverCheck < this.hoverThrottleMs) {
-      return;
-    }
-    this.lastHoverCheck = now;
+    const context = {
+      getCanvasCoordinates: this.getCanvasCoordinates.bind(this),
+      clickableItems: this.wheel.clickableItems,
+      wheelStructure: this.wheel.wheelStructure,
+      pendingItemUpdates: this.wheel.pendingItemUpdates,
+      center: this.wheel.center,
+      rotationAngle: this.wheel.rotationAngle,
+      year: this.wheel.year,
+      zoomedMonth: this.wheel.zoomedMonth,
+      zoomedQuarter: this.wheel.zoomedQuarter,
+      detectDragZone: this.detectDragZone.bind(this)
+    };
 
-    const { x, y } = this.getCanvasCoordinates(event);
-    let newHoveredItem = null;
-    let hoverZone = null;
-
-    const clickableItems = this.wheel.clickableItems;
-    if (!clickableItems || clickableItems.length === 0) {
-      if (this.hoveredItem || this.wheel.hoveredItem) {
-        this.hoveredItem = null;
-        this.wheel.hoveredItem = null;
-        if (this.wheel.create && !this.wheel.hoverRedrawPending) {
-          this.wheel.hoverRedrawPending = true;
-          requestAnimationFrame(() => {
-            if (this.wheel.create) this.wheel.create();
-            this.wheel.hoverRedrawPending = false;
-          });
-        }
-      }
-      if (this.canvas.style.cursor !== 'default') {
-        this.canvas.style.cursor = 'default';
-      }
-      return;
-    }
-
-    for (const itemRegion of clickableItems) {
-      if (this.isPointInItemRegion(x, y, itemRegion)) {
-        const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
-        const itemFromData = this.wheel.wheelStructure.items.find(
-          (i) => i.id === itemRegion.itemId
-        );
-        const resolvedItem = pendingEntry ? pendingEntry.item : itemFromData;
-
-        if (resolvedItem) {
-          const startYear = new Date(resolvedItem.startDate).getFullYear();
-          const inViewYear = startYear === parseInt(this.wheel.year, 10);
-          const zoomActive = this.wheel.zoomedMonth !== null || this.wheel.zoomedQuarter !== null;
-
-          if ((zoomActive || inViewYear) && !resolvedItem.isCluster) {
-            newHoveredItem = resolvedItem;
-            hoverZone = this.detectDragZone(x, y, itemRegion);
-          }
-        }
-
-        break;
-      }
-    }
-
-    let newCursor = 'default';
-    if (newHoveredItem) {
-      if (hoverZone === 'resize-start' || hoverZone === 'resize-end') {
-        newCursor = 'ew-resize';
-      } else {
-        newCursor = 'grab';
-      }
-    }
-
-    if (this.canvas.style.cursor !== newCursor) {
-      this.canvas.style.cursor = newCursor;
-    }
-
-    const prevId = this.hoveredItem ? this.hoveredItem.id : null;
-    const nextId = newHoveredItem ? newHoveredItem.id : null;
-
-    if (prevId !== nextId) {
-      this.hoveredItem = newHoveredItem;
-      this.wheel.hoveredItem = newHoveredItem;
-
-      if (this.wheel.onHoverChange) {
-        this.wheel.onHoverChange(newHoveredItem);
-      }
-
-      if (this.wheel.create && !this.wheel.hoverRedrawPending) {
-        this.wheel.hoverRedrawPending = true;
-        requestAnimationFrame(() => {
-          if (this.wheel.create) this.wheel.create();
-          this.wheel.hoverRedrawPending = false;
-        });
-      }
-    }
+    this.hoverHandler.update(event, context);
   }
 
   async handleMouseUp(event) {
@@ -1352,67 +1297,24 @@ class InteractionHandler {
   }
 
   handleClick(event) {
-    // console.log('[DEBUG] handleClick - wheel.hadDragInCurrentCycle:', this.wheel.hadDragInCurrentCycle);
+    // Delegate to ClickHandler
+    const context = {
+      getCanvasCoordinates: this.getCanvasCoordinates.bind(this),
+      clickableItems: this.wheel.clickableItems,
+      wheelStructure: this.wheel.wheelStructure,
+      pendingItemUpdates: this.wheel.pendingItemUpdates,
+      center: this.wheel.center,
+      rotationAngle: this.wheel.rotationAngle,
+      hadDragInCurrentCycle: this.wheel.hadDragInCurrentCycle,
+      skipNextClick: this.wheel.skipNextClick,
+      justFinishedDrag: this.wheel.justFinishedDrag
+    };
+
+    this.clickHandler.handleClick(event, context);
     
-    // Block click if ANY drag happened in current mouse cycle (CHECK WHEEL INSTANCE)
-    if (this.wheel.hadDragInCurrentCycle) {
-      // console.log('[DEBUG] BLOCKED by wheel.hadDragInCurrentCycle');
-      return;
-    }
-    
-    // Block click if drag just completed
-    if (this.dragJustCompleted) {
-      return;
-    }
-    
-    if (this.wheel.skipNextClick) {
+    // Reset skip flags after click handling
+    if (context.skipNextClick) {
       this.wheel.skipNextClick = false;
-      return;
-    }
-
-    if (this.wheel.justFinishedDrag) {
-      return;
-    }
-
-    if (this.dragState.isDragging || this.isRotating) {
-      return;
-    }
-
-    // Handle click events (for item selection, etc.)
-    if (this.options.onItemClick) {
-      const { x, y } = this.getCanvasCoordinates(event);
-      
-      if (this.wheel.clickableItems) {
-        for (const itemRegion of this.wheel.clickableItems) {
-          if (this.isPointInItemRegion(x, y, itemRegion)) {
-            // If this is a cluster, use the stored cluster data directly
-            if (itemRegion.clusterData) {
-              this.options.onItemClick(itemRegion.clusterData, {
-                x: event.clientX,
-                y: event.clientY
-              }, event);
-              return;
-            }
-            
-            // CRITICAL: Look up fresh item data from wheelStructure (single source of truth)
-            const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
-            const freshItemFromData = this.wheel.wheelStructure.items.find(
-              (i) => i.id === itemRegion.itemId
-            );
-            const freshItem = pendingEntry ? pendingEntry.item : freshItemFromData;
-            
-            // If item not found in current wheelStructure, skip (year filtered out)
-            if (freshItem) {
-              // Pass item, position, and original event (for modifier keys)
-              this.options.onItemClick(freshItem, {
-                x: event.clientX,
-                y: event.clientY
-              }, event);
-            }
-            return;
-          }
-        }
-      }
     }
   }
 
@@ -1433,7 +1335,7 @@ class InteractionHandler {
    * @returns {Object|null} Hovered item
    */
   getHoveredItem() {
-    return this.hoveredItem;
+    return this.hoverHandler.getHoveredItem();
   }
 
   /**
@@ -1458,8 +1360,12 @@ class InteractionHandler {
       this.wheel.updateDragStateFromHandler(this.dragState);
     }
     
-    this.isRotating = false;
-    this.hoveredItem = null;
+    // Reset sub-handlers
+    this.rotationHandler.reset();
+    this.hoverHandler.reset();
+    this.clickHandler.reset();
+    
+    // Update wheel state
     this.wheel.hoveredItem = null;
     this.canvas.style.cursor = 'default';
   }
