@@ -7,6 +7,7 @@ import InteractionHandler from "./utils/InteractionHandler.js";
 import ExportManager from "./utils/ExportManager.js";
 import ConfigValidator from "./utils/ConfigValidator.js";
 import LRUCache from "./utils/LRUCache.js";
+import TextRenderer from "./utils/TextRenderer.js";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -166,6 +167,12 @@ class YearWheel {
       readonly: this.readonly
     });
     
+    // Text rendering module (consolidated from duplicated methods)
+    this.textRenderer = new TextRenderer(this.context, this.size, this.center, {
+      zoomLevel: this.zoomLevel,
+      textCache: this.textMeasurementCache
+    });
+    
     this.interactionHandler = new InteractionHandler(this.canvas, this, {
       readonly: this.readonly,
       selectionMode: this.selectionMode,
@@ -305,6 +312,10 @@ class YearWheel {
   updateZoomLevel(newZoomLevel) {
     if (this.zoomLevel !== newZoomLevel) {
       this.zoomLevel = newZoomLevel;
+      // Sync TextRenderer with new zoom level
+      if (this.textRenderer) {
+        this.textRenderer.setZoomLevel(newZoomLevel);
+      }
       // Invalidate cache since text rendering will change
       this.invalidateCache();
       // Redraw with new zoom-adjusted text
@@ -1042,65 +1053,20 @@ class YearWheel {
     fontSize,
     isVertical
   ) {
-    // NATURAL letter spacing - no stretching, just center the text
+    // Delegate to TextRenderer for curved text along arc
+    // Note: startAngle and endAngle are already in radians from setCircleSectionHTML
     const middleRadius = startRadius + width / 2;
-    const color = "#ffffff";
-
-    this.context.save();
-    this.context.font = `600 ${fontSize}px Arial, sans-serif`;
-    this.context.fillStyle = color;
-    this.context.textAlign = "center";
-    this.context.textBaseline = "middle";
-
-    // Measure each character's natural width
-    const charWidths = [];
-    let totalWidth = 0;
-    for (let i = 0; i < text.length; i++) {
-      const charWidth = this.context.measureText(text[i]).width;
-      charWidths.push(charWidth);
-      totalWidth += charWidth;
-    }
-
-    // Add natural spacing between characters (10% of average char width)
-    const avgCharWidth = totalWidth / text.length;
-    const letterSpacing = avgCharWidth * 0.1;
-    const totalSpacing = letterSpacing * (text.length - 1);
-    const totalTextWidth = totalWidth + totalSpacing;
-
-    // Calculate the angular span this text would naturally occupy
-    const textAngleSpan = totalTextWidth / middleRadius;
-
-    // Center the text within the available angle
-    const startOffset = (angleLength - textAngleSpan) / 2;
-    let currentAngle = startAngle + startOffset;
-
-    // Draw each character with natural spacing
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      const charWidth = charWidths[i];
-      const charAngleSpan = charWidth / middleRadius;
-
-      // Position at center of character's arc span
-      const charAngle = currentAngle + charAngleSpan / 2;
-      const coord = this.moveToAngle(middleRadius, charAngle);
-
-      this.context.save();
-      this.context.translate(coord.x, coord.y);
-      this.context.rotate(charAngle + Math.PI / 2);
-      this.context.fillText(char, 0, 0);
-      this.context.restore();
-
-      // Move to next character (char width + spacing)
-      currentAngle += charAngleSpan + letterSpacing / middleRadius;
-    }
-
-    this.context.restore();
+    
+    this.textRenderer.drawCurvedText(text, middleRadius, startAngle, endAngle, {
+      fontSize,
+      fontWeight: '600',
+      color: '#ffffff'
+    });
   }
 
   /**
-   * COMPLETELY REWRITTEN TEXT RENDERING
-   * Renders activity text perpendicular to the arc (radial direction)
-   * with proper word wrapping, truncation, and size constraints
+   * Activity text rendering - perpendicular to the arc (radial direction)
+   * Delegates to TextRenderer for consistent text handling
    *
    * @param {object} renderDecision - Optional: Pre-calculated rendering decision from evaluateRenderingSolution
    */
@@ -1116,295 +1082,12 @@ class YearWheel {
     backgroundColor,
     renderDecision = null
   ) {
-    // Angles are already in radians from setCircleSectionHTML
-    const startRad = startAngle;
-    const endRad = endAngle;
-    const centerAngle = (startRad + endRad) / 2;
-    const middleRadius = startRadius + width / 2;
-
-    // Calculate available space in pixels
-    const arcLength = middleRadius * Math.abs(angleLength); // Length along the arc
-    const radialWidth = width; // Width perpendicular to arc
-
-    // Smart zoom: MUCH lower thresholds to show more items when zoomed
-    const zoomFactor = this.zoomLevel / 100;
-
-    // Very aggressive thresholds - allow tiny segments to show text when zoomed
-    let arcLengthThreshold = this.size * 0.003; // Was 0.008 - much lower now!
-    let radialWidthThreshold = this.size * 0.002; // Was 0.005 - much lower now!
-
-    // Adjust thresholds inversely with zoom
-    arcLengthThreshold = arcLengthThreshold / zoomFactor;
-    radialWidthThreshold = radialWidthThreshold / zoomFactor;
-
-    if (arcLength < arcLengthThreshold || radialWidth < radialWidthThreshold) {
-      // Too small to render readable text - skip it
-      return;
-    }
-
-    // Get text color with proper contrast
-    const textColor = backgroundColor
-      ? this.getContrastColor(backgroundColor)
-      : "#FFFFFF";
-
-    // INTELLIGENT DISPLAY-AWARE FONT SIZING WITH PROPORTIONAL SCALING
-    const effectiveDisplaySize = this.size * zoomFactor;
-
-    // ZOOM-AWARE CONSTRAINTS - Scale with display but cap appropriately
-    // At high zoom, don't let fonts grow unbounded - cap based on actual rendered size
-    const absoluteMinFont = Math.max(
-      12,
-      Math.min(effectiveDisplaySize / 200, 16)
-    );
-    const minDisplayFont = Math.max(
-      14,
-      Math.min(effectiveDisplaySize / 180, 18)
-    );
-    const maxDisplayFont = Math.min(
-      50,
-      Math.max(20, effectiveDisplaySize / 45)
-    );
-    const reasonableMaxFont = Math.min(
-      35,
-      Math.max(18, effectiveDisplaySize / 60)
-    );
-
-    // TEXT CONTENT ANALYSIS
-    const textLength = text.length;
-    const hasSpaces = text.includes(" ");
-    const wordCount = hasSpaces ? text.split(/\s+/).length : 1;
-
-    // Length penalty (more moderate - won't force too-small fonts)
-    let lengthPenalty = 1.0;
-    if (textLength > 15) lengthPenalty = 0.9; // Was 0.85
-    else if (textLength > 10) lengthPenalty = 0.93; // Was 0.90
-    else if (textLength > 6) lengthPenalty = 0.96; // Was 0.95
-
-    // CONTAINER PROPORTIONALITY
-    const segmentArea = radialWidth * arcLength;
-    const wheelArea = this.size * this.size;
-    const areaRatio = segmentArea / wheelArea;
-
-    // Size penalty for large segments (more moderate)
-    let sizePenalty = 1.0;
-    if (areaRatio > 0.15) sizePenalty = 0.88; // Was 0.85
-    else if (areaRatio > 0.1) sizePenalty = 0.92; // Was 0.90
-    else if (areaRatio > 0.06) sizePenalty = 0.96; // Was 0.95
-
-    // SPACE ANALYSIS - Use aggressive margins from start
-    const maxTextWidth = radialWidth * 0.85; // Match wrapping threshold
-    const maxTextHeight = arcLength * 0.85;
-
-    // SMART FONT CALCULATION: Find largest font where text actually fits
-    // Don't just use geometry - measure actual text width!
-    let testFontSize = reasonableMaxFont; // Start with reasonable max
-
-    // Binary search for optimal font size that fits the text
-    let minFont = minDisplayFont;
-    let maxFont = reasonableMaxFont;
-
-    this.context.save();
-
-    for (let iteration = 0; iteration < 10; iteration++) {
-      testFontSize = (minFont + maxFont) / 2;
-      this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
-      const measuredWidth = this.context.measureText(text).width;
-
-      if (measuredWidth <= maxTextWidth * 0.95) {
-        // Text fits! Try larger
-        minFont = testFontSize;
-      } else {
-        // Too big, go smaller
-        maxFont = testFontSize;
-      }
-    }
-
-    // Use the largest font that fit
-    testFontSize = minFont;
-
-    // Apply length penalty only if text is very long
-    if (textLength > 15) testFontSize *= 0.95;
-
-    // Enforce absolute limits
-    testFontSize = Math.max(testFontSize, absoluteMinFont);
-    testFontSize = Math.min(testFontSize, maxDisplayFont);
-
-    // Set final font
-    this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
-    this.context.fillStyle = textColor;
-    this.context.textAlign = "center";
-    this.context.textBaseline = "middle";
-
-    const textWidth = this.context.measureText(text).width;
-
-    // TRUNCATION STRATEGY: Only truncate if absolutely necessary
-    let displayText = text;
-
-    if (textWidth > maxTextWidth) {
-      // Text still too wide even after font optimization
-      // Only now do we truncate
-      let truncated = text;
-      this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
-      let truncatedWidth = this.context.measureText(truncated + "…").width;
-
-      while (truncatedWidth > maxTextWidth * 0.9 && truncated.length > 1) {
-        truncated = truncated.substring(0, truncated.length - 1);
-        truncatedWidth = this.context.measureText(truncated + "…").width;
-      }
-
-      displayText =
-        truncated.length < text.length ? truncated + "…" : truncated;
-    }
-
-    // MULTI-LINE RENDERING SUPPORT
-    // If renderDecision indicates multi-line (lineCount > 1), wrap the text
-    let linesToRender = [displayText];
-
-    if (
-      renderDecision &&
-      renderDecision.allowWrapping &&
-      renderDecision.lineCount > 1
-    ) {
-      // Use the pre-calculated decision to render multi-line text
-      // Split on spaces AND hyphens for better wrapping
-      const words = this.splitTextForWrapping(text);
-      linesToRender = [];
-      let currentLine = "";
-
-      this.context.save();
-      this.context.font = `500 ${renderDecision.fontSize}px Arial, sans-serif`;
-
-      // Wrap text into lines
-      for (let word of words) {
-        const testLine = currentLine ? currentLine + " " + word : word;
-        const testWidth = this.context.measureText(testLine).width;
-
-        if (testWidth > maxTextWidth * 0.85 && currentLine) {
-          // Use 85% for aggressive containment
-          linesToRender.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      if (currentLine) linesToRender.push(currentLine);
-
-      // CRITICAL: Check if all lines fit vertically
-      const lineHeight = renderDecision.fontSize * 1.2;
-      const totalHeight = linesToRender.length * lineHeight;
-
-      if (totalHeight > maxTextHeight * 0.95) {
-        // Too many lines! Fall back to single-line with truncation
-        this.context.restore();
-        linesToRender = [displayText];
-        if (textWidth > maxTextWidth) {
-          // Truncate to fit
-          let truncated = text;
-          this.context.save();
-          this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
-          let truncatedWidth = this.context.measureText(truncated + "…").width;
-          while (truncatedWidth > maxTextWidth * 0.9 && truncated.length > 1) {
-            truncated = truncated.substring(0, truncated.length - 1);
-            truncatedWidth = this.context.measureText(truncated + "…").width;
-          }
-          this.context.restore();
-          linesToRender = [truncated + "…"];
-        }
-      } else {
-        // Lines fit! Validate each line width
-        const maxLineWidth = Math.max(
-          ...linesToRender.map((line) => this.context.measureText(line).width)
-        );
-        if (maxLineWidth > maxTextWidth * 0.9) {
-          // A line is too wide, truncate longest line
-          linesToRender = linesToRender.map((line) => {
-            const lineWidth = this.context.measureText(line).width;
-            if (lineWidth > maxTextWidth * 0.9) {
-              let truncated = line;
-              let truncatedWidth = this.context.measureText(
-                truncated + "…"
-              ).width;
-              while (
-                truncatedWidth > maxTextWidth * 0.9 &&
-                truncated.length > 1
-              ) {
-                truncated = truncated.substring(0, truncated.length - 1);
-                truncatedWidth = this.context.measureText(
-                  truncated + "…"
-                ).width;
-              }
-              return truncated + "…";
-            }
-            return line;
-          });
-        }
-        this.context.restore();
-
-        // Update font size from decision
-        testFontSize = renderDecision.fontSize;
-        this.context.font = `500 ${testFontSize}px Arial, sans-serif`;
-      }
-    } else if (!renderDecision && text.includes(" ") && testFontSize >= 14) {
-      // Fallback: attempt basic wrapping if no decision provided
-      const words = text.split(/\s+/);
-      linesToRender = [];
-      let currentLine = "";
-
-      for (let word of words) {
-        const testLine = currentLine ? currentLine + " " + word : word;
-        const testWidth = this.context.measureText(testLine).width;
-
-        if (testWidth > maxTextWidth && currentLine) {
-          linesToRender.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = testLine;
-        }
-      }
-      if (currentLine) linesToRender.push(currentLine);
-
-      // If wrapping creates more lines than fit, use single truncated line
-      const lineHeight = testFontSize * 1.2;
-      if (linesToRender.length * lineHeight > maxTextHeight) {
-        linesToRender = [displayText];
-      }
-    }
-
-    // Position at center of segment
-    const coord = this.moveToAngle(middleRadius, centerAngle);
-    this.context.translate(coord.x, coord.y);
-
-    // Determine rotation for perpendicular text
-    let normalizedAngle = centerAngle % (Math.PI * 2);
-    if (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
-
-    // Check if we're on left side (flip text to keep readable)
-    const isLeftSide =
-      normalizedAngle > Math.PI / 2 && normalizedAngle < Math.PI * 1.5;
-    let rotation = centerAngle;
-    if (isLeftSide) {
-      rotation += Math.PI; // Flip 180° so text reads outward
-    }
-
-    this.context.rotate(rotation);
-
-    // Draw text (single or multi-line)
-    if (linesToRender.length === 1) {
-      // Single line - center it
-      this.context.fillText(linesToRender[0], 0, 0);
-    } else {
-      // Multi-line - stack vertically with proper spacing
-      const lineHeight = testFontSize * 1.2;
-      const totalHeight = linesToRender.length * lineHeight;
-      let startY = -totalHeight / 2 + lineHeight / 2;
-
-      for (let line of linesToRender) {
-        this.context.fillText(line, 0, startY);
-        startY += lineHeight;
-      }
-    }
-
-    this.context.restore();
+    // Delegate to TextRenderer for perpendicular text rendering
+    // Note: startAngle and endAngle are already in radians from setCircleSectionHTML
+    this.textRenderer.drawPerpendicularText(text, startRadius, width, startAngle, endAngle, {
+      backgroundColor,
+      renderDecision
+    });
   }
 
   /**

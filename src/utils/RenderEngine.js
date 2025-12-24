@@ -3,7 +3,7 @@
  * 
  * Provides reusable rendering functions for:
  * - Ring backgrounds and sections
- * - Text along curved paths
+ * - Text along curved paths (delegates to TextRenderer)
  * - Activity items with labels
  * - Month/week rings
  * - Drag previews
@@ -14,6 +14,7 @@
 import LayoutCalculator from './LayoutCalculator.js';
 import ColorUtils from './ColorUtils.js';
 import LRUCache from './LRUCache.js';
+import TextRenderer from './TextRenderer.js';
 
 class RenderEngine {
   constructor(context, size, center, options = {}) {
@@ -24,6 +25,11 @@ class RenderEngine {
     
     // Text measurement cache with LRU eviction (max 500 entries)
     this.textMeasurementCache = new LRUCache(500);
+    
+    // Consolidated text rendering (delegates to TextRenderer)
+    this.textRenderer = new TextRenderer(context, size, center, {
+      textCache: this.textMeasurementCache
+    });
   }
 
   // ============================================================================
@@ -149,7 +155,7 @@ class RenderEngine {
   }
 
   // ============================================================================
-  // CURVED TEXT RENDERING
+  // CURVED TEXT RENDERING (Delegating to TextRenderer)
   // ============================================================================
 
   /**
@@ -164,50 +170,25 @@ class RenderEngine {
     const {
       fontSize = this.size / 70,
       fontWeight = 'normal',
-      fontColor = '#374151',
-      textAlign = 'center'
+      fontColor = '#374151'
     } = style;
 
-    this.context.save();
-    this.context.font = `${fontWeight} ${fontSize}px Arial, sans-serif`;
-    this.context.fillStyle = fontColor;
-    this.context.textAlign = 'center';
-    this.context.textBaseline = 'middle';
+    // Convert degrees to radians for TextRenderer
+    const startAngleRad = LayoutCalculator.degreesToRadians(startAngle);
+    const endAngleRad = LayoutCalculator.degreesToRadians(endAngle);
 
-    const angleRange = endAngle - startAngle;
-    const midAngle = startAngle + angleRange / 2;
-
-    // For short text, just center it
-    if (text.length <= 3) {
-      const angleRad = LayoutCalculator.degreesToRadians(midAngle);
-      const pos = LayoutCalculator.polarToCartesian(this.center.x, this.center.y, radius, angleRad);
-      
-      this.context.translate(pos.x, pos.y);
-      this.context.rotate(angleRad + Math.PI / 2);
-      this.context.fillText(text, 0, 0);
-    } else {
-      // For longer text, place character by character along arc
-      const charAngle = angleRange / text.length;
-      
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const angle = startAngle + (i + 0.5) * charAngle;
-        const angleRad = LayoutCalculator.degreesToRadians(angle);
-        const pos = LayoutCalculator.polarToCartesian(this.center.x, this.center.y, radius, angleRad);
-        
-        this.context.save();
-        this.context.translate(pos.x, pos.y);
-        this.context.rotate(angleRad + Math.PI / 2);
-        this.context.fillText(char, 0, 0);
-        this.context.restore();
-      }
-    }
-
-    this.context.restore();
+    // Delegate to TextRenderer
+    this.textRenderer.drawCurvedText(text, radius, startAngleRad, endAngleRad, {
+      fontSize,
+      fontWeight,
+      color: fontColor
+    });
   }
 
   /**
    * Draw text perpendicular to arc (for activity names on inner rings)
+   * Note: This is a simplified version - for full-featured perpendicular text,
+   * use TextRenderer.drawPerpendicularText directly
    * @param {string} text - Text to draw
    * @param {number} radius - Radius for text placement
    * @param {number} midAngle - Middle angle in degrees
@@ -220,6 +201,7 @@ class RenderEngine {
       fontColor = '#FFFFFF'
     } = style;
 
+    // Simple perpendicular text - for complex rendering use TextRenderer directly
     this.context.save();
     this.context.font = `${fontWeight} ${fontSize}px Arial, sans-serif`;
     this.context.fillStyle = fontColor;
@@ -232,37 +214,23 @@ class RenderEngine {
     this.context.translate(pos.x, pos.y);
     this.context.rotate(angleRad + Math.PI / 2);
 
-    // Measure text and wrap if needed
+    // Measure text and truncate if needed
     const maxWidth = this.size / 10;
-    const metrics = this.context.measureText(text);
-    
-    if (metrics.width > maxWidth) {
-      // Simple truncation with ellipsis
-      const truncated = this.truncateText(text, maxWidth);
-      this.context.fillText(truncated, 0, 0);
-    } else {
-      this.context.fillText(text, 0, 0);
-    }
+    const truncated = this.textRenderer.truncateText(text, maxWidth, `${fontWeight} ${fontSize}px Arial, sans-serif`);
+    this.context.fillText(truncated, 0, 0);
 
     this.context.restore();
   }
 
   /**
-   * Truncate text to fit within max width
+   * Truncate text to fit within max width (delegates to TextRenderer)
    * @param {string} text - Text to truncate
    * @param {number} maxWidth - Maximum width
    * @returns {string} Truncated text
    */
   truncateText(text, maxWidth) {
-    let truncated = text;
-    let metrics = this.context.measureText(truncated + '...');
-    
-    while (metrics.width > maxWidth && truncated.length > 0) {
-      truncated = truncated.slice(0, -1);
-      metrics = this.context.measureText(truncated + '...');
-    }
-    
-    return truncated + '...';
+    const font = this.context.font || `500 ${this.size / 80}px Arial, sans-serif`;
+    return this.textRenderer.truncateText(text, maxWidth, font);
   }
 
   // ============================================================================
