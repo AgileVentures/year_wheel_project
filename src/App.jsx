@@ -3502,7 +3502,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Handle extending activity beyond current year - OPTION B: Linked items across pages
   // Since items are PAGE-SCOPED, we create linked items on each year's page
   // Items are linked via crossYearGroupId for synchronized updates
-  const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd, newStartDate }) => {
+  const handleExtendActivityBeyondYear = useCallback(async ({ item, overflowEndDate, currentYearEnd, newStartDate, newRingId }) => {
     if (!wheelId || !item || !overflowEndDate || !currentYearEnd) {
       return;
     }
@@ -3511,6 +3511,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const currentYearEndDate = new Date(currentYearEnd);
     // Use newStartDate if provided (for move operations), otherwise keep original
     const actualStartDate = newStartDate ? new Date(newStartDate) : new Date(item.startDate);
+    // Use newRingId if provided (when item was dragged to a different ring)
+    const actualRingId = newRingId || item.ringId;
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
       return;
@@ -3573,11 +3575,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Generate a cross-year group ID to link all segments
     const crossYearGroupId = item.crossYearGroupId || crypto.randomUUID();
 
-    // First, update the current item with the group ID, new start date, and clamp end to year end
+    // First, update the current item with the group ID, new start date, new ringId, and clamp end to year end
     const updatedCurrentItem = {
       ...item,
       startDate: formatDateOnly(actualStartDate), // Use new start date for move operations
       endDate: formatDateOnly(currentYearEndDate),
+      ringId: actualRingId, // Use new ringId if item was dragged to a different ring
       crossYearGroupId,
     };
 
@@ -3616,13 +3619,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           ...existingLinked,
           startDate: segment.startDate,
           endDate: segment.endDate,
+          ringId: actualRingId, // Sync ringId across all linked items
           isUpdate: true,
         });
       } else {
         // Create new linked item
         newItems.push({
           id: generateItemId(),
-          ringId: item.ringId,
+          ringId: actualRingId, // Use the new ringId for all linked items
           activityId: item.activityId,
           labelId: item.labelId || null,
           name: item.name,
@@ -3708,7 +3712,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // Handle extending activity to PREVIOUS year(s) - OPTION B: Linked items across pages
   // Since items are PAGE-SCOPED, we create linked items on each year's page
   // Items are linked via crossYearGroupId for synchronized updates
-  const handleExtendActivityToPreviousYear = useCallback(async ({ item, overflowStartDate, currentYearStart, newEndDate }) => {
+  const handleExtendActivityToPreviousYear = useCallback(async ({ item, overflowStartDate, currentYearStart, newEndDate, newRingId }) => {
     if (!wheelId || !item || !overflowStartDate || !currentYearStart) {
       return;
     }
@@ -3717,6 +3721,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     const currentYearStartDate = new Date(currentYearStart);
     // Use newEndDate if provided (for move operations), otherwise keep original
     const actualEndDate = newEndDate ? new Date(newEndDate) : new Date(item.endDate);
+    // Use newRingId if provided (when item was dragged to a different ring)
+    const actualRingId = newRingId || item.ringId;
 
     if (!(overflowDate instanceof Date) || Number.isNaN(overflowDate.getTime())) {
       return;
@@ -3782,11 +3788,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // Generate a cross-year group ID to link all segments
     const crossYearGroupId = item.crossYearGroupId || crypto.randomUUID();
 
-    // First, update the current item with the group ID, new end date, and clamp start to year start
+    // First, update the current item with the group ID, new end date, new ringId, and clamp start to year start
     const updatedCurrentItem = {
       ...item,
       startDate: formatDateOnly(currentYearStartDate),
       endDate: formatDateOnly(actualEndDate), // Use new end date for move operations
+      ringId: actualRingId, // Use new ringId if item was dragged to a different ring
       crossYearGroupId,
     };
 
@@ -3825,13 +3832,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           ...existingLinked,
           startDate: segment.startDate,
           endDate: segment.endDate,
+          ringId: actualRingId, // Sync ringId across all linked items
           isUpdate: true,
         });
       } else {
         // Create new linked item
         newItems.push({
           id: generateItemId(),
-          ringId: item.ringId,
+          ringId: actualRingId, // Use the new ringId for all linked items
           activityId: item.activityId,
           labelId: item.labelId || null,
           name: item.name,

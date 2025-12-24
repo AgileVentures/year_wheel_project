@@ -817,6 +817,9 @@ class InteractionHandler {
         (this.dragState.dragMode === 'resize-end' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToNextYear
       ) {
+        // Determine the new ringId (if dragged to another ring)
+        const newRingId = this.dragState.targetRing?.id || originalItem.ringId;
+        
         try {
           await this.options.onExtendActivityToNextYear({
             item: originalItem,
@@ -826,6 +829,8 @@ class InteractionHandler {
             // CRITICAL: Pass the NEW start date for move operations
             // Without this, the current item keeps its original start date
             newStartDate: this.dragState.dragMode === 'move' ? newStartDate : null,
+            // Pass new ringId if item was dragged to a different ring
+            newRingId: newRingId !== originalItem.ringId ? newRingId : null,
           });
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity across years:', extensionError);
@@ -844,6 +849,9 @@ class InteractionHandler {
         (this.dragState.dragMode === 'resize-start' || this.dragState.dragMode === 'move') &&
         this.options.onExtendActivityToPreviousYear
       ) {
+        // Determine the new ringId (if dragged to another ring)
+        const newRingId = this.dragState.targetRing?.id || originalItem.ringId;
+        
         try {
           await this.options.onExtendActivityToPreviousYear({
             item: originalItem,
@@ -852,6 +860,8 @@ class InteractionHandler {
             dragMode: this.dragState.dragMode,
             // CRITICAL: Pass the NEW end date for move operations
             newEndDate: this.dragState.dragMode === 'move' ? newEndDate : null,
+            // Pass new ringId if item was dragged to a different ring
+            newRingId: newRingId !== originalItem.ringId ? newRingId : null,
           });
         } catch (extensionError) {
           console.error('[InteractionHandler] Failed to extend activity to previous year:', extensionError);
@@ -1003,14 +1013,7 @@ class InteractionHandler {
 
       // CASCADE DEPENDENCY UPDATES: Find and update all dependent items
       const allItems = this.wheel.wheelStructure.items;
-      
-      // console.log(`[InteractionHandler] Checking dependencies for item ${updatedItem.id.substring(0, 8)} "${updatedItem.name}"`);
-      // console.log(`[InteractionHandler] Total items in wheelStructure: ${allItems.length}`);
-      // console.log(`[InteractionHandler] Items with dependencies:`, allItems.filter(i => i.dependsOn).map(i => ({ 
-      //   name: i.name, 
-      //   dependsOn: i.dependsOn?.substring(0, 8),
-      //   id: i.id.substring(0, 8)
-      // })));
+
       
       const cascadedUpdates = cascadeUpdateDependents(
         allItems,
@@ -1021,7 +1024,6 @@ class InteractionHandler {
         }
       );
 
-      // console.log(`[InteractionHandler] Cascaded ${cascadedUpdates.length} dependent items`);
 
       // Add all cascaded updates to pending updates
       cascadedUpdates.forEach(({ id, newDates }) => {
