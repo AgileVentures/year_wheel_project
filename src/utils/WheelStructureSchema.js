@@ -48,15 +48,15 @@ export const ItemSchema = z.object({
   activityId: z.string().uuid('Activity ID must be a valid UUID'),
   labelId: z.string().uuid().optional().nullable(),
   time: z.string().optional().nullable(),
-  description: z.string().default(''),
+  description: z.string().nullable().default(''),
   source: z.enum(['manual', 'google_calendar', 'google_sheets']).default('manual'),
   external_id: z.string().optional().nullable(),
   sync_metadata: z.record(z.any()).optional().nullable(),
   // Cross-year support
-  crossYearGroupId: z.string().uuid().optional(),
-  _originalStartDate: z.string().optional(),
-  _originalEndDate: z.string().optional(),
-  isCluster: z.boolean().optional()
+  crossYearGroupId: z.string().uuid().optional().nullable(),
+  _originalStartDate: z.string().optional().nullable(),
+  _originalEndDate: z.string().optional().nullable(),
+  isCluster: z.boolean().optional().nullable()
 }).refine(
   (data) => {
     // Validate that end date is not before start date
