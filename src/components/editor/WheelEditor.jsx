@@ -1652,29 +1652,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Get items directly from page.items (single source of truth)
         const rawItems = Array.isArray(page.items) ? page.items : [];
 
+        // For version snapshots, save ALL items on the page without year filtering
+        // Year filtering should only happen during rendering, not during backup
         const pageItems = rawItems
           .filter((item) => {
             if (!item) {
               return false;
             }
 
+            // Only filter out items explicitly assigned to a different page
             if (item.pageId && item.pageId !== page.id) {
               return false;
             }
 
-            if (pageYear == null) {
-              return true;
-            }
-
-            const startYear = item.startDate ? new Date(item.startDate).getFullYear() : null;
-            const endYear = item.endDate ? new Date(item.endDate).getFullYear() : startYear;
-
-            if (startYear == null || endYear == null) {
-              return false;
-            }
-
-            const yearMatch = startYear <= pageYear && endYear >= pageYear;
-            return yearMatch;
+            return true;
           })
           .map((item) => {
             const cleanItem = stripRemoteFields(item);
@@ -1699,6 +1690,19 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         };
       })
       .filter(Boolean);
+
+    // Debug logging for snapshot creation
+    console.log('[buildWheelSnapshot] Creating snapshot:', {
+      hasLatest: !!latest,
+      pagesCount: pagesSnapshot.length,
+      pages: pagesSnapshot.map(p => ({ id: p.id, year: p.year, itemsCount: p.items?.length || 0 })),
+      structure: {
+        ringsCount: sharedStructure.rings?.length,
+        activityGroupsCount: sharedStructure.activityGroups?.length,
+        labelsCount: sharedStructure.labels?.length,
+      },
+      latestPagesInfo: allPages.map(p => ({ id: p?.id, year: p?.year, itemsCount: p?.items?.length || 0 })),
+    });
 
     // CLEAN STRUCTURE: metadata + structure (shared) + pages (with items only)
     return {
@@ -3082,8 +3086,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // CRITICAL: Do ONE atomic state update with ALL restored data
       // This prevents race conditions where setWheelStructure overwrites page items
       const restoredPageMap = new Map(restoredPages.map(p => [p.id, p]));
+      const restoredPageByYear = new Map(restoredPages.map(p => [p.year, p]));
+      
+      // Debug logging for version restore
+      console.log('[VersionRestore] Restored data:', {
+        hasMetadata: !!versionData.metadata,
+        hasStructure: !!versionData.structure,
+        pagesCount: restoredPages.length,
+        restoredPages: restoredPages.map(p => ({ id: p.id, year: p.year, itemsCount: p.items?.length || 0 })),
+        restoredStructure: restoredStructure ? {
+          ringsCount: restoredStructure.rings?.length,
+          activityGroupsCount: restoredStructure.activityGroups?.length,
+          labelsCount: restoredStructure.labels?.length,
+        } : null,
+      });
       
       setWheelState((prev) => {
+        console.log('[VersionRestore] Current state pages:', prev.pages.map(p => ({ id: p.id, year: p.year, itemsCount: p.items?.length || 0 })));
+        
         const newMetadata = {
           ...prev.metadata,
           ...(restoredTitle && { title: restoredTitle }),
@@ -3096,14 +3116,31 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         const newStructure = restoredStructure || prev.structure;
         
+        // Try to match pages by ID first, then by year as fallback
         const newPages = prev.pages.map((page) => {
-          const restoredPage = restoredPageMap.get(page.id);
+          // First try exact ID match
+          let restoredPage = restoredPageMap.get(page.id);
+          
+          // Fallback: match by year if ID doesn't match
+          if (!restoredPage && page.year) {
+            restoredPage = restoredPageByYear.get(page.year);
+          }
+          
           if (restoredPage) {
+            console.log('[VersionRestore] Restoring items for page:', { 
+              pageId: page.id, 
+              pageYear: page.year, 
+              matchedById: restoredPageMap.has(page.id),
+              matchedByYear: !restoredPageMap.has(page.id) && restoredPageByYear.has(page.year),
+              restoredItemsCount: restoredPage.items?.length || 0 
+            });
             return {
               ...page,
               items: restoredPage.items || []
             };
           }
+          
+          console.log('[VersionRestore] No match found for page:', { pageId: page.id, pageYear: page.year });
           return page;
         });
         
