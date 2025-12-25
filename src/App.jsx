@@ -3204,16 +3204,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     try {
       setIsSaving(true);
       
-      // Fetch template data
+      // Fetch template wheel data (includes structure: rings, activityGroups, labels)
       const templateData = await fetchWheel(templateId);
       const templatePagesRaw = await fetchPages(templateId);
       
-      // Fetch items for each page from the items table (items are NOT in organization_data)
+      // Fetch items for each page from the items table
       const templatePages = await Promise.all((templatePagesRaw || []).map(async (page) => {
         const pageItems = await fetchPageData(page.id, page.year, templateId);
         return {
           ...page,
-          structure: normalizePageStructure(page),
           items: pageItems || []
         };
       }));
@@ -3222,7 +3221,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         throw new Error('Template data not found');
       }
 
-      console.log('[Editor] Loading template:', templateData.title, 'Pages:', templatePages.length);
+      console.log('[Editor] Loading template:', templateData.title);
+      console.log('[Editor] Template structure:', {
+        rings: templateData.structure?.rings?.length || 0,
+        activityGroups: templateData.structure?.activityGroups?.length || 0,
+        labels: templateData.structure?.labels?.length || 0
+      });
+      console.log('[Editor] Template pages:', templatePages.length);
       templatePages.forEach((page, idx) => {
         console.log(`[Editor] Template page ${idx + 1}: year=${page.year}, items=${page.items?.length || 0}`);
       });
@@ -3292,9 +3297,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       // For multi-page wheels, load all pages with their items
       if (templatePages.length > 1) {
-        // Convert structure from first page (rings, groups, labels are wheel-scoped)
-        const firstPage = templatePages[0];
-        const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(firstPage.structure);
+        // Convert structure from wheel data (rings, groups, labels are wheel-scoped)
+        const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(templateData.structure);
         
         // Load template pages into wheelState - each page gets its own items
         const pagesForState = templatePages.map((page, index) => {
@@ -3324,9 +3328,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           currentPageId: null // Will be set when saved
         }));
       } else {
-        // Single page template - load organization data from first page
-        const templateStructure = templatePages[0].structure;
-        const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(templateStructure);
+        // Single page template - load structure from wheel data
+        const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(templateData.structure);
         
         // Convert items for the single page (items come from separate table, not structure)
         const pageItems = convertTemplateItems(
@@ -3355,7 +3358,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
 
       // Update rings data for backward compatibility
-      const rings = templatePages[0].structure?.rings || [];
+      const rings = templateData.structure?.rings || [];
       const newRingsData = rings.map(ring => ({
         data: ring.data || Array.from({ length: 12 }, () => [""]),
         orientation: ring.orientation || "vertical"
