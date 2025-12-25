@@ -1799,48 +1799,67 @@ export const fetchWheelByShareToken = async (token) => {
 
 /**
  * Create a new version snapshot of a wheel
+ * Handles race conditions with retry logic for duplicate key errors
  */
-export const createVersion = async (wheelId, snapshotData, description = null, isAutoSave = false) => {
-  try {
-    // Get next version number
-    const { data: versionNumber, error: versionError } = await supabase
-      .rpc('get_next_version_number', { p_wheel_id: wheelId });
+export const createVersion = async (wheelId, snapshotData, description = null, isAutoSave = false, maxRetries = 3) => {
+  // Get current user once
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Get next version number
+      const { data: versionNumber, error: versionError } = await supabase
+        .rpc('get_next_version_number', { p_wheel_id: wheelId });
 
-    if (versionError) throw versionError;
+      if (versionError) throw versionError;
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+      // Create version
+      const { data, error } = await supabase
+        .from('wheel_versions')
+        .insert({
+          wheel_id: wheelId,
+          version_number: versionNumber,
+          snapshot_data: snapshotData,
+          change_description: description,
+          is_auto_save: isAutoSave,
+          created_by: user?.id,
+          metadata: {
+            user_agent: navigator.userAgent,
+            timestamp: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
 
-    // Create version
-    const { data, error } = await supabase
-      .from('wheel_versions')
-      .insert({
-        wheel_id: wheelId,
-        version_number: versionNumber,
-        snapshot_data: snapshotData,
-        change_description: description,
-        is_auto_save: isAutoSave,
-        created_by: user?.id,
-        metadata: {
-          user_agent: navigator.userAgent,
-          timestamp: new Date().toISOString()
+      if (error) {
+        // Check if it's a duplicate key error (code 23505)
+        if (error.code === '23505' && attempt < maxRetries) {
+          // Wait briefly and retry with a new version number
+          await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+          continue;
         }
-      })
-      .select()
-      .single();
+        throw error;
+      }
 
-    if (error) throw error;
+      // Cleanup old versions (keep last 100)
+      await supabase.rpc('cleanup_old_versions', { 
+        p_wheel_id: wheelId, 
+        p_keep_count: 100 
+      });
 
-    // Cleanup old versions (keep last 100)
-    await supabase.rpc('cleanup_old_versions', { 
-      p_wheel_id: wheelId, 
-      p_keep_count: 100 
-    });
-
-    return data;
-  } catch (error) {
-    console.error('Error creating version:', error);
-    throw error;
+      return data;
+    } catch (error) {
+      // On last attempt, log and throw
+      if (attempt === maxRetries) {
+        console.error('Error creating version after retries:', error);
+        throw error;
+      }
+      // For other errors, throw immediately
+      if (error.code !== '23505') {
+        console.error('Error creating version:', error);
+        throw error;
+      }
+    }
   }
 };
 

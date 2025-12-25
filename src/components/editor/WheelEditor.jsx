@@ -801,6 +801,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const handleSaveRef = useRef(null);
   // Expose triggerAutoSave for code paths defined above its declaration
   const triggerAutoSaveRef = useRef(null);
+  // Prevent duplicate version creation on unmount (React StrictMode calls cleanup twice)
+  const unmountVersionCreatedRef = useRef(false);
   // Queue item persistence operations to avoid race conditions
 
   // Complete wheel snapshot in the format: { metadata, structure, pages }
@@ -2100,15 +2102,22 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Create version on unmount if there are unsaved changes
   useEffect(() => {
+    // Reset the guard when wheelId changes (new wheel loaded)
+    unmountVersionCreatedRef.current = false;
+    
     return () => {
+      // Guard against duplicate unmount calls (React StrictMode)
+      if (unmountVersionCreatedRef.current) {
+        return;
+      }
+      
       // Only create version on unmount if we have a wheelId and unsaved changes
       if (wheelId && changeTracker.hasChanges()) {
-        // Use navigator.sendBeacon for reliable execution during page unload
-        // This is more reliable than async operations during unmount
+        unmountVersionCreatedRef.current = true;
+        
         const snapshot = buildWheelSnapshot();
         
-        // Fallback: try synchronous version creation if possible
-        // Note: This may not complete if unmount happens quickly
+        // Try to create version - the service handles race conditions with retries
         import('../../services/wheelService').then(({ createVersion }) => {
           createVersion(
             wheelId,
@@ -2116,6 +2125,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             'Auto-save på stängning',
             true // is_auto_save
           ).catch(error => {
+            // Reset guard on error so retry is possible
+            unmountVersionCreatedRef.current = false;
             console.error('[UnmountVersion] Failed to create version on unmount:', error);
           });
         });
