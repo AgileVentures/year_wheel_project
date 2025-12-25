@@ -197,6 +197,8 @@
   "aiTour": "Starta AI-guide",
     "template": "Template",
     "markAsTemplate": "Skapa som mall",
+    "makeTemplate": "Mall",
+    "isTemplate": "✓ Mall",
     "templateWheelVisibleOnLanding": "Template-hjul (synligt på startsidan)",
     "useTemplate": "Använd mall",
     "wheelView": "Hjulvy",

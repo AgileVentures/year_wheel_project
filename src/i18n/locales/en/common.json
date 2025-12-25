@@ -198,6 +198,8 @@
   "aiTour": "Show AI tour",
     "template": "Template",
     "markAsTemplate": "Mark as template",
+    "makeTemplate": "Template",
+    "isTemplate": "✓ Template",
     "templateWheelVisibleOnLanding": "Template wheel (visible on landing page)",
     "useTemplate": "Use template",
     "wheelView": "Wheel view",

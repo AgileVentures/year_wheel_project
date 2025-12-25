@@ -607,14 +607,14 @@ function Header({
         {wheelId && isAdmin && onToggleTemplate && (
           <button
             onClick={onToggleTemplate}
-            className={`hidden lg:flex items-center px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+            className={`hidden lg:flex items-center p-2 text-xs font-medium rounded-sm transition-colors ${
               isTemplate
                 ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
             title={isTemplate ? t('common:header.templateWheelVisibleOnLanding') : t('common:header.markAsTemplate')}
           >
-            {isTemplate ? t('common:header.template') : t('common:header.markAsTemplate')}
+            {isTemplate ? t('common:header.isTemplate') : t('common:header.makeTemplate')}
           </button>
         )}
 
