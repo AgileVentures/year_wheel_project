@@ -164,11 +164,20 @@ const ListView = ({
     const endYear = end.getFullYear();
     const showYear = yearFilter === 'all' || startYear !== endYear;
     
-    const dateFormat = showYear ? 'MMM d, yyyy' : 'MMM d';
+    // Compact format for mobile
+    const dateFormat = showYear ? 'd MMM yy' : 'd MMM';
     const startFormatted = format(start, dateFormat, { locale });
     const endFormatted = format(end, dateFormat, { locale });
     
-    return `${startFormatted} - ${endFormatted}`;
+    // Single day event
+    if (start.getTime() === end.getTime() || 
+        (start.getDate() === end.getDate() && 
+         start.getMonth() === end.getMonth() && 
+         start.getFullYear() === end.getFullYear())) {
+      return startFormatted;
+    }
+    
+    return `${startFormatted} – ${endFormatted}`;
   };
   
   const getActivityGroup = (activityId) => {

@@ -208,7 +208,7 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
             title={t('common:presentationMode', { defaultValue: 'Presentation mode' })}
           >
             <Presentation size={14} />
-            <span>{t('common:cast', { defaultValue: 'Cast' })}</span>
+            <span>{t('common:cast.castToScreen', { defaultValue: 'Casta' })}</span>
           </button>
         )}
 

@@ -52,6 +52,7 @@ export function useRealtimeCast() {
           // Handle READY signal from receiver
           if (payload && payload.type === CAST_MESSAGE_TYPES.ACK) {
             console.log('[useRealtimeCast] 📥 Receiver is READY! Sending INIT now...');
+            setIsConnected(true); // Now we know receiver is actually connected
             
             // Send INIT immediately when receiver signals ready
             if (initialState) {
@@ -84,8 +85,8 @@ export function useRealtimeCast() {
           console.log('[useRealtimeCast] Channel status:', status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('[useRealtimeCast] Connected! Waiting for receiver...');
-            setIsConnected(true);
+            console.log('[useRealtimeCast] Channel subscribed! Waiting for receiver to connect...');
+            // Don't set isConnected here - wait for READY message from receiver
             setSessionToken(token);
             setError(null);
             
