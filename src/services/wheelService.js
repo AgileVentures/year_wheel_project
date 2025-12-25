@@ -1447,16 +1447,20 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     
     if (!existingPageIds.has(page.id)) {
       // Page doesn't exist - create it
-      console.log(`[saveWheelSnapshot] Creating new page: id=${page.id?.substring(0,8)}, year=${page.year}, order=${page.pageOrder}`);
+      // page_order must be >= 1 (database constraint), so add 1 to 0-based index
+      const pageIndex = normalizedPages.indexOf(page);
+      const pageOrder = (page.pageOrder ?? pageIndex) + 1; // Convert to 1-based
+      
+      console.log(`[saveWheelSnapshot] Creating new page: id=${page.id?.substring(0,8)}, year=${page.year}, order=${pageOrder}`);
       
       const { data: newPage, error: createError } = await supabase
         .from('wheel_pages')
         .insert({
           id: page.id, // Use the client-generated UUID
           wheel_id: wheelId,
-          page_order: page.pageOrder ?? normalizedPages.indexOf(page),
+          page_order: pageOrder,
           year: page.year || new Date().getFullYear(),
-          title: page.title || `Sida ${(page.pageOrder ?? normalizedPages.indexOf(page)) + 1}`,
+          title: page.title || `Sida ${pageOrder}`,
           structure: {
             rings: baseRings.map(r => ({ ...r, id: ringIdMap.get(r.id) || r.id })),
             activityGroups: baseActivityGroups.map(g => ({ ...g, id: activityIdMap.get(g.id) || g.id })),
