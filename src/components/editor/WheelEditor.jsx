@@ -1934,28 +1934,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       lastSaveTimestamp.current = Date.now();
 
-      if (reason === 'manual') {
-        try {
-          // Version snapshot using CLEAN structure format
-          await createVersion(
-            wheelId,
-            {
-              metadata: snapshot.metadata,
-              structure: {
-                rings: normalizedRings,
-                activityGroups: normalizedActivityGroups,
-                labels: normalizedLabels,
-              },
-              pages: snapshot.pages || [],
-              activePageId: latest.currentPageId,
-            },
-            null,
-            false
-          );
-        } catch (versionError) {
-          // Silent fail for version creation
-        }
-      }
+      // NOTE: Version creation is now ONLY done via explicit handleSaveWithVersion
+      // Regular manual saves do NOT create versions to avoid clutter
 
       // Mark as saved in undo/redo stack
       markSaved();
@@ -2120,13 +2100,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         unmountVersionCreatedRef.current = true;
         
         const snapshot = buildWheelSnapshot();
+        const itemCount = snapshot?.pages?.reduce((sum, p) => sum + (p.items?.length || 0), 0) || 0;
+        const description = `Auto-sparning vid stängning (${itemCount} aktiviteter)`;
         
         // Try to create version - the service handles race conditions with retries
         import('../../services/wheelService').then(({ createVersion }) => {
           createVersion(
             wheelId,
             snapshot,
-            'Auto-save på stängning',
+            description,
             true // is_auto_save
           ).catch(error => {
             // Reset guard on error so retry is possible
@@ -2222,13 +2204,32 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   };
 
   const handleSaveWithVersion = useCallback(async () => {
-    // Force a full save with version creation
+    // Force a full save with explicit version creation
     try {
       isSavingRef.current = true;
       setIsSaving(true);
       
-      // Execute full save with manual reason to trigger version creation
+      // First do the regular save
       const result = await enqueueFullSave('manual');
+      
+      // Then create explicit version snapshot with description
+      const snapshot = buildWheelSnapshot();
+      if (snapshot && wheelId) {
+        const latest = latestValuesRef.current;
+        const itemCount = snapshot.pages?.reduce((sum, p) => sum + (p.items?.length || 0), 0) || 0;
+        const ringCount = snapshot.structure?.rings?.length || 0;
+        const groupCount = snapshot.structure?.activityGroups?.length || 0;
+        
+        // Create descriptive version note
+        const description = `Manuell sparning (${itemCount} aktiviteter, ${ringCount} ringar, ${groupCount} grupper)`;
+        
+        await createVersion(
+          wheelId,
+          snapshot,
+          description,
+          false // not auto-save
+        );
+      }
       
       showToast('Data och version har sparats!', 'success');
       markSaved();
@@ -2241,7 +2242,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isSavingRef.current = false;
       setIsSaving(false);
     }
-  }, [enqueueFullSave, showToast, markSaved]);
+  }, [enqueueFullSave, showToast, markSaved, buildWheelSnapshot, wheelId]);
 
   const handleSave = useCallback(async (options = {}) => {
     const { silent = false, reason = 'manual' } = options;
@@ -3028,10 +3029,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       
       // Create a version snapshot of current state before restoring
       if (wheelId) {
+        const preRestoreSnapshot = buildWheelSnapshot();
+        const itemCount = preRestoreSnapshot?.pages?.reduce((sum, p) => sum + (p.items?.length || 0), 0) || 0;
         await createVersion(
           wheelId,
-          buildWheelSnapshot(),
-          'Före återställning',
+          preRestoreSnapshot,
+          `Säkerhetskopia före återställning (${itemCount} aktiviteter)`,
           false
         );
       }
@@ -3058,7 +3061,14 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           labels: [...(versionData.structure.labels || [])],
         };
         
-        restoredPages = versionData.pages || [];
+        // Ensure all items have pageId when restoring
+        restoredPages = (versionData.pages || []).map(page => ({
+          ...page,
+          items: (page.items || []).map(item => ({
+            ...item,
+            pageId: item.pageId || page.id,
+          })),
+        }));
       } else {
         // OLD FORMAT: { title, year, colors, wheelStructure: { rings, activityGroups, labels, items } }
         restoredTitle = versionData.title;
@@ -3077,7 +3087,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         
         // Old format has items at wheelStructure level, assign to current page
         if (currentPageId && ws.items) {
-          restoredPages = [{ id: currentPageId, year: restoredYear, items: [...ws.items] }];
+          // Ensure all items have pageId when restoring from old format
+          const itemsWithPageId = ws.items.map(item => ({
+            ...item,
+            pageId: item.pageId || currentPageId,
+          }));
+          restoredPages = [{ id: currentPageId, year: restoredYear, items: itemsWithPageId }];
         } else {
           restoredPages = [];
         }
@@ -4254,17 +4269,33 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    if (!updatedItem?.id || !updatedItem?.pageId) {
-      console.warn('[handleUpdateAktivitet] Missing id or pageId', updatedItem);
+    console.log('[handleUpdateAktivitet] Called with:', {
+      id: updatedItem?.id,
+      name: updatedItem?.name,
+      pageId: updatedItem?.pageId,
+      hasPageId: !!updatedItem?.pageId,
+      hasId: !!updatedItem?.id,
+    });
+    
+    if (!updatedItem?.id) {
+      console.warn('[handleUpdateAktivitet] Missing id', updatedItem);
       return;
+    }
+    
+    // RECOVERY: If pageId is missing, try to find it from currentPageId
+    // This handles legacy items or items from old version snapshots
+    let itemToUpdate = updatedItem;
+    if (!updatedItem.pageId) {
+      console.warn('[handleUpdateAktivitet] Missing pageId, recovering from currentPageId:', currentPageId);
+      itemToUpdate = { ...updatedItem, pageId: currentPageId };
     }
 
     // CRITICAL FIX: Detect when item dates no longer match pageId's year
     // This can happen when dependency cascades push dates into a different year
-    const itemPage = pages.find(p => p.id === updatedItem.pageId);
-    if (itemPage && updatedItem.startDate) {
-      const itemStartYear = new Date(updatedItem.startDate).getFullYear();
-      const itemEndYear = updatedItem.endDate ? new Date(updatedItem.endDate).getFullYear() : itemStartYear;
+    const itemPage = pages.find(p => p.id === itemToUpdate.pageId);
+    if (itemPage && itemToUpdate.startDate) {
+      const itemStartYear = new Date(itemToUpdate.startDate).getFullYear();
+      const itemEndYear = itemToUpdate.endDate ? new Date(itemToUpdate.endDate).getFullYear() : itemStartYear;
       const pageYear = itemPage.year;
       
       // Check if item's dates fall completely outside its current page's year
@@ -4274,25 +4305,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Find correct page for the item based on start date
         const correctPage = pages.find(p => p.year === itemStartYear);
         
-        if (correctPage && correctPage.id !== updatedItem.pageId) {
-          console.log(`[handleUpdateAktivitet] Item "${updatedItem.name}" dates (${itemStartYear}) mismatch page year (${pageYear}). Moving to correct page.`);
+        if (correctPage && correctPage.id !== itemToUpdate.pageId) {
+          console.log(`[handleUpdateAktivitet] Item "${itemToUpdate.name}" dates (${itemStartYear}) mismatch page year (${pageYear}). Moving to correct page.`);
           
           // Move item to correct page
           setWheelState((prev) => ({
             ...prev,
             pages: prev.pages.map(page => {
               // Remove from old page
-              if (page.id === updatedItem.pageId) {
+              if (page.id === itemToUpdate.pageId) {
                 return {
                   ...page,
-                  items: (page.items || []).filter(item => item.id !== updatedItem.id)
+                  items: (page.items || []).filter(item => item.id !== itemToUpdate.id)
                 };
               }
               // Add to new page with updated pageId
               if (page.id === correctPage.id) {
                 return {
                   ...page,
-                  items: [...(page.items || []), { ...updatedItem, pageId: correctPage.id }]
+                  items: [...(page.items || []), { ...itemToUpdate, pageId: correctPage.id }]
                 };
               }
               return page;
@@ -4300,18 +4331,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }), { type: 'moveItemBetweenPages' });
           
           // Track the change for save
-          changeTracker.trackItemChange(updatedItem.id, 'modified', { ...updatedItem, pageId: correctPage.id });
+          changeTracker.trackItemChange(itemToUpdate.id, 'modified', { ...itemToUpdate, pageId: correctPage.id });
           return;
         } else if (!correctPage) {
-          console.warn(`[handleUpdateAktivitet] No page exists for year ${itemStartYear}. Item "${updatedItem.name}" may become orphaned.`);
+          console.warn(`[handleUpdateAktivitet] No page exists for year ${itemStartYear}. Item "${itemToUpdate.name}" may become orphaned.`);
           // TODO: Consider auto-creating the page or clamping dates back to page year
         }
       }
     }
 
     // Handle cross-year edits - delegate to handleUpdateCrossYearGroup
-    if (updatedItem._isCrossYearEdit) {
-      const { _isCrossYearEdit, ...cleanItem } = updatedItem;
+    if (itemToUpdate._isCrossYearEdit) {
+      const { _isCrossYearEdit, ...cleanItem } = itemToUpdate;
       
       // If item already has crossYearGroupId, update the whole group
       if (cleanItem.crossYearGroupId) {
@@ -4351,45 +4382,45 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     // CRITICAL: Update optimistic state immediately (before save)
     setWheelState((prev) => {
       const nextPages = prev.pages.map((page) => {
-        if (page.id !== updatedItem.pageId) return page;
+        if (page.id !== itemToUpdate.pageId) return page;
 
         const currentItems = Array.isArray(page.items) ? page.items : [];
-        const oldItem = currentItems.find((item) => item.id === updatedItem.id);
+        const oldItem = currentItems.find((item) => item.id === itemToUpdate.id);
 
         if (!oldItem) {
-          console.warn('[handleUpdateAktivitet] Item not found on page', updatedItem.id, 'page:', page.id);
+          console.warn('[handleUpdateAktivitet] Item not found on page', itemToUpdate.id, 'page:', page.id);
           return page;
         }
 
         changeResultRef.itemFound = true;
 
         // Check what changed
-        const ringChanged = oldItem.ringId !== updatedItem.ringId;
-        const datesChanged = oldItem.startDate !== updatedItem.startDate || oldItem.endDate !== updatedItem.endDate;
-        const activityChanged = oldItem.activityId !== updatedItem.activityId;
-        const labelChanged = (oldItem.labelId || null) !== (updatedItem.labelId || null);
-        const nameChanged = oldItem.name !== updatedItem.name;
-        const timeChanged = (oldItem.time || null) !== (updatedItem.time || null);
-        const descriptionChanged = (oldItem.description || null) !== (updatedItem.description || null);
+        const ringChanged = oldItem.ringId !== itemToUpdate.ringId;
+        const datesChanged = oldItem.startDate !== itemToUpdate.startDate || oldItem.endDate !== itemToUpdate.endDate;
+        const activityChanged = oldItem.activityId !== itemToUpdate.activityId;
+        const labelChanged = (oldItem.labelId || null) !== (itemToUpdate.labelId || null);
+        const nameChanged = oldItem.name !== itemToUpdate.name;
+        const timeChanged = (oldItem.time || null) !== (itemToUpdate.time || null);
+        const descriptionChanged = (oldItem.description || null) !== (itemToUpdate.description || null);
         const linkChanged =
-          (oldItem.linkType || null) !== (updatedItem.linkType || null) ||
-          (oldItem.linkedWheelId || null) !== (updatedItem.linkedWheelId || null);
+          (oldItem.linkType || null) !== (itemToUpdate.linkType || null) ||
+          (oldItem.linkedWheelId || null) !== (itemToUpdate.linkedWheelId || null);
         const dependencyChanged =
-          (oldItem.dependsOn || null) !== (updatedItem.dependsOn || null) ||
-          (oldItem.dependencyType || 'finish_to_start') !== (updatedItem.dependencyType || 'finish_to_start') ||
-          (oldItem.lagDays || 0) !== (updatedItem.lagDays || 0);
+          (oldItem.dependsOn || null) !== (itemToUpdate.dependsOn || null) ||
+          (oldItem.dependencyType || 'finish_to_start') !== (itemToUpdate.dependencyType || 'finish_to_start') ||
+          (oldItem.lagDays || 0) !== (itemToUpdate.lagDays || 0);
 
         // CRITICAL: Assign to ref so it's available after setWheelState completes
         changeResultRef.actuallyChanged =
           ringChanged || datesChanged || activityChanged || labelChanged ||
           nameChanged || timeChanged || descriptionChanged || linkChanged || dependencyChanged;
-        changeResultRef.updatedItem = updatedItem;
+        changeResultRef.updatedItem = itemToUpdate;
 
         if (!changeResultRef.actuallyChanged) return page;
 
         // Update item in page items (optimistic update)
         const nextItems = currentItems.map((item) =>
-          item.id === updatedItem.id ? updatedItem : item
+          item.id === itemToUpdate.id ? itemToUpdate : item
         );
 
         return {
@@ -4400,7 +4431,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       if (!changeResultRef.itemFound) {
         changeResultRef.actuallyChanged = false;
-        console.warn('[handleUpdateAktivitet] Item not found in any page!', updatedItem.id);
+        console.warn('[handleUpdateAktivitet] Item not found in any page!', itemToUpdate.id);
       }
 
       // CRITICAL: Preserve all wheelState properties, only update pages
@@ -4408,7 +4439,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         ...prev, 
         pages: nextPages 
       };
-    }, wasDragging ? { type: 'dragItem', params: { itemId: updatedItem.id } } : { type: 'updateItem' });
+    }, wasDragging ? { type: 'dragItem', params: { itemId: itemToUpdate.id } } : { type: 'updateItem' });
 
     // Handle drag mode cleanup (use ref values)
     if (wasDragging) {
@@ -4481,7 +4512,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       }
     }
-  }, [setWheelState, endBatch, cancelBatch, changeTracker, pages]);
+  }, [setWheelState, endBatch, cancelBatch, changeTracker, pages, currentPageId]);
 
   const handleAddItems = useCallback(async (newItems) => {
     if (!currentPageId) return;

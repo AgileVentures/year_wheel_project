@@ -299,14 +299,8 @@ export function useSaveManager(options: SaveManagerOptions): SaveManagerReturn {
     await executeMetadataSave(operation);
     await executeOrganizationSave(operation);
     
-    // Create version snapshot for manual saves
-    if (operation.isManual) {
-      await executeVersionSave({
-        type: 'version',
-        data: { description: null, isAutoSave: false },
-        timestamp: Date.now()
-      });
-    }
+    // NOTE: Version creation is now ONLY done via explicit handleSaveWithVersion in WheelEditor
+    // Regular saves do NOT create versions to avoid clutter
     
     console.log('[SaveManager] Full save completed');
   }, [wheelId, executeMetadataSave, executeOrganizationSave]);

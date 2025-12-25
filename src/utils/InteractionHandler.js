@@ -384,6 +384,14 @@ class InteractionHandler {
       console.warn('[InteractionHandler] Item not found in wheelStructure:', itemRegion.itemId);
       return;
     }
+    
+    console.log('[InteractionHandler] startActivityDrag freshItem:', {
+      id: freshItem.id,
+      name: freshItem.name,
+      pageId: freshItem.pageId,
+      ringId: freshItem.ringId,
+      hasPageId: !!freshItem.pageId,
+    });
 
     // Clustered items require special handling and cannot be dragged directly
     if (freshItem.isCluster) {
@@ -1022,6 +1030,15 @@ class InteractionHandler {
       // Update the primary item last (after dependents)
       // SKIP for cross-year items - handleUpdateCrossYearGroup handles all updates
       if (this.wheel.options?.onUpdateAktivitet && !originalItem.crossYearGroupId) {
+        console.log('[InteractionHandler] Calling onUpdateAktivitet with:', {
+          id: updatedItem.id,
+          name: updatedItem.name,
+          pageId: updatedItem.pageId,
+          hasPageId: !!updatedItem.pageId,
+          startDate: updatedItem.startDate,
+          endDate: updatedItem.endDate,
+          ringId: updatedItem.ringId,
+        });
         this.wheel.options.onUpdateAktivitet(updatedItem);
       }
     }
