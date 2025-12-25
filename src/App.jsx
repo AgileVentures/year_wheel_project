@@ -3253,26 +3253,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const groupIdMap = new Map();
         const labelIdMap = new Map();
         
-        // CRITICAL: Clear all IDs and create new client-side IDs
+        // CRITICAL: Generate new UUIDs for all IDs to avoid conflicts
         if (orgData.rings) {
-          orgData.rings = orgData.rings.map((ring, index) => {
-            const newId = `ring-${index + 1}`;
+          orgData.rings = orgData.rings.map((ring) => {
+            const newId = crypto.randomUUID();
             ringIdMap.set(ring.id, newId);
             return { ...ring, id: newId };
           });
         }
         
         if (orgData.activityGroups) {
-          orgData.activityGroups = orgData.activityGroups.map((group, index) => {
-            const newId = `group-${index + 1}`;
+          orgData.activityGroups = orgData.activityGroups.map((group) => {
+            const newId = crypto.randomUUID();
             groupIdMap.set(group.id, newId);
             return { ...group, id: newId };
           });
         }
         
         if (orgData.labels) {
-          orgData.labels = orgData.labels.map((label, index) => {
-            const newId = `label-${index + 1}`;
+          orgData.labels = orgData.labels.map((label) => {
+            const newId = crypto.randomUUID();
             labelIdMap.set(label.id, newId);
             return { ...label, id: newId };
           });
