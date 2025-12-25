@@ -88,18 +88,18 @@ function MobileWheelViewer({
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-sm safe-area-top">
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 safe-area-top">
         <button
           onClick={onClose}
-          className="p-2 -ml-2 text-white/80 hover:text-white active:bg-white/10 rounded-full transition-colors"
+          className="p-2 -ml-2 text-gray-700 hover:text-gray-900 active:bg-gray-100 rounded-full transition-colors"
           aria-label={t('common:close', { defaultValue: 'Stäng' })}
         >
           <X size={24} />
         </button>
         
-        <h2 className="text-white font-medium truncate px-2">
+        <h2 className="text-gray-900 font-medium truncate px-2">
           {title || t('common:yearWheel', { defaultValue: 'Årshjul' })}
         </h2>
         
@@ -115,7 +115,7 @@ function MobileWheelViewer({
       {/* Wheel Container */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-hidden bg-gray-900 flex items-center justify-center"
+        className="flex-1 overflow-hidden bg-white flex items-center justify-center"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -151,11 +151,11 @@ function MobileWheelViewer({
       </div>
       
       {/* Bottom Controls */}
-      <div className="flex items-center justify-center gap-4 px-4 py-3 bg-black/80 backdrop-blur-sm safe-area-bottom">
+      <div className="flex items-center justify-center gap-4 px-4 py-3 bg-white border-t border-gray-200 safe-area-bottom">
         <button
           onClick={handleZoomOut}
           disabled={zoomLevel <= 0.5}
-          className="p-3 text-white/80 hover:text-white active:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-3 text-gray-700 hover:text-gray-900 active:bg-gray-100 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label={t('common:zoomOut', { defaultValue: 'Zooma ut' })}
         >
           <ZoomOut size={24} />
@@ -163,7 +163,7 @@ function MobileWheelViewer({
         
         <button
           onClick={handleResetView}
-          className="p-3 text-white/80 hover:text-white active:bg-white/10 rounded-full transition-colors"
+          className="p-3 text-gray-700 hover:text-gray-900 active:bg-gray-100 rounded-full transition-colors"
           aria-label={t('common:resetView', { defaultValue: 'Återställ vy' })}
         >
           <RotateCcw size={24} />
@@ -172,14 +172,14 @@ function MobileWheelViewer({
         <button
           onClick={handleZoomIn}
           disabled={zoomLevel >= 3}
-          className="p-3 text-white/80 hover:text-white active:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-3 text-gray-700 hover:text-gray-900 active:bg-gray-100 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label={t('common:zoomIn', { defaultValue: 'Zooma in' })}
         >
           <ZoomIn size={24} />
         </button>
         
         {/* Zoom Level Indicator */}
-        <span className="text-white/60 text-sm min-w-[60px] text-center">
+        <span className="text-gray-600 text-sm min-w-[60px] text-center">
           {Math.round(zoomLevel * 100)}%
         </span>
       </div>
