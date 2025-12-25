@@ -4897,7 +4897,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                   activityGroups: [...processedOrgData.activityGroups],
                   labels: [...processedOrgData.labels],
                 };
-                const pageItems = [...(itemsByYear[yearStr] || [])];
+                // CRITICAL: Set pageId on each item to the target page's ID
+                const pageItems = (itemsByYear[yearStr] || []).map(item => ({
+                  ...item,
+                  pageId: targetPage.id
+                }));
 
                 itemsByPageId[targetPage.id] = pageItems;
 
