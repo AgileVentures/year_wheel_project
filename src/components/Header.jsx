@@ -372,223 +372,157 @@ function Header({
                 <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
                   <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.imageExport')}</p>
                 </div>
-                {/* PNG Transparent */}
-                <div className={`border-b border-gray-200 ${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
-                  <div className="px-4 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <FileDown className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {t('common:header.pngTransparent')}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {t('common:header.pngTransparentDesc')}
-                        </div>
-                      </div>
+                <div className="p-1">
+                  {/* PNG Transparent */}
+                  <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                    <FileDown size={16} className="text-gray-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900">{t('common:header.pngTransparent')}</div>
+                      <div className="text-xs text-gray-500">{t('common:header.pngTransparentDesc')}</div>
                     </div>
-                    {!isPremium && (
-                      <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
-                        {t('subscription:premium')}
-                      </span>
+                    {isPremium ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => { handleExport('png'); setShowImageExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.download')}
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </button>
+                        <button
+                          onClick={() => { handleCopyToClipboard('png'); setShowImageExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.copy')}
+                        >
+                          {copiedFormat === 'png' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
                     )}
                   </div>
-                  <div className="flex border-t border-gray-200">
-                    <button
-                      onClick={() => { handleExport('png'); setShowImageExportMenu(false); }}
-                      disabled={!isPremium}
-                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
-                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      <Download size={14} />
-                      {t('common:actions.download')}
-                    </button>
-                    <div className="w-px bg-gray-200"></div>
-                    <button
-                      onClick={() => { handleCopyToClipboard('png'); setShowImageExportMenu(false); }}
-                      disabled={!isPremium}
-                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
-                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      {copiedFormat === 'png' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
-                      {copiedFormat === 'png' ? t('common:actions.copied') : t('common:actions.copy')}
-                    </button>
-                  </div>
-                </div>
 
-                {/* PNG White Background */}
-                <div className="border-b border-gray-200">
-                  <div className="px-4 py-2 flex items-center gap-3">
-                    <FileDown className="w-5 h-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {t('common:header.pngWhite')}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {t('common:header.pngWhiteDesc')}
-                      </div>
+                  {/* PNG White */}
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50">
+                    <FileDown size={16} className="text-gray-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900">{t('common:header.pngWhite')}</div>
+                      <div className="text-xs text-gray-500">{t('common:header.pngWhiteDesc')}</div>
                     </div>
-                  </div>
-                  <div className="flex border-t border-gray-200">
-                    <button
-                      onClick={() => { handleExport('png-white'); setShowImageExportMenu(false); }}
-                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <Download size={14} />
-                      {t('common:actions.download')}
-                    </button>
-                    <div className="w-px bg-gray-200"></div>
-                    <button
-                      onClick={() => { handleCopyToClipboard('png-white'); setShowImageExportMenu(false); }}
-                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      {copiedFormat === 'png-white' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
-                      {copiedFormat === 'png-white' ? t('common:actions.copied') : t('common:actions.copy')}
-                    </button>
-                  </div>
-                </div>
-
-                {/* JPEG */}
-                <div className={`border-b border-gray-200 ${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
-                  <div className="px-4 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <FileDown className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <div className="font-medium text-gray-900">JPEG</div>
-                        <div className="text-xs text-gray-500">
-                          {t('common:header.jpegDesc')}
-                        </div>
-                      </div>
-                    </div>
-                    {!isPremium && (
-                      <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
-                        {t('subscription:premium')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex border-t border-gray-200">
-                    <button
-                      onClick={() => { handleExport('jpeg'); setShowImageExportMenu(false); }}
-                      disabled={!isPremium}
-                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
-                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      <Download size={14} />
-                      {t('common:actions.download')}
-                    </button>
-                    <div className="w-px bg-gray-200"></div>
-                    <button
-                      onClick={() => { handleCopyToClipboard('jpeg'); setShowImageExportMenu(false); }}
-                      disabled={!isPremium}
-                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
-                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      {copiedFormat === 'jpeg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
-                      {copiedFormat === 'jpeg' ? t('common:actions.copied') : t('common:actions.copy')}
-                    </button>
-                  </div>
-                </div>
-
-                {/* SVG */}
-                <div className="border-b border-gray-200">
-                  <div className="px-4 py-2 flex items-center gap-3">
-                    <FileDown className="w-5 h-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium text-gray-900">SVG</div>
-                      <div className="text-xs text-gray-500">
-                        {t('common:header.svgDesc')}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex border-t border-gray-200">
-                    <button
-                      onClick={() => { handleExport('svg'); setShowImageExportMenu(false); }}
-                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      <Download size={14} />
-                      {t('common:actions.download')}
-                    </button>
-                    <div className="w-px bg-gray-200"></div>
-                    <button
-                      onClick={() => { handleCopyToClipboard('svg'); setShowImageExportMenu(false); }}
-                      className="flex-1 px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-center gap-2 transition-colors"
-                    >
-                      {copiedFormat === 'svg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} />}
-                      {copiedFormat === 'svg' ? t('common:actions.copied') : t('common:actions.copy')}
-                    </button>
-                  </div>
-                </div>
-
-                {/* PDF */}
-                <div className={`border-b border-gray-200 ${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
-                  <div className="px-4 py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                      <FileDown className="w-5 h-5 text-gray-600" />
-                      <div>
-                        <div className="font-medium text-gray-900">PDF</div>
-                        <div className="text-xs text-gray-500">
-                          {t('common:header.pdfDesc')}
-                        </div>
-                      </div>
-                    </div>
-                    {!isPremium && (
-                      <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
-                        {t('subscription:premium')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex border-t border-gray-200">
-                    <button
-                      onClick={() => { handleExport('pdf'); setShowImageExportMenu(false); }}
-                      disabled={!isPremium}
-                      className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
-                        !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      <Download size={14} />
-                      {t('common:actions.download')}
-                    </button>
-                  </div>
-                </div>
-
-                {/* PDF Report with Activity List */}
-                {onDownloadPDFReport && (
-                  <div className={`${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
-                    <div className="px-4 py-2 flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <FileSpreadsheet className="w-5 h-5 text-gray-600" />
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {t('common:header.pdfReport', 'PDF Rapport')}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {t('common:header.pdfReportDesc', 'Aktivitetslista + hjulbild')}
-                          </div>
-                        </div>
-                      </div>
-                      {!isPremium && (
-                        <span className="text-xs text-amber-600 font-medium px-2 py-1 bg-amber-50 rounded ml-2">
-                          {t('subscription:premium')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex border-t border-gray-200">
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={() => { onDownloadPDFReport(); setShowImageExportMenu(false); }}
-                        disabled={!isPremium}
-                        className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 transition-colors ${
-                          !isPremium ? 'cursor-not-allowed' : 'hover:bg-gray-100'
-                        }`}
+                        onClick={() => { handleExport('png-white'); setShowImageExportMenu(false); }}
+                        className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                        title={t('common:actions.download')}
                       >
-                        <Download size={14} />
-                        {t('common:actions.download')}
+                        <Download size={14} className="text-gray-500" />
+                      </button>
+                      <button
+                        onClick={() => { handleCopyToClipboard('png-white'); setShowImageExportMenu(false); }}
+                        className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                        title={t('common:actions.copy')}
+                      >
+                        {copiedFormat === 'png-white' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
                       </button>
                     </div>
                   </div>
-                )}
+
+                  {/* JPEG */}
+                  <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                    <FileDown size={16} className="text-gray-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900">JPEG</div>
+                      <div className="text-xs text-gray-500">{t('common:header.jpegDesc')}</div>
+                    </div>
+                    {isPremium ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => { handleExport('jpeg'); setShowImageExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.download')}
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </button>
+                        <button
+                          onClick={() => { handleCopyToClipboard('jpeg'); setShowImageExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.copy')}
+                        >
+                          {copiedFormat === 'jpeg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
+                    )}
+                  </div>
+
+                  {/* SVG */}
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50">
+                    <FileDown size={16} className="text-gray-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900">SVG</div>
+                      <div className="text-xs text-gray-500">{t('common:header.svgDesc')}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { handleExport('svg'); setShowImageExportMenu(false); }}
+                        className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                        title={t('common:actions.download')}
+                      >
+                        <Download size={14} className="text-gray-500" />
+                      </button>
+                      <button
+                        onClick={() => { handleCopyToClipboard('svg'); setShowImageExportMenu(false); }}
+                        className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                        title={t('common:actions.copy')}
+                      >
+                        {copiedFormat === 'svg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* PDF */}
+                  <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                    <FileDown size={16} className="text-gray-400 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900">PDF</div>
+                      <div className="text-xs text-gray-500">{t('common:header.pdfDesc')}</div>
+                    </div>
+                    {isPremium ? (
+                      <button
+                        onClick={() => { handleExport('pdf'); setShowImageExportMenu(false); }}
+                        className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                        title={t('common:actions.download')}
+                      >
+                        <Download size={14} className="text-gray-500" />
+                      </button>
+                    ) : (
+                      <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
+                    )}
+                  </div>
+
+                  {/* PDF Report */}
+                  {onDownloadPDFReport && (
+                    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                      <FileSpreadsheet size={16} className="text-gray-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-gray-900">{t('common:header.pdfReport')}</div>
+                        <div className="text-xs text-gray-500">{t('common:header.pdfReportDesc')}</div>
+                      </div>
+                      {isPremium ? (
+                        <button
+                          onClick={() => { onDownloadPDFReport(); setShowImageExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.download')}
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Sharing Links Section */}
                 {wheelId && isPublic && (
@@ -804,42 +738,30 @@ function Header({
               />
               <div
                 ref={saveMenuRef}
-                className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50"
               >
-                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+                {/* Save Options Section */}
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
                   <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.chooseSaveMode')}</p>
                 </div>
-                
-                <div className="p-2">
+                <div className="p-1">
                   <button
                     onClick={() => {
                       onSave();
                       setShowSaveMenu(false);
                     }}
                     disabled={isSaving}
-                    className="w-full text-left px-3 py-3 rounded-sm hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-start gap-3 transition-all group border-2 border-transparent hover:border-blue-100"
+                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50"
                   >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-blue-100 group-hover:bg-blue-200 transition-colors flex-shrink-0">
-                      <Save size={20} strokeWidth={2} className="text-blue-600" />
+                    <div className="flex items-center gap-3">
+                      <Save size={16} className="text-gray-500" />
+                      <div className="text-left">
+                        <div className="font-medium">{t('common:header.quickSave')}</div>
+                        <div className="text-xs text-gray-500">{t('common:header.quickSaveDesc')}</div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 mb-0.5">{t('common:header.quickSave')}</div>
-                      <div className="text-xs text-gray-600 leading-relaxed">{t('common:header.quickSaveDesc')}</div>
-                    </div>
-                    <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-md border border-gray-300 shadow-sm flex-shrink-0 mt-0.5">
-                      ⌘S
-                    </kbd>
+                    <kbd className="hidden sm:block px-1.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded border border-gray-300">⌘S</kbd>
                   </button>
-                  
-                  <div className="relative my-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div className="relative flex justify-center">
-                      <span className="px-2 bg-white text-xs text-gray-400 font-medium">{t('common:header.saveMenuOr')}</span>
-                    </div>
-                  </div>
-                  
                   <button
                     onClick={() => {
                       if (onSaveWithVersion) {
@@ -848,56 +770,45 @@ function Header({
                       setShowSaveMenu(false);
                     }}
                     disabled={isSaving}
-                    className="w-full text-left px-3 py-3 rounded-sm hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-start gap-3 transition-all group border-2 border-transparent hover:border-green-100"
+                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50"
                   >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-green-100 group-hover:bg-green-200 transition-colors flex-shrink-0">
-                      <History size={20} strokeWidth={2} className="text-green-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-semibold text-gray-900">{t('common:header.createCheckpoint')}</span>
-                        <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full uppercase tracking-wide">{t('common:header.versionBadge')}</span>
-                      </div>
-                      <div className="text-xs text-gray-600 leading-relaxed">{t('common:header.createCheckpointDesc')}</div>
-                    </div>
-                    <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-md border border-gray-300 shadow-sm flex-shrink-0 mt-0.5">
-                      ⌘⇧S
-                    </kbd>
-                  </button>
-                  
-                  {/* Version History Button */}
-                  {onVersionHistory && (
-                    <>
-                      <div className="relative my-2">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-200"></div>
+                    <div className="flex items-center gap-3">
+                      <History size={16} className="text-green-600" />
+                      <div className="text-left">
+                        <div className="font-medium flex items-center gap-2">
+                          {t('common:header.createCheckpoint')}
+                          <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded">{t('common:header.versionBadge')}</span>
                         </div>
+                        <div className="text-xs text-gray-500">{t('common:header.createCheckpointDesc')}</div>
                       </div>
-                      
+                    </div>
+                    <kbd className="hidden sm:block px-1.5 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded border border-gray-300">⌘⇧S</kbd>
+                  </button>
+                </div>
+                
+                {/* Version History Section */}
+                {onVersionHistory && (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.history')}</p>
+                    </div>
+                    <div className="p-1">
                       <button
                         onClick={() => {
                           onVersionHistory();
                           setShowSaveMenu(false);
                         }}
-                        className="w-full text-left px-3 py-3 rounded-sm hover:bg-gray-50 flex items-start gap-3 transition-all group border-2 border-transparent hover:border-gray-100"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
                       >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-gray-100 group-hover:bg-gray-200 transition-colors flex-shrink-0">
-                          <History size={20} strokeWidth={2} className="text-gray-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-gray-900 mb-0.5">{t('common:header.versionHistory')}</div>
-                          <div className="text-xs text-gray-600 leading-relaxed">{t('common:header.viewPreviousVersions', 'View and restore previous versions')}</div>
+                        <History size={16} className="text-gray-500" />
+                        <div className="text-left">
+                          <div className="font-medium">{t('common:header.versionHistory')}</div>
+                          <div className="text-xs text-gray-500">{t('common:header.viewPreviousVersions')}</div>
                         </div>
                       </button>
-                    </>
-                  )}
-                </div>
-                
-                <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200">
-                  <p className="text-[11px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold">{t('common:header.saveMenuTip')}</span> {t('common:header.saveMenuTipText')}
-                  </p>
-                </div>
+                    </div>
+                  </>
+                )}
               </div>
             </>
           )}
