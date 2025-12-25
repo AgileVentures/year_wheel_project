@@ -19,6 +19,63 @@ class ExportManager {
    */
   constructor(wheelInstance) {
     this.wheel = wheelInstance;
+    this._logoCache = null;
+  }
+
+  // ==================== LOGO HELPER ====================
+
+  /**
+   * Load YearWheel logo as base64 data URL for embedding in PDFs
+   * @returns {Promise<string|null>} Base64 data URL or null if failed
+   */
+  async loadLogo() {
+    if (this._logoCache) return this._logoCache;
+    
+    try {
+      const logoUrl = '/year_wheel_logo.png';
+      const response = await fetch(logoUrl);
+      if (!response.ok) throw new Error('Logo not found');
+      
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          this._logoCache = reader.result;
+          resolve(this._logoCache);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.warn('Could not load logo for PDF:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Add logo to PDF header
+   * @param {jsPDF} pdf - jsPDF instance
+   * @param {string} logoData - Base64 logo data
+   * @param {number} pageWidth - Page width in mm
+   * @param {number} margin - Page margin in mm
+   * @returns {number} Y position after logo
+   */
+  addLogoToHeader(pdf, logoData, pageWidth, margin) {
+    if (!logoData) return margin;
+    
+    try {
+      // Logo dimensions (aspect ratio ~3.5:1 for wide logo)
+      const logoHeight = 10;
+      const logoWidth = 35;
+      const logoX = pageWidth - margin - logoWidth;
+      const logoY = margin - 5;
+      
+      pdf.addImage(logoData, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      return margin + 5; // Return y position after logo header area
+    } catch (err) {
+      console.warn('Could not add logo to PDF:', err);
+      return margin;
+    }
   }
 
   // ==================== PUBLIC API ====================
@@ -361,6 +418,9 @@ class ExportManager {
     const { t, language } = translations;
     const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
     
+    // Load logo
+    const logoData = await this.loadLogo();
+    
     // Create A4 portrait PDF
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -378,6 +438,8 @@ class ExportManager {
     const checkNewPage = (neededHeight) => {
       if (yPos + neededHeight > pageHeight - margin) {
         pdf.addPage();
+        // Add logo to new page header
+        this.addLogoToHeader(pdf, logoData, pageWidth, margin);
         yPos = margin;
         return true;
       }
@@ -386,19 +448,22 @@ class ExportManager {
 
     // ===== PAGE 1: Title and Activity List =====
     
+    // Add logo to first page header (top-right)
+    this.addLogoToHeader(pdf, logoData, pageWidth, margin);
+    
     // Title
     pdf.setFontSize(24);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(title, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 8;
+    pdf.text(title, margin, yPos + 5);
+    yPos += 12;
     
     // Year subtitle
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(100, 100, 100);
-    pdf.text(String(yearNum), pageWidth / 2, yPos, { align: 'center' });
+    pdf.text(String(yearNum), margin, yPos);
     pdf.setTextColor(0, 0, 0);
-    yPos += 15;
+    yPos += 12;
 
     // Get items and rings
     const items = wheelStructure.items || [];
@@ -544,14 +609,17 @@ class ExportManager {
 
     // ===== PAGE 2: Wheel Image =====
     pdf.addPage();
+    
+    // Add logo to wheel page header
+    this.addLogoToHeader(pdf, logoData, pageWidth, margin);
     yPos = margin;
 
     // Page title
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
     const wheelImageTitle = language === 'sv' ? 'Årshjul' : 'Year Wheel';
-    pdf.text(wheelImageTitle, pageWidth / 2, yPos, { align: 'center' });
-    yPos += 10;
+    pdf.text(wheelImageTitle, margin, yPos + 5);
+    yPos += 12;
 
     // Create high-quality wheel image
     const wheelCanvas = this.copyCanvas(true); // White background
@@ -613,6 +681,9 @@ class ExportManager {
     const { language } = translations;
     const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
     
+    // Load logo
+    const logoData = await this.loadLogo();
+    
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -660,6 +731,13 @@ class ExportManager {
       pdf.setFillColor(59, 130, 246); // Indigo-500
       pdf.rect(0, 0, pageWidth, 35, 'F');
       
+      // Add logo in header area (top-right, white/light version would be ideal, but PNG works)
+      if (logoData) {
+        try {
+          pdf.addImage(logoData, 'PNG', pageWidth - margin - 30, 5, 25, 7);
+        } catch (e) { /* ignore logo errors */ }
+      }
+      
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(28);
       pdf.setFont('helvetica', 'bold');
@@ -667,7 +745,7 @@ class ExportManager {
       
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(String(yearNum), pageWidth - margin, 25, { align: 'right' });
+      pdf.text(String(yearNum), pageWidth - margin - 35, 25, { align: 'right' });
       
       pdf.setTextColor(0, 0, 0);
       yPos = 50;
@@ -863,6 +941,9 @@ class ExportManager {
     const { language } = translations;
     const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
     
+    // Load logo
+    const logoData = await this.loadLogo();
+    
     const isLandscape = pageOrientation === 'landscape';
     const pdf = new jsPDF({
       orientation: pageOrientation,
@@ -890,6 +971,9 @@ class ExportManager {
       const endYear = new Date(item.endDate).getFullYear();
       return startYear <= yearNum && endYear >= yearNum;
     }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+    // Add logo to header (top-right)
+    this.addLogoToHeader(pdf, logoData, pageWidth, margin);
 
     // Title
     pdf.setFontSize(20);
@@ -1047,6 +1131,9 @@ class ExportManager {
     const { language } = translations;
     const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
     
+    // Load logo
+    const logoData = await this.loadLogo();
+    
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -1073,25 +1160,30 @@ class ExportManager {
     const checkNewPage = (neededHeight) => {
       if (yPos + neededHeight > pageHeight - margin) {
         pdf.addPage();
+        // Add logo to new page header
+        this.addLogoToHeader(pdf, logoData, pageWidth, margin);
         yPos = margin;
         return true;
       }
       return false;
     };
 
+    // Add logo to first page header (top-right)
+    this.addLogoToHeader(pdf, logoData, pageWidth, margin);
+
     // Title page
     pdf.setFontSize(28);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(title, pageWidth / 2, yPos + 20, { align: 'center' });
+    pdf.text(title, margin, yPos + 20);
     
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(100, 100, 100);
     const summaryLabel = language === 'sv' ? 'Ringsammanfattning' : 'Ring Summary';
-    pdf.text(summaryLabel, pageWidth / 2, yPos + 32, { align: 'center' });
+    pdf.text(summaryLabel, margin, yPos + 32);
     
     pdf.setFontSize(14);
-    pdf.text(String(yearNum), pageWidth / 2, yPos + 42, { align: 'center' });
+    pdf.text(String(yearNum), margin, yPos + 42);
     pdf.setTextColor(0, 0, 0);
     
     // Summary stats
@@ -1100,10 +1192,12 @@ class ExportManager {
     const statsText = language === 'sv' 
       ? `${yearItems.length} aktiviteter • ${rings.filter(r => r.visible !== false).length} ringar • ${activityGroups.filter(g => g.visible !== false).length} aktivitetsgrupper`
       : `${yearItems.length} activities • ${rings.filter(r => r.visible !== false).length} rings • ${activityGroups.filter(g => g.visible !== false).length} activity groups`;
-    pdf.text(statsText, pageWidth / 2, yPos, { align: 'center' });
+    pdf.text(statsText, margin, yPos);
     
     // Start ring sections on new page
     pdf.addPage();
+    // Add logo to ring pages
+    this.addLogoToHeader(pdf, logoData, pageWidth, margin);
     yPos = margin;
 
     // Process each ring
