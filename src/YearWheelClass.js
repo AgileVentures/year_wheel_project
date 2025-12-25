@@ -3353,25 +3353,23 @@ class YearWheel {
       endAngle = startAngle + angleSpan;
     }
 
-    // Use the item's actual dimensions
-    let startRadius = region.startRadius;
-    let endRadius = region.endRadius;
-    const itemWidth = endRadius - startRadius;
-
-    // If switching to a different ring, use the STORED rendered position
-    if (
-      this.dragState.targetRing &&
-      this.dragState.targetRing.id !== item.ringId
-    ) {
-      const targetRingPosition = this.renderedRingPositions.get(
-        this.dragState.targetRing.id
-      );
-      if (targetRingPosition) {
-        // Use the target ring's position
-        startRadius = targetRingPosition.startRadius;
-        endRadius = startRadius + itemWidth;
-      }
+    // Use the TARGET RING's full dimensions for preview (not the track-subdivided height)
+    // When dragging, we show at full ring height because overlaps will be recalculated after drop
+    const currentRingId = this.dragState.targetRing?.id || item.ringId;
+    const ringPosition = this.renderedRingPositions.get(currentRingId);
+    
+    let startRadius, endRadius;
+    if (ringPosition) {
+      // Use the ring's full height for preview
+      startRadius = ringPosition.startRadius;
+      endRadius = ringPosition.endRadius;
+    } else {
+      // Fallback to item's stored dimensions
+      startRadius = region.startRadius;
+      endRadius = region.endRadius;
     }
+    
+    console.log(`[DRAG PREVIEW] Item: ${item.name}, ring: ${currentRingId?.substring(0,8)}, startRadius: ${startRadius.toFixed(1)}, endRadius: ${endRadius.toFixed(1)}`);
 
     // Draw preview (we're already in the rotated context - no transform needed!)
     this.context.save();
