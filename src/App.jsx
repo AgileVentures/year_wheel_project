@@ -3207,9 +3207,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       // Fetch template data
       const templateData = await fetchWheel(templateId);
       const templatePagesRaw = await fetchPages(templateId);
-      const templatePages = (templatePagesRaw || []).map((page) => ({
-        ...page,
-        structure: normalizePageStructure(page),
+      
+      // Fetch items for each page from the items table (items are NOT in organization_data)
+      const templatePages = await Promise.all((templatePagesRaw || []).map(async (page) => {
+        const pageItems = await fetchPageData(page.id, page.year, templateId);
+        return {
+          ...page,
+          structure: normalizePageStructure(page),
+          items: pageItems || []
+        };
       }));
       
       if (!templateData || !templatePages || templatePages.length === 0) {
@@ -3217,6 +3223,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
 
       console.log('[Editor] Loading template:', templateData.title, 'Pages:', templatePages.length);
+      templatePages.forEach((page, idx) => {
+        console.log(`[Editor] Template page ${idx + 1}: year=${page.year}, items=${page.items?.length || 0}`);
+      });
 
       // Set wheel-level data from template
       setTitle(`${templateData.title} (Kopia)`);
@@ -3290,7 +3299,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         // Load template pages into wheelState - each page gets its own items
         const pagesForState = templatePages.map((page, index) => {
           const pageItems = convertTemplateItems(
-            page.structure?.items || page.items || [],
+            page.items || [], // Items fetched from items table
             ringIdMap,
             groupIdMap,
             labelIdMap
@@ -3319,9 +3328,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         const templateStructure = templatePages[0].structure;
         const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(templateStructure);
         
-        // Convert items for the single page
+        // Convert items for the single page (items come from separate table, not structure)
         const pageItems = convertTemplateItems(
-          templateStructure?.items || [],
+          templatePages[0].items || [],
           ringIdMap,
           groupIdMap,
           labelIdMap
