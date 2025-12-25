@@ -3026,100 +3026,125 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if (wheelId) {
         await createVersion(
           wheelId,
-          {
-            title,
-            year,
-            colors,
-            showWeekRing,
-            showMonthRing,
-            showRingNames,
-            wheelStructure
-          },
+          buildWheelSnapshot(),
           'Före återställning',
           false
         );
       }
 
-      const cloneOrgData = (data) => {
-        if (!data) {
-          return null;
+      // NORMALIZE: Handle both OLD format (wheelStructure) and NEW format (metadata + structure + pages)
+      const isNewFormat = versionData.metadata && versionData.structure;
+      
+      let restoredTitle, restoredYear, restoredColors, restoredShowWeekRing, restoredShowMonthRing, restoredShowRingNames;
+      let restoredStructure; // { rings, activityGroups, labels }
+      let restoredPages; // [{ id, year, items }]
+      
+      if (isNewFormat) {
+        // NEW FORMAT: { metadata, structure, pages }
+        restoredTitle = versionData.metadata.title;
+        restoredYear = versionData.metadata.year;
+        restoredColors = versionData.metadata.colors;
+        restoredShowWeekRing = versionData.metadata.showWeekRing;
+        restoredShowMonthRing = versionData.metadata.showMonthRing;
+        restoredShowRingNames = versionData.metadata.showRingNames;
+        
+        restoredStructure = {
+          rings: [...(versionData.structure.rings || [])],
+          activityGroups: [...(versionData.structure.activityGroups || [])],
+          labels: [...(versionData.structure.labels || [])],
+        };
+        
+        restoredPages = versionData.pages || [];
+      } else {
+        // OLD FORMAT: { title, year, colors, wheelStructure: { rings, activityGroups, labels, items } }
+        restoredTitle = versionData.title;
+        restoredYear = versionData.year;
+        restoredColors = versionData.colors;
+        restoredShowWeekRing = versionData.showWeekRing;
+        restoredShowMonthRing = versionData.showMonthRing;
+        restoredShowRingNames = versionData.showRingNames;
+        
+        const ws = versionData.wheelStructure || {};
+        restoredStructure = {
+          rings: [...(ws.rings || [])],
+          activityGroups: [...(ws.activityGroups || [])],
+          labels: [...(ws.labels || [])],
+        };
+        
+        // Old format has items at wheelStructure level, assign to current page
+        if (currentPageId && ws.items) {
+          restoredPages = [{ id: currentPageId, year: restoredYear, items: [...ws.items] }];
+        } else {
+          restoredPages = [];
         }
+      }
 
-        return {
-          rings: [...(data.rings || [])],
-          activityGroups: [...(data.activityGroups || [])],
-          labels: [...(data.labels || [])],
-          items: [...(data.items || [])],
-        };
-      };
-
-      const restoredOrgData = cloneOrgData(versionData.wheelStructure);
-
-      if (currentPageId && restoredOrgData) {
-        // Update current page items in wheelState
-        setWheelState((prev) => ({
-          ...prev,
-          pages: prev.pages.map((page) => {
-            if (page.id !== currentPageId) {
+      // Update wheelState with restored pages
+      if (restoredPages.length > 0) {
+        setWheelState((prev) => {
+          const restoredPageMap = new Map(restoredPages.map(p => [p.id, p]));
+          
+          return {
+            ...prev,
+            pages: prev.pages.map((page) => {
+              const restoredPage = restoredPageMap.get(page.id);
+              if (restoredPage) {
+                return {
+                  ...page,
+                  items: restoredPage.items || []
+                };
+              }
               return page;
-            }
-
-            return {
-              ...page,
-              items: restoredOrgData.items || []
-            };
-          })
-        }));
+            })
+          };
+        });
       }
 
+      // Update structure via setUndoableStates
       const versionUpdates = {};
-      if (versionData.title) {
-        versionUpdates.title = versionData.title;
+      if (restoredTitle) {
+        versionUpdates.title = restoredTitle;
       }
-      if (versionData.colors) {
-        versionUpdates.colors = versionData.colors;
+      if (restoredColors) {
+        versionUpdates.colors = restoredColors;
       }
-      if (restoredOrgData) {
-        versionUpdates.structure = {
-          rings: [...(restoredOrgData.rings || [])],
-          activityGroups: [...(restoredOrgData.activityGroups || [])],
-          labels: [...(restoredOrgData.labels || [])],
-        };
+      if (restoredStructure) {
+        versionUpdates.structure = restoredStructure;
       }
 
       if (Object.keys(versionUpdates).length > 0) {
         setUndoableStates(versionUpdates);
       }
 
+      // Update latestValuesRef for consistency
+      const pageItemsById = {};
+      restoredPages.forEach(p => {
+        if (p.id && p.items) {
+          pageItemsById[p.id] = [...p.items];
+        }
+      });
+      
       latestValuesRef.current = {
         ...latestValuesRef.current,
-        title: versionData.title ?? latestValuesRef.current?.title,
-        colors: versionData.colors ?? latestValuesRef.current?.colors,
-        showWeekRing: versionData.showWeekRing ?? latestValuesRef.current?.showWeekRing,
-        showMonthRing: versionData.showMonthRing ?? latestValuesRef.current?.showMonthRing,
-        showRingNames: versionData.showRingNames ?? latestValuesRef.current?.showRingNames,
-        structure: restoredOrgData
-          ? {
-              rings: [...(restoredOrgData.rings || [])],
-              activityGroups: [...(restoredOrgData.activityGroups || [])],
-              labels: [...(restoredOrgData.labels || [])],
-            }
-          : latestValuesRef.current?.structure,
-        pageItemsById: restoredOrgData?.items && currentPageId
-          ? {
-              ...(latestValuesRef.current?.pageItemsById || {}),
-              [currentPageId]: [...(restoredOrgData.items || [])],
-            }
+        title: restoredTitle ?? latestValuesRef.current?.title,
+        colors: restoredColors ?? latestValuesRef.current?.colors,
+        showWeekRing: restoredShowWeekRing ?? latestValuesRef.current?.showWeekRing,
+        showMonthRing: restoredShowMonthRing ?? latestValuesRef.current?.showMonthRing,
+        showRingNames: restoredShowRingNames ?? latestValuesRef.current?.showRingNames,
+        structure: restoredStructure ?? latestValuesRef.current?.structure,
+        pageItemsById: Object.keys(pageItemsById).length > 0
+          ? { ...(latestValuesRef.current?.pageItemsById || {}), ...pageItemsById }
           : latestValuesRef.current?.pageItemsById,
-        year: versionData.year ?? latestValuesRef.current?.year,
+        year: restoredYear ?? latestValuesRef.current?.year,
       };
 
       clearHistory();
 
-      if (versionData.year) setYear(versionData.year.toString());
-      if (typeof versionData.showWeekRing === 'boolean') setShowWeekRing(versionData.showWeekRing);
-      if (typeof versionData.showMonthRing === 'boolean') setShowMonthRing(versionData.showMonthRing);
-      if (typeof versionData.showRingNames === 'boolean') setShowRingNames(versionData.showRingNames);
+      // Update individual state values
+      if (restoredYear) setYear(restoredYear.toString());
+      if (typeof restoredShowWeekRing === 'boolean') setShowWeekRing(restoredShowWeekRing);
+      if (typeof restoredShowMonthRing === 'boolean') setShowMonthRing(restoredShowMonthRing);
+      if (typeof restoredShowRingNames === 'boolean') setShowRingNames(restoredShowRingNames);
 
       await enqueueFullSave('restore-version');
 
