@@ -1441,7 +1441,38 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   
   const existingPageIds = new Set((existingPages || []).map(p => p.id));
   
-  // Create any pages that don't exist yet
+  // FIRST: Delete pages that exist in DB but are not in the snapshot
+  // This MUST happen before creating new pages to avoid unique constraint on page_order
+  const snapshotPageIds = new Set(normalizedPages.map(p => p.id).filter(Boolean));
+  const pagesToDelete = (existingPages || []).filter(p => !snapshotPageIds.has(p.id));
+  
+  if (pagesToDelete.length > 0) {
+    console.log(`[saveWheelSnapshot] Deleting ${pagesToDelete.length} orphaned pages:`, pagesToDelete.map(p => p.id?.substring(0,8)));
+    
+    // Delete items for orphaned pages first (foreign key constraint)
+    const { error: deleteItemsError } = await supabase
+      .from('items')
+      .delete()
+      .eq('wheel_id', wheelId)
+      .in('page_id', pagesToDelete.map(p => p.id));
+    
+    if (deleteItemsError) {
+      console.error('[saveWheelSnapshot] Error deleting items for orphaned pages:', deleteItemsError);
+    }
+    
+    // Now delete the orphaned pages
+    const { error: deletePagesError } = await supabase
+      .from('wheel_pages')
+      .delete()
+      .eq('wheel_id', wheelId)
+      .in('id', pagesToDelete.map(p => p.id));
+    
+    if (deletePagesError) {
+      console.error('[saveWheelSnapshot] Error deleting orphaned pages:', deletePagesError);
+    }
+  }
+  
+  // SECOND: Create any pages that don't exist yet
   for (const page of normalizedPages) {
     if (!page || !page.id) continue;
     
@@ -1472,7 +1503,7 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
       
       if (createError) {
         console.error(`[saveWheelSnapshot] Error creating page ${page.id}:`, createError);
-        // If UUID conflict, try to use existing page
+        // If UUID conflict, page already exists
         if (createError.code === '23505') {
           console.log(`[saveWheelSnapshot] Page ${page.id} already exists (race condition)`);
         } else {
@@ -1485,37 +1516,6 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
       pageIdMap.set(page.id, page.id); // Map to itself since we used the client ID
     } else {
       pageIdMap.set(page.id, page.id); // Page already exists
-    }
-  }
-  
-  // Delete pages that exist in DB but are not in the snapshot
-  // This handles template import replacing all pages
-  const snapshotPageIds = new Set(normalizedPages.map(p => p.id).filter(Boolean));
-  const pagesToDelete = (existingPages || []).filter(p => !snapshotPageIds.has(p.id));
-  
-  if (pagesToDelete.length > 0) {
-    console.log(`[saveWheelSnapshot] Deleting ${pagesToDelete.length} orphaned pages:`, pagesToDelete.map(p => p.id?.substring(0,8)));
-    
-    // Delete items for orphaned pages first (foreign key constraint)
-    const { error: deleteItemsError } = await supabase
-      .from('items')
-      .delete()
-      .eq('wheel_id', wheelId)
-      .in('page_id', pagesToDelete.map(p => p.id));
-    
-    if (deleteItemsError) {
-      console.error('[saveWheelSnapshot] Error deleting items for orphaned pages:', deleteItemsError);
-    }
-    
-    // Now delete the orphaned pages
-    const { error: deletePagesError } = await supabase
-      .from('wheel_pages')
-      .delete()
-      .eq('wheel_id', wheelId)
-      .in('id', pagesToDelete.map(p => p.id));
-    
-    if (deletePagesError) {
-      console.error('[saveWheelSnapshot] Error deleting orphaned pages:', deletePagesError);
     }
   }
 
