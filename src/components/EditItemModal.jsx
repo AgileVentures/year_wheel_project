@@ -29,6 +29,7 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
   const [showDescription, setShowDescription] = useState(!!item.description);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(!!item.description || !!item.dependsOn);
   const isRecurringInstance = item.isRecurringInstance || false;
+  const isCrossYearItem = item._isCrossYearConsolidated || item.crossYearGroupId;
 
   // Fetch accessible wheels on mount
   useEffect(() => {
@@ -222,6 +223,19 @@ function EditItemModal({ item, wheelStructure, onUpdateItem, onDeleteItem, onClo
                 <br />
                 <span className="text-xs text-blue-700">
                   {t('editor:editItemModal.recurringNoticeText', 'Detta är en del av en återkommande aktivitetsserie. Ändringar påverkar endast denna instans.')}
+                </span>
+              </p>
+            </div>
+          )}
+
+          {/* Cross-year item notice */}
+          {isCrossYearItem && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-sm">
+              <p className="text-sm text-amber-900">
+                <span className="font-medium">{t('editor:editItemModal.crossYearNotice', 'Flerårig aktivitet')}</span>
+                <br />
+                <span className="text-xs text-amber-700">
+                  {t('editor:editItemModal.crossYearNoticeText', 'Denna aktivitet sträcker sig över flera år. Ändringar i datum kan påverka hur aktiviteten visas på respektive årshjul.')}
                 </span>
               </p>
             </div>

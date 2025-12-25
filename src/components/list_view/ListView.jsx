@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 import EditItemModal from '../EditItemModal';
 import AddItemModal from '../AddItemModal';
-import ConfirmDialog from '../ConfirmDialog';
+import { showConfirmDialog } from '../../utils/dialogs';
 
 /**
  * ListView Component
@@ -40,8 +40,6 @@ const ListView = ({
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [editingItem, setEditingItem] = useState(null);
   const [addItemRingId, setAddItemRingId] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dropTargetRingId, setDropTargetRingId] = useState(null);
   const [editingRingId, setEditingRingId] = useState(null);
@@ -58,22 +56,72 @@ const ListView = ({
   }, [pages]);
   
   // Get all items from all pages or filter by selected year
+  // Cross-year items (same crossYearGroupId) are consolidated into a single entry
   const filteredItems = useMemo(() => {
+    // Always get all items to properly consolidate cross-year groups
+    const allItems = pages.flatMap(page => (page.items || []).map(item => ({
+      ...item,
+      _pageYear: parseInt(page.year, 10)
+    })));
+    
+    // Build a map of all cross-year groups with their full item list
+    const allCrossYearGroups = new Map();
+    allItems.forEach(item => {
+      if (item.crossYearGroupId) {
+        if (!allCrossYearGroups.has(item.crossYearGroupId)) {
+          allCrossYearGroups.set(item.crossYearGroupId, []);
+        }
+        allCrossYearGroups.get(item.crossYearGroupId).push(item);
+      }
+    });
+    
+    // Now filter based on yearFilter
+    let rawItems;
     if (yearFilter === 'all') {
-      // Combine items from all pages
-      return pages.flatMap(page => (page.items || []).map(item => ({
-        ...item,
-        _pageYear: parseInt(page.year, 10)
-      })));
+      rawItems = allItems;
     } else {
-      // Filter by specific year
       const filterYear = parseInt(yearFilter, 10);
-      const page = pages.find(p => parseInt(p.year, 10) === filterYear);
-      return (page?.items || []).map(item => ({
-        ...item,
-        _pageYear: filterYear
-      }));
+      rawItems = allItems.filter(item => item._pageYear === filterYear);
     }
+    
+    // Consolidate cross-year items into single entries
+    const crossYearGroupsInView = new Set();
+    const standaloneItems = [];
+    
+    rawItems.forEach(item => {
+      if (item.crossYearGroupId) {
+        // Track which cross-year groups are represented in the filtered view
+        crossYearGroupsInView.add(item.crossYearGroupId);
+      } else {
+        standaloneItems.push(item);
+      }
+    });
+    
+    // Create consolidated entries for cross-year groups that have at least one item in view
+    const consolidatedCrossYear = [];
+    crossYearGroupsInView.forEach(groupId => {
+      // Get ALL segments of this group (not just filtered ones) to show full date range
+      const allGroupItems = allCrossYearGroups.get(groupId) || [];
+      if (allGroupItems.length === 0) return;
+      
+      // Sort by start date to find the earliest start and latest end
+      const sorted = allGroupItems.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      const earliest = sorted[0];
+      const latest = sorted.reduce((a, b) => new Date(a.endDate) > new Date(b.endDate) ? a : b);
+      
+      // Use the first segment as the base, but with full date range
+      consolidatedCrossYear.push({
+        ...earliest,
+        // Show full date range across all segments
+        startDate: earliest.startDate,
+        endDate: latest.endDate,
+        // Store all segment IDs for operations
+        _crossYearSegmentIds: allGroupItems.map(i => i.id),
+        _isCrossYearConsolidated: true,
+      });
+    });
+    
+    return [...standaloneItems, ...consolidatedCrossYear];
   }, [pages, yearFilter]);
   
   // Filter items by year and group by rings
@@ -175,26 +223,41 @@ const ListView = ({
     setSelectedItems(new Set());
   };
   
-  const handleDeleteSelected = () => {
-    setConfirmDelete(true);
-  };
-  
-  const confirmDeleteAction = () => {
-    selectedItems.forEach(itemId => {
-      onDeleteItem(itemId);
+  const handleDeleteSelected = async () => {
+    const confirmed = await showConfirmDialog({
+      title: t('listView.deleteTitle', 'Ta bort aktiviteter'),
+      message: t('listView.confirmDelete', `Är du säker på att du vill ta bort ${selectedItems.size} aktiviteter?`),
+      confirmText: t('common:actions.delete', 'Ta bort'),
+      cancelText: t('common:actions.cancel', 'Avbryt'),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
     });
-    setSelectedItems(new Set());
-    setConfirmDelete(false);
+    
+    if (confirmed) {
+      selectedItems.forEach(itemId => {
+        onDeleteItem(itemId);
+      });
+      setSelectedItems(new Set());
+    }
   };
   
-  const handleDeleteSingleItem = (item) => {
-    setItemToDelete(item);
-  };
-  
-  const confirmDeleteSingleItem = () => {
-    if (itemToDelete) {
-      onDeleteItem(itemToDelete.id);
-      setItemToDelete(null);
+  const handleDeleteSingleItem = async (item) => {
+    const confirmed = await showConfirmDialog({
+      title: t('listView.deleteTitle', 'Ta bort aktivitet'),
+      message: t('listView.confirmDeleteSingle', `Är du säker på att du vill ta bort "${item.name}"?`),
+      confirmText: t('common:actions.delete', 'Ta bort'),
+      cancelText: t('common:actions.cancel', 'Avbryt'),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+    });
+    
+    if (confirmed) {
+      // For cross-year consolidated items, delete all segments
+      if (item._isCrossYearConsolidated && item._crossYearSegmentIds) {
+        item._crossYearSegmentIds.forEach(segmentId => {
+          onDeleteItem(segmentId);
+        });
+      } else {
+        onDeleteItem(item.id);
+      }
     }
   };
   
@@ -643,7 +706,16 @@ const ListView = ({
           item={editingItem}
           wheelStructure={wheelStructure}
           onUpdateItem={onUpdateItem}
-          onDeleteItem={onDeleteItem}
+          onDeleteItem={(itemId) => {
+            // For cross-year consolidated items, delete all segments
+            if (editingItem._isCrossYearConsolidated && editingItem._crossYearSegmentIds) {
+              editingItem._crossYearSegmentIds.forEach(segmentId => {
+                onDeleteItem(segmentId);
+              });
+            } else {
+              onDeleteItem(itemId);
+            }
+          }}
           onClose={() => setEditingItem(null)}
           currentWheelId={currentWheelId}
         />
@@ -663,34 +735,6 @@ const ListView = ({
           }}
           onClose={() => setAddItemRingId(null)}
           preselectedRingId={addItemRingId}
-        />
-      )}
-      
-      {/* Confirm Delete Dialog */}
-      {confirmDelete && (
-        <ConfirmDialog
-          isOpen={confirmDelete}
-          title={t('listView.deleteTitle', 'Ta bort aktiviteter')}
-          message={t('listView.confirmDelete', `Är du säker på att du vill ta bort ${selectedItems.size} aktiviteter?`)}
-          confirmLabel={t('common:actions.delete', 'Ta bort')}
-          cancelLabel={t('common:actions.cancel', 'Avbryt')}
-          onConfirm={confirmDeleteAction}
-          onCancel={() => setConfirmDelete(false)}
-          variant="danger"
-        />
-      )}
-      
-      {/* Confirm Delete Single Item Dialog */}
-      {itemToDelete && (
-        <ConfirmDialog
-          isOpen={!!itemToDelete}
-          title={t('listView.deleteTitle', 'Ta bort aktivitet')}
-          message={t('listView.confirmDeleteSingle', `Är du säker på att du vill ta bort "${itemToDelete.name}"?`)}
-          confirmLabel={t('common:actions.delete', 'Ta bort')}
-          cancelLabel={t('common:actions.cancel', 'Avbryt')}
-          onConfirm={confirmDeleteSingleItem}
-          onCancel={() => setItemToDelete(null)}
-          variant="danger"
         />
       )}
     </div>
