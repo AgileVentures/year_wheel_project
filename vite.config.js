@@ -184,6 +184,31 @@ export default defineConfig({
             return 'stripe';
           }
           
+          // Chart.js and related
+          if (id.includes('node_modules/chart.js') || id.includes('node_modules/react-chartjs-2')) {
+            return 'charts';
+          }
+          
+          // Calendar library
+          if (id.includes('node_modules/@h6s/calendar')) {
+            return 'calendar';
+          }
+          
+          // DOMPurify (sanitization)
+          if (id.includes('node_modules/dompurify')) {
+            return 'sanitize';
+          }
+          
+          // Marked (markdown parser)
+          if (id.includes('node_modules/marked')) {
+            return 'marked';
+          }
+          
+          // AI SDK
+          if (id.includes('node_modules/ai') || id.includes('node_modules/@ai-sdk')) {
+            return 'ai-sdk';
+          }
+          
           // Remaining vendor modules - split by size
           if (id.includes('node_modules')) {
             // Get package name
