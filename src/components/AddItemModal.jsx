@@ -298,21 +298,21 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto" data-cy="add-activity-modal">
-      <div className="bg-white rounded-sm shadow-xl w-full max-w-2xl my-8">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4 overflow-y-auto" data-cy="add-activity-modal">
+      <div className="bg-white rounded-t-xl sm:rounded-sm shadow-xl w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] sm:my-8 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-sm z-10">
-          <h2 className="text-lg font-semibold text-gray-900">{t('editor:addItemModal.title')}</h2>
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl sm:rounded-t-sm z-10 flex-shrink-0">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">{t('editor:addItemModal.title')}</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-2 -mr-1 hover:bg-gray-100 active:bg-gray-200 rounded-full transition-colors"
           >
-            <X size={20} className="text-gray-600" />
+            <X size={22} className="text-gray-600" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-3 sm:p-6 overflow-y-auto flex-1">
           {/* General Error Display */}
           {generalError && (
             <ErrorDisplay
@@ -324,23 +324,23 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
             />
           )}
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             {/* Left column - Basic Info & Dates */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide">
                 {t('editor:addItemModal.basicInfo', 'Grundläggande information')}
               </h3>
             
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('editor:addItemModal.itemNameLabel')}
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
-                  className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
+                  className={`w-full px-3 py-2 sm:py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm ${
                     errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder={t('editor:addItemModal.itemNamePlaceholder')}
@@ -352,67 +352,71 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
                 )}
               </div>
 
-              {/* Dates */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {t('editor:addItemModal.startDateLabel')}
-                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(auto-beräknat)</span>}
-                </label>
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => handleChange('startDate', e.target.value)}
-                  disabled={!!formData.dependsOn}
-                  className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                    errors.startDate ? 'border-red-500' : 'border-gray-300'
-                  } ${formData.dependsOn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                  data-cy="activity-start-date-input"
-                />
-                {errors.startDate && (
-                  <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
-                )}
-              </div>
+              {/* Dates - side by side on mobile */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-1 sm:gap-0 sm:space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('editor:addItemModal.startDateLabel')}
+                    {formData.dependsOn && <span className="text-xs text-blue-600 ml-1">(auto)</span>}
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => handleChange('startDate', e.target.value)}
+                    disabled={!!formData.dependsOn}
+                    className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm ${
+                      errors.startDate ? 'border-red-500' : 'border-gray-300'
+                    } ${formData.dependsOn ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    data-cy="activity-start-date-input"
+                  />
+                  {errors.startDate && (
+                    <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  {formData.isRecurring 
-                    ? t('editor:addItemModal.recurringEndDateLabel', 'Slutdatum (upprepar till)')
-                    : t('editor:addItemModal.endDateLabel')
-                  }
-                  {formData.dependsOn && <span className="text-xs text-blue-600 ml-2">(varaktighet beräknas)</span>}
-                </label>
-                <input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => handleChange('endDate', e.target.value)}
-                  min={formData.startDate}
-                  className={`w-full px-3 py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                    errors.endDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  data-cy="activity-end-date-input"
-                />
-                {errors.endDate && (
-                  <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="hidden sm:inline">
+                      {formData.isRecurring 
+                        ? t('editor:addItemModal.recurringEndDateLabel', 'Slutdatum (upprepar till)')
+                        : t('editor:addItemModal.endDateLabel')
+                      }
+                    </span>
+                    <span className="sm:hidden">{t('editor:addItemModal.endDateLabel')}</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => handleChange('endDate', e.target.value)}
+                    min={formData.startDate}
+                    className={`w-full px-2 sm:px-3 py-2 sm:py-2.5 border rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm ${
+                      errors.endDate ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    data-cy="activity-end-date-input"
+                  />
+                  {errors.endDate && (
+                    <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Right column - Categorization */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-900 uppercase tracking-wide">
                 {t('editor:addItemModal.categorization', 'Kategorisering')}
               </h3>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Ring */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('editor:addItemModal.ringLabel')}
                   </label>
                   <select
                     value={formData.ringId}
                     onChange={(e) => handleChange('ringId', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm bg-white"
                     data-cy="activity-ring-select"
                   >
                     {wheelStructure.rings.map((ring) => (
@@ -425,13 +429,13 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
 
                 {/* Activity */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('editor:addItemModal.activityLabel')}
                   </label>
                   <select
                     value={formData.activityId}
                     onChange={(e) => handleChange('activityId', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm bg-white"
                     data-cy="activity-group-select"
                   >
                     {wheelStructure.activityGroups.map((activity) => (
@@ -444,13 +448,13 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
 
                 {/* Label */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    {t('editor:addItemModal.labelLabel')} <span className="text-gray-400 font-normal">(valfritt)</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('editor:addItemModal.labelLabel')} <span className="text-gray-400 font-normal text-xs">(valfritt)</span>
                   </label>
                   <select
                     value={formData.labelId}
                     onChange={(e) => handleChange('labelId', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 py-2 sm:py-2.5 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm bg-white"
                   >
                     {wheelStructure.labels.map((label) => (
                       <option key={label.id} value={label.id}>
@@ -465,7 +469,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
 
             {/* Advanced Settings Section - Collapsible */}
             {formData.activityId && (
-              <div className="pt-6 border-t border-gray-200 mt-6">
+              <div className="pt-4 sm:pt-6 border-t border-gray-200 mt-4 sm:mt-6">
                 {!showAdvancedSettings ? (
                   <button
                     type="button"
@@ -725,17 +729,17 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
             )}
 
           {/* Buttons */}
-          <div className="flex gap-3 pt-6 border-t border-gray-200">
+          <div className="flex gap-2 sm:gap-3 pt-4 sm:pt-6 border-t border-gray-200 sticky bottom-0 bg-white pb-safe">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 transition-colors text-sm font-medium"
+              className="flex-1 px-3 sm:px-4 py-3 sm:py-2.5 border border-gray-300 text-gray-700 rounded-sm hover:bg-gray-50 active:bg-gray-100 transition-colors text-sm font-medium"
             >
               {t('editor:addItemModal.cancel')}
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+              className="flex-1 px-3 sm:px-4 py-3 sm:py-2.5 bg-blue-600 text-white rounded-sm hover:bg-blue-700 active:bg-blue-800 transition-colors text-sm font-medium flex items-center justify-center gap-2"
               data-cy="activity-save-button"
             >
               <Plus size={16} />

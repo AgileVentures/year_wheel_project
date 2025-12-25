@@ -90,7 +90,7 @@ export default function ReportSelectionModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-sm transition-colors"
           >
             <X size={20} className="text-gray-500" />
           </button>
@@ -115,7 +115,7 @@ export default function ReportSelectionModal({
                   }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-2.5 rounded-lg ${
+                    <div className={`p-2.5 rounded-sm ${
                       isSelected ? 'bg-indigo-100' : 'bg-gray-100'
                     }`}>
                       <Icon size={22} className={isSelected ? 'text-indigo-600' : 'text-gray-600'} />
@@ -227,7 +227,7 @@ export default function ReportSelectionModal({
                   <div className="flex gap-2">
                     <button
                       onClick={() => setOptions({ ...options, pageOrientation: 'portrait' })}
-                      className={`px-3 py-1.5 text-sm rounded-lg border ${
+                      className={`px-3 py-1.5 text-sm rounded-sm border ${
                         options.pageOrientation === 'portrait'
                           ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                           : 'border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -237,7 +237,7 @@ export default function ReportSelectionModal({
                     </button>
                     <button
                       onClick={() => setOptions({ ...options, pageOrientation: 'landscape' })}
-                      className={`px-3 py-1.5 text-sm rounded-lg border ${
+                      className={`px-3 py-1.5 text-sm rounded-sm border ${
                         options.pageOrientation === 'landscape'
                           ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                           : 'border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -265,14 +265,14 @@ export default function ReportSelectionModal({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
             >
               {t('common:actions.cancel', 'Avbryt')}
             </button>
             <button
               onClick={handleGenerate}
               disabled={isGenerating || !isPremium}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 ${
+              className={`px-4 py-2 text-sm font-medium rounded-sm transition-colors flex items-center gap-2 ${
                 isPremium
                   ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'

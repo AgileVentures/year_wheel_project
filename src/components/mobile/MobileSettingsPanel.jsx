@@ -119,7 +119,7 @@ function MobileSettingsPanel({
                   type="text"
                   value={titleDraft}
                   onChange={(e) => setTitleDraft(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSaveTitle();
@@ -131,7 +131,7 @@ function MobileSettingsPanel({
                 />
                 <button
                   onClick={handleSaveTitle}
-                  className="p-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 active:bg-teal-700 transition-colors"
+                  className="p-2 bg-teal-500 text-white rounded-sm hover:bg-teal-600 active:bg-teal-700 transition-colors"
                 >
                   <Check size={20} />
                 </button>
@@ -139,7 +139,7 @@ function MobileSettingsPanel({
             ) : (
               <button
                 onClick={() => setEditingTitle(true)}
-                className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors text-left"
+                className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-sm transition-colors text-left"
               >
                 <span className="text-gray-900">{title || t('common:newWheel', { defaultValue: 'Nytt hjul' })}</span>
                 <Type size={18} className="text-gray-400" />
@@ -160,7 +160,7 @@ function MobileSettingsPanel({
                   <button
                     key={idx}
                     onClick={() => onColorsChange && onColorsChange(palette.colors)}
-                    className={`p-2 rounded-lg border-2 transition-all ${
+                    className={`p-2 rounded-sm border-2 transition-all ${
                       isSelected 
                         ? 'border-teal-500 bg-teal-50' 
                         : 'border-gray-200 hover:border-gray-300 active:bg-gray-50'
@@ -222,7 +222,7 @@ function MobileSettingsPanel({
                   <button
                     key={ring.id}
                     onClick={() => handleToggleRing(ring.id)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-sm transition-colors"
                   >
                     <span className={ring.visible ? 'text-gray-900' : 'text-gray-400'}>
                       {ring.name}
@@ -285,7 +285,7 @@ function ToggleRow({ label, checked, onChange }) {
   return (
     <button
       onClick={() => onChange && onChange(!checked)}
-      className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
+      className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-sm transition-colors"
     >
       <span className="text-gray-900">{label}</span>
       <div

@@ -29,7 +29,7 @@ function MobileBottomNav({
         {/* Home */}
         <button
           onClick={onHome}
-          className="flex flex-col items-center justify-center p-2 min-w-[56px] text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-lg transition-colors"
+          className="flex flex-col items-center justify-center p-2 min-w-[56px] text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-sm transition-colors"
           aria-label={t('common:navigation.home', { defaultValue: 'Hem' })}
         >
           <Home size={24} />
@@ -39,7 +39,7 @@ function MobileBottomNav({
         {/* View Wheel */}
         <button
           onClick={onViewWheel}
-          className="flex flex-col items-center justify-center p-2 min-w-[56px] text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-lg transition-colors"
+          className="flex flex-col items-center justify-center p-2 min-w-[56px] text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-sm transition-colors"
           aria-label={t('common:viewWheel', { defaultValue: 'Visa hjul' })}
         >
           <Eye size={24} />
@@ -58,7 +58,7 @@ function MobileBottomNav({
         {/* Settings */}
         <button
           onClick={onSettings}
-          className="flex flex-col items-center justify-center p-2 min-w-[56px] text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-lg transition-colors"
+          className="flex flex-col items-center justify-center p-2 min-w-[56px] text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-sm transition-colors"
           aria-label={t('common:settings', { defaultValue: 'Inställningar' })}
         >
           <Settings size={24} />
@@ -69,7 +69,7 @@ function MobileBottomNav({
         <button
           onClick={onSave}
           disabled={isSaving}
-          className={`flex flex-col items-center justify-center p-2 min-w-[56px] rounded-lg transition-colors relative ${
+          className={`flex flex-col items-center justify-center p-2 min-w-[56px] rounded-sm transition-colors relative ${
             hasUnsavedChanges 
               ? 'text-teal-600 hover:text-teal-700' 
               : 'text-gray-600 hover:text-gray-900'
