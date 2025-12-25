@@ -1425,6 +1425,96 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
 
   const normalizedPages = Array.isArray(pages) ? pages : [];
 
+  // SYNC PAGES: Ensure all pages exist in database before saving items
+  // This is critical for template imports where new page IDs are generated
+  const pageIdMap = new Map();
+  
+  // Get existing pages for this wheel
+  const { data: existingPages, error: existingPagesError } = await supabase
+    .from('wheel_pages')
+    .select('id, page_order, year')
+    .eq('wheel_id', wheelId);
+  
+  if (existingPagesError) {
+    console.error('[saveWheelSnapshot] Error fetching existing pages:', existingPagesError);
+  }
+  
+  const existingPageIds = new Set((existingPages || []).map(p => p.id));
+  
+  // Create any pages that don't exist yet
+  for (const page of normalizedPages) {
+    if (!page || !page.id) continue;
+    
+    if (!existingPageIds.has(page.id)) {
+      // Page doesn't exist - create it
+      console.log(`[saveWheelSnapshot] Creating new page: id=${page.id?.substring(0,8)}, year=${page.year}, order=${page.pageOrder}`);
+      
+      const { data: newPage, error: createError } = await supabase
+        .from('wheel_pages')
+        .insert({
+          id: page.id, // Use the client-generated UUID
+          wheel_id: wheelId,
+          page_order: page.pageOrder ?? normalizedPages.indexOf(page),
+          year: page.year || new Date().getFullYear(),
+          title: page.title || `Sida ${(page.pageOrder ?? normalizedPages.indexOf(page)) + 1}`,
+          structure: {
+            rings: baseRings.map(r => ({ ...r, id: ringIdMap.get(r.id) || r.id })),
+            activityGroups: baseActivityGroups.map(g => ({ ...g, id: activityIdMap.get(g.id) || g.id })),
+            labels: baseLabels.map(l => ({ ...l, id: labelIdMap.get(l.id) || l.id })),
+          }
+        })
+        .select()
+        .single();
+      
+      if (createError) {
+        console.error(`[saveWheelSnapshot] Error creating page ${page.id}:`, createError);
+        // If UUID conflict, try to use existing page
+        if (createError.code === '23505') {
+          console.log(`[saveWheelSnapshot] Page ${page.id} already exists (race condition)`);
+        } else {
+          throw createError;
+        }
+      } else {
+        console.log(`[saveWheelSnapshot] Created page: ${newPage.id}`);
+      }
+      
+      pageIdMap.set(page.id, page.id); // Map to itself since we used the client ID
+    } else {
+      pageIdMap.set(page.id, page.id); // Page already exists
+    }
+  }
+  
+  // Delete pages that exist in DB but are not in the snapshot
+  // This handles template import replacing all pages
+  const snapshotPageIds = new Set(normalizedPages.map(p => p.id).filter(Boolean));
+  const pagesToDelete = (existingPages || []).filter(p => !snapshotPageIds.has(p.id));
+  
+  if (pagesToDelete.length > 0) {
+    console.log(`[saveWheelSnapshot] Deleting ${pagesToDelete.length} orphaned pages:`, pagesToDelete.map(p => p.id?.substring(0,8)));
+    
+    // Delete items for orphaned pages first (foreign key constraint)
+    const { error: deleteItemsError } = await supabase
+      .from('items')
+      .delete()
+      .eq('wheel_id', wheelId)
+      .in('page_id', pagesToDelete.map(p => p.id));
+    
+    if (deleteItemsError) {
+      console.error('[saveWheelSnapshot] Error deleting items for orphaned pages:', deleteItemsError);
+    }
+    
+    // Now delete the orphaned pages
+    const { error: deletePagesError } = await supabase
+      .from('wheel_pages')
+      .delete()
+      .eq('wheel_id', wheelId)
+      .in('id', pagesToDelete.map(p => p.id));
+    
+    if (deletePagesError) {
+      console.error('[saveWheelSnapshot] Error deleting orphaned pages:', deletePagesError);
+    }
+  }
+
   const ensureItemId = () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return `item-${crypto.randomUUID()}`;
@@ -1526,6 +1616,7 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
     ringIdMap,
     activityIdMap,
     labelIdMap,
+    pageIdMap,
     itemsByPage,
   };
 };
