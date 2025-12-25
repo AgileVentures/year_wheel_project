@@ -343,13 +343,13 @@ const ListView = ({
   };
   
   return (
-    <div className="w-full h-full bg-gray-50 overflow-auto p-6">
+    <div className="w-full h-full bg-gray-50 overflow-auto p-2 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
+        {/* Header - Compact on mobile */}
+        <div className="mb-3 sm:mb-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+              <div className="hidden sm:block">
                 <h2 className="text-2xl font-semibold text-gray-900">
                   {t('listView.title', 'Listvy')}
                 </h2>
@@ -362,7 +362,7 @@ const ListView = ({
               <select
                 value={yearFilter}
                 onChange={(e) => setYearFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">{t('listView.allYears', 'Alla år')}</option>
                 {availableYears.map(y => (
@@ -373,8 +373,8 @@ const ListView = ({
             
             {/* Bulk Actions */}
             {selectedItems.size > 0 && (
-              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-sm px-4 py-2">
-                <span className="text-sm font-medium text-blue-900">
+              <div className="flex items-center gap-1 sm:gap-2 bg-blue-50 border border-blue-200 rounded-sm px-2 sm:px-4 py-1.5 sm:py-2">
+                <span className="text-xs sm:text-sm font-medium text-blue-900">
                   {selectedItems.size} {t('listView.selected', 'valda')}
                 </span>
                 <select
@@ -384,24 +384,26 @@ const ListView = ({
                       e.target.value = '';
                     }
                   }}
-                  className="text-sm border border-blue-300 rounded px-2 py-1"
+                  className="text-xs sm:text-sm border border-blue-300 rounded px-1.5 sm:px-2 py-1 max-w-[100px] sm:max-w-none"
                 >
-                  <option value="">{t('listView.moveToRing', 'Flytta till ring...')}</option>
+                  <option value="">{t('listView.moveToRing', 'Flytta...')}</option>
                   {wheelStructure.rings.map(ring => (
                     <option key={ring.id} value={ring.id}>{ring.name}</option>
                   ))}
                 </select>
                 <button
                   onClick={handleDeleteSelected}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  className="text-xs sm:text-sm text-red-600 hover:text-red-700 font-medium px-1"
                 >
-                  {t('common:actions.delete', 'Ta bort')}
+                  <Trash2 size={16} className="sm:hidden" />
+                  <span className="hidden sm:inline">{t('common:actions.delete', 'Ta bort')}</span>
                 </button>
                 <button
                   onClick={() => setSelectedItems(new Set())}
-                  className="text-sm text-gray-600 hover:text-gray-700"
+                  className="text-xs sm:text-sm text-gray-600 hover:text-gray-700 px-1"
                 >
-                  {t('listView.clearSelection', 'Rensa')}
+                  <X size={16} className="sm:hidden" />
+                  <span className="hidden sm:inline">{t('listView.clearSelection', 'Rensa')}</span>
                 </button>
               </div>
             )}
@@ -409,7 +411,7 @@ const ListView = ({
         </div>
         
         {/* Rings List */}
-        <div className="space-y-4">
+        <div className="space-y-2 sm:space-y-4">
           {Object.entries(itemsByRing).map(([ringId, { ring, items }]) => {
             const isExpanded = expandedRings[ringId] !== false; // Default to expanded
             const activityGroup = getActivityGroup(items[0]?.activityId);
@@ -427,52 +429,52 @@ const ListView = ({
               >
                 {/* Ring Header */}
                 <div 
-                  className={`flex items-center justify-between px-4 py-3 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors ${
+                  className={`flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors ${
                     dropTargetRingId === ringId ? 'bg-blue-100' : 'bg-gray-50'
                   }`}
                   onClick={() => toggleRing(ringId)}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <button 
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleRing(ringId);
                       }}
                     >
-                      {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                      {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </button>
                     
                     {/* Editable Ring Name */}
                     {editingRingId === ringId ? (
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1 sm:gap-2 min-w-0" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="text"
                           value={editingRingName}
                           onChange={(e) => setEditingRingName(e.target.value)}
                           onKeyDown={(e) => handleRingNameKeyDown(e, ringId)}
                           autoFocus
-                          className="text-lg font-semibold text-gray-900 px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="text-base sm:text-lg font-semibold text-gray-900 px-2 py-1 border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0 w-full"
                         />
                         <button
                           onClick={(e) => handleSaveRingName(e, ringId)}
-                          className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
+                          className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded flex-shrink-0"
                           title={t('common:actions.save', 'Spara')}
                         >
                           <Check size={18} />
                         </button>
                         <button
                           onClick={handleCancelEditRingName}
-                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                          className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded flex-shrink-0"
                           title={t('common:actions.cancel', 'Avbryt')}
                         >
                           <X size={18} />
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 group/name">
+                      <div className="flex items-center gap-1 sm:gap-2 group/name min-w-0">
                         <h3 
-                          className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"
+                          className="text-base sm:text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer truncate"
                           onClick={(e) => handleStartEditRingName(e, ring)}
                           title={t('listView.clickToEditRingName', 'Klicka för att redigera ringnamn')}
                         >
@@ -480,7 +482,7 @@ const ListView = ({
                         </h3>
                         <button
                           onClick={(e) => handleStartEditRingName(e, ring)}
-                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover/name:opacity-100 transition-opacity"
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover/name:opacity-100 transition-opacity flex-shrink-0 hidden sm:block"
                           title={t('listView.editRingName', 'Redigera ringnamn')}
                         >
                           <Pencil size={14} />
@@ -500,13 +502,13 @@ const ListView = ({
                         }
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="text-xs px-2 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hidden sm:block flex-shrink-0"
                     >
                       <option value="inner">{t('listView.innerRing', 'Innerring')}</option>
                       <option value="outer">{t('listView.outerRing', 'Ytterring')}</option>
                     </select>
-                    <span className="text-sm text-gray-500">
-                      {items.length} {t('listView.items', 'aktiviteter')}
+                    <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">
+                      ({items.length})
                     </span>
                   </div>
                   
@@ -516,22 +518,138 @@ const ListView = ({
                         e.stopPropagation();
                         handleAddItemToRing(ringId);
                       }}
-                      className="flex items-center gap-1 px-3 py-1.5 sm:py-1.5 py-2.5 text-sm text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded-sm transition-colors min-h-[44px] sm:min-h-0"
+                      className="flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 active:bg-blue-100 rounded-sm transition-colors flex-shrink-0"
+                      title={t('listView.addItemButton', 'Lägg till aktivitet')}
                     >
-                      <Plus size={16} />
-                      <span className="hidden sm:inline">{t('listView.addItemButton', '+ Lägg till aktivitet')}</span>
-                      <span className="sm:hidden">{t('listView.add', '+ Lägg till')}</span>
+                      <Plus size={18} />
                     </button>
                   )}
                 </div>
                 
-                {/* Items Table */}
+                {/* Items - Card layout for mobile, Table for desktop */}
                 {isExpanded && (
-                  <div className="overflow-x-auto">
+                  <>
+                    {/* Mobile Card Layout */}
+                    <div className="md:hidden divide-y divide-gray-100">
+                      {items.map((item) => {
+                        const itemActivityGroup = getActivityGroup(item.activityId);
+                        const itemLabel = getLabel(item.labelId);
+                        const isSelected = selectedItems.has(item.id);
+                        
+                        return (
+                          <div 
+                            key={item.id}
+                            className={`p-2.5 active:bg-gray-100 ${isSelected ? 'bg-blue-50' : ''} ${draggedItem?.id === item.id ? 'opacity-50' : ''}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              {/* Checkbox */}
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected}
+                                onChange={() => handleToggleItem(item.id)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1 flex-shrink-0"
+                              />
+                              
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                {/* Row 1: Color dot + Name + Actions */}
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-2.5 h-2.5 rounded flex-shrink-0"
+                                    style={{ backgroundColor: itemActivityGroup?.color || '#D1D5DB' }}
+                                  />
+                                  <button
+                                    onClick={() => setEditingItem(item)}
+                                    className="text-sm font-medium text-gray-900 hover:text-blue-600 text-left truncate flex-1"
+                                  >
+                                    {item.name}
+                                  </button>
+                                  
+                                  {/* Compact action buttons */}
+                                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                                    {onNavigateToItemOnWheel && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onNavigateToItemOnWheel(item.id);
+                                        }}
+                                        className="text-gray-400 hover:text-blue-600 p-1.5"
+                                      >
+                                        <Eye size={16} />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingItem(item);
+                                      }}
+                                      className="text-gray-400 hover:text-blue-600 p-1.5"
+                                    >
+                                      <Edit2 size={16} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteSingleItem(item);
+                                      }}
+                                      className="text-gray-400 hover:text-red-600 p-1.5"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {/* Row 2: Date badge + optional type/label */}
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white">
+                                    {formatDateRange(item.startDate, item.endDate)}
+                                  </span>
+                                  {itemActivityGroup && (
+                                    <span className="text-xs text-gray-500">
+                                      {itemActivityGroup.name}
+                                    </span>
+                                  )}
+                                  {itemLabel && (
+                                    <span 
+                                      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs"
+                                      style={{ 
+                                        backgroundColor: itemLabel.color || '#94A3B8',
+                                        color: (() => {
+                                          const hexColor = itemLabel.color || '#94A3B8';
+                                          const r = parseInt(hexColor.slice(1, 3), 16);
+                                          const g = parseInt(hexColor.slice(3, 5), 16);
+                                          const b = parseInt(hexColor.slice(5, 7), 16);
+                                          const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                                          return luminance > 0.5 ? '#000000' : '#FFFFFF';
+                                        })()
+                                      }}
+                                    >
+                                      {itemLabel.name}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Add Item Button */}
+                      <button
+                        onClick={() => handleAddItemToRing(ringId)}
+                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-full p-2.5"
+                      >
+                        <Plus size={16} />
+                        {t('listView.addItemButton', '+ Lägg till aktivitet')}
+                      </button>
+                    </div>
+                    
+                    {/* Desktop Table Layout */}
+                    <div className="hidden md:block overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
-                          <th className="px-4 py-2 text-left w-8 hidden sm:table-cell">
+                          <th className="px-3 py-2 text-left w-8">
                             <input 
                               type="checkbox" 
                               checked={items.length > 0 && items.every(item => selectedItems.has(item.id))}
@@ -539,19 +657,19 @@ const ListView = ({
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                           </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.item', 'Aktivitet')}
                           </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.type', 'Typ')}
                           </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                             {t('listView.label', 'Etikett')}
                           </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {t('listView.timeline', 'Tidslinje')}
                           </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                             {t('listView.actions', 'Åtgärder')}
                           </th>
                         </tr>
@@ -575,7 +693,7 @@ const ListView = ({
                               onDragStart={(e) => handleDragStart(e, item)}
                               onDragEnd={handleDragEnd}
                             >
-                              <td className="px-4 py-3 hidden sm:table-cell">
+                              <td className="px-3 py-2.5">
                                 <input 
                                   type="checkbox" 
                                   checked={isSelected}
@@ -585,7 +703,7 @@ const ListView = ({
                               </td>
                               
                               {/* Item Name */}
-                              <td className="px-4 py-3">
+                              <td className="px-3 py-2.5">
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-3 h-3 rounded flex-shrink-0"
@@ -593,25 +711,25 @@ const ListView = ({
                                   />
                                   <button
                                     onClick={() => setEditingItem(item)}
-                                    className="text-sm font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-left min-h-[44px] sm:min-h-0 flex items-center"
+                                    className="text-sm font-medium text-gray-900 hover:text-blue-600 active:text-blue-700 text-left"
                                   >
                                     {item.name}
                                   </button>
                                 </div>
                               </td>
                               
-                              {/* Type (Activity Group) - hidden on mobile */}
-                              <td className="px-4 py-3 hidden md:table-cell">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              {/* Type (Activity Group) */}
+                              <td className="px-3 py-2.5">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                                   {itemActivityGroup?.name || t('listView.noType', 'Ingen typ')}
                                 </span>
                               </td>
                               
-                              {/* Label - hidden on mobile */}
-                              <td className="px-4 py-3 hidden lg:table-cell">
+                              {/* Label - hidden on smaller desktop */}
+                              <td className="px-3 py-2.5 hidden lg:table-cell">
                                 {itemLabel ? (
                                   <span 
-                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                     style={{ 
                                       backgroundColor: itemLabel.color || '#94A3B8',
                                       color: (() => {
@@ -632,25 +750,25 @@ const ListView = ({
                               </td>
                               
                               {/* Timeline */}
-                              <td className="px-4 py-3">
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white">
+                              <td className="px-3 py-2.5">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white">
                                   {formatDateRange(item.startDate, item.endDate)}
                                 </span>
                               </td>
                               
                               {/* Actions */}
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-1 sm:gap-1 gap-2">
+                              <td className="px-3 py-2.5">
+                                <div className="flex items-center gap-1">
                                   {onNavigateToItemOnWheel && (
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         onNavigateToItemOnWheel(item.id);
                                       }}
-                                      className="text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors p-1 sm:p-1 p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+                                      className="text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors p-1"
                                       title={t('listView.showInWheel', 'Visa i hjul')}
                                     >
-                                      <Eye size={16} className="sm:w-4 sm:h-4 w-5 h-5" />
+                                      <Eye size={16} />
                                     </button>
                                   )}
                                   <button
@@ -658,20 +776,20 @@ const ListView = ({
                                       e.stopPropagation();
                                       setEditingItem(item);
                                     }}
-                                    className="text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors p-1 sm:p-1 p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+                                    className="text-gray-400 hover:text-blue-600 active:text-blue-700 transition-colors p-1"
                                     title={t('listView.edit', 'Redigera')}
                                   >
-                                    <Edit2 size={16} className="sm:w-4 sm:h-4 w-5 h-5" />
+                                    <Edit2 size={16} />
                                   </button>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleDeleteSingleItem(item);
                                     }}
-                                    className="text-gray-400 hover:text-red-600 active:text-red-700 transition-colors p-1 sm:p-1 p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+                                    className="text-gray-400 hover:text-red-600 active:text-red-700 transition-colors p-1"
                                     title={t('listView.delete', 'Ta bort')}
                                   >
-                                    <Trash2 size={16} className="sm:w-4 sm:h-4 w-5 h-5" />
+                                    <Trash2 size={16} />
                                   </button>
                                 </div>
                               </td>
@@ -681,10 +799,10 @@ const ListView = ({
                         
                         {/* Add Item Row */}
                         <tr className="hover:bg-gray-50 active:bg-gray-100">
-                          <td colSpan="6" className="px-4 py-2">
+                          <td colSpan="6" className="px-3 py-2">
                             <button
                               onClick={() => handleAddItemToRing(ringId)}
-                              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 active:text-gray-900 transition-colors py-2 min-h-[44px] sm:min-h-0"
+                              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 active:text-gray-900 transition-colors py-1"
                             >
                               <Plus size={16} />
                               {t('listView.addItemButton', '+ Lägg till aktivitet')}
@@ -693,7 +811,8 @@ const ListView = ({
                         </tr>
                       </tbody>
                     </table>
-                  </div>
+                    </div>
+                  </>
                 )}
               </div>
             );
