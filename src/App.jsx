@@ -3229,7 +3229,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       setWeekRingDisplayMode(templateData.week_ring_display_mode || 'week-numbers');
 
       // Helper function to convert template data to new client IDs
-      const convertTemplateData = (templateStructure) => {
+      // Returns the converted data AND the ID mappings for consistent references across pages
+      const convertTemplateStructure = (templateStructure) => {
         // Deep copy to avoid read-only property issues
         const orgData = JSON.parse(JSON.stringify(templateStructure || defaultPageStructure));
         
@@ -3263,34 +3264,45 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           });
         }
         
-        if (orgData.items) {
-          orgData.items = orgData.items.map((item, index) => ({
-            ...item,
-            id: crypto.randomUUID(), // Use proper UUID
-            pageId: null, // Clear page reference
-            // Update references using the mapping
-            ringId: ringIdMap.get(item.ringId) || item.ringId,
-            activityId: groupIdMap.get(item.activityId) || item.activityId,
-            labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
-          }));
-        }
-        
-        return orgData;
+        return { orgData, ringIdMap, groupIdMap, labelIdMap };
+      };
+      
+      // Helper to convert items using existing ID mappings
+      const convertTemplateItems = (items, ringIdMap, groupIdMap, labelIdMap) => {
+        if (!items || items.length === 0) return [];
+        return items.map((item) => ({
+          ...item,
+          id: crypto.randomUUID(), // Use proper UUID for each item
+          pageId: null, // Clear page reference - will be set per page
+          // Update references using the mapping
+          ringId: ringIdMap.get(item.ringId) || item.ringId,
+          activityId: groupIdMap.get(item.activityId) || item.activityId,
+          labelId: item.labelId ? (labelIdMap.get(item.labelId) || item.labelId) : null
+        }));
       };
 
-      // For multi-page wheels, load the first page
+      // For multi-page wheels, load all pages with their items
       if (templatePages.length > 1) {
+        // Convert structure from first page (rings, groups, labels are wheel-scoped)
         const firstPage = templatePages[0];
-        const orgData = convertTemplateData(firstPage.structure);
+        const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(firstPage.structure);
         
-        // Load template pages into wheelState
-        const pagesForState = templatePages.map((page, index) => ({
-          id: `template-page-${index + 1}`, // Temporary client-side IDs
-          year: page.year || (new Date().getFullYear() + index),
-          pageOrder: index,
-          title: page.title || `Sida ${index + 1}`,
-          items: orgData.items || [] // Items from converted structure
-        }));
+        // Load template pages into wheelState - each page gets its own items
+        const pagesForState = templatePages.map((page, index) => {
+          const pageItems = convertTemplateItems(
+            page.structure?.items || page.items || [],
+            ringIdMap,
+            groupIdMap,
+            labelIdMap
+          );
+          return {
+            id: `template-page-${index + 1}`, // Temporary client-side IDs
+            year: page.year || (new Date().getFullYear() + index),
+            pageOrder: index,
+            title: page.title || `Sida ${index + 1}`,
+            items: pageItems
+          };
+        });
 
         setWheelState((prev) => ({
           ...prev,
@@ -3305,7 +3317,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       } else {
         // Single page template - load organization data from first page
         const templateStructure = templatePages[0].structure;
-        const orgData = convertTemplateData(templateStructure);
+        const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(templateStructure);
+        
+        // Convert items for the single page
+        const pageItems = convertTemplateItems(
+          templateStructure?.items || [],
+          ringIdMap,
+          groupIdMap,
+          labelIdMap
+        );
         
         setWheelState((prev) => ({
           ...prev,
@@ -3314,7 +3334,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             activityGroups: orgData.activityGroups || [],
             labels: orgData.labels || []
           },
-          pages: [], // No pages yet
+          pages: [{
+            id: 'template-page-1',
+            year: templatePages[0].year || new Date().getFullYear(),
+            pageOrder: 0,
+            title: templatePages[0].title || 'Sida 1',
+            items: pageItems
+          }],
           currentPageId: null
         }));
       }
