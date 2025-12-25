@@ -288,16 +288,6 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateWheelStructure(newWheelStructure) {
-    // Debug: Log what's coming in
-    if (this.pendingItemUpdates.size > 0) {
-      const pendingIds = Array.from(this.pendingItemUpdates.keys());
-      const pendingItem = this.pendingItemUpdates.get(pendingIds[0]);
-      const incomingItem = newWheelStructure.items?.find(i => i.id === pendingIds[0]);
-      console.log(`[updateWheelStructure] Pending: ${pendingItem?.item.startDate} - ${pendingItem?.item.endDate}`);
-      console.log(`[updateWheelStructure] Incoming: ${incomingItem?.startDate} - ${incomingItem?.endDate}`);
-      console.log(`[updateWheelStructure] Match: ${incomingItem?.startDate === pendingItem?.item.startDate && incomingItem?.endDate === pendingItem?.item.endDate}`);
-    }
-    
     this.wheelStructure = newWheelStructure;
     
     // Update DataProcessor with new structure (invalidates its cache only if changed)
@@ -3215,14 +3205,8 @@ class YearWheel {
     const rotationThisFrame = (this.animationSpeed * speedMultiplier * cappedDelta) / 1000;
     this.rotationAngle -= rotationThisFrame;
 
-    // Throttled rotation callback for casting sync (only every 100ms during animation)
-    if (this.onRotationChange) {
-      const timeSinceLastCallback = now - this.lastRotationCallbackTime;
-      if (timeSinceLastCallback >= this.rotationCallbackThrottle) {
-        this.onRotationChange(this.rotationAngle);
-        this.lastRotationCallbackTime = now;
-      }
-    }
+    // DON'T call onRotationChange during animation - it causes React re-renders!
+    // Only call when animation stops (in stopSpinning())
 
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawRotatingElements();
@@ -3277,17 +3261,6 @@ class YearWheel {
 
 
   create() {
-    // Debug: Check pending updates at render time
-    if (this.pendingItemUpdates.size > 0) {
-      console.log(`[YearWheel.create] Rendering with ${this.pendingItemUpdates.size} pending updates:`, 
-        Array.from(this.pendingItemUpdates.entries()).map(([id, data]) => ({
-          id: id.substring(0, 8),
-          dates: `${data.item.startDate} - ${data.item.endDate}`,
-          age: Date.now() - data.timestamp
-        }))
-      );
-    }
-    
     // Set canvas internal dimensions (for drawing resolution)
     this.canvas.width = this.size;
     this.canvas.height = this.size;
@@ -3368,8 +3341,6 @@ class YearWheel {
       startRadius = region.startRadius;
       endRadius = region.endRadius;
     }
-    
-    console.log(`[DRAG PREVIEW] Item: ${item.name}, ring: ${currentRingId?.substring(0,8)}, startRadius: ${startRadius.toFixed(1)}, endRadius: ${endRadius.toFixed(1)}`);
 
     // Draw preview (we're already in the rotated context - no transform needed!)
     this.context.save();
@@ -4746,7 +4717,6 @@ class YearWheel {
             const itemToRender = pendingData ? pendingData.item : item;
             
             if (pendingData) {
-              console.log(`[OUTER RENDER] Using pending data for ${item.id.substring(0,8)}: ${pendingData.item.startDate} - ${pendingData.item.endDate}`);
               const age = Date.now() - pendingData.timestamp;
               
               // DON'T check for matches in the first 300ms - give React time to update
@@ -4754,7 +4724,6 @@ class YearWheel {
                 // Too soon - keep using pending update
               } else if (age > 5000) {
                 // Waited 5 seconds - timeout, clear it
-                console.log('[OUTER RING] TIMEOUT - clearing stale update (age:', age, 'ms) for:', item.id);
                 this.pendingItemUpdates.delete(item.id);
               } else {
                 // 300ms-5000ms: check if wheelStructure has caught up
@@ -4764,7 +4733,6 @@ class YearWheel {
                 
                 if (datesMatch && ringMatches) {
                   // wheelStructure now has our changes - safe to clear
-                  console.log('[OUTER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
                   this.pendingItemUpdates.delete(item.id);
                 }
                 // else: keep using pending update
@@ -5141,11 +5109,6 @@ class YearWheel {
         });
 
         ringItems.forEach((item) => {
-          // Debug: check if this is the pending item
-          if (this.pendingItemUpdates.has(item.id)) {
-            console.log(`[INNER LOOP] Found pending item in ringItems: ${item.id.substring(0,8)}, ring: ${ring.name}`);
-          }
-          
           // Skip the item being dragged - it will be drawn as a preview instead
           if (
             this.dragState.isDragging &&
@@ -5163,16 +5126,12 @@ class YearWheel {
           
           if (pendingData) {
             const age = Date.now() - pendingData.timestamp;
-            console.log(`[INNER RING] Using pending data for ${item.id.substring(0,8)}, age: ${age}ms`);
-            console.log(`[INNER RING] wheelStructure dates: ${item.startDate} - ${item.endDate}`);
-            console.log(`[INNER RING] pending dates: ${pendingData.item.startDate} - ${pendingData.item.endDate}`);
             
             // DON'T check for matches in the first 300ms - give React time to update
             if (age < 300) {
               // Too soon - keep using pending update
             } else if (age > 5000) {
               // Waited 5 seconds - timeout, clear it
-              console.log('[INNER RING] TIMEOUT - clearing stale update (age:', age, 'ms) for:', item.id);
               this.pendingItemUpdates.delete(item.id);
             } else {
               // 300ms-5000ms: check if wheelStructure has caught up
@@ -5182,7 +5141,6 @@ class YearWheel {
               
               if (datesMatch && ringMatches) {
                 // wheelStructure now has our changes - safe to clear
-                // console.log('[INNER RING] Data synchronized (age:', age, 'ms) - clearing for:', item.id);
                 this.pendingItemUpdates.delete(item.id);
               }
               // else: keep using pending update
@@ -5202,11 +5160,6 @@ class YearWheel {
           // Calculate angles
           let startAngle = dateToAngle(itemStartDate);
           let endAngle = dateToAngle(itemEndDate);
-          
-          // Debug: log angles for pending items
-          if (pendingData) {
-            console.log(`[INNER RING] Calculated angles: ${startAngle.toFixed(1)}° - ${endAngle.toFixed(1)}° (from ${itemToRender.startDate})`);
-          }
 
           // VIEWPORT CULLING: Skip items outside visible angle range (performance optimization)
           const visibleRangeStart = 0;

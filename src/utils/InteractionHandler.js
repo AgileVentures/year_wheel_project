@@ -888,18 +888,12 @@ class InteractionHandler {
       originalItem.endDate !== updatedItem.endDate ||
       originalItem.ringId !== updatedItem.ringId;
 
-    console.log(`[InteractionHandler] stopActivityDrag - hasChanges: ${hasChanges}, item: ${updatedItem.name}`);
-    console.log(`[InteractionHandler] Old: ${originalItem.startDate} - ${originalItem.endDate}`);
-    console.log(`[InteractionHandler] New: ${updatedItem.startDate} - ${updatedItem.endDate}`);
-
     if (hasChanges) {
-      // Store the primary update
-      console.log(`[InteractionHandler] Setting pendingItemUpdate for: ${updatedItem.id}`);
+      // Store the primary update for optimistic rendering
       this.wheel.pendingItemUpdates.set(updatedItem.id, {
         item: updatedItem,
         timestamp: Date.now(),
       });
-      console.log(`[InteractionHandler] pendingItemUpdates size: ${this.wheel.pendingItemUpdates.size}`);
 
       // CROSS-YEAR LINKED ITEMS: If this item is part of a cross-year group,
       // update all linked items with the new full date range
@@ -1099,9 +1093,8 @@ class InteractionHandler {
     this.wheel.rotationAngle += angleDifference;
     this.lastMouseAngle = currentMouseAngle;
 
-    if (this.wheel.onRotationChange) {
-      this.wheel.onRotationChange(this.wheel.rotationAngle);
-    }
+    // DON'T call onRotationChange during rotation - it causes React re-renders!
+    // Only call when rotation ends (in stopWheelRotation)
 
     // Trigger redraw with requestAnimationFrame throttling for smooth 60fps
     if (this.wheel.create && !this.rotationRedrawPending) {
