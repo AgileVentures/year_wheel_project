@@ -2534,15 +2534,27 @@ export const applyDeltaChanges = async (wheelId, changes) => {
 
     // 2. INSERT operations
     if (changes.items.added.length > 0) {
-      const { error } = await supabase
-        .from('items')
-        .upsert(changes.items.added.map(item => ({
-          id: item.id,
-          wheel_id: wheelId,
-          page_id: item.page_id || item.pageId,
-          ring_id: item.ring_id || item.ringId,
-          activity_id: item.activity_id || item.activityId,
-          label_id: item.label_id || item.labelId || null,
+      // Filter out items without required pageId to prevent NOT NULL constraint violation
+      const validItems = changes.items.added.filter(item => {
+        const pageId = item.page_id || item.pageId;
+        if (!pageId) {
+          console.error(`[deltaSave] Skipping item "${item.name}" (${item.id}) - missing page_id`);
+          results.errors.push(`Item "${item.name}": missing page_id`);
+          return false;
+        }
+        return true;
+      });
+      
+      if (validItems.length > 0) {
+        const { error } = await supabase
+          .from('items')
+          .upsert(validItems.map(item => ({
+            id: item.id,
+            wheel_id: wheelId,
+            page_id: item.page_id || item.pageId,
+            ring_id: item.ring_id || item.ringId,
+            activity_id: item.activity_id || item.activityId,
+            label_id: item.label_id || item.labelId || null,
           name: item.name,
           start_date: item.start_date || item.startDate,
           end_date: item.end_date || item.endDate,
@@ -2551,9 +2563,10 @@ export const applyDeltaChanges = async (wheelId, changes) => {
           linked_wheel_id: item.linked_wheel_id || item.linkedWheelId || null,
           link_type: item.link_type || item.linkType || null,
           cross_year_group_id: item.cross_year_group_id || item.crossYearGroupId || null,
-        })), { onConflict: 'id' });
-      if (error) throw new Error(`Items insert failed: ${error.message}`);
-      results.items.inserted = changes.items.added.length;
+          })), { onConflict: 'id' });
+        if (error) throw new Error(`Items insert failed: ${error.message}`);
+        results.items.inserted = validItems.length;
+      }
     }
 
     if (changes.rings.added.length > 0) {
@@ -2615,10 +2628,18 @@ export const applyDeltaChanges = async (wheelId, changes) => {
     // 3. UPDATE operations (use upsert for efficiency)
     if (changes.items.modified.length > 0) {
       for (const item of changes.items.modified) {
+        // Validate required fields
+        const pageId = item.page_id || item.pageId;
+        if (!pageId) {
+          console.error(`[deltaSave] Skipping update for item "${item.name}" (${item.id}) - missing page_id`);
+          results.errors.push(`Item "${item.name}": missing page_id for update`);
+          continue;
+        }
+        
         // Filter to only updatable database columns (exclude id, created_at, updated_at)
         const updateData = {
           wheel_id: item.wheel_id || item.wheelId,
-          page_id: item.page_id || item.pageId,
+          page_id: pageId,
           ring_id: item.ring_id || item.ringId,
           activity_id: item.activity_id || item.activityId,
           label_id: item.label_id || item.labelId || null,

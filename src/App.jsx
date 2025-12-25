@@ -4452,13 +4452,17 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           
           processedItems.push({
             ...item,
+            pageId: item.pageId || currentPageId,
             startDate: formatDateOnly(clampedStart),
             endDate: formatDateOnly(clampedEnd),
           });
         }
       } else {
-        // Single year item - add as-is
-        processedItems.push(item);
+        // Single year item - ensure pageId is set
+        processedItems.push({
+          ...item,
+          pageId: item.pageId || currentPageId
+        });
       }
     }
     
