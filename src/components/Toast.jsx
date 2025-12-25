@@ -7,7 +7,8 @@ function Toast() {
   useEffect(() => {
     const handleShowToast = (event) => {
       const { message, type = 'success' } = event.detail;
-      const id = Date.now();
+      // Use timestamp + random suffix to ensure unique keys even if triggered at same millisecond
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       
       setToasts(prev => [...prev, { id, message, type }]);
       

@@ -3100,20 +3100,15 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         });
       }
 
-      // Update structure via setUndoableStates
-      const versionUpdates = {};
+      // Update state with restored values (skip history since we're doing a version restore)
       if (restoredTitle) {
-        versionUpdates.title = restoredTitle;
+        setTitle(restoredTitle, null); // null = skip history
       }
       if (restoredColors) {
-        versionUpdates.colors = restoredColors;
+        setColors(restoredColors, null); // null = skip history
       }
       if (restoredStructure) {
-        versionUpdates.structure = restoredStructure;
-      }
-
-      if (Object.keys(versionUpdates).length > 0) {
-        setUndoableStates(versionUpdates);
+        setWheelStructure(restoredStructure, null); // null = skip history
       }
 
       // Update latestValuesRef for consistency
