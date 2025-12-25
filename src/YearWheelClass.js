@@ -8,6 +8,8 @@ import ExportManager from "./utils/ExportManager.js";
 import ConfigValidator from "./utils/ConfigValidator.js";
 import LRUCache from "./utils/LRUCache.js";
 import TextRenderer from "./utils/TextRenderer.js";
+import DataProcessor from "./utils/DataProcessor.js";
+import WheelConstants from "./utils/WheelConstants.js";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -162,6 +164,10 @@ class YearWheel {
     // Bind animateWheel once to avoid creating new functions each frame
     this.boundAnimateWheel = this.animateWheel.bind(this);
 
+    // Performance optimization: Centralized constants and data processor
+    this.constants = new WheelConstants(size);
+    this.dataProcessor = new DataProcessor(this.wheelStructure);
+
     // Initialize utility modules (NEW ARCHITECTURE)
     this.renderEngine = new RenderEngine(this.context, this.size, this.center, {
       readonly: this.readonly
@@ -270,6 +276,10 @@ class YearWheel {
   invalidateCache() {
     this.cacheValid = false;
     this.textMeasurementCache.clear();
+    // Invalidate DataProcessor cache
+    if (this.dataProcessor) {
+      this.dataProcessor.invalidate();
+    }
     // CRITICAL: Clear all cached render data to prevent showing stale state
     this.clickableItems = [];
     this.hoveredItem = null;
@@ -279,6 +289,9 @@ class YearWheel {
   // Update organization data without recreating the wheel
   updateWheelStructure(newWheelStructure) {
     this.wheelStructure = newWheelStructure;
+    
+    // Update DataProcessor with new structure (invalidates its cache only if changed)
+    this.dataProcessor.updateStructure(newWheelStructure);
 
     // Recalculate maxRadius in case outer rings were added/removed/toggled
     this.calculateMaxRadius();
@@ -4532,23 +4545,16 @@ class YearWheel {
     const minDate = zoomStartDate;
     const maxDate = zoomEndDate;
 
-    // Define visibility filters at higher scope for use in both outer and inner ring drawing
-    const visibleRings = this.wheelStructure.rings.filter(
-      (r) => r.visible && r.type === "outer"
-    );
-    const visibleInnerRings = this.wheelStructure.rings.filter(
-      (r) => r.visible && r.type === "inner"
-    );
-    const visibleActivityGroups = this.wheelStructure.activityGroups.filter(
-      (a) => a.visible
-    );
-    const visibleLabels = this.wheelStructure.labels.filter((l) => l.visible);
+    // PERFORMANCE: Use DataProcessor for memoized visibility filtering
+    // This avoids redundant array operations during animation (60fps = 60 filter calls/sec)
+    const visibleRings = this.dataProcessor.getVisibleOuterRings();
+    const visibleInnerRings = this.dataProcessor.getVisibleInnerRings();
+    const visibleActivityGroups = this.dataProcessor.getVisibleActivityGroups();
+    const visibleLabels = this.dataProcessor.getVisibleLabels();
 
-    // PERFORMANCE: Create lookup maps to avoid repeated array.find() calls
-    const activityGroupMap = new Map(
-      visibleActivityGroups.map((a) => [a.id, a])
-    );
-    const labelMap = new Map(visibleLabels.map((l) => [l.id, l]));
+    // PERFORMANCE: Use memoized lookup maps from DataProcessor
+    const activityGroupMap = this.dataProcessor.getActivityGroupMap();
+    const labelMap = this.dataProcessor.getLabelMap();
 
     // Draw organization data items (from sidebar) if available
     if (
@@ -4557,11 +4563,11 @@ class YearWheel {
       this.wheelStructure.items.length > 0
     ) {
       if (visibleRings.length > 0) {
-        const ringNameBandWidth = this.size / 70; // CONSISTENT ring name band width
+        const ringNameBandWidth = this.constants.get('RING_NAME_BAND'); // CONSISTENT ring name band width
         const standardGap = 0; // NO GAP - for testing
 
         // Each outer ring = content area + name band (same as inner rings)
-        const outerRingTotalHeight = this.size / 23; // Total height per outer ring
+        const outerRingTotalHeight = this.constants.get('OUTER_RING_WIDTH'); // Total height per outer ring
         const outerRingContentHeight = this.showRingNames
           ? outerRingTotalHeight - ringNameBandWidth
           : outerRingTotalHeight;
@@ -4594,18 +4600,8 @@ class YearWheel {
             type: "outer",
           });
 
-          // Filter items for this ring that also have visible activity group (label is optional)
-          let ringItems = this.wheelStructure.items.filter((item) => {
-            const hasVisibleActivityGroup = visibleActivityGroups.some(
-              (a) => a.id === item.activityId
-            );
-            // Label is optional - only filter by label if item has one
-            const labelOk =
-              !item.labelId || visibleLabels.some((l) => l.id === item.labelId);
-            return (
-              item.ringId === ring.id && hasVisibleActivityGroup && labelOk
-            );
-          });
+          // PERFORMANCE: Use DataProcessor for memoized ring item filtering
+          let ringItems = this.dataProcessor.getItemsForRing(ring.id);
 
           // Cluster by week if in full year view (not zoomed)
           // DON'T disable clustering during drag - just skip rendering the dragged item later
@@ -4616,7 +4612,7 @@ class YearWheel {
           // Assign items to tracks to handle overlaps
           const { maxTracks, itemToTrack } =
             this.assignActivitiesToTracks(ringItems);
-          const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
+          const trackGap = this.constants.get('TRACK_GAP'); // Tiny gap between tracks for visual separation
 
           // Calculate which items actually have overlaps (are in tracks > 0)
           const itemsWithOverlaps = new Set();
@@ -4936,16 +4932,16 @@ class YearWheel {
       }
     }
 
-    // STANDARDIZED spacing constants - used consistently throughout
-    const standardGap = this.size / 1000; // Ultra-minimal gap - 2-3px
-    const ringNameBandWidth = this.size / 70; // CONSISTENT ring name band width (same as outer)
+    // STANDARDIZED spacing constants - use centralized WheelConstants
+    const standardGap = this.constants.get('STANDARD_GAP') * 0.15; // Ultra-minimal gap - 2-3px (fraction of standard)
+    const ringNameBandWidth = this.constants.get('RING_NAME_BAND'); // CONSISTENT ring name band width (same as outer)
 
     // Reserve space for month and week rings (draw them LATER after inner rings)
-    const monthNameWidth = this.size / 30;
-    const weekRingWidth = this.size / 35;
+    const monthNameWidth = this.constants.get('MONTH_RING_WIDTH');
+    const weekRingWidth = this.constants.get('WEEK_RING_WIDTH');
 
     // CRITICAL: Validate that we have enough space for all rings
-    const outerRingHeight = this.size / 23;
+    const outerRingHeight = this.constants.get('OUTER_RING_WIDTH');
     const monthRingWidthIfVisible = this.showMonthRing ? monthNameWidth : 0;
     const weekRingWidthIfVisible = this.showWeekRing ? weekRingWidth : 0;
     const minInnerSpace = this.minRadius;
@@ -4995,10 +4991,8 @@ class YearWheel {
 
     // Draw monthly events (inner sections) - they expand to fill available space
 
-    // Show ALL visible inner rings, even if empty (no items)
-    const innerRings = this.wheelStructure.rings.filter((r) => {
-      return r.type === "inner" && r.visible;
-    });
+    // PERFORMANCE: Use DataProcessor for memoized inner ring filtering
+    const innerRings = visibleInnerRings; // Already filtered by DataProcessor
     const numberOfEvents = innerRings.length;
 
     // Calculate total available space for inner rings
@@ -5037,15 +5031,8 @@ class YearWheel {
         type: "inner",
       });
 
-      // Get items for this ring
-      let ringItems = this.wheelStructure.items.filter((item) => {
-        const hasVisibleActivityGroup = visibleActivityGroups.some(
-          (a) => a.id === item.activityId
-        );
-        const labelOk =
-          !item.labelId || visibleLabels.some((l) => l.id === item.labelId);
-        return item.ringId === ring.id && hasVisibleActivityGroup && labelOk;
-      });
+      // PERFORMANCE: Use DataProcessor for memoized ring item filtering
+      let ringItems = this.dataProcessor.getItemsForRing(ring.id);
 
       // Cluster by week if in full year view (not zoomed)
       // DON'T disable clustering during drag - just skip rendering the dragged item later
@@ -5089,7 +5076,7 @@ class YearWheel {
         // Assign items to tracks to handle overlaps
         const { maxTracks, itemToTrack } =
           this.assignActivitiesToTracks(ringItems);
-        const trackGap = this.size / 2000; // Tiny gap between tracks for visual separation
+        const trackGap = this.constants.get('TRACK_GAP'); // Tiny gap between tracks for visual separation
 
         // Calculate overlap groups and their maximum overlap counts (INNER RINGS)
         const itemOverlapInfo = new Map();

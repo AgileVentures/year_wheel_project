@@ -743,17 +743,25 @@ function YearWheel({
     }
   }, [initialRotation, yearWheel]);
   
-  // Update zoom level for smart text scaling (without recreating wheel)
+  // CONSOLIDATED: Update wheel state properties without recreating wheel
+  // Combines zoom level, selection mode, and active editors updates
+  // This reduces effect count and improves performance by batching state updates
   useEffect(() => {
-    if (yearWheel && yearWheel.updateZoomLevel) {
+    if (!yearWheel) return;
+    
+    // Update zoom level for smart text scaling
+    if (yearWheel.updateZoomLevel) {
       yearWheel.updateZoomLevel(zoomLevel);
     }
-  }, [zoomLevel, yearWheel]);
-  
-  // Update selection mode and selected items (without recreating wheel)
-  useEffect(() => {
-    if (yearWheel && yearWheel.updateSelection) {
+    
+    // Update selection mode and selected items
+    if (yearWheel.updateSelection) {
       yearWheel.updateSelection(selectionMode, Array.from(selectedItems));
+    }
+    
+    // Update active editors for real-time collaboration
+    if (yearWheel.updateActiveEditors) {
+      yearWheel.updateActiveEditors(activeEditors);
     }
     
     // Close tooltip when entering selection mode
@@ -761,14 +769,7 @@ function YearWheel({
       setSelectedItem(null);
       setTooltipPosition(null);
     }
-  }, [selectionMode, selectedItems, yearWheel]);
-  
-  // Update active editors for real-time collaboration (without recreating wheel)
-  useEffect(() => {
-    if (yearWheel && yearWheel.updateActiveEditors) {
-      yearWheel.updateActiveEditors(activeEditors);
-    }
-  }, [activeEditors, yearWheel]);
+  }, [yearWheel, zoomLevel, selectionMode, selectedItems, activeEditors]);
 
   // Notify parent when wheel instance changes (only once per instance)
   // Expose yearWheel methods to parent via onWheelReady
