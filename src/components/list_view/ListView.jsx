@@ -654,6 +654,9 @@ const ListView = ({
         <AddItemModal
           wheelStructure={wheelStructure}
           year={yearNum}
+          pages={pages}
+          currentPageId={currentPageId}
+          currentWheelId={currentWheelId}
           onAddItem={(items) => {
             onAddItems(Array.isArray(items) ? items : [items]);
             setAddItemRingId(null);

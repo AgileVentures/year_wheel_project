@@ -5,12 +5,25 @@ import { fetchAccessibleWheels, fetchLinkedWheelInfo } from '../services/wheelSe
 import { wouldCreateCircularDependency, getDependencyChain, calculateDependentDates } from '../services/dependencyService';
 import ErrorDisplay from './ErrorDisplay';
 
-function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, currentPageId, year, preselectedRingId }) {
+function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, currentPageId, pages = [], year, preselectedRingId }) {
   const { t } = useTranslation(['editor']);
   
   // Use page year for default dates (fall back to current year if not provided)
   const defaultYear = year ? parseInt(year) : new Date().getFullYear();
   const defaultDate = `${defaultYear}-01-01`; // Jan 1st of page year
+  
+  // Helper to find page for a given year
+  const findPageForYear = (yearNum) => {
+    return pages.find(p => parseInt(p.year) === yearNum);
+  };
+  
+  // Helper to determine pageId based on start date
+  const getPageIdForDate = (dateStr) => {
+    if (!dateStr) return currentPageId;
+    const startYear = new Date(dateStr).getFullYear();
+    const page = findPageForYear(startYear);
+    return page?.id || currentPageId;
+  };
   
   const [formData, setFormData] = useState({
     name: '',
@@ -209,7 +222,7 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
       const recurringGroupId = `recurring-${Date.now()}`;
       const newItems = recurringDates.map((dates, index) => ({
         id: crypto.randomUUID(),
-        pageId: currentPageId, // CRITICAL: Assign current page ID
+        pageId: getPageIdForDate(dates.startDate), // Determine page from start date
         name: formData.name,
         ringId: formData.ringId,
         activityId: formData.activityId,
@@ -229,10 +242,10 @@ function AddItemModal({ wheelStructure, onAddItem, onClose, currentWheelId, curr
 
       onAddItem(newItems);
     } else {
-      // Create single item
+      // Create single item - pageId determined by start date year
       const newItem = {
         id: crypto.randomUUID(),
-        pageId: currentPageId, // CRITICAL: Assign current page ID
+        pageId: getPageIdForDate(formData.startDate), // Determine page from start date
         name: formData.name,
         ringId: formData.ringId,
         activityId: formData.activityId,
