@@ -3309,7 +3309,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             labelIdMap
           );
           return {
-            id: `template-page-${index + 1}`, // Temporary client-side IDs
+            id: crypto.randomUUID(), // Use proper UUID for page IDs
             year: page.year || (new Date().getFullYear() + index),
             pageOrder: index,
             title: page.title || `Sida ${index + 1}`,
@@ -3325,7 +3325,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             labels: orgData.labels || []
           },
           pages: pagesForState,
-          currentPageId: null // Will be set when saved
+          currentPageId: pagesForState[0]?.id || null // Auto-select first page
         }));
       } else {
         // Single page template - load structure from wheel data
@@ -3339,6 +3339,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           labelIdMap
         );
         
+        const firstPageId = crypto.randomUUID();
+        
         setWheelState((prev) => ({
           ...prev,
           structure: {
@@ -3347,13 +3349,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             labels: orgData.labels || []
           },
           pages: [{
-            id: 'template-page-1',
+            id: firstPageId,
             year: templatePages[0].year || new Date().getFullYear(),
             pageOrder: 0,
             title: templatePages[0].title || 'Sida 1',
             items: pageItems
           }],
-          currentPageId: null
+          currentPageId: firstPageId // Auto-select first page
         }));
       }
 
