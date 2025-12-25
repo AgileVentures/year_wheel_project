@@ -785,68 +785,113 @@ function Header({
         <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
         
         <div className="save-menu-container relative flex-shrink-0">
-          <div className="flex items-center">
+          <div className="flex items-stretch shadow-sm rounded-sm overflow-hidden">
             <button
               onClick={onSave}
               disabled={isSaving}
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 rounded-l-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
               data-onboarding="save-button"
             >
-              <Save size={16} />
+              <Save size={18} strokeWidth={2} />
               <span className="hidden sm:inline">
                 {isSaving ? t('common:header.saving') : t('common:actions.save')}
                 {!isSaving && unsavedChangesCount > 0 && (
-                  <span className="ml-1 text-xs opacity-90">({unsavedChangesCount})</span>
+                  <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-blue-500 rounded-full">{unsavedChangesCount}</span>
                 )}
               </span>
             </button>
             <button
               onClick={() => setShowSaveMenu(!showSaveMenu)}
               disabled={isSaving}
-              className="flex items-center px-2 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 rounded-r-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border-l border-blue-500"
+              className="save-dropdown-trigger flex items-center justify-center w-10 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-l border-blue-500/30"
               title="Fler sparalternativ"
             >
-              <ChevronDown size={16} />
+              <ChevronDown 
+                size={18} 
+                strokeWidth={2.5}
+                className={`transition-transform duration-200 ${showSaveMenu ? 'rotate-180' : ''}`} 
+              />
             </button>
           </div>
           
           {showSaveMenu && (
-            <div
-              ref={saveMenuRef}
-              className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-            >
-              <button
-                onClick={() => {
-                  onSave();
-                  setShowSaveMenu(false);
-                }}
-                disabled={isSaving}
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowSaveMenu(false)}
+              />
+              <div
+                ref={saveMenuRef}
+                className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
               >
-                <Save size={16} className="text-gray-500" />
-                <div>
-                  <div className="font-medium">Spara</div>
-                  <div className="text-xs text-gray-500">Spara ändringar utan att skapa version</div>
+                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Välj sparläge</p>
                 </div>
-              </button>
-              <button
-                onClick={() => {
-                  if (onSaveWithVersion) {
-                    onSaveWithVersion();
-                  }
-                  setShowSaveMenu(false);
-                }}
-                disabled={isSaving}
-                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
-              >
-                <History size={16} className="text-gray-500" />
-                <div>
-                  <div className="font-medium">Spara och skapa version</div>
-                  <div className="text-xs text-gray-500">Skapa återställningspunkt i historiken</div>
+                
+                <div className="p-2">
+                  <button
+                    onClick={() => {
+                      onSave();
+                      setShowSaveMenu(false);
+                    }}
+                    disabled={isSaving}
+                    className="w-full text-left px-3 py-3 rounded-sm hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-start gap-3 transition-all group border-2 border-transparent hover:border-blue-100"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-blue-100 group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                      <Save size={20} strokeWidth={2} className="text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 mb-0.5">Snabbspara</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">Spara ändringar snabbt utan att skapa checkpoint</div>
+                    </div>
+                    <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-md border border-gray-300 shadow-sm flex-shrink-0 mt-0.5">
+                      ⌘S
+                    </kbd>
+                  </button>
+                  
+                  <div className="relative my-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="px-2 bg-white text-xs text-gray-400 font-medium">ELLER</span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      if (onSaveWithVersion) {
+                        onSaveWithVersion();
+                      }
+                      setShowSaveMenu(false);
+                    }}
+                    disabled={isSaving}
+                    className="w-full text-left px-3 py-3 rounded-sm hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-start gap-3 transition-all group border-2 border-transparent hover:border-green-100"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-green-100 group-hover:bg-green-200 transition-colors flex-shrink-0">
+                      <History size={20} strokeWidth={2} className="text-green-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-semibold text-gray-900">Skapa checkpoint</span>
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full uppercase tracking-wide">Version</span>
+                      </div>
+                      <div className="text-xs text-gray-600 leading-relaxed">Spara komplett ögonblicksbild för säker återställning</div>
+                    </div>
+                    <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-md border border-gray-300 shadow-sm flex-shrink-0 mt-0.5">
+                      ⌘⇧S
+                    </kbd>
+                  </button>
                 </div>
-              </button>
-            </div>
+                
+                <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200">
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    <span className="font-semibold">Tips:</span> Använd checkpoints före större ändringar
+                  </p>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>

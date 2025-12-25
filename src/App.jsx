@@ -2430,6 +2430,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     handleSaveRef.current = handleSave;
   }, [handleSave]);
 
+  // Keyboard shortcuts for save operations
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Cmd+S / Ctrl+S - Quick save
+      if ((e.metaKey || e.ctrlKey) && e.key === 's' && !e.shiftKey) {
+        e.preventDefault();
+        handleSave();
+      }
+      
+      // Cmd+Shift+S / Ctrl+Shift+S - Save with version
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 's') {
+        e.preventDefault();
+        handleSaveWithVersion();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave, handleSaveWithVersion]);
+
   // ========================================
   // DEBOUNCED AUTO-SAVE (via Optimistic Sync)
   // Automatically saves changes after 500ms of inactivity (reduced from 1.5s)
