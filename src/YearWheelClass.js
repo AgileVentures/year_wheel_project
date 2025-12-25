@@ -134,6 +134,7 @@ class YearWheel {
     this.easingProgress = 0; // Track easing progress (0-1)
     this.lastRotationCallbackTime = 0; // Track last rotation callback for throttling
     this.rotationCallbackThrottle = 100; // Only send rotation updates every 100ms during animation
+    this.animationCache = null; // Cached canvas for smooth animation (set in cacheWheelForAnimation)
     this.isDragging = false;
     this.lastMouseAngle = 0;
     this.dragStartAngle = 0;
@@ -3208,8 +3209,23 @@ class YearWheel {
     // DON'T call onRotationChange during animation - it causes React re-renders!
     // Only call when animation stops (in stopSpinning())
 
+    // PERFORMANCE: Use cached canvas if available for smooth animation
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.drawRotatingElements();
+    
+    if (this.animationCache) {
+      // Fast path: just draw the cached wheel with rotation
+      this.context.save();
+      this.context.translate(this.center.x, this.center.y);
+      this.context.rotate(this.rotationAngle);
+      this.context.translate(-this.center.x, -this.center.y);
+      this.context.drawImage(this.animationCache, 0, 0);
+      this.context.restore();
+    } else {
+      // Fallback: full redraw (shouldn't happen during animation)
+      this.drawRotatingElements();
+    }
+    
+    // Static elements (center title/year) don't rotate - always draw fresh
     this.drawStaticElements();
 
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
@@ -3227,11 +3243,17 @@ class YearWheel {
     this.lastAnimationTime = 0;
     this.lastRotationCallbackTime = 0; // Reset throttle timer
     this.easingProgress = 0; // Reset easing
+    
+    // PERFORMANCE: Cache the wheel content for smooth animation
+    // Render the wheel at rotation=0 to an offscreen canvas, then just rotate it each frame
+    this.cacheWheelForAnimation();
+    
     this.animationFrameId = requestAnimationFrame(this.boundAnimateWheel);
   }
 
   stopSpinning() {
     this.isAnimating = false;
+    this.animationCache = null; // Clear the cache
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
@@ -3240,10 +3262,45 @@ class YearWheel {
     this.lastRotationCallbackTime = 0;
     this.easingProgress = 0;
     
+    // Redraw normally (not from cache)
+    this.create();
+    
     // Send final rotation position when stopping
     if (this.onRotationChange) {
       this.onRotationChange(this.rotationAngle);
     }
+  }
+  
+  /**
+   * PERFORMANCE: Cache wheel content for smooth animation
+   * Renders the rotating elements at rotation=0 to an offscreen canvas
+   * During animation, we just draw this cached image with rotation transform
+   */
+  cacheWheelForAnimation() {
+    // Set up the offscreen canvas
+    this.backgroundCache.width = this.size;
+    this.backgroundCache.height = this.size;
+    
+    // Store current rotation and temporarily set to 0
+    const savedRotation = this.rotationAngle;
+    this.rotationAngle = 0;
+    
+    // Clear the cache canvas
+    this.backgroundCacheContext.clearRect(0, 0, this.size, this.size);
+    
+    // Save the main context and swap to cache context
+    const mainContext = this.context;
+    this.context = this.backgroundCacheContext;
+    
+    // Draw rotating elements to cache (at rotation=0)
+    this.drawRotatingElements();
+    
+    // Restore main context
+    this.context = mainContext;
+    this.rotationAngle = savedRotation;
+    
+    // Store that we have a valid animation cache
+    this.animationCache = this.backgroundCache;
   }
 
   // Update animation speed on the fly
