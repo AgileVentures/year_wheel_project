@@ -805,7 +805,7 @@ function Header({
               onClick={() => setShowSaveMenu(!showSaveMenu)}
               disabled={isSaving}
               className="save-dropdown-trigger flex items-center justify-center w-10 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed border-l border-blue-500/30"
-              title="Fler sparalternativ"
+              title={t('common:header.saveOptions')}
             >
               <ChevronDown 
                 size={18} 
@@ -826,7 +826,7 @@ function Header({
                 className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
               >
                 <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Välj sparläge</p>
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.chooseSaveMode')}</p>
                 </div>
                 
                 <div className="p-2">
@@ -842,8 +842,8 @@ function Header({
                       <Save size={20} strokeWidth={2} className="text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 mb-0.5">Snabbspara</div>
-                      <div className="text-xs text-gray-600 leading-relaxed">Spara ändringar snabbt utan att skapa checkpoint</div>
+                      <div className="font-semibold text-gray-900 mb-0.5">{t('common:header.quickSave')}</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">{t('common:header.quickSaveDesc')}</div>
                     </div>
                     <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-md border border-gray-300 shadow-sm flex-shrink-0 mt-0.5">
                       ⌘S
@@ -855,7 +855,7 @@ function Header({
                       <div className="w-full border-t border-gray-200"></div>
                     </div>
                     <div className="relative flex justify-center">
-                      <span className="px-2 bg-white text-xs text-gray-400 font-medium">ELLER</span>
+                      <span className="px-2 bg-white text-xs text-gray-400 font-medium">{t('common:header.saveMenuOr')}</span>
                     </div>
                   </div>
                   
@@ -874,10 +874,10 @@ function Header({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-semibold text-gray-900">Skapa checkpoint</span>
-                        <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full uppercase tracking-wide">Version</span>
+                        <span className="font-semibold text-gray-900">{t('common:header.createCheckpoint')}</span>
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full uppercase tracking-wide">{t('common:header.versionBadge')}</span>
                       </div>
-                      <div className="text-xs text-gray-600 leading-relaxed">Spara komplett ögonblicksbild för säker återställning</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">{t('common:header.createCheckpointDesc')}</div>
                     </div>
                     <kbd className="hidden sm:flex items-center gap-0.5 px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-md border border-gray-300 shadow-sm flex-shrink-0 mt-0.5">
                       ⌘⇧S
@@ -887,7 +887,7 @@ function Header({
                 
                 <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200">
                   <p className="text-[11px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold">Tips:</span> Använd checkpoints före större ändringar
+                    <span className="font-semibold">{t('common:header.saveMenuTip')}</span> {t('common:header.saveMenuTipText')}
                   </p>
                 </div>
               </div>
