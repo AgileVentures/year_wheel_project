@@ -603,19 +603,18 @@ function Header({
           </div>
         )}
         
-        {/* Template Toggle (only show for admins) - Hidden on small screens */}
+        {/* Template Toggle (only show for admins) - Text-based for clarity */}
         {wheelId && isAdmin && onToggleTemplate && (
           <button
             onClick={onToggleTemplate}
-            className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-sm transition-colors ${
+            className={`hidden lg:flex items-center px-3 py-1.5 text-xs font-medium rounded-sm transition-colors ${
               isTemplate
                 ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
             title={isTemplate ? t('common:header.templateWheelVisibleOnLanding') : t('common:header.markAsTemplate')}
           >
-            <Sparkles size={12} />
-            <span className="hidden xl:inline">{isTemplate ? t('common:header.template') : t('common:header.markAsTemplate')}</span>
+            {isTemplate ? t('common:header.template') : t('common:header.markAsTemplate')}
           </button>
         )}
 
