@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MoreVertical, Users, Calendar, Star } from 'lucide-react';
+import { MoreVertical, Users, Calendar, Star, Presentation } from 'lucide-react';
 import { getUserTeams, assignWheelToTeam, removeWheelFromTeam } from '../../services/teamService';
 import { fetchPages, toggleShowOnLanding } from '../../services/wheelService';
 import { supabase } from '../../lib/supabase';
 import { showToast } from '../../utils/dialogs';
+import { useDeviceDetection } from '../../hooks/useDeviceDetection';
 
 function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false }) {
   const { t, i18n } = useTranslation(['dashboard', 'common']);
+  const navigate = useNavigate();
+  const { isMobile, isTablet } = useDeviceDetection();
   const [showMenu, setShowMenu] = useState(false);
   const [showTeamSelector, setShowTeamSelector] = useState(false);
   const [teams, setTeams] = useState([]);
@@ -192,6 +196,21 @@ function WheelCard({ wheel, onSelect, onDelete, onUpdate, isTeamContext = false 
           {/* Center */}
           <circle cx="180" cy="180" r="72" fill="white" />
         </svg>
+
+        {/* Cast/Presentation Button for Mobile/Tablet */}
+        {(isMobile || isTablet) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/preview-wheel/${wheel.id}?presentation=true`);
+            }}
+            className="absolute bottom-2 left-2 flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 active:bg-teal-700 text-white text-xs font-medium rounded-full shadow-md transition-colors"
+            title={t('common:presentationMode', { defaultValue: 'Presentation mode' })}
+          >
+            <Presentation size={14} />
+            <span>{t('common:cast', { defaultValue: 'Cast' })}</span>
+          </button>
+        )}
 
         {/* Menu Button - Positioned absolutely over the preview */}
         <div className="absolute top-2 right-2" ref={menuRef}>

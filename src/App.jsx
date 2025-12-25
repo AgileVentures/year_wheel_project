@@ -70,6 +70,7 @@ const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
 const ConflictResolutionModal = lazyWithRetry(() => import("./components/ConflictResolutionModal"));
+const MobileEditor = lazyWithRetry(() => import("./components/mobile/MobileEditor"));
 import { fetchWheel, fetchPageData, saveWheelSnapshot, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, reorderPages, toggleTemplateStatus, checkIsAdmin } from "./services/wheelService";
 import { supabase } from "./lib/supabase";
 import { useRealtimeWheel } from "./hooks/useRealtimeWheel";
@@ -520,6 +521,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [wheelData, setWheelData] = useState(null);
   const [viewMode, setViewMode] = useState('wheel'); // 'wheel', 'calendar', or 'list'
   const [pendingTooltipItemId, setPendingTooltipItemId] = useState(null); // Item to show tooltip for after view/page switch
+  
+  // Mobile detection - renders MobileEditor instead of desktop editor
+  const [isMobileView, setIsMobileView] = useState(() => {
+    const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    return isMobileUA || isSmallScreen;
+  });
+  
+  // Update mobile view on resize
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobileView(isMobileUA || isSmallScreen);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Legacy refs for compatibility (will be removed later)
   const latestValuesRef = useRef({});
@@ -5150,6 +5170,55 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     );
   }
 
+  // Render mobile-optimized editor for mobile/tablet devices
+  if (isMobileView) {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-lg text-gray-600">{t('common:loading')}</div>
+        </div>
+      }>
+        <MobileEditor
+          wheelId={wheelId}
+          wheelData={wheelData}
+          wheelState={wheelState}
+          setWheelState={setWheelState}
+          wheelStructure={wheelStructure}
+          setWheelStructure={setWheelStructure}
+          title={title}
+          setTitle={setTitle}
+          year={year}
+          colors={colors}
+          setColors={setColors}
+          pages={pages}
+          currentPageId={currentPageId}
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          onAddPage={handleAddPage}
+          showRingNames={showRingNames}
+          setShowRingNames={setShowRingNames}
+          showLabels={showLabels}
+          setShowLabels={setShowLabels}
+          showWeekRing={showWeekRing}
+          setShowWeekRing={setShowWeekRing}
+          showMonthRing={showMonthRing}
+          setShowMonthRing={setShowMonthRing}
+          weekRingDisplayMode={weekRingDisplayMode}
+          setWeekRingDisplayMode={setWeekRingDisplayMode}
+          onAddItems={handleAddItems}
+          onUpdateItem={handleUpdateAktivitet}
+          onDeleteItem={handleDeleteAktivitet}
+          onSave={handleSave}
+          isSaving={isSaving}
+          hasUnsavedChanges={actualUnsavedCount > 0}
+          onBackToDashboard={onBackToDashboard}
+          isPremium={isPremium}
+          allItems={allItems}
+        />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header 
@@ -5617,16 +5686,7 @@ function WheelEditorRoute() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Detect mobile devices - redirect to presentation mode
-  useEffect(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const isSmallScreen = window.innerWidth < 768;
-    
-    if (isMobile || isSmallScreen) {
-      // Redirect to preview with presentation mode enabled
-      navigate(`/preview-wheel/${wheelId}?presentation=true`, { replace: true });
-    }
-  }, [wheelId, navigate]);
+  // Mobile detection now happens inside WheelEditor - it renders MobileEditor for mobile devices
 
   // Use location.key as a reloadTrigger without forcing full remount
   return (
