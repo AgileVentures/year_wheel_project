@@ -8,6 +8,10 @@
  * - Month/week rings
  * - Drag previews
  * 
+ * Supports dependency injection for:
+ * - textCache: External LRU cache for text measurements
+ * - textRenderer: External TextRenderer instance
+ * 
  * @license MIT
  */
 
@@ -17,19 +21,58 @@ import LRUCache from './LRUCache.js';
 import TextRenderer from './TextRenderer.js';
 
 class RenderEngine {
+  /**
+   * Create a RenderEngine instance
+   * @param {CanvasRenderingContext2D} context - Canvas 2D context
+   * @param {number} size - Canvas size in pixels
+   * @param {Object} center - Center point {x, y}
+   * @param {Object} options - Configuration options
+   * @param {LRUCache} [options.textCache] - External text measurement cache (optional)
+   * @param {TextRenderer} [options.textRenderer] - External text renderer (optional)
+   * @param {boolean} [options.readonly] - Readonly mode flag
+   */
   constructor(context, size, center, options = {}) {
     this.context = context;
     this.size = size;
     this.center = center;
     this.options = options;
     
-    // Text measurement cache with LRU eviction (max 500 entries)
-    this.textMeasurementCache = new LRUCache(500);
+    // Support dependency injection for text cache
+    // Allows sharing cache between wheel instances or with parent component
+    this.textMeasurementCache = options.textCache || new LRUCache(500);
     
-    // Consolidated text rendering (delegates to TextRenderer)
-    this.textRenderer = new TextRenderer(context, size, center, {
+    // Support dependency injection for text renderer
+    // Allows custom text rendering strategies
+    this.textRenderer = options.textRenderer || new TextRenderer(context, size, center, {
       textCache: this.textMeasurementCache
     });
+  }
+
+  /**
+   * Update the context (e.g., when canvas resizes)
+   * @param {CanvasRenderingContext2D} context - New canvas context
+   * @param {number} size - New canvas size
+   * @param {Object} center - New center point
+   */
+  updateContext(context, size, center) {
+    this.context = context;
+    this.size = size;
+    this.center = center;
+    
+    // Update text renderer if we own it (not injected)
+    if (this.textRenderer && !this.options.textRenderer) {
+      this.textRenderer = new TextRenderer(context, size, center, {
+        textCache: this.textMeasurementCache
+      });
+    }
+  }
+
+  /**
+   * Get the text cache (useful for sharing between components)
+   * @returns {LRUCache} Text measurement cache
+   */
+  getTextCache() {
+    return this.textMeasurementCache;
   }
 
   // ============================================================================

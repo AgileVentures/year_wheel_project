@@ -8,18 +8,53 @@
  * - PDF (using jsPDF, dynamic import)
  * - Clipboard copy operations
  * 
+ * Supports:
+ * - Progress callbacks for UI feedback
+ * - Dependency injection for testing
+ * 
  * Extracted from YearWheelClass.js (lines 5400-5610)
  * Date: 2025-10-30
+ * Updated: 2025-12-25 - Added dependency injection support
  */
 
 class ExportManager {
   /**
    * Initialize export manager
-   * @param {YearWheel} wheelInstance - Reference to YearWheel instance
+   * @param {YearWheel|Object} wheelInstance - Reference to YearWheel instance or config object
+   * @param {Object} options - Configuration options
+   * @param {Function} [options.getCanvas] - Custom function to get canvas element
+   * @param {Function} [options.createWheel] - Custom function to create/render wheel
+   * @param {string} [options.logoUrl] - Custom logo URL for PDF exports
    */
-  constructor(wheelInstance) {
+  constructor(wheelInstance, options = {}) {
     this.wheel = wheelInstance;
+    this.options = options;
     this._logoCache = null;
+    
+    // Allow custom logo URL for testing or white-labeling
+    this._logoUrl = options.logoUrl || '/year_wheel_logo.png';
+  }
+
+  /**
+   * Get the canvas element (supports dependency injection)
+   * @returns {HTMLCanvasElement}
+   */
+  getCanvas() {
+    if (this.options.getCanvas) {
+      return this.options.getCanvas();
+    }
+    return this.wheel.canvas;
+  }
+
+  /**
+   * Create/render the wheel (supports dependency injection)
+   * @param {CanvasRenderingContext2D} [context] - Optional context to render to
+   */
+  createWheel(context) {
+    if (this.options.createWheel) {
+      return this.options.createWheel(context);
+    }
+    return this.wheel.create(context);
   }
 
   // ==================== LOGO HELPER ====================
@@ -32,8 +67,7 @@ class ExportManager {
     if (this._logoCache) return this._logoCache;
     
     try {
-      const logoUrl = '/year_wheel_logo.png';
-      const response = await fetch(logoUrl);
+      const response = await fetch(this._logoUrl);
       if (!response.ok) throw new Error('Logo not found');
       
       const blob = await response.blob();
@@ -341,9 +375,10 @@ class ExportManager {
    * @returns {HTMLCanvasElement} Copied canvas
    */
   copyCanvas(whiteBackground = false) {
+    const sourceCanvas = this.getCanvas();
     const copiedCanvas = document.createElement("canvas");
-    copiedCanvas.width = this.wheel.canvas.width;
-    copiedCanvas.height = this.wheel.canvas.height;
+    copiedCanvas.width = sourceCanvas.width;
+    copiedCanvas.height = sourceCanvas.height;
     const copiedContext = copiedCanvas.getContext("2d");
 
     if (whiteBackground) {
@@ -351,7 +386,7 @@ class ExportManager {
       copiedContext.fillRect(0, 0, copiedCanvas.width, copiedCanvas.height);
     }
 
-    copiedContext.drawImage(this.wheel.canvas, 0, 0);
+    copiedContext.drawImage(sourceCanvas, 0, 0);
     return copiedCanvas;
   }
 
