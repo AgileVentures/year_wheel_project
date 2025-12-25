@@ -3079,37 +3079,41 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }
       }
 
-      // Update wheelState with restored pages
-      if (restoredPages.length > 0) {
-        setWheelState((prev) => {
-          const restoredPageMap = new Map(restoredPages.map(p => [p.id, p]));
-          
-          return {
-            ...prev,
-            pages: prev.pages.map((page) => {
-              const restoredPage = restoredPageMap.get(page.id);
-              if (restoredPage) {
-                return {
-                  ...page,
-                  items: restoredPage.items || []
-                };
-              }
-              return page;
-            })
-          };
+      // CRITICAL: Do ONE atomic state update with ALL restored data
+      // This prevents race conditions where setWheelStructure overwrites page items
+      const restoredPageMap = new Map(restoredPages.map(p => [p.id, p]));
+      
+      setWheelState((prev) => {
+        const newMetadata = {
+          ...prev.metadata,
+          ...(restoredTitle && { title: restoredTitle }),
+          ...(restoredYear && { year: restoredYear }),
+          ...(restoredColors && { colors: restoredColors }),
+          ...(typeof restoredShowWeekRing === 'boolean' && { showWeekRing: restoredShowWeekRing }),
+          ...(typeof restoredShowMonthRing === 'boolean' && { showMonthRing: restoredShowMonthRing }),
+          ...(typeof restoredShowRingNames === 'boolean' && { showRingNames: restoredShowRingNames }),
+        };
+        
+        const newStructure = restoredStructure || prev.structure;
+        
+        const newPages = prev.pages.map((page) => {
+          const restoredPage = restoredPageMap.get(page.id);
+          if (restoredPage) {
+            return {
+              ...page,
+              items: restoredPage.items || []
+            };
+          }
+          return page;
         });
-      }
-
-      // Update state with restored values (skip history since we're doing a version restore)
-      if (restoredTitle) {
-        setTitle(restoredTitle, null); // null = skip history
-      }
-      if (restoredColors) {
-        setColors(restoredColors, null); // null = skip history
-      }
-      if (restoredStructure) {
-        setWheelStructure(restoredStructure, null); // null = skip history
-      }
+        
+        return {
+          ...prev,
+          metadata: newMetadata,
+          structure: newStructure,
+          pages: newPages,
+        };
+      });
 
       // Update latestValuesRef for consistency
       const pageItemsById = {};
@@ -3122,6 +3126,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       latestValuesRef.current = {
         ...latestValuesRef.current,
         title: restoredTitle ?? latestValuesRef.current?.title,
+        year: restoredYear ?? latestValuesRef.current?.year,
         colors: restoredColors ?? latestValuesRef.current?.colors,
         showWeekRing: restoredShowWeekRing ?? latestValuesRef.current?.showWeekRing,
         showMonthRing: restoredShowMonthRing ?? latestValuesRef.current?.showMonthRing,
@@ -3130,16 +3135,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         pageItemsById: Object.keys(pageItemsById).length > 0
           ? { ...(latestValuesRef.current?.pageItemsById || {}), ...pageItemsById }
           : latestValuesRef.current?.pageItemsById,
-        year: restoredYear ?? latestValuesRef.current?.year,
       };
 
       clearHistory();
-
-      // Update individual state values
-      if (restoredYear) setYear(restoredYear.toString());
-      if (typeof restoredShowWeekRing === 'boolean') setShowWeekRing(restoredShowWeekRing);
-      if (typeof restoredShowMonthRing === 'boolean') setShowMonthRing(restoredShowMonthRing);
-      if (typeof restoredShowRingNames === 'boolean') setShowRingNames(restoredShowRingNames);
 
       await enqueueFullSave('restore-version');
 
