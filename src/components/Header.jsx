@@ -303,111 +303,15 @@ function Header({
           </>
         )}
         
-        {/* File Operations Dropdown - Hidden on small screens */}
-        <div className="hidden lg:block flex-shrink-0">
-        <Dropdown
-          trigger={
-            <button 
-              className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex items-center gap-1"
-              title={t('common:header.fileOperations')}
-              aria-label={t('common:header.fileOperations')}
-            >
-              <FolderOpen size={18} />
-              <ChevronDown size={14} />
-            </button>
-          }
-        >
-          <DropdownItem
-            icon={Upload}
-            label={t('common:header.importFile')}
-            onClick={onLoadFromFile}
-          />
-          <DropdownItem
-            icon={Download}
-            label={t('common:header.exportFile')}
-            onClick={onSaveToFile}
-          />
-          {onExportData && (
-            <DropdownItem
-              icon={FileSpreadsheet}
-              label={
-                <span className="flex items-center gap-2">
-                  {t('common:header.exportData')}
-                  <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
-                </span>
-              }
-              onClick={onExportData}
-            />
-          )}
-          {onSmartImport && wheelId && (
-            <DropdownItem
-              icon={Sparkles}
-              label={
-                <span className="flex items-center gap-2">
-                  Smart Import (CSV)
-                  <span className="text-xs font-semibold px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">AI</span>
-                </span>
-              }
-              onClick={onSmartImport}
-            />
-          )}
-          
-          {/* Share Links Section */}
-          {wheelId && isPublic && (
-            <>
-              <DropdownDivider />
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
-                {t('common:header.sharingLinks')}
-              </div>
-              <DropdownItem
-                icon={Eye}
-                label={copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
-                onClick={handleCopyPreviewLink}
-              />
-              <DropdownItem
-                icon={Presentation}
-                label={t('common:header.presentationMode')}
-                onClick={handleOpenPresentationMode}
-              />
-              <DropdownItem
-                icon={Link2}
-                label={
-                  <span className="flex items-center gap-2">
-                    {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
-                    <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
-                  </span>
-                }
-                onClick={handleCopyEmbedLink}
-              />
-            </>
-          )}
-          
-          <DropdownDivider />
-          {onTemplateSelect && (
-            <DropdownItem
-              icon={Sparkles}
-              label={t('common:header.useTemplate')}
-              onClick={() => setShowTemplateModal(true)}
-            />
-          )}
-          <DropdownItem
-            icon={RotateCcw}
-            label={t('common:header.resetAll')}
-            onClick={onReset}
-            variant="danger"
-          />
-        </Dropdown>
-        </div>
-        
-        {/* Image Export Menu - Hidden on small screens */}
+        {/* Combined Export & Share Menu - Hidden on small screens */}
         <div className="hidden lg:flex relative flex-shrink-0" data-onboarding="export-share">
           <button
             onClick={() => setShowImageExportMenu(!showImageExportMenu)}
             className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex items-center gap-1"
-            title={t('common:header.imageExport')}
-            aria-label={t('common:header.imageExport')}
+            title={t('common:header.exportAndShare')}
+            aria-label={t('common:header.exportAndShare')}
           >
-            <Image size={18} />
+            <Download size={18} />
             <ChevronDown size={14} />
           </button>
 
@@ -417,7 +321,57 @@ function Header({
                 className="fixed inset-0 z-40" 
                 onClick={() => setShowImageExportMenu(false)}
               ></div>
-              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 w-80">
+              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-80 max-h-[80vh] overflow-y-auto">
+                
+                {/* File Operations Section */}
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.fileOperations')}</p>
+                </div>
+                <div className="p-1">
+                  <button
+                    onClick={() => { onLoadFromFile(); setShowImageExportMenu(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <Upload size={16} className="text-gray-500" />
+                    {t('common:header.importFile')}
+                  </button>
+                  <button
+                    onClick={() => { onSaveToFile(); setShowImageExportMenu(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <Download size={16} className="text-gray-500" />
+                    {t('common:header.exportFile')}
+                  </button>
+                  {onExportData && (
+                    <button
+                      onClick={() => { onExportData(); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    >
+                      <FileSpreadsheet size={16} className="text-gray-500" />
+                      <span className="flex items-center gap-2">
+                        {t('common:header.exportData')}
+                        <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                      </span>
+                    </button>
+                  )}
+                  {onSmartImport && wheelId && (
+                    <button
+                      onClick={() => { onSmartImport(); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    >
+                      <Sparkles size={16} className="text-purple-500" />
+                      <span className="flex items-center gap-2">
+                        Smart Import (CSV)
+                        <span className="text-xs font-semibold px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">AI</span>
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Image Export Section */}
+                <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.imageExport')}</p>
+                </div>
                 {/* PNG Transparent */}
                 <div className={`border-b border-gray-200 ${!isPremium ? 'bg-gray-50 opacity-50' : ''}`}>
                   <div className="px-4 py-2 flex items-center justify-between">
@@ -635,6 +589,64 @@ function Header({
                     </div>
                   </div>
                 )}
+
+                {/* Sharing Links Section */}
+                {wheelId && isPublic && (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.sharingLinks')}</p>
+                    </div>
+                    <div className="p-1">
+                      <button
+                        onClick={() => { handleCopyPreviewLink(); setShowImageExportMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        <Eye size={16} className="text-gray-500" />
+                        {copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
+                      </button>
+                      <button
+                        onClick={() => { handleOpenPresentationMode(); setShowImageExportMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        <Presentation size={16} className="text-gray-500" />
+                        {t('common:header.presentationMode')}
+                      </button>
+                      <button
+                        onClick={() => { handleCopyEmbedLink(); setShowImageExportMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                      >
+                        <Link2 size={16} className="text-gray-500" />
+                        <span className="flex items-center gap-2">
+                          {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
+                          <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Other Actions Section */}
+                <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:actions.more')}</p>
+                </div>
+                <div className="p-1">
+                  {onTemplateSelect && (
+                    <button
+                      onClick={() => { setShowTemplateModal(true); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    >
+                      <Sparkles size={16} className="text-gray-500" />
+                      {t('common:header.useTemplate')}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { onReset(); setShowImageExportMenu(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <RotateCcw size={16} className="text-red-500" />
+                    {t('common:header.resetAll')}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -642,25 +654,19 @@ function Header({
         
         {/* Presence Indicator - Hidden on small screens */}
         {activeUsers.length > 0 && (
-          <>
-            <div className="hidden lg:block w-px h-6 bg-gray-300"></div>
-            <div className="hidden lg:block">
-              <PresenceIndicator activeUsers={activeUsers} />
-            </div>
-          </>
+          <div className="hidden lg:block">
+            <PresenceIndicator activeUsers={activeUsers} />
+          </div>
         )}
         
         {/* Public Share Toggle (only show for database wheels) - Hidden on small screens */}
         {wheelId && onTogglePublic && (
-          <>
-            <div className="hidden lg:block w-px h-6 bg-gray-300"></div>
-            <div className="hidden lg:block">
-              <PublicShareButton 
-                isPublic={isPublic}
-                onTogglePublic={onTogglePublic}
-              />
-            </div>
-          </>
+          <div className="hidden lg:block">
+            <PublicShareButton 
+              isPublic={isPublic}
+              onTogglePublic={onTogglePublic}
+            />
+          </div>
         )}
         
         {/* Template Toggle (only show for admins) - Hidden on small screens */}
@@ -677,21 +683,6 @@ function Header({
             <Sparkles size={12} />
             <span className="hidden xl:inline">{isTemplate ? t('common:header.template') : t('common:header.markAsTemplate')}</span>
           </button>
-        )}
-        
-        {/* Version History (only show for database wheels) - Hidden on small screens */}
-        {wheelId && onVersionHistory && (
-          <>
-            <div className="hidden lg:block w-px h-6 bg-gray-300"></div>
-            <button
-              onClick={onVersionHistory}
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-              title={t('common:header.versionHistory')}
-            >
-              <History size={14} />
-              <span className="hidden xl:inline">{t('common:header.history')}</span>
-            </button>
-          </>
         )}
 
         {/* AI Assistant Toggle (only show for database wheels) */}
@@ -720,38 +711,30 @@ function Header({
 
         {/* Onboarding Help Menu - Hidden on small screens */}
         {onStartOnboarding && (
-          <>
-            <div className="hidden lg:block w-px h-6 bg-gray-300"></div>
-            <div className="hidden lg:block">
-              <OnboardingMenu
-                onStartEditorGuide={onStartOnboarding}
-                onStartAIGuide={onStartAIOnboarding}
-                showAIOption={!!wheelId && !!onToggleAI}
-              />
-            </div>
-          </>
+          <div className="hidden lg:block">
+            <OnboardingMenu
+              onStartEditorGuide={onStartOnboarding}
+              onStartAIGuide={onStartAIOnboarding}
+              showAIOption={!!wheelId && !!onToggleAI}
+            />
+          </div>
         )}
 
         {/* Comments Button with notification badge (only show for database wheels) */}
         {wheelId && (
-          <>
-            <div className="hidden lg:block w-px h-6 bg-gray-300"></div>
-            
-            {/* Wheel Comments Button with Badge */}
-            <button
-              onClick={handleOpenCommentsPanel}
-              className="relative p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex-shrink-0"
-              title={t('notifications:wheelComments.allComments')}
-              aria-label={t('notifications:wheelComments.allComments')}
-            >
-              <MessageSquare size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {unreadCount > 9 ? '9' : unreadCount}
-                </span>
-              )}
-            </button>
-          </>
+          <button
+            onClick={handleOpenCommentsPanel}
+            className="hidden lg:flex relative p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex-shrink-0"
+            title={t('notifications:wheelComments.allComments')}
+            aria-label={t('notifications:wheelComments.allComments')}
+          >
+            <MessageSquare size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {unreadCount > 9 ? '9' : unreadCount}
+              </span>
+            )}
+          </button>
         )}
         
         <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
@@ -760,8 +743,6 @@ function Header({
         <div className="flex-shrink-0">
           <LanguageSwitcher />
         </div>
-        
-        <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
 
         {/* Mobile "More" Menu - Shows hidden features on small screens */}
         <div className="lg:hidden flex-shrink-0">
@@ -883,6 +864,33 @@ function Header({
                       ⌘⇧S
                     </kbd>
                   </button>
+                  
+                  {/* Version History Button */}
+                  {onVersionHistory && (
+                    <>
+                      <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-gray-200"></div>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          onVersionHistory();
+                          setShowSaveMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-3 rounded-sm hover:bg-gray-50 flex items-start gap-3 transition-all group border-2 border-transparent hover:border-gray-100"
+                      >
+                        <div className="flex items-center justify-center w-10 h-10 rounded-sm bg-gray-100 group-hover:bg-gray-200 transition-colors flex-shrink-0">
+                          <History size={20} strokeWidth={2} className="text-gray-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 mb-0.5">{t('common:header.versionHistory')}</div>
+                          <div className="text-xs text-gray-600 leading-relaxed">{t('common:header.viewPreviousVersions', 'View and restore previous versions')}</div>
+                        </div>
+                      </button>
+                    </>
+                  )}
                 </div>
                 
                 <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-200">
