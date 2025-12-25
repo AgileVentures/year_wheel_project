@@ -65,6 +65,7 @@ const lazyWithRetry = (componentImport) =>
 const AddPageModal = lazyWithRetry(() => import("./components/AddPageModal"));
 const ExportDataModal = lazyWithRetry(() => import("./components/ExportDataModal"));
 const SmartImportModal = lazyWithRetry(() => import("./components/SmartImportModal"));
+const ReportSelectionModal = lazyWithRetry(() => import("./components/ReportSelectionModal"));
 const AIAssistant = lazyWithRetry(() => import("./components/AIAssistant"));
 const EditorOnboarding = lazyWithRetry(() => import("./components/EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("./components/AIAssistantOnboarding"));
@@ -809,6 +810,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showVersionHistory, setShowVersionHistory] = useState(false); // Version history modal
   const [showExportModal, setShowExportModal] = useState(false); // Export data modal
   const [showSmartImport, setShowSmartImport] = useState(false); // Smart CSV import modal
+  const [showReportModal, setShowReportModal] = useState(false); // PDF Report selection modal
   const [showConflictModal, setShowConflictModal] = useState(false); // Conflict resolution modal
   const [conflictDetails, setConflictDetails] = useState(null); // Details of conflicts to resolve
   
@@ -5164,12 +5166,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         year={year}
         onYearChange={setYear}
         onDownloadImage={(toClipboard = false) => yearWheelRef && yearWheelRef.downloadImage(downloadFormat, toClipboard)}
-        onDownloadPDFReport={() => yearWheelRef && yearWheelRef.downloadPDFReport({
-          wheelStructure,
-          title,
-          year,
-          translations: { t, language: i18n.language }
-        })}
+        onDownloadPDFReport={() => setShowReportModal(true)}
         downloadFormat={downloadFormat}
         onDownloadFormatChange={handleDownloadFormatChange}
         activeUsers={activeUsers}
@@ -5389,6 +5386,28 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             title={title}
             onClose={() => setShowExportModal(false)}
             isPremium={isPremium}
+          />
+        </Suspense>
+      )}
+
+      {/* PDF Report Selection Modal */}
+      {showReportModal && (
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+          <ReportSelectionModal
+            isOpen={showReportModal}
+            onClose={() => setShowReportModal(false)}
+            isPremium={isPremium}
+            onGenerate={async (reportType, options) => {
+              if (!yearWheelRef) return;
+              
+              await yearWheelRef.exportManager.generateReport(reportType, {
+                ...options,
+                wheelStructure,
+                title,
+                year,
+                translations: { t, language: i18n.language }
+              });
+            }}
           />
         </Suspense>
       )}

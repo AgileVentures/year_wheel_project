@@ -589,6 +589,817 @@ class ExportManager {
     const fileName = this.generateFileName('pdf').replace('.pdf', '_report.pdf');
     pdf.save(fileName);
   }
+
+  // ==================== MONTHLY CALENDAR REPORT ====================
+
+  /**
+   * Generate 12-page monthly calendar PDF report
+   * @param {Object} options - Export options
+   */
+  async generateMonthlyCalendarReport(options = {}) {
+    const { jsPDF } = await import("jspdf");
+    
+    const {
+      wheelStructure = {},
+      title = this.wheel.title || 'Årshjul',
+      year = new Date().getFullYear(),
+      translations = { t: (key) => key, language: 'sv' },
+      includeDescriptions = true,
+      includeLegend = true,
+      includeEmptyMonths = false,
+      includeWheelImage = true
+    } = options;
+
+    const { language } = translations;
+    const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    const monthNames = language === 'sv' 
+      ? ['Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni', 'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December']
+      : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    const items = wheelStructure.items || [];
+    const rings = wheelStructure.rings || [];
+    const activityGroups = wheelStructure.activityGroups || [];
+
+    // Group items by month
+    const itemsByMonth = {};
+    items.forEach(item => {
+      const startDate = new Date(item.startDate);
+      if (startDate.getFullYear() === yearNum) {
+        const month = startDate.getMonth();
+        if (!itemsByMonth[month]) itemsByMonth[month] = [];
+        itemsByMonth[month].push(item);
+      }
+    });
+
+    // Generate each month page
+    let isFirstPage = true;
+    for (let month = 0; month < 12; month++) {
+      const monthItems = itemsByMonth[month] || [];
+      
+      // Skip empty months if option is disabled
+      if (!includeEmptyMonths && monthItems.length === 0) continue;
+
+      if (!isFirstPage) pdf.addPage();
+      isFirstPage = false;
+
+      let yPos = margin;
+
+      // Month header with background
+      pdf.setFillColor(59, 130, 246); // Indigo-500
+      pdf.rect(0, 0, pageWidth, 35, 'F');
+      
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(28);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(monthNames[month], margin, 25);
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(String(yearNum), pageWidth - margin, 25, { align: 'right' });
+      
+      pdf.setTextColor(0, 0, 0);
+      yPos = 50;
+
+      // Calendar grid for the month
+      const daysInMonth = new Date(yearNum, month + 1, 0).getDate();
+      const firstDayOfWeek = new Date(yearNum, month, 1).getDay();
+      const adjustedFirstDay = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // Monday start
+
+      const cellWidth = contentWidth / 7;
+      const cellHeight = 18;
+      
+      // Day headers
+      const dayNames = language === 'sv' 
+        ? ['Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör', 'Sön']
+        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(100, 100, 100);
+      dayNames.forEach((day, i) => {
+        pdf.text(day, margin + (i * cellWidth) + cellWidth / 2, yPos, { align: 'center' });
+      });
+      yPos += 6;
+
+      // Draw calendar cells
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+      
+      let currentDay = 1;
+      let currentWeek = 0;
+      
+      while (currentDay <= daysInMonth) {
+        for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+          const cellX = margin + (dayOfWeek * cellWidth);
+          const cellY = yPos + (currentWeek * cellHeight);
+          
+          if ((currentWeek === 0 && dayOfWeek < adjustedFirstDay) || currentDay > daysInMonth) {
+            // Empty cell
+            pdf.setDrawColor(230, 230, 230);
+            pdf.rect(cellX, cellY, cellWidth, cellHeight);
+          } else {
+            // Cell with date
+            const isWeekend = dayOfWeek >= 5;
+            pdf.setFillColor(isWeekend ? 250 : 255, isWeekend ? 250 : 255, isWeekend ? 250 : 255);
+            pdf.setDrawColor(200, 200, 200);
+            pdf.rect(cellX, cellY, cellWidth, cellHeight, 'FD');
+            
+            // Date number
+            pdf.setFontSize(10);
+            pdf.setTextColor(isWeekend ? 150 : 0, isWeekend ? 150 : 0, isWeekend ? 150 : 0);
+            pdf.text(String(currentDay), cellX + 3, cellY + 5);
+            
+            // Check for activities on this day
+            const dayActivities = monthItems.filter(item => {
+              const start = new Date(item.startDate);
+              const end = new Date(item.endDate);
+              const currentDate = new Date(yearNum, month, currentDay);
+              return currentDate >= start && currentDate <= end;
+            });
+            
+            if (dayActivities.length > 0) {
+              // Draw activity indicator dots
+              const maxDots = Math.min(dayActivities.length, 3);
+              for (let d = 0; d < maxDots; d++) {
+                const ag = activityGroups.find(g => g.id === dayActivities[d].activityId);
+                const color = ag?.color || '#3B82F6';
+                const rgb = this.hexToRgb(color);
+                pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+                pdf.circle(cellX + 5 + (d * 5), cellY + cellHeight - 4, 1.5, 'F');
+              }
+              if (dayActivities.length > 3) {
+                pdf.setFontSize(6);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text(`+${dayActivities.length - 3}`, cellX + 20, cellY + cellHeight - 2);
+              }
+            }
+            
+            currentDay++;
+          }
+        }
+        currentWeek++;
+      }
+
+      yPos += (currentWeek * cellHeight) + 15;
+
+      // Activity list for this month
+      if (monthItems.length > 0) {
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        const activityHeader = language === 'sv' ? 'Aktiviteter' : 'Activities';
+        pdf.text(activityHeader, margin, yPos);
+        yPos += 8;
+
+        // Sort by start date
+        monthItems.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        monthItems.forEach(item => {
+          if (yPos > pageHeight - 30) return; // Don't overflow
+
+          const ag = activityGroups.find(g => g.id === item.activityId);
+          const ring = rings.find(r => r.id === item.ringId);
+          
+          // Activity group color dot
+          if (ag) {
+            const rgb = this.hexToRgb(ag.color || '#3B82F6');
+            pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+            pdf.circle(margin + 3, yPos - 1, 2, 'F');
+          }
+
+          // Date range
+          const startDate = new Date(item.startDate);
+          const endDate = new Date(item.endDate);
+          const dateStr = startDate.getTime() === endDate.getTime()
+            ? `${startDate.getDate()}`
+            : `${startDate.getDate()}-${endDate.getDate()}`;
+          
+          pdf.setFontSize(8);
+          pdf.setTextColor(100, 100, 100);
+          pdf.text(dateStr, margin + 8, yPos);
+
+          // Activity name
+          pdf.setFontSize(9);
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(item.name, margin + 22, yPos);
+
+          // Ring name (right side)
+          if (ring) {
+            pdf.setFontSize(7);
+            pdf.setTextColor(130, 130, 130);
+            pdf.text(ring.name, pageWidth - margin, yPos, { align: 'right' });
+          }
+
+          yPos += 5;
+
+          // Description if enabled
+          if (includeDescriptions && item.description) {
+            pdf.setFontSize(7);
+            pdf.setTextColor(100, 100, 100);
+            const descLines = pdf.splitTextToSize(item.description, contentWidth - 25);
+            pdf.text(descLines.slice(0, 2), margin + 22, yPos);
+            yPos += descLines.length > 2 ? 8 : (descLines.length * 4);
+          }
+
+          yPos += 2;
+        });
+      }
+
+      // Footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(180, 180, 180);
+      pdf.text(title, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
+
+    // Add wheel image as last page if requested
+    if (includeWheelImage) {
+      pdf.addPage();
+      this.addWheelImagePage(pdf, title, yearNum, language);
+    }
+
+    // Add legend page if requested
+    if (includeLegend && activityGroups.length > 0) {
+      pdf.addPage();
+      this.addLegendPage(pdf, activityGroups, rings, title, language);
+    }
+
+    const fileName = this.generateFileName('pdf').replace('.pdf', '_calendar.pdf');
+    pdf.save(fileName);
+  }
+
+  // ==================== TIMELINE REPORT ====================
+
+  /**
+   * Generate Gantt-style timeline PDF report
+   * @param {Object} options - Export options
+   */
+  async generateTimelineReport(options = {}) {
+    const { jsPDF } = await import("jspdf");
+    
+    const {
+      wheelStructure = {},
+      title = this.wheel.title || 'Årshjul',
+      year = new Date().getFullYear(),
+      translations = { t: (key) => key, language: 'sv' },
+      includeDescriptions = false,
+      includeLegend = true,
+      includeWheelImage = true,
+      pageOrientation = 'landscape'
+    } = options;
+
+    const { language } = translations;
+    const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
+    
+    const isLandscape = pageOrientation === 'landscape';
+    const pdf = new jsPDF({
+      orientation: pageOrientation,
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = isLandscape ? 297 : 210;
+    const pageHeight = isLandscape ? 210 : 297;
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+    let yPos = margin;
+
+    const monthNames = language === 'sv' 
+      ? ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const items = wheelStructure.items || [];
+    const rings = wheelStructure.rings || [];
+    const activityGroups = wheelStructure.activityGroups || [];
+
+    // Filter and sort items
+    const yearItems = items.filter(item => {
+      const startYear = new Date(item.startDate).getFullYear();
+      const endYear = new Date(item.endDate).getFullYear();
+      return startYear <= yearNum && endYear >= yearNum;
+    }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+    // Title
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(title, margin, yPos + 5);
+    
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    const timelineLabel = language === 'sv' ? `Tidslinje ${yearNum}` : `Timeline ${yearNum}`;
+    pdf.text(timelineLabel, margin, yPos + 12);
+    pdf.setTextColor(0, 0, 0);
+    yPos += 25;
+
+    // Timeline header (months)
+    const timelineStartX = margin + 60; // Space for activity names
+    const timelineWidth = contentWidth - 60;
+    const monthWidth = timelineWidth / 12;
+
+    pdf.setFillColor(240, 240, 240);
+    pdf.rect(timelineStartX, yPos, timelineWidth, 8, 'F');
+    
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'bold');
+    monthNames.forEach((month, i) => {
+      pdf.text(month, timelineStartX + (i * monthWidth) + monthWidth / 2, yPos + 5.5, { align: 'center' });
+    });
+    yPos += 12;
+
+    // Draw month grid lines
+    pdf.setDrawColor(230, 230, 230);
+    for (let i = 0; i <= 12; i++) {
+      const x = timelineStartX + (i * monthWidth);
+      pdf.line(x, yPos, x, pageHeight - margin - 20);
+    }
+
+    // Draw activities
+    const barHeight = 6;
+    const barSpacing = includeDescriptions ? 12 : 8;
+    
+    yearItems.forEach((item, index) => {
+      if (yPos > pageHeight - margin - 30) {
+        // Add new page for more items
+        pdf.addPage();
+        yPos = margin + 15;
+        
+        // Redraw month header
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(timelineStartX, yPos, timelineWidth, 8, 'F');
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'bold');
+        monthNames.forEach((month, i) => {
+          pdf.text(month, timelineStartX + (i * monthWidth) + monthWidth / 2, yPos + 5.5, { align: 'center' });
+        });
+        yPos += 12;
+        
+        // Redraw grid lines
+        pdf.setDrawColor(230, 230, 230);
+        for (let i = 0; i <= 12; i++) {
+          const x = timelineStartX + (i * monthWidth);
+          pdf.line(x, yPos, x, pageHeight - margin - 20);
+        }
+      }
+
+      const ag = activityGroups.find(g => g.id === item.activityId);
+      const ring = rings.find(r => r.id === item.ringId);
+      
+      // Activity name (left side)
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+      
+      let displayName = item.name;
+      while (pdf.getTextWidth(displayName) > 55 && displayName.length > 3) {
+        displayName = displayName.slice(0, -4) + '...';
+      }
+      pdf.text(displayName, margin, yPos + 4);
+
+      // Calculate bar position
+      const startDate = new Date(item.startDate);
+      const endDate = new Date(item.endDate);
+      
+      // Clamp to current year
+      const yearStart = new Date(yearNum, 0, 1);
+      const yearEnd = new Date(yearNum, 11, 31);
+      const clampedStart = startDate < yearStart ? yearStart : startDate;
+      const clampedEnd = endDate > yearEnd ? yearEnd : endDate;
+      
+      const startDayOfYear = Math.floor((clampedStart - yearStart) / (1000 * 60 * 60 * 24));
+      const endDayOfYear = Math.floor((clampedEnd - yearStart) / (1000 * 60 * 60 * 24));
+      
+      const barX = timelineStartX + (startDayOfYear / 365) * timelineWidth;
+      const barW = Math.max(((endDayOfYear - startDayOfYear + 1) / 365) * timelineWidth, 3);
+
+      // Draw bar with activity group color
+      const color = ag?.color || '#3B82F6';
+      const rgb = this.hexToRgb(color);
+      pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+      pdf.roundedRect(barX, yPos, barW, barHeight, 1, 1, 'F');
+
+      // Ring indicator (small label)
+      if (ring) {
+        pdf.setFontSize(5);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(ring.name, margin, yPos + 8);
+      }
+
+      yPos += barSpacing;
+
+      // Description
+      if (includeDescriptions && item.description) {
+        pdf.setFontSize(6);
+        pdf.setTextColor(120, 120, 120);
+        const descLines = pdf.splitTextToSize(item.description, 55);
+        pdf.text(descLines.slice(0, 1), margin, yPos);
+        yPos += 4;
+      }
+    });
+
+    // Add wheel image as last page if requested
+    if (includeWheelImage) {
+      pdf.addPage();
+      this.addWheelImagePage(pdf, title, yearNum, language);
+    }
+
+    // Add legend
+    if (includeLegend && activityGroups.length > 0) {
+      pdf.addPage();
+      this.addLegendPage(pdf, activityGroups, rings, title, language);
+    }
+
+    const fileName = this.generateFileName('pdf').replace('.pdf', '_timeline.pdf');
+    pdf.save(fileName);
+  }
+
+  // ==================== RING SUMMARY REPORT ====================
+
+  /**
+   * Generate detailed ring-by-ring summary PDF report
+   * @param {Object} options - Export options
+   */
+  async generateRingSummaryReport(options = {}) {
+    const { jsPDF } = await import("jspdf");
+    
+    const {
+      wheelStructure = {},
+      title = this.wheel.title || 'Årshjul',
+      year = new Date().getFullYear(),
+      translations = { t: (key) => key, language: 'sv' },
+      includeDescriptions = true,
+      includeLegend = true,
+      includeWheelImage = true
+    } = options;
+
+    const { language } = translations;
+    const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    let yPos = margin;
+
+    const items = wheelStructure.items || [];
+    const rings = wheelStructure.rings || [];
+    const activityGroups = wheelStructure.activityGroups || [];
+
+    // Filter items by year
+    const yearItems = items.filter(item => {
+      const startYear = new Date(item.startDate).getFullYear();
+      return startYear === yearNum;
+    });
+
+    // Helper: Add new page if needed
+    const checkNewPage = (neededHeight) => {
+      if (yPos + neededHeight > pageHeight - margin) {
+        pdf.addPage();
+        yPos = margin;
+        return true;
+      }
+      return false;
+    };
+
+    // Title page
+    pdf.setFontSize(28);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(title, pageWidth / 2, yPos + 20, { align: 'center' });
+    
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    const summaryLabel = language === 'sv' ? 'Ringsammanfattning' : 'Ring Summary';
+    pdf.text(summaryLabel, pageWidth / 2, yPos + 32, { align: 'center' });
+    
+    pdf.setFontSize(14);
+    pdf.text(String(yearNum), pageWidth / 2, yPos + 42, { align: 'center' });
+    pdf.setTextColor(0, 0, 0);
+    
+    // Summary stats
+    yPos += 60;
+    pdf.setFontSize(10);
+    const statsText = language === 'sv' 
+      ? `${yearItems.length} aktiviteter • ${rings.filter(r => r.visible !== false).length} ringar • ${activityGroups.filter(g => g.visible !== false).length} aktivitetsgrupper`
+      : `${yearItems.length} activities • ${rings.filter(r => r.visible !== false).length} rings • ${activityGroups.filter(g => g.visible !== false).length} activity groups`;
+    pdf.text(statsText, pageWidth / 2, yPos, { align: 'center' });
+    
+    // Start ring sections on new page
+    pdf.addPage();
+    yPos = margin;
+
+    // Process each ring
+    const visibleRings = rings.filter(r => r.visible !== false);
+    
+    visibleRings.forEach((ring, ringIndex) => {
+      const ringItems = yearItems.filter(item => item.ringId === ring.id)
+        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+      checkNewPage(40);
+
+      // Ring header with colored bar
+      pdf.setFillColor(59, 130, 246);
+      pdf.rect(margin, yPos, 4, 20, 'F');
+      
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(ring.name, margin + 10, yPos + 8);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 100, 100);
+      const ringType = ring.type === 'outer' 
+        ? (language === 'sv' ? 'Yttre ring' : 'Outer ring')
+        : (language === 'sv' ? 'Inre ring' : 'Inner ring');
+      const itemCount = language === 'sv' 
+        ? `${ringItems.length} aktiviteter`
+        : `${ringItems.length} activities`;
+      pdf.text(`${ringType} • ${itemCount}`, margin + 10, yPos + 15);
+      
+      pdf.setTextColor(0, 0, 0);
+      yPos += 28;
+
+      if (ringItems.length === 0) {
+        pdf.setFontSize(10);
+        pdf.setTextColor(150, 150, 150);
+        const noActivities = language === 'sv' ? 'Inga aktiviteter' : 'No activities';
+        pdf.text(noActivities, margin + 10, yPos);
+        yPos += 15;
+      } else {
+        // List activities
+        ringItems.forEach((item, itemIndex) => {
+          checkNewPage(includeDescriptions && item.description ? 25 : 15);
+
+          const ag = activityGroups.find(g => g.id === item.activityId);
+          
+          // Activity group color dot
+          if (ag) {
+            const rgb = this.hexToRgb(ag.color || '#3B82F6');
+            pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+            pdf.circle(margin + 5, yPos - 1, 2.5, 'F');
+          }
+
+          // Activity name
+          pdf.setFontSize(11);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(item.name, margin + 12, yPos);
+
+          // Date range
+          const formatDate = (dateStr) => {
+            const date = new Date(dateStr);
+            const months = language === 'sv' 
+              ? ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+              : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${date.getDate()} ${months[date.getMonth()]}`;
+          };
+          
+          const dateRange = `${formatDate(item.startDate)} - ${formatDate(item.endDate)}`;
+          pdf.setFontSize(9);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(100, 100, 100);
+          pdf.text(dateRange, pageWidth - margin, yPos, { align: 'right' });
+
+          yPos += 6;
+
+          // Activity group name
+          if (ag) {
+            pdf.setFontSize(8);
+            pdf.setTextColor(120, 120, 120);
+            pdf.text(ag.name, margin + 12, yPos);
+            yPos += 4;
+          }
+
+          // Description
+          if (includeDescriptions && item.description) {
+            pdf.setFontSize(9);
+            pdf.setTextColor(80, 80, 80);
+            const descLines = pdf.splitTextToSize(item.description, contentWidth - 15);
+            descLines.slice(0, 3).forEach(line => {
+              pdf.text(line, margin + 12, yPos);
+              yPos += 4;
+            });
+            if (descLines.length > 3) {
+              pdf.setTextColor(150, 150, 150);
+              pdf.text('...', margin + 12, yPos);
+              yPos += 4;
+            }
+          }
+
+          yPos += 6;
+
+          // Divider (except for last item)
+          if (itemIndex < ringItems.length - 1) {
+            pdf.setDrawColor(230, 230, 230);
+            pdf.line(margin + 12, yPos - 3, pageWidth - margin, yPos - 3);
+          }
+        });
+      }
+
+      yPos += 10;
+
+      // Page break between rings (except last)
+      if (ringIndex < visibleRings.length - 1) {
+        pdf.addPage();
+        yPos = margin;
+      }
+    });
+
+    // Add wheel image as last page if requested
+    if (includeWheelImage) {
+      pdf.addPage();
+      this.addWheelImagePage(pdf, title, yearNum, language);
+    }
+
+    // Add legend
+    if (includeLegend && activityGroups.length > 0) {
+      pdf.addPage();
+      this.addLegendPage(pdf, activityGroups, rings, title, language);
+    }
+
+    const fileName = this.generateFileName('pdf').replace('.pdf', '_summary.pdf');
+    pdf.save(fileName);
+  }
+
+  // ==================== REPORT HELPER METHODS ====================
+
+  /**
+   * Add wheel image page to PDF
+   */
+  addWheelImagePage(pdf, title, year, language) {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+
+    let yPos = margin;
+
+    // Page title
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    const wheelImageTitle = language === 'sv' ? 'Årshjul' : 'Year Wheel';
+    pdf.text(wheelImageTitle, pageWidth / 2, yPos, { align: 'center' });
+    yPos += 10;
+
+    // Create high-quality wheel image
+    const wheelCanvas = this.copyCanvas(true);
+    const imgData = wheelCanvas.toDataURL('image/jpeg', 0.95);
+
+    // Calculate dimensions
+    const contentWidth = pageWidth - (margin * 2);
+    const maxImageHeight = pageHeight - yPos - margin - 15;
+    const wheelAspect = wheelCanvas.width / wheelCanvas.height;
+    
+    let imgWidth, imgHeight;
+    if (contentWidth / maxImageHeight > wheelAspect) {
+      imgHeight = maxImageHeight;
+      imgWidth = imgHeight * wheelAspect;
+    } else {
+      imgWidth = contentWidth;
+      imgHeight = imgWidth / wheelAspect;
+    }
+
+    const imgX = (pageWidth - imgWidth) / 2;
+    pdf.addImage(imgData, 'JPEG', imgX, yPos, imgWidth, imgHeight);
+
+    // Footer
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    const dateGenerated = new Date().toLocaleDateString(language === 'sv' ? 'sv-SE' : 'en-US');
+    const footerText = language === 'sv' 
+      ? `${title} • ${year} • Genererad ${dateGenerated}`
+      : `${title} • ${year} • Generated ${dateGenerated}`;
+    pdf.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+  }
+
+  /**
+   * Add legend page to PDF
+   */
+  addLegendPage(pdf, activityGroups, rings, title, language) {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    let yPos = margin;
+
+    // Title
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    const legendTitle = language === 'sv' ? 'Förklaring' : 'Legend';
+    pdf.text(legendTitle, pageWidth / 2, yPos, { align: 'center' });
+    yPos += 15;
+
+    // Activity Groups section
+    if (activityGroups.length > 0) {
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      const agTitle = language === 'sv' ? 'Aktivitetsgrupper' : 'Activity Groups';
+      pdf.text(agTitle, margin, yPos);
+      yPos += 8;
+
+      const visibleGroups = activityGroups.filter(g => g.visible !== false);
+      const colWidth = (pageWidth - margin * 2) / 2;
+
+      visibleGroups.forEach((group, index) => {
+        const col = index % 2;
+        const x = margin + (col * colWidth);
+        
+        if (col === 0 && index > 0) yPos += 8;
+
+        // Color dot
+        const rgb = this.hexToRgb(group.color || '#3B82F6');
+        pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+        pdf.circle(x + 3, yPos - 1, 3, 'F');
+
+        // Name
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(group.name, x + 10, yPos);
+      });
+
+      yPos += 20;
+    }
+
+    // Rings section
+    if (rings.length > 0) {
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      const ringsTitle = language === 'sv' ? 'Ringar' : 'Rings';
+      pdf.text(ringsTitle, margin, yPos);
+      yPos += 8;
+
+      const visibleRings = rings.filter(r => r.visible !== false);
+
+      visibleRings.forEach(ring => {
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        
+        const ringType = ring.type === 'outer' 
+          ? (language === 'sv' ? '(yttre)' : '(outer)')
+          : (language === 'sv' ? '(inre)' : '(inner)');
+        
+        pdf.text(`• ${ring.name} ${ringType}`, margin + 5, yPos);
+        yPos += 6;
+      });
+    }
+
+    // Footer
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text(title, pageWidth / 2, pageHeight - 10, { align: 'center' });
+  }
+
+  /**
+   * Convert hex color to RGB object
+   */
+  hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 59, g: 130, b: 246 }; // Default blue
+  }
+
+  /**
+   * Main entry point for generating reports
+   * @param {string} reportType - Type of report to generate
+   * @param {Object} options - Report options
+   */
+  async generateReport(reportType, options = {}) {
+    switch (reportType) {
+      case 'wheel-activity':
+        return this.downloadPDFReport(options);
+      case 'monthly-calendar':
+        return this.generateMonthlyCalendarReport(options);
+      case 'timeline':
+        return this.generateTimelineReport(options);
+      case 'ring-summary':
+        return this.generateRingSummaryReport(options);
+      default:
+        throw new Error(`Unknown report type: ${reportType}`);
+    }
+  }
 }
 
 export default ExportManager;

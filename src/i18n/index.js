@@ -23,6 +23,7 @@ import svQuiz from './locales/sv/quiz.json';
 import svSmartImport from './locales/sv/smartImport.json';
 import svToast from './locales/sv/toast.json';
 import svConflict from './locales/sv/conflict.json';
+import svReports from './locales/sv/reports.json';
 
 // Import English translations
 import enCommon from './locales/en/common.json';
@@ -45,6 +46,7 @@ import enQuiz from './locales/en/quiz.json';
 import enSmartImport from './locales/en/smartImport.json';
 import enToast from './locales/en/toast.json';
 import enConflict from './locales/en/conflict.json';
+import enReports from './locales/en/reports.json';
 
 i18n
   .use(LanguageDetector)
@@ -72,6 +74,7 @@ i18n
         smartImport: svSmartImport,
         toast: svToast,
         conflict: svConflict,
+        reports: svReports,
       },
       en: {
         common: enCommon,
@@ -94,6 +97,7 @@ i18n
         smartImport: enSmartImport,
         toast: enToast,
         conflict: enConflict,
+        reports: enReports,
       },
     },
     lng: undefined, // Don't set default - let detector choose

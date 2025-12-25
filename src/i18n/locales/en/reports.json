@@ -1,0 +1,38 @@
+{
+  "modal": {
+    "title": "Choose Report Type",
+    "subtitle": "Customize your PDF report"
+  },
+  "types": {
+    "wheelActivity": {
+      "title": "Wheel + Activity List",
+      "description": "Visual wheel image with complete activity list organized by ring"
+    },
+    "monthlyCalendar": {
+      "title": "Monthly Calendar",
+      "description": "12-page calendar with activities on their dates, perfect for printing"
+    },
+    "timeline": {
+      "title": "Timeline",
+      "description": "Gantt-style timeline showing activity durations"
+    },
+    "ringSummary": {
+      "title": "Ring Summary",
+      "description": "Detailed report by ring with descriptions and grouping"
+    }
+  },
+  "options": {
+    "title": "Options",
+    "includeDescriptions": "Include descriptions",
+    "includeLegend": "Include activity group legend",
+    "includeWheelImage": "Add wheel image as last page",
+    "includeEmptyMonths": "Show months without activities",
+    "orientation": "Orientation",
+    "portrait": "Portrait",
+    "landscape": "Landscape"
+  },
+  "recommended": "Recommended",
+  "generate": "Generate PDF",
+  "generating": "Generating...",
+  "premiumRequired": "PDF reports require a Premium subscription."
+}

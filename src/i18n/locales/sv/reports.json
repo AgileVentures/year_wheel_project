@@ -1,0 +1,38 @@
+{
+  "modal": {
+    "title": "Välj rapporttyp",
+    "subtitle": "Anpassa din PDF-rapport"
+  },
+  "types": {
+    "wheelActivity": {
+      "title": "Hjul + Aktivitetslista",
+      "description": "Visuell hjulbild med komplett aktivitetslista organiserad per ring"
+    },
+    "monthlyCalendar": {
+      "title": "Månadskalender",
+      "description": "12-sidig kalender med aktiviteter på sina datum, perfekt för utskrift"
+    },
+    "timeline": {
+      "title": "Tidslinje",
+      "description": "Gantt-liknande tidslinje som visar aktiviteternas varaktighet"
+    },
+    "ringSummary": {
+      "title": "Ringsammanfattning",
+      "description": "Detaljerad rapport per ring med beskrivningar och gruppering"
+    }
+  },
+  "options": {
+    "title": "Alternativ",
+    "includeDescriptions": "Inkludera beskrivningar",
+    "includeLegend": "Inkludera aktivitetsgrupplegend",
+    "includeWheelImage": "Lägg till hjulbild som sista sida",
+    "includeEmptyMonths": "Visa månader utan aktiviteter",
+    "orientation": "Orientering",
+    "portrait": "Stående",
+    "landscape": "Liggande"
+  },
+  "recommended": "Rekommenderad",
+  "generate": "Generera PDF",
+  "generating": "Genererar...",
+  "premiumRequired": "PDF-rapporter kräver en Premium-prenumeration."
+}
