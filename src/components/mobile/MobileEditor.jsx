@@ -194,14 +194,14 @@ function MobileEditor({
       {/* Add Item Modal */}
       {showAddItemModal && (
         <AddItemModal
-          isOpen={showAddItemModal}
+          wheelStructure={wheelStructure}
+          onAddItem={handleAddItemsFromModal}
           onClose={() => setShowAddItemModal(false)}
-          onAddItems={handleAddItemsFromModal}
-          rings={visibleRings}
-          activityGroups={wheelStructure?.activityGroups || []}
-          labels={wheelStructure?.labels || []}
-          defaultRingId={addItemRingId}
+          currentWheelId={wheelId}
+          currentPageId={currentPageId}
+          pages={pages}
           year={currentPage?.year || year}
+          preselectedRingId={addItemRingId}
         />
       )}
       
