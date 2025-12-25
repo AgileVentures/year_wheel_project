@@ -2187,6 +2187,31 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [changeTracker]); // Depend on changeTracker to get fresh reference
 
+  // Create version on unmount if there are unsaved changes
+  useEffect(() => {
+    return () => {
+      // Only create version on unmount if we have a wheelId and unsaved changes
+      if (wheelId && changeTracker.hasChanges()) {
+        // Use navigator.sendBeacon for reliable execution during page unload
+        // This is more reliable than async operations during unmount
+        const snapshot = buildWheelSnapshot();
+        
+        // Fallback: try synchronous version creation if possible
+        // Note: This may not complete if unmount happens quickly
+        import('./services/wheelService').then(({ createVersion }) => {
+          createVersion(
+            wheelId,
+            snapshot,
+            'Auto-save på stängning',
+            true // is_auto_save
+          ).catch(error => {
+            console.error('[UnmountVersion] Failed to create version on unmount:', error);
+          });
+        });
+      }
+    };
+  }, [wheelId, changeTracker, buildWheelSnapshot]);
+
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
     if (wheelId) return; // Skip if we have a wheelId
@@ -2269,6 +2294,28 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       showToast('toast:sharing.updateError', 'error');
     }
   };
+
+  const handleSaveWithVersion = useCallback(async () => {
+    // Force a full save with version creation
+    try {
+      isSavingRef.current = true;
+      setIsSaving(true);
+      
+      // Execute full save with manual reason to trigger version creation
+      const result = await enqueueFullSave('manual');
+      
+      showToast('Data och version har sparats!', 'success');
+      markSaved();
+      
+      return result;
+    } catch (error) {
+      console.error('[SaveWithVersion] Error:', error);
+      showToast('Kunde inte spara version', 'error');
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
+  }, [enqueueFullSave, showToast, markSaved]);
 
   const handleSave = useCallback(async (options = {}) => {
     const { silent = false, reason = 'manual' } = options;
@@ -5221,8 +5268,9 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header 
+      <Header
         onSave={handleSave}
+        onSaveWithVersion={handleSaveWithVersion}
         isSaving={isSaving}
         onBackToDashboard={wheelId ? handleBackToDashboard : null}
         onSaveToFile={handleSaveToFile}

@@ -11,10 +11,11 @@ import UndoHistoryMenu from './UndoHistoryMenu';
 import TemplateSelectionModal from './TemplateSelectionModal';
 import WheelCommentsPanel from './WheelCommentsPanel';
 import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 function Header({ 
   onSave, 
+  onSaveWithVersion,
   onSaveToFile, 
   onLoadFromFile,
   onExportData,
@@ -80,6 +81,8 @@ function Header({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
+  const [showSaveMenu, setShowSaveMenu] = useState(false);
+  const saveMenuRef = useRef(null);
   
   useEffect(() => {
     if (!showMobileMenu) return;
@@ -104,6 +107,21 @@ function Header({
       setShowImageExportMenu(false);
     }
   }, [showMobileMenu]);
+
+  // Close save menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (saveMenuRef.current && !saveMenuRef.current.contains(event.target) && 
+          !event.target.closest('.save-dropdown-trigger')) {
+        setShowSaveMenu(false);
+      }
+    };
+    
+    if (showSaveMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSaveMenu]);
 
   // Get unread notification count for badge
   const { unreadCount } = useRealtimeNotifications({ autoFetch: wheelId ? true : false });
@@ -766,21 +784,71 @@ function Header({
         
         <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
         
-        <button
-          onClick={onSave}
-          disabled={isSaving}
-          className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md flex-shrink-0"
-          title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
-          data-onboarding="save-button"
-        >
-          <Save size={16} />
-          <span className="hidden sm:inline">
-            {isSaving ? t('common:header.saving') : t('common:actions.save')}
-            {!isSaving && unsavedChangesCount > 0 && (
-              <span className="ml-1 text-xs opacity-90">({unsavedChangesCount})</span>
-            )}
-          </span>
-        </button>
+        <div className="save-menu-container relative flex-shrink-0">
+          <div className="flex items-center">
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 rounded-l-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+              title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
+              data-onboarding="save-button"
+            >
+              <Save size={16} />
+              <span className="hidden sm:inline">
+                {isSaving ? t('common:header.saving') : t('common:actions.save')}
+                {!isSaving && unsavedChangesCount > 0 && (
+                  <span className="ml-1 text-xs opacity-90">({unsavedChangesCount})</span>
+                )}
+              </span>
+            </button>
+            <button
+              onClick={() => setShowSaveMenu(!showSaveMenu)}
+              disabled={isSaving}
+              className="flex items-center px-2 py-2 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 rounded-r-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md border-l border-blue-500"
+              title="Fler sparalternativ"
+            >
+              <ChevronDown size={16} />
+            </button>
+          </div>
+          
+          {showSaveMenu && (
+            <div
+              ref={saveMenuRef}
+              className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+            >
+              <button
+                onClick={() => {
+                  onSave();
+                  setShowSaveMenu(false);
+                }}
+                disabled={isSaving}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+              >
+                <Save size={16} className="text-gray-500" />
+                <div>
+                  <div className="font-medium">Spara</div>
+                  <div className="text-xs text-gray-500">Spara ändringar utan att skapa version</div>
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  if (onSaveWithVersion) {
+                    onSaveWithVersion();
+                  }
+                  setShowSaveMenu(false);
+                }}
+                disabled={isSaving}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+              >
+                <History size={16} className="text-gray-500" />
+                <div>
+                  <div className="font-medium">Spara och skapa version</div>
+                  <div className="text-xs text-gray-500">Skapa återställningspunkt i historiken</div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {showMobileMenu && (
