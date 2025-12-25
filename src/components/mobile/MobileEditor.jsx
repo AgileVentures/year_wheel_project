@@ -110,7 +110,7 @@ function MobileEditor({
   }, [wheelStructure, allItems]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto">
       {/* Mobile Header */}
       <MobileHeader
         title={title}

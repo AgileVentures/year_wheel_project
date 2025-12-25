@@ -28,20 +28,20 @@ function MobileHeader({
   
   return (
     <header className="sticky top-0 bg-white border-b border-gray-200 z-30 safe-area-top">
-      <div className="flex items-center h-14 px-3">
+      <div className="flex items-center h-12 px-2 max-w-lg mx-auto">
         {/* Back Button */}
         <button
           onClick={onBack}
-          className="flex items-center justify-center w-10 h-10 -ml-2 text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-full transition-colors"
+          className="flex items-center justify-center w-9 h-9 -ml-1 text-gray-600 hover:text-gray-900 active:bg-gray-100 rounded-full transition-colors"
           aria-label={t('common:back', { defaultValue: 'Tillbaka' })}
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft size={22} />
         </button>
         
         {/* Title & Unsaved Indicator */}
-        <div className="flex-1 min-w-0 px-2">
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-semibold text-gray-900 truncate">
+        <div className="flex-1 min-w-0 px-1.5">
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-sm font-semibold text-gray-900 truncate">
               {title || t('common:newWheel', { defaultValue: 'Nytt hjul' })}
             </h1>
             {hasUnsavedChanges && (

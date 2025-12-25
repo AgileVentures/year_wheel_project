@@ -89,7 +89,7 @@ function MobileSettingsPanel({
     >
       <div 
         ref={panelRef}
-        className="bg-white w-full max-h-[85vh] rounded-t-2xl overflow-hidden animate-slide-up"
+        className="bg-white w-full max-w-lg max-h-[85vh] rounded-t-2xl overflow-hidden animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
