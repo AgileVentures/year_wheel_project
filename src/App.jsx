@@ -3327,6 +3327,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           pages: pagesForState,
           currentPageId: pagesForState[0]?.id || null // Auto-select first page
         }));
+        
+        // Update latestValuesRef for save operation (multi-page)
+        latestValuesRef.current = {
+          ...latestValuesRef.current,
+          title: `${templateData.title} (Kopia)`,
+          year: String(pagesForState[0]?.year || new Date().getFullYear()),
+          colors: templateData.colors || colors,
+          showWeekRing: templateData.show_week_ring,
+          showMonthRing: templateData.show_month_ring,
+          showRingNames: templateData.show_ring_names,
+          showLabels: templateData.show_labels,
+          currentPageId: pagesForState[0]?.id || null,
+          structure: {
+            rings: orgData.rings || [],
+            activityGroups: orgData.activityGroups || [],
+            labels: orgData.labels || [],
+          },
+          pages: pagesForState,
+        };
       } else {
         // Single page template - load structure from wheel data
         const { orgData, ringIdMap, groupIdMap, labelIdMap } = convertTemplateStructure(templateData.structure);
@@ -3357,6 +3376,31 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           }],
           currentPageId: firstPageId // Auto-select first page
         }));
+        
+        // Update latestValuesRef for save operation
+        latestValuesRef.current = {
+          ...latestValuesRef.current,
+          title: `${templateData.title} (Kopia)`,
+          year: String(templatePages[0].year || new Date().getFullYear()),
+          colors: templateData.colors || colors,
+          showWeekRing: templateData.show_week_ring,
+          showMonthRing: templateData.show_month_ring,
+          showRingNames: templateData.show_ring_names,
+          showLabels: templateData.show_labels,
+          currentPageId: firstPageId,
+          structure: {
+            rings: orgData.rings || [],
+            activityGroups: orgData.activityGroups || [],
+            labels: orgData.labels || [],
+          },
+          pages: [{
+            id: firstPageId,
+            year: templatePages[0].year || new Date().getFullYear(),
+            pageOrder: 0,
+            title: templatePages[0].title || 'Sida 1',
+            items: pageItems
+          }],
+        };
       }
 
       // Update rings data for backward compatibility
@@ -3366,6 +3410,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         orientation: ring.orientation || "vertical"
       }));
       setRingsData(newRingsData);
+
+      // Save to database
+      if (wheelId) {
+        await enqueueFullSave('template-import');
+      }
 
       // Clear history and mark as saved
       clearHistory();
