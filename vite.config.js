@@ -50,6 +50,23 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Application code chunks - split large components
+          if (id.includes('src/components/editor/WheelEditor')) {
+            return 'wheel-editor';
+          }
+          if (id.includes('src/YearWheel') || id.includes('src/YearWheelClass')) {
+            return 'year-wheel';
+          }
+          if (id.includes('src/components/calendar_view/') || id.includes('src/components/list_view/')) {
+            return 'wheel-views';
+          }
+          if (id.includes('src/components/dashboard/')) {
+            return 'dashboard';
+          }
+          if (id.includes('src/components/admin/')) {
+            return 'admin';
+          }
+          
           // Core React libraries (must be loaded first)
           if (id.includes('node_modules/react/') || 
               id.includes('node_modules/react-dom/') ||
