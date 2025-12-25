@@ -288,6 +288,16 @@ class YearWheel {
 
   // Update organization data without recreating the wheel
   updateWheelStructure(newWheelStructure) {
+    // Debug: Log what's coming in
+    if (this.pendingItemUpdates.size > 0) {
+      const pendingIds = Array.from(this.pendingItemUpdates.keys());
+      const pendingItem = this.pendingItemUpdates.get(pendingIds[0]);
+      const incomingItem = newWheelStructure.items?.find(i => i.id === pendingIds[0]);
+      console.log(`[updateWheelStructure] Pending: ${pendingItem?.item.startDate} - ${pendingItem?.item.endDate}`);
+      console.log(`[updateWheelStructure] Incoming: ${incomingItem?.startDate} - ${incomingItem?.endDate}`);
+      console.log(`[updateWheelStructure] Match: ${incomingItem?.startDate === pendingItem?.item.startDate && incomingItem?.endDate === pendingItem?.item.endDate}`);
+    }
+    
     this.wheelStructure = newWheelStructure;
     
     // Update DataProcessor with new structure (invalidates its cache only if changed)
@@ -308,11 +318,14 @@ class YearWheel {
       this.canvas.style.cursor = "default";
     }
     
-    // CRITICAL: Clear pending item updates when structure changes from external source
-    // This ensures cross-year updates show correctly
-    if (!this.dragState || !this.dragState.isDragging) {
-      this.pendingItemUpdates.clear();
-    }
+    // NOTE: Do NOT clear pendingItemUpdates here!
+    // The pending updates system has its own logic to clear updates once the
+    // wheelStructure data matches (300ms-5000ms window in rendering loop).
+    // Clearing here causes a race condition where:
+    // 1. Drag ends, pendingItemUpdates is set with new position
+    // 2. React state update triggers updateWheelStructure
+    // 3. pendingItemUpdates gets cleared BEFORE React data propagates
+    // 4. Canvas redraws with OLD data, item "jumps back"
     
     // DON'T redraw during drag - it will cause wheel to go blank
     // The drag handler (dragActivity) already calls create() to show preview
@@ -3264,6 +3277,17 @@ class YearWheel {
 
 
   create() {
+    // Debug: Check pending updates at render time
+    if (this.pendingItemUpdates.size > 0) {
+      console.log(`[YearWheel.create] Rendering with ${this.pendingItemUpdates.size} pending updates:`, 
+        Array.from(this.pendingItemUpdates.entries()).map(([id, data]) => ({
+          id: id.substring(0, 8),
+          dates: `${data.item.startDate} - ${data.item.endDate}`,
+          age: Date.now() - data.timestamp
+        }))
+      );
+    }
+    
     // Set canvas internal dimensions (for drawing resolution)
     this.canvas.width = this.size;
     this.canvas.height = this.size;
@@ -4703,6 +4727,11 @@ class YearWheel {
           this.context.closePath();
 
           ringItems.forEach((item) => {
+            // Debug: check if this is the pending item
+            if (this.pendingItemUpdates.has(item.id)) {
+              console.log(`[OUTER LOOP] Found pending item in ringItems: ${item.id.substring(0,8)}, ring: ${ring.name}`);
+            }
+            
             // Skip the item being dragged - it will be drawn as a preview instead
             if (
               this.dragState.isDragging &&
@@ -4719,6 +4748,7 @@ class YearWheel {
             const itemToRender = pendingData ? pendingData.item : item;
             
             if (pendingData) {
+              console.log(`[OUTER RENDER] Using pending data for ${item.id.substring(0,8)}: ${pendingData.item.startDate} - ${pendingData.item.endDate}`);
               const age = Date.now() - pendingData.timestamp;
               
               // DON'T check for matches in the first 300ms - give React time to update
@@ -5113,6 +5143,11 @@ class YearWheel {
         });
 
         ringItems.forEach((item) => {
+          // Debug: check if this is the pending item
+          if (this.pendingItemUpdates.has(item.id)) {
+            console.log(`[INNER LOOP] Found pending item in ringItems: ${item.id.substring(0,8)}, ring: ${ring.name}`);
+          }
+          
           // Skip the item being dragged - it will be drawn as a preview instead
           if (
             this.dragState.isDragging &&
@@ -5130,6 +5165,9 @@ class YearWheel {
           
           if (pendingData) {
             const age = Date.now() - pendingData.timestamp;
+            console.log(`[INNER RING] Using pending data for ${item.id.substring(0,8)}, age: ${age}ms`);
+            console.log(`[INNER RING] wheelStructure dates: ${item.startDate} - ${item.endDate}`);
+            console.log(`[INNER RING] pending dates: ${pendingData.item.startDate} - ${pendingData.item.endDate}`);
             
             // DON'T check for matches in the first 300ms - give React time to update
             if (age < 300) {
@@ -5166,6 +5204,11 @@ class YearWheel {
           // Calculate angles
           let startAngle = dateToAngle(itemStartDate);
           let endAngle = dateToAngle(itemEndDate);
+          
+          // Debug: log angles for pending items
+          if (pendingData) {
+            console.log(`[INNER RING] Calculated angles: ${startAngle.toFixed(1)}° - ${endAngle.toFixed(1)}° (from ${itemToRender.startDate})`);
+          }
 
           // VIEWPORT CULLING: Skip items outside visible angle range (performance optimization)
           const visibleRangeStart = 0;

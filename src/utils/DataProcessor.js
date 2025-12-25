@@ -20,7 +20,8 @@ class DataProcessor {
 
   /**
    * Compute a simple hash of the structure to detect changes
-   * Uses JSON.stringify for simplicity - could be optimized if needed
+   * CRITICAL: Must include item dates/positions, not just count!
+   * Otherwise moving items won't invalidate the cache.
    */
   computeStructureHash(structure) {
     if (!structure) return '';
@@ -29,9 +30,14 @@ class DataProcessor {
     const ringIds = structure.rings?.map(r => `${r.id}:${r.visible}`).join(',') || '';
     const activityIds = structure.activityGroups?.map(a => `${a.id}:${a.visible}`).join(',') || '';
     const labelIds = structure.labels?.map(l => `${l.id}:${l.visible}`).join(',') || '';
-    const itemCount = structure.items?.length || 0;
     
-    return `${ringIds}|${activityIds}|${labelIds}|${itemCount}`;
+    // CRITICAL FIX: Include item dates and ring assignments, not just count
+    // This ensures cache invalidates when items are moved/resized
+    const itemsHash = structure.items?.map(i => 
+      `${i.id}:${i.startDate}:${i.endDate}:${i.ringId}`
+    ).join(',') || '';
+    
+    return `${ringIds}|${activityIds}|${labelIds}|${itemsHash}`;
   }
 
   /**
