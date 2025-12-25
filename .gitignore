@@ -28,6 +28,7 @@ dist-ssr
 .env.local
 
 scripts/*
+!scripts/prerender.js
 docs/*
 cypress/downloads/*
 cypress/videos/*
