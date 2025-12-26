@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import LandingPageTemplate from './LandingPageTemplate';
 import PersonaQuiz from '../../components/PersonaQuiz';
 import { projectQuiz } from '../../data/quizData';
-import { Target, ClipboardList, Users, BarChart3, Calendar, Workflow, FileSpreadsheet, Share2, CheckCircle2, Sparkles, Check, X, Copy, MessageSquare } from 'lucide-react';
+import { Target, ClipboardList, Users, BarChart3, Calendar, Workflow, FileSpreadsheet, Share2, CheckCircle2, Sparkles, Check, X, Copy, MessageSquare, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 
