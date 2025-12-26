@@ -4463,6 +4463,7 @@ class YearWheel {
     this.labelsToDraw = [];
     this.linkedWheelsToDraw = [];
     this.avatarsToDraw = []; // Editor avatars for real-time collaboration
+    this.outerRingNamesToDraw = []; // Deferred outer ring name drawing (drawn after gradient)
     // Store actual rendered ring positions for accurate drag target detection
     this.renderedRingPositions = new Map(); // ringId -> {startRadius, endRadius}
 
@@ -4544,6 +4545,10 @@ class YearWheel {
       endDate: zoomEndDate,
       months: zoomMonths,
     } = this.getDateRangeForZoom();
+    
+    // Store for later use in drawYearBoundaryHighlight
+    this.zoomStartDate = zoomStartDate;
+    this.zoomEndDate = zoomEndDate;
 
     // This aligns with the month ring where each month is 30 degrees (360/12)
     // When zoomed, the entire zoomed range spans 360 degrees
@@ -4972,10 +4977,14 @@ class YearWheel {
             }
           });
 
-          // Name band is drawn at the outer edge of content area (no gap)
+          // DEFER ring name band drawing (drawn later after gradient so gradient doesn't cover names)
           if (this.showRingNames) {
             const ringNameRadius = ringStartRadius + outerRingContentHeight;
-            this.drawRingNameBand(ring.name, ringNameRadius, ringNameBandWidth);
+            this.outerRingNamesToDraw.push({
+              name: ring.name,
+              radius: ringNameRadius,
+              width: ringNameBandWidth,
+            });
           }
           // currentRadius is already at the correct position (bottom of entire ring including name band)
         });
@@ -5402,11 +5411,13 @@ class YearWheel {
       }
     }
 
-    // NOW draw month ring AFTER inner rings (so it's on top)
-    if (this.shouldDrawYearBoundaryHighlight(zoomStartDate, zoomEndDate)) {
-      this.drawYearBoundaryHighlight(zoomStartDate, zoomEndDate);
+    // Draw year boundary highlight AFTER activities but BEFORE month/week rings
+    // This ensures gradient overlays activity items but not structural elements
+    if (this.shouldDrawYearBoundaryHighlight(this.zoomStartDate, this.zoomEndDate)) {
+      this.drawYearBoundaryHighlight(this.zoomStartDate, this.zoomEndDate);
     }
 
+    // NOW draw month ring AFTER inner rings (so it's on top)
     if (this.showMonthRing) {
       // Get months for current zoom level
       const monthsToDisplay = this.getMonthsForZoom();
@@ -5570,18 +5581,26 @@ class YearWheel {
       }
     }
 
-    // THIRD draw inner ring names (collected earlier)
-    // Ring names should always be visible, even over labels
-    if (
-      this.showRingNames &&
-      this.innerRingNamesToDraw &&
-      this.innerRingNamesToDraw.length > 0
-    ) {
-      for (const ringName of this.innerRingNamesToDraw) {
-        this.drawRingNameBand(ringName.name, ringName.radius, ringName.width);
+    // THIRD draw ALL ring names (both outer and inner - collected earlier)
+    // Ring names should always be visible, drawn AFTER gradient so they're not covered
+    if (this.showRingNames) {
+      // Draw outer ring names first (they're outermost)
+      if (this.outerRingNamesToDraw && this.outerRingNamesToDraw.length > 0) {
+        for (const ringName of this.outerRingNamesToDraw) {
+          this.drawRingNameBand(ringName.name, ringName.radius, ringName.width);
+        }
+        // Clear the array for next render
+        this.outerRingNamesToDraw = [];
       }
-      // Clear the array for next render
-      this.innerRingNamesToDraw = [];
+      
+      // Draw inner ring names
+      if (this.innerRingNamesToDraw && this.innerRingNamesToDraw.length > 0) {
+        for (const ringName of this.innerRingNamesToDraw) {
+          this.drawRingNameBand(ringName.name, ringName.radius, ringName.width);
+        }
+        // Clear the array for next render
+        this.innerRingNamesToDraw = [];
+      }
     }
 
     // FOURTH draw all editor avatars (real-time collaboration indicators)
@@ -5608,6 +5627,12 @@ class YearWheel {
   }
 
   shouldDrawYearBoundaryHighlight(visibleStartDate, visibleEndDate) {
+    // Always draw in full year view (no zoom)
+    if (this.zoomedMonth === null && this.zoomedQuarter === null) {
+      return true;
+    }
+    
+    // For zoomed views, only draw if December 31st is visible
     if (!visibleEndDate || !(visibleEndDate instanceof Date)) {
       return false;
     }
@@ -5652,19 +5677,24 @@ class YearWheel {
     let innerRadius = Number.POSITIVE_INFINITY;
     let outerRadius = 0;
 
+    // Calculate radius from ACTUAL rendered ring content positions
+    // renderedRingPositions contains only the content areas (activities), not ring name bands
+    // This ensures the gradient only covers activity areas, not structural elements
     for (const ringInfo of this.renderedRingPositions.values()) {
       innerRadius = Math.min(innerRadius, ringInfo.startRadius);
       outerRadius = Math.max(outerRadius, ringInfo.endRadius);
     }
 
+    // Fallback if no positions found
     if (!Number.isFinite(innerRadius) || outerRadius <= innerRadius) {
       innerRadius = this.minRadius;
       outerRadius = this.maxRadius - this.size / 50;
     }
-
-    const radiusPadding = this.size / 180;
-    innerRadius = Math.max(this.minRadius, innerRadius - radiusPadding);
-    outerRadius = Math.min(this.maxRadius, outerRadius + radiusPadding);
+    
+    // NO EXTENSION beyond content areas - we want to avoid covering:
+    // - Ring name bands (drawn separately)
+    // - Month ring
+    // - Week ring
 
     const startOuterX = this.center.x + Math.cos(startAngle) * outerRadius;
     const startOuterY = this.center.y + Math.sin(startAngle) * outerRadius;
@@ -5708,29 +5738,74 @@ class YearWheel {
     this.context.fill();
     this.context.restore();
 
-    const lineInnerRadius = Math.max(this.minRadius, innerRadius - this.size / 220);
-    const lineOuterRadius = Math.min(this.maxRadius, outerRadius + this.size / 90);
+    // Line extends slightly beyond content area for visual emphasis
+    // but not as far as before - keep it subtle
+    const lineInnerRadius = Math.max(this.minRadius, innerRadius - this.size / 300);
+    const lineOuterRadius = outerRadius + this.size / 300;  // Just slightly beyond activities
     const lineStartX = this.center.x + Math.cos(boundaryAngle) * lineInnerRadius;
     const lineStartY = this.center.y + Math.sin(boundaryAngle) * lineInnerRadius;
     const lineEndX = this.center.x + Math.cos(boundaryAngle) * lineOuterRadius;
     const lineEndY = this.center.y + Math.sin(boundaryAngle) * lineOuterRadius;
 
+    // Draw gradient overlay on January side only (AFTER the boundary, clockwise)
+    // In the wheel, January is AFTER the boundary (positive angle direction)
+    // December is BEFORE the boundary (negative angle direction)
+    const gradientSpanDegrees = 20; // How far the gradient extends into January
+    const gradientSpanRadians = this.toRadians(gradientSpanDegrees);
+    
+    // January is in the POSITIVE direction from boundary
+    const gradientStartAngle = boundaryAngle; // At the boundary
+    const gradientEndAngle = boundaryAngle + gradientSpanRadians; // Into January (clockwise)
+    
     this.context.save();
-    this.context.strokeStyle = "rgba(30, 41, 59, 0.55)";
-    this.context.lineWidth = Math.max(1.5, this.size / 620);
-    this.context.shadowColor = "rgba(15, 23, 42, 0.4)";
-    this.context.shadowBlur = Math.max(2, this.size / 210);
-    this.context.shadowOffsetX = 0;
-    this.context.shadowOffsetY = 0;
+    
+    // Calculate gradient direction - from boundary INTO January
+    // The gradient should be strongest at the boundary and fade as we go into January
+    const midRadius = (innerRadius + outerRadius) / 2;
+    
+    // Calculate arc midpoints for gradient direction
+    const boundaryMidX = this.center.x + Math.cos(boundaryAngle) * midRadius;
+    const boundaryMidY = this.center.y + Math.sin(boundaryAngle) * midRadius;
+    const januaryMidX = this.center.x + Math.cos(gradientEndAngle) * midRadius;
+    const januaryMidY = this.center.y + Math.sin(gradientEndAngle) * midRadius;
+    
+    // Create gradient from boundary (opaque) to January (transparent)
+    const januaryGradient = this.context.createLinearGradient(
+      boundaryMidX, boundaryMidY,  // Start at boundary
+      januaryMidX, januaryMidY     // End in January
+    );
+    januaryGradient.addColorStop(0, "rgba(210, 210, 210, 0.85)");   // Gray at boundary
+    januaryGradient.addColorStop(0.3, "rgba(225, 225, 225, 0.5)");  // Still visible
+    januaryGradient.addColorStop(0.6, "rgba(240, 240, 240, 0.25)"); // Fading
+    januaryGradient.addColorStop(1, "rgba(255, 255, 255, 0)");      // Transparent in January
+    
+    this.context.fillStyle = januaryGradient;
     this.context.beginPath();
-    this.context.moveTo(lineStartX, lineStartY);
-    this.context.lineTo(lineEndX, lineEndY);
-    this.context.stroke();
+    // Draw arc in January direction (positive/clockwise)
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      innerRadius,
+      gradientStartAngle,
+      gradientEndAngle,
+      false  // clockwise into January
+    );
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      outerRadius,
+      gradientEndAngle,
+      gradientStartAngle,
+      true   // back counter-clockwise
+    );
+    this.context.closePath();
+    this.context.fill();
     this.context.restore();
 
+    // Draw subtle boundary line
     this.context.save();
-    this.context.strokeStyle = "rgba(255, 255, 255, 0.65)";
-    this.context.lineWidth = Math.max(0.75, this.size / 900);
+    this.context.strokeStyle = "rgba(30, 41, 59, 0.4)";
+    this.context.lineWidth = Math.max(1, this.size / 800);
     this.context.beginPath();
     this.context.moveTo(lineStartX, lineStartY);
     this.context.lineTo(lineEndX, lineEndY);
