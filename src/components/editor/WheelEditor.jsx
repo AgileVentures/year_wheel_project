@@ -14,7 +14,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useSubscription } from "../../hooks/useSubscription";
 import { showConfirmDialog, showToast } from "../../utils/dialogs";
 import { CHANGE_TYPES, getHistoryLabel, detectOrganizationChange } from "../../constants/historyChangeTypes";
-import { formatDateOnly, toYearNumber } from "../../utils/dateUtils";
+import { formatDateOnly, toYearNumber } from "../../utils/DateUtils";
 import { UUID_REGEX, normalizePageStructure } from "../../utils/wheelUtils";
 import { fetchWheel, fetchPageData, saveWheelSnapshot, updateWheel, createVersion, fetchPages, createPage, updatePage, deletePage, duplicatePage, reorderPages, toggleTemplateStatus, checkIsAdmin } from "../../services/wheelService";
 import { supabase } from "../../lib/supabase";
