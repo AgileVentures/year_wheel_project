@@ -446,12 +446,11 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const handleCreateWheel = async (wheelData) => {
     try {
       const newWheelId = await createWheel(wheelData);
-      await loadWheels();
       // Refresh subscription to update wheel count
       await refreshSubscription();
       setShowCreateModal(false);
-      // Show success feedback
-      showToast(t('dashboard:messages.created'), 'success');
+      // Navigate directly to the editor instead of reloading wheel list
+      navigate(`/wheel/${newWheelId}`);
     } catch (err) {
       console.error('Error creating wheel:', err);
 
