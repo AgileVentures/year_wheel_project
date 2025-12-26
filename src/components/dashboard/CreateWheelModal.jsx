@@ -6,9 +6,16 @@ import { showToast } from '../../utils/dialogs';
 
 export default function CreateWheelModal({ onClose, onCreate }) {
   const { t } = useTranslation(['dashboard', 'common']);
-  const currentYear = new Date().getFullYear();
-  const [title, setTitle] = useState(t('dashboard:createWheel'));
-  const [yearInput, setYearInput] = useState(String(currentYear));
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-11 (0=Jan, 11=Dec)
+  
+  // If we're in Q4 (October, November, December), default to next year
+  // Users are more likely planning ahead when the year is almost over
+  const defaultYear = currentMonth >= 9 ? currentYear + 1 : currentYear; // 9=October
+  
+  const [title, setTitle] = useState(`Årshjul ${defaultYear}`);
+  const [yearInput, setYearInput] = useState(String(defaultYear));
   const [selectedTeam, setSelectedTeam] = useState('');
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -51,16 +58,16 @@ export default function CreateWheelModal({ onClose, onCreate }) {
 
     const parsedYear = Number.parseInt(yearInput, 10);
     const normalizedYear = Number.isNaN(parsedYear)
-      ? currentYear
+      ? defaultYear
       : Math.min(2100, Math.max(2000, parsedYear));
     
     try {
       await onCreate({
-        title: title.trim() || t('dashboard:createWheel'),
+        title: title.trim() || `Årshjul ${normalizedYear}`,
         year: normalizedYear,
         team_id: selectedTeam || null,
       });
-      setYearInput(String(currentYear));
+      setYearInput(String(defaultYear));
       onClose();
     } catch (err) {
       console.error('Error creating wheel:', err);
