@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import WheelLoader from '../WheelLoader';
 import {
   CheckCircle,
   XCircle,
@@ -365,8 +366,7 @@ export default function AdminAffiliates() {
   if (loading && !organizations.length && !commissions.length && !conversions.length) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">{t('affiliate:admin.loading')}</p>
+        <WheelLoader size="sm" className="mx-auto" />
       </div>
     );
   }

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { listVersions, restoreVersion, deleteVersion, getVersion } from '../services/wheelService';
 import { showConfirmDialog, showToast } from '../utils/dialogs';
 import YearWheel from '../YearWheel';
+import WheelLoader from './WheelLoader';
 
 /**
  * VersionHistoryModal - Beautiful UI for viewing and restoring wheel versions
@@ -169,7 +170,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <WheelLoader size="sm" />
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -356,7 +357,7 @@ export default function VersionHistoryModal({ wheelId, onRestore, onClose }) {
 
       {isRestoring && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm cursor-wait">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+          <WheelLoader size="sm" />
           <p className="mt-4 text-sm text-gray-700" aria-live="assertive">
             {t('editor:versionHistory.restoringInProgress')}
           </p>

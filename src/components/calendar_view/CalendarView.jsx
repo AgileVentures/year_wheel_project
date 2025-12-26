@@ -10,6 +10,7 @@ import DayDialog from "./DayDialog";
 import AddEventDialog from "./AddEventDialog";
 import { useTranslation } from "react-i18next";
 import { Separator } from "@/components/ui/custom";
+import WheelLoader from "../WheelLoader";
 
 const timeStringToMinutes = (timeStr) => {
   const [hours, minutes] = timeStr.split(":").map(Number);
@@ -156,7 +157,7 @@ const CalendarView = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+        <WheelLoader size="sm" />
       </div>
     );
   }

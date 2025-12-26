@@ -4,6 +4,7 @@ import { Users, Plus, Crown, Shield, User } from 'lucide-react';
 import { getUserTeams } from '../../services/teamService';
 import CreateTeamModal from './CreateTeamModal';
 import TeamDetails from './TeamDetails';
+import WheelLoader from '../WheelLoader';
 
 const TeamList = ({ onSelectWheel }) => {
   const { t, i18n } = useTranslation(['teams', 'common']);
@@ -110,8 +111,7 @@ const TeamList = ({ onSelectWheel }) => {
 
       {loading ? (
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">{t('common:messages.loading')}</p>
+          <WheelLoader size="sm" className="mx-auto" />
         </div>
       ) : teams.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-sm border-2 border-dashed border-gray-300">

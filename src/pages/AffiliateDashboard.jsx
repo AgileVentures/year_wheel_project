@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { showToast } from '../utils/dialogs';
+import WheelLoader from '../components/WheelLoader';
 import OrganizationSettings from '../components/affiliate/OrganizationSettings';
 import UTMLinkBuilder from '../components/affiliate/UTMLinkBuilder';
 
@@ -308,8 +309,10 @@ export default function AffiliateDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Laddar...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <WheelLoader size="sm" className="mx-auto" />
+        </div>
       </div>
     );
   }

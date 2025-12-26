@@ -10,6 +10,7 @@ import MentionInput from './MentionInput';
 import { useTeamMembers } from '../hooks/useTeamMembers';
 import { useAuth } from '../hooks/useAuth';
 import { showConfirmDialog, showToast } from '../utils/dialogs';
+import WheelLoader from './WheelLoader';
 import {
   getComments,
   createComment,
@@ -340,7 +341,7 @@ export function ItemCommentsPanel({ item, wheel }) {
       <div className="flex-1 overflow-y-auto mb-4 min-h-0">
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <WheelLoader size="sm" />
           </div>
         )}
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronLeft, ChevronRight, ExternalLink, Users, Globe, Star, Calendar, Layers, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import WheelLoader from '../WheelLoader';
 
 export default function AdminWheelsTable({ 
   wheels = [], 
@@ -95,8 +96,7 @@ export default function AdminWheelsTable({
       <div className="sm:hidden space-y-3">
         {loading ? (
           <div className="bg-white rounded-sm shadow p-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto"></div>
-            <p className="text-gray-500 text-sm mt-3">Laddar hjul...</p>
+            <WheelLoader size="sm" className="mx-auto" />
           </div>
         ) : wheels.length === 0 ? (
           <div className="bg-white rounded-sm shadow p-6 text-center text-gray-500">
@@ -208,8 +208,7 @@ export default function AdminWheelsTable({
                 <tr>
                   <td colSpan={10} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
-                      <p className="text-gray-500 text-sm">Laddar hjul...</p>
+                      <WheelLoader size="sm" />
                     </div>
                   </td>
                 </tr>

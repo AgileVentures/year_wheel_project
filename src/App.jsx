@@ -6,6 +6,7 @@ import CookieConsent from "./components/CookieConsent";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import { useAuth } from "./hooks/useAuth.jsx";
 import AffiliateTracker from "./components/AffiliateTracker";
+import WheelLoader from "./components/WheelLoader";
 
 // Import routing components
 import ProtectedRoute from "./components/routing/ProtectedRoute";
@@ -50,8 +51,10 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Laddar...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <WheelLoader size="sm" className="mx-auto" />
+        </div>
       </div>
     );
   }
@@ -80,10 +83,9 @@ function AppContent() {
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <WheelLoader size="sm" className="mx-auto" />
         </div>
       </div>
     }>
@@ -118,7 +120,7 @@ function AppContent() {
         
         {/* Admin routes with nested layout */}
         <Route path="/admin" element={
-          <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div></div>}>
+          <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><WheelLoader size="sm" className="mx-auto" /></div>}>
             <AdminGuard>
               <AdminLayout />
             </AdminGuard>

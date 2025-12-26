@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { ArrowLeft } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import Footer from './Footer';
+import WheelLoader from './WheelLoader';
 
 function LegalPage() {
   const { i18n } = useTranslation();
@@ -87,7 +88,7 @@ function LegalPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00A4A6]"></div>
+            <WheelLoader size="sm" />
           </div>
         )}
 

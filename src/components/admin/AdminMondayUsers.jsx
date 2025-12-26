@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import WheelLoader from '../WheelLoader';
 import { 
   Calendar, 
   CreditCard, 
@@ -423,8 +424,7 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh, loading }) {
                 <div className="space-y-4">
                   {loadingActivities ? (
                     <div className="text-center py-8">
-                      <RefreshCw className="animate-spin mx-auto mb-2 text-gray-400" size={24} />
-                      <p className="text-sm text-gray-600">Loading activities...</p>
+                      <WheelLoader size="sm" className="mx-auto" />
                     </div>
                   ) : userActivities.length === 0 ? (
                     <div className="text-center py-8">

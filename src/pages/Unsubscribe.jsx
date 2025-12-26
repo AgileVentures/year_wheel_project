@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { CheckCircle, Mail, AlertCircle } from 'lucide-react';
+import WheelLoader from '../components/WheelLoader';
 
 export default function Unsubscribe() {
   const [searchParams] = useSearchParams();
@@ -130,8 +131,7 @@ export default function Unsubscribe() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-sm shadow-xl p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Laddar...</p>
+          <WheelLoader size="sm" className="mx-auto" />
         </div>
       </div>
     );

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import WheelLoader from './WheelLoader';
 import { AlertTriangle } from 'lucide-react';
 import YearWheel from '../YearWheel';
 import { supabase } from '../lib/supabase';
@@ -69,10 +70,9 @@ export default function EmbedWheel() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Laddar hjul...</p>
+          <WheelLoader size="sm" className="mx-auto" />
         </div>
       </div>
     );

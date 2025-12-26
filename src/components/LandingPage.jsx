@@ -14,11 +14,15 @@ import TemplateShowcase from "./TemplateShowcase";
 // import ComparisonTable from './ComparisonTable';
 import Footer from "./Footer";
 import PhilosophySection from "./PhilosophySection";
+import WheelLoader from "./WheelLoader";
 
 const LandingPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Loading state with delay for examining the loader
+  const [isLoading, setIsLoading] = useState(true);
 
   // Set canonical URL for main landing page
   useCanonicalUrl("https://yearwheel.se/");
@@ -36,6 +40,14 @@ const LandingPage = () => {
       navigate("/dashboard");
     }
   }, [user, navigate]);
+
+  // Brief loading state to show the branded loader
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const scrollToFeatures = useCallback(() => {
     featuresRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,6 +76,17 @@ const LandingPage = () => {
   const scrollToAuth = useCallback(() => {
     authRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  // Show loader while loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <WheelLoader size="sm" className="mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

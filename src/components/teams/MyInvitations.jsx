@@ -3,6 +3,7 @@ import { Mail, Check, X, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getMyInvitations, acceptInvitation, declineInvitation, TEAM_LIMIT_ERROR_CODE } from '../../services/teamService';
 import { showConfirmDialog, showToast } from '../../utils/dialogs';
+import WheelLoader from '../WheelLoader';
 
 const MyInvitations = ({ onInvitationAccepted }) => {
   const { t, i18n } = useTranslation(['teams']);
@@ -87,8 +88,7 @@ const MyInvitations = ({ onInvitationAccepted }) => {
     return (
       <div className="bg-white border border-gray-200 rounded-sm p-6">
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">{t('teams:myInvitations.loading')}</p>
+          <WheelLoader size="sm" className="mx-auto" />
         </div>
       </div>
     );

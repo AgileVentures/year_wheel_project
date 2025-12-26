@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Sparkles, Calendar, Copy, Eye } from 'lucide-react';
 import { fetchTemplateWheels } from '../services/wheelService';
 import { supabase } from '../lib/supabase';
+import WheelLoader from './WheelLoader';
 
 /**
  * TemplateSelectionModal - Modal for selecting and using templates in the editor
@@ -101,8 +102,7 @@ function TemplateSelectionModal({ isOpen, onClose, onTemplateSelect }) {
         <div className="flex-1 overflow-auto p-6">
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">{t('common:loading', { defaultValue: 'Laddar...' })}</p>
+              <WheelLoader size="sm" className="mx-auto" />
             </div>
           ) : templates.length === 0 ? (
             <div className="text-center py-12">

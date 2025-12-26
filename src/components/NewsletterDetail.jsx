@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Mail, CheckCircle, AlertCircle, MousePointer, UserMinus, ExternalLink, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { newsletterTemplate, featureAnnouncementTemplate, tipsTemplate, simpleAnnouncementTemplate, compositeTemplate } from '../utils/emailTemplates';
+import WheelLoader from './WheelLoader';
 
 export default function NewsletterDetail({ send: initialSend, onClose }) {
   const [send, setSend] = useState(initialSend);
@@ -195,7 +196,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <WheelLoader size="sm" />
             </div>
           ) : (
             <>

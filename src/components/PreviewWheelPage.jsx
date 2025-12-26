@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import WheelLoader from './WheelLoader';
 import { fetchWheel, fetchPages, fetchPageData, fetchPage, createWheel, createPage, saveWheelData } from '../services/wheelService';
 import YearWheel from '../YearWheel';
 import CastButton from './CastButton';
@@ -519,10 +520,9 @@ function PreviewWheelPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('common:previewWheelPage.loading')}</p>
+          <WheelLoader size="sm" className="mx-auto" />
         </div>
       </div>
     );

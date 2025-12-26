@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Settings, UserPlus, Trash2, Crown, Shield, User, X, MoreVertical, ExternalLink, Mail, Clock, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import WheelLoader from '../WheelLoader';
 import { 
   getTeam, 
   updateTeam, 
@@ -208,8 +209,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-2 text-gray-600">{t('teams:messages.loading')}</p>
+        <WheelLoader size="sm" className="mx-auto" />
       </div>
     );
   }
@@ -502,8 +502,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
 
         {loadingWheels ? (
           <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-sm text-gray-600">{t('teams:loadingWheels')}</p>
+            <WheelLoader size="sm" className="mx-auto" />
           </div>
         ) : wheels.length === 0 ? (
           <div className="text-center py-8 text-gray-500">

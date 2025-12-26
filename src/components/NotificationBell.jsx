@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X, Check, CheckCheck } from 'lucide-react';
 import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications';
+import WheelLoader from './WheelLoader';
 
 /**
  * Format relative time (e.g., "2 hours ago", "3 days ago")
@@ -205,7 +206,7 @@ export function NotificationBell() {
           <div className="flex-1 overflow-y-auto">
             {loading && (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                <WheelLoader size="sm" />
               </div>
             )}
 

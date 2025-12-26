@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { fetchLandingPageTemplates } from '../services/wheelService';
 import { supabase } from '../lib/supabase';
+import WheelLoader from './WheelLoader';
 
 function TemplateShowcase() {
   const { t, i18n } = useTranslation(['landing', 'common']);
@@ -73,7 +74,7 @@ function TemplateShowcase() {
 
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <WheelLoader size="sm" className="mx-auto" />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -9,6 +9,7 @@ import PageNavigator from "../PageNavigator";
 import Toast from "../Toast";
 import ConfirmDialog from "../ConfirmDialog";
 import VersionHistoryModal from "../VersionHistoryModal";
+import WheelLoader from "../WheelLoader";
 import { useAuth } from "../../hooks/useAuth";
 import { useSubscription } from "../../hooks/useSubscription";
 import { showConfirmDialog, showToast } from "../../utils/dialogs";
@@ -733,6 +734,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   // showWeekRing, showMonthRing, showRingNames, showLabels, weekRingDisplayMode now come from wheelState.metadata
   const [downloadFormat, setDownloadFormat] = useState(isPremium ? "png" : "png-white");
   const [isLoading, setIsLoading] = useState(true);
+  const [minLoadTimeElapsed, setMinLoadTimeElapsed] = useState(false); // Ensure loader shows for minimum time
   const [isSaving, setIsSaving] = useState(false); // For UI feedback in Header
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false); // DISABLED: All saves are direct to DB
   const [isPublic, setIsPublic] = useState(false); // Public sharing toggle
@@ -5237,10 +5239,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     );
   }, [changeTracker.version]); // Recalculate when changeTracker version changes (cleared or updated)
 
-  if (isLoading) {
+  // Minimum load time to show the loader animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadTimeElapsed(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading || !minLoadTimeElapsed) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">{t('common:loading')}</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <WheelLoader size="sm" className="mx-auto" />
+        </div>
       </div>
     );
   }
@@ -5249,8 +5261,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   if (isMobileView) {
     return (
       <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-lg text-gray-600">{t('common:loading')}</div>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <WheelLoader size="sm" className="mx-auto" />
+          </div>
         </div>
       }>
         <MobileEditor
@@ -5508,7 +5522,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       {/* Add Page Modal */}
       {showAddPageModal && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><WheelLoader size="sm" /></div>}>
           <AddPageModal
             currentPage={wheelState.pages.find(p => p.id === currentPageId)}
             onClose={() => setShowAddPageModal(false)}
@@ -5523,7 +5537,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       {/* Export Data Modal */}
       {showExportModal && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><WheelLoader size="sm" /></div>}>
           <ExportDataModal
             wheelStructure={wheelStructure}
             pages={pages}
@@ -5537,7 +5551,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       {/* PDF Report Selection Modal */}
       {showReportModal && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><WheelLoader size="sm" /></div>}>
           <ReportSelectionModal
             isOpen={showReportModal}
             onClose={() => setShowReportModal(false)}
@@ -5559,7 +5573,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       {/* Smart CSV Import Modal */}
       {showSmartImport && wheelId && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><WheelLoader size="sm" /></div>}>
           <SmartImportModal
             isOpen={showSmartImport}
             onClose={() => setShowSmartImport(false)}
@@ -5680,7 +5694,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
       {/* Conflict Resolution Modal */}
       {showConflictModal && conflictDetails && (
-        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div></div>}>
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><WheelLoader size="sm" /></div>}>
           <ConflictResolutionModal
             conflicts={conflictDetails}
             onResolve={async (resolution) => {

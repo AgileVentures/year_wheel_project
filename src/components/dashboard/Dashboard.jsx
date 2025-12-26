@@ -12,6 +12,7 @@ import CreateWheelModal from './CreateWheelModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
+import WheelLoader from '../WheelLoader';
 import { Users, Mail, LayoutGrid, Crown, Shield, Sparkles, User, LogOut, ChevronDown, TrendingUp } from 'lucide-react';
 import { useUsageLimits } from '../../hooks/useSubscription';
 import SubscriptionModal from '../subscription/SubscriptionModal';
@@ -523,8 +524,10 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg text-gray-600">{t('dashboard:loading')}</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <WheelLoader size="sm" className="mx-auto" />
+        </div>
       </div>
     );
   }
@@ -684,8 +687,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="mt-2 text-gray-600">{t('dashboard:loading')}</p>
+                <WheelLoader size="sm" className="mx-auto" />
               </div>
             ) : (
               <div className="space-y-8">
