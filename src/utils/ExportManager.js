@@ -61,7 +61,8 @@ class ExportManager {
 
   /**
    * Load YearWheel logo as base64 data URL for embedding in PDFs
-   * @returns {Promise<string|null>} Base64 data URL or null if failed
+   * Also caches the image dimensions for proper aspect ratio calculation
+   * @returns {Promise<{data: string, width: number, height: number}|null>} Logo data with dimensions or null if failed
    */
   async loadLogo() {
     if (this._logoCache) return this._logoCache;
@@ -71,15 +72,27 @@ class ExportManager {
       if (!response.ok) throw new Error('Logo not found');
       
       const blob = await response.blob();
-      return new Promise((resolve) => {
+      const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          this._logoCache = reader.result;
-          resolve(this._logoCache);
-        };
-        reader.onerror = () => resolve(null);
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to read logo'));
         reader.readAsDataURL(blob);
       });
+      
+      // Load image to get actual dimensions
+      const dimensions = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => resolve({ width: 767, height: 167 }); // Fallback dimensions
+        img.src = dataUrl;
+      });
+      
+      this._logoCache = {
+        data: dataUrl,
+        width: dimensions.width,
+        height: dimensions.height
+      };
+      return this._logoCache;
     } catch (err) {
       console.warn('Could not load logo for PDF:', err);
       return null;
@@ -89,22 +102,31 @@ class ExportManager {
   /**
    * Add logo to PDF header
    * @param {jsPDF} pdf - jsPDF instance
-   * @param {string} logoData - Base64 logo data
+   * @param {{data: string, width: number, height: number}|null} logoInfo - Logo data with dimensions
    * @param {number} pageWidth - Page width in mm
    * @param {number} margin - Page margin in mm
    * @returns {number} Y position after logo
    */
-  addLogoToHeader(pdf, logoData, pageWidth, margin) {
-    if (!logoData) return margin;
+  addLogoToHeader(pdf, logoInfo, pageWidth, margin) {
+    if (!logoInfo || !logoInfo.data) return margin;
     
     try {
-      // Logo dimensions (aspect ratio ~3.5:1 for wide logo)
+      // Desired logo height in mm
       const logoHeight = 10;
-      const logoWidth = 35;
-      const logoX = pageWidth - margin - logoWidth;
+      
+      // Calculate width based on actual image aspect ratio
+      const aspectRatio = logoInfo.width / logoInfo.height;
+      const logoWidth = logoHeight * aspectRatio;
+      
+      // Ensure logo doesn't overflow page
+      const maxLogoWidth = pageWidth - margin * 2;
+      const finalLogoWidth = Math.min(logoWidth, maxLogoWidth);
+      const finalLogoHeight = finalLogoWidth / aspectRatio;
+      
+      const logoX = pageWidth - margin - finalLogoWidth;
       const logoY = margin - 5;
       
-      pdf.addImage(logoData, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      pdf.addImage(logoInfo.data, 'PNG', logoX, logoY, finalLogoWidth, finalLogoHeight);
       return margin + 5; // Return y position after logo header area
     } catch (err) {
       console.warn('Could not add logo to PDF:', err);
