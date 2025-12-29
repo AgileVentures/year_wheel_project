@@ -39,9 +39,14 @@ function Hero() {
           </h1>
 
           {/* Description */}
-          <p className="text-xl text-[#A4E6E0]/90 mb-8 leading-relaxed">
-            {t('landing:hero.description')}
-          </p>
+          <ul className="text-xl text-[#A4E6E0]/90 mb-8 leading-relaxed space-y-3">
+            {t('landing:hero.description', { returnObjects: true }).map((line, index) => (
+              <li key={index} className="flex items-start">
+                <span className="text-[#36C2C6] mr-3">–</span>
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
 
           {/* CTA Buttons - using logo colors */}
           <div className="flex flex-col sm:flex-row gap-4">

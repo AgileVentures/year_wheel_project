@@ -16,7 +16,11 @@
     "badge": "AI-assisterad årsplanering",
     "title1": "Året i en bild –",
     "title2": "fatta beslut snabbare",
-    "description": "YearWheel gör din årsplanering tydlig, samlad och lätt att agera på. Se hela året på en gång, hitta luckor och krockar direkt – allt med AI-assistans.",
+    "description": [
+      "När överblicken är tydlig blir besluten säkra.",
+      "När mönstren är synliga blir planeringen strategisk.",
+      "När allt hänger ihop fungerar din organisation helt enkelt bättre."
+    ],
     "ctaPrimary": "Kom igång gratis",
     "ctaSecondary": "Se demo",
     "stats": {

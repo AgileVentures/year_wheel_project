@@ -16,7 +16,11 @@
     "badge": "AI-powered annual planning",
     "title1": "Your year at a glance –",
     "title2": "make decisions faster",
-    "description": "YearWheel makes your annual planning clear, unified and easy to act on. See the whole year at once, spot gaps and conflicts instantly – all with AI assistance.",
+    "description": [
+      "When visibility is clear, decisions become confident.",
+      "When patterns are obvious, planning becomes strategic.",
+      "When everything is connected, your organization simply works better."
+    ],
     "ctaPrimary": "Get started free",
     "ctaSecondary": "See demo",
     "stats": {
