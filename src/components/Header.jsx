@@ -321,7 +321,7 @@ function Header({
                 className="fixed inset-0 z-40" 
                 onClick={() => setShowImageExportMenu(false)}
               ></div>
-              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-80 max-h-[80vh] overflow-y-auto">
+              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 w-80 max-h-[80vh] overflow-y-auto">
                 
                 {/* File Operations Section */}
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
@@ -737,7 +737,7 @@ function Header({
               />
               <div
                 ref={saveMenuRef}
-                className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50"
+                className="absolute right-0 mt-2 w-72 bg-white rounded-sm shadow-xl border border-gray-200 overflow-hidden z-50"
               >
                 {/* Save Options Section */}
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">

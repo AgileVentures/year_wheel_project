@@ -26,7 +26,7 @@ function MondayHowToGuide() {
       image: "/docs/monday/images/01-wheel-view-overview.png",
       content: (
         <>
-          <div className="bg-gradient-to-r from-[#00A4A6] to-[#008B8D] text-white p-6 rounded-lg mb-6">
+          <div className="bg-gradient-to-r from-[#00A4A6] to-[#008B8D] text-white p-6 rounded-sm mb-6">
             <h3 className="text-2xl font-bold mb-3">Stop scrolling through endless lists</h3>
             <p className="text-lg opacity-95">
               Year Wheel turns your monday.com boards into stunning circular calendars that display your entire year in one view, 
@@ -65,14 +65,14 @@ function MondayHowToGuide() {
           <img 
             src="/docs/monday/images/01-wheel-view-overview.png" 
             alt="YearWheel circular calendar showing full year view" 
-            className="w-full rounded-lg shadow-2xl border border-gray-200"
+            className="w-full rounded-sm shadow-2xl border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
             Your entire annual plan displayed in one elegant circular calendar
           </p>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+            <div className="bg-blue-50 p-4 rounded-sm border-l-4 border-blue-500">
               <div className="flex items-start">
                 <Check className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
                 <div>
@@ -81,7 +81,7 @@ function MondayHowToGuide() {
                 </div>
               </div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
+            <div className="bg-green-50 p-4 rounded-sm border-l-4 border-green-500">
               <div className="flex items-start">
                 <Check className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
                 <div>
@@ -101,7 +101,7 @@ function MondayHowToGuide() {
       image: "/docs/monday/images/03-structure-panel.png",
       content: (
         <>
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-lg mb-6">
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-sm mb-6">
             <h3 className="text-2xl font-bold mb-3">Your Structure Stays Intact</h3>
             <p className="text-lg opacity-95">
               Each board group automatically becomes a concentric ring, preserving your organization and color coding. 
@@ -115,17 +115,17 @@ function MondayHowToGuide() {
             <img 
               src="/docs/monday/images/02-board-table-view.png" 
               alt="Monday.com board table view" 
-              className="w-full rounded-lg shadow-lg border border-gray-200"
+              className="w-full rounded-sm shadow-lg border border-gray-200"
             />
             <img 
               src="/docs/monday/images/03-structure-panel.png" 
               alt="YearWheel structure panel showing rings and groups" 
-              className="w-full rounded-lg shadow-lg border border-gray-200"
+              className="w-full rounded-sm shadow-lg border border-gray-200"
             />
           </div>
 
           <div className="space-y-6">
-            <div className="flex items-start bg-gradient-to-r from-orange-50 to-orange-100 p-5 rounded-lg border-l-4 border-orange-500">
+            <div className="flex items-start bg-gradient-to-r from-orange-50 to-orange-100 p-5 rounded-sm border-l-4 border-orange-500">
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold mr-4 flex-shrink-0 text-lg">
                 1
               </div>
@@ -136,7 +136,7 @@ function MondayHowToGuide() {
               </div>
             </div>
 
-            <div className="flex items-start bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-lg border-l-4 border-blue-500">
+            <div className="flex items-start bg-gradient-to-r from-blue-50 to-blue-100 p-5 rounded-sm border-l-4 border-blue-500">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-4 flex-shrink-0 text-lg">
                 2
               </div>
@@ -147,7 +147,7 @@ function MondayHowToGuide() {
               </div>
             </div>
 
-            <div className="flex items-start bg-gradient-to-r from-green-50 to-green-100 p-5 rounded-lg border-l-4 border-green-500">
+            <div className="flex items-start bg-gradient-to-r from-green-50 to-green-100 p-5 rounded-sm border-l-4 border-green-500">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold mr-4 flex-shrink-0 text-lg">
                 3
               </div>
@@ -159,7 +159,7 @@ function MondayHowToGuide() {
             </div>
           </div>
 
-          <div className="mt-6 bg-amber-50 border-l-4 border-amber-500 p-5 rounded-lg">
+          <div className="mt-6 bg-amber-50 border-l-4 border-amber-500 p-5 rounded-sm">
             <div className="flex items-start">
               <Sparkles className="w-6 h-6 text-amber-600 mr-3 mt-1 flex-shrink-0" />
               <div>
@@ -191,13 +191,13 @@ function MondayHowToGuide() {
           <img 
             src="/docs/monday/images/04-wheel-colors-settings.png" 
             alt="YearWheel color theme settings" 
-            className="w-full rounded-lg shadow-2xl border border-gray-200 mb-6"
+            className="w-full rounded-sm shadow-2xl border border-gray-200 mb-6"
           />
 
           <h4 className="text-xl font-semibold mb-4">Choose Your Theme</h4>
 
           <div className="grid grid-cols-1 gap-4 mb-6">
-            <div className="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow bg-white">
+            <div className="border border-gray-200 rounded-sm p-5 hover:shadow-lg transition-shadow bg-white">
               <div className="flex items-center justify-between mb-3">
                 <h5 className="font-bold text-lg">Monday Colors</h5>
                 <div className="flex gap-1">
@@ -209,7 +209,7 @@ function MondayHowToGuide() {
               <p className="text-sm text-gray-600">Monday.com's default color palette - familiar and professional</p>
             </div>
 
-            <div className="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow bg-white">
+            <div className="border border-gray-200 rounded-sm p-5 hover:shadow-lg transition-shadow bg-white">
               <div className="flex items-center justify-between mb-3">
                 <h5 className="font-bold text-lg">Nordic Cool</h5>
                 <div className="flex gap-1">
@@ -221,7 +221,7 @@ function MondayHowToGuide() {
               <p className="text-sm text-gray-600">Scandinavian-inspired muted tones - calm and sophisticated</p>
             </div>
 
-            <div className="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow bg-white">
+            <div className="border border-gray-200 rounded-sm p-5 hover:shadow-lg transition-shadow bg-white">
               <div className="flex items-center justify-between mb-3">
                 <h5 className="font-bold text-lg">Vibrant Energy</h5>
                 <div className="flex gap-1">
@@ -233,7 +233,7 @@ function MondayHowToGuide() {
               <p className="text-sm text-gray-600">Bold, energetic colors - perfect for creative teams</p>
             </div>
 
-            <div className="border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow bg-white">
+            <div className="border border-gray-200 rounded-sm p-5 hover:shadow-lg transition-shadow bg-white">
               <div className="flex items-center justify-between mb-3">
                 <h5 className="font-bold text-lg">Modern Minimalist</h5>
                 <div className="flex gap-1">
@@ -250,19 +250,19 @@ function MondayHowToGuide() {
             <img 
               src="/docs/monday/images/01-wheel-view-overview.png" 
               alt="Light mode YearWheel" 
-              className="w-full rounded-lg shadow-lg border border-gray-200"
+              className="w-full rounded-sm shadow-lg border border-gray-200"
             />
             <img 
               src="/docs/monday/images/07-dark-mode-theme.png" 
               alt="Dark mode YearWheel" 
-              className="w-full rounded-lg shadow-lg border border-gray-200"
+              className="w-full rounded-sm shadow-lg border border-gray-200"
             />
           </div>
           <p className="text-center text-sm text-gray-600 italic mb-6">
             Light and dark mode support - matches your Monday.com theme automatically
           </p>
 
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-5">
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-sm p-5">
             <h4 className="font-semibold text-purple-900 mb-3 flex items-center">
               <Palette className="w-5 h-5 mr-2" />
               Customize Everything
@@ -296,7 +296,7 @@ function MondayHowToGuide() {
       image: "/docs/monday/images/01-wheel-view-overview.png",
       content: (
         <>
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-lg mb-6">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-sm mb-6">
             <h3 className="text-2xl font-bold mb-3">Immediately Spot What Traditional Views Hide</h3>
             <p className="text-lg opacity-95">
               Overloaded quarters. Scheduling conflicts. Seasonal patterns. Resource gaps. 
@@ -307,9 +307,9 @@ function MondayHowToGuide() {
           <h3 className="text-xl font-semibold mb-4">Interactive Features That Drive Insights</h3>
 
           <div className="space-y-5 mb-6">
-            <div className="bg-white border-2 border-blue-200 rounded-lg p-5 hover:shadow-lg transition-shadow">
+            <div className="bg-white border-2 border-blue-200 rounded-sm p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-start">
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                <div className="w-10 h-10 bg-blue-500 rounded-sm flex items-center justify-center mr-4 flex-shrink-0">
                   <Eye className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
@@ -322,9 +322,9 @@ function MondayHowToGuide() {
               </div>
             </div>
 
-            <div className="bg-white border-2 border-green-200 rounded-lg p-5 hover:shadow-lg transition-shadow">
+            <div className="bg-white border-2 border-green-200 rounded-sm p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-start">
-                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                <div className="w-10 h-10 bg-green-500 rounded-sm flex items-center justify-center mr-4 flex-shrink-0">
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
@@ -337,9 +337,9 @@ function MondayHowToGuide() {
               </div>
             </div>
 
-            <div className="bg-white border-2 border-purple-200 rounded-lg p-5 hover:shadow-lg transition-shadow">
+            <div className="bg-white border-2 border-purple-200 rounded-sm p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-start">
-                <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                <div className="w-10 h-10 bg-purple-500 rounded-sm flex items-center justify-center mr-4 flex-shrink-0">
                   <Layout className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
@@ -356,34 +356,34 @@ function MondayHowToGuide() {
           <img 
             src="/docs/monday/images/01-wheel-view-overview.png" 
             alt="Interactive YearWheel with hover and navigation" 
-            className="w-full rounded-lg shadow-2xl border border-gray-200 mb-6"
+            className="w-full rounded-sm shadow-2xl border border-gray-200 mb-6"
           />
 
           <h4 className="text-xl font-semibold mb-4">Patterns That Emerge Instantly</h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-sm">
               <h5 className="font-semibold text-red-900 mb-2">🔥 Overloaded Quarters</h5>
               <p className="text-sm text-red-800">
                 See at a glance which quarters have too many initiatives. Prevent burnout before it happens.
               </p>
             </div>
 
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-sm">
               <h5 className="font-semibold text-yellow-900 mb-2">⚡ Scheduling Conflicts</h5>
               <p className="text-sm text-yellow-800">
                 Overlapping campaigns? Competing launches? The wheel reveals conflicts that lists hide.
               </p>
             </div>
 
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-sm">
               <h5 className="font-semibold text-blue-900 mb-2">📊 Seasonal Patterns</h5>
               <p className="text-sm text-blue-800">
                 Understand when your team is busiest. Plan around holidays and traditional slow periods.
               </p>
             </div>
 
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-sm">
               <h5 className="font-semibold text-green-900 mb-2">🎯 Resource Gaps</h5>
               <p className="text-sm text-green-800">
                 Identify months with too little activity. Optimize resource allocation throughout the year.
@@ -391,7 +391,7 @@ function MondayHowToGuide() {
             </div>
           </div>
 
-          <div className="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 p-5 rounded-lg">
+          <div className="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 p-5 rounded-sm">
             <h4 className="font-semibold text-indigo-900 mb-3 flex items-center">
               <Target className="w-5 h-5 mr-2" />
               Perfect For Strategic Planning
@@ -436,19 +436,19 @@ function MondayHowToGuide() {
             <img 
               src="/docs/monday/images/05-display-settings.png" 
               alt="Display settings panel" 
-              className="w-full rounded-lg shadow-lg border border-gray-200"
+              className="w-full rounded-sm shadow-lg border border-gray-200"
             />
             <img 
               src="/docs/monday/images/06-edit-item-dialog.png" 
               alt="Edit item dialog" 
-              className="w-full rounded-lg shadow-lg border border-gray-200"
+              className="w-full rounded-sm shadow-lg border border-gray-200"
             />
           </div>
 
           <h4 className="text-xl font-semibold mb-4">Display Options</h4>
 
           <div className="space-y-4 mb-6">
-            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+            <div className="border border-gray-200 rounded-sm p-5 bg-white">
               <h5 className="font-semibold text-lg mb-3 flex items-center">
                 <Calendar className="w-5 h-5 mr-2 text-[#00A4A6]" />
                 Week Ring Display
@@ -466,7 +466,7 @@ function MondayHowToGuide() {
               </div>
             </div>
 
-            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+            <div className="border border-gray-200 rounded-sm p-5 bg-white">
               <h5 className="font-semibold text-lg mb-3 flex items-center">
                 <Eye className="w-5 h-5 mr-2 text-[#00A4A6]" />
                 Ring Visibility
@@ -487,7 +487,7 @@ function MondayHowToGuide() {
               </div>
             </div>
 
-            <div className="border border-gray-200 rounded-lg p-5 bg-white">
+            <div className="border border-gray-200 rounded-sm p-5 bg-white">
               <h5 className="font-semibold text-lg mb-3 flex items-center">
                 <Zap className="w-5 h-5 mr-2 text-[#00A4A6]" />
                 Reset Configuration
@@ -501,7 +501,7 @@ function MondayHowToGuide() {
 
           <h4 className="text-xl font-semibold mb-4">Managing Items</h4>
 
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-5 mb-6">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-sm p-5 mb-6">
             <h5 className="font-semibold text-blue-900 mb-3">Edit Items Directly</h5>
             <p className="text-blue-800 text-sm mb-3">
               Click any item on the wheel to open the edit dialog. Update the name, change groups, reassign team members, 
@@ -523,7 +523,7 @@ function MondayHowToGuide() {
             </ul>
           </div>
 
-          <div className="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-lg">
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-sm">
             <h5 className="font-semibold text-amber-900 mb-2 flex items-center">
               <Sparkles className="w-5 h-5 mr-2" />
               Pro Tip: Structure Panel
@@ -543,7 +543,7 @@ function MondayHowToGuide() {
       image: "/docs/monday/images/01-wheel-view-overview.png",
       content: (
         <>
-          <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6 rounded-lg mb-6">
+          <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6 rounded-sm mb-6">
             <h3 className="text-2xl font-bold mb-3">Export Publication-Ready Visuals</h3>
             <p className="text-lg opacity-95">
               Walk into stakeholder meetings with stunning wheels that communicate your strategy instantly. 
@@ -554,9 +554,9 @@ function MondayHowToGuide() {
           <h3 className="text-xl font-semibold mb-4">Export in Multiple Formats</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="border-2 border-blue-200 bg-blue-50 rounded-lg p-5 hover:shadow-lg transition-shadow">
+            <div className="border-2 border-blue-200 bg-blue-50 rounded-sm p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-center mb-3">
-                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                <div className="w-12 h-12 bg-blue-500 rounded-sm flex items-center justify-center mr-3">
                   <span className="text-2xl">🖼️</span>
                 </div>
                 <div>
@@ -569,9 +569,9 @@ function MondayHowToGuide() {
               </p>
             </div>
 
-            <div className="border-2 border-green-200 bg-green-50 rounded-lg p-5 hover:shadow-lg transition-shadow">
+            <div className="border-2 border-green-200 bg-green-50 rounded-sm p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-center mb-3">
-                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mr-3">
+                <div className="w-12 h-12 bg-green-500 rounded-sm flex items-center justify-center mr-3">
                   <span className="text-2xl">✨</span>
                 </div>
                 <div>
@@ -584,9 +584,9 @@ function MondayHowToGuide() {
               </p>
             </div>
 
-            <div className="border-2 border-red-200 bg-red-50 rounded-lg p-5 hover:shadow-lg transition-shadow">
+            <div className="border-2 border-red-200 bg-red-50 rounded-sm p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-center mb-3">
-                <div className="w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center mr-3">
+                <div className="w-12 h-12 bg-red-500 rounded-sm flex items-center justify-center mr-3">
                   <span className="text-2xl">📄</span>
                 </div>
                 <div>
@@ -599,9 +599,9 @@ function MondayHowToGuide() {
               </p>
             </div>
 
-            <div className="border-2 border-purple-200 bg-purple-50 rounded-lg p-5 hover:shadow-lg transition-shadow">
+            <div className="border-2 border-purple-200 bg-purple-50 rounded-sm p-5 hover:shadow-lg transition-shadow">
               <div className="flex items-center mb-3">
-                <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
+                <div className="w-12 h-12 bg-purple-500 rounded-sm flex items-center justify-center mr-3">
                   <span className="text-2xl">📸</span>
                 </div>
                 <div>
@@ -618,7 +618,7 @@ function MondayHowToGuide() {
           <h4 className="text-xl font-semibold mb-4">Real-World Use Cases</h4>
 
           <div className="space-y-4 mb-6">
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-500 p-5 rounded-lg">
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 border-l-4 border-orange-500 p-5 rounded-sm">
               <h5 className="font-semibold text-orange-900 mb-2">📊 Quarterly Business Reviews</h5>
               <p className="text-sm text-orange-800 mb-2">
                 Export high-res PNG or PDF to include in executive presentations. Show leadership the entire year's plan 
@@ -629,7 +629,7 @@ function MondayHowToGuide() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-5 rounded-lg">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-5 rounded-sm">
               <h5 className="font-semibold text-blue-900 mb-2">🖨️ Office Wall Planning</h5>
               <p className="text-sm text-blue-800 mb-2">
                 Export large-format SVG or PDF for printing team planning posters. Keep everyone aligned with a physical 
@@ -640,7 +640,7 @@ function MondayHowToGuide() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 p-5 rounded-lg">
+            <div className="bg-gradient-to-r from-green-50 to-teal-50 border-l-4 border-green-500 p-5 rounded-sm">
               <h5 className="font-semibold text-green-900 mb-2">📧 Client & Stakeholder Updates</h5>
               <p className="text-sm text-green-800 mb-2">
                 Export as JPG for email attachments showing project timelines. Communicate complex schedules in one 
@@ -651,7 +651,7 @@ function MondayHowToGuide() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 p-5 rounded-lg">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 p-5 rounded-sm">
               <h5 className="font-semibold text-purple-900 mb-2">🎤 Conference Presentations</h5>
               <p className="text-sm text-purple-800 mb-2">
                 Use SVG exports in presentation software for pixel-perfect displays on any screen size. Professional 
@@ -663,7 +663,7 @@ function MondayHowToGuide() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-[#00A4A6] to-[#008B8D] text-white p-6 rounded-lg">
+          <div className="bg-gradient-to-r from-[#00A4A6] to-[#008B8D] text-white p-6 rounded-sm">
             <h4 className="font-semibold text-xl mb-3">How to Export</h4>
             <ol className="space-y-2 text-sm opacity-95">
               <li className="flex items-start">
@@ -694,7 +694,7 @@ function MondayHowToGuide() {
       image: "/docs/monday/images/01-wheel-view-overview.png",
       content: (
         <>
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white p-8 rounded-lg mb-6 text-center">
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white p-8 rounded-sm mb-6 text-center">
             <h3 className="text-3xl font-bold mb-4">Stop Managing Your Year in Rows</h3>
             <h3 className="text-3xl font-bold mb-4">Start Seeing It in Circles</h3>
             <p className="text-xl opacity-95">
@@ -703,7 +703,7 @@ function MondayHowToGuide() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white border-2 border-[#00A4A6] rounded-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="bg-white border-2 border-[#00A4A6] rounded-sm p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-[#00A4A6] rounded-full flex items-center justify-center mr-3">
                   <Zap className="w-7 h-7 text-white" />
@@ -726,7 +726,7 @@ function MondayHowToGuide() {
               </ul>
             </div>
 
-            <div className="bg-white border-2 border-[#00A4A6] rounded-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="bg-white border-2 border-[#00A4A6] rounded-sm p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-[#00A4A6] rounded-full flex items-center justify-center mr-3">
                   <Users className="w-7 h-7 text-white" />
@@ -750,7 +750,7 @@ function MondayHowToGuide() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-lg p-6 mb-8">
+          <div className="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-sm p-6 mb-8">
             <h4 className="text-2xl font-bold text-green-900 mb-4 text-center">Why Teams Choose YearWheel</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div>
@@ -771,11 +771,11 @@ function MondayHowToGuide() {
           <img 
             src="/docs/monday/images/01-wheel-view-overview.png" 
             alt="YearWheel full year view" 
-            className="w-full rounded-lg shadow-2xl border-2 border-gray-200 mb-8"
+            className="w-full rounded-sm shadow-2xl border-2 border-gray-200 mb-8"
           />
 
           <div className="space-y-6">
-            <div className="bg-white border-2 border-gray-200 rounded-lg p-6">
+            <div className="bg-white border-2 border-gray-200 rounded-sm p-6">
               <h4 className="text-xl font-semibold mb-4 flex items-center">
                 <Target className="w-6 h-6 mr-2 text-[#00A4A6]" />
                 Perfect For Your Team
@@ -812,7 +812,7 @@ function MondayHowToGuide() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-[#00A4A6] to-[#008B8D] text-white rounded-lg p-8 text-center">
+            <div className="bg-gradient-to-r from-[#00A4A6] to-[#008B8D] text-white rounded-sm p-8 text-center">
               <h4 className="text-2xl font-bold mb-4">Need Help?</h4>
               <p className="text-lg opacity-95 mb-6">
                 Our team is here to ensure you get the most out of YearWheel
@@ -820,7 +820,7 @@ function MondayHowToGuide() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a 
                   href="mailto:support@yearwheel.se"
-                  className="inline-flex items-center justify-center px-6 py-3 bg-white text-[#00A4A6] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-white text-[#00A4A6] rounded-sm font-semibold hover:bg-gray-100 transition-colors"
                 >
                   📧 Email Support
                 </a>
@@ -828,7 +828,7 @@ function MondayHowToGuide() {
                   href="https://yearwheel.se/support" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-6 py-3 bg-white text-[#00A4A6] rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                  className="inline-flex items-center justify-center px-6 py-3 bg-white text-[#00A4A6] rounded-sm font-semibold hover:bg-gray-100 transition-colors"
                 >
                   📚 Documentation
                 </a>
@@ -836,7 +836,7 @@ function MondayHowToGuide() {
               <p className="text-sm opacity-75 mt-4">Response within 24 hours on business days</p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-200 rounded-lg p-6 text-center">
+            <div className="bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 border-2 border-purple-200 rounded-sm p-6 text-center">
               <h4 className="text-2xl font-bold text-gray-900 mb-3">
                 🎉 You're All Set to Transform Your Planning!
               </h4>
@@ -905,7 +905,7 @@ function MondayHowToGuide() {
                 <button
                   key={index}
                   onClick={() => goToStep(index)}
-                  className={`flex items-center px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+                  className={`flex items-center px-4 py-2 rounded-sm font-medium whitespace-nowrap transition-all ${
                     currentStep === index
                       ? 'bg-[#00A4A6] text-white shadow-md'
                       : currentStep > index
@@ -929,7 +929,7 @@ function MondayHowToGuide() {
 
       {/* Main Content */}
       <div ref={contentRef} className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg">
+        <div className="bg-white rounded-sm">
           {/* Step Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -957,7 +957,7 @@ function MondayHowToGuide() {
             <button
               onClick={prevStep}
               disabled={currentStep === 0}
-              className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex items-center px-6 py-3 rounded-sm font-medium transition-colors ${
                 currentStep === 0
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -970,7 +970,7 @@ function MondayHowToGuide() {
             {currentStep < steps.length - 1 ? (
               <button
                 onClick={nextStep}
-                className="flex items-center px-6 py-3 bg-[#00A4A6] text-white rounded-lg font-medium hover:bg-[#008B8D] transition-colors shadow-md hover:shadow-lg"
+                className="flex items-center px-6 py-3 bg-[#00A4A6] text-white rounded-sm font-medium hover:bg-[#008B8D] transition-colors shadow-md hover:shadow-lg"
               >
                 Next: {steps[currentStep + 1].title}
                 <ChevronRight className="w-5 h-5 ml-2" />
@@ -978,7 +978,7 @@ function MondayHowToGuide() {
             ) : (
               <button
                 onClick={() => setCurrentStep(0)}
-                className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
+                className="flex items-center px-6 py-3 bg-green-600 text-white rounded-sm font-medium hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
               >
                 <Check className="w-5 h-5 mr-2" />
                 Review Guide
