@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react';
-import { X, Presentation, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { X, Presentation, ZoomIn, ZoomOut, RotateCcw, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import YearWheel from '../../YearWheel';
 
@@ -12,6 +12,7 @@ import YearWheel from '../../YearWheel';
  * - Rotation via touch
  * - Quick access to presentation/cast mode
  * - Zoom controls
+ * - Page navigation for multi-year wheels
  */
 function MobileWheelViewer({
   isOpen,
@@ -29,10 +30,15 @@ function MobileWheelViewer({
   showLabels,
   weekRingDisplayMode,
   onOpenPresentation,
+  // Page navigation
+  pages,
+  currentPageId,
+  onPageChange,
 }) {
   const { t } = useTranslation(['common']);
   const [wheelRef, setWheelRef] = useState(null);
   const containerRef = useRef(null);
+  const [showPageSelector, setShowPageSelector] = useState(false);
   
   // Zoom state
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -47,6 +53,7 @@ function MobileWheelViewer({
     if (isOpen) {
       setZoomLevel(1);
       setRotation(0);
+      setShowPageSelector(false);
     }
   }, [isOpen]);
   
@@ -85,6 +92,10 @@ function MobileWheelViewer({
     setRotation(0);
   };
   
+  // Get current page info
+  const currentPage = pages?.find(p => p.id === currentPageId);
+  const displayYear = currentPage?.year || year;
+  
   if (!isOpen) return null;
   
   return (
@@ -99,9 +110,60 @@ function MobileWheelViewer({
           <X size={24} />
         </button>
         
-        <h2 className="text-gray-900 font-medium truncate px-2">
-          {title || t('common:yearWheel', { defaultValue: 'Årshjul' })}
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-gray-900 font-medium truncate">
+            {title || t('common:yearWheel', { defaultValue: 'Årshjul' })}
+          </h2>
+          
+          {/* Page Selector */}
+          {pages && pages.length > 1 && (
+            <div className="relative">
+              <button
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  setShowPageSelector(!showPageSelector);
+                }}
+                onClick={() => setShowPageSelector(!showPageSelector)}
+                className="flex items-center gap-1 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 active:bg-gray-300 touch-manipulation"
+              >
+                <span className="text-sm font-medium">{displayYear}</span>
+                <ChevronDown size={16} className={`transform transition-transform ${showPageSelector ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showPageSelector && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-30"
+                    onClick={() => setShowPageSelector(false)}
+                  />
+                  <div className="absolute top-full mt-1 right-0 bg-white rounded shadow-lg z-40 min-w-[120px] border border-gray-200">
+                    {pages
+                      .sort((a, b) => a.pageOrder - b.pageOrder)
+                      .map(page => (
+                        <button
+                          key={page.id}
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            onPageChange(page.id);
+                            setShowPageSelector(false);
+                          }}
+                          onClick={() => {
+                            onPageChange(page.id);
+                            setShowPageSelector(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-gray-50 active:bg-gray-100 first:rounded-t last:rounded-b touch-manipulation ${
+                            page.id === currentPageId ? 'bg-gray-100 font-semibold' : ''
+                          }`}
+                        >
+                          {page.year}
+                        </button>
+                      ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
         
         <button
           onClick={onOpenPresentation}

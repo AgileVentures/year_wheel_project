@@ -188,6 +188,9 @@ function MobileEditor({
         showRingNames={showRingNames}
         showLabels={showLabels}
         weekRingDisplayMode={weekRingDisplayMode}
+        pages={pages}
+        currentPageId={currentPage?.id}
+        onPageChange={onPageChange}
         onOpenPresentation={handleOpenPresentation}
       />
       

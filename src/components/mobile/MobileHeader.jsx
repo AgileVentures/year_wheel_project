@@ -58,25 +58,36 @@ function MobileHeader({
         <div className="relative">
           <button
             onClick={() => setShowPageSelector(!showPageSelector)}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full transition-colors"
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              setShowPageSelector(!showPageSelector);
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full transition-colors touch-manipulation"
             aria-expanded={showPageSelector}
             aria-haspopup="listbox"
+            disabled={!pages || pages.length === 0}
           >
             <span>{displayYear}</span>
-            <ChevronDown size={16} className={`transition-transform ${showPageSelector ? 'rotate-180' : ''}`} />
+            {pages && pages.length > 1 && (
+              <ChevronDown size={16} className={`transition-transform ${showPageSelector ? 'rotate-180' : ''}`} />
+            )}
           </button>
           
           {/* Page/Year Dropdown */}
-          {showPageSelector && pages.length > 0 && (
+          {showPageSelector && pages && pages.length > 0 && (
             <>
               {/* Backdrop */}
               <div 
                 className="fixed inset-0 z-40" 
                 onClick={() => setShowPageSelector(false)}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  setShowPageSelector(false);
+                }}
               />
               
               {/* Dropdown */}
-              <div className="absolute right-0 top-full mt-1 bg-white rounded-sm shadow-lg border border-gray-200 py-1 min-w-[120px] z-50">
+              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[160px] max-h-[300px] overflow-y-auto z-50">
                 {pages
                   .sort((a, b) => (a.year || 0) - (b.year || 0))
                   .map((page) => (
@@ -86,15 +97,23 @@ function MobileHeader({
                         onPageChange && onPageChange(page.id);
                         setShowPageSelector(false);
                       }}
-                      className={`w-full px-4 py-2 text-left text-sm transition-colors ${
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (onPageChange) {
+                          onPageChange(page.id);
+                        }
+                        setShowPageSelector(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left text-sm transition-colors touch-manipulation ${
                         page.id === currentPageId
                           ? 'bg-teal-50 text-teal-700 font-medium'
                           : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
                       }`}
                     >
-                      {page.year}
+                      <div className="font-medium">{page.year}</div>
                       {page.title && page.title !== String(page.year) && (
-                        <span className="text-gray-400 ml-1">- {page.title}</span>
+                        <div className="text-xs text-gray-500 mt-0.5">{page.title}</div>
                       )}
                     </button>
                   ))}
