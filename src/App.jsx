@@ -45,6 +45,7 @@ const SkolaUtbildning = lazy(() => import("./pages/landing/SkolaUtbildning"));
 const Projektplanering = lazy(() => import("./pages/landing/Projektplanering"));
 const QuickStartGuide = lazy(() => import("./components/QuickStartGuide"));
 const ArshjulGuide = lazy(() => import("./pages/ArshjulGuide"));
+const MondayHowToGuide = lazy(() => import("./pages/MondayHowToGuide"));
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -99,6 +100,7 @@ function AppContent() {
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/guide/quick-start" element={<QuickStartGuide />} />
         <Route path="/guide/arshjul" element={<ArshjulGuide />} />
+        <Route path="/monday/how-to" element={<MondayHowToGuide />} />
         <Route path="/legal/:document" element={<LegalPage />} />
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
