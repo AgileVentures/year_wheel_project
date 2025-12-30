@@ -27,7 +27,7 @@
 
 # Special headers for Monday.com how-to page (iframe embeddable)
 [[headers]]
-  for = "/monday/how-to"
+  for = "/how-to"
   [headers.values]
     # Allow embedding in any iframe (required for Monday.com marketplace and testing)
     # This is safe for documentation/how-to content
