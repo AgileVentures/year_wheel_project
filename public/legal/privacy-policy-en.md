@@ -54,19 +54,24 @@ Our application uses minimal third-party services, primarily for infrastructure,
 
 | Service | Domain(s) | Purpose | Used By | Data Shared |
 |---------|-----------|---------|---------|-------------|
-| Monday.com | api.monday.com, auth.monday.com | Board data, authentication | Both apps | Context, board data (read-only) |
-| Supabase | mmysvuymzabstnobdfvo.supabase.co | Backend infrastructure, database | Both apps | User profile, OAuth data |
+| monday.com | api.monday.com, auth.monday.com | Board data, authentication | Both apps | Context, board data (read-only) - **only if you authenticate via monday.com or use our app from monday.com marketplace** |
+| Supabase | mmysvuymzabstnobdfvo.supabase.co | Backend infrastructure, database (EU-hosted) | Both apps | User profile, OAuth data - **all data stored within EU** |
 | Google Analytics | www.google-analytics.com, www.googletagmanager.com | Usage analytics | Main app only | Page views, sessions (anonymized) |
-| Google Auth | accounts.google.com, oauth2.googleapis.com | User authentication | Main app only | Email, name, profile (with consent) |
+| Google Auth | accounts.google.com, oauth2.googleapis.com | User authentication | Main app only | Email, name, profile - **only stored if you use Google Auth** |
 | Google Tag Manager | www.googletagmanager.com | Tag management | Main app only | Event tracking data |
 | Netlify | yearwheel.se | Static hosting | Main app | None (hosting provider) |
 | Stripe | stripe.com | Payment processing | Main app | Payment information (PCI DSS certified) |
 
 **Important Distinction:**
-- **Monday.com Board View App**: Uses only Monday.com API and Supabase (no analytics)
+- **monday.com Board View App**: Uses only monday.com API and Supabase (no analytics)
 - **Main YearWheel.se App**: Uses all services above
 
-### 5.2 Monday.com API (First-Party Integration)
+**Data Storage Clarifications:**
+- **All user data is stored within the EU** through Supabase (Frankfurt, Germany)
+- **monday.com data** (email, name, account details) is only stored if you authenticate using monday.com OAuth or subscribe to our app from the monday.com marketplace
+- **Google data** (email, name, profile) is only stored if you choose to use Google Authentication for sign-in
+
+### 5.2 monday.com API (First-Party Integration)
 
 **Domains:**
 - `https://api.monday.com/v2` - GraphQL API
@@ -78,18 +83,25 @@ Our application uses minimal third-party services, primarily for infrastructure,
 - User Authentication: OAuth flow for main app
 - Context Management: Board view SDK context
 
-**Data Sent to Monday.com:**
+**Data Sent to monday.com:**
 - GraphQL Queries: Board ID, item queries (no PII)
 - OAuth Requests: Client ID, redirect URI, state parameter
 - Context Requests: Board context from SDK
 
-**Data Received from Monday.com:**
+**Data Received from monday.com:**
 - Board Data: Groups, items, column values
 - User Info: Email, name, account details (OAuth only)
 - Context: Board ID, user session
 
+**When Data Is Stored:**
+Your monday.com data (email, name, account details) is **only stored in our EU database** if you:
+- Authenticate using monday.com OAuth in the main app, OR
+- Subscribe to or install our app from the monday.com marketplace
+
+If you only use the monday.com Board View feature without authentication, we do not store your monday.com user data.
+
 **Why This Is Necessary:**
-Monday.com API is the core functionality of the integration, required to display board data in year wheel visualization and OAuth required for main app user linking.
+monday.com API is the core functionality of the integration, required to display board data in year wheel visualization and OAuth required for main app user linking.
 
 **Privacy Policy:** https://monday.com/l/legal/privacy-policy
 
@@ -108,8 +120,9 @@ Monday.com API is the core functionality of the integration, required to display
 
 **Data Sent to Supabase:**
 - User Profiles: Email, name (from OAuth or registration)
-- Monday Users: monday_user_id, account_id, email, name
-- Webhook Data: Monday.com webhook payloads (install, subscription events)
+- monday.com Users: monday_user_id, account_id, email, name (only if using monday.com auth)
+- Google Users: Email, name, profile (only if using Google Auth)
+- Webhook Data: monday.com webhook payloads (install, subscription events)
 
 **Data Received from Supabase:**
 - User Records: User profile data, monday_users records
@@ -121,7 +134,7 @@ Monday.com API is the core functionality of the integration, required to display
 - Environment Variables: Secrets not in code
 - JWT Verification: Webhook payload verification
 
-**Hosting Location:** Frankfurt, Germany (eu-central-1)
+**Hosting Location:** **All data is stored within the EU** - Frankfurt, Germany (eu-central-1)
 
 **Privacy Policy:** https://supabase.com/privacy
 
@@ -157,7 +170,7 @@ Monday.com API is the core functionality of the integration, required to display
 **Why This Is Necessary:**
 Product improvement, understanding user interactions, bug detection, identifying errors and performance issues, and data-driven development decisions. Not used for ads, remarketing or advertising.
 
-**Important:** Google Analytics is NOT used in the Monday.com Board View App iframe (zero tracking in board view).
+**Important:** Google Analytics is NOT used in the monday.com Board View App iframe (zero tracking in board view).
 
 **Privacy Policy:** https://policies.google.com/privacy
 
@@ -182,6 +195,9 @@ Product improvement, understanding user interactions, bug detection, identifying
 - Access Token: For API access (if needed)
 - ID Token: JWT with user identity
 
+**When Data Is Stored:**
+Your Google account data (email, name, profile picture) is **only stored in our EU database** if you choose to use Google Authentication to sign in to YearWheel. If you create an account with email/password instead, we do not receive or store any Google data.
+
 **User Consent:**
 - OAuth Consent Screen: Users explicitly approve data sharing
 - Scope Disclosure: Clearly states what data is requested (email, profile)
@@ -199,7 +215,7 @@ Product improvement, understanding user interactions, bug detection, identifying
 - No Google APIs: Don't access Gmail, Drive, or other Google services
 - Data Control: Users control what data they share
 
-**Important:** Google Auth is NOT used in the Monday.com Board View App (board view uses Monday.com SDK authentication).
+**Important:** Google Auth is NOT used in the monday.com Board View App (board view uses monday.com SDK authentication).
 
 **Privacy Policy:** https://policies.google.com/privacy
 
@@ -248,7 +264,7 @@ We explicitly do **NOT** use:
 - Hotjar/FullStory: No session replay or heatmaps
 - Amplitude/Mixpanel: No advanced analytics (beyond Google Analytics)
 - Third-Party Ad Networks: No advertising
-- Twitter/LinkedIn/Apple Login: No other social logins (only Google Auth and Monday.com OAuth)
+- Twitter/LinkedIn/Apple Login: No other social logins (only Google Auth and monday.com OAuth)
 
 ### 5.9 Legal Requirements
 
@@ -263,16 +279,16 @@ Our data flows between different services as follows:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Monday.com Board View                     │
-│                  (ZIP hosted on Monday.com)                  │
+│                    monday.com Board View                     │
+│                  (ZIP hosted on monday.com)                  │
 └───────────────────────┬─────────────────────────────────────┘
                         │
         ┌───────────────┼───────────────┐
         │               │               │
         ▼               ▼               ▼
 ┌───────────────┐ ┌──────────┐ ┌──────────────┐
-│ Monday.com API│ │ Supabase │ │ (No Analytics│
-│ api.monday.com│ │ Backend  │ │  in iframe)  │
+│ monday.com API│ │ Supabase │ │ (No Analytics│
+│ api.monday.com│ │ (EU-hosted)│ │  in iframe)  │
 └───────────────┘ └──────────┘ └──────────────┘
         │
 ┌───────────────────────────────────────────────────────────────┐
@@ -284,19 +300,19 @@ Our data flows between different services as follows:
         │               │               │               │          │
         ▼               ▼               ▼               ▼          ▼
 ┌───────────────┐ ┌──────────┐ ┌──────────────┐ ┌─────────┐ ┌────────────┐
-│ Monday.com API│ │ Supabase │ │Google Analytics│ │ Netlify │ │Google Auth │
-│ (OAuth)       │ │ Backend  │ │& Tag Manager   │ │  CDN    │ │(Sign-in)   │
+│ monday.com API│ │ Supabase │ │Google Analytics│ │ Netlify │ │Google Auth │
+│ (OAuth)       │ │ (EU-hosted)│ │& Tag Manager   │ │  CDN    │ │(Sign-in)   │
 └───────────────┘ └──────────┘ └──────────────┘ └─────────┘ └────────────┘
 ```
 
 **Data Flow Summary:**
-- User → Monday.com Board View: Context only
-- Board View → Monday.com API: Board queries (read-only)
+- User → monday.com Board View: Context only
+- Board View → monday.com API: Board queries (read-only)
 - Board View → Supabase: No direct calls (webhook only)
-- Main App → Monday.com API: OAuth authentication
-- Main App → Supabase: User profile, OAuth data
+- Main App → monday.com API: OAuth authentication (data stored only if used)
+- Main App → Supabase: User profile, OAuth data (all stored in EU)
 - Main App → Google Analytics & Tag Manager: Page views, events (with consent)
-- Main App → Google Auth: User sign-in (with consent)
+- Main App → Google Auth: User sign-in (data stored only if used)
 - Main App → Netlify: Static asset requests only
 
 ### 5.11 Compliance Summary
@@ -305,7 +321,7 @@ All third-party services we use are compliant with major data protection standar
 
 | Service | GDPR Compliant | Data Processing Agreement | SOC 2 | ISO 27001 |
 |---------|----------------|---------------------------|-------|-----------|
-| Monday.com | ✓ | ✓ | ✓ | ✓ |
+| monday.com | ✓ | ✓ | ✓ | ✓ |
 | Supabase | ✓ | ✓ | ✓ | ✓ |
 | Google | ✓ | ✓ | ✓ | ✓ |
 | Netlify | ✓ | ✓ | ✓ | ✓ |
@@ -321,8 +337,9 @@ All third-party services we use are compliant with major data protection standar
 ## 6. Data Storage and Security
 
 ### 6.1 Where We Store Data
-- Primary storage: EU-based servers (via Supabase)
+- **Primary storage: All user data is stored within the EU** via Supabase (Frankfurt, Germany, eu-central-1)
 - Backups: Encrypted backups in EU region
+- **No data is stored outside the EU**
 
 ### 6.2 Security Measures
 - End-to-end encryption for sensitive data

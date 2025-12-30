@@ -93,19 +93,24 @@ Vår applikation använder minimalt med tredjepartstjänster, främst för infra
 
 | Tjänst | Domän(er) | Syfte | Används av | Data som delas |
 |---------|-----------|-------|------------|----------------|
-| Monday.com | api.monday.com, auth.monday.com | Boarddata, autentisering | Båda apparna | Kontext, boarddata (endast läsning) |
-| Supabase | mmysvuymzabstnobdfvo.supabase.co | Backend-infrastruktur, databas | Båda apparna | Användarprofil, OAuth-data |
+| monday.com | api.monday.com, auth.monday.com | Boarddata, autentisering | Båda apparna | Kontext, boarddata (endast läsning) - **lagras endast om du autentiserar via monday.com eller använder vår app från monday.com marketplace** |
+| Supabase | mmysvuymzabstnobdfvo.supabase.co | Backend-infrastruktur, databas (EU-värd) | Båda apparna | Användarprofil, OAuth-data - **all data lagras inom EU** |
 | Google Analytics | www.google-analytics.com, www.googletagmanager.com | Användningsanalys | Endast huvudapp | Sidvisningar, sessioner (anonymiserade) |
-| Google Auth | accounts.google.com, oauth2.googleapis.com | Användarautentisering | Endast huvudapp | E-post, namn, profil (med samtycke) |
+| Google Auth | accounts.google.com, oauth2.googleapis.com | Användarautentisering | Endast huvudapp | E-post, namn, profil - **lagras endast om du använder Google Auth** |
 | Google Tag Manager | www.googletagmanager.com | Tag-hantering | Endast huvudapp | Händelsespårningsdata |
 | Netlify | yearwheel.se | Statisk hosting | Huvudapp | Ingen (värdleverantör) |
 | Stripe | stripe.com | Betalningshantering | Huvudapp | Betalningsinformation (PCI DSS-certifierad) |
 
 **Viktig distinktion:**
-- **Monday.com Board View App**: Använder endast Monday.com API och Supabase (ingen analys)
+- **monday.com Board View App**: Använder endast monday.com API och Supabase (ingen analys)
 - **Huvudappen YearWheel.se**: Använder alla tjänster ovan
 
-### Monday.com API (Förstapartsintegration)
+**Förtydliganden om datalagring:**
+- **All användardata lagras inom EU** genom Supabase (Frankfurt, Tyskland)
+- **monday.com-data** (e-post, namn, kontouppgifter) lagras endast om du autentiserar med monday.com OAuth eller prenumererar på vår app från monday.com marketplace
+- **Google-data** (e-post, namn, profil) lagras endast om du väljer att använda Google Authentication för inloggning
+
+### monday.com API (Förstapartsintegration)
 
 **Domäner:**
 - `https://api.monday.com/v2` - GraphQL API
@@ -117,18 +122,25 @@ Vår applikation använder minimalt med tredjepartstjänster, främst för infra
 - Användarautentisering: OAuth-flöde för huvudapp
 - Kontexthantering: Board view SDK-kontext
 
-**Data som skickas till Monday.com:**
+**Data som skickas till monday.com:**
 - GraphQL-frågor: Board-ID, objektfrågor (ingen PII)
 - OAuth-förfrågningar: Klient-ID, redirect URI, state-parameter
 - Kontextförfrågningar: Board-kontext från SDK
 
-**Data som tas emot från Monday.com:**
+**Data som tas emot från monday.com:**
 - Boarddata: Grupper, objekt, kolumnvärden
 - Användarinfo: E-post, namn, kontouppgifter (endast OAuth)
 - Kontext: Board-ID, användarsession
 
+**När data lagras:**
+Din monday.com-data (e-post, namn, kontouppgifter) lagras **endast i vår EU-databas** om du:
+- Autentiserar med monday.com OAuth i huvudappen, ELLER
+- Prenumererar på eller installerar vår app från monday.com marketplace
+
+Om du endast använder monday.com Board View-funktionen utan autentisering lagrar vi inte din monday.com-användardata.
+
 **Varför detta är nödvändigt:**
-Monday.com API är kärnfunktionaliteten i integrationen, krävs för att visa boarddata i årshjulsvisualisering och OAuth krävs för huvudappens användarlänkning.
+monday.com API är kärnfunktionaliteten i integrationen, krävs för att visa boarddata i årshjulsvisualisering och OAuth krävs för huvudappens användarlänkning.
 
 **Integritetspolicy:** https://monday.com/l/legal/privacy-policy
 
@@ -147,8 +159,9 @@ Monday.com API är kärnfunktionaliteten i integrationen, krävs för att visa b
 
 **Data som skickas till Supabase:**
 - Användarprofiler: E-post, namn (från OAuth eller registrering)
-- Monday-användare: monday_user_id, account_id, e-post, namn
-- Webhook-data: Monday.com webhook-payloads (installation, prenumerationshändelser)
+- monday.com-användare: monday_user_id, account_id, e-post, namn (endast om monday.com auth används)
+- Google-användare: E-post, namn, profil (endast om Google Auth används)
+- Webhook-data: monday.com webhook-payloads (installation, prenumerationshändelser)
 
 **Data som tas emot från Supabase:**
 - Användarposter: Användarprofildata, monday_users-poster
@@ -160,7 +173,7 @@ Monday.com API är kärnfunktionaliteten i integrationen, krävs för att visa b
 - Miljövariabler: Hemligheter inte i kod
 - JWT-verifiering: Webhook payload-verifiering
 
-**Värdplats:** Frankfurt, Tyskland (eu-central-1)
+**Värdplats:** **All data lagras inom EU** - Frankfurt, Tyskland (eu-central-1)
 
 **Integritetspolicy:** https://supabase.com/privacy
 
@@ -196,7 +209,7 @@ Monday.com API är kärnfunktionaliteten i integrationen, krävs för att visa b
 **Varför detta är nödvändigt:**
 Produktförbättring, förståelse av användarinteraktioner, buggdetektering, identifiering av fel och prestandaproblem, samt datadrivna utvecklingsbeslut. Används inte för annonser, remarketing eller annonsering.
 
-**Viktigt:** Google Analytics används INTE i Monday.com Board View App iframe (ingen spårning i board view).
+**Viktigt:** Google Analytics används INTE i monday.com Board View App iframe (ingen spårning i board view).
 
 **Integritetspolicy:** https://policies.google.com/privacy
 
@@ -221,6 +234,9 @@ Produktförbättring, förståelse av användarinteraktioner, buggdetektering, i
 - Åtkomsttoken: För API-åtkomst (om nödvändigt)
 - ID-token: JWT med användaridentitet
 
+**När data lagras:**
+Din Google-kontodata (e-post, namn, profilbild) lagras **endast i vår EU-databas** om du väljer att använda Google Authentication för att logga in på YearWheel. Om du istället skapar ett konto med e-post/lösenord tar vi inte emot eller lagrar någon Google-data.
+
 **Användarsamtycke:**
 - OAuth-samtyckeskärm: Användare godkänner explicit datadelning
 - Scope-upplysning: Anger tydligt vilken data som begärs (e-post, profil)
@@ -238,7 +254,7 @@ Produktförbättring, förståelse av användarinteraktioner, buggdetektering, i
 - Inga Google API:er: Kommer inte åt Gmail, Drive eller andra Google-tjänster
 - Datakontroll: Användare kontrollerar vilken data de delar
 
-**Viktigt:** Google Auth används INTE i Monday.com Board View App (board view använder Monday.com SDK-autentisering).
+**Viktigt:** Google Auth används INTE i monday.com Board View App (board view använder monday.com SDK-autentisering).
 
 **Integritetspolicy:** https://policies.google.com/privacy
 
@@ -287,7 +303,7 @@ Vi använder uttryckligen **INTE**:
 - Hotjar/FullStory: Ingen sessionuppspelning eller värmekartorr
 - Amplitude/Mixpanel: Ingen avancerad analys (utöver Google Analytics)
 - Tredjepartsnätverk för annonser: Ingen annonsering
-- Twitter/LinkedIn/Apple Login: Inga andra sociala inloggningar (endast Google Auth och Monday.com OAuth)
+- Twitter/LinkedIn/Apple Login: Inga andra sociala inloggningar (endast Google Auth och monday.com OAuth)
 
 ### Juridiska krav
 
@@ -302,16 +318,16 @@ Vårt dataflöde mellan olika tjänster ser ut som följer:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Monday.com Board View                     │
-│                  (ZIP hosted on Monday.com)                  │
+│                    monday.com Board View                     │
+│                  (ZIP hosted on monday.com)                  │
 └───────────────────────┬─────────────────────────────────────┘
                         │
         ┌───────────────┼───────────────┐
         │               │               │
         ▼               ▼               ▼
 ┌───────────────┐ ┌──────────┐ ┌──────────────┐
-│ Monday.com API│ │ Supabase │ │ (No Analytics│
-│ api.monday.com│ │ Backend  │ │  in iframe)  │
+│ monday.com API│ │ Supabase │ │ (No Analytics│
+│ api.monday.com│ │ (EU-värd)│ │  in iframe)  │
 └───────────────┘ └──────────┘ └──────────────┘
         │
 ┌───────────────────────────────────────────────────────────────┐
@@ -323,19 +339,19 @@ Vårt dataflöde mellan olika tjänster ser ut som följer:
         │               │               │               │          │
         ▼               ▼               ▼               ▼          ▼
 ┌───────────────┐ ┌──────────┐ ┌──────────────┐ ┌─────────┐ ┌────────────┐
-│ Monday.com API│ │ Supabase │ │Google Analytics│ │ Netlify │ │Google Auth │
-│ (OAuth)       │ │ Backend  │ │& Tag Manager   │ │  CDN    │ │(Sign-in)   │
+│ monday.com API│ │ Supabase │ │Google Analytics│ │ Netlify │ │Google Auth │
+│ (OAuth)       │ │ (EU-värd)│ │& Tag Manager   │ │  CDN    │ │(Sign-in)   │
 └───────────────┘ └──────────┘ └──────────────┘ └─────────┘ └────────────┘
 ```
 
 **Sammanfattning av dataflöde:**
-- Användare → Monday.com Board View: Endast kontext
-- Board View → Monday.com API: Board-frågor (endast läsning)
+- Användare → monday.com Board View: Endast kontext
+- Board View → monday.com API: Board-frågor (endast läsning)
 - Board View → Supabase: Inga direkta anrop (endast webhook)
-- Huvudapp → Monday.com API: OAuth-autentisering
-- Huvudapp → Supabase: Användarprofil, OAuth-data
+- Huvudapp → monday.com API: OAuth-autentisering (data lagras endast om används)
+- Huvudapp → Supabase: Användarprofil, OAuth-data (allt lagras i EU)
 - Huvudapp → Google Analytics & Tag Manager: Sidvisningar, händelser (med samtycke)
-- Huvudapp → Google Auth: Användarinloggning (med samtycke)
+- Huvudapp → Google Auth: Användarinloggning (data lagras endast om används)
 - Huvudapp → Netlify: Endast statiska tillgångsförfrågningar
 
 ### Compliance-sammanfattning
@@ -344,7 +360,7 @@ Alla tredjepartstjänster vi använder följer större dataskyddsstandarder:
 
 | Tjänst | GDPR-kompatibel | Databehandlingsavtal | SOC 2 | ISO 27001 |
 |---------|-----------------|----------------------|-------|-----------|
-| Monday.com | ✓ | ✓ | ✓ | ✓ |
+| monday.com | ✓ | ✓ | ✓ | ✓ |
 | Supabase | ✓ | ✓ | ✓ | ✓ |
 | Google | ✓ | ✓ | ✓ | ✓ |
 | Netlify | ✓ | ✓ | ✓ | ✓ |
@@ -364,10 +380,12 @@ Alla tredjepartstjänster vi använder följer större dataskyddsstandarder:
 ### Var vi lagrar data
 
 **Primär lagring**  
-EU-baserade servrar (via Supabase)
+**All användardata lagras inom EU** via Supabase (Frankfurt, Tyskland, eu-central-1)
 
 **Backup**  
 Krypterade säkerhetskopior i EU-regionen
+
+**Ingen data lagras utanför EU**
 
 ### Säkerhetsåtgärder
 
