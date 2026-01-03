@@ -16,6 +16,9 @@ import i18n from '../i18n';
  * @param {string} [options.confirmText='OK'] - Confirm button text
  * @param {string} [options.cancelText='Cancel'] - Cancel button text
  * @param {string} [options.confirmButtonClass] - Custom CSS class for confirm button
+ * @param {boolean} [options.requireConfirmation=false] - Require typing confirmation text
+ * @param {string} [options.confirmationText] - Text that must be typed to confirm (e.g., "DELETE")
+ * @param {string} [options.confirmationPrompt] - Prompt message for confirmation input
  * @returns {Promise<boolean>} - Resolves to true if confirmed, false if cancelled
  * 
  * @example
@@ -29,13 +32,28 @@ import i18n from '../i18n';
  * if (confirmed) {
  *   // User clicked Delete
  * }
+ * 
+ * @example
+ * // With confirmation text requirement
+ * const confirmed = await showConfirmDialog({
+ *   title: 'Delete Account',
+ *   message: 'This will permanently delete your account.',
+ *   requireConfirmation: true,
+ *   confirmationText: 'DELETE',
+ *   confirmationPrompt: 'Type DELETE to confirm',
+ *   confirmText: 'Delete Account',
+ *   confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+ * });
  */
 export function showConfirmDialog({
   title = 'Bekräfta',
   message,
   confirmText = 'OK',
   cancelText = 'Avbryt',
-  confirmButtonClass = 'bg-blue-600 hover:bg-blue-700 text-white'
+  confirmButtonClass = 'bg-blue-600 hover:bg-blue-700 text-white',
+  requireConfirmation = false,
+  confirmationText = '',
+  confirmationPrompt = ''
 }) {
   return new Promise((resolve) => {
     const event = new CustomEvent('showConfirmDialog', {
@@ -45,6 +63,9 @@ export function showConfirmDialog({
         confirmText,
         cancelText,
         confirmButtonClass,
+        requireConfirmation,
+        confirmationText,
+        confirmationPrompt,
         onConfirm: () => resolve(true),
         onCancel: () => resolve(false)
       }
