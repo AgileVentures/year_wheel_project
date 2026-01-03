@@ -277,7 +277,22 @@
     "cancel": "Avbryt",
     "dangerZone": "Farlig zon",
     "signOutDescription": "När du loggar ut kommer du att återvända till inloggningssidan.",
-    "signOut": "Logga ut"
+    "signOut": "Logga ut",
+    "editProfile": "Redigera profil",
+    "firstName": "Förnamn",
+    "lastName": "Efternamn",
+    "fullName": "Fullständigt namn",
+    "saveChanges": "Spara ändringar",
+    "saving": "Sparar...",
+    "profileUpdated": "Profil uppdaterad!",
+    "cannotEditOAuthProfile": "Du kan inte redigera din profil eftersom du är inloggad via {{provider}}",
+    "deleteAccount": "Radera konto",
+    "deleteAccountTitle": "Radera ditt konto",
+    "deleteAccountWarning": "Är du säker på att du vill radera ditt konto? Alla dina hjul kommer att raderas permanent.",
+    "deleteAccountConfirm": "Denna åtgärd kan inte ångras. Skriv \"RADERA\" för att bekräfta.",
+    "typeDeleteToConfirm": "Skriv RADERA för att bekräfta",
+    "accountDeleted": "Ditt konto har raderats",
+    "deleting": "Raderar..."
   },
   "previewWheelPage": {
     "loading": "Laddar hjul...",

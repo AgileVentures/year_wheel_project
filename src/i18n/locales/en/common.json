@@ -278,7 +278,22 @@
     "cancel": "Cancel",
     "dangerZone": "Danger Zone",
     "signOutDescription": "When you sign out, you will be returned to the login page.",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "editProfile": "Edit Profile",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "fullName": "Full Name",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "profileUpdated": "Profile updated!",
+    "cannotEditOAuthProfile": "You cannot edit your profile because you are signed in via {{provider}}",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Delete Your Account",
+    "deleteAccountWarning": "Are you sure you want to delete your account? All your wheels will be permanently deleted.",
+    "deleteAccountConfirm": "This action cannot be undone. Type \"DELETE\" to confirm.",
+    "typeDeleteToConfirm": "Type DELETE to confirm",
+    "accountDeleted": "Your account has been deleted",
+    "deleting": "Deleting..."
   },
   "previewWheelPage": {
     "loading": "Loading wheel...",

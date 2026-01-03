@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { User, Mail, Key, ArrowLeft, Link as LinkIcon, Calendar, Sheet, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { User, Mail, Key, ArrowLeft, Link as LinkIcon, Calendar, Sheet, Loader2, CheckCircle, XCircle, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getMondayUserDetails } from '../services/mondayService';
+import { updateUserProfile, getUserProfile, deleteUserAccount } from '../services/profileService';
 import { useTranslation } from 'react-i18next';
 import { 
   getUserIntegrations, 
@@ -24,6 +25,12 @@ function ProfilePage({ onBack }) {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   
+  // Profile edit states
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [editForm, setEditForm] = useState({ full_name: '', email: '' });
+  const [canEditProfile, setCanEditProfile] = useState(true);
+  
   // Integration states
   const [integrations, setIntegrations] = useState([]);
   const [integrationsLoading, setIntegrationsLoading] = useState(true);
@@ -35,6 +42,7 @@ function ProfilePage({ onBack }) {
 
   // Load integrations on mount and check for OAuth callback
   useEffect(() => {
+    loadProfile();
     loadIntegrations();
     loadMondayUser();
     
@@ -56,6 +64,20 @@ function ProfilePage({ onBack }) {
       window.history.replaceState({}, '', '/profile');
     }
   }, []);
+
+  const loadProfile = async () => {
+    try {
+      const data = await getUserProfile();
+      setProfile(data);
+      setEditForm({ full_name: data.full_name || '', email: data.email || '' });
+      
+      // Check if user can edit profile (not OAuth users)
+      const authProvider = data.auth_provider;
+      setCanEditProfile(authProvider === 'email');
+    } catch (err) {
+      console.error('Error loading profile:', err);
+    }
+  };
 
   const loadIntegrations = async () => {
     try {
@@ -171,6 +193,61 @@ function ProfilePage({ onBack }) {
     }
   };
 
+  const handleEditProfile = () => {
+    if (!canEditProfile) {
+      setError(t('common:profilePage.cannotEditOAuthProfile', { provider: profile?.auth_provider }));
+      return;
+    }
+    setIsEditingProfile(true);
+    setError('');
+    setSuccess('');
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      await updateUserProfile(editForm);
+      setSuccess(t('common:profilePage.profileUpdated'));
+      setIsEditingProfile(false);
+      await loadProfile(); // Reload profile
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = await showConfirmDialog({
+      title: t('common:profilePage.deleteAccountTitle'),
+      message: t('common:profilePage.deleteAccountWarning'),
+      confirmText: t('common:profilePage.deleteAccount'),
+      cancelText: t('common:profilePage.cancel'),
+      confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white',
+      requireConfirmation: true,
+      confirmationText: i18n.language === 'sv' ? 'RADERA' : 'DELETE',
+      confirmationPrompt: t('common:profilePage.deleteAccountConfirm')
+    });
+
+    if (!confirmed) return;
+
+    setError('');
+    setLoading(true);
+
+    try {
+      await deleteUserAccount();
+      showToast(t('common:profilePage.accountDeleted'), 'success');
+      navigate('/');
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   const getIntegrationByProvider = (provider) => {
     return integrations.find(i => i.provider === provider);
   };
@@ -222,12 +299,35 @@ function ProfilePage({ onBack }) {
 
         {/* Profile Information */}
         <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User size={20} />
-            {t('common:profilePage.accountInfo')}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <User size={20} />
+              {t('common:profilePage.accountInfo')}
+            </h2>
+            <button
+              onClick={handleEditProfile}
+              disabled={!canEditProfile}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              title={!canEditProfile ? t('common:profilePage.cannotEditOAuthProfile', { provider: profile?.auth_provider }) : ''}
+            >
+              <Edit size={16} />
+              {t('common:profilePage.editProfile')}
+            </button>
+          </div>
           
           <div className="space-y-4">
+            {profile?.full_name && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('common:profilePage.fullName')}
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-sm">
+                  <User size={16} className="text-gray-400" />
+                  <span className="text-gray-900">{profile.full_name}</span>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {t('common:profilePage.email')}
@@ -514,17 +614,102 @@ function ProfilePage({ onBack }) {
           <h2 className="text-xl font-semibold text-red-600 mb-4">
             {t('common:profilePage.dangerZone')}
           </h2>
-          <p className="text-gray-600 mb-4">
-            {t('common:profilePage.signOutDescription')}
-          </p>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors"
-          >
-            {t('common:profilePage.signOut')}
-          </button>
+          
+          <div className="space-y-4">
+            <div>
+              <p className="text-gray-600 mb-3">
+                {t('common:profilePage.signOutDescription')}
+              </p>
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm transition-colors"
+              >
+                {t('common:profilePage.signOut')}
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-red-200">
+              <p className="text-red-600 font-semibold mb-2">
+                {t('common:profilePage.deleteAccountTitle')}
+              </p>
+              <p className="text-gray-600 mb-3">
+                {t('common:profilePage.deleteAccountWarning')}
+              </p>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={loading}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                {loading ? t('common:profilePage.deleting') : t('common:profilePage.deleteAccount')}
+              </button>
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* Edit Profile Dialog */}
+      {isEditingProfile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-sm shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                {t('common:profilePage.editProfile')}
+              </h3>
+              
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('common:profilePage.fullName')}
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.full_name}
+                    onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t('common:profilePage.fullName')}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('common:profilePage.email')}
+                  </label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t('common:profilePage.email')}
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-sm transition-colors disabled:opacity-50"
+                  >
+                    {loading ? t('common:profilePage.saving') : t('common:profilePage.saveChanges')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingProfile(false);
+                      setEditForm({ full_name: profile?.full_name || '', email: profile?.email || '' });
+                      setError('');
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-sm transition-colors"
+                  >
+                    {t('common:profilePage.cancel')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
