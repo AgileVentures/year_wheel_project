@@ -20,6 +20,7 @@ const navItems = [
   { path: '/admin', icon: Activity, labelKey: 'overview', exact: true },
   { path: '/admin/users', icon: Users, labelKey: 'users' },
   { path: '/admin/wheels', icon: Circle, labelKey: 'wheels', label: 'Hjul' },
+  { path: '/admin/teams', icon: Users, label: 'Team' },
   { path: '/admin/affiliates', icon: DollarSign, labelKey: 'affiliates' },
   { path: '/admin/monday', icon: Calendar, label: 'Monday.com' },
   { path: '/admin/newsletter', icon: Mail, labelKey: 'newsletter' },

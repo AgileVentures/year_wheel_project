@@ -35,6 +35,7 @@ const AdminUsersPage = lazy(() => import("./components/admin/AdminUsersPage"));
 const AdminWheelsPage = lazy(() => import("./components/admin/AdminWheelsPage"));
 const AdminAffiliatesPage = lazy(() => import("./components/admin/AdminAffiliatesPage"));
 const AdminMondayPage = lazy(() => import("./components/admin/AdminMondayPage"));
+const AdminTeamsPage = lazy(() => import("./components/admin/AdminTeamsPage"));
 const RevenueForecast = lazy(() => import("./components/admin/RevenueForecast"));
 const NewsletterManager = lazy(() => import("./pages/admin/NewsletterManager"));
 
@@ -133,6 +134,7 @@ function AppContent() {
           <Route path="wheels" element={<AdminWheelsPage />} />
           <Route path="affiliates" element={<AdminAffiliatesPage />} />
           <Route path="monday" element={<AdminMondayPage />} />
+          <Route path="teams" element={<AdminTeamsPage />} />
           <Route path="newsletter" element={<NewsletterManager />} />
           <Route path="forecasts" element={<RevenueForecast />} />
         </Route>

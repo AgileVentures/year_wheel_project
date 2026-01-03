@@ -674,3 +674,21 @@ const getEmptyStatsStructure = () => ({
   churn: { canceled: 0, rate: 0, atRisk: 0 },
   leads: { quizStarts: 0, quizCompleted: 0, signups: 0, newsletter: 0 }
 });
+
+/**
+ * Get all teams with members and wheel counts (admin only - uses service role via edge function)
+ * @returns {Promise<Array>} Array of teams with member details
+ */
+export const getAllTeams = async () => {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-get-teams', {
+      body: {}
+    });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching teams:', error);
+    throw error;
+  }
+};
