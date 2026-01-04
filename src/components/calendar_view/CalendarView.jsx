@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { Button } from "../../../components/ui/button";
-import { CalendarViewType, useCalendar } from "@h6s/calendar";
+import { CalendarViewType, useCalendar } from "@/hooks/useCalendar";
 import { format, isToday, isSameMonth } from "date-fns";
 import { enUS, sv } from "date-fns/locale";
 import { useParams, useNavigate } from "react-router-dom";

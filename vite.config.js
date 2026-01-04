@@ -42,6 +42,8 @@ export default defineConfig({
       // Ensure single React instance
       'react': path.resolve(__dirname, './node_modules/react'),
       'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+      // Add @ alias for src directory
+      '@': path.resolve(__dirname, './src'),
     },
     dedupe: ['react', 'react-dom'],
   },
@@ -187,11 +189,6 @@ export default defineConfig({
           // Chart.js and related
           if (id.includes('node_modules/chart.js') || id.includes('node_modules/react-chartjs-2')) {
             return 'charts';
-          }
-          
-          // Calendar library
-          if (id.includes('node_modules/@h6s/calendar')) {
-            return 'calendar';
           }
           
           // DOMPurify (sanitization)

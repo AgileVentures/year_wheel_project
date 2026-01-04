@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { CalendarViewType, useCalendar } from "@h6s/calendar";
+import { CalendarViewType, useCalendar } from "@/hooks/useCalendar";
 import { format, isToday, isSameMonth, startOfDay } from "date-fns";
 import { enUS, sv } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
