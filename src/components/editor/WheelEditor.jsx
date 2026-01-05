@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import YearWheel from "../../YearWheel";
 import WheelCalendarView from "../calendar_view/WheelCalendarView";
 import ListView from "../list_view/ListView";
+import KanbanView from "../kanban_view/KanbanView";
 import SidePanel from "../SidePanel";
 import Header from "../Header";
 import PageNavigator from "../PageNavigator";
@@ -431,7 +432,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [wheelRotation, setWheelRotation] = useState(0); // Persist wheel rotation angle
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [wheelData, setWheelData] = useState(null);
-  const [viewMode, setViewMode] = useState('wheel'); // 'wheel', 'calendar', or 'list'
+  const [viewMode, setViewMode] = useState('wheel'); // 'wheel', 'calendar', 'list', or 'kanban'
   const [pendingTooltipItemId, setPendingTooltipItemId] = useState(null); // Item to show tooltip for after view/page switch
   
   // Mobile detection - renders MobileEditor instead of desktop editor
@@ -5488,10 +5489,26 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 onNavigateToItemOnWheel={handleNavigateToItemOnWheel}
               />
             </div>
-          ) : (
+          ) : viewMode === 'list' ? (
             <div className="w-full h-full">
               <ListView
                 key={`list-${Date.now()}`}
+                wheelStructure={calendarWheelStructure}
+                year={wheelState.metadata.year}
+                pages={wheelState.pages || []}
+                onUpdateItem={handleUpdateAktivitet}
+                onDeleteItem={handleDeleteAktivitet}
+                onAddItems={handleAddItems}
+                onOrganizationChange={setWheelStructure}
+                onNavigateToItemOnWheel={handleNavigateToItemOnWheel}
+                currentWheelId={wheelId}
+                currentPageId={currentPageId}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-full">
+              <KanbanView
+                key={`kanban-${Date.now()}`}
                 wheelStructure={calendarWheelStructure}
                 year={wheelState.metadata.year}
                 pages={wheelState.pages || []}
