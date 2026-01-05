@@ -37,18 +37,27 @@ const KanbanView = ({
 }) => {
   const { t, i18n } = useTranslation();
   
+  const { rings = [], activityGroups = [], labels = [], items = [] } = wheelStructure || {};
+  
   // First-time setup state
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [hasConfigured, setHasConfigured] = useState(false);
   
-  // Kanban state
+  // Kanban state - all columns collapsed by default
   const [collapsedColumns, setCollapsedColumns] = useState({});
   const [editingItem, setEditingItem] = useState(null);
   const [addItemLabelId, setAddItemLabelId] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
   const [dropTargetLabelId, setDropTargetLabelId] = useState(null);
   
-  const { rings = [], activityGroups = [], labels = [], items = [] } = wheelStructure || {};
+  // Initialize collapsed state when labels change
+  useEffect(() => {
+    const newCollapsedState = { unlabeled: true };
+    labels.forEach(label => {
+      newCollapsedState[label.id] = true;
+    });
+    setCollapsedColumns(newCollapsedState);
+  }, [labels]);
   
   // Check if labels exist and show setup modal on first load
   useEffect(() => {
@@ -257,7 +266,7 @@ const KanbanView = ({
               Vill du skapa ett standarduppsättning av etiketter?
             </p>
             
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="bg-gray-50 rounded-sm p-4 mb-6">
               <h3 className="font-semibold text-gray-900 mb-3">Föreslagna etiketter:</h3>
               <div className="space-y-2">
                 {[
@@ -285,14 +294,14 @@ const KanbanView = ({
                   localStorage.setItem(`kanban-config-${currentWheelId}`, JSON.stringify({ configured: true }));
                   setShowSetupModal(false);
                 }}
-                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-sm transition-colors"
                 data-cy="kanban-skip-setup"
               >
                 Hoppa över
               </button>
               <button
                 onClick={handleCreateDefaultLabels}
-                className="flex-1 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-medium"
+                className="flex-1 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-sm transition-colors font-medium"
                 data-cy="kanban-create-labels"
               >
                 Skapa etiketter
@@ -328,28 +337,32 @@ const KanbanView = ({
                 >
                   {/* Column Header */}
                   <div
-                    className="p-4 flex items-center justify-between cursor-pointer"
+                    className="relative flex items-center justify-center cursor-pointer"
                     onClick={() => toggleColumn(label.id)}
                     style={{
                       backgroundColor: label.color,
-                      color: getContrastColor(label.color)
+                      color: getContrastColor(label.color),
+                      minHeight: isCollapsed ? '180px' : '80px',
+                      padding: isCollapsed ? '16px 8px' : '20px 16px'
                     }}
                   >
                     {isCollapsed ? (
-                      <div className="flex flex-col items-center w-full">
-                        <span className="font-semibold text-sm transform -rotate-90 whitespace-nowrap origin-center">
-                          {label.name}
-                        </span>
-                        <div className="mt-2 flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
-                          <span className="text-xs font-bold">{items.length}</span>
+                      <div className="flex flex-col items-center justify-center gap-3 w-full h-full">
+                        <div className="writing-mode-vertical transform rotate-180 text-center">
+                          <span className="font-bold text-sm uppercase tracking-wider whitespace-nowrap">
+                            {label.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-center min-w-[28px] h-7 rounded-full bg-white/30 backdrop-blur-sm px-2">
+                          <span className="text-sm font-bold">{items.length}</span>
                         </div>
                       </div>
                     ) : (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{label.name}</h3>
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
-                            <span className="text-xs font-bold">{items.length}</span>
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-bold text-base uppercase tracking-wide">{label.name}</h3>
+                          <div className="flex items-center justify-center min-w-[28px] h-7 rounded-full bg-white/30 backdrop-blur-sm px-2.5">
+                            <span className="text-sm font-bold">{items.length}</span>
                           </div>
                         </div>
                         <button
@@ -357,11 +370,12 @@ const KanbanView = ({
                             e.stopPropagation();
                             toggleColumn(label.id);
                           }}
-                          className="hover:bg-white/20 p-1 rounded transition-colors"
+                          className="hover:bg-white/20 p-1.5 rounded transition-colors"
+                          aria-label="Minimera kolumn"
                         >
-                          <ChevronDown size={18} />
+                          <ChevronDown size={20} />
                         </button>
-                      </>
+                      </div>
                     )}
                   </div>
                   
@@ -378,7 +392,7 @@ const KanbanView = ({
                             draggable
                             onDragStart={(e) => handleDragStart(e, item)}
                             onClick={() => setEditingItem(item)}
-                            className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-xl transition-all hover:scale-105"
+                            className="bg-white rounded-sm shadow-md p-4 cursor-pointer hover:shadow-xl transition-all hover:scale-105"
                             data-cy="kanban-card"
                             data-item-id={item.id}
                             data-item-name={item.name}
@@ -421,7 +435,7 @@ const KanbanView = ({
                       {/* Add Item Button */}
                       <button
                         onClick={() => setAddItemLabelId(label.id)}
-                        className="w-full py-3 border-2 border-dashed border-white/30 rounded-lg hover:border-white/60 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-white/70 hover:text-white"
+                        className="w-full py-3 border-2 border-dashed border-white/30 rounded-sm hover:border-white/60 hover:bg-white/10 transition-all flex items-center justify-center gap-2 text-white/70 hover:text-white"
                         data-cy="kanban-add-item"
                         data-label-id={label.id}
                       >
@@ -447,24 +461,30 @@ const KanbanView = ({
             data-label-name="Utan etikett"
           >
             <div
-              className="p-4 bg-gray-300 text-gray-700 flex items-center justify-between cursor-pointer"
+              className="relative flex items-center justify-center cursor-pointer bg-gray-300 text-gray-800"
               onClick={() => toggleColumn('unlabeled')}
+              style={{
+                minHeight: collapsedColumns['unlabeled'] ? '180px' : '80px',
+                padding: collapsedColumns['unlabeled'] ? '16px 8px' : '20px 16px'
+              }}
             >
               {collapsedColumns['unlabeled'] ? (
-                <div className="flex flex-col items-center w-full">
-                  <span className="font-semibold text-sm transform -rotate-90 whitespace-nowrap">
-                    Utan etikett
-                  </span>
-                  <div className="mt-2 flex items-center justify-center w-6 h-6 rounded-full bg-white/40">
-                    <span className="text-xs font-bold">{itemsByLabel.get('unlabeled')?.length || 0}</span>
+                <div className="flex flex-col items-center justify-center gap-3 w-full h-full">
+                  <div className="writing-mode-vertical transform rotate-180 text-center">
+                    <span className="font-bold text-sm uppercase tracking-wider whitespace-nowrap">
+                      Utan etikett
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center min-w-[28px] h-7 rounded-full bg-white/50 backdrop-blur-sm px-2">
+                    <span className="text-sm font-bold">{itemsByLabel.get('unlabeled')?.length || 0}</span>
                   </div>
                 </div>
               ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">Utan etikett</h3>
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/40">
-                      <span className="text-xs font-bold">{itemsByLabel.get('unlabeled')?.length || 0}</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-bold text-base uppercase tracking-wide">Utan etikett</h3>
+                    <div className="flex items-center justify-center min-w-[28px] h-7 rounded-full bg-white/50 backdrop-blur-sm px-2.5">
+                      <span className="text-sm font-bold">{itemsByLabel.get('unlabeled')?.length || 0}</span>
                     </div>
                   </div>
                   <button
@@ -472,11 +492,12 @@ const KanbanView = ({
                       e.stopPropagation();
                       toggleColumn('unlabeled');
                     }}
-                    className="hover:bg-white/20 p-1 rounded transition-colors"
+                    className="hover:bg-white/20 p-1.5 rounded transition-colors"
+                    aria-label="Minimera kolumn"
                   >
-                    <ChevronDown size={18} />
+                    <ChevronDown size={20} />
                   </button>
-                </>
+                </div>
               )}
             </div>
             
@@ -492,7 +513,7 @@ const KanbanView = ({
                       draggable
                       onDragStart={(e) => handleDragStart(e, item)}
                       onClick={() => setEditingItem(item)}
-                      className="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-xl transition-all hover:scale-105"
+                      className="bg-white rounded-sm shadow-md p-4 cursor-pointer hover:shadow-xl transition-all hover:scale-105"
                       data-cy="kanban-card"
                       data-item-id={item.id}
                       data-item-name={item.name}

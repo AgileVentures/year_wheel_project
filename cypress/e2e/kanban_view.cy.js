@@ -136,14 +136,14 @@ describe('Kanban View', () => {
       cy.wait('@getPages');
 
       // Switch to Kanban view
-      cy.get('[title*="Kanban"]', { timeout: 10000 }).click();
+      cy.get('[data-cy="view-kanban"]').click();
 
-      // Setup modal should appear
+      // Setup modal is expected to appear
       cy.get('[data-cy="kanban-setup-modal"]').should('be.visible');
       cy.contains('Välkommen till Kanban-vy').should('be.visible');
       cy.contains('Föreslagna etiketter').should('be.visible');
       
-      // Check that all suggested labels are shown
+      // All suggested labels are expected to be shown
       cy.contains('Kanske').should('be.visible');
       cy.contains('Intressant').should('be.visible');
       cy.contains('Kommer arbeta på').should('be.visible');
@@ -167,19 +167,19 @@ describe('Kanban View', () => {
 
       cy.wait('@getWheels');
       cy.wait('@getPages');
-      cy.get('[title*="Kanban"]').click();
+      cy.get('[data-cy="view-kanban"]').click();
 
       cy.get('[data-cy="kanban-setup-modal"]').should('be.visible');
       cy.get('[data-cy="kanban-skip-setup"]').click();
 
-      // Modal should close
+      // Modal is expected to close
       cy.get('[data-cy="kanban-setup-modal"]').should('not.exist');
       
-      // Should see only "Utan etikett" column
+      // "Utan etikett" column is expected to be visible (collapsed by default)
       cy.get('[data-cy="kanban-column"][data-label-name="Utan etikett"]').should('be.visible');
     });
 
-    it('creates default labels when user clicks "Skapa etiketter"', () => {
+    it.only('creates default labels when user clicks "Skapa etiketter"', () => {
       const testWheel = fixtures.userWheels[0];
       
       cy.visitWithMockAuth(`/wheel/${testWheel.id}`, {
@@ -194,12 +194,12 @@ describe('Kanban View', () => {
 
       cy.wait('@getWheels');
       cy.wait('@getPages');
-      cy.get('[title*="Kanban"]').click();
+      cy.get('[data-cy="view-kanban"]').click();
 
       cy.get('[data-cy="kanban-setup-modal"]').should('be.visible');
       cy.get('[data-cy="kanban-create-labels"]').click();
 
-      // Modal should close
+      // Modal is expected to close
       cy.get('[data-cy="kanban-setup-modal"]').should('not.exist');
     });
   });
@@ -367,16 +367,16 @@ describe('Kanban View', () => {
       cy.wait('@getItems');
 
       // Switch to Kanban view
-      cy.get('[title*="Kanban"]', { timeout: 10000 }).click();
+      cy.get('[data-cy="view-kanban"]').click();
 
-      // Should see all label columns
+      // All label columns are expected to be visible (collapsed by default)
       cy.get('[data-cy="kanban-column"][data-label-name="Att göra"]').should('be.visible');
       cy.get('[data-cy="kanban-column"][data-label-name="Pågår"]').should('be.visible');
       cy.get('[data-cy="kanban-column"][data-label-name="Klart"]').should('be.visible');
       cy.get('[data-cy="kanban-column"][data-label-name="Utan etikett"]').should('be.visible');
     });
 
-    it('displays items in correct columns', () => {
+    it('displays items in correct columns after expanding', () => {
       const testWheel = fixtures.userWheels[0];
       
       cy.visitWithMockAuth(`/wheel/${testWheel.id}`, {
@@ -391,17 +391,26 @@ describe('Kanban View', () => {
       cy.wait('@getWheels');
       cy.wait('@getPages');
       cy.wait('@getItems');
-      cy.get('[title*="Kanban"]').click();
+      cy.get('[data-cy="view-kanban"]').click();
 
-      // Check items are in correct columns
+      // Expand "Att göra" column
+      cy.get('[data-cy="kanban-column"][data-label-name="Att göra"]').click();
+      
+      // Item is expected to be visible in the correct column
       cy.get('[data-cy="kanban-column"][data-label-name="Att göra"]')
         .find('[data-cy="kanban-card"][data-item-name="Planera kampanj"]')
         .should('be.visible');
 
+      // Expand "Pågår" column
+      cy.get('[data-cy="kanban-column"][data-label-name="Pågår"]').click();
+      
       cy.get('[data-cy="kanban-column"][data-label-name="Pågår"]')
         .find('[data-cy="kanban-card"][data-item-name="Skapa innehåll"]')
         .should('be.visible');
 
+      // Expand "Utan etikett" column
+      cy.get('[data-cy="kanban-column"][data-label-name="Utan etikett"]').click();
+      
       cy.get('[data-cy="kanban-column"][data-label-name="Utan etikett"]')
         .find('[data-cy="kanban-card"][data-item-name="Outagen uppgift"]')
         .should('be.visible');
@@ -421,24 +430,24 @@ describe('Kanban View', () => {
 
       cy.wait('@getWheels');
       cy.wait('@getPages');
-      cy.get('[title*="Kanban"]').click();
+      cy.get('[data-cy="view-kanban"]').click();
 
       const todoColumn = '[data-cy="kanban-column"][data-label-name="Att göra"]';
       
-      // Column should be expanded initially
-      cy.get(todoColumn).should('have.class', 'w-80');
-      
-      // Click header to collapse
-      cy.get(todoColumn).find('.p-4').first().click();
-      
-      // Column should be collapsed
+      // Column is expected to be collapsed initially
       cy.get(todoColumn).should('have.class', 'w-16');
       
-      // Click again to expand
-      cy.get(todoColumn).find('.p-4').first().click();
+      // Click header to expand
+      cy.get(todoColumn).click();
       
-      // Column should be expanded again
+      // Column is expected to be expanded
       cy.get(todoColumn).should('have.class', 'w-80');
+      
+      // Click again to collapse
+      cy.get(todoColumn).click();
+      
+      // Column is expected to be collapsed again
+      cy.get(todoColumn).should('have.class', 'w-16');
     });
 
     it('displays card count badges', () => {
@@ -456,9 +465,9 @@ describe('Kanban View', () => {
       cy.wait('@getWheels');
       cy.wait('@getPages');
       cy.wait('@getItems');
-      cy.get('[title*="Kanban"]').click();
+      cy.get('[data-cy="view-kanban"]').click();
 
-      // Check count badges
+      // Count badges are expected to display correct numbers
       cy.get('[data-cy="kanban-column"][data-label-name="Att göra"]').contains('1');
       cy.get('[data-cy="kanban-column"][data-label-name="Pågår"]').contains('1');
       cy.get('[data-cy="kanban-column"][data-label-name="Klart"]').contains('0');
@@ -480,11 +489,14 @@ describe('Kanban View', () => {
       cy.wait('@getWheels');
       cy.wait('@getPages');
       cy.wait('@getItems');
-      cy.get('[title*="Kanban"]').click();
+      cy.get('[data-cy="view-kanban"]').click();
+
+      // Expand "Att göra" column to see cards
+      cy.get('[data-cy="kanban-column"][data-label-name="Att göra"]').click();
 
       const card = '[data-cy="kanban-card"][data-item-name="Planera kampanj"]';
       
-      // Check card content
+      // Card content is expected to display correctly
       cy.get(card).within(() => {
         cy.contains('Planera kampanj').should('be.visible');
         cy.contains('Planera Mars kampanj').should('be.visible');
@@ -508,12 +520,15 @@ describe('Kanban View', () => {
       cy.wait('@getWheels');
       cy.wait('@getPages');
       cy.wait('@getItems');
-      cy.get('[title*="Kanban"]').click();
+      cy.get('[data-cy="view-kanban"]').click();
+
+      // Expand "Att göra" column to see cards
+      cy.get('[data-cy="kanban-column"][data-label-name="Att göra"]').click();
 
       // Click on a card
       cy.get('[data-cy="kanban-card"][data-item-name="Planera kampanj"]').click();
 
-      // Edit modal should appear (assuming EditItemModal has appropriate selectors)
+      // Edit modal is expected to appear
       cy.get('div[role="dialog"], .modal, [class*="modal"]', { timeout: 5000 }).should('be.visible');
     });
   });

@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Kanban vertical text */
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
 /* Markdown content styling for AI Assistant */
 .markdown-content h1,
 .markdown-content h2,

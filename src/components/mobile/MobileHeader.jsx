@@ -87,7 +87,7 @@ function MobileHeader({
               />
               
               {/* Dropdown */}
-              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[160px] max-h-[300px] overflow-y-auto z-50">
+              <div className="absolute right-0 top-full mt-1 bg-white rounded-sm shadow-xl border border-gray-200 py-1 min-w-[160px] max-h-[300px] overflow-y-auto z-50">
                 {pages
                   .sort((a, b) => (a.year || 0) - (b.year || 0))
                   .map((page) => (

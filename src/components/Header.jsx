@@ -288,6 +288,7 @@ function Header({
                   : 'text-gray-600 hover:text-gray-900'
               }`}
               title={t('common:header.kanbanView', 'Kanban-vy')}
+              data-cy="view-kanban"
             >
               <Columns size={16} />
             </button>
