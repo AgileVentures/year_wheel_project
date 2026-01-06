@@ -136,8 +136,9 @@ BEGIN
     OFFSET p_keep_count
   )
   DELETE FROM public.wheel_versions
-  WHERE id IN (SELECT id FROM versions_to_delete)
-  RETURNING * INTO v_deleted_count;
+  WHERE id IN (SELECT id FROM versions_to_delete);
+  
+  GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
   
   RETURN COALESCE(v_deleted_count, 0);
 END;

@@ -430,6 +430,7 @@
     "status": "Status",
     "type": "Type",
     "label": "Label",
+    "unlabeled": "Unlabeled",
     "date": "Date",
     "timeline": "Timeline",
     "delete": "Delete",

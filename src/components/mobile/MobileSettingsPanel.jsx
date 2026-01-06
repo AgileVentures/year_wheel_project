@@ -242,7 +242,7 @@ function MobileSettingsPanel({
           <div className="px-4 py-4">
             <button
               onClick={onOpenPresentation}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 active:from-teal-700 active:to-teal-800 text-white rounded-xl transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 active:from-teal-700 active:to-teal-800 text-white rounded-sm transition-colors"
             >
               <div className="flex items-center gap-3">
                 <Presentation size={20} />

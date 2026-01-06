@@ -448,6 +448,10 @@ describe('Kanban View', () => {
       
       // Column is expected to be collapsed again
       cy.get(todoColumn).should('have.class', 'w-16');
+      
+      // "Utan etikett" column is expected to be open by default
+      const unlabeledColumn = '[data-cy="kanban-column"][data-label-name="Utan etikett"]';
+      cy.get(unlabeledColumn).should('have.class', 'w-80');
     });
 
     it('displays card count badges', () => {

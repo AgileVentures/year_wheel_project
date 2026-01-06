@@ -429,6 +429,7 @@
     "status": "Status",
     "type": "Typ",
     "label": "Etikett",
+    "unlabeled": "Utan etikett",
     "date": "Datum",
     "timeline": "Längd",
     "delete": "Ta bort",

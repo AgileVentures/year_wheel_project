@@ -1841,11 +1841,17 @@ export const createVersion = async (wheelId, snapshotData, description = null, i
         throw error;
       }
 
-      // Cleanup old versions (keep last 100)
-      await supabase.rpc('cleanup_old_versions', { 
-        p_wheel_id: wheelId, 
-        p_keep_count: 100 
-      });
+      // Cleanup old versions (keep last 100) - non-blocking, don't fail if RPC doesn't exist
+      try {
+        await supabase.rpc('cleanup_old_versions', { 
+          p_wheel_id: wheelId, 
+          p_keep_count: 100 
+        });
+      } catch (cleanupError) {
+        // Silently ignore cleanup errors - this is a maintenance operation
+        // The RPC might not exist in all environments
+        console.debug('[createVersion] cleanup_old_versions failed (non-critical):', cleanupError.message);
+      }
 
       return data;
     } catch (error) {

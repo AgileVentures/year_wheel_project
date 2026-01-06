@@ -1694,19 +1694,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       })
       .filter(Boolean);
 
-    // Debug logging for snapshot creation
-    console.log('[buildWheelSnapshot] Creating snapshot:', {
-      hasLatest: !!latest,
-      pagesCount: pagesSnapshot.length,
-      pages: pagesSnapshot.map(p => ({ id: p.id, year: p.year, itemsCount: p.items?.length || 0 })),
-      structure: {
-        ringsCount: sharedStructure.rings?.length,
-        activityGroupsCount: sharedStructure.activityGroups?.length,
-        labelsCount: sharedStructure.labels?.length,
-      },
-      latestPagesInfo: allPages.map(p => ({ id: p?.id, year: p?.year, itemsCount: p?.items?.length || 0 })),
-    });
-
     // CLEAN STRUCTURE: metadata + structure (shared) + pages (with items only)
     return {
       metadata: {
@@ -2087,29 +2074,42 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [changeTracker]); // Depend on changeTracker to get fresh reference
 
-  // Create version on unmount if there are unsaved changes
+  // Store refs for use in unmount cleanup (avoids stale closures)
+  const wheelIdRef = useRef(wheelId);
+  const changeTrackerRef = useRef(changeTracker);
+  const buildWheelSnapshotRef = useRef(buildWheelSnapshot);
+  
   useEffect(() => {
-    // Reset the guard when wheelId changes (new wheel loaded)
-    unmountVersionCreatedRef.current = false;
-    
+    wheelIdRef.current = wheelId;
+    changeTrackerRef.current = changeTracker;
+    buildWheelSnapshotRef.current = buildWheelSnapshot;
+  });
+
+  // Create version on ACTUAL unmount only (not dependency changes)
+  // CRITICAL: Empty dependency array ensures this ONLY runs on mount/unmount
+  useEffect(() => {
     return () => {
       // Guard against duplicate unmount calls (React StrictMode)
       if (unmountVersionCreatedRef.current) {
         return;
       }
       
+      const currentWheelId = wheelIdRef.current;
+      const currentChangeTracker = changeTrackerRef.current;
+      const currentBuildSnapshot = buildWheelSnapshotRef.current;
+      
       // Only create version on unmount if we have a wheelId and unsaved changes
-      if (wheelId && changeTracker.hasChanges()) {
+      if (currentWheelId && currentChangeTracker?.hasChanges()) {
         unmountVersionCreatedRef.current = true;
         
-        const snapshot = buildWheelSnapshot();
+        const snapshot = currentBuildSnapshot?.();
         const itemCount = snapshot?.pages?.reduce((sum, p) => sum + (p.items?.length || 0), 0) || 0;
         const description = `Auto-sparning vid stängning (${itemCount} aktiviteter)`;
         
         // Try to create version - the service handles race conditions with retries
         import('../../services/wheelService').then(({ createVersion }) => {
           createVersion(
-            wheelId,
+            currentWheelId,
             snapshot,
             description,
             true // is_auto_save
@@ -2121,7 +2121,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         });
       }
     };
-  }, [wheelId, changeTracker, buildWheelSnapshot]);
+  }, []); // CRITICAL: Empty deps = ONLY on actual component unmount
 
   // Fallback: Load from localStorage if no wheelId (backward compatibility)
   useEffect(() => {
@@ -2427,13 +2427,10 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       return;
     }
     
-    // Use optimistic sync's debounced save instead of legacy debounce
-    // This ensures proper dirty state tracking
-    optimisticSync.scheduleSave();
-    
-    // Also trigger legacy for backward compatibility during transition
+    // Use ONLY debounced auto-save (not both optimisticSync AND debouncedAutoSave)
+    // Using both was causing duplicate save operations and multiple renders
     debouncedAutoSave();
-  }, [wheelId, debouncedAutoSave, optimisticSync]);
+  }, [wheelId, debouncedAutoSave]);
 
   // Keep ref updated for early callers
   useEffect(() => {
@@ -4272,14 +4269,6 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
 
   // Memoize callbacks to prevent infinite loops
   const handleUpdateAktivitet = useCallback((updatedItem) => {
-    console.log('[handleUpdateAktivitet] Called with:', {
-      id: updatedItem?.id,
-      name: updatedItem?.name,
-      pageId: updatedItem?.pageId,
-      hasPageId: !!updatedItem?.pageId,
-      hasId: !!updatedItem?.id,
-    });
-    
     if (!updatedItem?.id) {
       console.warn('[handleUpdateAktivitet] Missing id', updatedItem);
       return;
@@ -4469,38 +4458,51 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if (crossYearGroupId) {
         const syncableFields = ['name', 'ringId', 'activityId', 'labelId', 'time', 'description', 'linkedWheelId', 'linkType'];
         
-        setWheelState((prev) => {
-          let hasLinkedUpdates = false;
-          const nextPages = prev.pages.map((page) => {
-            const currentItems = page.items || [];
-            const linkedItems = currentItems.filter(
-              i => i.crossYearGroupId === crossYearGroupId && i.id !== changeResultRef.updatedItem.id
-            );
-            
-            if (linkedItems.length === 0) return page;
-            
-            hasLinkedUpdates = true;
-            return {
-              ...page,
-              items: currentItems.map((item) => {
-                if (item.crossYearGroupId !== crossYearGroupId || item.id === changeResultRef.updatedItem.id) {
-                  return item;
-                }
-                // Sync non-date fields
-                const updates = {};
-                syncableFields.forEach(field => {
-                  if (changeResultRef.updatedItem[field] !== undefined) {
-                    updates[field] = changeResultRef.updatedItem[field];
+        // PERFORMANCE: Check if there are any linked items BEFORE calling setWheelState
+        // This prevents unnecessary state updates and re-renders
+        let hasLinkedItemsToSync = false;
+        for (const page of pages) {
+          const linkedItems = (page.items || []).filter(
+            i => i.crossYearGroupId === crossYearGroupId && i.id !== changeResultRef.updatedItem.id
+          );
+          if (linkedItems.length > 0) {
+            hasLinkedItemsToSync = true;
+            break;
+          }
+        }
+        
+        // Only update state if there are actually linked items to sync
+        if (hasLinkedItemsToSync) {
+          setWheelState((prev) => {
+            const nextPages = prev.pages.map((page) => {
+              const currentItems = page.items || [];
+              const linkedItems = currentItems.filter(
+                i => i.crossYearGroupId === crossYearGroupId && i.id !== changeResultRef.updatedItem.id
+              );
+              
+              if (linkedItems.length === 0) return page;
+              
+              return {
+                ...page,
+                items: currentItems.map((item) => {
+                  if (item.crossYearGroupId !== crossYearGroupId || item.id === changeResultRef.updatedItem.id) {
+                    return item;
                   }
-                });
-                return { ...item, ...updates };
-              }),
-            };
-          });
-          
-          if (!hasLinkedUpdates) return prev;
-          return { ...prev, pages: nextPages };
-        }, { type: 'syncLinkedItems' });
+                  // Sync non-date fields
+                  const updates = {};
+                  syncableFields.forEach(field => {
+                    if (changeResultRef.updatedItem[field] !== undefined) {
+                      updates[field] = changeResultRef.updatedItem[field];
+                    }
+                  });
+                  return { ...item, ...updates };
+                }),
+              };
+            });
+            
+            return { ...prev, pages: nextPages };
+          }, { type: 'syncLinkedItems' });
+        }
       }
       
       if (wasDragging) {
