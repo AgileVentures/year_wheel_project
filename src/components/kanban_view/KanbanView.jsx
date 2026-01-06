@@ -6,6 +6,7 @@ import KanbanItemDialog from './KanbanItemDialog';
 const KanbanView = ({
   wheelStructure,
   wheel,
+  pages = [],
   onUpdateItem,
   onDeleteItem,
   currentWheelId,
@@ -18,17 +19,34 @@ const KanbanView = ({
   const [collapsedColumns, setCollapsedColumns] = useState({});
   const [editingItem, setEditingItem] = useState(null);
   const [draggedItem, setDraggedItem] = useState(null);
+  const [yearFilter, setYearFilter] = useState('all');
+  
+  // Get available years from pages
+  const availableYears = useMemo(() => {
+    const years = pages.map(p => parseInt(p.year, 10)).filter(y => !isNaN(y));
+    return [...new Set(years)].sort((a, b) => a - b);
+  }, [pages]);
+  
+  // Filter items by year
+  const filteredItems = useMemo(() => {
+    if (yearFilter === 'all') return items;
+    const yearNum = parseInt(yearFilter, 10);
+    return items.filter(item => {
+      const itemYear = new Date(item.startDate).getFullYear();
+      return itemYear === yearNum;
+    });
+  }, [items, yearFilter]);
   
   const itemsByLabel = useMemo(() => {
     const grouped = new Map();
     labels.forEach(l => { if (l.visible) grouped.set(l.id, []); });
     grouped.set('unlabeled', []);
-    items.forEach(item => {
+    filteredItems.forEach(item => {
       const key = item.labelId || 'unlabeled';
       if (grouped.has(key)) grouped.get(key).push(item);
     });
     return grouped;
-  }, [items, labels]);
+  }, [filteredItems, labels]);
   
   const handleDragStart = (e, item) => {
     setDraggedItem(item);
@@ -119,9 +137,32 @@ const KanbanView = ({
   
   return (
     <div className="w-full h-full flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
-      <div className="flex-1 overflow-x-auto p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 pt-6 pb-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {t('kanbanView.title', 'Kanban-vy')}
+          </h2>
+          <p className="text-gray-600 mt-1">
+            {t('kanbanView.subtitle', 'Objekt grupperade efter etiketter')}
+          </p>
+        </div>
+        <select
+          value={yearFilter}
+          onChange={(e) => setYearFilter(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">{t('listView.allYears', 'Alla år')}</option>
+          {availableYears.map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+      
+      {/* Kanban Board */}
+      <div className="flex-1 overflow-x-auto px-6 pb-6">
         <div className="flex gap-4 h-full">
-          {renderColumn('unlabeled', t('common.unlabeled', 'Utan etikett'), '#e5e7eb', itemsByLabel.get('unlabeled') || [])}
+          {renderColumn('unlabeled', t('listView.unlabeled', 'Utan etikett'), '#e5e7eb', itemsByLabel.get('unlabeled') || [])}
           {labels.filter(l => l.visible).map(label => 
             renderColumn(label.id, label.name, label.color, itemsByLabel.get(label.id) || [])
           )}

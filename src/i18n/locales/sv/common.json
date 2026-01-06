@@ -417,6 +417,10 @@
     "start": "Start",
     "end": "Slut"
   },
+  "kanbanView": {
+    "title": "Kanban-vy",
+    "subtitle": "Objekt grupperade efter etiketter"
+  },
   "listView": {
     "title": "Listvy",
     "subtitle": "Aktiviteter grupperade efter ringar",

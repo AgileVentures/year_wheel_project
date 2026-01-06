@@ -418,6 +418,10 @@
     "start": "Start",
     "end": "End"
   },
+  "kanbanView": {
+    "title": "Kanban View",
+    "subtitle": "Items grouped by labels"
+  },
   "listView": {
     "title": "List View",
     "subtitle": "Activities grouped by rings",
