@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import ItemTooltip from '../ItemTooltip';
+import KanbanItemDialog from './KanbanItemDialog';
 
 const KanbanView = ({
   wheelStructure,
+  wheel,
   onUpdateItem,
+  onDeleteItem,
   currentWheelId,
 }) => {
   const { t } = useTranslation();
@@ -15,7 +17,6 @@ const KanbanView = ({
   
   const [collapsedColumns, setCollapsedColumns] = useState({});
   const [editingItem, setEditingItem] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [draggedItem, setDraggedItem] = useState(null);
   
   const itemsByLabel = useMemo(() => {
@@ -96,11 +97,7 @@ const KanbanView = ({
                   draggable
                   onDragStart={(e) => handleDragStart(e, item)}
                   onDragEnd={handleDragEnd}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setTooltipPosition({ x: rect.right + 10, y: rect.top });
-                    setEditingItem(item);
-                  }}
+                  onClick={() => setEditingItem(item)}
                   className="bg-white rounded p-3 cursor-move shadow hover:shadow-lg"
                 >
                   <div className="font-semibold text-sm mb-1">{item.name}</div>
@@ -132,17 +129,19 @@ const KanbanView = ({
       </div>
       
       {editingItem && (
-        <ItemTooltip
+        <KanbanItemDialog
           item={editingItem}
-          position={tooltipPosition}
+          wheelStructure={wheelStructure}
+          wheel={wheel}
           onClose={() => setEditingItem(null)}
           onUpdate={(updated) => {
             if (onUpdateItem) onUpdateItem(updated);
             setEditingItem(null);
           }}
-          rings={rings}
-          activityGroups={activityGroups}
-          labels={labels}
+          onDelete={(item) => {
+            if (onDeleteItem) onDeleteItem(item);
+            setEditingItem(null);
+          }}
         />
       )}
     </div>
