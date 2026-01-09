@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format, addMonths, startOfMonth, endOfMonth, eachWeekOfInterval, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
@@ -21,12 +21,14 @@ const GanttTimelinePane = ({
   wheelStructure,
   onItemClick,
   onUpdateItem,
+  onWidthChange,
 }) => {
   const { t, i18n } = useTranslation();
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const scrollContainerRef = useRef(null);
+  const headerScrollRef = useRef(null);
   const [isPanning, setIsPanning] = useState(false);
   const panStartX = useRef(0);
   const scrollStartX = useRef(0);
@@ -98,9 +100,24 @@ const GanttTimelinePane = ({
     }
   }, [isPanning]);
   
+  // Sync horizontal scroll between header and content
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    const headerScroll = headerScrollRef.current;
+    if (!scrollContainer || !headerScroll) return;
+    
+    const handleScroll = () => {
+      headerScroll.scrollLeft = scrollContainer.scrollLeft;
+    };
+    
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, []);
+  
   // Calculate row height (same as row pane)
   const GROUP_HEADER_HEIGHT = 36;
   const ITEM_ROW_HEIGHT = 40;
+  const TIME_HEADER_HEIGHT = 48; // Height of the month header
   
   // Get group metadata
   const getGroupInfo = (groupId) => {
@@ -164,11 +181,22 @@ const GanttTimelinePane = ({
   
   const timeTicks = generateTimeTicks();
   
-  // Calculate total timeline width from ticks
-  const timelineWidth = timeTicks.reduce((sum, tick) => sum + tick.width, 0);
+  // Calculate total timeline width from ticks - memoized to prevent loop
+  const effectiveWidth = useMemo(() => {
+    const timelineWidth = timeTicks.reduce((sum, tick) => sum + tick.width, 0);
+    return Math.max(timelineWidth, containerWidth, 2000);
+  }, [timeTicks.length, containerWidth]); // Only recalc when tick count or container changes
   
-  // Use timeline width or minimum viewport width
-  const effectiveWidth = Math.max(timelineWidth, containerWidth, 1200);
+  // Report width to parent for timeScale calculations
+  useEffect(() => {
+    if (onWidthChange && effectiveWidth > 0) {
+      // Use a small debounce to prevent rapid updates
+      const timer = setTimeout(() => {
+        onWidthChange(effectiveWidth);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [effectiveWidth]); // Remove onWidthChange from deps to prevent loop
   
   // Calculate total height
   const calculateHeight = () => {
@@ -197,6 +225,7 @@ const GanttTimelinePane = ({
           const startX = timeScale.dateToX(new Date(item.startDate));
           const endX = timeScale.dateToX(new Date(item.endDate));
           const width = Math.max(endX - startX, 20); // Minimum 20px width
+          // Y position relative to timeline content (no offset needed since header is outside)
           const y = currentY + index * ITEM_ROW_HEIGHT;
           
           const color = getActivityGroupColor(item.activityId);
@@ -246,15 +275,10 @@ const GanttTimelinePane = ({
   const showTodayMarker = todayX >= 0 && todayX <= containerWidth;
   
   return (
-    <div 
-      ref={scrollContainerRef}
-      className={`flex-1 overflow-x-auto overflow-y-hidden bg-white ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
-      data-cy="gantt-timeline-pane"
-      onMouseDown={handleMouseDown}
-    >
-      {/* Time header */}
-      <div className="sticky top-0 left-0 z-10 bg-gray-50 border-b border-gray-200 shadow-sm">
-        <div className="flex h-12 items-stretch">
+    <div className="flex-1 flex flex-col bg-white">
+      {/* Time header - Outside scroll container so it stays visible */}
+      <div ref={headerScrollRef} className="flex-shrink-0 bg-gray-50 border-b border-gray-200 shadow-sm overflow-x-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div className="flex h-12 items-stretch" style={{ width: `${effectiveWidth}px` }}>
           {timeTicks.map((tick, index) => (
             <div
               key={index}
@@ -269,7 +293,13 @@ const GanttTimelinePane = ({
         </div>
       </div>
       
-      {/* Timeline content */}
+      {/* Timeline content - Scrollable */}
+      <div 
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-x-auto overflow-y-hidden ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+        data-cy="gantt-timeline-pane"
+        onMouseDown={handleMouseDown}
+      >
       <div ref={containerRef} className="relative" style={{ height: `${totalHeight}px`, width: `${effectiveWidth}px`, minWidth: '100%' }}>
         {/* Grid lines */}
         <svg
@@ -324,6 +354,7 @@ const GanttTimelinePane = ({
           {renderBars()}
         </svg>
       </div>
+    </div>
     </div>
   );
 };

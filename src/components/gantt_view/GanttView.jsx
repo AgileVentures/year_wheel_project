@@ -50,8 +50,8 @@ const GanttView = ({
   });
   const [zoomLevel, setZoomLevel] = useState('month'); // 'day' | 'week' | 'month'
   
-  // Container dimensions
-  const [containerWidth, setContainerWidth] = useState(1000);
+  // Container dimensions - use larger default for proper rendering
+  const [timelineWidth, setTimelineWidth] = useState(2000);
   const [containerHeight, setContainerHeight] = useState(600);
   
   // Shared scroll position for syncing row pane and timeline
@@ -84,7 +84,7 @@ const GanttView = ({
   const timeScale = useTimeScale({
     viewStart,
     viewEnd,
-    containerWidth,
+    containerWidth: timelineWidth,
     zoomLevel,
   });
   
@@ -193,6 +193,7 @@ const GanttView = ({
           wheelStructure={wheelStructure}
           onItemClick={handleItemClick}
           onUpdateItem={onUpdateItem}
+          onWidthChange={setTimelineWidth}
         />
       </div>
     </div>
