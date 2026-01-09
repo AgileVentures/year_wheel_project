@@ -25,31 +25,42 @@ const GanttToolbar = ({
   
   return (
     <div 
-      className="flex items-center justify-between px-4 py-3 bg-white border-b"
+      className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200"
       data-cy="gantt-toolbar"
     >
-      {/* Left: Year selector and Today button */}
-      <div className="flex items-center gap-3">
-        <select
-          value={yearFilter}
-          onChange={(e) => onYearChange(e.target.value)}
-          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          data-cy="gantt-year-filter"
-        >
-          <option value="all">{t('common.allYears', 'Alla år')}</option>
-          {availableYears.map(year => (
-            <option key={year} value={year}>{year}</option>
-          ))}
-        </select>
+      {/* Left: Title and Year selector */}
+      <div className="flex items-center gap-6">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {t('gantt.title', 'Tidslinje')}
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {t('gantt.subtitle', 'Aktiviteter som tidslinje')}
+          </p>
+        </div>
         
-        <button
-          onClick={onTodayClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          data-cy="gantt-today-button"
-        >
-          <Calendar className="w-4 h-4" />
-          {t('common.today', 'Idag')}
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={yearFilter}
+            onChange={(e) => onYearChange(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-cy="gantt-year-filter"
+          >
+            <option value="all">{t('common.allYears', 'Alla år')}</option>
+            {availableYears.map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+          
+          <button
+            onClick={onTodayClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            data-cy="gantt-today-button"
+          >
+            <Calendar className="w-4 h-4" />
+            {t('common.today', 'Idag')}
+          </button>
+        </div>
       </div>
       
       {/* Center: Grouping options */}

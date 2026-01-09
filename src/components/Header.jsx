@@ -254,20 +254,9 @@ function Header({
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
-              title={t('common:header.wheelView', 'Hjulvy')}
+              title={t('common:header.wheelView', 'Årshjul')}
             >
               <RotateCcw size={16} />
-            </button>
-            <button
-              onClick={() => onViewModeChange('calendar')}
-              className={`p-1.5 rounded-sm transition-colors ${
-                viewMode === 'calendar'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title={t('common:header.calendarView', 'Kalendervy')}
-            >
-              <LayoutGrid size={16} />
             </button>
             <button
               onClick={() => onViewModeChange('list')}
