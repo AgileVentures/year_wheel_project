@@ -13,7 +13,7 @@
  * - Smart date range (only months with activities + padding)
  */
 
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, differenceInDays, eachMonthOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, differenceInDays, eachMonthOfInterval } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 
 /**
@@ -23,40 +23,6 @@ const generateFileName = (extension, title = 'timeline') => {
   const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm');
   const sanitizedTitle = title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
   return `${sanitizedTitle}_${timestamp}.${extension}`;
-};
-
-/**
- * Calculate optimal date range based on actual items
- * Returns a range that includes all items with 1 month padding on each side
- */
-const calculateOptimalDateRange = (items, fallbackStart, fallbackEnd) => {
-  if (!items || items.length === 0) {
-    return { start: fallbackStart, end: fallbackEnd };
-  }
-  
-  let minDate = null;
-  let maxDate = null;
-  
-  items.forEach(item => {
-    if (!item.startDate || !item.endDate) return;
-    
-    const startDate = new Date(item.startDate);
-    const endDate = new Date(item.endDate);
-    
-    if (!minDate || startDate < minDate) minDate = startDate;
-    if (!maxDate || endDate > maxDate) maxDate = endDate;
-  });
-  
-  if (!minDate || !maxDate) {
-    return { start: fallbackStart, end: fallbackEnd };
-  }
-  
-  // Add padding: start at the beginning of the first month with activity,
-  // and end at the end of the last month with activity
-  const paddedStart = startOfMonth(minDate);
-  const paddedEnd = endOfMonth(maxDate);
-  
-  return { start: paddedStart, end: paddedEnd };
 };
 
 /**
@@ -76,7 +42,6 @@ const createExportableContent = async (options) => {
     showNamesPanel = true,
     showDatesOnBars = false,
     showLegend = true,
-    showDependencies = true,
   } = options;
   
   const dateLocale = locale === 'sv' ? sv : enUS;

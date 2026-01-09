@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { format, addMonths, startOfMonth, endOfMonth, eachWeekOfInterval, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth, eachWeekOfInterval, eachDayOfInterval, endOfWeek } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 
 /**
@@ -27,7 +27,7 @@ const GanttTimelinePane = ({
   scrollRef,
   contentHeight,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -133,21 +133,6 @@ const GanttTimelinePane = ({
   // Calculate row height (same as row pane)
   const GROUP_HEADER_HEIGHT = 36;
   const ITEM_ROW_HEIGHT = 40;
-  const TIME_HEADER_HEIGHT = 48; // Height of the month header
-  
-  // Get group metadata
-  const getGroupInfo = (groupId) => {
-    switch (groupBy) {
-      case 'rings':
-        return rings.find(r => r.id === groupId) || { name: 'Unknown', color: '#94A3B8' };
-      case 'labels':
-        return labels.find(l => l.id === groupId) || { name: 'Unlabeled', color: '#94A3B8' };
-      case 'activityGroups':
-        return activityGroups.find(ag => ag.id === groupId) || { name: 'Unknown', color: '#94A3B8' };
-      default:
-        return { name: 'Unknown', color: '#94A3B8' };
-    }
-  };
   
   const getActivityGroupColor = (activityId) => {
     const group = activityGroups.find(ag => ag.id === activityId);
@@ -780,8 +765,6 @@ const GanttTimelinePane = ({
                  L ${endX - 8} ${endY}`;
       }
       
-      // Calculate arrow angle for arrowhead
-      const arrowAngle = Math.atan2(endY - (endY > startY ? endY - 10 : endY + 10), 8);
       const arrowSize = 6;
       
       arrows.push(

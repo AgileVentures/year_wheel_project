@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, FileImage, FileText, FileSpreadsheet, Printer, Calendar, Info } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, eachMonthOfInterval } from 'date-fns';
+import { X, FileImage, FileText, FileSpreadsheet, Printer, Info } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 
 /**

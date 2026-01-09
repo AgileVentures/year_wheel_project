@@ -65,7 +65,6 @@ const GanttView = forwardRef(function GanttView({
   const timelineScrollRef = useRef(null);
   const rowPaneRef = useRef(null);
   const timelineHeaderRef = useRef(null);
-  const [headerScrollLeft, setHeaderScrollLeft] = useState(0);
   const [timelineTicks, setTimelineTicks] = useState([]);
   const [monthSpanTicks, setMonthSpanTicks] = useState([]); // For day zoom top row
   
