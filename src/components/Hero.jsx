@@ -148,7 +148,7 @@ function Hero() {
               {viewIcons.map((view, index) => (
                 <div
                   key={view.id}
-                  className="group animate-slide-in-diagonal flex items-center gap-5 mb-5"
+                  className="group animate-slide-in-diagonal flex items-center gap-5 mb-35"
                   style={{ 
                     animationDelay: view.delay,
                     animationFillMode: 'both',

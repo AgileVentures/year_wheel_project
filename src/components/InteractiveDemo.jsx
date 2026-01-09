@@ -11,7 +11,7 @@ function InteractiveDemo({ demoRef }) {
 
   // Auto-rotate between all 4 demos
   useEffect(() => {
-    // Timing: Manual=24s, AI=15s, List=12s, Timeline=12s
+    // Timing: Manual=24s, AI=15s, List=14s, Timeline=12s
     let duration;
     switch (activeDemo) {
       case 'wheel':
@@ -21,7 +21,7 @@ function InteractiveDemo({ demoRef }) {
         duration = 15000;
         break;
       case 'list':
-        duration = 12000;
+        duration = 14000;
         break;
       case 'timeline':
         duration = 12000;
