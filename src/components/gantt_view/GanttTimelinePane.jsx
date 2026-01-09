@@ -38,6 +38,10 @@ const GanttTimelinePane = ({
   const panStartX = useRef(0);
   const scrollStartX = useRef(0);
   
+  // Drag state
+  const [dragState, setDragState] = useState(null);
+  // dragState = { item, mode: 'move' | 'resize-start' | 'resize-end', startX, originalStartDate, originalEndDate, originalRingId, currentStartDate, currentEndDate, targetRingId }
+  
   const locale = i18n.language === 'sv' ? sv : enUS;
   const { rings = [], activityGroups = [], labels = [] } = wheelStructure || {};
   
@@ -208,6 +212,189 @@ const GanttTimelinePane = ({
   // Use contentHeight from parent (calculated in GanttView)
   const totalHeight = contentHeight;
   
+  // === DRAG AND DROP FUNCTIONALITY ===
+  
+  // Build a map of Y positions to group IDs for ring detection during drag
+  const groupYPositions = useMemo(() => {
+    const positions = [];
+    let currentY = 0;
+    
+    Object.entries(groupedItems).forEach(([groupId, items]) => {
+      const groupStart = currentY;
+      currentY += GROUP_HEADER_HEIGHT;
+      
+      const isExpanded = expandedGroups[groupId];
+      if (isExpanded) {
+        currentY += items.length * ITEM_ROW_HEIGHT;
+      }
+      
+      positions.push({
+        groupId,
+        startY: groupStart,
+        endY: currentY,
+      });
+    });
+    
+    return positions;
+  }, [groupedItems, expandedGroups]);
+  
+  // Get group at Y position
+  const getGroupAtY = (y) => {
+    for (const pos of groupYPositions) {
+      if (y >= pos.startY && y < pos.endY) {
+        return pos.groupId;
+      }
+    }
+    return null;
+  };
+  
+  // Detect drag zone based on mouse position relative to bar
+  const getDragZone = (mouseX, barStartX, barWidth) => {
+    const RESIZE_ZONE = 8; // pixels from edge to trigger resize
+    
+    if (mouseX < barStartX + RESIZE_ZONE) {
+      return 'resize-start';
+    } else if (mouseX > barStartX + barWidth - RESIZE_ZONE) {
+      return 'resize-end';
+    }
+    return 'move';
+  };
+  
+  // Handle drag start on bar
+  const handleBarMouseDown = (e, item, barStartX, barWidth, groupId) => {
+    if (e.button !== 0) return; // Only left click
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left + scrollContainerRef.current.scrollLeft;
+    const mode = getDragZone(mouseX, barStartX, barWidth);
+    
+    setDragState({
+      item,
+      mode,
+      startX: mouseX,
+      startY: e.clientY - rect.top + scrollContainerRef.current.scrollTop,
+      originalStartDate: new Date(item.startDate),
+      originalEndDate: new Date(item.endDate),
+      originalRingId: item.ringId,
+      currentStartDate: new Date(item.startDate),
+      currentEndDate: new Date(item.endDate),
+      targetRingId: groupId,
+    });
+  };
+  
+  // Handle drag move
+  const handleDragMove = (e) => {
+    if (!dragState) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left + scrollContainerRef.current.scrollLeft;
+    const mouseY = e.clientY - rect.top;
+    const deltaX = mouseX - dragState.startX;
+    
+    // Convert pixel delta to days
+    const deltaDays = Math.round(deltaX / timeScale.pixelsPerDay);
+    
+    let newStartDate = new Date(dragState.originalStartDate);
+    let newEndDate = new Date(dragState.originalEndDate);
+    
+    if (dragState.mode === 'move') {
+      // Move both dates by same amount
+      newStartDate.setDate(newStartDate.getDate() + deltaDays);
+      newEndDate.setDate(newEndDate.getDate() + deltaDays);
+      
+      // Detect target ring from Y position (only for 'rings' groupBy)
+      if (groupBy === 'rings') {
+        const targetGroup = getGroupAtY(mouseY);
+        if (targetGroup && targetGroup !== dragState.targetRingId) {
+          setDragState(prev => ({ ...prev, targetRingId: targetGroup }));
+        }
+      }
+    } else if (dragState.mode === 'resize-start') {
+      // Only change start date, but don't go past end date
+      newStartDate.setDate(newStartDate.getDate() + deltaDays);
+      if (newStartDate >= newEndDate) {
+        newStartDate = new Date(newEndDate);
+        newStartDate.setDate(newStartDate.getDate() - 1);
+      }
+    } else if (dragState.mode === 'resize-end') {
+      // Only change end date, but don't go before start date
+      newEndDate.setDate(newEndDate.getDate() + deltaDays);
+      if (newEndDate <= newStartDate) {
+        newEndDate = new Date(newStartDate);
+        newEndDate.setDate(newEndDate.getDate() + 1);
+      }
+    }
+    
+    setDragState(prev => ({
+      ...prev,
+      currentStartDate: newStartDate,
+      currentEndDate: newEndDate,
+    }));
+  };
+  
+  // Handle drag end
+  const handleDragEnd = () => {
+    if (!dragState) return;
+    
+    const { item, currentStartDate, currentEndDate, targetRingId, originalStartDate, originalEndDate, originalRingId } = dragState;
+    
+    // Check if anything changed
+    const startChanged = currentStartDate.getTime() !== originalStartDate.getTime();
+    const endChanged = currentEndDate.getTime() !== originalEndDate.getTime();
+    const ringChanged = groupBy === 'rings' && targetRingId !== originalRingId;
+    
+    if (startChanged || endChanged || ringChanged) {
+      // Format dates as ISO strings (date only)
+      const formatDate = (d) => d.toISOString().split('T')[0];
+      
+      const updatedItem = {
+        ...item,
+        startDate: formatDate(currentStartDate),
+        endDate: formatDate(currentEndDate),
+      };
+      
+      // Update ring if moved between rings
+      if (ringChanged) {
+        updatedItem.ringId = targetRingId;
+      }
+      
+      if (onUpdateItem) {
+        onUpdateItem(updatedItem);
+      }
+    }
+    
+    setDragState(null);
+  };
+  
+  // Store handlers in refs to avoid stale closures
+  const dragMoveRef = useRef(handleDragMove);
+  const dragEndRef = useRef(handleDragEnd);
+  
+  useEffect(() => {
+    dragMoveRef.current = handleDragMove;
+    dragEndRef.current = handleDragEnd;
+  });
+  
+  // Global mouse move/up handlers for drag
+  useEffect(() => {
+    if (dragState) {
+      const handleMouseMoveGlobal = (e) => dragMoveRef.current(e);
+      const handleMouseUpGlobal = () => dragEndRef.current();
+      
+      window.addEventListener('mousemove', handleMouseMoveGlobal);
+      window.addEventListener('mouseup', handleMouseUpGlobal);
+      
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMoveGlobal);
+        window.removeEventListener('mouseup', handleMouseUpGlobal);
+      };
+    }
+  }, [dragState !== null]); // Only re-attach when drag starts/stops
+  
+  // === END DRAG AND DROP ===
+  
   // Render timeline bars
   const renderBars = () => {
     const bars = [];
@@ -226,8 +413,15 @@ const GanttTimelinePane = ({
             return;
           }
           
-          const startX = timeScale.dateToX(new Date(item.startDate));
-          const endX = timeScale.dateToX(new Date(item.endDate));
+          // Check if this item is being dragged
+          const isDragging = dragState && dragState.item.id === item.id;
+          
+          // Use drag state dates if dragging, otherwise use item dates
+          const displayStartDate = isDragging ? dragState.currentStartDate : new Date(item.startDate);
+          const displayEndDate = isDragging ? dragState.currentEndDate : new Date(item.endDate);
+          
+          const startX = timeScale.dateToX(displayStartDate);
+          const endX = timeScale.dateToX(displayEndDate);
           const width = Math.max(endX - startX, 20); // Minimum 20px width
           // Y position - center 24px bar within 40px row (8px padding top/bottom)
           const y = currentY + index * ITEM_ROW_HEIGHT + 8;
@@ -236,7 +430,12 @@ const GanttTimelinePane = ({
           const isSelected = selectedItemId === item.id;
           
           bars.push(
-            <g key={item.id} onClick={(e) => onItemClick(item, e)} className="cursor-pointer">
+            <g 
+              key={item.id} 
+              onClick={(e) => !dragState && onItemClick(item, e)} 
+              onMouseDown={(e) => handleBarMouseDown(e, item, startX, width, groupId)}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+            >
               {/* Bar background (rounded pill) */}
               <rect
                 x={startX}
@@ -246,22 +445,47 @@ const GanttTimelinePane = ({
                 rx={12}
                 ry={12}
                 fill={color}
-                opacity={isSelected ? 1 : 0.9}
-                stroke={isSelected ? '#3B82F6' : 'none'}
-                strokeWidth={isSelected ? 2 : 0}
-                className="transition-all hover:opacity-100"
+                opacity={isDragging ? 0.7 : (isSelected ? 1 : 0.9)}
+                stroke={isDragging ? '#3B82F6' : (isSelected ? '#3B82F6' : 'none')}
+                strokeWidth={isDragging ? 2 : (isSelected ? 2 : 0)}
+                strokeDasharray={isDragging ? '4 2' : 'none'}
+                className="transition-opacity hover:opacity-100"
               />
+              
+              {/* Resize handles (visual indicators) */}
+              {!isDragging && (
+                <>
+                  {/* Left resize handle */}
+                  <rect
+                    x={startX}
+                    y={y}
+                    width={8}
+                    height={24}
+                    fill="transparent"
+                    style={{ cursor: 'ew-resize' }}
+                  />
+                  {/* Right resize handle */}
+                  <rect
+                    x={startX + width - 8}
+                    y={y}
+                    width={8}
+                    height={24}
+                    fill="transparent"
+                    style={{ cursor: 'ew-resize' }}
+                  />
+                </>
+              )}
               
               {/* Item name text */}
               <text
-                x={startX + 8}
+                x={startX + 12}
                 y={y + 16}
                 fontSize="12"
                 fill="white"
                 className="pointer-events-none"
                 style={{ userSelect: 'none' }}
               >
-                {item.name.length > 30 ? item.name.slice(0, 30) + '...' : item.name}
+                {item.name.length > 25 ? item.name.slice(0, 25) + '...' : item.name}
               </text>
             </g>
           );
@@ -275,6 +499,26 @@ const GanttTimelinePane = ({
     return bars;
   };
   
+  // Render drag target indicator when dragging between rings
+  const renderDragTargetIndicator = () => {
+    if (!dragState || groupBy !== 'rings') return null;
+    
+    const targetPos = groupYPositions.find(p => p.groupId === dragState.targetRingId);
+    if (!targetPos || dragState.targetRingId === dragState.originalRingId) return null;
+    
+    return (
+      <rect
+        x={0}
+        y={targetPos.startY}
+        width={effectiveWidth}
+        height={targetPos.endY - targetPos.startY}
+        fill="#3B82F6"
+        opacity={0.1}
+        className="pointer-events-none"
+      />
+    );
+  };
+  
   // Today marker
   const todayX = timeScale.dateToX(new Date());
   const showTodayMarker = todayX >= 0 && todayX <= containerWidth;
@@ -282,10 +526,10 @@ const GanttTimelinePane = ({
   return (
     <div 
       ref={scrollContainerRef}
-      className={`flex-1 overflow-x-auto bg-white min-w-0 ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+      className={`flex-1 overflow-x-auto bg-white min-w-0 ${dragState ? 'cursor-grabbing' : (isPanning ? 'cursor-grabbing' : 'cursor-default')}`}
       style={{ height: `${totalHeight}px` }}
       data-cy="gantt-timeline-pane"
-      onMouseDown={handleMouseDown}
+      onMouseDown={!dragState ? handleMouseDown : undefined}
     >
       <div ref={containerRef} className="relative" style={{ height: `${totalHeight}px`, width: `${effectiveWidth}px`, minWidth: '100%' }}>
         {/* Grid lines */}
@@ -330,6 +574,9 @@ const GanttTimelinePane = ({
               />
             </>
           )}
+          
+          {/* Drag target highlight */}
+          {renderDragTargetIndicator()}
         </svg>
         
         {/* Item bars */}
@@ -337,6 +584,7 @@ const GanttTimelinePane = ({
           className="absolute inset-0"
           width={effectiveWidth}
           height={totalHeight}
+          style={{ pointerEvents: dragState ? 'none' : 'auto' }}
         >
           {renderBars()}
         </svg>
