@@ -5527,7 +5527,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           ) : (
             <div className="w-full h-full">
               <GanttView
-                key={`gantt-${Date.now()}`}
+                key={`gantt-${wheelId}`}
                 wheelStructure={calendarWheelStructure}
                 wheel={wheelState.metadata}
                 pages={wheelState.pages || []}

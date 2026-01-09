@@ -21,7 +21,6 @@ const GanttTimelinePane = ({
   wheelStructure,
   onItemClick,
   onUpdateItem,
-  onWidthChange,
   onHeaderScroll,
   timeTicks: externalTimeTicks,
   effectiveWidth: externalEffectiveWidth,
@@ -206,41 +205,24 @@ const GanttTimelinePane = ({
     return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [onHeaderScroll]);
   
-  // Report width to parent for timeScale calculations
-  useEffect(() => {
-    if (onWidthChange && effectiveWidth > 0) {
-      // Use a small debounce to prevent rapid updates
-      const timer = setTimeout(() => {
-        onWidthChange(effectiveWidth);
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [effectiveWidth]); // Remove onWidthChange from deps to prevent loop
-  
   // Use contentHeight from parent (calculated in GanttView)
   const totalHeight = contentHeight;
-  
-  console.log('GanttTimelinePane render:', { totalHeight, effectiveWidth, groupCount: Object.keys(groupedItems).length });
   
   // Render timeline bars
   const renderBars = () => {
     const bars = [];
     let currentY = 0;
     
-    console.log('renderBars called, expandedGroups:', expandedGroups);
-    
     Object.entries(groupedItems).forEach(([groupId, items]) => {
       // Add space for group header
       currentY += GROUP_HEADER_HEIGHT;
       
       const isExpanded = expandedGroups[groupId];
-      console.log(`Group ${groupId}: isExpanded=${isExpanded}, items=${items.length}, currentY=${currentY}`);
       
       if (isExpanded) {
         items.forEach((item, index) => {
           // Skip items without valid dates
           if (!item.startDate || !item.endDate) {
-            console.log(`Skipping item "${item.name}" - missing dates:`, { startDate: item.startDate, endDate: item.endDate });
             return;
           }
           
@@ -249,8 +231,6 @@ const GanttTimelinePane = ({
           const width = Math.max(endX - startX, 20); // Minimum 20px width
           // Y position - center 24px bar within 40px row (8px padding top/bottom)
           const y = currentY + index * ITEM_ROW_HEIGHT + 8;
-          
-          console.log(`Bar: "${item.name}" x=${startX.toFixed(0)} y=${y} width=${width.toFixed(0)}`);
           
           const color = getActivityGroupColor(item.activityId);
           const isSelected = selectedItemId === item.id;

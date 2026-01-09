@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { startOfMonth, endOfMonth, addMonths, format } from 'date-fns';
+import { startOfMonth, endOfMonth, addMonths, startOfWeek, endOfWeek, addWeeks, getISOWeek, format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 import GanttToolbar from './GanttToolbar';
 import GanttRowPane from './GanttRowPane';
 import GanttTimelinePane from './GanttTimelinePane';
-import MiniWheelNavigator from './MiniWheelNavigator';
 import ItemTooltip from '../ItemTooltip';
 import EditItemModal from '../EditItemModal';
 import { useGanttData } from './useGanttData';
@@ -57,16 +56,36 @@ const GanttView = ({
   });
   const [zoomLevel, setZoomLevel] = useState('month'); // 'day' | 'week' | 'month'
   
-  // Container dimensions - use larger default for proper rendering
-  const [timelineWidth, setTimelineWidth] = useState(2000);
-  const [containerHeight, setContainerHeight] = useState(600);
-  
   // Shared scroll position for syncing row pane and timeline
   const scrollContainerRef = useRef(null);
   const headerScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
   const [headerScrollLeft, setHeaderScrollLeft] = useState(0);
   const [timelineTicks, setTimelineTicks] = useState([]);
+  const [monthSpanTicks, setMonthSpanTicks] = useState([]); // For day zoom top row
+  
+  // Calculate timeline width based on zoom level and date range
+  const timelineWidth = useMemo(() => {
+    const totalMs = viewEnd.getTime() - viewStart.getTime();
+    const totalDays = totalMs / (1000 * 60 * 60 * 24);
+    
+    // Pixels per day based on zoom level
+    let pixelsPerDay;
+    switch (zoomLevel) {
+      case 'day':
+        pixelsPerDay = 30; // Very detailed
+        break;
+      case 'week':
+        pixelsPerDay = 10; // Medium detail
+        break;
+      case 'month':
+      default:
+        pixelsPerDay = 5; // Overview
+        break;
+    }
+    
+    return Math.max(800, totalDays * pixelsPerDay);
+  }, [viewStart, viewEnd, zoomLevel]);
   
   // Get available years from pages
   const availableYears = useMemo(() => {
@@ -158,18 +177,90 @@ const GanttView = ({
       
       while (current <= end) {
         const tickEnd = endOfMonth(current);
-        // Show "Jan 25" format when multiple years, just "Jan" for single year
-        const labelFormat = showYear ? 'MMM yy' : 'MMM';
         ticks.push({
           date: current,
-          label: format(current, labelFormat, { locale }),
+          label: format(current, 'MMM', { locale }),
+          labelLine2: showYear ? format(current, 'yy') : null,
           width: timeScale.dateToX(tickEnd) - timeScale.dateToX(current),
         });
         current = addMonths(current, 1);
       }
+    } else if (zoomLevel === 'week') {
+      // Week zoom - use weekRingDisplayMode setting from wheel
+      const weekDisplayMode = wheel?.weekRingDisplayMode || 'week-numbers';
+      let current = startOfWeek(viewStart, { weekStartsOn: 1 }); // Monday start
+      const end = endOfWeek(viewEnd, { weekStartsOn: 1 });
+      
+      while (current <= end) {
+        const tickEnd = endOfWeek(current, { weekStartsOn: 1 });
+        let label, labelLine2;
+        if (weekDisplayMode === 'dates') {
+          // Show date range on line 1, month+year on line 2
+          const startDay = format(current, 'd', { locale });
+          const endDay = format(tickEnd, 'd', { locale });
+          const month = format(current, 'MMM', { locale });
+          label = `${startDay}-${endDay}`;
+          labelLine2 = showYear ? `${month} ${format(current, 'yy')}` : month;
+        } else {
+          // Show week number like "v2" or "W2" on line 1, year on line 2
+          const weekNum = getISOWeek(current);
+          const weekPrefix = i18n.language === 'sv' ? 'v' : 'W';
+          label = `${weekPrefix}${weekNum}`;
+          labelLine2 = showYear ? format(current, 'yy') : null;
+        }
+        ticks.push({
+          date: current,
+          label,
+          labelLine2,
+          width: timeScale.dateToX(tickEnd) - timeScale.dateToX(current),
+        });
+        current = addWeeks(current, 1);
+      }
+    } else if (zoomLevel === 'day') {
+      // Day zoom - show just day numbers
+      let current = new Date(viewStart);
+      const end = new Date(viewEnd);
+      
+      while (current <= end) {
+        const tickEnd = new Date(current);
+        tickEnd.setDate(tickEnd.getDate() + 1);
+        ticks.push({
+          date: new Date(current),
+          label: format(current, 'd'), // Just day number
+          labelLine2: null,
+          width: timeScale.dateToX(tickEnd) - timeScale.dateToX(current),
+        });
+        current.setDate(current.getDate() + 1);
+      }
+      
+      // Generate month spans for top row
+      const monthSpans = [];
+      let monthStart = startOfMonth(viewStart);
+      const monthEnd = endOfMonth(viewEnd);
+      
+      while (monthStart <= monthEnd) {
+        const spanStart = monthStart < viewStart ? viewStart : monthStart;
+        const spanEndDate = endOfMonth(monthStart);
+        const spanEnd = spanEndDate > viewEnd ? viewEnd : spanEndDate;
+        
+        const startX = timeScale.dateToX(spanStart);
+        const endX = timeScale.dateToX(new Date(spanEnd.getTime() + 24 * 60 * 60 * 1000)); // Include last day
+        
+        monthSpans.push({
+          label: format(monthStart, 'MMMM', { locale }),
+          labelLine2: showYear ? format(monthStart, 'yyyy') : null,
+          width: endX - startX,
+          startX,
+        });
+        
+        monthStart = addMonths(monthStart, 1);
+      }
+      setMonthSpanTicks(monthSpans);
+    } else {
+      setMonthSpanTicks([]);
     }
     setTimelineTicks(ticks);
-  }, [timeScale.viewStart, timeScale.viewEnd, zoomLevel, timelineWidth, i18n.language, yearFilter]);
+  }, [timeScale.viewStart, timeScale.viewEnd, zoomLevel, timelineWidth, i18n.language, yearFilter, wheel?.weekRingDisplayMode]);
   
   // Handlers
   const handleZoomIn = () => {
@@ -223,18 +314,8 @@ const GanttView = ({
     }));
   };
   
-  const handleViewportChange = (newStart, newEnd) => {
-    setViewStart(newStart);
-    setViewEnd(newEnd);
-  };
-  
   // Handle click on item name in row pane - scroll to item
   const handleRowItemClick = (item) => {
-    console.log('=== handleRowItemClick ===');
-    console.log('Item:', item.name, 'startDate:', item.startDate);
-    console.log('yearFilter:', yearFilter);
-    console.log('viewStart:', viewStart, 'viewEnd:', viewEnd);
-    
     setSelectedItemId(item.id);
     
     // Auto-scroll timeline to show the item
@@ -244,26 +325,15 @@ const GanttView = ({
       const viewportWidth = scrollContainer.clientWidth;
       const scrollLeft = scrollContainer.scrollLeft;
       const scrollRight = scrollLeft + viewportWidth;
-      const scrollWidth = scrollContainer.scrollWidth;
-      
-      console.log('itemX:', itemX);
-      console.log('viewportWidth:', viewportWidth, 'scrollWidth:', scrollWidth);
-      console.log('scrollLeft:', scrollLeft, 'scrollRight:', scrollRight);
-      console.log('Is outside?', itemX < scrollLeft || itemX > scrollRight);
       
       // Check if item is outside visible area
       if (itemX < scrollLeft || itemX > scrollRight) {
         const targetScroll = Math.max(0, itemX - viewportWidth / 2);
-        console.log('Scrolling to:', targetScroll);
         scrollContainer.scrollTo({
           left: targetScroll,
           behavior: 'smooth'
         });
-      } else {
-        console.log('Item is in view, no scroll needed');
       }
-    } else {
-      console.log('Missing ref or startDate:', { hasRef: !!timelineScrollRef.current, startDate: item.startDate });
     }
   };
   
@@ -272,12 +342,30 @@ const GanttView = ({
     setSelectedItemId(item.id);
     setSelectedItem(item);
     
-    // Position tooltip near click
+    // Position tooltip near click, ensuring it stays within viewport
     if (event) {
-      setTooltipPosition({
-        x: event.clientX + 10,
-        y: event.clientY + 10
-      });
+      const tooltipWidth = 320;
+      const tooltipHeight = 200;
+      const padding = 10;
+      
+      let x = event.clientX + padding;
+      let y = event.clientY + padding;
+      
+      // Adjust if would go off right edge
+      if (x + tooltipWidth > window.innerWidth) {
+        x = event.clientX - tooltipWidth - padding;
+      }
+      
+      // Adjust if would go off bottom edge
+      if (y + tooltipHeight > window.innerHeight) {
+        y = event.clientY - tooltipHeight - padding;
+      }
+      
+      // Ensure not off left or top edge
+      x = Math.max(padding, x);
+      y = Math.max(padding, y);
+      
+      setTooltipPosition({ x, y });
     } else {
       setTooltipPosition({ x: 300, y: 100 });
     }
@@ -325,41 +413,70 @@ const GanttView = ({
           </h3>
         </div>
         
-        {/* Right: Timeline month header */}
+        {/* Right: Timeline header */}
         <div 
           ref={headerScrollRef}
           className="flex-1 overflow-x-hidden bg-gray-50"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <div className="flex h-12 items-stretch" style={{ width: `${timelineWidth}px` }}>
-            {timelineTicks.map((tick, index) => (
-              <div
-                key={index}
-                className="flex-shrink-0 border-r border-gray-200 px-2 py-2 text-center"
-                style={{ width: `${tick.width}px` }}
-              >
-                <span className="text-xs font-medium text-gray-600">
-                  {tick.label}
-                </span>
+          {/* Day zoom: Two-row header with months on top, days below */}
+          {zoomLevel === 'day' && monthSpanTicks.length > 0 ? (
+            <div style={{ width: `${timelineWidth}px` }}>
+              {/* Top row: Month spans */}
+              <div className="flex h-6 items-stretch border-b border-gray-200">
+                {monthSpanTicks.map((tick, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 border-r border-gray-300 px-2 text-center flex items-center justify-center bg-gray-100"
+                    style={{ width: `${tick.width}px` }}
+                  >
+                    <span className="text-xs font-semibold text-gray-700 truncate">
+                      {tick.label}{tick.labelLine2 ? ` ${tick.labelLine2}` : ''}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+              {/* Bottom row: Day numbers */}
+              <div className="flex h-6 items-stretch">
+                {timelineTicks.map((tick, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 border-r border-gray-200 text-center flex items-center justify-center"
+                    style={{ width: `${tick.width}px` }}
+                  >
+                    <span className="text-[11px] text-gray-600">
+                      {tick.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Single row header for month/week zoom */
+            <div className="flex h-10 items-stretch" style={{ width: `${timelineWidth}px` }}>
+              {timelineTicks.map((tick, index) => (
+                <div
+                  key={index}
+                  className="flex-shrink-0 border-r border-gray-200 px-1 py-1 text-center flex flex-col justify-center"
+                  style={{ width: `${tick.width}px` }}
+                >
+                  <span className="text-xs font-medium text-gray-600 leading-tight truncate">
+                    {tick.label}
+                  </span>
+                  {tick.labelLine2 && (
+                    <span className="text-[10px] text-gray-400 leading-tight">
+                      {tick.labelLine2}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       
       {/* Main content area - shared scroll container */}
       <div ref={scrollContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden relative min-w-0">
-        {/* Mini Wheel Navigator - Overlay in top-right */}
-        <div className="absolute top-4 right-4 z-20">
-          <MiniWheelNavigator
-            viewStart={viewStart}
-            viewEnd={viewEnd}
-            yearFilter={yearFilter}
-            availableYears={availableYears}
-            onViewportChange={handleViewportChange}
-          />
-        </div>
-        
         {/* Left: Row pane with groups */}
         <GanttRowPane
           groupedItems={groupedItems}
@@ -382,7 +499,6 @@ const GanttView = ({
           wheelStructure={wheelStructure}
           onItemClick={handleBarClick}
           onUpdateItem={onUpdateItem}
-          onWidthChange={setTimelineWidth}
           onHeaderScroll={(scrollLeft) => {
             if (headerScrollRef.current) {
               headerScrollRef.current.scrollLeft = scrollLeft;
