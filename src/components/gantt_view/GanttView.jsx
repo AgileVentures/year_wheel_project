@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import GanttToolbar from './GanttToolbar';
 import GanttRowPane from './GanttRowPane';
@@ -67,6 +67,15 @@ const GanttView = ({
     yearFilter,
     groupBy,
   });
+  
+  // Initialize all groups as expanded when groupedItems changes
+  useEffect(() => {
+    const initialExpanded = {};
+    Object.keys(groupedItems).forEach(groupId => {
+      initialExpanded[groupId] = true;
+    });
+    setExpandedGroups(initialExpanded);
+  }, [groupBy, yearFilter]); // Reset when grouping or filter changes
   
   // Time scale calculations
   const timeScale = useTimeScale({
