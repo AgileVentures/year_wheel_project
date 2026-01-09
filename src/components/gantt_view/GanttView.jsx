@@ -262,6 +262,48 @@ const GanttView = ({
     setTimelineTicks(ticks);
   }, [timeScale.viewStart, timeScale.viewEnd, zoomLevel, timelineWidth, i18n.language, yearFilter, wheel?.weekRingDisplayMode]);
   
+  // Scroll to appropriate position when year filter changes
+  // - If "all" or current year: scroll to today
+  // - Otherwise: scroll to January 1st of selected year
+  useEffect(() => {
+    if (!timelineScrollRef.current || !timeScale) return;
+    
+    // Small delay to ensure timeline is rendered
+    const scrollTimer = setTimeout(() => {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const filterYear = yearFilter === 'all' ? null : parseInt(yearFilter, 10);
+      
+      // Determine target date
+      let targetDate;
+      if (yearFilter === 'all' || filterYear === currentYear) {
+        targetDate = today;
+      } else {
+        targetDate = new Date(filterYear, 0, 1); // January 1st of selected year
+      }
+      
+      const targetX = timeScale.dateToX(targetDate);
+      const viewportWidth = timelineScrollRef.current.clientWidth;
+      // Center the target date in viewport
+      const targetScroll = Math.max(0, targetX - viewportWidth / 3);
+      
+      timelineScrollRef.current.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
+      
+      // Sync header scroll
+      if (headerScrollRef.current) {
+        headerScrollRef.current.scrollTo({
+          left: targetScroll,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
+    
+    return () => clearTimeout(scrollTimer);
+  }, [yearFilter, timeScale]);
+  
   // Handlers
   const handleZoomIn = () => {
     const levels = ['month', 'week', 'day'];
