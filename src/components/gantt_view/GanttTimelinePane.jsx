@@ -446,13 +446,11 @@ const GanttTimelinePane = ({
           // Check if this item is being dragged
           const isDragging = dragState && dragState.item.id === item.id;
           
-          // Use drag state dates if dragging, otherwise use item dates
-          const displayStartDate = isDragging ? dragState.currentStartDate : new Date(item.startDate);
-          const displayEndDate = isDragging ? dragState.currentEndDate : new Date(item.endDate);
+          // Original position (always use item's actual dates)
+          const originalStartX = timeScale.dateToX(new Date(item.startDate));
+          const originalEndX = timeScale.dateToX(new Date(item.endDate));
+          const originalWidth = Math.max(originalEndX - originalStartX, 20);
           
-          const startX = timeScale.dateToX(displayStartDate);
-          const endX = timeScale.dateToX(displayEndDate);
-          const width = Math.max(endX - startX, 20); // Minimum 20px width
           // Y position - center 24px bar within 40px row (8px padding top/bottom)
           const y = currentY + index * ITEM_ROW_HEIGHT + 8;
           
@@ -461,107 +459,183 @@ const GanttTimelinePane = ({
           const isHovered = hoveredBarId === item.id;
           const showResizeHandles = isHovered && !isDragging;
           
-          bars.push(
-            <g 
-              key={item.id} 
-              onMouseDown={(e) => handleBarMouseDown(e, item, startX, width, groupId)}
-              onMouseEnter={() => !dragState && setHoveredBarId(item.id)}
-              onMouseLeave={() => !dragState && setHoveredBarId(null)}
-              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-            >
-              {/* Bar background (rounded pill) */}
-              <rect
-                x={startX}
-                y={y}
-                width={width}
-                height={24}
-                rx={12}
-                ry={12}
-                fill={color}
-                opacity={isDragging ? 0.7 : (isSelected ? 1 : 0.9)}
-                stroke={isDragging ? '#3B82F6' : (isSelected ? '#3B82F6' : (isHovered ? 'rgba(59, 130, 246, 0.5)' : 'none'))}
-                strokeWidth={isDragging ? 2 : (isSelected ? 2 : (isHovered ? 1 : 0))}
-                strokeDasharray={isDragging ? '4 2' : 'none'}
-                className="transition-opacity hover:opacity-100"
-              />
-              
-              {/* Resize handles - visible on hover */}
-              {showResizeHandles && (
-                <>
-                  {/* Left resize handle - visual indicator */}
-                  <rect
-                    x={startX}
-                    y={y}
-                    width={10}
-                    height={24}
-                    rx={12}
-                    fill="rgba(255,255,255,0.3)"
-                    style={{ cursor: 'ew-resize' }}
-                  />
-                  <line
-                    x1={startX + 4}
-                    y1={y + 6}
-                    x2={startX + 4}
-                    y2={y + 18}
-                    stroke="rgba(255,255,255,0.7)"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    className="pointer-events-none"
-                  />
-                  {/* Right resize handle - visual indicator */}
-                  <rect
-                    x={startX + width - 10}
-                    y={y}
-                    width={10}
-                    height={24}
-                    rx={12}
-                    fill="rgba(255,255,255,0.3)"
-                    style={{ cursor: 'ew-resize' }}
-                  />
-                  <line
-                    x1={startX + width - 4}
-                    y1={y + 6}
-                    x2={startX + width - 4}
-                    y2={y + 18}
-                    stroke="rgba(255,255,255,0.7)"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    className="pointer-events-none"
-                  />
-                </>
-              )}
-              
-              {/* Invisible resize hit areas (always active for cursor change) */}
-              <rect
-                x={startX}
-                y={y}
-                width={10}
-                height={24}
-                fill="transparent"
-                style={{ cursor: 'ew-resize' }}
-              />
-              <rect
-                x={startX + width - 10}
-                y={y}
-                width={10}
-                height={24}
-                fill="transparent"
-                style={{ cursor: 'ew-resize' }}
-              />
-              
-              {/* Item name text */}
-              <text
-                x={startX + 14}
-                y={y + 16}
-                fontSize="12"
-                fill="white"
-                className="pointer-events-none"
-                style={{ userSelect: 'none' }}
+          // When dragging, render ghost at original position + preview at new position
+          if (isDragging) {
+            const previewStartX = timeScale.dateToX(dragState.currentStartDate);
+            const previewEndX = timeScale.dateToX(dragState.currentEndDate);
+            const previewWidth = Math.max(previewEndX - previewStartX, 20);
+            
+            // Calculate preview Y position (might be different ring if dragging between rings)
+            let previewY = y;
+            if (groupBy === 'rings' && dragState.targetRingId !== dragState.originalRingId) {
+              const targetPos = groupYPositions.find(p => p.groupId === dragState.targetRingId);
+              if (targetPos) {
+                // Find item's index in target ring (will be appended)
+                const targetGroup = groupedItems.find(g => g.groupId === dragState.targetRingId);
+                const targetItemCount = targetGroup ? targetGroup.items.length : 0;
+                previewY = targetPos.y + targetItemCount * ITEM_ROW_HEIGHT + 8;
+              }
+            }
+            
+            bars.push(
+              <g key={`${item.id}-ghost`}>
+                {/* Ghost bar at original position */}
+                <rect
+                  x={originalStartX}
+                  y={y}
+                  width={originalWidth}
+                  height={24}
+                  rx={12}
+                  ry={12}
+                  fill={color}
+                  opacity={0.3}
+                  stroke="none"
+                />
+                <text
+                  x={originalStartX + 14}
+                  y={y + 16}
+                  fontSize="12"
+                  fill="white"
+                  opacity={0.5}
+                  className="pointer-events-none"
+                  style={{ userSelect: 'none' }}
+                >
+                  {item.name.length > 25 ? item.name.slice(0, 25) + '...' : item.name}
+                </text>
+              </g>
+            );
+            
+            bars.push(
+              <g key={`${item.id}-preview`} style={{ cursor: 'grabbing' }}>
+                {/* Preview bar at new position */}
+                <rect
+                  x={previewStartX}
+                  y={previewY}
+                  width={previewWidth}
+                  height={24}
+                  rx={12}
+                  ry={12}
+                  fill={color}
+                  opacity={0.85}
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  strokeDasharray="6 3"
+                />
+                <text
+                  x={previewStartX + 14}
+                  y={previewY + 16}
+                  fontSize="12"
+                  fill="white"
+                  className="pointer-events-none"
+                  style={{ userSelect: 'none' }}
+                >
+                  {item.name.length > 25 ? item.name.slice(0, 25) + '...' : item.name}
+                </text>
+              </g>
+            );
+          } else {
+            // Normal bar rendering (not dragging)
+            bars.push(
+              <g 
+                key={item.id} 
+                onMouseDown={(e) => handleBarMouseDown(e, item, originalStartX, originalWidth, groupId)}
+                onMouseEnter={() => !dragState && setHoveredBarId(item.id)}
+                onMouseLeave={() => !dragState && setHoveredBarId(null)}
+                style={{ cursor: 'grab' }}
               >
-                {item.name.length > 25 ? item.name.slice(0, 25) + '...' : item.name}
-              </text>
-            </g>
-          );
+                {/* Bar background (rounded pill) */}
+                <rect
+                  x={originalStartX}
+                  y={y}
+                  width={originalWidth}
+                  height={24}
+                  rx={12}
+                  ry={12}
+                  fill={color}
+                  opacity={isSelected ? 1 : 0.9}
+                  stroke={isSelected ? '#3B82F6' : (isHovered ? 'rgba(59, 130, 246, 0.5)' : 'none')}
+                  strokeWidth={isSelected ? 2 : (isHovered ? 1 : 0)}
+                  className="transition-opacity hover:opacity-100"
+                />
+                
+                {/* Resize handles - visible on hover */}
+                {showResizeHandles && (
+                  <>
+                    {/* Left resize handle - visual indicator */}
+                    <rect
+                      x={originalStartX}
+                      y={y}
+                      width={10}
+                      height={24}
+                      rx={12}
+                      fill="rgba(255,255,255,0.3)"
+                      style={{ cursor: 'ew-resize' }}
+                    />
+                    <line
+                      x1={originalStartX + 4}
+                      y1={y + 6}
+                      x2={originalStartX + 4}
+                      y2={y + 18}
+                      stroke="rgba(255,255,255,0.7)"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      className="pointer-events-none"
+                    />
+                    {/* Right resize handle - visual indicator */}
+                    <rect
+                      x={originalStartX + originalWidth - 10}
+                      y={y}
+                      width={10}
+                      height={24}
+                      rx={12}
+                      fill="rgba(255,255,255,0.3)"
+                      style={{ cursor: 'ew-resize' }}
+                    />
+                    <line
+                      x1={originalStartX + originalWidth - 4}
+                      y1={y + 6}
+                      x2={originalStartX + originalWidth - 4}
+                      y2={y + 18}
+                      stroke="rgba(255,255,255,0.7)"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      className="pointer-events-none"
+                    />
+                  </>
+                )}
+                
+                {/* Invisible resize hit areas (always active for cursor change) */}
+                <rect
+                  x={originalStartX}
+                  y={y}
+                  width={10}
+                  height={24}
+                  fill="transparent"
+                  style={{ cursor: 'ew-resize' }}
+                />
+                <rect
+                  x={originalStartX + originalWidth - 10}
+                  y={y}
+                  width={10}
+                  height={24}
+                  fill="transparent"
+                  style={{ cursor: 'ew-resize' }}
+                />
+                
+                {/* Item name text */}
+                <text
+                  x={originalStartX + 14}
+                  y={y + 16}
+                  fontSize="12"
+                  fill="white"
+                  className="pointer-events-none"
+                  style={{ userSelect: 'none' }}
+                >
+                  {item.name.length > 25 ? item.name.slice(0, 25) + '...' : item.name}
+                </text>
+              </g>
+            );
+          }
         });
         
         // Advance Y position by height of all items in this group
