@@ -6,6 +6,7 @@ import { useMemo } from 'react';
  * Transforms wheel structure data into Gantt-ready format
  * Groups items by rings, labels, or activityGroups
  * Filters by year if specified
+ * Consolidates cross-year items (same crossYearGroupId) into single entries
  * 
  * @param {Object} wheelStructure - Rings, activityGroups, labels, items
  * @param {Array} pages - All pages with their items
@@ -21,10 +22,10 @@ export const useGanttData = ({
 }) => {
   const { rings = [], activityGroups = [], labels = [] } = wheelStructure || {};
   
-  // Get all items, optionally filtered by year
+  // Get all items, consolidating cross-year items
   const allItems = useMemo(() => {
     // Collect items from all pages
-    const items = pages.flatMap(page => {
+    const rawItems = pages.flatMap(page => {
       const pageYear = parseInt(page.year, 10);
       return (page.items || []).map(item => ({
         ...item,
@@ -32,18 +33,67 @@ export const useGanttData = ({
       }));
     });
     
-    // Filter by year if not 'all'
+    // Build a map of all cross-year groups with their full item list
+    const allCrossYearGroups = new Map();
+    rawItems.forEach(item => {
+      if (item.crossYearGroupId) {
+        if (!allCrossYearGroups.has(item.crossYearGroupId)) {
+          allCrossYearGroups.set(item.crossYearGroupId, []);
+        }
+        allCrossYearGroups.get(item.crossYearGroupId).push(item);
+      }
+    });
+    
+    // Filter items based on yearFilter
+    let filteredItems;
     if (yearFilter === 'all') {
-      return items;
+      filteredItems = rawItems;
+    } else {
+      const filterYear = parseInt(yearFilter, 10);
+      filteredItems = rawItems.filter(item => {
+        const startYear = new Date(item.startDate).getFullYear();
+        const endYear = new Date(item.endDate).getFullYear();
+        // Include if item overlaps with the filtered year
+        return startYear <= filterYear && endYear >= filterYear;
+      });
     }
     
-    const filterYear = parseInt(yearFilter, 10);
-    return items.filter(item => {
-      const startYear = new Date(item.startDate).getFullYear();
-      const endYear = new Date(item.endDate).getFullYear();
-      // Include if item overlaps with the filtered year
-      return startYear <= filterYear && endYear >= filterYear;
+    // Consolidate cross-year items into single entries
+    const crossYearGroupsInView = new Set();
+    const standaloneItems = [];
+    
+    filteredItems.forEach(item => {
+      if (item.crossYearGroupId) {
+        // Track which cross-year groups are represented
+        crossYearGroupsInView.add(item.crossYearGroupId);
+      } else {
+        standaloneItems.push(item);
+      }
     });
+    
+    // Create consolidated entries for cross-year groups
+    const consolidatedCrossYear = [];
+    crossYearGroupsInView.forEach(groupId => {
+      // Get ALL segments of this group to show full date range
+      const allGroupItems = allCrossYearGroups.get(groupId) || [];
+      if (allGroupItems.length === 0) return;
+      
+      // Sort by start date to find the earliest start and latest end
+      const sorted = allGroupItems.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+      const earliest = sorted[0];
+      const latest = sorted.reduce((a, b) => new Date(a.endDate) > new Date(b.endDate) ? a : b);
+      
+      // Use the first segment as the base, but with full date range
+      consolidatedCrossYear.push({
+        ...earliest,
+        startDate: earliest.startDate,
+        endDate: latest.endDate,
+        _crossYearSegmentIds: allGroupItems.map(i => i.id),
+        _isCrossYearConsolidated: true,
+      });
+    });
+    
+    return [...standaloneItems, ...consolidatedCrossYear];
   }, [pages, yearFilter]);
   
   // Group items

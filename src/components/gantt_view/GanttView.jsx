@@ -74,6 +74,16 @@ const GanttView = ({
     return [...new Set(years)].sort((a, b) => a - b);
   }, [pages]);
   
+  // Initialize view range when available years change and "all" is selected
+  useEffect(() => {
+    if (yearFilter === 'all' && availableYears.length > 0) {
+      const minYear = Math.min(...availableYears);
+      const maxYear = Math.max(...availableYears);
+      setViewStart(new Date(minYear, 0, 1));
+      setViewEnd(new Date(maxYear, 11, 31));
+    }
+  }, [availableYears, yearFilter]);
+  
   // Constants for row heights - must match both panes
   const GROUP_HEADER_HEIGHT = 36;
   const ITEM_ROW_HEIGHT = 40;
@@ -136,6 +146,11 @@ const GanttView = ({
     const { viewStart, viewEnd } = timeScale;
     const locale = i18n.language === 'sv' ? sv : enUS;
     
+    // Determine if we're showing multiple years (need to show year in labels)
+    const startYear = viewStart.getFullYear();
+    const endYear = viewEnd.getFullYear();
+    const showYear = yearFilter === 'all' || startYear !== endYear;
+    
     let ticks = [];
     if (zoomLevel === 'month') {
       let current = startOfMonth(viewStart);
@@ -143,16 +158,18 @@ const GanttView = ({
       
       while (current <= end) {
         const tickEnd = endOfMonth(current);
+        // Show "Jan 25" format when multiple years, just "Jan" for single year
+        const labelFormat = showYear ? 'MMM yy' : 'MMM';
         ticks.push({
           date: current,
-          label: format(current, 'MMM', { locale }),
+          label: format(current, labelFormat, { locale }),
           width: timeScale.dateToX(tickEnd) - timeScale.dateToX(current),
         });
         current = addMonths(current, 1);
       }
     }
     setTimelineTicks(ticks);
-  }, [timeScale.viewStart, timeScale.viewEnd, zoomLevel, timelineWidth, i18n.language]);
+  }, [timeScale.viewStart, timeScale.viewEnd, zoomLevel, timelineWidth, i18n.language, yearFilter]);
   
   // Handlers
   const handleZoomIn = () => {
@@ -185,6 +202,12 @@ const GanttView = ({
       const yearNum = parseInt(year, 10);
       setViewStart(new Date(yearNum, 0, 1));
       setViewEnd(new Date(yearNum, 11, 31));
+    } else if (availableYears.length > 0) {
+      // "All years" - span from earliest to latest available year
+      const minYear = Math.min(...availableYears);
+      const maxYear = Math.max(...availableYears);
+      setViewStart(new Date(minYear, 0, 1));
+      setViewEnd(new Date(maxYear, 11, 31));
     }
   };
   
@@ -207,6 +230,11 @@ const GanttView = ({
   
   // Handle click on item name in row pane - scroll to item
   const handleRowItemClick = (item) => {
+    console.log('=== handleRowItemClick ===');
+    console.log('Item:', item.name, 'startDate:', item.startDate);
+    console.log('yearFilter:', yearFilter);
+    console.log('viewStart:', viewStart, 'viewEnd:', viewEnd);
+    
     setSelectedItemId(item.id);
     
     // Auto-scroll timeline to show the item
@@ -216,15 +244,26 @@ const GanttView = ({
       const viewportWidth = scrollContainer.clientWidth;
       const scrollLeft = scrollContainer.scrollLeft;
       const scrollRight = scrollLeft + viewportWidth;
+      const scrollWidth = scrollContainer.scrollWidth;
+      
+      console.log('itemX:', itemX);
+      console.log('viewportWidth:', viewportWidth, 'scrollWidth:', scrollWidth);
+      console.log('scrollLeft:', scrollLeft, 'scrollRight:', scrollRight);
+      console.log('Is outside?', itemX < scrollLeft || itemX > scrollRight);
       
       // Check if item is outside visible area
       if (itemX < scrollLeft || itemX > scrollRight) {
         const targetScroll = Math.max(0, itemX - viewportWidth / 2);
+        console.log('Scrolling to:', targetScroll);
         scrollContainer.scrollTo({
           left: targetScroll,
           behavior: 'smooth'
         });
+      } else {
+        console.log('Item is in view, no scroll needed');
       }
+    } else {
+      console.log('Missing ref or startDate:', { hasRef: !!timelineScrollRef.current, startDate: item.startDate });
     }
   };
   
