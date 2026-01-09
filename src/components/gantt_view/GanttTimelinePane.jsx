@@ -164,6 +164,12 @@ const GanttTimelinePane = ({
   
   const timeTicks = generateTimeTicks();
   
+  // Calculate total timeline width from ticks
+  const timelineWidth = timeTicks.reduce((sum, tick) => sum + tick.width, 0);
+  
+  // Use timeline width or minimum viewport width
+  const effectiveWidth = Math.max(timelineWidth, containerWidth, 1200);
+  
   // Calculate total height
   const calculateHeight = () => {
     let height = 0;
@@ -263,13 +269,13 @@ const GanttTimelinePane = ({
         </div>
       </div>
       
-      {/* Tref={containerRef} imeline content */}
-      <div className="relative" style={{ height: `${totalHeight}px` }}>
+      {/* Timeline content */}
+      <div ref={containerRef} className="relative" style={{ height: `${totalHeight}px`, width: `${effectiveWidth}px`, minWidth: '100%' }}>
         {/* Grid lines */}
         <svg
           ref={svgRef}
           className="absolute inset-0 pointer-events-none"
-          width={containerWidth}
+          width={effectiveWidth}
           height={totalHeight}
         >
           {timeTicks.map((tick, index) => {
@@ -312,7 +318,7 @@ const GanttTimelinePane = ({
         {/* Item bars */}
         <svg
           className="absolute inset-0"
-          width={containerWidth}
+          width={effectiveWidth}
           height={totalHeight}
         >
           {renderBars()}
