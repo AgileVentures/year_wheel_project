@@ -471,8 +471,9 @@ const GanttTimelinePane = ({
               const targetPos = groupYPositions.find(p => p.groupId === dragState.targetRingId);
               if (targetPos) {
                 // Find item's index in target ring (will be appended)
-                const targetGroup = groupedItems.find(g => g.groupId === dragState.targetRingId);
-                const targetItemCount = targetGroup ? targetGroup.items.length : 0;
+                // groupedItems is an object, not an array
+                const targetItems = groupedItems[dragState.targetRingId];
+                const targetItemCount = targetItems ? targetItems.length : 0;
                 previewY = targetPos.y + targetItemCount * ITEM_ROW_HEIGHT + 8;
               }
             }
