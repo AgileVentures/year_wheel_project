@@ -8,6 +8,7 @@ import LandingNavigation from "./LandingNavigation";
 import MobileDemoMessage from "./MobileDemoMessage";
 import InteractiveDemo from "./InteractiveDemo";
 import FeaturesSection from "./FeaturesSection";
+import ViewsSection from "./ViewsSection";
 import PricingSection from "./PricingSection";
 import AuthSection from "./AuthSection";
 import TemplateShowcase from "./TemplateShowcase";
@@ -108,6 +109,8 @@ const LandingPage = () => {
         <div ref={featuresRef}>
           <FeaturesSection />
         </div>
+
+        <ViewsSection />
 
         <div ref={pricingRef}>
           <PricingSection

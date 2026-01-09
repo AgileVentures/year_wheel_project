@@ -1,108 +1,89 @@
-import { useState, useEffect, useRef, useMemo, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles } from 'lucide-react';
 import AIAssistantDemo from './AIAssistantDemo';
 import ManualEditorDemo from './ManualEditorDemo';
+import ListViewDemo from './ListViewDemo';
+import TimelineDemo from './TimelineDemo';
 
 function InteractiveDemo({ demoRef }) {
   const { t } = useTranslation(['landing']);
-  const [activeDemo, setActiveDemo] = useState('wheel'); // 'wheel' or 'ai'
+  const [activeDemo, setActiveDemo] = useState('wheel'); // 'wheel' | 'ai' | 'list' | 'timeline'
 
-  // Auto-rotate between demos
+  // Auto-rotate between all 4 demos
   useEffect(() => {
-    // Manual demo runs for 24 seconds, then switch to AI for 15 seconds, then loop
+    // Timing: Manual=24s, AI=15s, List=14s, Timeline=12s
+    let duration;
+    switch (activeDemo) {
+      case 'wheel':
+        duration = 24000;
+        break;
+      case 'ai':
+        duration = 15000;
+        break;
+      case 'list':
+        duration = 14000;
+        break;
+      case 'timeline':
+        duration = 12000;
+        break;
+      default:
+        duration = 15000;
+    }
+
     const timer = setTimeout(() => {
-      setActiveDemo(prev => prev === 'wheel' ? 'ai' : 'wheel');
-    }, activeDemo === 'wheel' ? 24000 : 15000);
+      setActiveDemo(prev => {
+        switch (prev) {
+          case 'wheel': return 'ai';
+          case 'ai': return 'list';
+          case 'list': return 'timeline';
+          case 'timeline': return 'wheel';
+          default: return 'wheel';
+        }
+      });
+    }, duration);
 
     return () => clearTimeout(timer);
   }, [activeDemo]);
 
-  // Conversation animation state
-  const [conversationStep, setConversationStep] = useState(0);
-  const [inputText, setInputText] = useState('');
-  const [isTypingInInput, setIsTypingInInput] = useState(false);
-  const chatContainerRef = useRef(null);
-
-  // Conversation sequence - using translations (memoized to prevent infinite re-renders)
-  const conversationSequence = useMemo(() => [
-    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message1'), delay: 500 },
-    { type: 'user-send', delay: 100 },
-    { type: 'ai-response', delay: 800 },
-    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message2'), delay: 1500 },
-    { type: 'user-send', delay: 100 },
-    { type: 'ai-response', delay: 800 },
-    { type: 'input-typing', text: t('landing:aiDemo.userMessages.message3'), delay: 1500 },
-    { type: 'user-send', delay: 100 },
-    { type: 'ai-response', delay: 800 },
-    { type: 'reset', delay: 3500 }
-  ], [t]);
-
-  // Animation effect
-  useEffect(() => {
-    if (activeDemo !== 'ai') return;
-    
-    const currentStep = conversationSequence[conversationStep];
-    if (!currentStep) return;
-
-    const timer = setTimeout(() => {
-      if (currentStep.type === 'input-typing') {
-        // Type in input field
-        setIsTypingInInput(true);
-        setInputText('');
-        let charIndex = 0;
-        const typeInterval = setInterval(() => {
-          if (charIndex <= currentStep.text.length) {
-            setInputText(currentStep.text.slice(0, charIndex));
-            charIndex++;
-          } else {
-            setIsTypingInInput(false);
-            clearInterval(typeInterval);
-            setConversationStep(prev => prev + 1);
-          }
-        }, 50);
-        return () => clearInterval(typeInterval);
-      } else if (currentStep.type === 'user-send') {
-        // Clear input and move to next
-        setInputText('');
-        setConversationStep(prev => prev + 1);
-      } else if (currentStep.type === 'ai-response' || currentStep.type === 'reset') {
-        setConversationStep(prev => currentStep.type === 'reset' ? 0 : prev + 1);
-      }
-    }, currentStep.delay);
-
-    return () => clearTimeout(timer);
-  }, [conversationStep, activeDemo, conversationSequence]);
-
-  // Reset on demo change
-  useEffect(() => {
-    if (activeDemo === 'ai') {
-      setConversationStep(0);
-      setInputText('');
-      setIsTypingInInput(false);
+  // Get demo title and description based on active demo
+  const getDemoContent = () => {
+    switch (activeDemo) {
+      case 'wheel':
+        return {
+          title: t('landing:demo.manualTitle'),
+          description: t('landing:demo.manualDescription')
+        };
+      case 'ai':
+        return {
+          title: t('landing:demo.aiTitle'),
+          description: t('landing:demo.aiDescription')
+        };
+      case 'list':
+        return {
+          title: t('landing:demo.listTitle', 'List View - Find Anything Instantly'),
+          description: t('landing:demo.listDescription', 'Search, filter, and manage all your activities in a structured list format.')
+        };
+      case 'timeline':
+        return {
+          title: t('landing:demo.timelineTitle', 'Timeline View - Visualize Your Schedule'),
+          description: t('landing:demo.timelineDescription', 'See all your activities on a horizontal timeline with zoom and pan controls.')
+        };
+      default:
+        return { title: '', description: '' };
     }
-  }, [activeDemo]);
+  };
 
-  // Auto-scroll chat to bottom when conversation progresses
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [conversationStep]);
+  const { title, description } = getDemoContent();
 
   return (
     <section id="demo-section" ref={demoRef} className="hidden md:block py-20 px-4 sm:px-6 lg:px-8 bg-gray-900 text-white scroll-mt-16">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            {activeDemo === 'wheel' 
-              ? t('landing:demo.manualTitle')
-              : t('landing:demo.aiTitle')}
+            {title}
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            {activeDemo === 'wheel'
-              ? t('landing:demo.manualDescription')
-              : t('landing:demo.aiDescription')}
+            {description}
           </p>
         </div>
 
@@ -110,6 +91,8 @@ function InteractiveDemo({ demoRef }) {
         <div className="bg-gray-800 rounded-sm overflow-hidden shadow-2xl border border-gray-700">
           {activeDemo === 'wheel' && <ManualEditorDemo />}
           {activeDemo === 'ai' && <AIAssistantDemo />}
+          {activeDemo === 'list' && <ListViewDemo />}
+          {activeDemo === 'timeline' && <TimelineDemo />}
         </div>
       </div>
     </section>

@@ -1,0 +1,58 @@
+{
+  "title": "Tidslinje",
+  "toolbar": {
+    "year": "År",
+    "allYears": "Alla år",
+    "groupBy": "Gruppera efter",
+    "rings": "Ringar",
+    "labels": "Etiketter",
+    "activityGroups": "Aktivitetsgrupper",
+    "zoom": "Zoom",
+    "zoomIn": "Zooma in",
+    "zoomOut": "Zooma ut",
+    "today": "Idag"
+  },
+  "zoomLevels": {
+    "day": "Dag",
+    "week": "Vecka",
+    "month": "Månad"
+  },
+  "emptyState": {
+    "title": "Inga aktiviteter att visa",
+    "description": "Lägg till aktiviteter i hjulvyn för att se dem i tidslinjen."
+  },
+  "tooltip": {
+    "startDate": "Start",
+    "endDate": "Slut",
+    "duration": "Varaktighet",
+    "days": "dagar",
+    "day": "dag",
+    "ring": "Ring",
+    "activityGroup": "Aktivitetsgrupp",
+    "label": "Etikett"
+  },
+  "export": {
+    "title": "Exportera tidslinje",
+    "format": "Format",
+    "dateRange": "Tidsperiod",
+    "smartRange": "Smart (endast månader med aktiviteter)",
+    "currentView": "Aktuell vy",
+    "fullYear": "Hela året/åren",
+    "customRange": "Anpassad period",
+    "include": "Inkludera",
+    "namesPanel": "Namnpanel (vänster sida)",
+    "datesOnBars": "Datum på staplar",
+    "legend": "Färgförklaring",
+    "dependencies": "Beroenden (pilar)",
+    "pdfSize": "PDF-storlek",
+    "autoSize": "Auto",
+    "fitToPage": "Anpassa till 1 sida",
+    "csvInfo": "CSV-export",
+    "csvDescription": "Exporterar alla aktiviteter som en tabell med namn, datum, grupp och etiketter. Perfekt för Excel eller Google Sheets."
+  },
+  "groups": {
+    "noItems": "Inga objekt i denna grupp",
+    "expand": "Expandera grupp",
+    "collapse": "Minimera grupp"
+  }
+}

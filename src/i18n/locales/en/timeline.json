@@ -1,0 +1,58 @@
+{
+  "title": "Timeline",
+  "toolbar": {
+    "year": "Year",
+    "allYears": "All years",
+    "groupBy": "Group by",
+    "rings": "Rings",
+    "labels": "Labels",
+    "activityGroups": "Activity groups",
+    "zoom": "Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "today": "Today"
+  },
+  "zoomLevels": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month"
+  },
+  "emptyState": {
+    "title": "No activities to display",
+    "description": "Add activities in the wheel view to see them in the timeline."
+  },
+  "tooltip": {
+    "startDate": "Start",
+    "endDate": "End",
+    "duration": "Duration",
+    "days": "days",
+    "day": "day",
+    "ring": "Ring",
+    "activityGroup": "Activity group",
+    "label": "Label"
+  },
+  "export": {
+    "title": "Export timeline",
+    "format": "Format",
+    "dateRange": "Date range",
+    "smartRange": "Smart (only months with activities)",
+    "currentView": "Current view",
+    "fullYear": "Full year(s)",
+    "customRange": "Custom range",
+    "include": "Include",
+    "namesPanel": "Names panel (left side)",
+    "datesOnBars": "Dates on bars",
+    "legend": "Color legend",
+    "dependencies": "Dependencies (arrows)",
+    "pdfSize": "PDF size",
+    "autoSize": "Auto",
+    "fitToPage": "Fit to 1 page",
+    "csvInfo": "CSV export",
+    "csvDescription": "Exports all activities as a table with name, dates, group and labels. Perfect for Excel or Google Sheets."
+  },
+  "groups": {
+    "noItems": "No items in this group",
+    "expand": "Expand group",
+    "collapse": "Collapse group"
+  }
+}

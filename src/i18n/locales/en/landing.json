@@ -23,6 +23,13 @@
     ],
     "ctaPrimary": "Get started free",
     "ctaSecondary": "See demo",
+    "viewsLabel": "4 ways to view your data",
+    "viewTaglines": {
+      "wheel": "See the big picture",
+      "list": "Find it fast",
+      "kanban": "Track progress",
+      "timeline": "Plan ahead"
+    },
     "stats": {
       "free": {
         "value": "Free",
@@ -48,7 +55,11 @@
     "manualTitle": "Create your year wheel manually",
     "manualDescription": "Click, drag, and organize your activities exactly as you want them.",
     "aiTitle": "Or let the AI do the work",
-    "aiDescription": "Describe what you want to achieve – the AI creates the structure, adds activities, and suggests improvements."
+    "aiDescription": "Describe what you want to achieve – the AI creates the structure, adds activities, and suggests improvements.",
+    "listTitle": "List View - Find Anything Instantly",
+    "listDescription": "Search, filter, and manage all your activities in a structured list format.",
+    "timelineTitle": "Timeline View - Visualize Your Schedule",
+    "timelineDescription": "See all your activities on a horizontal timeline with zoom and pan controls."
   },
   "features": {
     "title": "Everything you need for professional planning",
@@ -266,6 +277,67 @@
       "firstActivity": "My first activity"
     }
   },
+  "listDemo": {
+    "rings": {
+      "campaigns": "Campaigns",
+      "content": "Content"
+    },
+    "items": {
+      "campaign1": "Spring Launch",
+      "campaign2": "Summer Campaign",
+      "campaign3": "Fall Promotion",
+      "campaign4": "Holiday Campaign",
+      "content1": "Blog Posts Q1",
+      "content2": "Video Series",
+      "content3": "Webinar Prep",
+      "content4": "Social Media Plan",
+      "content5": "Newsletter Campaign"
+    },
+    "activities": {
+      "marketing": "Marketing",
+      "sales": "Sales",
+      "content": "Content",
+      "events": "Events"
+    },
+    "searchPlaceholder": "Search activities...",
+    "searchText": "Campaign",
+    "newActivity": "Black Friday Sale",
+    "addButton": "Add Activity",
+    "totalActivities": "Total:",
+    "rings": "Rings:",
+    "year": "Year:"
+  },
+  "timelineDemo": {
+    "rings": {
+      "title": "Rings",
+      "campaigns": "Campaigns",
+      "content": "Content"
+    },
+    "items": {
+      "campaign1": "Spring Launch",
+      "campaign2": "Summer Campaign",
+      "campaign3": "Fall Promotion",
+      "content1": "Blog Posts Q1",
+      "content2": "Video Series",
+      "content3": "Social Media Plan"
+    },
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "May",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Dec"
+    },
+    "activities": "activities",
+    "days": "days"
+  },
   "footer": {
     "tagline": "Make annual planning simple, clear and effective for the whole team.",
     "createdBy": "YearWheel Planner is a SaaS service created and operated by",
@@ -285,6 +357,33 @@
     "badge": "Templates",
     "title": "Get inspired by real-world examples",
     "description": "Our templates are based on actual plans from companies and organizations. Regardless of industry - education, HR, marketing or finance - there's a template that matches your needs. Use them as inspiration for your year wheel."
+  },
+  "views": {
+    "badge": "4 Views",
+    "title": "Same data, different perspectives",
+    "subtitle": "Switch between views instantly. Your activities stay synced across all perspectives – choose the view that fits how you work.",
+    "cta": "All views included free",
+    "ctaSubtext": "No premium required. Every view is available to all users.",
+    "wheel": {
+      "title": "Year Wheel",
+      "description": "The classic circular view. See your entire year at a glance, spot seasonal patterns, and visualize how activities connect across time.",
+      "useCases": ["Annual overview", "Seasonal patterns", "Presentations"]
+    },
+    "list": {
+      "title": "List View",
+      "description": "A structured, scannable view of all activities. Filter, sort, and find exactly what you need with powerful search capabilities.",
+      "useCases": ["Quick lookup", "Filtering", "Data review"]
+    },
+    "kanban": {
+      "title": "Kanban Board",
+      "description": "Drag-and-drop cards organized by status. Perfect for tracking progress, managing workflows, and team collaboration.",
+      "useCases": ["Status tracking", "Workflows", "Team planning"]
+    },
+    "timeline": {
+      "title": "Timeline",
+      "description": "A horizontal Gantt-style view showing activities across time. Ideal for project planning, resource allocation, and deadlines.",
+      "useCases": ["Project planning", "Deadlines", "Resource view"]
+    }
   },
   "cta": {
     "title": "Ready to start?",

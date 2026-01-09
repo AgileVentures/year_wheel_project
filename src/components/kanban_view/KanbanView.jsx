@@ -136,21 +136,21 @@ const KanbanView = ({
   };
   
   return (
-    <div className="w-full h-full flex flex-col bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="w-full h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-6 pb-4">
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-xl font-semibold text-gray-900">
             {t('kanbanView.title', 'Kanban-vy')}
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-sm text-gray-500 mt-0.5">
             {t('kanbanView.subtitle', 'Objekt grupperade efter etiketter')}
           </p>
         </div>
         <select
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 text-sm border border-gray-300 rounded-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">{t('listView.allYears', 'Alla år')}</option>
           {availableYears.map(y => (
@@ -160,7 +160,7 @@ const KanbanView = ({
       </div>
       
       {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto px-6 pb-6">
+      <div className="flex-1 overflow-x-auto px-6 py-4">
         <div className="flex gap-4 h-full">
           {renderColumn('unlabeled', t('listView.unlabeled', 'Utan etikett'), '#e5e7eb', itemsByLabel.get('unlabeled') || [])}
           {labels.filter(l => l.visible).map(label => 

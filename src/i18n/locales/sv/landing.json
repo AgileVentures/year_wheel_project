@@ -23,6 +23,13 @@
     ],
     "ctaPrimary": "Kom igång gratis",
     "ctaSecondary": "Se demo",
+    "viewsLabel": "4 sätt att se din data",
+    "viewTaglines": {
+      "wheel": "Se helheten",
+      "list": "Hitta snabbt",
+      "kanban": "Följ framsteg",
+      "timeline": "Planera framåt"
+    },
     "stats": {
       "free": {
         "value": "0 kr",
@@ -48,7 +55,11 @@
     "manualTitle": "Skapa ditt årshjul manuellt",
     "manualDescription": "Klicka, dra och organisera dina aktiviteter precis som du vill ha dem.",
     "aiTitle": "Eller låt AI:n göra jobbet",
-    "aiDescription": "Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter och föreslår förbättringar."
+    "aiDescription": "Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter och föreslår förbättringar.",
+    "listTitle": "Listvy - Hitta allt direkt",
+    "listDescription": "Sök, filtrera och hantera alla dina aktiviteter i ett strukturerat listformat.",
+    "timelineTitle": "Tidslinjevy - Visualisera ditt schema",
+    "timelineDescription": "Se alla dina aktiviteter på en horisontell tidslinje med zoom- och panoramakontroller."
   },
   "features": {
     "title": "Allt du behöver för professionell planering",
@@ -265,6 +276,67 @@
       "firstActivity": "Min första aktivitet"
     }
   },
+  "listDemo": {
+    "rings": {
+      "campaigns": "Kampanjer",
+      "content": "Innehåll"
+    },
+    "items": {
+      "campaign1": "Vårens lansering",
+      "campaign2": "Sommarkampanj",
+      "campaign3": "Höstpromotion",
+      "campaign4": "Julkampanj",
+      "content1": "Bloggposter Q1",
+      "content2": "Videoserie",
+      "content3": "Webinar-prep",
+      "content4": "Social Media-plan",
+      "content5": "Nyhetsbrevskampanj"
+    },
+    "activities": {
+      "marketing": "Marknadsföring",
+      "sales": "Försäljning",
+      "content": "Innehåll",
+      "events": "Event"
+    },
+    "searchPlaceholder": "Sök aktiviteter...",
+    "searchText": "Kampanj",
+    "newActivity": "Black Friday-rea",
+    "addButton": "Lägg till aktivitet",
+    "totalActivities": "Totalt:",
+    "rings": "Ringar:",
+    "year": "År:"
+  },
+  "timelineDemo": {
+    "rings": {
+      "title": "Ringar",
+      "campaigns": "Kampanjer",
+      "content": "Innehåll"
+    },
+    "items": {
+      "campaign1": "Vårens lansering",
+      "campaign2": "Sommarkampanj",
+      "campaign3": "Höstpromotion",
+      "content1": "Bloggposter Q1",
+      "content2": "Videoserie",
+      "content3": "Social Media-plan"
+    },
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "Maj",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Okt",
+      "nov": "Nov",
+      "dec": "Dec"
+    },
+    "activities": "aktiviteter",
+    "days": "dagar"
+  },
   "footer": {
     "tagline": "Gör årsplanering enkel, tydlig och effektiv för hela teamet.",
     "createdBy": "YearWheel Planner är en SaaS-tjänst skapad och driven av",
@@ -284,6 +356,33 @@
     "badge": "Mallar",
     "title": "Inspireras av verkliga exempel",
     "description": "Våra mallar bygger på riktiga planeringar från företag och föreningar. Oavsett bransch - undervisning, HR, marknadsföring eller finans - finns en mall som matchar dina behov. Använd dem som inspiration för ditt årshjul."
+  },
+  "views": {
+    "badge": "4 vyer",
+    "title": "Samma data, olika perspektiv",
+    "subtitle": "Växla mellan vyer direkt. Dina aktiviteter synkas automatiskt över alla perspektiv – välj den vy som passar ditt arbetssätt.",
+    "cta": "Alla vyer ingår gratis",
+    "ctaSubtext": "Inget premium krävs. Alla vyer är tillgängliga för samtliga användare.",
+    "wheel": {
+      "title": "Årshjul",
+      "description": "Den klassiska cirkulära vyn. Se hela ditt år i en överblick, upptäck säsongsmönster och visualisera hur aktiviteter hänger ihop över tid.",
+      "useCases": ["Årsöverblick", "Säsongsmönster", "Presentationer"]
+    },
+    "list": {
+      "title": "Listvy",
+      "description": "En strukturerad, scanningsbar vy av alla aktiviteter. Filtrera, sortera och hitta exakt det du söker med kraftfull sökning.",
+      "useCases": ["Snabb uppslagning", "Filtrering", "Dataöversikt"]
+    },
+    "kanban": {
+      "title": "Kanban-tavla",
+      "description": "Dra-och-släpp-kort organiserade efter status. Perfekt för att följa framsteg, hantera arbetsflöden och teamsamarbete.",
+      "useCases": ["Statusspårning", "Arbetsflöden", "Teamplanering"]
+    },
+    "timeline": {
+      "title": "Tidslinje",
+      "description": "En horisontell Gantt-liknande vy som visar aktiviteter över tid. Idealisk för projektplanering, resursallokering och deadlines.",
+      "useCases": ["Projektplanering", "Deadlines", "Resursvy"]
+    }
   },
   "cta": {
     "title": "Redo att börja?",

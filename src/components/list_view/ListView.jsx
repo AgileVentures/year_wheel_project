@@ -343,33 +343,36 @@ const ListView = ({
   };
   
   return (
-    <div className="w-full h-full bg-gray-50 overflow-auto p-2 sm:p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header - Compact on mobile */}
-        <div className="mb-3 sm:mb-6">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-              <div className="hidden sm:block">
-                <h2 className="text-2xl font-semibold text-gray-900">
-                  {t('listView.title', 'Listvy')}
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {t('listView.subtitle', 'Aktiviteter grupperade efter ringar')}
-                </p>
-              </div>
-              
-              {/* Year Filter */}
-              <select
-                value={yearFilter}
-                onChange={(e) => setYearFilter(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">{t('listView.allYears', 'Alla år')}</option>
-                {availableYears.map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
+    <div className="w-full h-full flex flex-col bg-gray-50">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {t('listView.title', 'Listvy')}
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {t('listView.subtitle', 'Aktiviteter grupperade efter ringar')}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Year Filter */}
+          <select
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">{t('listView.allYears', 'Alla år')}</option>
+            {availableYears.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-4 sm:p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between gap-2 mb-4">
             
             {/* Bulk Actions */}
             {selectedItems.size > 0 && (
@@ -408,10 +411,9 @@ const ListView = ({
               </div>
             )}
           </div>
-        </div>
         
-        {/* Rings List */}
-        <div className="space-y-2 sm:space-y-4">
+          {/* Rings List */}
+          <div className="space-y-2 sm:space-y-4">
           {Object.entries(itemsByRing).map(([ringId, { ring, items }]) => {
             const isExpanded = expandedRings[ringId] !== false; // Default to expanded
             const activityGroup = getActivityGroup(items[0]?.activityId);
@@ -819,14 +821,15 @@ const ListView = ({
           })}
         </div>
         
-        {/* Empty State */}
-        {Object.keys(itemsByRing).length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              {t('listView.noRings', 'Inga ringar hittades. Skapa ringar för att komma igång.')}
-            </p>
-          </div>
-        )}
+          {/* Empty State */}
+          {Object.keys(itemsByRing).length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">
+                {t('listView.noRings', 'Inga ringar hittades. Skapa ringar för att komma igång.')}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Edit Item Modal */}
