@@ -59,6 +59,7 @@ const GanttView = ({
   // Shared scroll position for syncing row pane and timeline
   const scrollContainerRef = useRef(null);
   const headerScrollRef = useRef(null);
+  const timelineScrollRef = useRef(null);
   const [headerScrollLeft, setHeaderScrollLeft] = useState(0);
   const [timelineTicks, setTimelineTicks] = useState([]);
   
@@ -168,7 +169,40 @@ const GanttView = ({
   };
   
   const handleItemClick = (item) => {
+    console.log('=== handleItemClick ===');
+    console.log('Item:', item.name, 'startDate:', item.startDate);
     setSelectedItemId(item.id);
+    
+    // Auto-scroll timeline to show the item if it's not in view
+    if (timelineScrollRef.current && item.startDate) {
+      const scrollContainer = timelineScrollRef.current;
+      console.log('scrollContainer:', scrollContainer);
+      console.log('clientWidth:', scrollContainer.clientWidth);
+      console.log('offsetWidth:', scrollContainer.offsetWidth);
+      console.log('scrollWidth:', scrollContainer.scrollWidth);
+      
+      const itemX = timeScale.dateToX(new Date(item.startDate));
+      const viewportWidth = scrollContainer.clientWidth;
+      const scrollLeft = scrollContainer.scrollLeft;
+      const scrollRight = scrollLeft + viewportWidth;
+      
+      console.log('itemX:', itemX, 'scrollLeft:', scrollLeft, 'scrollRight:', scrollRight, 'viewportWidth:', viewportWidth);
+      console.log('Is outside?', itemX < scrollLeft || itemX > scrollRight);
+      
+      // Check if item is outside visible area
+      if (itemX < scrollLeft || itemX > scrollRight) {
+        const targetScroll = Math.max(0, itemX - viewportWidth / 2);
+        console.log('Scrolling to:', targetScroll);
+        scrollContainer.scrollTo({
+          left: targetScroll,
+          behavior: 'smooth'
+        });
+      } else {
+        console.log('Item is in view, no scroll');
+      }
+    } else {
+      console.log('Missing:', { hasRef: !!timelineScrollRef.current, hasStartDate: !!item.startDate });
+    }
     // TODO: Open edit modal
   };
   
@@ -219,7 +253,7 @@ const GanttView = ({
       </div>
       
       {/* Main content area - shared scroll container */}
-      <div ref={scrollContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden relative">
+      <div ref={scrollContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden relative min-w-0">
         {/* Mini Wheel Navigator - Overlay in top-right */}
         <div className="absolute top-4 right-4 z-20">
           <MiniWheelNavigator
@@ -260,6 +294,7 @@ const GanttView = ({
           }}
           timeTicks={timelineTicks}
           effectiveWidth={timelineWidth}
+          scrollRef={timelineScrollRef}
         />
       </div>
     </div>

@@ -25,12 +25,14 @@ const GanttTimelinePane = ({
   onHeaderScroll,
   timeTicks: externalTimeTicks,
   effectiveWidth: externalEffectiveWidth,
+  scrollRef,
 }) => {
   const { t, i18n } = useTranslation();
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const scrollContainerRef = useRef(null);
+  const internalScrollRef = useRef(null);
+  const scrollContainerRef = scrollRef || internalScrollRef;
   const headerScrollRef = useRef(null);
   const [isPanning, setIsPanning] = useState(false);
   const panStartX = useRef(0);
@@ -293,7 +295,7 @@ const GanttTimelinePane = ({
   const showTodayMarker = todayX >= 0 && todayX <= containerWidth;
   
   return (
-    <div className="flex-1 flex flex-col bg-white">
+    <div className="flex-1 flex flex-col bg-white min-w-0">
       {/* Timeline content - Scrollable */}
       <div 
         ref={scrollContainerRef}
