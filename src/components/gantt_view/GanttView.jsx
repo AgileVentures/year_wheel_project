@@ -5,11 +5,12 @@ import { sv, enUS } from 'date-fns/locale';
 import GanttToolbar from './GanttToolbar';
 import GanttRowPane from './GanttRowPane';
 import GanttTimelinePane from './GanttTimelinePane';
+import GanttExportModal from './GanttExportModal';
 import ItemTooltip from '../ItemTooltip';
 import EditItemModal from '../EditItemModal';
 import { useGanttData } from './useGanttData';
 import { useTimeScale } from './useTimeScale';
-import { exportGanttAsPNG, exportGanttAsPDF, printGantt } from './GanttExporter';
+import { exportGanttAsPNG, exportGanttAsPDF, exportGanttAsCSV, printGantt } from './GanttExporter';
 
 /**
  * GanttView Component
@@ -46,8 +47,8 @@ const GanttView = forwardRef(function GanttView({
   const [selectedItem, setSelectedItem] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
-  
-  // Time scale state
+  const [showExportModal, setShowExportModal] = useState(false);
+    // Time scale state
   const [viewStart, setViewStart] = useState(() => {
     const today = new Date();
     return new Date(today.getFullYear(), 0, 1); // Start of current year
@@ -433,16 +434,36 @@ const GanttView = forwardRef(function GanttView({
     handleCloseTooltip();
   };
   
-  // Export handler
-  const handleExport = useCallback(async (exportFormat) => {
+  // Open export modal (called from Header)
+  const handleOpenExportModal = useCallback(() => {
+    setShowExportModal(true);
+  }, []);
+  
+  // Export handler with options from modal
+  const handleExportWithOptions = useCallback(async (exportFormat, options = {}) => {
+    const {
+      dateRange,
+      showNamesPanel = true,
+      showDatesOnBars = false,
+      showLegend = true,
+      showDependencies = true,
+      pdfSize = 'auto',
+    } = options;
+    
     const exportOptions = {
       title: wheel?.title || t('gantt.title', 'Tidslinje'),
-      viewStart,
-      viewEnd,
+      viewStart: dateRange?.start || viewStart,
+      viewEnd: dateRange?.end || viewEnd,
       wheelStructure,
       locale: i18n.language,
       groupedItems,
       allItems,
+      // New options
+      showNamesPanel,
+      showDatesOnBars,
+      showLegend,
+      showDependencies,
+      pdfSize,
     };
     
     try {
@@ -452,6 +473,9 @@ const GanttView = forwardRef(function GanttView({
           break;
         case 'pdf':
           await exportGanttAsPDF(exportOptions);
+          break;
+        case 'csv':
+          await exportGanttAsCSV(exportOptions);
           break;
         case 'print':
           await printGantt(exportOptions);
@@ -466,9 +490,10 @@ const GanttView = forwardRef(function GanttView({
   }, [wheel?.title, viewStart, viewEnd, wheelStructure, i18n.language, t, groupedItems, allItems]);
   
   // Expose export function via ref for parent components
+  // Opens the modal instead of exporting directly
   useImperativeHandle(ref, () => ({
-    export: handleExport,
-  }), [handleExport]);
+    export: handleOpenExportModal,
+  }), [handleOpenExportModal]);
   
   return (
     <div className="flex flex-col h-full bg-gray-50" data-cy="gantt-view">
@@ -624,6 +649,17 @@ const GanttView = forwardRef(function GanttView({
           onClose={() => setEditingItem(null)}
         />
       )}
+      
+      {/* Export Options Modal */}
+      <GanttExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExportWithOptions}
+        viewStart={viewStart}
+        viewEnd={viewEnd}
+        allItems={allItems}
+        availableYears={availableYears}
+      />
     </div>
   );
 });
