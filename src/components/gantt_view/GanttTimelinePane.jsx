@@ -40,7 +40,7 @@ const GanttTimelinePane = ({
   
   // Drag state
   const [dragState, setDragState] = useState(null);
-  // dragState = { item, mode: 'move' | 'resize-start' | 'resize-end', startX, originalStartDate, originalEndDate, originalRingId, currentStartDate, currentEndDate, targetRingId }
+  // dragState = { item, mode: 'move' | 'resize-start' | 'resize-end', startX, startY, originalStartDate, originalEndDate, originalRingId, currentStartDate, currentEndDate, targetRingId, currentY }
   
   // Hover state for showing resize handles
   const [hoveredBarId, setHoveredBarId] = useState(null);
@@ -350,6 +350,7 @@ const GanttTimelinePane = ({
       ...prev,
       currentStartDate: newStartDate,
       currentEndDate: newEndDate,
+      currentY: mouseY,
     }));
   };
   
@@ -465,18 +466,9 @@ const GanttTimelinePane = ({
             const previewEndX = timeScale.dateToX(dragState.currentEndDate);
             const previewWidth = Math.max(previewEndX - previewStartX, 20);
             
-            // Calculate preview Y position (might be different ring if dragging between rings)
-            let previewY = y;
-            if (groupBy === 'rings' && dragState.targetRingId !== dragState.originalRingId) {
-              const targetPos = groupYPositions.find(p => p.groupId === dragState.targetRingId);
-              if (targetPos) {
-                // Find item's index in target ring (will be appended)
-                // groupedItems is an object, not an array
-                const targetItems = groupedItems[dragState.targetRingId];
-                const targetItemCount = targetItems ? targetItems.length : 0;
-                previewY = targetPos.y + targetItemCount * ITEM_ROW_HEIGHT + 8;
-              }
-            }
+            // Calculate preview Y position - follow cursor Y, centered on bar
+            // Use currentY from drag state, offset to center the 24px bar
+            let previewY = dragState.currentY !== undefined ? dragState.currentY - 12 : y;
             
             bars.push(
               <g key={`${item.id}-ghost`}>
