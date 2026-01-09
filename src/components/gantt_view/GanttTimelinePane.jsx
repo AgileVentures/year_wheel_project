@@ -22,6 +22,9 @@ const GanttTimelinePane = ({
   onItemClick,
   onUpdateItem,
   onWidthChange,
+  onHeaderScroll,
+  timeTicks: externalTimeTicks,
+  effectiveWidth: externalEffectiveWidth,
 }) => {
   const { t, i18n } = useTranslation();
   const containerRef = useRef(null);
@@ -179,13 +182,26 @@ const GanttTimelinePane = ({
     }
   };
   
-  const timeTicks = generateTimeTicks();
+  const timeTicks = externalTimeTicks || generateTimeTicks();
   
   // Calculate total timeline width from ticks - memoized to prevent loop
-  const effectiveWidth = useMemo(() => {
+  const effectiveWidth = externalEffectiveWidth || useMemo(() => {
     const timelineWidth = timeTicks.reduce((sum, tick) => sum + tick.width, 0);
     return Math.max(timelineWidth, containerWidth, 2000);
   }, [timeTicks.length, containerWidth]); // Only recalc when tick count or container changes
+  
+  // Notify parent of scroll position for header sync
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer || !onHeaderScroll) return;
+    
+    const handleScroll = () => {
+      onHeaderScroll(scrollContainer.scrollLeft);
+    };
+    
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [onHeaderScroll]);
   
   // Report width to parent for timeScale calculations
   useEffect(() => {
@@ -276,23 +292,6 @@ const GanttTimelinePane = ({
   
   return (
     <div className="flex-1 flex flex-col bg-white">
-      {/* Time header - Outside scroll container so it stays visible */}
-      <div ref={headerScrollRef} className="flex-shrink-0 bg-gray-50 border-b border-gray-200 shadow-sm overflow-x-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <div className="flex h-12 items-stretch" style={{ width: `${effectiveWidth}px` }}>
-          {timeTicks.map((tick, index) => (
-            <div
-              key={index}
-              className="flex-shrink-0 border-r border-gray-200 px-2 py-2 text-center"
-              style={{ width: `${tick.width}px` }}
-            >
-              <span className="text-xs font-medium text-gray-600">
-                {tick.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-      
       {/* Timeline content - Scrollable */}
       <div 
         ref={scrollContainerRef}

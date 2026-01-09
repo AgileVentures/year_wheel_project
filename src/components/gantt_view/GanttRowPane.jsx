@@ -104,14 +104,7 @@ const GanttRowPane = ({
       className="w-80 bg-white border-r border-gray-200 flex-shrink-0"
       data-cy="gantt-row-pane"
     >
-      {/* Header */}
-      <div className="sticky top-0 z-10 px-3 py-3 bg-gray-100 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700">
-          {t(`gantt.${groupBy}`, groupBy.charAt(0).toUpperCase() + groupBy.slice(1))}
-        </h3>
-      </div>
-      
-      {/* Groups */}
+      {/* Groups - no header here, it's in parent */}
       <div>
         {Object.keys(groupedItems).length === 0 ? (
           <div className="px-3 py-8 text-center text-sm text-gray-500">
