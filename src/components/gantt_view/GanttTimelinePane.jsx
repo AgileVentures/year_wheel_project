@@ -272,7 +272,8 @@ const GanttTimelinePane = ({
     if (e.button !== 0) return; // Only left click
     e.stopPropagation();
     
-    const rect = containerRef.current.getBoundingClientRect();
+    // Use scrollContainerRef for rect to get correct position relative to scroll viewport
+    const rect = scrollContainerRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left + scrollContainerRef.current.scrollLeft;
     const mode = getDragZone(mouseX, barStartX, barWidth);
     
@@ -298,7 +299,8 @@ const GanttTimelinePane = ({
   const handleDragMove = (e) => {
     if (!dragState) return;
     
-    const rect = containerRef.current.getBoundingClientRect();
+    // Use scrollContainerRef for rect to get correct position relative to scroll viewport
+    const rect = scrollContainerRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left + scrollContainerRef.current.scrollLeft;
     const mouseY = e.clientY - rect.top;
     const deltaX = mouseX - dragState.startX;
