@@ -319,9 +319,9 @@ function YearWheel({
     // Base display size at 100% zoom is 1000px
     const baseDisplaySize = 1000;
     
-    // Calculate zoom to fit (with some padding)
-    const widthZoom = (containerWidth * 0.9 / baseDisplaySize) * 100;
-    const heightZoom = ((containerHeight - 80) * 0.9 / baseDisplaySize) * 100; // 80px for toolbar
+    // Calculate zoom to fill the entire area (no margins)
+    const widthZoom = (containerWidth / baseDisplaySize) * 100;
+    const heightZoom = ((containerHeight - 80) / baseDisplaySize) * 100; // 80px for toolbar
     
     const optimalZoom = Math.min(widthZoom, heightZoom, 200);
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
