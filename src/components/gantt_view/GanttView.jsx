@@ -356,26 +356,24 @@ const GanttView = ({
     }));
   };
   
-  // Handle click on item name in row pane - scroll to item
+  // Handle click on item name in row pane - scroll to center item in view
   const handleRowItemClick = (item) => {
     setSelectedItemId(item.id);
     
-    // Auto-scroll timeline to show the item
+    // Auto-scroll timeline to center the item in view
     if (timelineScrollRef.current && item.startDate) {
       const scrollContainer = timelineScrollRef.current;
-      const itemX = timeScale.dateToX(new Date(item.startDate));
+      const itemStartX = timeScale.dateToX(new Date(item.startDate));
+      const itemEndX = item.endDate ? timeScale.dateToX(new Date(item.endDate)) : itemStartX;
+      const itemCenterX = (itemStartX + itemEndX) / 2;
       const viewportWidth = scrollContainer.clientWidth;
-      const scrollLeft = scrollContainer.scrollLeft;
-      const scrollRight = scrollLeft + viewportWidth;
       
-      // Check if item is outside visible area
-      if (itemX < scrollLeft || itemX > scrollRight) {
-        const targetScroll = Math.max(0, itemX - viewportWidth / 2);
-        scrollContainer.scrollTo({
-          left: targetScroll,
-          behavior: 'smooth'
-        });
-      }
+      // Center the item in the viewport
+      const targetScroll = Math.max(0, itemCenterX - viewportWidth / 2);
+      scrollContainer.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
     }
   };
   
