@@ -234,6 +234,7 @@ const GanttTimelinePane = ({
     let currentY = 0;
     
     Object.entries(groupedItems).forEach(([groupId, items]) => {
+      // Add space for group header
       currentY += GROUP_HEADER_HEIGHT;
       
       if (expandedGroups[groupId]) {
@@ -279,6 +280,7 @@ const GanttTimelinePane = ({
           );
         });
         
+        // Advance Y position by height of all items in this group
         currentY += items.length * ITEM_ROW_HEIGHT;
       }
     });

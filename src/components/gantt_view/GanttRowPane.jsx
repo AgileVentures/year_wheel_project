@@ -75,11 +75,12 @@ const GanttRowPane = ({
               <div
                 key={item.id}
                 onClick={() => onItemClick(item)}
-                className={`flex items-center gap-2 px-3 py-2 pl-10 cursor-pointer hover:bg-white transition-colors border-l-2 ${
+                className={`flex items-center gap-2 px-3 pl-10 cursor-pointer hover:bg-white transition-colors border-l-2 ${
                   selectedItemId === item.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-transparent'
                 }`}
+                style={{ height: '40px' }}
                 data-cy={`gantt-item-${item.id}`}
               >
                 <div className="flex-1 min-w-0">
