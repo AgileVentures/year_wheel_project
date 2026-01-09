@@ -219,6 +219,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const broadcastOperationRef = useRef(null);
 
   const [yearWheelRef, setYearWheelRef] = useState(null);
+  const ganttViewRef = useRef(null);
 
   // Store currentPageId in ref so callback can access it without causing dependency issues
   const currentPageIdRef = useRef(null);
@@ -5396,6 +5397,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             console.warn('yearWheelRef.openItemTooltip not available');
           }
         }}
+        // View-specific export handlers
+        onGanttExport={(format) => {
+          if (ganttViewRef.current && ganttViewRef.current.export) {
+            ganttViewRef.current.export(format);
+          }
+        }}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -5527,6 +5534,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           ) : (
             <div className="w-full h-full">
               <GanttView
+                ref={ganttViewRef}
                 key={`gantt-${wheelId}`}
                 wheelStructure={calendarWheelStructure}
                 wheel={wheelState.metadata}

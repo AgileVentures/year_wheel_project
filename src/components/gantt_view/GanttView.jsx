@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { startOfMonth, endOfMonth, addMonths, startOfWeek, endOfWeek, addWeeks, getISOWeek, format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
@@ -26,15 +26,16 @@ import { exportGanttAsPNG, exportGanttAsPDF, printGantt } from './GanttExporter'
  * @param {Function} onUpdateItem - Callback when item is updated
  * @param {Function} onDeleteItem - Callback when item is deleted
  * @param {string} currentWheelId - Current wheel ID
+ * @param {React.Ref} ref - Forwarded ref for imperative handle
  */
-const GanttView = ({
+const GanttView = forwardRef(function GanttView({
   wheelStructure,
   wheel,
   pages = [],
   onUpdateItem,
   onDeleteItem,
   currentWheelId,
-}) => {
+}, ref) {
   const { t, i18n } = useTranslation();
   
   // View state
@@ -465,6 +466,11 @@ const GanttView = ({
     }
   }, [wheel?.title, viewStart, viewEnd, wheelStructure, i18n.language, t]);
   
+  // Expose export function via ref for parent components
+  useImperativeHandle(ref, () => ({
+    export: handleExport,
+  }), [handleExport]);
+  
   return (
     <div className="flex flex-col h-full bg-gray-50" data-cy="gantt-view">
       {/* Toolbar */}
@@ -478,7 +484,6 @@ const GanttView = ({
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onTodayClick={handleTodayClick}
-        onExport={handleExport}
       />
       
       {/* Unified sticky header row */}
@@ -622,6 +627,6 @@ const GanttView = ({
       )}
     </div>
   );
-};
+});
 
 export default GanttView;
