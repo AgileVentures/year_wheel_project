@@ -26,6 +26,7 @@ const GanttTimelinePane = ({
   timeTicks: externalTimeTicks,
   effectiveWidth: externalEffectiveWidth,
   scrollRef,
+  contentHeight,
 }) => {
   const { t, i18n } = useTranslation();
   const containerRef = useRef(null);
@@ -216,36 +217,40 @@ const GanttTimelinePane = ({
     }
   }, [effectiveWidth]); // Remove onWidthChange from deps to prevent loop
   
-  // Calculate total height
-  const calculateHeight = () => {
-    let height = 0;
-    Object.entries(groupedItems).forEach(([groupId, items]) => {
-      height += GROUP_HEADER_HEIGHT;
-      if (expandedGroups[groupId]) {
-        height += items.length * ITEM_ROW_HEIGHT;
-      }
-    });
-    return Math.max(height, 400);
-  };
+  // Use contentHeight from parent (calculated in GanttView)
+  const totalHeight = contentHeight;
   
-  const totalHeight = calculateHeight();
+  console.log('GanttTimelinePane render:', { totalHeight, effectiveWidth, groupCount: Object.keys(groupedItems).length });
   
   // Render timeline bars
   const renderBars = () => {
     const bars = [];
     let currentY = 0;
     
+    console.log('renderBars called, expandedGroups:', expandedGroups);
+    
     Object.entries(groupedItems).forEach(([groupId, items]) => {
       // Add space for group header
       currentY += GROUP_HEADER_HEIGHT;
       
-      if (expandedGroups[groupId]) {
+      const isExpanded = expandedGroups[groupId];
+      console.log(`Group ${groupId}: isExpanded=${isExpanded}, items=${items.length}, currentY=${currentY}`);
+      
+      if (isExpanded) {
         items.forEach((item, index) => {
+          // Skip items without valid dates
+          if (!item.startDate || !item.endDate) {
+            console.log(`Skipping item "${item.name}" - missing dates:`, { startDate: item.startDate, endDate: item.endDate });
+            return;
+          }
+          
           const startX = timeScale.dateToX(new Date(item.startDate));
           const endX = timeScale.dateToX(new Date(item.endDate));
           const width = Math.max(endX - startX, 20); // Minimum 20px width
           // Y position - center 24px bar within 40px row (8px padding top/bottom)
           const y = currentY + index * ITEM_ROW_HEIGHT + 8;
+          
+          console.log(`Bar: "${item.name}" x=${startX.toFixed(0)} y=${y} width=${width.toFixed(0)}`);
           
           const color = getActivityGroupColor(item.activityId);
           const isSelected = selectedItemId === item.id;
@@ -295,14 +300,13 @@ const GanttTimelinePane = ({
   const showTodayMarker = todayX >= 0 && todayX <= containerWidth;
   
   return (
-    <div className="flex-1 flex flex-col bg-white min-w-0">
-      {/* Timeline content - Scrollable */}
-      <div 
-        ref={scrollContainerRef}
-        className={`flex-1 overflow-x-auto overflow-y-hidden ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
-        data-cy="gantt-timeline-pane"
-        onMouseDown={handleMouseDown}
-      >
+    <div 
+      ref={scrollContainerRef}
+      className={`flex-1 overflow-x-auto bg-white min-w-0 ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+      style={{ height: `${totalHeight}px` }}
+      data-cy="gantt-timeline-pane"
+      onMouseDown={handleMouseDown}
+    >
       <div ref={containerRef} className="relative" style={{ height: `${totalHeight}px`, width: `${effectiveWidth}px`, minWidth: '100%' }}>
         {/* Grid lines */}
         <svg
@@ -357,7 +361,6 @@ const GanttTimelinePane = ({
           {renderBars()}
         </svg>
       </div>
-    </div>
     </div>
   );
 };

@@ -69,6 +69,10 @@ const GanttView = ({
     return [...new Set(years)].sort((a, b) => a - b);
   }, [pages]);
   
+  // Constants for row heights - must match both panes
+  const GROUP_HEADER_HEIGHT = 36;
+  const ITEM_ROW_HEIGHT = 40;
+  
   // Transform data for Gantt display
   const { groupedItems, allItems } = useGanttData({
     wheelStructure,
@@ -77,7 +81,35 @@ const GanttView = ({
     groupBy,
   });
   
+  // Calculate total content height based on expanded groups
+  const contentHeight = useMemo(() => {
+    let height = 0;
+    Object.entries(groupedItems).forEach(([groupId, items]) => {
+      height += GROUP_HEADER_HEIGHT;
+      if (expandedGroups[groupId]) {
+        height += items.length * ITEM_ROW_HEIGHT;
+      }
+    });
+    return Math.max(height, 400);
+  }, [groupedItems, expandedGroups]);
+  
   // Initialize all groups as expanded when groupedItems changes
+  useEffect(() => {
+    if (Object.keys(groupedItems).length > 0) {
+      setExpandedGroups(prev => {
+        const newExpanded = { ...prev };
+        Object.keys(groupedItems).forEach(groupId => {
+          // Only set to true if not already defined (preserve user's collapse state)
+          if (newExpanded[groupId] === undefined) {
+            newExpanded[groupId] = true;
+          }
+        });
+        return newExpanded;
+      });
+    }
+  }, [groupedItems]); // React to actual data changes
+  
+  // Reset expanded state when grouping changes
   useEffect(() => {
     const initialExpanded = {};
     Object.keys(groupedItems).forEach(groupId => {
@@ -274,6 +306,7 @@ const GanttView = ({
           wheelStructure={wheelStructure}
           onToggleGroup={toggleGroup}
           onItemClick={handleItemClick}
+          contentHeight={contentHeight}
         />
         
         {/* Right: Timeline pane with bars */}
@@ -292,6 +325,7 @@ const GanttView = ({
               headerScrollRef.current.scrollLeft = scrollLeft;
             }
           }}
+          contentHeight={contentHeight}
           timeTicks={timelineTicks}
           effectiveWidth={timelineWidth}
           scrollRef={timelineScrollRef}

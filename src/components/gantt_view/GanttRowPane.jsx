@@ -15,6 +15,7 @@ const GanttRowPane = ({
   wheelStructure,
   onToggleGroup,
   onItemClick,
+  contentHeight,
 }) => {
   const { t } = useTranslation();
   
@@ -107,6 +108,7 @@ const GanttRowPane = ({
   return (
     <div 
       className="w-80 bg-white border-r border-gray-200 flex-shrink-0"
+      style={{ height: `${contentHeight}px` }}
       data-cy="gantt-row-pane"
     >
       {/* Groups - no header here, it's in parent */}
