@@ -1,6 +1,9 @@
 import { useState, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronRight, Calendar, User, Eye, Target, List, Trello, Clock } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, User, Eye } from 'lucide-react';
+import AddActivityModal from './demo-shared/AddActivityModal';
+import WheelView from './demo-shared/WheelView';
+import ViewNavigation from './demo-shared/ViewNavigation';
 
 function ListViewDemo() {
   const { t } = useTranslation(['landing']);
@@ -129,11 +132,11 @@ function ListViewDemo() {
     }, 13000));
 
     return () => timers.forEach(timer => clearTimeout(timer));
-  }, [t, demoStep]);
+  }, [t]);
 
   return (
-    <div className="aspect-video bg-white p-4">
-      <div className="h-full flex flex-col">
+    <div className="aspect-video bg-white p-4 relative">
+      <div className="h-full flex flex-col relative">
         {/* Header with View Navigation */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -142,142 +145,12 @@ function ListViewDemo() {
           </div>
           
           {/* View Navigation */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-gray-100 rounded-sm p-1">
-              <button
-                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                  currentView === 'wheel' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Target className="w-3.5 h-3.5" />
-                {t('landing:views.wheel.title', 'Wheel')}
-              </button>
-              <button
-                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
-                  currentView === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <List className="w-3.5 h-3.5" />
-                {t('landing:views.list.title', 'List')}
-              </button>
-              <button
-                className="px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 text-gray-400"
-                disabled
-              >
-                <Trello className="w-3.5 h-3.5" />
-                {t('landing:views.kanban.title', 'Kanban')}
-              </button>
-              <button
-                className="px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 text-gray-400"
-                disabled
-              >
-                <Clock className="w-3.5 h-3.5" />
-                {t('landing:views.timeline.title', 'Timeline')}
-              </button>
-            </div>
-          </div>
+          <ViewNavigation currentView={currentView} />
         </div>
 
         {/* Wheel View */}
         {currentView === 'wheel' && (
-          <div className="flex-1 flex items-center justify-center bg-gray-50 py-8 px-4">
-            <div className="relative w-full max-w-md">
-              <svg viewBox="0 0 360 360" className="transform -rotate-90 drop-shadow-2xl w-full h-auto">
-                {/* Background */}
-                <circle cx="180" cy="180" r="175" fill="#fafafa" />
-
-                {/* Outer ring - Campaigns (blue) */}
-                <circle cx="180" cy="180" r="165" fill="none" stroke="#dbeafe" strokeWidth="28" />
-
-                {/* Inner ring - Content (purple) */}
-                <circle cx="180" cy="180" r="132" fill="none" stroke="#ede9fe" strokeWidth="26" />
-
-                {/* Month ring */}
-                <circle cx="180" cy="180" r="102" fill="none" stroke="#e2e8f0" strokeWidth="12" />
-
-                {/* Center */}
-                <circle cx="180" cy="180" r="94" fill="white" stroke="#e5e7eb" strokeWidth="2" />
-
-                {/* Month dividers */}
-                {Array.from({ length: 12 }, (_, i) => {
-                  const angle = (i * 30) * (Math.PI / 180);
-                  const x1 = 180 + 96 * Math.cos(angle);
-                  const y1 = 180 + 96 * Math.sin(angle);
-                  const x2 = 180 + 179 * Math.cos(angle);
-                  const y2 = 180 + 179 * Math.sin(angle);
-                  return (
-                    <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#e5e7eb" strokeWidth="1" opacity="0.4" />
-                  );
-                })}
-
-                {/* Campaign activities (outer ring - blue) */}
-                {items.ring1?.map((item, idx) => {
-                  const createArcSegment = (startAngle, endAngle, innerRadius, outerRadius) => {
-                    const startRad = (startAngle * Math.PI) / 180;
-                    const endRad = (endAngle * Math.PI) / 180;
-                    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-
-                    const x1 = 180 + outerRadius * Math.cos(startRad);
-                    const y1 = 180 + outerRadius * Math.sin(startRad);
-                    const x2 = 180 + outerRadius * Math.cos(endRad);
-                    const y2 = 180 + outerRadius * Math.sin(endRad);
-                    const x3 = 180 + innerRadius * Math.cos(endRad);
-                    const y3 = 180 + innerRadius * Math.sin(endRad);
-                    const x4 = 180 + innerRadius * Math.cos(startRad);
-                    const y4 = 180 + innerRadius * Math.sin(startRad);
-
-                    return `M ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-                  };
-
-                  return (
-                    <path
-                      key={item.id}
-                      d={createArcSegment(item.startAngle, item.endAngle, 151, 179)}
-                      fill="#3b82f6"
-                      opacity={item.isNew ? 1 : 0.85}
-                      className={item.isNew ? 'animate-pulse' : ''}
-                    />
-                  );
-                })}
-
-                {/* Content activities (inner ring - purple) */}
-                {items.ring2?.map((item) => {
-                  const createArcSegment = (startAngle, endAngle, innerRadius, outerRadius) => {
-                    const startRad = (startAngle * Math.PI) / 180;
-                    const endRad = (endAngle * Math.PI) / 180;
-                    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-
-                    const x1 = 180 + outerRadius * Math.cos(startRad);
-                    const y1 = 180 + outerRadius * Math.sin(startRad);
-                    const x2 = 180 + outerRadius * Math.cos(endRad);
-                    const y2 = 180 + outerRadius * Math.sin(endRad);
-                    const x3 = 180 + innerRadius * Math.cos(endRad);
-                    const y3 = 180 + innerRadius * Math.sin(endRad);
-                    const x4 = 180 + innerRadius * Math.cos(startRad);
-                    const y4 = 180 + innerRadius * Math.sin(startRad);
-
-                    return `M ${x1} ${y1} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4} Z`;
-                  };
-
-                  return (
-                    <path
-                      key={item.id}
-                      d={createArcSegment(item.startAngle, item.endAngle, 119, 145)}
-                      fill="#8b5cf6"
-                      opacity="0.85"
-                    />
-                  );
-                })}
-              </svg>
-
-              {/* Center label */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-white border border-gray-200 rounded-full px-4 py-2 text-lg font-semibold text-gray-900 shadow-sm">
-                  2026
-                </div>
-              </div>
-            </div>
-          </div>
+          <WheelView items={items} year="2026" />
         )}
 
         {/* List View */}
@@ -389,71 +262,15 @@ function ListViewDemo() {
         )}
 
         {/* Add Activity Modal */}
-        {showAddModal && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-white rounded-sm shadow-2xl w-full max-w-md mx-4 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {t('landing:listDemo.addButton', 'Add Activity')}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('landing:manualDemo.modal.activityName', 'Activity name')}
-                  </label>
-                  <input
-                    type="text"
-                    value={newActivityName}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
-                  />
-                  {isTypingActivity && (
-                    <span className="inline-block w-0.5 h-4 bg-blue-600 ml-1 animate-pulse"></span>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('landing:manualDemo.modal.ring', 'Ring')}
-                  </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm" disabled>
-                    <option>{t('landing:listDemo.rings.campaigns', 'Campaigns')}</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('landing:manualDemo.modal.startDate', 'Start date')}
-                    </label>
-                    <input
-                      type="text"
-                      value="2026-11-25"
-                      readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('landing:manualDemo.modal.endDate', 'End date')}
-                    </label>
-                    <input
-                      type="text"
-                      value="2026-11-29"
-                      readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-sm text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 flex items-center justify-end gap-3">
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors">
-                  {t('landing:manualDemo.modal.cancel', 'Cancel')}
-                </button>
-                <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm transition-colors">
-                  {t('landing:manualDemo.modal.save', 'Save')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <AddActivityModal
+          show={showAddModal}
+          activityName={newActivityName}
+          isTyping={isTypingActivity}
+          ringName={t('landing:listDemo.rings.campaigns', 'Campaigns')}
+          activityGroup={t('landing:listDemo.activities.sales', 'Sales')}
+          startDate="2026-11-25"
+          endDate="2026-11-29"
+        />
       </div>
     </div>
   );

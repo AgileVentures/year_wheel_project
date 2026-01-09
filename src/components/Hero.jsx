@@ -148,15 +148,15 @@ function Hero() {
               {viewIcons.map((view, index) => (
                 <div
                   key={view.id}
-                  className="group animate-slide-in-diagonal flex items-center gap-5 mb-35"
+                  className="group animate-slide-in-diagonal flex items-center gap-5 mb-5"
                   style={{ 
                     animationDelay: view.delay,
                     animationFillMode: 'both',
-                    paddingLeft: `${index * 70}px`,
+                    paddingLeft: `${index * 40}px`,
                   }}
                 >
                   {/* Main icon - white with subtle transparent background */}
-                  <div className="relative w-20 h-20 bg-white/5 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 animate-float cursor-pointer border border-white/10 flex-shrink-0"
+                  <div className="relative w-20 h-20 bg-white/5 backdrop-blur-sm rounded-sm flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 animate-float cursor-pointer border border-white/10 flex-shrink-0"
                     style={{ 
                       animationDelay: view.delay,
                       animationDuration: `${3 + index * 0.5}s`

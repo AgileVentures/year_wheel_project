@@ -9,14 +9,26 @@ function TimelineDemo() {
   const [hoveredBar, setHoveredBar] = useState(null);
   const [scrollPosition, setScrollPosition] = useState(0);
 
-  // Timeline bars - positioned by month and width
-  const timelineBars = [
-    { id: 'bar1', name: t('landing:timelineDemo.items.campaign1', 'Spring Launch'), ring: t('landing:timelineDemo.rings.campaigns', 'Campaigns'), startMonth: 2, widthMonths: 1, color: '#3b82f6' },
-    { id: 'bar2', name: t('landing:timelineDemo.items.campaign2', 'Summer Campaign'), ring: t('landing:timelineDemo.rings.campaigns', 'Campaigns'), startMonth: 5, widthMonths: 3, color: '#3b82f6' },
-    { id: 'bar3', name: t('landing:timelineDemo.items.content1', 'Blog Posts Q1'), ring: t('landing:timelineDemo.rings.content', 'Content'), startMonth: 0, widthMonths: 3, color: '#8b5cf6' },
-    { id: 'bar4', name: t('landing:timelineDemo.items.content2', 'Video Series'), ring: t('landing:timelineDemo.rings.content', 'Content'), startMonth: 3, widthMonths: 3, color: '#8b5cf6' },
-    { id: 'bar5', name: t('landing:timelineDemo.items.campaign3', 'Fall Promotion'), ring: t('landing:timelineDemo.rings.campaigns', 'Campaigns'), startMonth: 8, widthMonths: 1.5, color: '#3b82f6' },
-    { id: 'bar6', name: t('landing:timelineDemo.items.content3', 'Social Media Plan'), ring: t('landing:timelineDemo.rings.content', 'Content'), startMonth: 6, widthMonths: 3, color: '#8b5cf6' },
+  // Timeline bars grouped by ring with individual rows per activity
+  const ringData = [
+    {
+      ring: t('landing:timelineDemo.rings.campaigns', 'Campaigns'),
+      color: '#3b82f6',
+      activities: [
+        { id: 'bar1', name: t('landing:timelineDemo.items.campaign1', 'Spring Launch'), startMonth: 2, widthMonths: 1 },
+        { id: 'bar2', name: t('landing:timelineDemo.items.campaign2', 'Summer Campaign'), startMonth: 5, widthMonths: 3 },
+        { id: 'bar5', name: t('landing:timelineDemo.items.campaign3', 'Fall Promotion'), startMonth: 8, widthMonths: 1.5 },
+      ]
+    },
+    {
+      ring: t('landing:timelineDemo.rings.content', 'Content'),
+      color: '#8b5cf6',
+      activities: [
+        { id: 'bar3', name: t('landing:timelineDemo.items.content1', 'Blog Posts Q1'), startMonth: 0, widthMonths: 3 },
+        { id: 'bar4', name: t('landing:timelineDemo.items.content2', 'Video Series'), startMonth: 3, widthMonths: 3 },
+        { id: 'bar6', name: t('landing:timelineDemo.items.content3', 'Social Media Plan'), startMonth: 6, widthMonths: 3 },
+      ]
+    },
   ];
 
   const months = [
@@ -34,12 +46,9 @@ function TimelineDemo() {
     t('landing:timelineDemo.months.dec', 'Dec'),
   ];
 
-  // Group bars by ring
-  const rings = [...new Set(timelineBars.map(b => b.ring))];
-  const barsByRing = {};
-  rings.forEach(ring => {
-    barsByRing[ring] = timelineBars.filter(b => b.ring === ring);
-  });
+  // Calculate total row height based on activities per ring
+  const ACTIVITY_ROW_HEIGHT = 50;
+  const RING_HEADER_HEIGHT = 40;
 
   // Demo sequence
   useEffect(() => {
@@ -130,12 +139,21 @@ function TimelineDemo() {
               </span>
             </div>
             <div>
-              {rings.map((ring, idx) => (
-                <div key={idx} className="border-b border-gray-200 px-4 py-4 bg-white">
-                  <div className="text-sm font-medium text-gray-900">{ring}</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {barsByRing[ring].length} {t('landing:timelineDemo.activities', 'activities')}
+              {ringData.map((ringGroup, idx) => (
+                <div key={idx}>
+                  {/* Ring header */}
+                  <div className="border-b border-gray-300 px-4 py-2 bg-gray-50" style={{ height: RING_HEADER_HEIGHT }}>
+                    <div className="text-sm font-semibold text-gray-900">{ringGroup.ring}</div>
                   </div>
+                  {/* Activity rows */}
+                  {ringGroup.activities.map((activity, actIdx) => (
+                    <div key={activity.id} className="border-b border-gray-200 px-4 py-2 bg-white" style={{ height: ACTIVITY_ROW_HEIGHT }}>
+                      <div className="text-xs text-gray-700 truncate">{activity.name}</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        {Math.round(activity.widthMonths * 30)} {t('landing:timelineDemo.days', 'days')}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -170,7 +188,7 @@ function TimelineDemo() {
               </div>
             </div>
 
-            {/* Timeline bars */}
+            {/* Timeline bars with ring groups */}
             <div className="overflow-hidden bg-white relative" style={{ height: 'calc(100% - 60px)' }}>
               <div 
                 className="absolute inset-0"
@@ -180,65 +198,87 @@ function TimelineDemo() {
                   width: timelineWidth
                 }}
               >
-                {rings.map((ring, ringIdx) => (
-                  <div
-                    key={ringIdx}
-                    className="border-b border-gray-200 relative"
-                    style={{ height: 80 }}
-                  >
-                    {/* Month grid lines */}
-                    {months.map((_, monthIdx) => (
-                      <div
-                        key={monthIdx}
-                        className="absolute top-0 bottom-0 border-r border-gray-100"
-                        style={{ left: monthIdx * monthWidth, width: monthWidth }}
-                      />
-                    ))}
-
-                    {/* Activity bars */}
-                    {barsByRing[ring].map((bar) => {
-                      const left = bar.startMonth * monthWidth;
-                      const width = bar.widthMonths * monthWidth;
-                      const isHovered = hoveredBar === bar.id;
-
-                      return (
+                {ringData.map((ringGroup, ringIdx) => (
+                  <div key={ringIdx}>
+                    {/* Ring header row */}
+                    <div
+                      className="border-b border-gray-300 bg-gray-50 relative flex items-center"
+                      style={{ height: RING_HEADER_HEIGHT }}
+                    >
+                      {/* Month grid lines */}
+                      {months.map((_, monthIdx) => (
                         <div
-                          key={bar.id}
-                          className={`absolute rounded-sm shadow-sm transition-all cursor-pointer ${
-                            isHovered ? 'shadow-lg z-10' : ''
-                          }`}
-                          style={{
-                            left: left + 8,
-                            top: 16,
-                            width: width - 16,
-                            height: 48,
-                            backgroundColor: bar.color,
-                            opacity: isHovered ? 0.95 : 0.85,
-                            transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-                          }}
-                          onMouseEnter={() => setHoveredBar(bar.id)}
-                          onMouseLeave={() => setHoveredBar(null)}
-                        >
-                          <div className="px-3 py-2 h-full flex items-center">
-                            <span className="text-white text-xs font-medium truncate">
-                              {bar.name}
-                            </span>
-                          </div>
+                          key={monthIdx}
+                          className="absolute top-0 bottom-0 border-r border-gray-100"
+                          style={{ left: monthIdx * monthWidth, width: monthWidth }}
+                        />
+                      ))}
+                      <div className="px-3 text-sm font-semibold text-gray-700 relative z-10">
+                        {ringGroup.ring}
+                      </div>
+                    </div>
 
-                          {/* Tooltip on hover */}
-                          {isHovered && (
-                            <div className="absolute left-0 -top-16 bg-gray-900 text-white px-3 py-2 rounded-sm text-xs whitespace-nowrap z-20 shadow-xl">
-                              <div className="font-semibold mb-1">{bar.name}</div>
-                              <div className="text-gray-300 flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {Math.round(bar.widthMonths * 30)} {t('landing:timelineDemo.days', 'days')}
+                    {/* Activity rows for this ring */}
+                    {ringGroup.activities.map((activity, actIdx) => (
+                      <div
+                        key={activity.id}
+                        className="border-b border-gray-200 relative"
+                        style={{ height: ACTIVITY_ROW_HEIGHT }}
+                      >
+                        {/* Month grid lines */}
+                        {months.map((_, monthIdx) => (
+                          <div
+                            key={monthIdx}
+                            className="absolute top-0 bottom-0 border-r border-gray-100"
+                            style={{ left: monthIdx * monthWidth, width: monthWidth }}
+                          />
+                        ))}
+
+                        {/* Activity bar */}
+                        {(() => {
+                          const left = activity.startMonth * monthWidth;
+                          const width = activity.widthMonths * monthWidth;
+                          const isHovered = hoveredBar === activity.id;
+
+                          return (
+                            <div
+                              className={`absolute rounded-sm shadow-sm transition-all cursor-pointer ${
+                                isHovered ? 'shadow-lg z-10' : ''
+                              }`}
+                              style={{
+                                left: left + 8,
+                                top: 8,
+                                width: width - 16,
+                                height: ACTIVITY_ROW_HEIGHT - 16,
+                                backgroundColor: ringGroup.color,
+                                opacity: isHovered ? 0.95 : 0.85,
+                                transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+                              }}
+                              onMouseEnter={() => setHoveredBar(activity.id)}
+                              onMouseLeave={() => setHoveredBar(null)}
+                            >
+                              <div className="px-3 py-2 h-full flex items-center">
+                                <span className="text-white text-xs font-medium truncate">
+                                  {activity.name}
+                                </span>
                               </div>
-                              <div className="absolute left-4 -bottom-1 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+
+                              {/* Tooltip on hover */}
+                              {isHovered && (
+                                <div className="absolute left-0 -top-16 bg-gray-900 text-white px-3 py-2 rounded-sm text-xs whitespace-nowrap z-20 shadow-xl">
+                                  <div className="font-semibold mb-1">{activity.name}</div>
+                                  <div className="text-gray-300 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {Math.round(activity.widthMonths * 30)} {t('landing:timelineDemo.days', 'days')}
+                                  </div>
+                                  <div className="absolute left-4 -bottom-1 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                          );
+                        })()}
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>

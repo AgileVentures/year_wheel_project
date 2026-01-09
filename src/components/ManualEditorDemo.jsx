@@ -1,5 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import AddActivityModal from './demo-shared/AddActivityModal';
 
 function ManualEditorDemo() {
   const { t } = useTranslation(['landing']);
@@ -510,113 +511,14 @@ function ManualEditorDemo() {
           </div>
 
           {/* Add Activity Modal */}
-          {showAddModal && (
-            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4">
-              <div className="bg-white rounded-sm shadow-xl w-full max-w-md animate-fadeIn">
-                {/* Modal Header */}
-                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">{t('landing:manualDemo.modal.addActivityTitle')}</h3>
-                  <button
-                    onClick={() => setShowAddModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Modal Content */}
-                <div className="px-6 py-4 space-y-4">
-                  {/* Item Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('landing:manualDemo.modal.activityName')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={isTypingActivity ? activityTypingText : t('landing:manualDemo.activities.firstActivity')}
-                        readOnly
-                        className="w-full px-4 py-2.5 border border-blue-500 rounded-sm bg-white text-base font-medium text-gray-900"
-                      />
-                      {isTypingActivity && (
-                        <span className="absolute top-3 bg-blue-600 w-0.5 h-5 animate-pulse" style={{
-                          left: `${16 + activityTypingText.length * 8.5}px`
-                        }}></span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Ring */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('landing:manualDemo.modal.ring')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
-                    </label>
-                    <select value={ringName} readOnly className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-white">
-                      <option>{ringName}</option>
-                    </select>
-                  </div>
-
-                  {/* Activity Group */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('landing:manualDemo.modal.activityGroup')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
-                    </label>
-                    <select className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-white">
-                      <option>{t('landing:manualDemo.activities.planning')}</option>
-                    </select>
-                  </div>
-
-                  {/* Label */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('landing:manualDemo.modal.label')}</label>
-                    <select className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base bg-white">
-                      <option value="">{t('landing:manualDemo.modal.noLabel')}</option>
-                    </select>
-                  </div>
-
-                  {/* Dates */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('landing:manualDemo.modal.startDate')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
-                      </label>
-                      <input
-                        type="date"
-                        defaultValue="2026-03-10"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base text-gray-900 bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('landing:manualDemo.modal.endDate')} <span className="text-red-500">{t('landing:manualDemo.modal.required')}</span>
-                      </label>
-                      <input
-                        type="date"
-                        defaultValue="2026-03-16"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-sm text-base text-gray-900 bg-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
-                  <button
-                    onClick={() => setShowAddModal(false)}
-                    className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
-                  >
-                    {t('landing:manualDemo.modal.cancel')}
-                  </button>
-                  <button
-                    onClick={() => setShowAddModal(false)}
-                    className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-sm shadow-sm transition-colors"
-                  >
-                    {t('landing:manualDemo.modal.addActivity')}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <AddActivityModal
+            show={showAddModal}
+            activityName={isTypingActivity ? activityTypingText : t('landing:manualDemo.activities.firstActivity')}
+            isTyping={isTypingActivity}
+            ringName={ringName}
+            activityGroup={t('landing:manualDemo.activities.planning')}
+            onClose={() => setShowAddModal(false)}
+          />
 
           {/* Edit Activity Modal */}
           {showEditModal && (
