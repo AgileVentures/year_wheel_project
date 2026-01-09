@@ -241,8 +241,8 @@ const GanttTimelinePane = ({
           const startX = timeScale.dateToX(new Date(item.startDate));
           const endX = timeScale.dateToX(new Date(item.endDate));
           const width = Math.max(endX - startX, 20); // Minimum 20px width
-          // Y position relative to timeline content (no offset needed since header is outside)
-          const y = currentY + index * ITEM_ROW_HEIGHT;
+          // Y position - center 24px bar within 40px row (8px padding top/bottom)
+          const y = currentY + index * ITEM_ROW_HEIGHT + 8;
           
           const color = getActivityGroupColor(item.activityId);
           const isSelected = selectedItemId === item.id;
@@ -252,7 +252,7 @@ const GanttTimelinePane = ({
               {/* Bar background (rounded pill) */}
               <rect
                 x={startX}
-                y={y + 8}
+                y={y}
                 width={width}
                 height={24}
                 rx={12}
@@ -267,7 +267,7 @@ const GanttTimelinePane = ({
               {/* Item name text */}
               <text
                 x={startX + 8}
-                y={y + 24}
+                y={y + 16}
                 fontSize="12"
                 fill="white"
                 className="pointer-events-none"

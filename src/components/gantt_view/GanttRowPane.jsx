@@ -44,7 +44,8 @@ const GanttRowPane = ({
         {/* Group header */}
         <div
           onClick={() => onToggleGroup(groupId)}
-          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-50 transition-colors"
+          style={{ height: '36px' }}
           data-cy={`gantt-group-${groupId}`}
         >
           {isExpanded ? (
