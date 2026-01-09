@@ -23,6 +23,13 @@
     ],
     "ctaPrimary": "Get started free",
     "ctaSecondary": "See demo",
+    "viewsLabel": "4 ways to view your data",
+    "viewTaglines": {
+      "wheel": "See the big picture",
+      "list": "Find it fast",
+      "kanban": "Track progress",
+      "timeline": "Plan ahead"
+    },
     "stats": {
       "free": {
         "value": "Free",

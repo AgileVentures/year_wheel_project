@@ -23,6 +23,13 @@
     ],
     "ctaPrimary": "Kom igång gratis",
     "ctaSecondary": "Se demo",
+    "viewsLabel": "4 sätt att se din data",
+    "viewTaglines": {
+      "wheel": "Se helheten",
+      "list": "Hitta snabbt",
+      "kanban": "Följ framsteg",
+      "timeline": "Planera framåt"
+    },
     "stats": {
       "free": {
         "value": "0 kr",
