@@ -42,6 +42,13 @@ const GanttTimelinePane = ({
   const [dragState, setDragState] = useState(null);
   // dragState = { item, mode: 'move' | 'resize-start' | 'resize-end', startX, originalStartDate, originalEndDate, originalRingId, currentStartDate, currentEndDate, targetRingId }
   
+  // Hover state for showing resize handles
+  const [hoveredBarId, setHoveredBarId] = useState(null);
+  
+  // Track if we're dragging to prevent click from firing
+  const isDraggingRef = useRef(false);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
+  
   const locale = i18n.language === 'sv' ? sv : enUS;
   const { rings = [], activityGroups = [], labels = [] } = wheelStructure || {};
   
@@ -250,7 +257,7 @@ const GanttTimelinePane = ({
   
   // Detect drag zone based on mouse position relative to bar
   const getDragZone = (mouseX, barStartX, barWidth) => {
-    const RESIZE_ZONE = 8; // pixels from edge to trigger resize
+    const RESIZE_ZONE = 10; // pixels from edge to trigger resize
     
     if (mouseX < barStartX + RESIZE_ZONE) {
       return 'resize-start';
@@ -264,11 +271,14 @@ const GanttTimelinePane = ({
   const handleBarMouseDown = (e, item, barStartX, barWidth, groupId) => {
     if (e.button !== 0) return; // Only left click
     e.stopPropagation();
-    e.preventDefault();
     
     const rect = containerRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left + scrollContainerRef.current.scrollLeft;
     const mode = getDragZone(mouseX, barStartX, barWidth);
+    
+    // Track start position to detect if it's a click or drag
+    dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+    isDraggingRef.current = false;
     
     setDragState({
       item,
@@ -292,6 +302,13 @@ const GanttTimelinePane = ({
     const mouseX = e.clientX - rect.left + scrollContainerRef.current.scrollLeft;
     const mouseY = e.clientY - rect.top;
     const deltaX = mouseX - dragState.startX;
+    
+    // Check if we've moved enough to consider this a drag (not a click)
+    const moveThreshold = 3;
+    const totalMove = Math.abs(e.clientX - dragStartPosRef.current.x) + Math.abs(e.clientY - dragStartPosRef.current.y);
+    if (totalMove > moveThreshold) {
+      isDraggingRef.current = true;
+    }
     
     // Convert pixel delta to days
     const deltaDays = Math.round(deltaX / timeScale.pixelsPerDay);
@@ -335,10 +352,21 @@ const GanttTimelinePane = ({
   };
   
   // Handle drag end
-  const handleDragEnd = () => {
+  // Handle drag end - also handles click detection
+  const handleDragEnd = (e) => {
     if (!dragState) return;
     
-    const { item, currentStartDate, currentEndDate, targetRingId, originalStartDate, originalEndDate, originalRingId } = dragState;
+    const { item, mode, currentStartDate, currentEndDate, targetRingId, originalStartDate, originalEndDate, originalRingId } = dragState;
+    
+    // If we didn't actually drag (just clicked), and it was in 'move' zone, show tooltip
+    if (!isDraggingRef.current && mode === 'move') {
+      // It was a click, not a drag - show tooltip
+      if (onItemClick) {
+        onItemClick(item, e);
+      }
+      setDragState(null);
+      return;
+    }
     
     // Check if anything changed
     const startChanged = currentStartDate.getTime() !== originalStartDate.getTime();
@@ -381,7 +409,7 @@ const GanttTimelinePane = ({
   useEffect(() => {
     if (dragState) {
       const handleMouseMoveGlobal = (e) => dragMoveRef.current(e);
-      const handleMouseUpGlobal = () => dragEndRef.current();
+      const handleMouseUpGlobal = (e) => dragEndRef.current(e);
       
       window.addEventListener('mousemove', handleMouseMoveGlobal);
       window.addEventListener('mouseup', handleMouseUpGlobal);
@@ -428,12 +456,15 @@ const GanttTimelinePane = ({
           
           const color = getActivityGroupColor(item.activityId);
           const isSelected = selectedItemId === item.id;
+          const isHovered = hoveredBarId === item.id;
+          const showResizeHandles = isHovered && !isDragging;
           
           bars.push(
             <g 
               key={item.id} 
-              onClick={(e) => !dragState && onItemClick(item, e)} 
               onMouseDown={(e) => handleBarMouseDown(e, item, startX, width, groupId)}
+              onMouseEnter={() => !dragState && setHoveredBarId(item.id)}
+              onMouseLeave={() => !dragState && setHoveredBarId(null)}
               style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             >
               {/* Bar background (rounded pill) */}
@@ -446,39 +477,79 @@ const GanttTimelinePane = ({
                 ry={12}
                 fill={color}
                 opacity={isDragging ? 0.7 : (isSelected ? 1 : 0.9)}
-                stroke={isDragging ? '#3B82F6' : (isSelected ? '#3B82F6' : 'none')}
-                strokeWidth={isDragging ? 2 : (isSelected ? 2 : 0)}
+                stroke={isDragging ? '#3B82F6' : (isSelected ? '#3B82F6' : (isHovered ? 'rgba(59, 130, 246, 0.5)' : 'none'))}
+                strokeWidth={isDragging ? 2 : (isSelected ? 2 : (isHovered ? 1 : 0))}
                 strokeDasharray={isDragging ? '4 2' : 'none'}
                 className="transition-opacity hover:opacity-100"
               />
               
-              {/* Resize handles (visual indicators) */}
-              {!isDragging && (
+              {/* Resize handles - visible on hover */}
+              {showResizeHandles && (
                 <>
-                  {/* Left resize handle */}
+                  {/* Left resize handle - visual indicator */}
                   <rect
                     x={startX}
                     y={y}
-                    width={8}
+                    width={10}
                     height={24}
-                    fill="transparent"
+                    rx={12}
+                    fill="rgba(255,255,255,0.3)"
                     style={{ cursor: 'ew-resize' }}
                   />
-                  {/* Right resize handle */}
+                  <line
+                    x1={startX + 4}
+                    y1={y + 6}
+                    x2={startX + 4}
+                    y2={y + 18}
+                    stroke="rgba(255,255,255,0.7)"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    className="pointer-events-none"
+                  />
+                  {/* Right resize handle - visual indicator */}
                   <rect
-                    x={startX + width - 8}
+                    x={startX + width - 10}
                     y={y}
-                    width={8}
+                    width={10}
                     height={24}
-                    fill="transparent"
+                    rx={12}
+                    fill="rgba(255,255,255,0.3)"
                     style={{ cursor: 'ew-resize' }}
+                  />
+                  <line
+                    x1={startX + width - 4}
+                    y1={y + 6}
+                    x2={startX + width - 4}
+                    y2={y + 18}
+                    stroke="rgba(255,255,255,0.7)"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    className="pointer-events-none"
                   />
                 </>
               )}
               
+              {/* Invisible resize hit areas (always active for cursor change) */}
+              <rect
+                x={startX}
+                y={y}
+                width={10}
+                height={24}
+                fill="transparent"
+                style={{ cursor: 'ew-resize' }}
+              />
+              <rect
+                x={startX + width - 10}
+                y={y}
+                width={10}
+                height={24}
+                fill="transparent"
+                style={{ cursor: 'ew-resize' }}
+              />
+              
               {/* Item name text */}
               <text
-                x={startX + 12}
+                x={startX + 14}
                 y={y + 16}
                 fontSize="12"
                 fill="white"
