@@ -6,6 +6,8 @@ import GanttToolbar from './GanttToolbar';
 import GanttRowPane from './GanttRowPane';
 import GanttTimelinePane from './GanttTimelinePane';
 import MiniWheelNavigator from './MiniWheelNavigator';
+import ItemTooltip from '../ItemTooltip';
+import EditItemModal from '../EditItemModal';
 import { useGanttData } from './useGanttData';
 import { useTimeScale } from './useTimeScale';
 
@@ -40,6 +42,9 @@ const GanttView = ({
   const [groupBy, setGroupBy] = useState('rings'); // 'rings' | 'labels' | 'activityGroups'
   const [expandedGroups, setExpandedGroups] = useState({});
   const [selectedItemId, setSelectedItemId] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState(null);
+  const [editingItem, setEditingItem] = useState(null);
   
   // Time scale state
   const [viewStart, setViewStart] = useState(() => {
@@ -200,42 +205,61 @@ const GanttView = ({
     setViewEnd(newEnd);
   };
   
-  const handleItemClick = (item) => {
-    console.log('=== handleItemClick ===');
-    console.log('Item:', item.name, 'startDate:', item.startDate);
+  // Handle click on item name in row pane - scroll to item
+  const handleRowItemClick = (item) => {
     setSelectedItemId(item.id);
     
-    // Auto-scroll timeline to show the item if it's not in view
+    // Auto-scroll timeline to show the item
     if (timelineScrollRef.current && item.startDate) {
       const scrollContainer = timelineScrollRef.current;
-      console.log('scrollContainer:', scrollContainer);
-      console.log('clientWidth:', scrollContainer.clientWidth);
-      console.log('offsetWidth:', scrollContainer.offsetWidth);
-      console.log('scrollWidth:', scrollContainer.scrollWidth);
-      
       const itemX = timeScale.dateToX(new Date(item.startDate));
       const viewportWidth = scrollContainer.clientWidth;
       const scrollLeft = scrollContainer.scrollLeft;
       const scrollRight = scrollLeft + viewportWidth;
       
-      console.log('itemX:', itemX, 'scrollLeft:', scrollLeft, 'scrollRight:', scrollRight, 'viewportWidth:', viewportWidth);
-      console.log('Is outside?', itemX < scrollLeft || itemX > scrollRight);
-      
       // Check if item is outside visible area
       if (itemX < scrollLeft || itemX > scrollRight) {
         const targetScroll = Math.max(0, itemX - viewportWidth / 2);
-        console.log('Scrolling to:', targetScroll);
         scrollContainer.scrollTo({
           left: targetScroll,
           behavior: 'smooth'
         });
-      } else {
-        console.log('Item is in view, no scroll');
       }
-    } else {
-      console.log('Missing:', { hasRef: !!timelineScrollRef.current, hasStartDate: !!item.startDate });
     }
-    // TODO: Open edit modal
+  };
+  
+  // Handle click on bar in timeline - show tooltip
+  const handleBarClick = (item, event) => {
+    setSelectedItemId(item.id);
+    setSelectedItem(item);
+    
+    // Position tooltip near click
+    if (event) {
+      setTooltipPosition({
+        x: event.clientX + 10,
+        y: event.clientY + 10
+      });
+    } else {
+      setTooltipPosition({ x: 300, y: 100 });
+    }
+  };
+  
+  const handleCloseTooltip = () => {
+    setSelectedItem(null);
+    setTooltipPosition(null);
+    setSelectedItemId(null);
+  };
+  
+  const handleEditItem = (item) => {
+    setEditingItem(item);
+    handleCloseTooltip();
+  };
+  
+  const handleDeleteItem = async (itemId) => {
+    if (onDeleteItem) {
+      await onDeleteItem(itemId);
+    }
+    handleCloseTooltip();
   };
   
   return (
@@ -305,7 +329,7 @@ const GanttView = ({
           selectedItemId={selectedItemId}
           wheelStructure={wheelStructure}
           onToggleGroup={toggleGroup}
-          onItemClick={handleItemClick}
+          onItemClick={handleRowItemClick}
           contentHeight={contentHeight}
         />
         
@@ -317,7 +341,7 @@ const GanttView = ({
           selectedItemId={selectedItemId}
           timeScale={timeScale}
           wheelStructure={wheelStructure}
-          onItemClick={handleItemClick}
+          onItemClick={handleBarClick}
           onUpdateItem={onUpdateItem}
           onWidthChange={setTimelineWidth}
           onHeaderScroll={(scrollLeft) => {
@@ -331,6 +355,37 @@ const GanttView = ({
           scrollRef={timelineScrollRef}
         />
       </div>
+      
+      {/* Item Tooltip */}
+      {selectedItem && tooltipPosition && (
+        <ItemTooltip
+          item={selectedItem}
+          wheelStructure={wheelStructure}
+          position={tooltipPosition}
+          onEdit={handleEditItem}
+          onDelete={handleDeleteItem}
+          onClose={handleCloseTooltip}
+          onOpenItem={(itemId) => {
+            const item = allItems.find(i => i.id === itemId);
+            if (item) {
+              setSelectedItem(item);
+            }
+          }}
+          wheel={wheel}
+        />
+      )}
+      
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          wheelStructure={wheelStructure}
+          currentWheelId={currentWheelId}
+          onUpdateItem={onUpdateItem}
+          onDeleteItem={handleDeleteItem}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
     </div>
   );
 };

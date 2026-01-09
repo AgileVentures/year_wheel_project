@@ -256,7 +256,7 @@ const GanttTimelinePane = ({
           const isSelected = selectedItemId === item.id;
           
           bars.push(
-            <g key={item.id} onClick={() => onItemClick(item)} className="cursor-pointer">
+            <g key={item.id} onClick={(e) => onItemClick(item, e)} className="cursor-pointer">
               {/* Bar background (rounded pill) */}
               <rect
                 x={startX}

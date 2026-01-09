@@ -75,10 +75,7 @@ const GanttRowPane = ({
             {items.map(item => (
               <div
                 key={item.id}
-                onClick={() => {
-                  console.log('Row clicked, calling onItemClick with:', item.name);
-                  onItemClick(item);
-                }}
+                onClick={() => onItemClick(item)}
                 className={`flex items-center gap-2 px-3 pl-10 cursor-pointer hover:bg-white transition-colors border-l-2 ${
                   selectedItemId === item.id
                     ? 'border-blue-500 bg-blue-50'
