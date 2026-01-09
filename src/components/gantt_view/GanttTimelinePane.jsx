@@ -245,6 +245,42 @@ const GanttTimelinePane = ({
     return positions;
   }, [groupedItems, expandedGroups]);
   
+  // Calculate all bar positions for rendering and dependency arrows
+  const barPositions = useMemo(() => {
+    const positions = new Map();
+    let currentY = 0;
+    
+    Object.entries(groupedItems).forEach(([groupId, items]) => {
+      currentY += GROUP_HEADER_HEIGHT;
+      
+      const isExpanded = expandedGroups[groupId];
+      
+      if (isExpanded) {
+        items.forEach((item, index) => {
+          if (!item.startDate || !item.endDate) return;
+          
+          const startX = timeScale.dateToX(new Date(item.startDate));
+          const endX = timeScale.dateToX(new Date(item.endDate));
+          const width = Math.max(endX - startX, 20);
+          const y = currentY + index * ITEM_ROW_HEIGHT + 8;
+          
+          positions.set(item.id, {
+            item,
+            startX,
+            endX,
+            width,
+            y,
+            centerY: y + 12, // Center of 24px bar
+          });
+        });
+        
+        currentY += items.length * ITEM_ROW_HEIGHT;
+      }
+    });
+    
+    return positions;
+  }, [groupedItems, expandedGroups, timeScale]);
+  
   // Get group at Y position
   const getGroupAtY = (y) => {
     for (const pos of groupYPositions) {
@@ -659,6 +695,121 @@ const GanttTimelinePane = ({
     );
   };
   
+  // Render dependency arrows between linked items
+  const renderDependencyArrows = () => {
+    const arrows = [];
+    
+    // Get all items from all groups
+    const allItems = Object.values(groupedItems).flat();
+    
+    allItems.forEach(item => {
+      // Skip if no dependency
+      if (!item.dependsOn) return;
+      
+      // Get positions of both items
+      const dependentPos = barPositions.get(item.id);
+      const predecessorPos = barPositions.get(item.dependsOn);
+      
+      // Skip if either item is not visible
+      if (!dependentPos || !predecessorPos) return;
+      
+      // Calculate connection points based on dependency type
+      let startX, startY, endX, endY;
+      const dependencyType = item.dependencyType || 'finish_to_start';
+      
+      switch (dependencyType) {
+        case 'finish_to_start':
+          // Arrow from predecessor END to dependent START
+          startX = predecessorPos.endX;
+          startY = predecessorPos.centerY;
+          endX = dependentPos.startX;
+          endY = dependentPos.centerY;
+          break;
+        
+        case 'start_to_start':
+          // Arrow from predecessor START to dependent START
+          startX = predecessorPos.startX;
+          startY = predecessorPos.centerY;
+          endX = dependentPos.startX;
+          endY = dependentPos.centerY;
+          break;
+        
+        case 'finish_to_finish':
+          // Arrow from predecessor END to dependent END
+          startX = predecessorPos.endX;
+          startY = predecessorPos.centerY;
+          endX = dependentPos.endX;
+          endY = dependentPos.centerY;
+          break;
+        
+        default:
+          return;
+      }
+      
+      // Calculate path - use stepped path for cleaner look (like MS Project)
+      const midX = startX + 15; // Small horizontal offset from start
+      const cornerRadius = 4;
+      
+      // Create path with rounded corners
+      // Path: horizontal from start, then vertical, then horizontal to end
+      let pathD;
+      
+      if (Math.abs(startY - endY) < 5) {
+        // Same row - straight horizontal line
+        pathD = `M ${startX} ${startY} L ${endX - 8} ${endY}`;
+      } else if (endX > startX + 30) {
+        // End is to the right - simple path
+        pathD = `M ${startX} ${startY} 
+                 L ${midX} ${startY} 
+                 Q ${midX + cornerRadius} ${startY} ${midX + cornerRadius} ${startY + (endY > startY ? cornerRadius : -cornerRadius)}
+                 L ${midX + cornerRadius} ${endY - (endY > startY ? cornerRadius : -cornerRadius)}
+                 Q ${midX + cornerRadius} ${endY} ${midX + cornerRadius * 2} ${endY}
+                 L ${endX - 8} ${endY}`;
+      } else {
+        // End is to the left or overlapping - need to go around
+        const routeY = Math.max(startY, endY) + 25;
+        pathD = `M ${startX} ${startY}
+                 L ${startX + 10} ${startY}
+                 Q ${startX + 10 + cornerRadius} ${startY} ${startX + 10 + cornerRadius} ${startY + cornerRadius}
+                 L ${startX + 10 + cornerRadius} ${routeY - cornerRadius}
+                 Q ${startX + 10 + cornerRadius} ${routeY} ${startX + 10} ${routeY}
+                 L ${endX - 15} ${routeY}
+                 Q ${endX - 15 - cornerRadius} ${routeY} ${endX - 15 - cornerRadius} ${routeY - cornerRadius}
+                 L ${endX - 15 - cornerRadius} ${endY + cornerRadius}
+                 Q ${endX - 15 - cornerRadius} ${endY} ${endX - 15} ${endY}
+                 L ${endX - 8} ${endY}`;
+      }
+      
+      // Calculate arrow angle for arrowhead
+      const arrowAngle = Math.atan2(endY - (endY > startY ? endY - 10 : endY + 10), 8);
+      const arrowSize = 6;
+      
+      arrows.push(
+        <g key={`dep-${item.id}`} className="pointer-events-none">
+          {/* Dependency line */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke="rgba(59, 130, 246, 0.6)"
+            strokeWidth={1.5}
+            strokeDasharray="4 2"
+          />
+          {/* Arrowhead */}
+          <polygon
+            points={`
+              ${endX - 8},${endY}
+              ${endX - 8 - arrowSize * 1.5},${endY - arrowSize}
+              ${endX - 8 - arrowSize * 1.5},${endY + arrowSize}
+            `}
+            fill="rgba(59, 130, 246, 0.7)"
+          />
+        </g>
+      );
+    });
+    
+    return arrows;
+  };
+  
   // Today marker
   const todayX = timeScale.dateToX(new Date());
   const showTodayMarker = todayX >= 0 && todayX <= containerWidth;
@@ -717,6 +868,9 @@ const GanttTimelinePane = ({
           
           {/* Drag target highlight */}
           {renderDragTargetIndicator()}
+          
+          {/* Dependency arrows */}
+          {renderDependencyArrows()}
         </svg>
         
         {/* Item bars */}
