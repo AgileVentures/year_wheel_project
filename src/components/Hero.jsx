@@ -148,11 +148,12 @@ function Hero() {
               {viewIcons.map((view, index) => (
                 <div
                   key={view.id}
-                  className="group animate-slide-in-diagonal flex items-center gap-5 mb-5"
+                  className="group animate-slide-in-diagonal flex items-center gap-5"
                   style={{ 
                     animationDelay: view.delay,
                     animationFillMode: 'both',
                     paddingLeft: `${index * 40}px`,
+                    marginTop: index > 0 ? '32px' : '0',
                   }}
                 >
                   {/* Main icon - white with subtle transparent background */}
