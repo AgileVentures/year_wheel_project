@@ -248,7 +248,7 @@ const GanttTimelinePane = ({
   return (
     <div 
       ref={scrollContainerRef}
-      className={`flex-1 overflow-auto bg-white ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
+      className={`flex-1 overflow-x-auto overflow-y-hidden bg-white ${isPanning ? 'cursor-grabbing' : 'cursor-default'}`}
       data-cy="gantt-timeline-pane"
       onMouseDown={handleMouseDown}
     >

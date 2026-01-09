@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import GanttToolbar from './GanttToolbar';
 import GanttRowPane from './GanttRowPane';
@@ -53,6 +53,9 @@ const GanttView = ({
   // Container dimensions
   const [containerWidth, setContainerWidth] = useState(1000);
   const [containerHeight, setContainerHeight] = useState(600);
+  
+  // Shared scroll position for syncing row pane and timeline
+  const scrollContainerRef = useRef(null);
   
   // Get available years from pages
   const availableYears = useMemo(() => {
@@ -167,8 +170,8 @@ const GanttView = ({
         />
       </div>
       
-      {/* Main content area */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main content area - shared scroll container */}
+      <div ref={scrollContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden">
         {/* Left: Row pane with groups */}
         <GanttRowPane
           groupedItems={groupedItems}
