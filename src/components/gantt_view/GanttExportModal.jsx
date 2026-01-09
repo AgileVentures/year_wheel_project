@@ -22,7 +22,7 @@ const GanttExportModal = ({
   allItems = [],
   availableYears = [],
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['timeline', 'common']);
   const dateLocale = i18n.language === 'sv' ? sv : enUS;
   
   // Export options state
@@ -153,7 +153,7 @@ const GanttExportModal = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            {t('gantt.export.title', 'Exportera tidslinje')}
+            {t('timeline:export.title')}
           </h2>
           <button
             onClick={onClose}
@@ -169,14 +169,14 @@ const GanttExportModal = ({
           {/* Format Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('gantt.export.format', 'Format')}
+              {t('timeline:export.format')}
             </label>
             <div className="grid grid-cols-4 gap-2">
               {[
                 { id: 'png', icon: FileImage, label: 'PNG' },
                 { id: 'pdf', icon: FileText, label: 'PDF' },
                 { id: 'csv', icon: FileSpreadsheet, label: 'CSV' },
-                { id: 'print', icon: Printer, label: t('common.print', 'Skriv ut') },
+                { id: 'print', icon: Printer, label: t('common:actions.export') },
               ].map(({ id, icon: Icon, label }) => (
                 <button
                   key={id}
@@ -198,28 +198,28 @@ const GanttExportModal = ({
           {exportFormat !== 'csv' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('gantt.export.dateRange', 'Tidsperiod')}
+                {t('timeline:export.dateRange')}
               </label>
               <div className="space-y-2">
                 {[
                   { 
                     id: 'smart', 
-                    label: t('gantt.export.smartRange', 'Smart (endast månader med aktiviteter)'),
+                    label: t('timeline:export.smartRange'),
                     detail: formatDateRange(smartDateRange.start, smartDateRange.end),
                   },
                   { 
                     id: 'current', 
-                    label: t('gantt.export.currentView', 'Aktuell vy'),
+                    label: t('timeline:export.currentView'),
                     detail: formatDateRange(viewStart, viewEnd),
                   },
                   { 
                     id: 'full', 
-                    label: t('gantt.export.fullYear', 'Hela året/åren'),
+                    label: t('timeline:export.fullYear'),
                     detail: formatDateRange(fullYearRange.start, fullYearRange.end),
                   },
                   { 
                     id: 'custom', 
-                    label: t('gantt.export.customRange', 'Anpassad period'),
+                    label: t('timeline:export.customRange'),
                     detail: null,
                   },
                 ].map(({ id, label, detail }) => (
@@ -280,14 +280,14 @@ const GanttExportModal = ({
           {exportFormat !== 'csv' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('gantt.export.include', 'Inkludera')}
+                {t('timeline:export.include')}
               </label>
               <div className="space-y-2">
                 {[
-                  { id: 'showNamesPanel', label: t('gantt.export.namesPanel', 'Namnpanel (vänster sida)'), state: showNamesPanel, setter: setShowNamesPanel },
-                  { id: 'showDatesOnBars', label: t('gantt.export.datesOnBars', 'Datum på staplar'), state: showDatesOnBars, setter: setShowDatesOnBars },
-                  { id: 'showLegend', label: t('gantt.export.legend', 'Färgförklaring'), state: showLegend, setter: setShowLegend },
-                  { id: 'showDependencies', label: t('gantt.export.dependencies', 'Beroenden (pilar)'), state: showDependencies, setter: setShowDependencies },
+                  { id: 'showNamesPanel', label: t('timeline:export.namesPanel'), state: showNamesPanel, setter: setShowNamesPanel },
+                  { id: 'showDatesOnBars', label: t('timeline:export.datesOnBars'), state: showDatesOnBars, setter: setShowDatesOnBars },
+                  { id: 'showLegend', label: t('timeline:export.legend'), state: showLegend, setter: setShowLegend },
+                  { id: 'showDependencies', label: t('timeline:export.dependencies'), state: showDependencies, setter: setShowDependencies },
                 ].map(({ id, label, state, setter }) => (
                   <label
                     key={id}
@@ -310,12 +310,12 @@ const GanttExportModal = ({
           {exportFormat === 'pdf' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('gantt.export.pdfSize', 'PDF-storlek')}
+                {t('timeline:export.pdfSize')}
               </label>
               <div className="flex gap-2">
                 {[
-                  { id: 'auto', label: t('gantt.export.autoSize', 'Auto') },
-                  { id: 'fit', label: t('gantt.export.fitToPage', 'Anpassa till 1 sida') },
+                  { id: 'auto', label: t('timeline:export.autoSize') },
+                  { id: 'fit', label: t('timeline:export.fitToPage') },
                   { id: 'a4', label: 'A4' },
                   { id: 'a3', label: 'A3' },
                 ].map(({ id, label }) => (
@@ -340,9 +340,9 @@ const GanttExportModal = ({
             <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
               <Info size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-800">
-                <p className="font-medium">{t('gantt.export.csvInfo', 'CSV-export')}</p>
+                <p className="font-medium">{t('timeline:export.csvInfo')}</p>
                 <p className="mt-1 text-blue-700">
-                  {t('gantt.export.csvDescription', 'Exporterar alla aktiviteter som en tabell med namn, datum, grupp och etiketter. Perfekt för Excel eller Google Sheets.')}
+                  {t('timeline:export.csvDescription')}
                 </p>
               </div>
             </div>
@@ -356,15 +356,15 @@ const GanttExportModal = ({
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
           >
-            {t('common.cancel', 'Avbryt')}
+            {t('common:actions.cancel')}
           </button>
           <button
             onClick={handleExport}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
           >
             {exportFormat === 'print' 
-              ? t('common.print', 'Skriv ut')
-              : t('common.export', 'Exportera')
+              ? t('common:actions.export')
+              : t('common:actions.export')
             }
           </button>
         </div>

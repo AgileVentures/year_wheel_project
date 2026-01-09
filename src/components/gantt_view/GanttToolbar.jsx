@@ -21,7 +21,7 @@ const GanttToolbar = ({
   onZoomOut,
   onTodayClick,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['timeline', 'common']);
   
   return (
     <div 
@@ -32,11 +32,8 @@ const GanttToolbar = ({
       <div className="flex items-center gap-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">
-            {t('gantt.title', 'Tidslinje')}
+            {t('timeline:title')}
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {t('gantt.subtitle', 'Aktiviteter som tidslinje')}
-          </p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -46,7 +43,7 @@ const GanttToolbar = ({
             className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             data-cy="gantt-year-filter"
           >
-            <option value="all">{t('common.allYears', 'Alla år')}</option>
+            <option value="all">{t('timeline:toolbar.allYears')}</option>
             {availableYears.map(year => (
               <option key={year} value={year}>{year}</option>
             ))}
@@ -58,14 +55,14 @@ const GanttToolbar = ({
             data-cy="gantt-today-button"
           >
             <Calendar className="w-4 h-4" />
-            {t('common.today', 'Idag')}
+            {t('timeline:toolbar.today')}
           </button>
         </div>
       </div>
       
       {/* Center: Grouping options */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600">{t('gantt.groupBy', 'Gruppera efter')}:</span>
+        <span className="text-sm text-gray-600">{t('timeline:toolbar.groupBy')}:</span>
         <div className="flex gap-1 p-1 bg-gray-100 rounded-md">
           <button
             onClick={() => onGroupByChange('rings')}
@@ -76,7 +73,7 @@ const GanttToolbar = ({
             }`}
             data-cy="gantt-group-rings"
           >
-            {t('gantt.rings', 'Ringar')}
+            {t('timeline:toolbar.rings')}
           </button>
           <button
             onClick={() => onGroupByChange('labels')}
@@ -87,7 +84,7 @@ const GanttToolbar = ({
             }`}
             data-cy="gantt-group-labels"
           >
-            {t('gantt.labels', 'Etiketter')}
+            {t('timeline:toolbar.labels')}
           </button>
           <button
             onClick={() => onGroupByChange('activityGroups')}
@@ -98,33 +95,33 @@ const GanttToolbar = ({
             }`}
             data-cy="gantt-group-activities"
           >
-            {t('gantt.activityGroups', 'Aktivitetsgrupper')}
+            {t('timeline:toolbar.activityGroups')}
           </button>
         </div>
       </div>
       
       {/* Right: Zoom controls */}
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-600">{t('gantt.zoom', 'Zoom')}:</span>
+        <span className="text-sm text-gray-600">{t('timeline:toolbar.zoom')}:</span>
         <div className="flex items-center gap-1">
           <button
             onClick={onZoomOut}
             disabled={zoomLevel === 'month'}
             className="p-1.5 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed"
             data-cy="gantt-zoom-out"
-            title={t('gantt.zoomOut', 'Zooma ut')}
+            title={t('timeline:toolbar.zoomOut')}
           >
             <ZoomOut className="w-4 h-4" />
           </button>
           <span className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded min-w-[60px] text-center">
-            {t(`gantt.zoom.${zoomLevel}`, zoomLevel)}
+            {t(`timeline:zoomLevels.${zoomLevel}`)}
           </span>
           <button
             onClick={onZoomIn}
             disabled={zoomLevel === 'day'}
             className="p-1.5 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed"
             data-cy="gantt-zoom-in"
-            title={t('gantt.zoomIn', 'Zooma in')}
+            title={t('timeline:toolbar.zoomIn')}
           >
             <ZoomIn className="w-4 h-4" />
           </button>

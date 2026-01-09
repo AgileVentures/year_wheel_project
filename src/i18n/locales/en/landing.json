@@ -286,6 +286,33 @@
     "title": "Get inspired by real-world examples",
     "description": "Our templates are based on actual plans from companies and organizations. Regardless of industry - education, HR, marketing or finance - there's a template that matches your needs. Use them as inspiration for your year wheel."
   },
+  "views": {
+    "badge": "4 Views",
+    "title": "Same data, different perspectives",
+    "subtitle": "Switch between views instantly. Your activities stay synced across all perspectives – choose the view that fits how you work.",
+    "cta": "All views included free",
+    "ctaSubtext": "No premium required. Every view is available to all users.",
+    "wheel": {
+      "title": "Year Wheel",
+      "description": "The classic circular view. See your entire year at a glance, spot seasonal patterns, and visualize how activities connect across time.",
+      "useCases": ["Annual overview", "Seasonal patterns", "Presentations"]
+    },
+    "list": {
+      "title": "List View",
+      "description": "A structured, scannable view of all activities. Filter, sort, and find exactly what you need with powerful search capabilities.",
+      "useCases": ["Quick lookup", "Filtering", "Data review"]
+    },
+    "kanban": {
+      "title": "Kanban Board",
+      "description": "Drag-and-drop cards organized by status. Perfect for tracking progress, managing workflows, and team collaboration.",
+      "useCases": ["Status tracking", "Workflows", "Team planning"]
+    },
+    "timeline": {
+      "title": "Timeline",
+      "description": "A horizontal Gantt-style view showing activities across time. Ideal for project planning, resource allocation, and deadlines.",
+      "useCases": ["Project planning", "Deadlines", "Resource view"]
+    }
+  },
   "cta": {
     "title": "Ready to start?",
     "subtitle": "Create your first year wheel today",

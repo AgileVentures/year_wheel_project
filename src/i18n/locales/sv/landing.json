@@ -285,6 +285,33 @@
     "title": "Inspireras av verkliga exempel",
     "description": "Våra mallar bygger på riktiga planeringar från företag och föreningar. Oavsett bransch - undervisning, HR, marknadsföring eller finans - finns en mall som matchar dina behov. Använd dem som inspiration för ditt årshjul."
   },
+  "views": {
+    "badge": "4 vyer",
+    "title": "Samma data, olika perspektiv",
+    "subtitle": "Växla mellan vyer direkt. Dina aktiviteter synkas automatiskt över alla perspektiv – välj den vy som passar ditt arbetssätt.",
+    "cta": "Alla vyer ingår gratis",
+    "ctaSubtext": "Inget premium krävs. Alla vyer är tillgängliga för samtliga användare.",
+    "wheel": {
+      "title": "Årshjul",
+      "description": "Den klassiska cirkulära vyn. Se hela ditt år i en överblick, upptäck säsongsmönster och visualisera hur aktiviteter hänger ihop över tid.",
+      "useCases": ["Årsöverblick", "Säsongsmönster", "Presentationer"]
+    },
+    "list": {
+      "title": "Listvy",
+      "description": "En strukturerad, scanningsbar vy av alla aktiviteter. Filtrera, sortera och hitta exakt det du söker med kraftfull sökning.",
+      "useCases": ["Snabb uppslagning", "Filtrering", "Dataöversikt"]
+    },
+    "kanban": {
+      "title": "Kanban-tavla",
+      "description": "Dra-och-släpp-kort organiserade efter status. Perfekt för att följa framsteg, hantera arbetsflöden och teamsamarbete.",
+      "useCases": ["Statusspårning", "Arbetsflöden", "Teamplanering"]
+    },
+    "timeline": {
+      "title": "Tidslinje",
+      "description": "En horisontell Gantt-liknande vy som visar aktiviteter över tid. Idealisk för projektplanering, resursallokering och deadlines.",
+      "useCases": ["Projektplanering", "Deadlines", "Resursvy"]
+    }
+  },
   "cta": {
     "title": "Redo att börja?",
     "subtitle": "Skapa ditt första årshjul idag",
