@@ -253,7 +253,7 @@ const GanttTimelinePane = ({
       onMouseDown={handleMouseDown}
     >
       {/* Time header */}
-      <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
+      <div className="sticky top-0 left-0 z-10 bg-gray-50 border-b border-gray-200 shadow-sm">
         <div className="flex h-12 items-stretch">
           {timeTicks.map((tick, index) => (
             <div

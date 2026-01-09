@@ -193,7 +193,7 @@ const MiniWheelNavigator = ({
   }, [isDragging, dragStartAngle]);
   
   return (
-    <div className="flex items-center justify-center" data-cy="mini-wheel-navigator">
+    <div className="flex items-center justify-center bg-white rounded-lg shadow-lg p-3" data-cy="mini-wheel-navigator">
       <div className="text-center">
         <canvas
           ref={canvasRef}

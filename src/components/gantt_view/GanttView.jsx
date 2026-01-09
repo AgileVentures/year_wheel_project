@@ -159,19 +159,19 @@ const GanttView = ({
         onTodayClick={handleTodayClick}
       />
       
-      {/* Mini Wheel Navigator */}
-      <div className="px-4 py-2 bg-white border-b">
-        <MiniWheelNavigator
-          viewStart={viewStart}
-          viewEnd={viewEnd}
-          yearFilter={yearFilter}
-          availableYears={availableYears}
-          onViewportChange={handleViewportChange}
-        />
-      </div>
-      
       {/* Main content area - shared scroll container */}
-      <div ref={scrollContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden">
+      <div ref={scrollContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden relative">
+        {/* Mini Wheel Navigator - Overlay in top-right */}
+        <div className="absolute top-4 right-4 z-20">
+          <MiniWheelNavigator
+            viewStart={viewStart}
+            viewEnd={viewEnd}
+            yearFilter={yearFilter}
+            availableYears={availableYears}
+            onViewportChange={handleViewportChange}
+          />
+        </div>
+        
         {/* Left: Row pane with groups */}
         <GanttRowPane
           groupedItems={groupedItems}
