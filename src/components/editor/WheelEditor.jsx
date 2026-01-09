@@ -4,6 +4,7 @@ import YearWheel from "../../YearWheel";
 import WheelCalendarView from "../calendar_view/WheelCalendarView";
 import ListView from "../list_view/ListView";
 import KanbanView from "../kanban_view/KanbanView";
+import GanttView from "../gantt_view/GanttView";
 import SidePanel from "../SidePanel";
 import Header from "../Header";
 import PageNavigator from "../PageNavigator";
@@ -432,7 +433,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [wheelRotation, setWheelRotation] = useState(0); // Persist wheel rotation angle
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [wheelData, setWheelData] = useState(null);
-  const [viewMode, setViewMode] = useState('wheel'); // 'wheel', 'calendar', 'list', or 'kanban'
+  const [viewMode, setViewMode] = useState('wheel'); // 'wheel', 'calendar', 'list', 'kanban', or 'gantt'
   const [pendingTooltipItemId, setPendingTooltipItemId] = useState(null); // Item to show tooltip for after view/page switch
   
   // Mobile detection - renders MobileEditor instead of desktop editor
@@ -5507,7 +5508,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 currentPageId={currentPageId}
               />
             </div>
-          ) : (
+          ) : viewMode === 'kanban' ? (
             <div className="w-full h-full">
               <KanbanView
                 key={`kanban-${Date.now()}`}
@@ -5521,6 +5522,18 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
                 onNavigateToItemOnWheel={handleNavigateToItemOnWheel}
                 currentWheelId={wheelId}
                 currentPageId={currentPageId}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-full">
+              <GanttView
+                key={`gantt-${Date.now()}`}
+                wheelStructure={calendarWheelStructure}
+                wheel={wheelState.metadata}
+                pages={wheelState.pages || []}
+                onUpdateItem={handleUpdateAktivitet}
+                onDeleteItem={handleDeleteAktivitet}
+                currentWheelId={wheelId}
               />
             </div>
           )}
