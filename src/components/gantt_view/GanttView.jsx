@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { startOfMonth, endOfMonth, addMonths, startOfWeek, endOfWeek, addWeeks, getISOWeek, format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
@@ -9,6 +9,7 @@ import ItemTooltip from '../ItemTooltip';
 import EditItemModal from '../EditItemModal';
 import { useGanttData } from './useGanttData';
 import { useTimeScale } from './useTimeScale';
+import { exportGanttAsPNG, exportGanttAsPDF, printGantt } from './GanttExporter';
 
 /**
  * GanttView Component
@@ -60,6 +61,8 @@ const GanttView = ({
   const scrollContainerRef = useRef(null);
   const headerScrollRef = useRef(null);
   const timelineScrollRef = useRef(null);
+  const rowPaneRef = useRef(null);
+  const timelineHeaderRef = useRef(null);
   const [headerScrollLeft, setHeaderScrollLeft] = useState(0);
   const [timelineTicks, setTimelineTicks] = useState([]);
   const [monthSpanTicks, setMonthSpanTicks] = useState([]); // For day zoom top row
@@ -429,6 +432,39 @@ const GanttView = ({
     handleCloseTooltip();
   };
   
+  // Export handler
+  const handleExport = useCallback(async (exportFormat) => {
+    const exportOptions = {
+      timelineElement: timelineScrollRef.current,
+      rowPaneElement: rowPaneRef.current,
+      headerElement: timelineHeaderRef.current,
+      title: wheel?.title || t('gantt.title', 'Tidslinje'),
+      viewStart,
+      viewEnd,
+      wheelStructure,
+      locale: i18n.language,
+    };
+    
+    try {
+      switch (exportFormat) {
+        case 'png':
+          await exportGanttAsPNG(exportOptions);
+          break;
+        case 'pdf':
+          await exportGanttAsPDF(exportOptions);
+          break;
+        case 'print':
+          await printGantt(exportOptions);
+          break;
+        default:
+          console.warn('Unknown export format:', exportFormat);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      // TODO: Show error toast to user
+    }
+  }, [wheel?.title, viewStart, viewEnd, wheelStructure, i18n.language, t]);
+  
   return (
     <div className="flex flex-col h-full bg-gray-50" data-cy="gantt-view">
       {/* Toolbar */}
@@ -442,6 +478,7 @@ const GanttView = ({
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onTodayClick={handleTodayClick}
+        onExport={handleExport}
       />
       
       {/* Unified sticky header row */}
@@ -455,7 +492,7 @@ const GanttView = ({
         
         {/* Right: Timeline header */}
         <div 
-          ref={headerScrollRef}
+          ref={timelineHeaderRef}
           className="flex-1 overflow-x-hidden bg-gray-50"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
@@ -518,16 +555,18 @@ const GanttView = ({
       {/* Main content area - shared scroll container */}
       <div ref={scrollContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden relative min-w-0">
         {/* Left: Row pane with groups */}
-        <GanttRowPane
-          groupedItems={groupedItems}
-          groupBy={groupBy}
-          expandedGroups={expandedGroups}
-          selectedItemId={selectedItemId}
-          wheelStructure={wheelStructure}
-          onToggleGroup={toggleGroup}
-          onItemClick={handleRowItemClick}
-          contentHeight={contentHeight}
-        />
+        <div ref={rowPaneRef}>
+          <GanttRowPane
+            groupedItems={groupedItems}
+            groupBy={groupBy}
+            expandedGroups={expandedGroups}
+            selectedItemId={selectedItemId}
+            wheelStructure={wheelStructure}
+            onToggleGroup={toggleGroup}
+            onItemClick={handleRowItemClick}
+            contentHeight={contentHeight}
+          />
+        </div>
         
         {/* Right: Timeline pane with bars */}
         <GanttTimelinePane
@@ -540,8 +579,8 @@ const GanttView = ({
           onItemClick={handleBarClick}
           onUpdateItem={onUpdateItem}
           onHeaderScroll={(scrollLeft) => {
-            if (headerScrollRef.current) {
-              headerScrollRef.current.scrollLeft = scrollLeft;
+            if (timelineHeaderRef.current) {
+              timelineHeaderRef.current.scrollLeft = scrollLeft;
             }
           }}
           contentHeight={contentHeight}
