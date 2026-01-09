@@ -317,11 +317,15 @@ function YearWheel({
     const containerHeight = container.clientHeight;
     
     // Base display size at 100% zoom is 1000px
+    // The wheel drawing has ~4% internal padding from the canvas edge
+    // so we need to zoom in ~1.08x more to make the wheel fill the screen
     const baseDisplaySize = 1000;
+    const wheelToCanvasRatio = 1.08; // Compensate for internal wheel padding
     
-    // Calculate zoom to fill the entire area (no margins)
-    const widthZoom = (containerWidth / baseDisplaySize) * 100;
-    const heightZoom = ((containerHeight - 80) / baseDisplaySize) * 100; // 80px for toolbar
+    // Calculate zoom to fill the entire area (accounting for wheel padding)
+    const toolbarHeight = 50; // Actual toolbar height is closer to 50px
+    const widthZoom = (containerWidth / baseDisplaySize) * 100 * wheelToCanvasRatio;
+    const heightZoom = ((containerHeight - toolbarHeight) / baseDisplaySize) * 100 * wheelToCanvasRatio;
     
     const optimalZoom = Math.min(widthZoom, heightZoom, 200);
     setZoomLevel(Math.max(50, Math.floor(optimalZoom)));
