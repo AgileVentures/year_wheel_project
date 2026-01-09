@@ -436,14 +436,13 @@ const GanttView = forwardRef(function GanttView({
   // Export handler
   const handleExport = useCallback(async (exportFormat) => {
     const exportOptions = {
-      timelineElement: timelineScrollRef.current,
-      rowPaneElement: rowPaneRef.current,
-      headerElement: timelineHeaderRef.current,
       title: wheel?.title || t('gantt.title', 'Tidslinje'),
       viewStart,
       viewEnd,
       wheelStructure,
       locale: i18n.language,
+      groupedItems,
+      allItems,
     };
     
     try {
@@ -464,7 +463,7 @@ const GanttView = forwardRef(function GanttView({
       console.error('Export failed:', error);
       // TODO: Show error toast to user
     }
-  }, [wheel?.title, viewStart, viewEnd, wheelStructure, i18n.language, t]);
+  }, [wheel?.title, viewStart, viewEnd, wheelStructure, i18n.language, t, groupedItems, allItems]);
   
   // Expose export function via ref for parent components
   useImperativeHandle(ref, () => ({

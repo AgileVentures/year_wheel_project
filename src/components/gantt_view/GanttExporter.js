@@ -10,9 +10,10 @@
  * - Title and date range header
  * - Legend for activity groups
  * - Full timeline without scrolling
+ * - Smart date range (only months with activities + padding)
  */
 
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, differenceInDays, eachMonthOfInterval } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 
 /**
@@ -25,23 +26,63 @@ const generateFileName = (extension, title = 'timeline') => {
 };
 
 /**
+ * Calculate optimal date range based on actual items
+ * Returns a range that includes all items with 1 month padding on each side
+ */
+const calculateOptimalDateRange = (items, fallbackStart, fallbackEnd) => {
+  if (!items || items.length === 0) {
+    return { start: fallbackStart, end: fallbackEnd };
+  }
+  
+  let minDate = null;
+  let maxDate = null;
+  
+  items.forEach(item => {
+    if (!item.startDate || !item.endDate) return;
+    
+    const startDate = new Date(item.startDate);
+    const endDate = new Date(item.endDate);
+    
+    if (!minDate || startDate < minDate) minDate = startDate;
+    if (!maxDate || endDate > maxDate) maxDate = endDate;
+  });
+  
+  if (!minDate || !maxDate) {
+    return { start: fallbackStart, end: fallbackEnd };
+  }
+  
+  // Add padding: start at the beginning of the first month with activity,
+  // and end at the end of the last month with activity
+  const paddedStart = startOfMonth(minDate);
+  const paddedEnd = endOfMonth(maxDate);
+  
+  return { start: paddedStart, end: paddedEnd };
+};
+
+/**
  * Create a printable/exportable version of the Gantt chart
- * This renders to a hidden container with proper layout
+ * Renders fresh content with optimal date range based on actual items
  */
 const createExportableContent = async (options) => {
   const {
-    timelineElement,
-    rowPaneElement,
-    headerElement,
     title = 'Tidslinje',
     viewStart,
     viewEnd,
     wheelStructure,
     locale = 'sv',
+    groupedItems = {},
+    allItems = [],
   } = options;
   
   const dateLocale = locale === 'sv' ? sv : enUS;
   const dateFormat = 'd MMM yyyy';
+  
+  // Calculate optimal date range based on actual items
+  const { start: optimalStart, end: optimalEnd } = calculateOptimalDateRange(allItems, viewStart, viewEnd);
+  
+  // Generate months for the optimal range
+  const months = eachMonthOfInterval({ start: optimalStart, end: optimalEnd });
+  const totalDays = differenceInDays(optimalEnd, optimalStart) + 1;
   
   // Create container for export
   const container = document.createElement('div');
@@ -51,6 +92,8 @@ const createExportableContent = async (options) => {
     top: 0;
     background: white;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    width: max-content;
+    min-width: 1200px;
   `;
   
   // Add header with title and date range
@@ -65,7 +108,7 @@ const createExportableContent = async (options) => {
       <div>
         <h1 style="font-size: 24px; font-weight: 600; color: #111827; margin: 0;">${title}</h1>
         <p style="font-size: 14px; color: #6B7280; margin: 4px 0 0 0;">
-          ${format(viewStart, dateFormat, { locale: dateLocale })} – ${format(viewEnd, dateFormat, { locale: dateLocale })}
+          ${format(optimalStart, dateFormat, { locale: dateLocale })} – ${format(optimalEnd, dateFormat, { locale: dateLocale })}
         </p>
       </div>
       <div style="text-align: right; font-size: 12px; color: #9CA3AF;">
@@ -75,8 +118,17 @@ const createExportableContent = async (options) => {
   `;
   container.appendChild(header);
   
-  // Add legend for activity groups
-  if (wheelStructure?.activityGroups?.length > 0) {
+  // Add legend for activity groups (only those with visible items)
+  const usedActivityGroupIds = new Set();
+  allItems.forEach(item => {
+    if (item.activityId) usedActivityGroupIds.add(item.activityId);
+  });
+  
+  const usedGroups = (wheelStructure?.activityGroups || []).filter(g => 
+    g.visible !== false && usedActivityGroupIds.has(g.id)
+  );
+  
+  if (usedGroups.length > 0) {
     const legend = document.createElement('div');
     legend.style.cssText = `
       padding: 12px 32px;
@@ -87,8 +139,7 @@ const createExportableContent = async (options) => {
       gap: 16px;
     `;
     
-    const visibleGroups = wheelStructure.activityGroups.filter(g => g.visible !== false);
-    visibleGroups.forEach(group => {
+    usedGroups.forEach(group => {
       const item = document.createElement('div');
       item.style.cssText = `
         display: flex;
@@ -112,55 +163,198 @@ const createExportableContent = async (options) => {
     container.appendChild(legend);
   }
   
-  // Create main content area with fixed layout
+  // Calculate timeline width (more compact for print)
+  const leftPaneWidth = 200;
+  const timelineWidth = Math.max(800, months.length * 80); // ~80px per month
+  
+  // Create main content area
   const mainContent = document.createElement('div');
   mainContent.style.cssText = `
     display: flex;
     background: white;
   `;
   
-  // Clone row pane (left side with names)
-  if (rowPaneElement) {
-    const rowClone = rowPaneElement.cloneNode(true);
-    rowClone.style.cssText = `
+  // Left pane: Group headers and item names
+  const leftPane = document.createElement('div');
+  leftPane.style.cssText = `
+    flex-shrink: 0;
+    width: ${leftPaneWidth}px;
+    border-right: 1px solid #E5E7EB;
+  `;
+  
+  // Right pane: Timeline with header and bars
+  const rightPane = document.createElement('div');
+  rightPane.style.cssText = `
+    flex: 1;
+    min-width: ${timelineWidth}px;
+  `;
+  
+  // Timeline header (months)
+  const timelineHeader = document.createElement('div');
+  timelineHeader.style.cssText = `
+    display: flex;
+    border-bottom: 1px solid #E5E7EB;
+    background: #F9FAFB;
+    height: 36px;
+  `;
+  
+  months.forEach(month => {
+    const monthStart = startOfMonth(month);
+    const monthEnd = endOfMonth(month);
+    const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
+    const monthWidth = (daysInMonth / totalDays) * timelineWidth;
+    
+    const monthCell = document.createElement('div');
+    monthCell.style.cssText = `
       flex-shrink: 0;
-      width: 250px;
+      width: ${monthWidth}px;
+      padding: 8px 4px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
       border-right: 1px solid #E5E7EB;
-      overflow: visible;
-      height: auto;
+      box-sizing: border-box;
     `;
-    // Remove scroll styles
-    rowClone.style.overflow = 'visible';
-    rowClone.style.maxHeight = 'none';
-    mainContent.appendChild(rowClone);
-  }
+    monthCell.textContent = format(month, 'MMM yyyy', { locale: dateLocale });
+    timelineHeader.appendChild(monthCell);
+  });
+  rightPane.appendChild(timelineHeader);
   
-  // Clone timeline (right side with bars)
-  if (timelineElement) {
-    const timelineWrapper = document.createElement('div');
-    timelineWrapper.style.cssText = `
-      flex: 1;
-      overflow: visible;
-    `;
-    
-    // Clone header if provided
-    if (headerElement) {
-      const headerClone = headerElement.cloneNode(true);
-      headerClone.style.overflow = 'visible';
-      headerClone.style.width = 'auto';
-      timelineWrapper.appendChild(headerClone);
-    }
-    
-    const timelineClone = timelineElement.cloneNode(true);
-    timelineClone.style.cssText = `
-      overflow: visible;
-      width: auto;
-      height: auto;
-    `;
-    timelineWrapper.appendChild(timelineClone);
-    mainContent.appendChild(timelineWrapper);
-  }
+  // Left pane header (spacer)
+  const leftHeader = document.createElement('div');
+  leftHeader.style.cssText = `
+    height: 36px;
+    background: #F9FAFB;
+    border-bottom: 1px solid #E5E7EB;
+  `;
+  leftPane.appendChild(leftHeader);
   
+  // Helper to calculate position and width of a bar
+  const calculateBarPosition = (itemStart, itemEnd) => {
+    const start = new Date(itemStart);
+    const end = new Date(itemEnd);
+    
+    // Clamp to visible range
+    const visibleStart = start < optimalStart ? optimalStart : start;
+    const visibleEnd = end > optimalEnd ? optimalEnd : end;
+    
+    const daysFromStart = differenceInDays(visibleStart, optimalStart);
+    const barDays = differenceInDays(visibleEnd, visibleStart) + 1;
+    
+    const left = (daysFromStart / totalDays) * timelineWidth;
+    const width = Math.max(20, (barDays / totalDays) * timelineWidth); // Min 20px width
+    
+    return { left, width };
+  };
+  
+  // Render grouped items
+  const groupIds = Object.keys(groupedItems);
+  const ROW_HEIGHT = 32;
+  const GROUP_HEADER_HEIGHT = 28;
+  
+  groupIds.forEach(groupId => {
+    const items = groupedItems[groupId] || [];
+    if (items.length === 0) return;
+    
+    // Find group info
+    const ring = wheelStructure?.rings?.find(r => r.id === groupId);
+    const label = wheelStructure?.labels?.find(l => l.id === groupId);
+    const activityGroup = wheelStructure?.activityGroups?.find(a => a.id === groupId);
+    const groupName = ring?.name || label?.name || activityGroup?.name || groupId;
+    const groupColor = ring?.color || label?.color || activityGroup?.color || '#94A3B8';
+    
+    // Group header - left side
+    const groupHeaderLeft = document.createElement('div');
+    groupHeaderLeft.style.cssText = `
+      height: ${GROUP_HEADER_HEIGHT}px;
+      padding: 4px 12px;
+      background: #F3F4F6;
+      border-bottom: 1px solid #E5E7EB;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+    `;
+    groupHeaderLeft.innerHTML = `
+      <span style="width: 10px; height: 10px; border-radius: 2px; background: ${groupColor}; flex-shrink: 0;"></span>
+      ${groupName}
+    `;
+    leftPane.appendChild(groupHeaderLeft);
+    
+    // Group header - right side (empty row)
+    const groupHeaderRight = document.createElement('div');
+    groupHeaderRight.style.cssText = `
+      height: ${GROUP_HEADER_HEIGHT}px;
+      background: #F3F4F6;
+      border-bottom: 1px solid #E5E7EB;
+    `;
+    rightPane.appendChild(groupHeaderRight);
+    
+    // Item rows
+    items.forEach(item => {
+      const itemActivityGroup = wheelStructure?.activityGroups?.find(a => a.id === item.activityId);
+      const barColor = itemActivityGroup?.color || groupColor;
+      
+      // Item name - left side
+      const itemRowLeft = document.createElement('div');
+      itemRowLeft.style.cssText = `
+        height: ${ROW_HEIGHT}px;
+        padding: 0 12px 0 24px;
+        border-bottom: 1px solid #F3F4F6;
+        display: flex;
+        align-items: center;
+        font-size: 11px;
+        color: #4B5563;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      `;
+      itemRowLeft.textContent = item.name || 'Unnamed';
+      leftPane.appendChild(itemRowLeft);
+      
+      // Item bar - right side
+      const itemRowRight = document.createElement('div');
+      itemRowRight.style.cssText = `
+        height: ${ROW_HEIGHT}px;
+        border-bottom: 1px solid #F3F4F6;
+        position: relative;
+      `;
+      
+      const { left, width } = calculateBarPosition(item.startDate, item.endDate);
+      
+      const bar = document.createElement('div');
+      bar.style.cssText = `
+        position: absolute;
+        top: 6px;
+        left: ${left}px;
+        width: ${width}px;
+        height: 20px;
+        background: ${barColor};
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        padding: 0 6px;
+        font-size: 10px;
+        color: white;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      `;
+      // Only show name on bar if it has enough width
+      if (width > 60) {
+        bar.textContent = item.name || '';
+      }
+      itemRowRight.appendChild(bar);
+      rightPane.appendChild(itemRowRight);
+    });
+  });
+  
+  mainContent.appendChild(leftPane);
+  mainContent.appendChild(rightPane);
   container.appendChild(mainContent);
   
   // Add footer
