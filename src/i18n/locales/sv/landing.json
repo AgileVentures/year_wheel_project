@@ -55,7 +55,11 @@
     "manualTitle": "Skapa ditt årshjul manuellt",
     "manualDescription": "Klicka, dra och organisera dina aktiviteter precis som du vill ha dem.",
     "aiTitle": "Eller låt AI:n göra jobbet",
-    "aiDescription": "Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter och föreslår förbättringar."
+    "aiDescription": "Beskriv vad du vill åstadkomma – AI:n skapar strukturen, lägger till aktiviteter och föreslår förbättringar.",
+    "listTitle": "Listvy - Hitta allt direkt",
+    "listDescription": "Sök, filtrera och hantera alla dina aktiviteter i ett strukturerat listformat.",
+    "timelineTitle": "Tidslinjevy - Visualisera ditt schema",
+    "timelineDescription": "Se alla dina aktiviteter på en horisontell tidslinje med zoom- och panoramakontroller."
   },
   "features": {
     "title": "Allt du behöver för professionell planering",
@@ -271,6 +275,66 @@
       "planning": "Planering",
       "firstActivity": "Min första aktivitet"
     }
+  },
+  "listDemo": {
+    "rings": {
+      "campaigns": "Kampanjer",
+      "content": "Innehåll"
+    },
+    "items": {
+      "campaign1": "Vårens lansering",
+      "campaign2": "Sommarkampanj",
+      "campaign3": "Höstpromotion",
+      "campaign4": "Julkampanj",
+      "content1": "Bloggposter Q1",
+      "content2": "Videoserie",
+      "content3": "Webinar-prep",
+      "content4": "Social Media-plan",
+      "content5": "Nyhetsbrevskampanj"
+    },
+    "activities": {
+      "marketing": "Marknadsföring",
+      "sales": "Försäljning",
+      "content": "Innehåll",
+      "events": "Event"
+    },
+    "searchPlaceholder": "Sök aktiviteter...",
+    "searchText": "Kampanj",
+    "addButton": "Lägg till aktivitet",
+    "totalActivities": "Totalt:",
+    "rings": "Ringar:",
+    "year": "År:"
+  },
+  "timelineDemo": {
+    "rings": {
+      "title": "Ringar",
+      "campaigns": "Kampanjer",
+      "content": "Innehåll"
+    },
+    "items": {
+      "campaign1": "Vårens lansering",
+      "campaign2": "Sommarkampanj",
+      "campaign3": "Höstpromotion",
+      "content1": "Bloggposter Q1",
+      "content2": "Videoserie",
+      "content3": "Social Media-plan"
+    },
+    "months": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "Maj",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Okt",
+      "nov": "Nov",
+      "dec": "Dec"
+    },
+    "activities": "aktiviteter",
+    "days": "dagar"
   },
   "footer": {
     "tagline": "Gör årsplanering enkel, tydlig och effektiv för hela teamet.",

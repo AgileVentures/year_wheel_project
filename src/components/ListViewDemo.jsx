@@ -1,0 +1,219 @@
+import { useState, useEffect, memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ChevronDown, ChevronRight, Calendar, User, Eye } from 'lucide-react';
+
+function ListViewDemo() {
+  const { t } = useTranslation(['landing']);
+  const [demoStep, setDemoStep] = useState(0);
+  const [expandedRings, setExpandedRings] = useState({ ring1: false, ring2: false });
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [isTypingSearch, setIsTypingSearch] = useState(false);
+
+  // Demo data
+  const rings = [
+    { id: 'ring1', name: t('landing:listDemo.rings.campaigns', 'Campaigns'), color: '#3b82f6', itemCount: 4 },
+    { id: 'ring2', name: t('landing:listDemo.rings.content', 'Content'), color: '#8b5cf6', itemCount: 5 },
+  ];
+
+  const items = {
+    ring1: [
+      { id: 'item1', name: t('landing:listDemo.items.campaign1', 'Spring Launch'), start: '2026-03-01', end: '2026-03-30', activity: t('landing:listDemo.activities.marketing', 'Marketing') },
+      { id: 'item2', name: t('landing:listDemo.items.campaign2', 'Summer Campaign'), start: '2026-06-01', end: '2026-08-31', activity: t('landing:listDemo.activities.marketing', 'Marketing') },
+      { id: 'item3', name: t('landing:listDemo.items.campaign3', 'Fall Promotion'), start: '2026-09-15', end: '2026-10-15', activity: t('landing:listDemo.activities.sales', 'Sales') },
+      { id: 'item4', name: t('landing:listDemo.items.campaign4', 'Holiday Campaign'), start: '2026-11-20', end: '2026-12-31', activity: t('landing:listDemo.activities.marketing', 'Marketing') },
+    ],
+    ring2: [
+      { id: 'item5', name: t('landing:listDemo.items.content1', 'Blog Posts Q1'), start: '2026-01-01', end: '2026-03-31', activity: t('landing:listDemo.activities.content', 'Content') },
+      { id: 'item6', name: t('landing:listDemo.items.content2', 'Video Series'), start: '2026-04-01', end: '2026-06-30', activity: t('landing:listDemo.activities.content', 'Content') },
+      { id: 'item7', name: t('landing:listDemo.items.content3', 'Webinar Prep'), start: '2026-05-15', end: '2026-05-30', activity: t('landing:listDemo.activities.events', 'Events') },
+      { id: 'item8', name: t('landing:listDemo.items.content4', 'Social Media Plan'), start: '2026-07-01', end: '2026-09-30', activity: t('landing:listDemo.activities.content', 'Content') },
+      { id: 'item9', name: t('landing:listDemo.items.content5', 'Newsletter Campaign'), start: '2026-10-01', end: '2026-12-31', activity: t('landing:listDemo.activities.content', 'Content') },
+    ],
+  };
+
+  // Demo sequence
+  useEffect(() => {
+    const timers = [];
+
+    // Step 1: Expand first ring after 1000ms
+    timers.push(setTimeout(() => {
+      setExpandedRings(prev => ({ ...prev, ring1: true }));
+      setDemoStep(1);
+    }, 1000));
+
+    // Step 2: Hover over first item at 2500ms
+    timers.push(setTimeout(() => {
+      setHoveredItem('item1');
+      setDemoStep(2);
+    }, 2500));
+
+    // Step 3: Unhover and expand second ring at 4000ms
+    timers.push(setTimeout(() => {
+      setHoveredItem(null);
+      setExpandedRings(prev => ({ ...prev, ring2: true }));
+      setDemoStep(3);
+    }, 4000));
+
+    // Step 4: Start typing search at 6000ms
+    timers.push(setTimeout(() => {
+      setIsTypingSearch(true);
+      const targetText = t('landing:listDemo.searchText', 'Campaign');
+      let currentIndex = 0;
+
+      const typingInterval = setInterval(() => {
+        if (currentIndex <= targetText.length) {
+          setSearchText(targetText.substring(0, currentIndex));
+          currentIndex++;
+        } else {
+          clearInterval(typingInterval);
+          setIsTypingSearch(false);
+        }
+      }, 80);
+
+      timers.push(typingInterval);
+      setDemoStep(4);
+    }, 6000));
+
+    // Step 5: Clear search and reset at 10000ms
+    timers.push(setTimeout(() => {
+      setSearchText('');
+      setExpandedRings({ ring1: false, ring2: false });
+      setHoveredItem(null);
+      setDemoStep(0);
+    }, 10000));
+
+    return () => timers.forEach(timer => clearTimeout(timer));
+  }, [t, demoStep]);
+
+  return (
+    <div className="aspect-video bg-white p-4">
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <img src="/year_wheel_logo.svg" alt="YearWheel" className="h-6 w-auto" />
+            <span className="text-sm font-medium text-gray-700">{t('landing:demo.wheelTitle')}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder={t('landing:listDemo.searchPlaceholder', 'Search activities...')}
+                value={searchText}
+                readOnly
+                className="px-3 py-1.5 pr-8 text-sm border border-gray-300 rounded-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-48"
+              />
+              {isTypingSearch && (
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-blue-600 animate-pulse"></span>
+              )}
+            </div>
+            <button className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-sm hover:bg-blue-700">
+              {t('landing:listDemo.addButton', 'Add Activity')}
+            </button>
+          </div>
+        </div>
+
+        {/* List Content */}
+        <div className="flex-1 overflow-auto bg-gray-50">
+          <div className="p-4">
+            {/* Stats bar */}
+            <div className="bg-white rounded-sm border border-gray-200 px-4 py-3 mb-4 flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <span className="text-gray-600">{t('landing:listDemo.totalActivities', 'Total:')}</span>
+                <span className="font-semibold text-gray-900">9</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-purple-600" />
+                <span className="text-gray-600">{t('landing:listDemo.rings', 'Rings:')}</span>
+                <span className="font-semibold text-gray-900">2</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Eye className="w-4 h-4 text-teal-600" />
+                <span className="text-gray-600">{t('landing:listDemo.year', 'Year:')}</span>
+                <span className="font-semibold text-gray-900">2026</span>
+              </div>
+            </div>
+
+            {/* Ring groups */}
+            {rings.map((ring) => {
+              const ringItems = items[ring.id] || [];
+              const isExpanded = expandedRings[ring.id];
+              const filtered = searchText ? ringItems.filter(item => 
+                item.name.toLowerCase().includes(searchText.toLowerCase())
+              ) : ringItems;
+
+              if (searchText && filtered.length === 0) return null;
+
+              return (
+                <div key={ring.id} className="mb-3">
+                  {/* Ring header */}
+                  <div
+                    className="bg-white rounded-sm border border-gray-200 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => setExpandedRings(prev => ({ ...prev, [ring.id]: !prev[ring.id] }))}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? (
+                          <ChevronDown className="w-5 h-5 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-500" />
+                        )}
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ring.color }}></div>
+                        <span className="font-medium text-gray-900">{ring.name}</span>
+                        <span className="text-sm text-gray-500">({filtered.length})</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Items */}
+                  {isExpanded && (
+                    <div className="mt-2 space-y-1.5 pl-4">
+                      {filtered.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`bg-white rounded-sm border px-4 py-3 transition-all ${
+                            hoveredItem === item.id
+                              ? 'border-blue-400 shadow-md'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onMouseEnter={() => setHoveredItem(item.id)}
+                          onMouseLeave={() => setHoveredItem(null)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 mb-1">{item.name}</div>
+                              <div className="flex items-center gap-4 text-xs text-gray-600">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {item.start} → {item.end}
+                                </span>
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded">
+                                  {item.activity}
+                                </span>
+                              </div>
+                            </div>
+                            {hoveredItem === item.id && (
+                              <div className="flex items-center gap-2">
+                                <button className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default memo(ListViewDemo);
