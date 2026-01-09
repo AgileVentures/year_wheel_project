@@ -66,7 +66,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col"
+        className="bg-white rounded-sm shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -124,7 +124,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder={t('editor:itemName', 'Item name')}
                 />
               </div>
@@ -138,7 +138,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder={t('editor:itemDescription', 'Item description')}
                 />
               </div>
@@ -154,7 +154,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                     type="date"
                     value={formatDateForInput(startDate)}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -166,7 +166,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                     type="date"
                     value={formatDateForInput(endDate)}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -180,7 +180,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                 <select
                   value={ringId}
                   onChange={(e) => setRingId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('editor:selectRing', 'Select ring...')}</option>
                   {rings.filter(r => r.visible).map(ring => (
@@ -199,7 +199,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                 <select
                   value={activityId}
                   onChange={(e) => setActivityId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('editor:selectActivityGroup', 'Select activity group...')}</option>
                   {activityGroups.filter(ag => ag.visible).map(ag => (
@@ -219,7 +219,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                 <select
                   value={labelId || ''}
                   onChange={(e) => setLabelId(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('common.unlabeled', 'Unlabeled')}</option>
                   {labels.filter(l => l.visible).map(label => (
@@ -239,20 +239,20 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
         <div className="flex items-center justify-between p-6 border-t bg-gray-50">
           <button
             onClick={handleDelete}
-            className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors font-medium"
+            className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-sm transition-colors font-medium"
           >
             {t('editor:delete', 'Delete')}
           </button>
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-colors font-medium"
+              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-sm transition-colors font-medium"
             >
               {t('editor:cancel', 'Cancel')}
             </button>
             <button
               onClick={handleSave}
-              className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors font-medium"
+              className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-sm transition-colors font-medium"
             >
               {t('editor:save', 'Save')}
             </button>

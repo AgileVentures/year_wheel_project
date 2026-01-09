@@ -72,10 +72,10 @@ function ViewsSection() {
           {views.map((view) => (
             <div
               key={view.id}
-              className={`relative group bg-gradient-to-br ${view.bgColor} p-6 rounded-xl border-2 ${view.borderColor} hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
+              className={`relative group bg-gradient-to-br ${view.bgColor} p-6 rounded-sm border-2 ${view.borderColor} hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
             >
               {/* Icon */}
-              <div className={`w-16 h-16 bg-gradient-to-br ${view.color} rounded-xl flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+              <div className={`w-16 h-16 bg-gradient-to-br ${view.color} rounded-sm flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                 {view.useImg ? (
                   <img 
                     src={view.icon} 
@@ -113,7 +113,7 @@ function ViewsSection() {
 
         {/* Bottom CTA */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white rounded-sm shadow-lg hover:shadow-xl transition-shadow">
             <span className="font-semibold">{t('landing:views.cta')}</span>
             <ArrowRight size={18} />
           </div>

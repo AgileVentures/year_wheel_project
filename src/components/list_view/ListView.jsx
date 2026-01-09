@@ -359,7 +359,7 @@ const ListView = ({
           <select
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">{t('listView.allYears', 'Alla år')}</option>
             {availableYears.map(y => (

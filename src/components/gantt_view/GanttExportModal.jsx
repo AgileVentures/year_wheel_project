@@ -149,7 +149,7 @@ const GanttExportModal = ({
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white rounded-sm shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -181,7 +181,7 @@ const GanttExportModal = ({
                 <button
                   key={id}
                   onClick={() => setExportFormat(id)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${
+                  className={`flex flex-col items-center gap-1 p-3 rounded-sm border-2 transition-colors ${
                     exportFormat === id
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
                       : 'border-gray-200 hover:border-gray-300 text-gray-600'
@@ -225,7 +225,7 @@ const GanttExportModal = ({
                 ].map(({ id, label, detail }) => (
                   <label
                     key={id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    className={`flex items-start gap-3 p-3 rounded-sm border cursor-pointer transition-colors ${
                       dateRangeMode === id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
@@ -255,7 +255,7 @@ const GanttExportModal = ({
                   <select
                     value={customStartMonth}
                     onChange={(e) => setCustomStartMonth(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-sm"
                   >
                     {monthOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -265,7 +265,7 @@ const GanttExportModal = ({
                   <select
                     value={customEndMonth}
                     onChange={(e) => setCustomEndMonth(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md"
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-sm"
                   >
                     {monthOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -291,7 +291,7 @@ const GanttExportModal = ({
                 ].map(({ id, label, state, setter }) => (
                   <label
                     key={id}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                    className="flex items-center gap-3 px-3 py-2 rounded-sm hover:bg-gray-50 cursor-pointer"
                   >
                     <input
                       type="checkbox"
@@ -322,7 +322,7 @@ const GanttExportModal = ({
                   <button
                     key={id}
                     onClick={() => setPdfSize(id)}
-                    className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                    className={`px-3 py-1.5 text-sm rounded-sm border transition-colors ${
                       pdfSize === id
                         ? 'border-blue-500 bg-blue-50 text-blue-700'
                         : 'border-gray-200 hover:border-gray-300 text-gray-600'
@@ -337,7 +337,7 @@ const GanttExportModal = ({
           
           {/* CSV Info */}
           {exportFormat === 'csv' && (
-            <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-sm">
               <Info size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-800">
                 <p className="font-medium">{t('timeline:export.csvInfo')}</p>
@@ -360,7 +360,7 @@ const GanttExportModal = ({
           </button>
           <button
             onClick={handleExport}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-sm hover:bg-blue-700 transition-colors"
           >
             {exportFormat === 'print' 
               ? t('common:actions.export')

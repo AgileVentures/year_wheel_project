@@ -10,31 +10,35 @@ function Hero() {
   const viewIcons = [
     { 
       id: 'wheel', 
-      icon: <Target className="w-5 h-5" />,
+      icon: <Target className="w-8 h-8" />,
       useImg: false,
       tagline: t('landing:hero.viewTaglines.wheel', 'See the big picture'),
       delay: '0s',
+      color: 'from-[#00A4A6] to-[#36C2C6]',
     },
     { 
       id: 'list', 
       icon: '/icons/timeline-svgrepo-com.svg',
       useImg: true,
       tagline: t('landing:hero.viewTaglines.list', 'Find it fast'),
-      delay: '0.15s',
+      delay: '0.2s',
+      color: 'from-[#9FCB3E] to-[#336B3E]',
     },
     { 
       id: 'kanban', 
       icon: '/icons/kanban-svgrepo-com.svg',
       useImg: true,
       tagline: t('landing:hero.viewTaglines.kanban', 'Track progress'),
-      delay: '0.3s',
+      delay: '0.4s',
+      color: 'from-[#2D4EC8] to-[#36C2C6]',
     },
     { 
       id: 'timeline', 
       icon: '/icons/roadmap-timeline-svgrepo-com.svg',
       useImg: true,
       tagline: t('landing:hero.viewTaglines.timeline', 'Plan ahead'),
-      delay: '0.45s',
+      delay: '0.6s',
+      color: 'from-[#36C2C6] to-[#00A4A6]',
     },
   ];
   
@@ -56,8 +60,8 @@ function Hero() {
 
       {/* Content */}
       <div className="relative max-w-7xl mx-auto px-6 py-24 sm:py-32 lg:px-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-12">
-          <div className="max-w-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-12">
+          <div className="max-w-2xl flex-shrink-0">
           {/* Badge - using teal from logo */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00A4A6]/10 backdrop-blur-sm border border-[#36C2C6]/30 rounded-full mb-6">
             <svg className="w-4 h-4 text-[#36C2C6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,58 +129,134 @@ function Hero() {
           </div>
           </div>
           
-          {/* Animated View Icons - Right Side */}
-          <div className="hidden lg:flex flex-col gap-4 lg:w-72">
-            <p className="text-xs uppercase tracking-wider text-[#A4E6E0]/60 font-semibold mb-2">
-              {t('landing:hero.viewsLabel', '4 ways to view your data')}
-            </p>
-            {viewIcons.map((view) => (
-              <div
-                key={view.id}
-                className="flex items-center gap-4 px-4 py-3 bg-white/5 backdrop-blur-sm border border-[#36C2C6]/20 rounded-lg hover:bg-white/10 hover:border-[#36C2C6]/40 transition-all duration-300 animate-fade-in-right group"
-                style={{ animationDelay: view.delay }}
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-[#00A4A6] to-[#2D4EC8] rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  {view.useImg ? (
-                    <img 
-                      src={view.icon} 
-                      alt="" 
-                      className="w-5 h-5"
-                      style={{ filter: 'brightness(0) invert(1)' }}
-                    />
-                  ) : (
-                    <span className="text-white">{view.icon}</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">
-                    {t(`landing:views.${view.id}.title`)}
-                  </p>
-                  <p className="text-xs text-[#A4E6E0]/70 truncate">
-                    {view.tagline}
-                  </p>
-                </div>
+          {/* Animated View Icons - Right Side - Diagonal Layout */}
+          <div className="hidden lg:flex flex-col justify-center gap-0 flex-shrink-0 min-w-[450px] pointer-events-auto">
+            {/* Badge Label */}
+            <div className="mb-8 flex justify-end">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00A4A6]/10 backdrop-blur-sm border border-[#36C2C6]/30 rounded-full">
+                <svg className="w-3.5 h-3.5 text-[#36C2C6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span className="text-xs font-medium text-[#A4E6E0] uppercase tracking-wide">
+                  {t('landing:hero.viewsLabel', '4 ways to view your data')}
+                </span>
               </div>
-            ))}
+            </div>
+            
+            {/* Icons in fixed diagonal - independent of text length */}
+            <div className="relative">
+              {viewIcons.map((view, index) => (
+                <div
+                  key={view.id}
+                  className="group animate-slide-in-diagonal flex items-center gap-5 mb-5"
+                  style={{ 
+                    animationDelay: view.delay,
+                    animationFillMode: 'both',
+                    paddingLeft: `${index * 70}px`,
+                  }}
+                >
+                  {/* Main icon - white with subtle transparent background */}
+                  <div className="relative w-20 h-20 bg-white/5 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 animate-float cursor-pointer border border-white/10 flex-shrink-0"
+                    style={{ 
+                      animationDelay: view.delay,
+                      animationDuration: `${3 + index * 0.5}s`
+                    }}
+                  >
+                    {/* Subtle glow on hover */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${view.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`}></div>
+                    
+                    {view.useImg ? (
+                      <img 
+                        src={view.icon} 
+                        alt="" 
+                        className="w-10 h-10 relative z-10 group-hover:scale-110 transition-transform duration-300"
+                        style={{ filter: 'brightness(0) invert(1)' }}
+                      />
+                    ) : (
+                      <span className="text-white relative z-10 group-hover:scale-110 transition-transform duration-300">
+                        {view.icon}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Text label - always visible */}
+                  <div className="whitespace-nowrap flex-shrink-0">
+                    <p className="text-base font-bold text-white drop-shadow-lg leading-tight">
+                      {t(`landing:views.${view.id}.title`)}
+                    </p>
+                    <p className="text-base text-[#A4E6E0]/90 drop-shadow-lg leading-tight">
+                      {view.tagline}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
       
       {/* Animation keyframes */}
       <style>{`
-        @keyframes fade-in-right {
-          from {
+        @keyframes slide-in-diagonal {
+          0% {
             opacity: 0;
-            transform: translateX(20px);
+            transform: translate(80px, -80px) scale(0.3) rotate(-20deg);
           }
-          to {
+          60% {
+            transform: translate(-8px, 8px) scale(1.05) rotate(3deg);
+          }
+          80% {
+            transform: translate(3px, -3px) scale(0.98) rotate(-1deg);
+          }
+          100% {
             opacity: 1;
-            transform: translateX(0);
+            transform: translate(0, 0) scale(1) rotate(0deg);
           }
         }
-        .animate-fade-in-right {
-          animation: fade-in-right 0.5s ease-out forwards;
-          opacity: 0;
+        
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-15px);
+          }
+        }
+        
+        @keyframes pulse-glow {
+          0%, 100% {
+            opacity: 0.4;
+            transform: scale(1.3);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.5);
+          }
+        }
+        
+        @keyframes spin-slow {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        .animate-slide-in-diagonal {
+          animation: slide-in-diagonal 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .animate-float {
+          animation: float ease-in-out infinite;
+        }
+        
+        .animate-pulse-glow {
+          animation: pulse-glow 3s ease-in-out infinite;
+        }
+        
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
         }
       `}</style>
     </section>

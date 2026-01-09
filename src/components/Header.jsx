@@ -362,14 +362,14 @@ function Header({
                 <div className="p-1">
                   <button
                     onClick={() => { onLoadFromFile(); setShowImageExportMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                   >
                     <Upload size={16} className="text-gray-500" />
                     {t('common:header.importFile')}
                   </button>
                   <button
                     onClick={() => { onSaveToFile(); setShowImageExportMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                   >
                     <Download size={16} className="text-gray-500" />
                     {t('common:header.exportFile')}
@@ -377,7 +377,7 @@ function Header({
                   {onExportData && (
                     <button
                       onClick={() => { onExportData(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                     >
                       <FileSpreadsheet size={16} className="text-gray-500" />
                       <span className="flex items-center gap-2">
@@ -389,7 +389,7 @@ function Header({
                   {onSmartImport && wheelId && (
                     <button
                       onClick={() => { onSmartImport(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                     >
                       <Sparkles size={16} className="text-purple-500" />
                       <span className="flex items-center gap-2">
@@ -409,7 +409,7 @@ function Header({
                     </div>
                     <div className="p-1">
                       {/* PNG Transparent */}
-                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
                         <FileDown size={16} className="text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-gray-900">{t('common:header.pngTransparent')}</div>
@@ -438,7 +438,7 @@ function Header({
                       </div>
 
                       {/* PNG White */}
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50">
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-50">
                         <FileDown size={16} className="text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-gray-900">{t('common:header.pngWhite')}</div>
@@ -463,7 +463,7 @@ function Header({
                       </div>
 
                       {/* JPEG */}
-                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
                         <FileDown size={16} className="text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-gray-900">JPEG</div>
@@ -492,7 +492,7 @@ function Header({
                       </div>
 
                       {/* SVG */}
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50">
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-50">
                         <FileDown size={16} className="text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-gray-900">SVG</div>
@@ -517,7 +517,7 @@ function Header({
                       </div>
 
                       {/* PDF */}
-                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
                         <FileDown size={16} className="text-gray-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm text-gray-900">PDF</div>
@@ -538,7 +538,7 @@ function Header({
 
                       {/* PDF Report */}
                       {onDownloadPDFReport && (
-                        <div className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                        <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
                           <FileSpreadsheet size={16} className="text-gray-400 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm text-gray-900">{t('common:header.pdfReport')}</div>
@@ -570,21 +570,21 @@ function Header({
                     <div className="p-1">
                       <button
                         onClick={() => { onGanttExport('png'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <FileImage size={16} className="text-gray-500" />
                         {t('export.png', 'PNG-bild')}
                       </button>
                       <button
                         onClick={() => { onGanttExport('pdf'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <FileText size={16} className="text-gray-500" />
                         {t('export.pdf', 'PDF-dokument')}
                       </button>
                       <button
                         onClick={() => { onGanttExport('print'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <Printer size={16} className="text-gray-500" />
                         {t('common.print', 'Skriv ut')}
@@ -602,14 +602,14 @@ function Header({
                     <div className="p-1">
                       <button
                         onClick={() => { onKanbanExport('png'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <FileImage size={16} className="text-gray-500" />
                         {t('export.png', 'PNG-bild')}
                       </button>
                       <button
                         onClick={() => { onKanbanExport('print'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <Printer size={16} className="text-gray-500" />
                         {t('common.print', 'Skriv ut')}
@@ -627,14 +627,14 @@ function Header({
                     <div className="p-1">
                       <button
                         onClick={() => { onListExport('csv'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <FileSpreadsheet size={16} className="text-gray-500" />
                         {t('export.csv', 'CSV-fil')}
                       </button>
                       <button
                         onClick={() => { onListExport('print'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <Printer size={16} className="text-gray-500" />
                         {t('common.print', 'Skriv ut')}
@@ -652,21 +652,21 @@ function Header({
                     <div className="p-1">
                       <button
                         onClick={() => { handleCopyPreviewLink(); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <Eye size={16} className="text-gray-500" />
                         {copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
                       </button>
                       <button
                         onClick={() => { handleOpenPresentationMode(); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <Presentation size={16} className="text-gray-500" />
                         {t('common:header.presentationMode')}
                       </button>
                       <button
                         onClick={() => { handleCopyEmbedLink(); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <Link2 size={16} className="text-gray-500" />
                         <span className="flex items-center gap-2">
@@ -686,7 +686,7 @@ function Header({
                   {onTemplateSelect && (
                     <button
                       onClick={() => { setShowTemplateModal(true); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                     >
                       <Sparkles size={16} className="text-gray-500" />
                       {t('common:header.useTemplate')}
@@ -694,7 +694,7 @@ function Header({
                   )}
                   <button
                     onClick={() => { onReset(); setShowImageExportMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-sm transition-colors"
                   >
                     <RotateCcw size={16} className="text-red-500" />
                     {t('common:header.resetAll')}
@@ -869,7 +869,7 @@ function Header({
                       setShowSaveMenu(false);
                     }}
                     disabled={isSaving}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
                       <Save size={16} className="text-gray-500" />
@@ -888,7 +888,7 @@ function Header({
                       setShowSaveMenu(false);
                     }}
                     disabled={isSaving}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
                       <History size={16} className="text-green-600" />
@@ -916,7 +916,7 @@ function Header({
                           onVersionHistory();
                           setShowSaveMenu(false);
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
                       >
                         <History size={16} className="text-gray-500" />
                         <div className="text-left">
