@@ -130,7 +130,7 @@ function Hero() {
           </div>
           
           {/* Animated View Icons - Right Side - Diagonal Layout */}
-          <div className="hidden lg:flex flex-col justify-center gap-0 flex-shrink-0 min-w-[450px] pointer-events-auto">
+          <div className="hidden lg:flex flex-col justify-center flex-shrink-0 min-w-[420px] pointer-events-auto">
             {/* Badge Label */}
             <div className="mb-8 flex justify-end">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00A4A6]/10 backdrop-blur-sm border border-[#36C2C6]/30 rounded-full">
@@ -143,35 +143,37 @@ function Hero() {
               </div>
             </div>
             
-            {/* Icons in fixed diagonal - independent of text length */}
-            <div className="relative">
+            {/* Icons in diagonal cascade */}
+            <div className="space-y-6">
               {viewIcons.map((view, index) => (
                 <div
                   key={view.id}
-                  className="group animate-slide-in-diagonal flex items-center gap-5"
+                  className={`group flex items-center gap-5 animate-fade-in-up opacity-0 ${
+                    index === 0 ? '[animation-delay:100ms]' : 
+                    index === 1 ? '[animation-delay:200ms]' : 
+                    index === 2 ? '[animation-delay:300ms]' : 
+                    '[animation-delay:400ms]'
+                  }`}
                   style={{ 
-                    animationDelay: view.delay,
-                    animationFillMode: 'both',
-                    paddingLeft: `${index * 40}px`,
-                    marginTop: index > 0 ? '32px' : '0',
+                    paddingLeft: `${index * 32}px`,
                   }}
                 >
-                  {/* Main icon - white with subtle transparent background */}
-                  <div className="relative w-20 h-20 bg-white/5 backdrop-blur-sm rounded-sm flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/10 transition-all duration-500 animate-float cursor-pointer border border-white/10 flex-shrink-0"
-                    style={{ 
-                      animationDelay: view.delay,
-                      animationDuration: `${3 + index * 0.5}s`
+                  {/* Icon Container - transparent with backdrop */}
+                  <div
+                    onClick={() => {
+                      const viewsSection = document.getElementById('views-section');
+                      viewsSection?.scrollIntoView({ behavior: 'smooth' });
                     }}
+                    className="relative w-20 h-20 bg-white/5 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/10 transition-all duration-300 cursor-pointer border border-white/10 flex-shrink-0"
                   >
-                    {/* Subtle glow on hover */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${view.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`}></div>
+                    {/* Gradient glow on hover */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${view.color} rounded-lg blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-300`}></div>
                     
                     {view.useImg ? (
                       <img 
                         src={view.icon} 
                         alt="" 
-                        className="w-10 h-10 relative z-10 group-hover:scale-110 transition-transform duration-300"
-                        style={{ filter: 'brightness(0) invert(1)' }}
+                        className="w-10 h-10 relative z-10 brightness-0 invert group-hover:scale-110 transition-transform duration-300"
                       />
                     ) : (
                       <span className="text-white relative z-10 group-hover:scale-110 transition-transform duration-300">
@@ -180,12 +182,12 @@ function Hero() {
                     )}
                   </div>
                   
-                  {/* Text label - always visible */}
-                  <div className="whitespace-nowrap flex-shrink-0">
+                  {/* Text label */}
+                  <div className="flex-shrink-0">
                     <p className="text-base font-bold text-white drop-shadow-lg leading-tight">
                       {t(`landing:views.${view.id}.title`)}
                     </p>
-                    <p className="text-base text-[#A4E6E0]/90 drop-shadow-lg leading-tight">
+                    <p className="text-sm text-[#A4E6E0]/90 drop-shadow-lg leading-tight">
                       {view.tagline}
                     </p>
                   </div>
@@ -195,71 +197,6 @@ function Hero() {
           </div>
         </div>
       </div>
-      
-      {/* Animation keyframes */}
-      <style>{`
-        @keyframes slide-in-diagonal {
-          0% {
-            opacity: 0;
-            transform: translate(80px, -80px) scale(0.3) rotate(-20deg);
-          }
-          60% {
-            transform: translate(-8px, 8px) scale(1.05) rotate(3deg);
-          }
-          80% {
-            transform: translate(3px, -3px) scale(0.98) rotate(-1deg);
-          }
-          100% {
-            opacity: 1;
-            transform: translate(0, 0) scale(1) rotate(0deg);
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-15px);
-          }
-        }
-        
-        @keyframes pulse-glow {
-          0%, 100% {
-            opacity: 0.4;
-            transform: scale(1.3);
-          }
-          50% {
-            opacity: 0.7;
-            transform: scale(1.5);
-          }
-        }
-        
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        
-        .animate-slide-in-diagonal {
-          animation: slide-in-diagonal 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        
-        .animate-float {
-          animation: float ease-in-out infinite;
-        }
-        
-        .animate-pulse-glow {
-          animation: pulse-glow 3s ease-in-out infinite;
-        }
-        
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
-      `}</style>
     </section>
   );
 }

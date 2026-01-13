@@ -341,7 +341,7 @@ const KanbanView = ({
       {/* Setup Modal */}
       {showSetupModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" data-cy="kanban-setup-modal">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-sm shadow-2xl max-w-md w-full p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Välkommen till Kanban-vy
             </h2>

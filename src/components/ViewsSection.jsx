@@ -52,7 +52,7 @@ function ViewsSection() {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+    <section id="views-section" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white scroll-mt-16">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
@@ -113,13 +113,16 @@ function ViewsSection() {
 
         {/* Bottom CTA */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white rounded-sm shadow-lg hover:shadow-xl transition-shadow">
-            <span className="font-semibold">{t('landing:views.cta')}</span>
-            <ArrowRight size={18} />
-          </div>
-          <p className="mt-4 text-sm text-gray-500">
-            {t('landing:views.ctaSubtext')}
-          </p>
+          <button
+            onClick={() => {
+              const authSection = document.getElementById('auth-section');
+              authSection?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#00A4A6] to-[#2D4EC8] text-white rounded-sm shadow-lg hover:shadow-xl transition-all hover:scale-105"
+          >
+            <span className="font-semibold text-lg">{t('landing:views.ctaRegister', 'Registrera dig')}</span>
+            <ArrowRight size={20} />
+          </button>
         </div>
       </div>
     </section>
