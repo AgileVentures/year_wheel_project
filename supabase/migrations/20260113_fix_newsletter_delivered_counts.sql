@@ -1,9 +1,6 @@
 -- Fix historic newsletter delivered counts based on actual webhook events
 -- This recalculates delivered_count from newsletter_events table
 
--- First, let's see what we're working with
-COMMENT ON MIGRATION IS 'Recalculate delivered_count from actual newsletter_events for historic newsletters';
-
 -- Update delivered_count to actual count from events
 UPDATE newsletter_sends ns
 SET delivered_count = (
