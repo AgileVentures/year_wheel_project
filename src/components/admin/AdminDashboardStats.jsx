@@ -216,11 +216,12 @@ export default function AdminDashboardStats({ onPeriodChange }) {
     if (!stats) return null;
     
     // Paying subscribers (excludes gift)
-    const payingSubscribers = stats.premium.paying || (stats.premium.monthly + stats.premium.yearly);
+    const payingSubscribers = stats.premium.paying || 0;
     
-    // Conversion rate: paying premium / total users (excludes gift subscribers)
-    const conversionRate = stats.users.total > 0 
-      ? (payingSubscribers / stats.users.total) * 100
+    // Conversion rate: paying premium / new users in period (not total users)
+    // This shows how many NEW signups converted to paid in this period
+    const conversionRate = stats.users.new > 0 
+      ? (stats.premium.new / stats.users.new) * 100
       : 0;
     
     // Active rate: active / total users  
@@ -239,11 +240,10 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       : 0;
 
     // Previous period metrics for comparison (with null safety)
-    const prevPayingSubscribers = comparisonStats?.premium?.paying || 
-      ((comparisonStats?.premium?.monthly || 0) + (comparisonStats?.premium?.yearly || 0));
+    const prevPayingSubscribers = comparisonStats?.premium?.paying || 0;
     
-    const prevConversionRate = comparisonStats?.users?.total > 0
-      ? (prevPayingSubscribers / comparisonStats.users.total) * 100
+    const prevConversionRate = comparisonStats?.users?.new > 0
+      ? (comparisonStats.premium.new / comparisonStats.users.new) * 100
       : null;
 
     const prevActiveRate = comparisonStats?.users?.total > 0
@@ -329,12 +329,10 @@ export default function AdminDashboardStats({ onPeriodChange }) {
         <KPICard
           title="MRR"
           value={formatCurrency(stats.revenue.mrr)}
-          target={Math.round(FORECAST_TARGETS.mrr12Month / 12)}
-          targetLabel="Prognos (mån)"
           previousValue={comparisonStats?.revenue?.mrr}
           icon={DollarSign}
           color="green"
-          subtitle={`${stats.premium.total} betalande`}
+          subtitle={`${metrics.payingSubscribers} betalande kunder`}
         />
         
         <KPICard
@@ -355,7 +353,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           previousValue={metrics.prevConversionRate}
           icon={Percent}
           color="purple"
-          subtitle={`${stats.premium.new} nya premium`}
+          subtitle={`${stats.premium.new} nya premium av ${stats.users.new} nya`}
         />
         
         <KPICard
@@ -393,7 +391,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
         <StatCard
           label="ARPU"
           value={formatCurrency(metrics.arpu)}
-          sublabel="per betalande användare"
+          sublabel="per betalande kund/månad"
           icon={DollarSign}
         />
         
@@ -406,7 +404,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       </div>
 
       {/* Gift Subscriptions - only show if there are any */}
-      {(stats.premium.gift > 0 || stats.premium.total > metrics.payingSubscribers) && (
+      {stats.premium.gift > 0 && (
         <div className="bg-purple-50 border border-purple-100 rounded-sm p-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-500 rounded-sm">
@@ -415,7 +413,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
             <div>
               <div className="text-sm font-medium text-purple-900">Gåvoprenumerationer</div>
               <div className="text-2xl font-bold text-purple-700">
-                {formatNumber(stats.premium.gift || (stats.premium.total - metrics.payingSubscribers))}
+                {formatNumber(stats.premium.gift)}
               </div>
               <div className="text-xs text-purple-600">Administratörstilldelade (genererar ingen intäkt)</div>
             </div>
