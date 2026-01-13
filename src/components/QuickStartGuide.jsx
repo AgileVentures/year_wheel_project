@@ -44,7 +44,7 @@ function QuickStartGuide() {
             </li>
             <li className="flex items-start">
               <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full font-medium mr-3 mt-0.5">4</span>
-              <span>Kolla din e-post för verifieringslänk (valfritt för omedelbar användning)</span>
+              <span>Du loggas in automatiskt och omdirigeras till din översikt</span>
             </li>
           </ol>
         </>
