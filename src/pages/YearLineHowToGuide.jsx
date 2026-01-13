@@ -19,17 +19,17 @@ function YearLineHowToGuide() {
 
   const steps = [
     {
-      title: "Get Started in Seconds",
-      time: "2 minutes",
+      title: "Install YearLine",
+      time: "1 minute",
       icon: Sparkles,
       image: "/docs/yearline/images/01-timeline-overview.png",
       content: (
         <>
           <div className="bg-gradient-to-r from-[#FF5A5F] to-[#E63946] text-white p-6 rounded-sm mb-6">
-            <h3 className="text-2xl font-bold mb-3">Turn Your Boards into Timelines Instantly</h3>
+            <h3 className="text-2xl font-bold mb-3">Transform Your Boards Into Visual Timelines</h3>
             <p className="text-lg opacity-95">
-              YearLine gives you Gantt-style timeline views for your Monday.com boards without any setup. 
-              See your projects flow across weeks and months, and make adjustments with simple drag and drop.
+              Add YearLine to any Monday.com board and instantly see your work as a clear Gantt timeline. 
+              No configuration, no learning curve—just visual clarity in seconds.
             </p>
           </div>
 
@@ -63,11 +63,11 @@ function YearLineHowToGuide() {
 
           <img 
             src="/docs/yearline/images/01-timeline-overview.png" 
-            alt="YearLine timeline showing project overview" 
+            alt="YearLine timeline showing project overview with groups and color-coded tasks" 
             className="w-full rounded-sm shadow-2xl border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
-            Your board items displayed as a clear, interactive timeline
+            Your Monday.com board transformed into a visual timeline—see everything at a glance
           </p>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -94,17 +94,17 @@ function YearLineHowToGuide() {
       )
     },
     {
-      title: "Choose Your View",
-      time: "2 minutes",
+      title: "Switch Between Views",
+      time: "1 minute",
       icon: Layout,
       image: "/docs/yearline/images/02-color-themes.png",
       content: (
         <>
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-sm mb-6">
-            <h3 className="text-2xl font-bold mb-3">Organize Your Timeline Your Way</h3>
+            <h3 className="text-2xl font-bold mb-3">See Your Work from Different Angles</h3>
             <p className="text-lg opacity-95">
-              Switch between different views to see your work organized by groups, status, or team members. 
-              YearLine adapts to how you need to see your projects.
+              Instantly reorganize your timeline by groups, status, or team members with one click. 
+              Each view reveals different insights about your project.
             </p>
           </div>
 
@@ -147,11 +147,11 @@ function YearLineHowToGuide() {
 
           <img 
             src="/docs/yearline/images/02-color-themes.png" 
-            alt="YearLine color theme selector" 
+            alt="YearLine color theme picker with preset options" 
             className="w-full rounded-sm shadow-lg border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
-            Choose from beautiful color themes to match your style
+            Personalize your timeline with themes—from professional Monday Colors to vibrant palettes
           </p>
 
           <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-sm">
@@ -173,17 +173,17 @@ function YearLineHowToGuide() {
       )
     },
     {
-      title: "Edit with Drag & Drop",
-      time: "3 minutes",
+      title: "Drag to Reschedule",
+      time: "2 minutes",
       icon: Move,
       image: "/docs/yearline/images/03-edit-item.png",
       content: (
         <>
           <div className="bg-gradient-to-r from-[#FF5A5F] to-[#E63946] text-white p-6 rounded-sm mb-6">
-            <h3 className="text-2xl font-bold mb-3">Adjust Timelines Visually</h3>
+            <h3 className="text-2xl font-bold mb-3">Edit Tasks Visually</h3>
             <p className="text-lg opacity-95">
-              Move tasks by dragging them to new dates. Resize them to change durations. 
-              Every change syncs back to Monday.com automatically.
+              Drag tasks to new dates or resize them to adjust duration—all changes sync to Monday.com instantly. 
+              No forms to fill, just intuitive visual editing.
             </p>
           </div>
 
@@ -226,11 +226,11 @@ function YearLineHowToGuide() {
 
           <img 
             src="/docs/yearline/images/03-edit-item.png" 
-            alt="YearLine edit dialog showing task details" 
+            alt="YearLine task editor with name, group, dates, status, and member assignment" 
             className="w-full rounded-sm shadow-lg border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
-            Edit dialog with all task fields (name, group, dates, status, assigned members)
+            Click any task to quickly update details—changes save automatically to Monday.com
           </p>
 
           <div className="mt-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-sm">
@@ -252,17 +252,17 @@ function YearLineHowToGuide() {
       )
     },
     {
-      title: "Zoom and Navigate",
-      time: "2 minutes",
+      title: "Zoom In and Out",
+      time: "1 minute",
       icon: Calendar,
       image: "/docs/yearline/images/04-week-view.png",
       content: (
         <>
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-sm mb-6">
-            <h3 className="text-2xl font-bold mb-3">See Your Timeline at Any Scale</h3>
+            <h3 className="text-2xl font-bold mb-3">Focus on Details or Big Picture</h3>
             <p className="text-lg opacity-95">
-              Zoom in to see weekly details or zoom out to view the entire year. 
-              YearLine adapts to show you exactly what you need.
+              Zoom in for week-by-week planning with precise week numbers, or zoom out to see months at a glance. 
+              Navigate quickly to any date with the "Today" button.
             </p>
           </div>
 
@@ -294,11 +294,11 @@ function YearLineHowToGuide() {
 
           <img 
             src="/docs/yearline/images/04-week-view.png" 
-            alt="YearLine week view showing detailed timeline with week numbers" 
+            alt="YearLine zoomed to week view with ISO week numbers and grouped tasks" 
             className="w-full rounded-sm shadow-lg border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
-            Week view with ISO week numbers for precise planning
+            Zoom to week view for detailed sprint planning with ISO week numbers (W44, W45...)
           </p>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -326,16 +326,16 @@ function YearLineHowToGuide() {
     },
     {
       title: "Filter by Status",
-      time: "2 minutes",
+      time: "1 minute",
       icon: Target,
       image: "/docs/yearline/images/05-status-filter.png",
       content: (
         <>
           <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6 rounded-sm mb-6">
-            <h3 className="text-2xl font-bold mb-3">Focus on What Matters</h3>
+            <h3 className="text-2xl font-bold mb-3">Show Only What Needs Attention</h3>
             <p className="text-lg opacity-95">
-              Filter your timeline by status to see only the tasks that need attention. 
-              Great for daily standups, sprint reviews, or status reports.
+              Filter by status to highlight stuck tasks, active work, or completed items. 
+              Perfect for standups, reviews, and keeping your team focused.
             </p>
           </div>
 
@@ -369,11 +369,11 @@ function YearLineHowToGuide() {
 
           <img 
             src="/docs/yearline/images/05-status-filter.png" 
-            alt="YearLine status filter showing timeline filtered by status" 
+            alt="YearLine timeline filtered by status showing only selected work states" 
             className="w-full rounded-sm shadow-lg border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
-            Timeline filtered by status - focus on work that needs attention
+            Use status filters to focus on blocked tasks or celebrate completed work
           </p>
 
           <div className="mt-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-sm">
@@ -419,16 +419,16 @@ function YearLineHowToGuide() {
       )
     },
     {
-      title: "Best Practices",
-      time: "3 minutes",
+      title: "Tips & Use Cases",
+      time: "2 minutes",
       icon: Sparkles,
       image: "/docs/yearline/images/01-timeline-overview.png",
       content: (
         <>
           <div className="bg-gradient-to-r from-[#FF5A5F] to-[#E63946] text-white p-6 rounded-sm mb-6">
-            <h3 className="text-2xl font-bold mb-3">Get the Most from YearLine</h3>
+            <h3 className="text-2xl font-bold mb-3">Make YearLine Work for You</h3>
             <p className="text-lg opacity-95">
-              Simple tips to make YearLine work even better for your team's planning and coordination.
+              Quick tips to maximize your timeline view and common ways teams use YearLine every day.
             </p>
           </div>
 
@@ -674,11 +674,11 @@ function YearLineHowToGuide() {
             Questions? We're here to help!
           </p>
           <p className="mb-3">
-            <a href="mailto:support@yearwheel.se" className="text-[#FF5A5F] hover:underline font-medium text-lg">
-              support@yearwheel.se
+            <a href="mailto:hey@communitaslabs.io" className="text-[#FF5A5F] hover:underline font-medium text-lg">
+              hey@communitaslabs.io
             </a>
           </p>
-          <p className="text-sm text-gray-600">© {new Date().getFullYear()} YearLine by YearWheel. All rights reserved.</p>
+          <p className="text-sm text-gray-600">© {new Date().getFullYear()} YearLine by Communitas Labs. All rights reserved.</p>
         </div>
       </div>
     </div>
