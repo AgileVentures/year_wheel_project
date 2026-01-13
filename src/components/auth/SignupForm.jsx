@@ -9,14 +9,12 @@ function SignupForm({ onToggleMode }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const { signUp } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    setSuccess(false);
 
     if (password !== confirmPassword) {
       setError(t('auth:signup.errors.passwordMismatch'));
@@ -32,35 +30,14 @@ function SignupForm({ onToggleMode }) {
 
     try {
       await signUp(email, password);
-      setSuccess(true);
+      // No need to show success message - user is automatically signed in
+      // The auth state change will redirect them to dashboard
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="w-full">
-        <div>
-          <h2 className="text-3xl font-bold mb-2 text-gray-900">
-            {t('auth:signup.success.title')}
-          </h2>
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-sm">
-            <p className="font-semibold mb-1">{t('auth:signup.success.emailTitle')}</p>
-            <p className="text-sm">{t('auth:signup.success.emailMessage')}</p>
-          </div>
-          <button
-            onClick={onToggleMode}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-sm transition-colors"
-          >
-            {t('auth:signup.success.goToLogin')}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full">

@@ -343,7 +343,7 @@ function QuickStartGuide() {
             </li>
             <li className="flex items-start">
               <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-[#00A4A6] text-white rounded-full font-medium mr-3 mt-0.5">4</span>
-              <span>Check your email for verification link (optional for immediate use)</span>
+              <span>You'll be instantly logged in and redirected to your dashboard</span>
             </li>
           </ol>
         </>
