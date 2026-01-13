@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 
 /**
- * Check if current user is a Monday.com user
+ * Check if current user is a monday.com user
  */
 export const isMondayUser = async () => {
   try {

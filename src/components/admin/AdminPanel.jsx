@@ -280,7 +280,7 @@ export default function AdminPanel() {
               }`}
             >
               <Calendar size={16} className="inline mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Monday.com</span>
+              <span className="hidden sm:inline">monday.com</span>
               <span className="sm:hidden">Monday</span>
             </button>
             <button

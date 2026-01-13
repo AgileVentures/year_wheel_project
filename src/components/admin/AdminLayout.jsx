@@ -22,7 +22,7 @@ const navItems = [
   { path: '/admin/wheels', icon: Circle, labelKey: 'wheels', label: 'Hjul' },
   { path: '/admin/teams', icon: Users, label: 'Team' },
   { path: '/admin/affiliates', icon: DollarSign, labelKey: 'affiliates' },
-  { path: '/admin/monday', icon: Calendar, label: 'Monday.com' },
+  { path: '/admin/monday', icon: Calendar, label: 'monday.com' },
   { path: '/admin/newsletter', icon: Mail, labelKey: 'newsletter' },
   { path: '/admin/forecasts', icon: BarChart3, label: 'Prognoser' },
 ];

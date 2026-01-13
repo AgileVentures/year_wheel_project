@@ -1,6 +1,6 @@
 # YearLine How-To Guide Screenshots
 
-This directory contains screenshots for the YearLine (Monday.com timeline) integration how-to guide.
+This directory contains screenshots for the YearLine (monday.com timeline) integration how-to guide.
 
 ## Required Images
 
@@ -16,11 +16,11 @@ Save the provided screenshots with these exact filenames:
 
 - **Format**: PNG preferred for crisp screenshots
 - **Resolution**: Full width screenshots, ideally 1920px or higher for clarity
-- **Content**: Should show real YearLine interface from Monday.com app
+- **Content**: Should show real YearLine interface from monday.com app
 - **File naming**: Use exact filenames listed above (lowercase, dash-separated)
 
 ## Usage
 
 These images are referenced in `/src/pages/YearLineHowToGuide.jsx` and displayed in the step-by-step guide at `/yearline/how-to`.
 
-The guide is designed to be iframe-embeddable in the Monday.com marketplace.
+The guide is designed to be iframe-embeddable in the monday.com marketplace.

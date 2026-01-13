@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
-// Monday.com app credentials (public)
+// monday.com app credentials (public)
 const MONDAY_CLIENT_ID = '82c44e2678c2b6e8723cf2d69b900250' // Public - safe to expose
 const MONDAY_APP_ID = '10727736' // Public - safe to expose
 const MONDAY_SIGNING_SECRET = Deno.env.get('MONDAY_SIGNING_SECRET') // Optional: For webhook signature verification
@@ -42,7 +42,7 @@ serve(async (req) => {
 
   try {
     const payload: MondayWebhookPayload = await req.json()
-    console.log('Monday.com webhook received:', payload.type)
+    console.log('monday.com webhook received:', payload.type)
 
     // Initialize Supabase Admin Client
     const supabaseAdmin = createClient(

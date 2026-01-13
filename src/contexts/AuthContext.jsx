@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    // Check for OAuth callback tokens in URL (Monday.com OAuth)
+    // Check for OAuth callback tokens in URL (monday.com OAuth)
     const handleOAuthCallback = async () => {
       const params = new URLSearchParams(window.location.search);
       const accessToken = params.get('access_token');

@@ -364,7 +364,7 @@ function ProfilePage({ onBack }) {
           </div>
         </div>
 
-        {/* Monday.com Integration */}
+        {/* monday.com Integration */}
         {mondayLoading ? (
           <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
             <div className="flex items-center justify-center py-8">

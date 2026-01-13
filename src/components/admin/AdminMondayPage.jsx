@@ -27,8 +27,8 @@ export default function AdminMondayPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Monday.com</h2>
-        <p className="text-gray-600 text-sm">Användare som anslutit via Monday.com</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">monday.com</h2>
+        <p className="text-gray-600 text-sm">Användare som anslutit via monday.com</p>
       </div>
       <AdminMondayUsers 
         mondayUsers={mondayUsers}

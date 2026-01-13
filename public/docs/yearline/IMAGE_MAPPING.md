@@ -4,7 +4,7 @@ Based on the attached screenshots, save them with these filenames in `public/doc
 
 ## Image Mapping
 
-### Screenshot 1: Main Monday.com Timeline View (Light Mode)
+### Screenshot 1: Main monday.com Timeline View (Light Mode)
 **Filename**: `01-timeline-overview.png`
 **Shows**: The main YearLine timeline interface with:
 - Groups sidebar on the left (Marketing, Development groups)

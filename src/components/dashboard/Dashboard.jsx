@@ -73,7 +73,7 @@ function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffili
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M0 14.472V9.528L12 2.056l12 7.472v4.944L12 21.944z"/>
                     </svg>
-                    Monday.com
+                    monday.com
                   </span>
                 )}
               </div>

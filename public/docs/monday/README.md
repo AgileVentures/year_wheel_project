@@ -1,6 +1,6 @@
-# Monday.com How-To Guide Screenshots
+# monday.com How-To Guide Screenshots
 
-This directory contains screenshots for the Monday.com integration how-to guide.
+This directory contains screenshots for the monday.com integration how-to guide.
 
 ## Current Images ✅
 
@@ -13,7 +13,7 @@ All screenshots have been added and renamed for clarity:
 - **Perfect for:** Demonstrating the main circular calendar interface
 
 ### 2. 02-board-table-view.png
-- Monday.com standard board table view
+- monday.com standard board table view
 - Shows Finance, Marketing, and IT Team groups
 - Displays items with status columns and timeline data
 - **Perfect for:** Showing the data source before transformation
@@ -43,7 +43,7 @@ All screenshots have been added and renamed for clarity:
 - **Perfect for:** Demonstrating item management and editing
 
 ### 7. 07-dark-mode-theme.png
-- YearWheel in dark mode following Monday.com theme
+- YearWheel in dark mode following monday.com theme
 - Modern Minimalist color palette with dark background
 - Shows same data structure in alternative theme
 - **Perfect for:** Showcasing theme flexibility and dark mode support

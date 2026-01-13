@@ -4,7 +4,7 @@
 
 ### 1. New React Component
 **File**: `/src/pages/YearLineHowToGuide.jsx`
-- 6-step embeddable guide for Monday.com marketplace
+- 6-step embeddable guide for monday.com marketplace
 - Styled with red/coral branding (`#FF5A5F`, `#E63946`)
 - Follows same structure as existing Monday How-To Guide
 - Responsive layout with Tailwind CSS
@@ -154,9 +154,9 @@ Should show 5 PNG files with the correct names.
 
 ---
 
-## Embedding in Monday.com Marketplace
+## Embedding in monday.com Marketplace
 
-When submitting to Monday.com marketplace:
+When submitting to monday.com marketplace:
 
 1. **Iframe URL**: `https://yourdomain.com/yearline/how-to`
 2. **Dimensions**: Full-width, min-height 800px
@@ -251,4 +251,4 @@ Everything is configured and working. The guide is accessible at `/yearline/how-
 
 **Final Task**: Save the 5 screenshots to `/public/docs/yearline/images/` with the correct filenames.
 
-Once images are in place, the guide will be 100% complete and ready for Monday.com marketplace submission.
+Once images are in place, the guide will be 100% complete and ready for monday.com marketplace submission.

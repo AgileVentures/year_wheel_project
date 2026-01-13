@@ -1,18 +1,18 @@
--- Monday.com Users Table
--- Stores user data from Monday.com app installations
+-- monday.com Users Table
+-- Stores user data from monday.com app installations
 CREATE TABLE IF NOT EXISTS monday_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Link to main user_profile (if they also have a YearWheel account)
     user_profile_id UUID REFERENCES user_profile(id) ON DELETE SET NULL,
     
-    -- Monday.com identifiers
+    -- monday.com identifiers
     monday_user_id BIGINT UNIQUE NOT NULL,
     monday_account_id BIGINT NOT NULL,
     monday_account_name TEXT,
     monday_account_slug TEXT,
     
-    -- User data from Monday.com
+    -- User data from monday.com
     email TEXT NOT NULL,
     name TEXT NOT NULL,
     country_code TEXT,
@@ -44,7 +44,7 @@ CREATE INDEX IF NOT EXISTS idx_monday_users_account_id ON monday_users(monday_ac
 CREATE INDEX IF NOT EXISTS idx_monday_users_subscription_status ON monday_users(subscription_status);
 CREATE INDEX IF NOT EXISTS idx_monday_users_current_plan ON monday_users(current_plan);
 
--- Monday.com Subscription Events Table
+-- monday.com Subscription Events Table
 -- Tracks all webhook events for analytics and debugging
 CREATE TABLE IF NOT EXISTS monday_subscription_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -75,11 +75,11 @@ CREATE TRIGGER update_monday_users_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Comments for documentation
-COMMENT ON TABLE monday_users IS 'Users who have installed the YearWheel Monday.com app';
-COMMENT ON TABLE monday_subscription_events IS 'Webhook events from Monday.com for subscription tracking';
+COMMENT ON TABLE monday_users IS 'Users who have installed the YearWheel monday.com app';
+COMMENT ON TABLE monday_subscription_events IS 'Webhook events from monday.com for subscription tracking';
 
-COMMENT ON COLUMN monday_users.monday_user_id IS 'Unique user ID from Monday.com';
+COMMENT ON COLUMN monday_users.monday_user_id IS 'Unique user ID from monday.com';
 COMMENT ON COLUMN monday_users.subscription_status IS 'Current subscription status: active, trial, cancelling, cancelled, trial_ended, payment_failed, payment_retry, uninstalled';
 COMMENT ON COLUMN monday_users.current_plan IS 'Current pricing plan: free, pro-monthly, pro-annual';
 COMMENT ON COLUMN monday_users.is_trial IS 'Whether user is currently in trial period';
-COMMENT ON COLUMN monday_subscription_events.event_data IS 'Full webhook payload from Monday.com';
+COMMENT ON COLUMN monday_subscription_events.event_data IS 'Full webhook payload from monday.com';

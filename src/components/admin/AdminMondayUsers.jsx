@@ -205,7 +205,7 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh, loading }) {
       {/* Users Table */}
       <div className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Monday.com Users</h3>
+          <h3 className="text-lg font-semibold text-gray-900">monday.com Users</h3>
           <button
             onClick={onRefresh}
             disabled={loading}
@@ -247,7 +247,7 @@ export default function AdminMondayUsers({ mondayUsers, onRefresh, loading }) {
               {mondayUsers?.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
-                    No Monday.com users found
+                    No monday.com users found
                   </td>
                 </tr>
               ) : (

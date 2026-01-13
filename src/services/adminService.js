@@ -477,7 +477,7 @@ export const getNewsletterStats = async () => {
 };
 
 /**
- * Get Monday.com users
+ * Get monday.com users
  */
 export const getMondayUsers = async () => {
   try {
@@ -495,7 +495,7 @@ export const getMondayUsers = async () => {
 };
 
 /**
- * Get Monday.com subscription events
+ * Get monday.com subscription events
  */
 export const getMondayEvents = async (userId = null, limit = 100) => {
   try {

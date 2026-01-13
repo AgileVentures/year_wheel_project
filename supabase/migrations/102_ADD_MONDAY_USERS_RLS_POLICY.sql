@@ -49,6 +49,6 @@ USING (
 );
 
 -- Comments for documentation
-COMMENT ON POLICY "Admins can read monday_users" ON monday_users IS 'Allows admin users to view all Monday.com user data in the admin panel';
-COMMENT ON POLICY "Admins can read monday_subscription_events" ON monday_subscription_events IS 'Allows admin users to view all Monday.com subscription events';
-COMMENT ON POLICY "Admins can read monday_user_activities" ON monday_user_activities IS 'Allows admin users to view all Monday.com user activities';
+COMMENT ON POLICY "Admins can read monday_users" ON monday_users IS 'Allows admin users to view all monday.com user data in the admin panel';
+COMMENT ON POLICY "Admins can read monday_subscription_events" ON monday_subscription_events IS 'Allows admin users to view all monday.com subscription events';
+COMMENT ON POLICY "Admins can read monday_user_activities" ON monday_user_activities IS 'Allows admin users to view all monday.com user activities';

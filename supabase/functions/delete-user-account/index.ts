@@ -190,7 +190,7 @@ Deno.serve(async (req: Request) => {
       console.error('Error deleting subscription:', subscriptionError)
     }
 
-    // 11. Delete Monday.com user data
+    // 11. Delete monday.com user data
     const { error: mondayError } = await supabaseAdmin
       .from('monday_users')
       .delete()

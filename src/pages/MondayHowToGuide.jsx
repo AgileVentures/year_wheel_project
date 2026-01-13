@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Check, Download, Calendar, Users, Share2, Eye, Sparkles, Palette, Zap, BarChart, Target, Layout } from 'lucide-react';
 
 /**
- * Monday.com How-To Guide
- * Iframe-embeddable page with no header/footer for Monday.com marketplace
+ * monday.com How-To Guide
+ * Iframe-embeddable page with no header/footer for monday.com marketplace
  * Accessible at: /monday/how-to
  * 
  * Transform Your Year into a Visual Masterpiece
- * The circular calendar that changes everything for Monday.com users
+ * The circular calendar that changes everything for monday.com users
  */
 function MondayHowToGuide() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -40,7 +40,7 @@ function MondayHowToGuide() {
             <li className="flex items-start">
               <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-[#00A4A6] text-white rounded-full font-semibold mr-3 mt-0.5">1</span>
               <div className="flex-1">
-                <p className="font-medium">Open Monday.com Marketplace</p>
+                <p className="font-medium">Open monday.com Marketplace</p>
                 <p className="text-gray-600 text-sm mt-1">Click your profile → "Apps Marketplace"</p>
               </div>
             </li>
@@ -114,7 +114,7 @@ function MondayHowToGuide() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <img 
               src="/docs/monday/images/02-board-table-view.png" 
-              alt="Monday.com board table view" 
+              alt="monday.com board table view" 
               className="w-full rounded-sm shadow-lg border border-gray-200"
             />
             <img 
@@ -165,7 +165,7 @@ function MondayHowToGuide() {
               <div>
                 <h4 className="font-semibold text-amber-900 mb-2">Flexible Mapping</h4>
                 <p className="text-amber-800 text-sm">
-                  Use any date column from your Monday.com board - single dates, timelines, start/end dates. 
+                  Use any date column from your monday.com board - single dates, timelines, start/end dates. 
                   YearWheel automatically detects and positions your items perfectly on the circular calendar.
                 </p>
               </div>
@@ -184,7 +184,7 @@ function MondayHowToGuide() {
           <h3 className="text-2xl font-bold mb-4">Professional Design That Impresses Immediately</h3>
           
           <p className="text-lg text-gray-700 mb-6">
-            YearWheel includes carefully crafted color themes that match Monday.com's design language while adding 
+            YearWheel includes carefully crafted color themes that match monday.com's design language while adding 
             visual polish that makes your planning wheels presentation-ready from day one.
           </p>
 
@@ -206,7 +206,7 @@ function MondayHowToGuide() {
                   ))}
                 </div>
               </div>
-              <p className="text-sm text-gray-600">Monday.com's default color palette - familiar and professional</p>
+              <p className="text-sm text-gray-600">monday.com's default color palette - familiar and professional</p>
             </div>
 
             <div className="border border-gray-200 rounded-sm p-5 hover:shadow-lg transition-shadow bg-white">
@@ -259,7 +259,7 @@ function MondayHowToGuide() {
             />
           </div>
           <p className="text-center text-sm text-gray-600 italic mb-6">
-            Light and dark mode support - matches your Monday.com theme automatically
+            Light and dark mode support - matches your monday.com theme automatically
           </p>
 
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-sm p-5">
@@ -270,7 +270,7 @@ function MondayHowToGuide() {
             <ul className="space-y-2 text-purple-800 text-sm">
               <li className="flex items-start">
                 <Check className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                <span><strong>Item Colors:</strong> Map to Monday.com group colors or choose custom themes</span>
+                <span><strong>Item Colors:</strong> Map to monday.com group colors or choose custom themes</span>
               </li>
               <li className="flex items-start">
                 <Check className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
@@ -278,7 +278,7 @@ function MondayHowToGuide() {
               </li>
               <li className="flex items-start">
                 <Check className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                <span><strong>Dark Mode:</strong> Automatically follows your Monday.com theme preference</span>
+                <span><strong>Dark Mode:</strong> Automatically follows your monday.com theme preference</span>
               </li>
               <li className="flex items-start">
                 <Check className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
@@ -330,7 +330,7 @@ function MondayHowToGuide() {
                 <div className="flex-1">
                   <h5 className="font-semibold text-lg mb-2">Click to Open in Monday</h5>
                   <p className="text-gray-700 text-sm">
-                    Click any item segment to jump directly to that item in your Monday.com board. 
+                    Click any item segment to jump directly to that item in your monday.com board. 
                     Seamless navigation between circular view and detailed editing.
                   </p>
                 </div>
@@ -494,7 +494,7 @@ function MondayHowToGuide() {
               </h5>
               <p className="text-sm text-gray-700 ml-7">
                 Made too many changes? Click "Reset Ring Configuration" to restore the default structure based on 
-                your Monday.com board groups. All your items stay intact - only the ring organization resets.
+                your monday.com board groups. All your items stay intact - only the ring organization resets.
               </p>
             </div>
           </div>
@@ -510,7 +510,7 @@ function MondayHowToGuide() {
             <ul className="space-y-1 text-sm text-blue-800">
               <li className="flex items-start">
                 <Check className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                <span>Changes sync instantly to your Monday.com board</span>
+                <span>Changes sync instantly to your monday.com board</span>
               </li>
               <li className="flex items-start">
                 <Check className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
@@ -713,7 +713,7 @@ function MondayHowToGuide() {
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start">
                   <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                  <span>Install from Monday.com Marketplace</span>
+                  <span>Install from monday.com Marketplace</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -736,7 +736,7 @@ function MondayHowToGuide() {
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start">
                   <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                  <span>Uses Monday.com permissions - no extra setup</span>
+                  <span>Uses monday.com permissions - no extra setup</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
