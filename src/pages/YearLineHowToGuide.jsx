@@ -3,10 +3,10 @@ import { ChevronRight, ChevronLeft, Check, Calendar, Users, Share2, Eye, Sparkle
 
 /**
  * YearLine How-To Guide
- * Iframe-embeddable page with no header/footer for Monday.com marketplace
+ * Iframe-embeddable page with no header/footer for monday.com marketplace
  * Accessible at: /yearline/how-to
  * 
- * Simple Timeline Visualization for Monday.com
+ * Simple Timeline Visualization for monday.com
  */
 function YearLineHowToGuide() {
   const [currentStep, setCurrentStep] = useState(0);
@@ -28,7 +28,7 @@ function YearLineHowToGuide() {
           <div className="bg-gradient-to-r from-[#FF5A5F] to-[#E63946] text-white p-6 rounded-sm mb-6">
             <h3 className="text-2xl font-bold mb-3">Transform Your Boards Into Visual Timelines</h3>
             <p className="text-lg opacity-95">
-              Add YearLine to any Monday.com board and instantly see your work as a clear Gantt timeline. 
+              Add YearLine to any monday.com board and instantly see your work as a clear Gantt timeline. 
               No configuration, no learning curve—just visual clarity in seconds.
             </p>
           </div>
@@ -39,7 +39,7 @@ function YearLineHowToGuide() {
             <li className="flex items-start">
               <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-[#FF5A5F] text-white rounded-full font-semibold mr-3 mt-0.5">1</span>
               <div className="flex-1">
-                <p className="font-medium">Open Monday.com Marketplace</p>
+                <p className="font-medium">Open monday.com Marketplace</p>
                 <p className="text-gray-600 text-sm mt-1">Click your profile → "Apps Marketplace"</p>
               </div>
             </li>
@@ -67,7 +67,7 @@ function YearLineHowToGuide() {
             className="w-full rounded-sm shadow-2xl border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
-            Your Monday.com board transformed into a visual timeline—see everything at a glance
+            Your monday.com board transformed into a visual timeline—see everything at a glance
           </p>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,7 +85,7 @@ function YearLineHowToGuide() {
                 <Check className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-green-900">Real-Time Sync</p>
-                  <p className="text-sm text-green-800">Changes update Monday.com instantly</p>
+                  <p className="text-sm text-green-800">Changes update monday.com instantly</p>
                 </div>
               </div>
             </div>
@@ -182,7 +182,7 @@ function YearLineHowToGuide() {
           <div className="bg-gradient-to-r from-[#FF5A5F] to-[#E63946] text-white p-6 rounded-sm mb-6">
             <h3 className="text-2xl font-bold mb-3">Edit Tasks Visually</h3>
             <p className="text-lg opacity-95">
-              Drag tasks to new dates or resize them to adjust duration—all changes sync to Monday.com instantly. 
+              Drag tasks to new dates or resize them to adjust duration—all changes sync to monday.com instantly. 
               No forms to fill, just intuitive visual editing.
             </p>
           </div>
@@ -230,7 +230,7 @@ function YearLineHowToGuide() {
             className="w-full rounded-sm shadow-lg border border-gray-200"
           />
           <p className="text-center text-sm text-gray-600 mt-3 italic">
-            Click any task to quickly update details—changes save automatically to Monday.com
+            Click any task to quickly update details—changes save automatically to monday.com
           </p>
 
           <div className="mt-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-sm">
@@ -240,7 +240,7 @@ function YearLineHowToGuide() {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-green-800">
-                  All changes sync to Monday.com automatically
+                  All changes sync to monday.com automatically
                 </p>
                 <p className="text-xs text-green-700 mt-1">
                   No save button needed - updates happen in real-time
@@ -440,7 +440,7 @@ function YearLineHowToGuide() {
                 <Calendar className="w-5 h-5 mr-2 text-blue-600" />
                 Always Set Dates
               </h5>
-              <p className="text-gray-700 mb-2">Make sure your Monday.com items have start and end dates</p>
+              <p className="text-gray-700 mb-2">Make sure your monday.com items have start and end dates</p>
               <p className="text-sm text-gray-600">Items without dates won't appear on the timeline</p>
             </div>
 
@@ -458,7 +458,7 @@ function YearLineHowToGuide() {
                 <Users className="w-5 h-5 mr-2 text-green-600" />
                 Organize with Groups
               </h5>
-              <p className="text-gray-700 mb-2">Use Monday.com groups to structure your timeline views</p>
+              <p className="text-gray-700 mb-2">Use monday.com groups to structure your timeline views</p>
               <p className="text-sm text-gray-600">Groups become swimlanes in your timeline</p>
             </div>
 
@@ -513,7 +513,7 @@ function YearLineHowToGuide() {
                   You're Ready to Go!
                 </p>
                 <p className="text-sm text-green-700">
-                  YearLine is now part of your Monday.com workflow. Start visualizing your timelines 
+                  YearLine is now part of your monday.com workflow. Start visualizing your timelines 
                   and adjusting schedules with drag and drop. Your changes sync automatically.
                 </p>
               </div>
@@ -549,7 +549,7 @@ function YearLineHowToGuide() {
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-center mb-4">
-            YearLine for Monday.com
+            YearLine for monday.com
           </h1>
           <p className="text-xl md:text-2xl text-center opacity-95 max-w-3xl mx-auto">
             Simple Timeline Visualization for Your Boards
