@@ -128,6 +128,35 @@ serve(async (req) => {
       )
     }
 
+    // Create send row upfront to get an ID
+    const { data: sendRow, error: sendInsertError } = await supabase
+      .from('newsletter_sends')
+      .insert({
+        sent_by: user.id,
+        recipient_type: recipientType,
+        subject: subject,
+        recipient_count: recipients.length,
+        success_count: 0,
+        error_count: 0,
+        delivered_count: 0, // Start at 0; will be incremented by webhook
+        template_type: templateType,
+        template_data: templateData,
+        sent_at: new Date().toISOString()
+      })
+      .select('id')
+      .single()
+
+    if (sendInsertError || !sendRow) {
+      console.error('Failed to create newsletter send row:', sendInsertError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to initialize newsletter send' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const sendId = sendRow.id
+    console.log(`Created newsletter send: ${sendId}`)
+
     // Send emails via Resend
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (!RESEND_API_KEY) {
@@ -136,6 +165,24 @@ serve(async (req) => {
         JSON.stringify({ error: 'Resend API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Get unsubscribe secret for token signing
+    const UNSUBSCRIBE_SECRET = Deno.env.get('UNSUBSCRIBE_SECRET') ?? ''
+    const encoder = new TextEncoder()
+    const b64url = (str: string) =>
+      btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+    
+    const sign = async (input: string) => {
+      const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(UNSUBSCRIBE_SECRET),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      )
+      const sigBuf = await crypto.subtle.sign('HMAC', key, encoder.encode(input))
+      return b64url(String.fromCharCode(...new Uint8Array(sigBuf)))
     }
 
     // Log what we're about to send
@@ -157,13 +204,30 @@ serve(async (req) => {
       console.log(`Processing batch ${batchNumber} with ${batch.length} recipients`)
 
       try {
-        const payload = batch.map(email => ({
-          from: `${fromName} <hello@notify.yearwheel.se>`,
-          reply_to: 'hey@communitaslabs.io',
-          to: [email],
-          subject: subject,
-          html: htmlContent
-        }))
+        // Create personalized unsubscribe URL for each recipient
+        const payload = await Promise.all(
+          batch.map(async (email) => {
+            const ts = Math.floor(Date.now() / 1000)
+            const eParam = b64url(email)
+            const toSign = `${sendId}.${eParam}.${ts}`
+            const sig = await sign(toSign)
+            const unsubUrl = `https://yearwheel.se/unsubscribe?sid=${sendId}&e=${eParam}&ts=${ts}&sig=${sig}`
+
+            // Replace generic unsubscribe link with personalized one
+            const personalizedHtml = (htmlContent || '').replace(
+              /https:\/\/yearwheel\.se\/unsubscribe/g,
+              unsubUrl
+            )
+
+            return {
+              from: `${fromName} <hello@notify.yearwheel.se>`,
+              reply_to: 'hey@communitaslabs.io',
+              to: [email],
+              subject: subject,
+              html: personalizedHtml
+            }
+          })
+        )
 
         console.log(`Sending batch ${batchNumber} to Resend API`)
         
@@ -194,6 +258,30 @@ serve(async (req) => {
           results.push(result)
           successCount += batch.length
           console.log(`Batch ${batchNumber} succeeded: ${batch.length} emails`)
+
+          // Record 'sent' events for webhook mapping
+          const sentEvents = (Array.isArray(result.data) ? result.data : [])
+            .map((row: any, idx: number) => ({
+              newsletter_send_id: sendId,
+              email_id: row?.id,
+              recipient: batch[idx],
+              event_type: 'sent',
+              event_data: row,
+              created_at: new Date().toISOString()
+            }))
+            .filter(e => e.email_id)
+
+          if (sentEvents.length > 0) {
+            const { error: eventsError } = await supabase
+              .from('newsletter_events')
+              .insert(sentEvents)
+            
+            if (eventsError) {
+              console.error(`Failed to record sent events for batch ${batchNumber}:`, eventsError)
+            } else {
+              console.log(`Recorded ${sentEvents.length} sent events for batch ${batchNumber}`)
+            }
+          }
         }
       } catch (error) {
         console.error(`Batch ${batchNumber} exception:`, error)
@@ -208,26 +296,17 @@ serve(async (req) => {
 
     console.log(`Send complete: ${successCount} succeeded, ${errorCount} failed`)
 
-    // Log newsletter send
-    // Initialize delivered_count with success_count since Resend accepted these emails
-    // Webhook events will update this if we get delivery confirmations
-    const logResult = await supabase
+    // Update send row with final counts (delivered_count stays 0, updated by webhooks)
+    const { error: updateError } = await supabase
       .from('newsletter_sends')
-      .insert({
-        sent_by: user.id,
-        recipient_type: recipientType,
-        subject: subject,
-        recipient_count: recipients.length,
+      .update({
         success_count: successCount,
-        error_count: errorCount,
-        delivered_count: successCount, // Initialize with success count
-        template_type: templateType,
-        template_data: templateData,
-        sent_at: new Date().toISOString()
+        error_count: errorCount
       })
+      .eq('id', sendId)
 
-    if (logResult.error) {
-      console.error('Failed to log newsletter send:', logResult.error)
+    if (updateError) {
+      console.error('Failed to update newsletter send:', updateError)
     }
 
     return new Response(

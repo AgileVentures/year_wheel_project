@@ -13,20 +13,46 @@ export default function Unsubscribe() {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    checkAuthAndUnsubscribe();
+    init();
   }, []);
 
-  const checkAuthAndUnsubscribe = async () => {
+  const init = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setError('Du måste vara inloggad för att avregistrera dig från nyhetsbrev.');
+      // Token-based unsubscribe (no auth required)
+      const sid = searchParams.get('sid');
+      const e = searchParams.get('e');
+      const ts = searchParams.get('ts');
+      const sig = searchParams.get('sig');
+
+      if (sid && e && ts && sig) {
+        // Use edge function for tokenized unsubscribe
+        const { data, error } = await supabase.functions.invoke('unsubscribe', {
+          body: { sid, e, ts, sig }
+        });
+        
+        if (error || !data?.success) {
+          setError('Kunde inte avregistrera. Länken kan vara ogiltig eller utgången.');
+          setLoading(false);
+          return;
+        }
+        
+        setUnsubscribed(true);
+        setEmail(tryDecodeEmail(e));
         setLoading(false);
         return;
       }
 
-      // Get user profile
+      // If no token, allow manual unsubscribe for logged-in users
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth?.user;
+      
+      if (!user) {
+        setError('Du kan avregistrera via länken i mejlet, eller logga in för att ändra dina inställningar.');
+        setLoading(false);
+        return;
+      }
+
+      // Load profile state for UI
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('email, newsletter_subscribed')
@@ -34,23 +60,12 @@ export default function Unsubscribe() {
         .single();
 
       if (profileError) throw profileError;
-
       setEmail(profile.email);
 
-      // Check if already unsubscribed
       if (!profile.newsletter_subscribed) {
         setUnsubscribed(true);
-        setLoading(false);
-        return;
       }
-
-      // Auto-unsubscribe if token is valid
-      const token = searchParams.get('token');
-      if (token) {
-        await handleUnsubscribe();
-      } else {
-        setLoading(false);
-      }
+      setLoading(false);
     } catch (err) {
       console.error('Error:', err);
       setError('Ett fel uppstod. Försök igen senare.');
@@ -58,10 +73,20 @@ export default function Unsubscribe() {
     }
   };
 
+  const tryDecodeEmail = (eParam) => {
+    try {
+      const s = eParam.replace(/-/g, '+').replace(/_/g, '/');
+      const pad = s.length % 4 === 2 ? '==' : s.length % 4 === 3 ? '=' : '';
+      return atob(s + pad);
+    } catch {
+      return '';
+    }
+  };
+
   const handleUnsubscribe = async () => {
     setLoading(true);
     setError(null);
-
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -114,11 +139,7 @@ export default function Unsubscribe() {
       if (updateError) throw updateError;
 
       setUnsubscribed(false);
-      setError('Du är nu återregistrerad för nyhetsbrev!');
-      
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      // No auto-redirect - user stays on page
     } catch (err) {
       console.error('Error resubscribing:', err);
       setError('Ett fel uppstod vid återregistrering. Försök igen.');
@@ -182,10 +203,10 @@ export default function Unsubscribe() {
               </button>
 
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/')}
                 className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-sm transition-colors"
               >
-                Tillbaka till översikt
+                Till startsidan
               </button>
             </div>
           </div>
@@ -210,7 +231,7 @@ export default function Unsubscribe() {
               </button>
 
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/')}
                 className="w-full px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium rounded-sm transition-colors"
               >
                 Avbryt

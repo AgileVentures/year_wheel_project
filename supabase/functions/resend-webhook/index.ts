@@ -74,21 +74,39 @@ serve(async (req) => {
       return new Response('ok', { headers: corsHeaders })
     }
 
-    // Find the newsletter send this email belongs to
-    const { data: send, error: sendError } = await supabase
-      .from('newsletter_sends')
-      .select('id')
-      .eq('subject', subject)
-      .order('sent_at', { ascending: false })
-      .limit(1)
-      .single()
+    // Prefer mapping by previously recorded 'sent' event (robust)
+    let sendId: string | null = null
+    {
+      const { data: sentEvent } = await supabase
+        .from('newsletter_events')
+        .select('newsletter_send_id')
+        .eq('email_id', emailId)
+        .eq('event_type', 'sent')
+        .maybeSingle()
 
-    if (sendError || !send) {
-      console.log('Newsletter send not found for subject:', subject)
-      return new Response('ok', { headers: corsHeaders })
+      if (sentEvent?.newsletter_send_id) {
+        sendId = sentEvent.newsletter_send_id
+        console.log(`Resolved send via sent event: ${sendId}`)
+      }
     }
 
-    console.log(`Found newsletter send: ${send.id}`)
+    if (!sendId) {
+      // Fallback: find latest send by subject (less reliable)
+      const { data: send, error: sendError } = await supabase
+        .from('newsletter_sends')
+        .select('id')
+        .eq('subject', subject)
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (sendError || !send) {
+        console.log('Newsletter send not found for subject:', subject)
+        return new Response('ok', { headers: corsHeaders })
+      }
+      sendId = send.id
+      console.log(`Resolved send via subject fallback: ${sendId}`)
+    }
 
     // Extract event type (remove 'email.' prefix)
     const eventType = type.replace('email.', '')
@@ -137,7 +155,7 @@ serve(async (req) => {
 
     // Insert email event
     const eventData = {
-      newsletter_send_id: send.id,
+      newsletter_send_id: sendId,
       email_id: emailId,
       recipient: recipient,
       event_type: eventType,
@@ -169,7 +187,7 @@ serve(async (req) => {
     }
 
     if (rpcFunction) {
-      const { error: rpcError } = await supabase.rpc(rpcFunction, { send_id: send.id })
+      const { error: rpcError } = await supabase.rpc(rpcFunction, { send_id: sendId })
       if (rpcError) {
         console.error(`Error calling ${rpcFunction}:`, rpcError)
       } else {

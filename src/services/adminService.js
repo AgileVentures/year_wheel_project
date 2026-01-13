@@ -452,16 +452,16 @@ export const getNewsletterStats = async () => {
       .eq('is_draft', false)
       .gte('sent_at', monthStart.toISOString());
 
-    // Total recipients (sum of all recipient_count, exclude drafts)
+    // Total recipients and delivered (sum across all sends, exclude drafts)
     const { data: allSends } = await supabase
       .from('newsletter_sends')
-      .select('recipient_count, success_count')
+      .select('recipient_count, delivered_count')
       .eq('is_draft', false);
 
     const totalRecipients = allSends?.reduce((sum, send) => sum + (send.recipient_count || 0), 0) || 0;
-    const totalSuccess = allSends?.reduce((sum, send) => sum + (send.success_count || 0), 0) || 0;
+    const totalDelivered = allSends?.reduce((sum, send) => sum + (send.delivered_count || 0), 0) || 0;
     const successRate = totalRecipients > 0 
-      ? ((totalSuccess / totalRecipients) * 100).toFixed(1)
+      ? ((totalDelivered / totalRecipients) * 100).toFixed(1)
       : 0;
 
     return {
