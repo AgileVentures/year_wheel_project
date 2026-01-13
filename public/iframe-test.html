@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YearLine Iframe Embed Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+        .info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #0073ea;
+        }
+        .info p {
+            margin: 5px 0;
+        }
+        iframe {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            background: #FF5A5F;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #E63946;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        .size-label {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 YearLine Iframe Embed Test</h1>
+        
+        <div class="info">
+            <p><strong>Testing iframe embedding for Monday.com marketplace</strong></p>
+            <p>This simulates how the YearLine guide will appear when embedded in external platforms.</p>
+            <p>Current URL: <code id="current-url"></code></p>
+        </div>
+
+        <div class="controls">
+            <button onclick="setHeight(600)">Small (600px)</button>
+            <button onclick="setHeight(800)">Medium (800px)</button>
+            <button onclick="setHeight(1000)">Large (1000px)</button>
+            <button onclick="setHeight(1200)">X-Large (1200px)</button>
+            <button class="secondary" onclick="toggleFullscreen()">Toggle Fullscreen</button>
+            <span class="size-label" id="size-label">Height: 800px</span>
+        </div>
+
+        <iframe 
+            id="yearline-iframe"
+            src="/yearline/how-to" 
+            height="800"
+            frameborder="0"
+            allow="fullscreen"
+            scrolling="auto">
+        </iframe>
+    </div>
+
+    <script>
+        // Display current URL
+        document.getElementById('current-url').textContent = window.location.origin + '/yearline/how-to';
+
+        function setHeight(height) {
+            const iframe = document.getElementById('yearline-iframe');
+            iframe.height = height;
+            document.getElementById('size-label').textContent = `Height: ${height}px`;
+        }
+
+        function toggleFullscreen() {
+            const iframe = document.getElementById('yearline-iframe');
+            if (!document.fullscreenElement) {
+                iframe.requestFullscreen().catch(err => {
+                    console.log('Fullscreen error:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Log iframe load events
+        const iframe = document.getElementById('yearline-iframe');
+        iframe.onload = function() {
+            console.log('✅ Iframe loaded successfully');
+        };
+        iframe.onerror = function() {
+            console.error('❌ Iframe failed to load');
+        };
+    </script>
+</body>
+</html>
