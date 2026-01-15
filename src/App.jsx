@@ -48,6 +48,7 @@ const QuickStartGuide = lazy(() => import("./components/QuickStartGuide"));
 const ArshjulGuide = lazy(() => import("./pages/ArshjulGuide"));
 const MondayHowToGuide = lazy(() => import("./pages/MondayHowToGuide"));
 const YearLineHowToGuide = lazy(() => import("./pages/YearLineHowToGuide"));
+const YearLineLegalPage = lazy(() => import("./components/YearLineLegalPage"));
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -104,6 +105,7 @@ function AppContent() {
         <Route path="/guide/arshjul" element={<ArshjulGuide />} />
         <Route path="/how-to" element={<MondayHowToGuide />} />
         <Route path="/yearline/how-to" element={<YearLineHowToGuide />} />
+        <Route path="/yearline/legal/:document" element={<YearLineLegalPage />} />
         <Route path="/legal/:document" element={<LegalPage />} />
         <Route path="/invite/:token" element={<InviteAcceptPage />} />
         <Route path="/preview-wheel/:wheelId" element={<PreviewWheelPage />} />
