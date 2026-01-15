@@ -1,5 +1,7 @@
 # Privacy Policy
 
+**Communitas Labs Inc**
+
 **Last updated: January 15, 2026**
 
 ## 1. Introduction
