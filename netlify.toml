@@ -25,12 +25,23 @@
     # Permissions Policy for security
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
 
-# Special headers for monday.com how-to page (iframe embeddable)
+# Special headers for monday.com how-to pages (iframe embeddable)
 [[headers]]
   for = "/how-to"
   [headers.values]
     # Allow embedding in any iframe (required for monday.com marketplace and testing)
     # This is safe for documentation/how-to content
+    Content-Security-Policy = "frame-ancestors *"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/yearline/how-to"
+  [headers.values]
+    # Allow embedding in any iframe (required for monday.com marketplace and testing)
     Content-Security-Policy = "frame-ancestors *"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"

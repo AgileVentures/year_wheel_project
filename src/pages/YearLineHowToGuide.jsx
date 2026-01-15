@@ -667,20 +667,6 @@ function YearLineHowToGuide() {
         </div>
       </div>
 
-      {/* Minimal Footer */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200 py-8 mt-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-lg font-medium text-gray-800 mb-2">
-            Questions? We're here to help!
-          </p>
-          <p className="mb-3">
-            <a href="mailto:hey@communitaslabs.io" className="text-[#FF5A5F] hover:underline font-medium text-lg">
-              hey@communitaslabs.io
-            </a>
-          </p>
-          <p className="text-sm text-gray-600">© {new Date().getFullYear()} YearLine by Communitas Labs. All rights reserved.</p>
-        </div>
-      </div>
     </div>
   );
 }
