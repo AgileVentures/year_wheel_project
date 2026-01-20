@@ -8,7 +8,6 @@ import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import { ColumnExtension } from '@gocapsule/column-extension';
-import '@gocapsule/column-extension/src/index.css';
 import CodeEditor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -282,8 +281,26 @@ const generateThemeCSS = (theme) => {
     .page-break { page-break-before: always; }
     .no-break { page-break-inside: avoid; }
     
+    /* TipTap Column Extension Styles */
+    .column-block {
+      width: 100%;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      gap: 24px;
+      padding: 8px 0;
+    }
+    .column {
+      overflow: auto;
+      border: 1px ${c.border} dashed;
+      border-radius: 8px;
+      padding: 8px;
+      margin: -8px;
+    }
+    
     @media print {
       body { padding: 20px; }
+      .column { border: none; margin: 0; }
     }
   `;
 };
@@ -1809,6 +1826,23 @@ export default function TemplateEditor({
                     .ProseMirror .three-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
                     .ProseMirror .four-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0; }
                     .ProseMirror .sidebar-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin: 1rem 0; }
+                    /* Column extension styles */
+                    .ProseMirror .column-block {
+                      width: 100%;
+                      display: grid;
+                      grid-auto-flow: column;
+                      grid-auto-columns: 1fr;
+                      gap: 24px;
+                      padding: 8px 0;
+                      margin: 1rem 0;
+                    }
+                    .ProseMirror .column {
+                      overflow: auto;
+                      border: 1px #cbd5e1 dashed;
+                      border-radius: 8px;
+                      padding: 8px;
+                      min-height: 100px;
+                    }
                     ${showOutlines ? `
                     /* ALL ELEMENTS get visible borders when editing */
                     .ProseMirror > * {
