@@ -80,12 +80,19 @@ const ColumnsComponent = ({ node, updateAttributes, deleteNode, selected }) => {
     <NodeViewWrapper 
       className={`resizable-columns-wrapper ${selected ? 'is-selected' : ''}`}
       data-drag-handle
+      style={{
+        display: 'grid',
+        gridTemplateColumns: widths.map(w => `${w}%`).join(' '),
+        gap: `${gap}px`,
+        alignItems: verticalAlign,
+      }}
     >
-      {/* Control bar - only visible when selected or hovered */}
+      {/* Control bar */}
       <div 
         className="columns-toolbar" 
         contentEditable={false}
         style={{
+          gridColumn: '1 / -1',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
@@ -163,56 +170,53 @@ const ColumnsComponent = ({ node, updateAttributes, deleteNode, selected }) => {
         </button>
       </div>
 
-      {/* Columns container */}
-      <div 
+      {/* Columns container with NodeViewContent using display: contents */}
+      <NodeViewContent 
         ref={containerRef}
-        className="columns-grid"
+        className="columns-content"
         style={{
-          display: 'grid',
-          gridTemplateColumns: widths.map(w => `${w}%`).join(' '),
-          gap: `${gap}px`,
-          alignItems: verticalAlign,
-          position: 'relative',
-          minHeight: '80px',
+          display: 'contents',
+          gridColumn: '1 / -1',
         }}
-      >
-        {/* The actual editable content */}
-        <NodeViewContent className="columns-content" />
-        
-        {/* Resize handles */}
-        {widths.slice(0, -1).map((_, index) => {
-          const leftPos = widths.slice(0, index + 1).reduce((a, b) => a + b, 0);
-          return (
-            <div
-              key={`handle-${index}`}
-              className={`resize-handle ${isDragging && dragIndex === index ? 'is-dragging' : ''}`}
-              onMouseDown={(e) => handleResizeStart(e, index)}
-              contentEditable={false}
-              style={{
-                position: 'absolute',
-                left: `calc(${leftPos}% - 6px + ${(index * gap) - gap/2}px)`,
-                top: 0,
-                bottom: 0,
-                width: '12px',
-                cursor: 'col-resize',
-                zIndex: 10,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <div className="resize-handle-bar" />
-            </div>
-          );
-        })}
-      </div>
+      />
+      
+      {/* Resize handles - absolutely positioned over the wrapper */}
+      {widths.slice(0, -1).map((_, index) => {
+        const leftPos = widths.slice(0, index + 1).reduce((a, b) => a + b, 0);
+        return (
+          <div
+            key={`handle-${index}`}
+            className={`resize-handle ${isDragging && dragIndex === index ? 'is-dragging' : ''}`}
+            onMouseDown={(e) => handleResizeStart(e, index)}
+            contentEditable={false}
+            style={{
+              position: 'fixed',
+              left: `calc(${leftPos}% - 6px + ${(index + 0.5) * gap}px)`,
+              top: 0,
+              bottom: 0,
+              width: '12px',
+              cursor: 'col-resize',
+              zIndex: 1000,
+              gridColumn: '1 / -1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'auto',
+            }}
+          >
+            <div className="resize-handle-bar" />
+          </div>
+        );
+      })}
 
       {/* Width indicators */}
       <div 
         className="width-indicators"
         contentEditable={false}
         style={{
-          display: 'flex',
+          gridColumn: '1 / -1',
+          display: 'grid',
+          gridTemplateColumns: widths.map(w => `${w}%`).join(' '),
           gap: `${gap}px`,
           marginTop: '6px',
         }}
@@ -241,6 +245,7 @@ const ColumnsComponent = ({ node, updateAttributes, deleteNode, selected }) => {
           border-radius: 8px;
           background: #fafbfc;
           transition: all 0.2s;
+          position: relative;
         }
         .resizable-columns-wrapper:hover {
           border-color: #94a3b8;
@@ -250,7 +255,32 @@ const ColumnsComponent = ({ node, updateAttributes, deleteNode, selected }) => {
           border-style: solid;
           background: #f8fafc;
         }
-        .columns-btn {
+        .columns-content {
+          display: contents !important;
+        }
+        /* Style the column children directly - they become grid items */
+        .resizable-columns-wrapper > [data-type="column"] {
+          min-height: 60px;
+          padding: 12px;
+          background: white;
+          border: 1px dashed #d1d5db;
+          border-radius: 6px;
+          transition: all 0.15s;
+        }
+        .resizable-columns-wrapper > [data-type="column"]:hover {
+          border-color: #93c5fd;
+          background: #f8fafc;
+        }
+        .resizable-columns-wrapper > [data-type="column"]:focus-within {
+          border-color: #3b82f6;
+          border-style: solid;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .resizable-columns-wrapper > [data-type="column"] p {
+          cursor: text;
+          outline: none;
+          min-height: 1.5em;
+        }
           padding: 3px 8px;
           border: 1px solid #cbd5e1;
           border-radius: 4px;
@@ -305,26 +335,6 @@ const ColumnsComponent = ({ node, updateAttributes, deleteNode, selected }) => {
           background: #3b82f6;
           height: 48px;
         }
-        .columns-content {
-          display: contents;
-        }
-        .columns-content > div[data-type="column"] {
-          min-height: 60px;
-          padding: 12px;
-          background: white;
-          border: 1px dashed #d1d5db;
-          border-radius: 6px;
-          transition: all 0.15s;
-        }
-        .columns-content > div[data-type="column"]:hover {
-          border-color: #93c5fd;
-          background: #f8fafc;
-        }
-        .columns-content > div[data-type="column"]:focus-within {
-          border-color: #3b82f6;
-          border-style: solid;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
       `}</style>
     </NodeViewWrapper>
   );
@@ -351,7 +361,7 @@ export const Column = Node.create({
 export const ResizableColumns = Node.create({
   name: 'resizableColumns',
   group: 'block',
-  content: 'column{2,6}', // 2-6 columns allowed
+  content: 'column{2,6}',
   defining: true,
   isolating: true,
   draggable: true,

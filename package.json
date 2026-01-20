@@ -22,6 +22,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^3.0.2",
     "@floating-ui/dom": "^1.7.4",
+    "@gocapsule/column-extension": "^1.0.0-beta-3",
     "@react-email/components": "^1.0.3",
     "@react-email/render": "^2.0.1",
     "@stripe/stripe-js": "^8.6.0",

@@ -7,7 +7,8 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
-import { ResizableColumns, Column } from '../extensions/ResizableColumns';
+import { ColumnExtension } from '@gocapsule/column-extension';
+import '@gocapsule/column-extension/src/index.css';
 import CodeEditor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -477,6 +478,37 @@ function VisualEditorToolbar({ editor, showOutlines, setShowOutlines }) {
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+        </svg>
+      </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1" />
+
+      {/* Column controls */}
+      <button
+        onClick={() => editor.chain().focus().setColumns(2).run()}
+        className={buttonClass(false)}
+        title="Lägg till 2 kolumner"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4v16M9 4H4v16h5M9 4h6v16H9M15 4h5v16h-5" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().setColumns(3).run()}
+        className={buttonClass(false)}
+        title="Lägg till 3 kolumner"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4v16M8 4H4v16h4M8 4h4v16H8M12 4h4v16h-4M16 4h4v16h-4" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().unsetColumns().run()}
+        className={buttonClass(false)}
+        title="Ta bort kolumnlayout"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
 
@@ -983,8 +1015,7 @@ export default function TemplateEditor({
         dragHandleWidth: 24,
         scrollTreshold: 100,
       }),
-      ResizableColumns,
-      Column,
+      ColumnExtension,
     ],
     content: templateContent || '<p>Börja skriva här...</p>',
     onUpdate: ({ editor }) => {
@@ -1177,7 +1208,16 @@ export default function TemplateEditor({
   // Insert resizable columns - only works in visual mode
   const insertColumns = useCallback((preset) => {
     if (editorMode === 'visual' && visualEditor) {
-      visualEditor.chain().focus().insertColumnsPreset(preset).run();
+      // Map presets to column counts for the ColumnExtension
+      const presetToColumns = {
+        '50-50': 2,
+        '33-33-33': 3,
+        '25-25-25-25': 4,
+        '66-33': 2,
+        '33-66': 2,
+      };
+      const columnCount = presetToColumns[preset] || 2;
+      visualEditor.chain().focus().setColumns(columnCount).run();
     } else {
       // In code mode, insert static HTML version
       const presetMap = {
