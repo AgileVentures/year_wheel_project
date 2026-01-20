@@ -42,11 +42,21 @@ export default function TemplateEditor({
       if (result.valid && wheelData && organizationData) {
         try {
           const context = buildTemplateContext(wheelData, pageData, organizationData);
+          console.log('Template context:', context); // Debug
           const rendered = renderTemplate(templateContent, context);
           setPreview(rendered);
         } catch (error) {
-          setPreview(`<div style="color: red; padding: 20px;">Preview Error: ${error.message}</div>`);
+          console.error('Template render error:', error);
+          setPreview(`<div style="color: red; padding: 20px;">
+            <strong>Preview Error:</strong><br>
+            ${error.message}<br>
+            <pre style="font-size: 11px; margin-top: 10px;">${error.stack || ''}</pre>
+          </div>`);
         }
+      } else if (!wheelData || !organizationData) {
+        setPreview(`<div style="color: #64748b; padding: 20px; font-style: italic;">
+          Ingen hjuldata tillgänglig. Öppna mallredigeraren från ett hjul för att se förhandsvisning.
+        </div>`);
       }
     }
   }, [templateContent, wheelData, pageData, organizationData]);
