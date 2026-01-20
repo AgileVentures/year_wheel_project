@@ -449,6 +449,278 @@ function VisualEditorToolbar({ editor }) {
   );
 }
 
+// Visual block templates for drag-and-drop style editing
+const LAYOUT_BLOCKS = [
+  {
+    id: 'header',
+    name: 'Rubrik',
+    icon: '📄',
+    preview: (
+      <div className="border-b-2 border-blue-500 pb-1">
+        <div className="h-3 bg-gray-800 rounded w-3/4 mb-1"></div>
+        <div className="h-2 bg-gray-400 rounded w-1/2"></div>
+      </div>
+    ),
+    html: `<div class="mb-6">
+  <h1>{{wheel.title}}</h1>
+  <p class="text-muted">{{wheel.year}}</p>
+</div>`
+  },
+  {
+    id: 'section',
+    name: 'Sektion',
+    icon: '📦',
+    preview: (
+      <div className="border-l-4 border-blue-500 bg-blue-50 p-2 rounded-r">
+        <div className="h-2 bg-gray-600 rounded w-1/2 mb-1"></div>
+        <div className="h-1.5 bg-gray-300 rounded w-full"></div>
+        <div className="h-1.5 bg-gray-300 rounded w-3/4 mt-1"></div>
+      </div>
+    ),
+    html: `<div class="section">
+  <h2>Rubrik</h2>
+  <p>Innehåll här...</p>
+</div>`
+  },
+  {
+    id: 'card',
+    name: 'Kort',
+    icon: '🃏',
+    preview: (
+      <div className="border border-gray-300 rounded p-2 bg-white shadow-sm">
+        <div className="h-2 bg-gray-600 rounded w-2/3 mb-1"></div>
+        <div className="h-1.5 bg-gray-300 rounded w-full"></div>
+      </div>
+    ),
+    html: `<div class="card">
+  <h3>Korttitel</h3>
+  <p>Kortinnehåll...</p>
+</div>`
+  },
+  {
+    id: 'stats-grid',
+    name: 'Statistik',
+    icon: '📊',
+    preview: (
+      <div className="grid grid-cols-3 gap-1">
+        <div className="bg-blue-100 rounded p-1 text-center">
+          <div className="text-xs font-bold text-blue-600">12</div>
+        </div>
+        <div className="bg-green-100 rounded p-1 text-center">
+          <div className="text-xs font-bold text-green-600">8</div>
+        </div>
+        <div className="bg-purple-100 rounded p-1 text-center">
+          <div className="text-xs font-bold text-purple-600">5</div>
+        </div>
+      </div>
+    ),
+    html: `<div class="stats-grid">
+  <div class="stat-box">
+    <div class="stat-value">{{stats.totalItems}}</div>
+    <div class="stat-label">Aktiviteter</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value">{{stats.totalRings}}</div>
+    <div class="stat-label">Ringar</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-value">{{stats.totalActivityGroups}}</div>
+    <div class="stat-label">Grupper</div>
+  </div>
+</div>`
+  },
+  {
+    id: 'two-columns',
+    name: '2 Kolumner',
+    icon: '▥',
+    preview: (
+      <div className="grid grid-cols-2 gap-1">
+        <div className="bg-gray-100 rounded p-1">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+        <div className="bg-gray-100 rounded p-1">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+      </div>
+    ),
+    html: `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+  <div>
+    <h3>Vänster kolumn</h3>
+    <p>Innehåll...</p>
+  </div>
+  <div>
+    <h3>Höger kolumn</h3>
+    <p>Innehåll...</p>
+  </div>
+</div>`
+  },
+  {
+    id: 'table',
+    name: 'Tabell',
+    icon: '📋',
+    preview: (
+      <div className="border border-gray-300 rounded overflow-hidden">
+        <div className="bg-blue-600 h-2"></div>
+        <div className="grid grid-cols-3 gap-px bg-gray-200">
+          <div className="bg-white h-1.5"></div>
+          <div className="bg-white h-1.5"></div>
+          <div className="bg-white h-1.5"></div>
+        </div>
+      </div>
+    ),
+    html: `<table>
+  <thead>
+    <tr>
+      <th>Kolumn 1</th>
+      <th>Kolumn 2</th>
+      <th>Kolumn 3</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Data</td>
+      <td>Data</td>
+      <td>Data</td>
+    </tr>
+  </tbody>
+</table>`
+  },
+  {
+    id: 'activity-loop',
+    name: 'Aktivitetsgrupper',
+    icon: '🔄',
+    preview: (
+      <div className="space-y-1">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <div className="h-1.5 bg-gray-400 rounded flex-1"></div>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <div className="h-1.5 bg-gray-400 rounded flex-1"></div>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+          <div className="h-1.5 bg-gray-400 rounded flex-1"></div>
+        </div>
+      </div>
+    ),
+    html: `{{#each activityGroups}}
+<div class="section" style="border-left-color: {{color}};">
+  <h3>{{name}}</h3>
+  <p>{{itemCount}} aktiviteter</p>
+  {{#each items}}
+  <div class="item">
+    <span class="item-name">{{name}}</span>
+    <span class="item-meta">{{formatDate startDate}} - {{formatDate endDate}}</span>
+  </div>
+  {{/each}}
+</div>
+{{/each}}`
+  },
+  {
+    id: 'month-loop',
+    name: 'Månadsöversikt',
+    icon: '📅',
+    preview: (
+      <div className="grid grid-cols-4 gap-0.5">
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className="bg-gray-100 rounded p-0.5 text-center">
+            <div className="text-[6px] text-gray-500">{['Jan','Feb','Mar','Apr','Maj','Jun','Jul','Aug','Sep','Okt','Nov','Dec'][i]}</div>
+          </div>
+        ))}
+      </div>
+    ),
+    html: `<h2>Månadsöversikt</h2>
+{{#each months}}
+<div class="card">
+  <h3>{{name}}</h3>
+  <p>{{itemCount}} aktiviteter</p>
+  {{#if items}}
+  <ul>
+    {{#each items}}
+    <li>{{name}}</li>
+    {{/each}}
+  </ul>
+  {{/if}}
+</div>
+{{/each}}`
+  },
+  {
+    id: 'ring-loop',
+    name: 'Ringlista',
+    icon: '⭕',
+    preview: (
+      <div className="space-y-1">
+        <div className="border-l-4 border-orange-400 pl-1">
+          <div className="h-1.5 bg-gray-400 rounded w-2/3"></div>
+        </div>
+        <div className="border-l-4 border-teal-400 pl-1">
+          <div className="h-1.5 bg-gray-400 rounded w-2/3"></div>
+        </div>
+      </div>
+    ),
+    html: `<h2>Per ring</h2>
+{{#each rings}}
+<div class="section">
+  <h3>{{name}}</h3>
+  <p>{{itemCount}} aktiviteter</p>
+</div>
+{{/each}}`
+  },
+  {
+    id: 'footer',
+    name: 'Sidfot',
+    icon: '📝',
+    preview: (
+      <div className="border-t border-gray-300 pt-1">
+        <div className="h-1.5 bg-gray-300 rounded w-1/3"></div>
+      </div>
+    ),
+    html: `<div class="footer">
+  <p>Genererad {{currentDate}} | {{wheel.title}}</p>
+</div>`
+  },
+  {
+    id: 'page-break',
+    name: 'Sidbrytning',
+    icon: '📃',
+    preview: (
+      <div className="border-t-2 border-dashed border-gray-400 my-1 relative">
+        <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-white px-1 text-[6px] text-gray-400">NY SIDA</span>
+      </div>
+    ),
+    html: `<div class="page-break"></div>`
+  }
+];
+
+// Block palette component
+function BlockPalette({ onInsertBlock }) {
+  return (
+    <div className="p-3 space-y-2">
+      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Layout-block</h4>
+      <div className="grid grid-cols-2 gap-2">
+        {LAYOUT_BLOCKS.map(block => (
+          <button
+            key={block.id}
+            onClick={() => onInsertBlock(block.html)}
+            className="p-2 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all text-left group"
+            title={block.name}
+          >
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-lg">{block.icon}</span>
+              <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600">{block.name}</span>
+            </div>
+            <div className="h-12 overflow-hidden rounded bg-gray-50 p-1.5">
+              {block.preview}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * TemplateEditor - Edit and preview report templates
  * Features: Syntax validation, live preview, design themes, visual/code modes
@@ -469,6 +741,7 @@ export default function TemplateEditor({
   const [validation, setValidation] = useState({ valid: true, error: null });
   const [preview, setPreview] = useState('');
   const [showVariables, setShowVariables] = useState(false);
+  const [showBlocks, setShowBlocks] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -610,6 +883,31 @@ export default function TemplateEditor({
     }
   }, [editorMode, insertVariableInVisual, templateContent]);
 
+  // Insert layout block - handles both code and visual mode
+  const insertBlock = useCallback((blockHtml) => {
+    if (editorMode === 'visual' && visualEditor) {
+      // Insert block HTML into TipTap
+      visualEditor.chain().focus().insertContent(blockHtml).run();
+    } else {
+      // Code mode - insert into textarea
+      const textarea = document.getElementById('template-editor');
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = templateContent;
+      const before = text.substring(0, start);
+      const after = text.substring(end);
+      // Add newlines for better formatting
+      const formattedBlock = '\n' + blockHtml + '\n';
+      setTemplateContent(before + formattedBlock + after);
+      
+      // Set cursor position after inserted block
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + formattedBlock.length, start + formattedBlock.length);
+      }, 0);
+    }
+  }, [editorMode, visualEditor, templateContent]);
   return (
     <div className="template-editor h-full flex flex-col">
       {/* Header */}
@@ -619,6 +917,19 @@ export default function TemplateEditor({
             {template?.id ? 'Redigera mall' : 'Skapa ny mall'}
           </h2>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowBlocks(!showBlocks)}
+              className={`px-3 py-2 text-sm rounded transition flex items-center gap-1.5 ${
+                showBlocks 
+                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' 
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+              </svg>
+              {showBlocks ? 'Dölj block' : 'Layout-block'}
+            </button>
             <button
               onClick={() => setShowVariables(!showVariables)}
               className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition"
@@ -776,6 +1087,13 @@ export default function TemplateEditor({
 
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Block palette sidebar */}
+        {showBlocks && (
+          <div className="w-72 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+            <BlockPalette onInsertBlock={insertBlock} />
+          </div>
+        )}
+
         {/* Variables sidebar */}
         {showVariables && (
           <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto p-4">
