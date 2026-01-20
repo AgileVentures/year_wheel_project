@@ -6,6 +6,10 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
+import CodeEditor from 'react-simple-code-editor';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-markup';
+import 'prismjs/themes/prism-tomorrow.css';
 import { 
   renderTemplate, 
   validateTemplate, 
@@ -243,6 +247,34 @@ const generateThemeCSS = (theme) => {
       color: ${c.textMuted};
     }
     
+    /* Layout Grid */
+    .two-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .three-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+    .four-columns {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+    .sidebar-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+    .main-content {
+      min-width: 0;
+    }
+    .sidebar {
+      min-width: 0;
+    }
+    
     /* Print */
     .page-break { page-break-before: always; }
     .no-break { page-break-inside: avoid; }
@@ -268,7 +300,7 @@ ${content}
 };
 
 // Toolbar component for visual editor
-function VisualEditorToolbar({ editor }) {
+function VisualEditorToolbar({ editor, showOutlines, setShowOutlines }) {
   if (!editor) return null;
 
   const buttonClass = (active) => 
@@ -445,6 +477,19 @@ function VisualEditorToolbar({ editor }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
         </svg>
       </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1" />
+
+      {/* Show outlines toggle */}
+      <button
+        onClick={() => setShowOutlines(!showOutlines)}
+        className={buttonClass(showOutlines)}
+        title={showOutlines ? "Dölj element-ramar" : "Visa element-ramar"}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -543,7 +588,7 @@ const LAYOUT_BLOCKS = [
         </div>
       </div>
     ),
-    html: `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+    html: `<div class="two-columns">
   <div>
     <h3>Vänster kolumn</h3>
     <p>Innehåll...</p>
@@ -551,6 +596,66 @@ const LAYOUT_BLOCKS = [
   <div>
     <h3>Höger kolumn</h3>
     <p>Innehåll...</p>
+  </div>
+</div>`
+  },
+  {
+    id: 'three-columns',
+    name: '3 Kolumner',
+    icon: '▦',
+    preview: (
+      <div className="grid grid-cols-3 gap-0.5">
+        <div className="bg-gray-100 rounded p-0.5">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+        <div className="bg-gray-100 rounded p-0.5">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+        <div className="bg-gray-100 rounded p-0.5">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+      </div>
+    ),
+    html: `<div class="three-columns">
+  <div class="card">
+    <h3>Kolumn 1</h3>
+    <p>Innehåll...</p>
+  </div>
+  <div class="card">
+    <h3>Kolumn 2</h3>
+    <p>Innehåll...</p>
+  </div>
+  <div class="card">
+    <h3>Kolumn 3</h3>
+    <p>Innehåll...</p>
+  </div>
+</div>`
+  },
+  {
+    id: 'sidebar-layout',
+    name: 'Sidofält',
+    icon: '◧',
+    preview: (
+      <div className="grid grid-cols-3 gap-0.5">
+        <div className="col-span-2 bg-gray-100 rounded p-1">
+          <div className="h-1.5 bg-gray-400 rounded w-full mb-0.5"></div>
+          <div className="h-1.5 bg-gray-300 rounded w-3/4"></div>
+        </div>
+        <div className="bg-blue-100 rounded p-1">
+          <div className="h-1 bg-blue-400 rounded w-full"></div>
+        </div>
+      </div>
+    ),
+    html: `<div class="sidebar-layout">
+  <div class="main-content">
+    <h2>Huvudinnehåll</h2>
+    <p>Det primära innehållet...</p>
+  </div>
+  <div class="sidebar">
+    <div class="card">
+      <h4>Sidofält</h4>
+      <p>Extra info...</p>
+    </div>
   </div>
 </div>`
   },
@@ -746,8 +851,69 @@ export default function TemplateEditor({
   const [isExporting, setIsExporting] = useState(false);
   const [editorMode, setEditorMode] = useState('visual'); // 'code', 'visual', or 'preview'
   const [showSettings, setShowSettings] = useState(false);
+  const [showOutlines, setShowOutlines] = useState(true); // Show element borders in visual editor
+
+  // Syntax highlighting function for HTML + Handlebars
+  const highlightCode = useCallback((code) => {
+    if (!code) return '';
+    
+    // First highlight HTML with Prism
+    let html = Prism.highlight(code, Prism.languages.markup, 'markup');
+    
+    // Then add custom Handlebars highlighting on top
+    // Handlebars blocks: {{#each}}, {{#if}}, {{/each}}, {{/if}}, {{else}}
+    html = html.replace(
+      /(\{\{)(#(?:each|if|unless)|\/(?:each|if|unless)|else)(\s*)([^}]*)(\}\})/g,
+      '<span class="token handlebars-delimiter">$1</span><span class="token handlebars-block">$2</span>$3<span class="token handlebars-variable">$4</span><span class="token handlebars-delimiter">$5</span>'
+    );
+    
+    // Handlebars helpers: {{formatDate x}}, {{uppercase x}}, etc.
+    html = html.replace(
+      /(\{\{)(formatDate|formatDateTime|uppercase|lowercase|truncate|pluralize|add|subtract|multiply|divide|ifEquals|ifContains|json)(\s+)([^}]+)(\}\})/g,
+      '<span class="token handlebars-delimiter">$1</span><span class="token handlebars-helper">$2</span>$3<span class="token handlebars-variable">$4</span><span class="token handlebars-delimiter">$5</span>'
+    );
+    
+    // Simple Handlebars variables: {{variable}}, {{object.property}}
+    html = html.replace(
+      /(\{\{)([^#\/][^}]*)(\}\})/g,
+      '<span class="token handlebars-delimiter">$1</span><span class="token handlebars-variable">$2</span><span class="token handlebars-delimiter">$3</span>'
+    );
+    
+    return html;
+  }, []);
 
   const variables = getTemplateVariables();
+
+  // Format HTML code
+  const formatCode = useCallback(() => {
+    if (!templateContent) return;
+    
+    // Simple HTML formatter
+    let formatted = templateContent
+      .replace(/></g, '>\n<')
+      .replace(/({{#[^}]+}})/g, '\n$1\n')
+      .replace(/({{\/(each|if|unless)[^}]*}})/g, '\n$1\n')
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => line.trim())
+      .join('\n');
+    
+    // Add indentation
+    let indent = 0;
+    formatted = formatted.split('\n').map(line => {
+      // Decrease indent for closing tags
+      if (line.match(/^<\/|^{{\//) && indent > 0) indent--;
+      
+      const indentedLine = '  '.repeat(Math.max(0, indent)) + line;
+      
+      // Increase indent for opening tags (excluding self-closing)
+      if (line.match(/^<[^/!][^>]*[^/]>$|^{{#/) && !line.match(/\/>$/)) indent++;
+      
+      return indentedLine;
+    }).join('\n');
+    
+    setTemplateContent(formatted);
+  }, [templateContent]);
   const theme = DESIGN_THEMES[selectedTheme];
 
   // TipTap editor for visual mode
@@ -1193,26 +1359,27 @@ export default function TemplateEditor({
                   </div>
                 </div>
               ) : (
-                <div className="p-3 space-y-4">
-                  <p className="text-xs text-gray-500">Klicka för att infoga variabel vid markören</p>
+                <div className="p-3 space-y-4 text-xs">
+                  <p className="text-gray-500">Klicka för att infoga variabel</p>
                   
-                  {/* Basic variables */}
+                  {/* Wheel & Page variables */}
                   <div>
-                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
                       <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                      Grunddata
+                      Hjul & Sida
                     </h4>
                     <div className="grid grid-cols-2 gap-1">
                       {[
-                        { var: '{{wheel.title}}', label: 'Titel' },
-                        { var: '{{wheel.year}}', label: 'År' },
+                        { var: '{{wheel.title}}', label: 'Hjultitel' },
+                        { var: '{{wheel.year}}', label: 'Hjulets år' },
                         { var: '{{page.title}}', label: 'Sidtitel' },
-                        { var: '{{currentDate}}', label: 'Datum' },
+                        { var: '{{page.year}}', label: 'Sidans år' },
+                        { var: '{{currentDate}}', label: 'Idag' },
                       ].map(v => (
                         <button 
                           key={v.var}
                           onClick={() => insertVariable(v.var)} 
-                          className="px-2 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded transition text-left truncate"
+                          className="px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded transition text-left truncate"
                           title={v.var}
                         >
                           {v.label}
@@ -1223,7 +1390,7 @@ export default function TemplateEditor({
 
                   {/* Statistics */}
                   <div>
-                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
                       <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                       Statistik
                     </h4>
@@ -1232,11 +1399,12 @@ export default function TemplateEditor({
                         { var: '{{stats.totalItems}}', label: 'Antal aktiviteter' },
                         { var: '{{stats.totalRings}}', label: 'Antal ringar' },
                         { var: '{{stats.totalActivityGroups}}', label: 'Antal grupper' },
+                        { var: '{{stats.totalLabels}}', label: 'Antal etiketter' },
                       ].map(v => (
                         <button 
                           key={v.var}
                           onClick={() => insertVariable(v.var)} 
-                          className="px-2 py-1.5 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded transition text-left truncate"
+                          className="px-2 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 rounded transition text-left truncate"
                           title={v.var}
                         >
                           {v.label}
@@ -1247,49 +1415,118 @@ export default function TemplateEditor({
 
                   {/* Loops */}
                   <div>
-                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
                       <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                      Loopar
+                      Loopar (listor)
                     </h4>
                     <div className="space-y-1">
                       <button 
-                        onClick={() => insertVariable('{{#each activityGroups}}\n  <div class="section">\n    <h3>{{name}}</h3>\n    {{#each items}}<p>{{name}}</p>{{/each}}\n  </div>\n{{/each}}')} 
-                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                        onClick={() => insertVariable('{{#each activityGroups}}\n<div class="section" style="border-left-color: {{color}}">\n  <h3>{{name}}</h3>\n  <p>{{itemCount}} aktiviteter</p>\n  {{#each items}}\n  <div class="item">\n    <span class="item-name">{{name}}</span>\n    <span class="item-meta">{{formatDate startDate}} - {{formatDate endDate}}</span>\n  </div>\n  {{/each}}\n</div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
                       >
-                        🔄 Aktivitetsgrupper med items
+                        🔄 Aktivitetsgrupper → items
                       </button>
                       <button 
-                        onClick={() => insertVariable('{{#each months}}\n  <div class="card">\n    <h3>{{name}}</h3>\n    <p>{{itemCount}} aktiviteter</p>\n  </div>\n{{/each}}')} 
-                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                        onClick={() => insertVariable('{{#each months}}\n<div class="card">\n  <h3>{{name}}</h3>\n  <p>{{itemCount}} aktiviteter</p>\n  {{#each items}}\n  <p>• {{name}}</p>\n  {{/each}}\n</div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
                       >
-                        📅 Alla månader
+                        📅 Månader → items
                       </button>
                       <button 
-                        onClick={() => insertVariable('{{#each rings}}\n  <div class="section">\n    <h3>{{name}}</h3>\n    <p>{{itemCount}} aktiviteter</p>\n  </div>\n{{/each}}')} 
-                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                        onClick={() => insertVariable('{{#each rings}}\n<div class="section">\n  <h3>{{name}} ({{type}})</h3>\n  <p>{{itemCount}} aktiviteter</p>\n  {{#each items}}\n  <p>• {{name}}</p>\n  {{/each}}\n</div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
                       >
-                        ⭕ Alla ringar
+                        ⭕ Ringar → items
                       </button>
                       <button 
-                        onClick={() => insertVariable('{{#each items}}\n  <div class="item">\n    <span class="item-name">{{name}}</span>\n    <span class="item-meta">{{formatDate startDate}}</span>\n  </div>\n{{/each}}')} 
-                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                        onClick={() => insertVariable('{{#each labels}}\n<div class="card">\n  <h3 style="color: {{color}}">{{name}}</h3>\n  <p>{{itemCount}} aktiviteter</p>\n</div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
                       >
-                        📋 Alla aktiviteter
+                        🏷️ Etiketter → items
                       </button>
+                      <button 
+                        onClick={() => insertVariable('{{#each items}}\n<div class="item">\n  <span class="item-name">{{name}}</span>\n  <span class="item-meta">{{ringName}} | {{activityName}}</span>\n  <span class="item-meta">{{formatDate startDate}} - {{formatDate endDate}}</span>\n  {{#if description}}<p>{{description}}</p>{{/if}}\n</div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                      >
+                        📋 Alla aktiviteter (detaljerat)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Item fields (in loops) */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+                      Aktivitetsfält (i loopar)
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {[
+                        { var: '{{name}}', label: 'Namn' },
+                        { var: '{{startDate}}', label: 'Startdatum' },
+                        { var: '{{endDate}}', label: 'Slutdatum' },
+                        { var: '{{description}}', label: 'Beskrivning' },
+                        { var: '{{time}}', label: 'Tid' },
+                        { var: '{{ringName}}', label: 'Ringnamn' },
+                        { var: '{{ringColor}}', label: 'Ringfärg' },
+                        { var: '{{activityName}}', label: 'Gruppnamn' },
+                        { var: '{{activityColor}}', label: 'Gruppfärg' },
+                        { var: '{{labelName}}', label: 'Etikettnamn' },
+                        { var: '{{labelColor}}', label: 'Etikettfärg' },
+                        { var: '{{itemCount}}', label: 'Antal items' },
+                      ].map(v => (
+                        <button 
+                          key={v.var}
+                          onClick={() => insertVariable(v.var)} 
+                          className="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded transition text-left truncate"
+                          title={v.var}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
                   {/* Helpers */}
                   <div>
-                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
                       <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
                       Hjälpfunktioner
                     </h4>
                     <div className="grid grid-cols-2 gap-1">
-                      <button onClick={() => insertVariable('{{formatDate startDate}}')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">formatDate</button>
-                      <button onClick={() => insertVariable('{{uppercase name}}')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">uppercase</button>
-                      <button onClick={() => insertVariable('{{#if items}}...{{else}}...{{/if}}')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">#if villkor</button>
-                      <button onClick={() => insertVariable('<div class="page-break"></div>')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">Sidbrytning</button>
+                      <button onClick={() => insertVariable('{{formatDate startDate}}')} className="px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left" title="Formatera datum (sv-SE)">formatDate</button>
+                      <button onClick={() => insertVariable('{{formatDateTime startDate}}')} className="px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left" title="Datum + tid">formatDateTime</button>
+                      <button onClick={() => insertVariable('{{uppercase name}}')} className="px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left" title="VERSALER">uppercase</button>
+                      <button onClick={() => insertVariable('{{lowercase name}}')} className="px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left" title="gemener">lowercase</button>
+                      <button onClick={() => insertVariable('{{truncate description 100}}')} className="px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left" title="Korta av text">truncate</button>
+                      <button onClick={() => insertVariable('{{pluralize count "aktivitet" "aktiviteter"}}')} className="px-2 py-1 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left" title="Singular/plural">pluralize</button>
+                    </div>
+                  </div>
+
+                  {/* Conditionals */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                      Villkor & Logik
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button onClick={() => insertVariable('{{#if items}}\n  ...\n{{else}}\n  <p>Inga aktiviteter</p>\n{{/if}}')} className="px-2 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded transition text-left">#if...else</button>
+                      <button onClick={() => insertVariable('{{#unless items}}\n  <p>Tomt</p>\n{{/unless}}')} className="px-2 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded transition text-left">#unless</button>
+                      <button onClick={() => insertVariable('{{#ifEquals type "outer"}}...{{/ifEquals}}')} className="px-2 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded transition text-left" title="Jämför värden">ifEquals</button>
+                      <button onClick={() => insertVariable('{{add a b}}')} className="px-2 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 rounded transition text-left" title="Addition">add</button>
+                    </div>
+                  </div>
+
+                  {/* Layout */}
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-gray-500 rounded-full"></span>
+                      Layout & Print
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button onClick={() => insertVariable('<div class="page-break"></div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Sidbrytning</button>
+                      <button onClick={() => insertVariable('<div class="no-break">\n  ...\n</div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Ingen brytning</button>
+                      <button onClick={() => insertVariable('<div class="section">\n  ...\n</div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Sektion</button>
+                      <button onClick={() => insertVariable('<div class="card">\n  ...\n</div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Kort</button>
                     </div>
                   </div>
                 </div>
@@ -1303,7 +1540,7 @@ export default function TemplateEditor({
           {/* Visual Editor Mode */}
           {editorMode === 'visual' && (
             <>
-              <VisualEditorToolbar editor={visualEditor} />
+              <VisualEditorToolbar editor={visualEditor} showOutlines={showOutlines} setShowOutlines={setShowOutlines} />
               <div className="flex-1 overflow-auto">
                 <style>{`
                   .ProseMirror {
@@ -1338,6 +1575,48 @@ export default function TemplateEditor({
                   .ProseMirror .stats-grid { display: flex; gap: 1rem; margin: 1.5rem 0; }
                   .ProseMirror .stat-box { flex: 1; text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
                   .ProseMirror .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 0.875rem; }
+                  /* Grid layouts */
+                  .ProseMirror .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+                  .ProseMirror .three-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+                  .ProseMirror .four-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+                  .ProseMirror .sidebar-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
+                  ${showOutlines ? `
+                  /* Design outlines for editing - show structure clearly */
+                  .ProseMirror .section, .ProseMirror .card, .ProseMirror .item, 
+                  .ProseMirror .stat-box, .ProseMirror .footer,
+                  .ProseMirror .two-columns, .ProseMirror .three-columns, 
+                  .ProseMirror .four-columns, .ProseMirror .sidebar-layout,
+                  .ProseMirror .stats-grid {
+                    outline: 2px dashed #94a3b8;
+                    outline-offset: 4px;
+                    position: relative;
+                    margin-top: 24px;
+                  }
+                  .ProseMirror .section::before { content: 'section'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #3b82f6; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .card::before { content: 'card'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #8b5cf6; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .item::before { content: 'item'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #0ea5e9; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .stats-grid::before { content: 'stats-grid'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #10b981; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .stat-box::before { content: 'stat-box'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #10b981; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .footer::before { content: 'footer'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #64748b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .two-columns::before { content: '2-kolumner'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .three-columns::before { content: '3-kolumner'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .four-columns::before { content: '4-kolumner'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  .ProseMirror .sidebar-layout::before { content: 'sidofält-layout'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+                  /* Child elements in grid layouts */
+                  .ProseMirror .two-columns > *, .ProseMirror .three-columns > *, .ProseMirror .four-columns > *, .ProseMirror .sidebar-layout > * {
+                    outline: 1px dashed #cbd5e1;
+                    outline-offset: 2px;
+                    min-height: 60px;
+                    padding: 8px;
+                    background: rgba(248, 250, 252, 0.5);
+                  }
+                  /* Visual indicator for Handlebars variables */
+                  .ProseMirror p:has(.variable-chip), .ProseMirror h1:has(.variable-chip), .ProseMirror h2:has(.variable-chip), .ProseMirror h3:has(.variable-chip) {
+                    background: linear-gradient(90deg, rgba(219, 234, 254, 0.3) 0%, transparent 100%);
+                    padding-left: 8px;
+                    border-radius: 4px;
+                  }
+                  ` : ''}
                 `}</style>
                 <EditorContent editor={visualEditor} className="h-full" />
               </div>
@@ -1348,7 +1627,19 @@ export default function TemplateEditor({
           {editorMode === 'code' && (
             <>
               <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-                <span className="text-xs text-gray-400 font-mono">HTML / Handlebars</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs text-gray-400 font-mono">HTML / Handlebars</span>
+                  <button
+                    onClick={formatCode}
+                    className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-700 transition flex items-center gap-1"
+                    title="Formatera kod (indentation)"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
+                    </svg>
+                    Formatera
+                  </button>
+                </div>
                 {validation.valid ? (
                   <span className="text-xs text-green-400 flex items-center gap-1">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -1365,14 +1656,44 @@ export default function TemplateEditor({
                   </span>
                 )}
               </div>
-              <textarea
-                id="template-editor"
-                value={templateContent}
-                onChange={(e) => setTemplateContent(e.target.value)}
-                className="flex-1 p-4 font-mono text-sm bg-gray-900 text-gray-100 border-none focus:ring-0 resize-none"
-                placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
-                spellCheck={false}
-              />
+              <div className="flex-1 overflow-auto" style={{ background: '#1d1f21' }}>
+                <CodeEditor
+                  value={templateContent}
+                  onValueChange={code => setTemplateContent(code)}
+                  highlight={code => highlightCode(code)}
+                  padding={16}
+                  style={{
+                    fontFamily: '"JetBrains Mono", "Fira Code", "Consolas", monospace',
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    minHeight: '100%',
+                  }}
+                  className="code-editor-container"
+                  textareaId="template-editor"
+                  placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
+                />
+              </div>
+              <style>{`
+                .code-editor-container {
+                  min-height: 100%;
+                }
+                .code-editor-container textarea {
+                  outline: none !important;
+                }
+                .code-editor-container pre {
+                  min-height: 100%;
+                }
+                /* Custom Handlebars/HTML highlighting */
+                .token.tag { color: #e06c75; }
+                .token.attr-name { color: #d19a66; }
+                .token.attr-value { color: #98c379; }
+                .token.punctuation { color: #abb2bf; }
+                .token.comment { color: #5c6370; font-style: italic; }
+                .token.handlebars-delimiter { color: #c678dd; font-weight: bold; }
+                .token.handlebars-variable { color: #61afef; }
+                .token.handlebars-helper { color: #c678dd; }
+                .token.handlebars-block { color: #e5c07b; }
+              `}</style>
             </>
           )}
 
