@@ -219,16 +219,27 @@ export async function exportToPDF(html, filename = 'report.pdf') {
 
 /**
  * Fetch all templates (user's + system)
+ * Returns: user-wide templates (wheel_id = null), wheel-specific templates, and system templates
  */
 export async function fetchTemplates(wheelId = null) {
   try {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData?.user?.id;
+    
     let query = supabase
       .from('report_templates')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (wheelId) {
-      query = query.or(`wheel_id.eq.${wheelId},is_system.eq.true`);
+    if (wheelId && userId) {
+      // Get: system templates, user's global templates, and wheel-specific templates
+      query = query.or(`is_system.eq.true,and(user_id.eq.${userId},wheel_id.is.null),and(user_id.eq.${userId},wheel_id.eq.${wheelId})`);
+    } else if (userId) {
+      // Get: system templates and user's global templates
+      query = query.or(`is_system.eq.true,and(user_id.eq.${userId},wheel_id.is.null)`);
+    } else {
+      // Only system templates for non-authenticated users
+      query = query.eq('is_system', true);
     }
     
     const { data, error } = await query;
@@ -262,6 +273,7 @@ export async function fetchTemplate(templateId) {
 
 /**
  * Create new template
+ * If wheel_id is not provided, creates a user-wide template (visible on all wheels)
  */
 export async function createTemplate(template) {
   try {
@@ -271,6 +283,7 @@ export async function createTemplate(template) {
       .from('report_templates')
       .insert({
         user_id: userData.user.id,
+        wheel_id: template.wheel_id || null, // null = user-wide template
         ...template
       })
       .select()

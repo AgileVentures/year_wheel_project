@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS report_templates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  wheel_id UUID REFERENCES year_wheels(id) ON DELETE CASCADE,
+  wheel_id UUID REFERENCES year_wheels(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
   description TEXT,
   template_content TEXT NOT NULL,
@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS report_templates (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+COMMENT ON COLUMN report_templates.wheel_id IS 'NULL = user-wide template (visible on all wheels), specific UUID = wheel-specific template';
 
 -- Indexes for performance
 CREATE INDEX idx_report_templates_user_id ON report_templates(user_id);

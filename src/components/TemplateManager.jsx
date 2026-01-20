@@ -70,9 +70,11 @@ export default function TemplateManager({
       if (selectedTemplate?.id) {
         await updateTemplate(selectedTemplate.id, templateData);
       } else {
+        // Create user-wide template (wheel_id = null) by default
+        // User can choose to make it wheel-specific later
         await createTemplate({
           ...templateData,
-          wheel_id: wheelData?.id
+          wheel_id: null // null = visible on all wheels for this user
         });
       }
       await loadTemplates();
