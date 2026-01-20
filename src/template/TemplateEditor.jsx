@@ -420,11 +420,23 @@ function ColumnConfigPopup({ editor, onClose }) {
       return;
     }
 
-    // Run the command
-    const success = editor.commands.changeColumnCount(columnCount);
+    // Change column count if needed
+    const currentCount = getCurrentColumnCount();
+    if (currentCount !== columnCount) {
+      editor.commands.changeColumnCount(columnCount);
+    }
+
+    // Apply background color and column widths
+    const attrs = {};
+    if (backgroundColor && backgroundColor !== 'transparent') {
+      attrs.backgroundColor = backgroundColor;
+    }
+    if (columnWidths && columnWidths.length > 0) {
+      attrs.columnWidths = JSON.stringify(columnWidths);
+    }
     
-    if (!success) {
-      console.log('changeColumnCount returned false, but it might have worked anyway');
+    if (Object.keys(attrs).length > 0) {
+      editor.commands.updateColumnBlock(attrs);
     }
     
     onClose();
@@ -877,22 +889,16 @@ const LAYOUT_BLOCKS = [
         </div>
       </div>
     ),
-    html: `<table>
-  <thead>
-    <tr>
-      <th>Aktivitet</th>
-      <th>Ring</th>
-      <th>Datum</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Exempel</td>
-      <td>Ring 1</td>
-      <td>2024-01-15</td>
-    </tr>
-  </tbody>
-</table>`
+    html: `<div class="column-block" data-column-config="block" style="background: #f1f5f9; font-weight: bold; padding: 8px 0;">
+  <div class="column" data-column-config="column"><p>Rubrik 1</p></div>
+  <div class="column" data-column-config="column"><p>Rubrik 2</p></div>
+  <div class="column" data-column-config="column"><p>Rubrik 3</p></div>
+</div>
+<div class="column-block" data-column-config="block" style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+  <div class="column" data-column-config="column"><p>Data 1</p></div>
+  <div class="column" data-column-config="column"><p>Data 2</p></div>
+  <div class="column" data-column-config="column"><p>Data 3</p></div>
+</div>`
   },
   {
     id: 'activity-loop',
@@ -1013,7 +1019,7 @@ const LAYOUT_BLOCKS = [
         <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-white px-1 text-[6px] text-gray-400">NY SIDA</span>
       </div>
     ),
-    html: `<div class="page-break"></div>`
+    html: `<div class="page-break" style="page-break-after: always; break-after: page; height: 1px;"></div>`
   }
 ];
 
@@ -1039,12 +1045,6 @@ function BlockPalette({ onInsertBlock }) {
             <div className="h-12 overflow-hidden rounded bg-gray-50 p-1.5">
               {block.preview}
             </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
           </button>
         ))}
       </div>
@@ -1702,16 +1702,13 @@ export default function TemplateEditor({
                     {LAYOUT_BLOCKS.map(block => (
                       <button
                         key={block.id}
-                        onClick={() => handleBlockInsert(block)}
-                        className={`p-2 bg-gray-50 border rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left group ${block.isResizable ? 'border-blue-200' : 'border-gray-200'}`}
-                        title={block.isResizable ? `${block.name} (klicka & dra för att ändra storlek)` : block.name}
+                        onClick={() => insertBlock(block.html)}
+                        className="p-2 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+                        title={block.name}
                       >
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-base">{block.icon}</span>
                           <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600 truncate">{block.name}</span>
-                          {block.isResizable && (
-                            <span className="ml-auto text-[9px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded font-medium">↔</span>
-                          )}
                         </div>
                         <div className="h-10 overflow-hidden rounded bg-white p-1 border border-gray-100">
                           {block.preview}
@@ -1885,7 +1882,7 @@ export default function TemplateEditor({
                       Layout & Print
                     </h4>
                     <div className="grid grid-cols-2 gap-1">
-                      <button onClick={() => insertVariable('<div class="page-break"></div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Sidbrytning</button>
+                      <button onClick={() => insertVariable('<div class="page-break" style="page-break-after: always; break-after: page; height: 1px;"></div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Sidbrytning</button>
                       <button onClick={() => insertVariable('<div class="no-break">\n  ...\n</div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Ingen brytning</button>
                       <button onClick={() => insertVariable('<div class="section">\n  ...\n</div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Sektion</button>
                       <button onClick={() => insertVariable('<div class="card">\n  ...\n</div>')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition text-left">Kort</button>

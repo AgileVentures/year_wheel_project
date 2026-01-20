@@ -18,6 +18,27 @@ export const ColumnBlock = Node.create({
     };
   },
 
+  addAttributes() {
+    return {
+      backgroundColor: {
+        default: null,
+        parseHTML: element => element.style.backgroundColor || null,
+        renderHTML: attributes => {
+          if (!attributes.backgroundColor) return {};
+          return { style: `background-color: ${attributes.backgroundColor}` };
+        },
+      },
+      columnWidths: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-column-widths') || null,
+        renderHTML: attributes => {
+          if (!attributes.columnWidths) return {};
+          return { 'data-column-widths': attributes.columnWidths };
+        },
+      },
+    };
+  },
+
   parseHTML() {
     return [
       {
@@ -216,10 +237,31 @@ export const ColumnBlock = Node.create({
         }
       };
 
+    const updateColumnBlock =
+      (attrs) =>
+      ({ tr, state, dispatch }) => {
+        const { $from } = state.selection;
+        
+        // Find the columnBlock node
+        for (let depth = $from.depth; depth > 0; depth--) {
+          const node = $from.node(depth);
+          if (node.type.name === 'columnBlock') {
+            const pos = $from.before(depth);
+            if (dispatch) {
+              tr.setNodeMarkup(pos, null, { ...node.attrs, ...attrs });
+              dispatch(tr);
+            }
+            return true;
+          }
+        }
+        return false;
+      };
+
     return {
       unsetColumns,
       setColumns,
       changeColumnCount,
+      updateColumnBlock,
     };
   },
 });
