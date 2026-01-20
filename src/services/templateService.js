@@ -197,157 +197,10 @@ export function renderTemplate(templateContent, context) {
 }
 
 /**
- * Wrap content in full HTML document with Tailwind-like CSS for PDF export
- */
-export function wrapInPdfDocument(content) {
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    /* Base styles */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      line-height: 1.6;
-      color: #1e293b;
-      padding: 40px;
-    }
-    
-    /* Typography */
-    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #0f172a; }
-    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; color: #1e293b; }
-    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #334155; }
-    h4 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #475569; }
-    p { margin-bottom: 0.75rem; }
-    
-    /* Tailwind-style utilities */
-    .text-center { text-align: center; }
-    .text-left { text-align: left; }
-    .text-right { text-align: right; }
-    .text-xs { font-size: 0.75rem; }
-    .text-sm { font-size: 0.875rem; }
-    .text-base { font-size: 1rem; }
-    .text-lg { font-size: 1.125rem; }
-    .text-xl { font-size: 1.25rem; }
-    .text-2xl { font-size: 1.5rem; }
-    .text-3xl { font-size: 1.875rem; }
-    .font-bold { font-weight: 700; }
-    .font-semibold { font-weight: 600; }
-    .font-medium { font-weight: 500; }
-    .font-normal { font-weight: 400; }
-    .italic { font-style: italic; }
-    .uppercase { text-transform: uppercase; }
-    
-    /* Colors */
-    .text-gray-400 { color: #9ca3af; }
-    .text-gray-500 { color: #6b7280; }
-    .text-gray-600 { color: #4b5563; }
-    .text-gray-700 { color: #374151; }
-    .text-gray-800 { color: #1f2937; }
-    .text-gray-900 { color: #111827; }
-    .text-slate-400 { color: #94a3b8; }
-    .text-slate-500 { color: #64748b; }
-    .text-slate-600 { color: #475569; }
-    .text-slate-700 { color: #334155; }
-    .text-slate-800 { color: #1e293b; }
-    .text-slate-900 { color: #0f172a; }
-    .text-blue-600 { color: #2563eb; }
-    .text-green-600 { color: #16a34a; }
-    .text-red-600 { color: #dc2626; }
-    
-    /* Backgrounds */
-    .bg-white { background-color: #ffffff; }
-    .bg-gray-50 { background-color: #f9fafb; }
-    .bg-gray-100 { background-color: #f3f4f6; }
-    .bg-slate-50 { background-color: #f8fafc; }
-    .bg-slate-100 { background-color: #f1f5f9; }
-    .bg-blue-50 { background-color: #eff6ff; }
-    .bg-blue-100 { background-color: #dbeafe; }
-    .bg-green-50 { background-color: #f0fdf4; }
-    
-    /* Spacing */
-    .p-2 { padding: 0.5rem; }
-    .p-3 { padding: 0.75rem; }
-    .p-4 { padding: 1rem; }
-    .p-5 { padding: 1.25rem; }
-    .p-6 { padding: 1.5rem; }
-    .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-    .px-4 { padding-left: 1rem; padding-right: 1rem; }
-    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-    .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-    .m-2 { margin: 0.5rem; }
-    .m-4 { margin: 1rem; }
-    .mb-2 { margin-bottom: 0.5rem; }
-    .mb-4 { margin-bottom: 1rem; }
-    .mb-6 { margin-bottom: 1.5rem; }
-    .mb-8 { margin-bottom: 2rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .mt-4 { margin-top: 1rem; }
-    .mt-6 { margin-top: 1.5rem; }
-    .mt-8 { margin-top: 2rem; }
-    .my-4 { margin-top: 1rem; margin-bottom: 1rem; }
-    .my-6 { margin-top: 1.5rem; margin-bottom: 1.5rem; }
-    
-    /* Borders */
-    .border { border: 1px solid #e2e8f0; }
-    .border-t { border-top: 1px solid #e2e8f0; }
-    .border-b { border-bottom: 1px solid #e2e8f0; }
-    .border-l { border-left: 1px solid #e2e8f0; }
-    .border-l-4 { border-left: 4px solid #e2e8f0; }
-    .border-gray-200 { border-color: #e5e7eb; }
-    .border-slate-200 { border-color: #e2e8f0; }
-    .border-blue-500 { border-color: #3b82f6; }
-    .rounded { border-radius: 0.25rem; }
-    .rounded-md { border-radius: 0.375rem; }
-    .rounded-lg { border-radius: 0.5rem; }
-    
-    /* Flexbox & Grid */
-    .flex { display: flex; }
-    .flex-col { flex-direction: column; }
-    .items-center { align-items: center; }
-    .justify-between { justify-content: space-between; }
-    .justify-center { justify-content: center; }
-    .gap-2 { gap: 0.5rem; }
-    .gap-4 { gap: 1rem; }
-    .grid { display: grid; }
-    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-    
-    /* Tables */
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    th { background: #f8fafc; font-weight: 600; color: #475569; }
-    
-    /* Lists */
-    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-    li { margin-bottom: 0.25rem; }
-    .list-none { list-style: none; padding-left: 0; }
-    
-    /* Print/PDF */
-    .page-break { page-break-before: always; }
-    .no-break { page-break-inside: avoid; }
-    
-    /* Shadow (visual only, may not render in PDF) */
-    .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-  </style>
-</head>
-<body>
-${content}
-</body>
-</html>`;
-}
-
-/**
  * Export rendered HTML to PDF
+ * Expects a complete HTML document with styling already included
  */
 export async function exportToPDF(html, filename = 'report.pdf') {
-  // Wrap in full document with CSS
-  const fullDocument = wrapInPdfDocument(html);
-  
   const options = {
     margin: [10, 10],
     filename,
@@ -357,7 +210,7 @@ export async function exportToPDF(html, filename = 'report.pdf') {
   };
   
   try {
-    await html2pdf().set(options).from(fullDocument).save();
+    await html2pdf().set(options).from(html).save();
     return true;
   } catch (error) {
     console.error('PDF export error:', error);

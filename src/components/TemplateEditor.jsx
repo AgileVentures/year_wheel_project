@@ -7,9 +7,262 @@ import {
   getTemplateVariables
 } from '../services/templateService';
 
+// Design themes with complete styling
+const DESIGN_THEMES = {
+  modern: {
+    name: 'Modern',
+    description: 'Clean and minimal',
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#64748b',
+      accent: '#0ea5e9',
+      background: '#ffffff',
+      surface: '#f8fafc',
+      text: '#1e293b',
+      textMuted: '#64748b',
+      border: '#e2e8f0'
+    }
+  },
+  professional: {
+    name: 'Professionell',
+    description: 'Classic business style',
+    colors: {
+      primary: '#1e40af',
+      secondary: '#374151',
+      accent: '#059669',
+      background: '#ffffff',
+      surface: '#f9fafb',
+      text: '#111827',
+      textMuted: '#6b7280',
+      border: '#d1d5db'
+    }
+  },
+  warm: {
+    name: 'Varm',
+    description: 'Friendly and inviting',
+    colors: {
+      primary: '#ea580c',
+      secondary: '#78716c',
+      accent: '#f59e0b',
+      background: '#fffbeb',
+      surface: '#fef3c7',
+      text: '#292524',
+      textMuted: '#78716c',
+      border: '#fcd34d'
+    }
+  },
+  dark: {
+    name: 'Mörk',
+    description: 'Dark mode elegance',
+    colors: {
+      primary: '#60a5fa',
+      secondary: '#9ca3af',
+      accent: '#34d399',
+      background: '#1f2937',
+      surface: '#374151',
+      text: '#f9fafb',
+      textMuted: '#9ca3af',
+      border: '#4b5563'
+    }
+  },
+  nature: {
+    name: 'Natur',
+    description: 'Green and organic',
+    colors: {
+      primary: '#16a34a',
+      secondary: '#57534e',
+      accent: '#84cc16',
+      background: '#f0fdf4',
+      surface: '#dcfce7',
+      text: '#14532d',
+      textMuted: '#57534e',
+      border: '#86efac'
+    }
+  },
+  corporate: {
+    name: 'Företag',
+    description: 'Formal and structured',
+    colors: {
+      primary: '#475569',
+      secondary: '#64748b',
+      accent: '#0284c7',
+      background: '#ffffff',
+      surface: '#f1f5f9',
+      text: '#0f172a',
+      textMuted: '#475569',
+      border: '#cbd5e1'
+    }
+  }
+};
+
+// Generate CSS for a theme
+const generateThemeCSS = (theme) => {
+  const c = theme.colors;
+  return `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.7;
+      color: ${c.text};
+      background: ${c.background};
+      padding: 48px;
+    }
+    
+    /* Typography */
+    h1 { 
+      font-size: 2rem; 
+      font-weight: 700; 
+      margin-bottom: 0.75rem; 
+      color: ${c.text};
+      border-bottom: 3px solid ${c.primary};
+      padding-bottom: 0.5rem;
+    }
+    h2 { 
+      font-size: 1.5rem; 
+      font-weight: 600; 
+      margin-bottom: 0.75rem; 
+      margin-top: 2rem;
+      color: ${c.primary};
+    }
+    h3 { 
+      font-size: 1.125rem; 
+      font-weight: 600; 
+      margin-bottom: 0.5rem; 
+      color: ${c.secondary};
+    }
+    p { margin-bottom: 0.75rem; }
+    strong { font-weight: 600; }
+    
+    /* Lists */
+    ul, ol { 
+      margin-bottom: 1rem; 
+      padding-left: 1.5rem; 
+    }
+    li { 
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      background: ${c.surface};
+      border-radius: 4px;
+      list-style-position: inside;
+    }
+    
+    /* Tables */
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 1rem 0;
+      background: ${c.background};
+    }
+    th { 
+      background: ${c.primary}; 
+      color: white;
+      padding: 12px 16px; 
+      text-align: left; 
+      font-weight: 600;
+    }
+    td { 
+      padding: 10px 16px; 
+      border-bottom: 1px solid ${c.border};
+    }
+    tr:nth-child(even) td {
+      background: ${c.surface};
+    }
+    
+    /* Cards/Sections */
+    .section {
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: ${c.surface};
+      border-radius: 8px;
+      border-left: 4px solid ${c.primary};
+    }
+    .card {
+      margin: 0.75rem 0;
+      padding: 1rem;
+      background: ${c.background};
+      border: 1px solid ${c.border};
+      border-radius: 6px;
+    }
+    
+    /* Item blocks */
+    .item {
+      margin: 0.5rem 0;
+      padding: 0.75rem 1rem;
+      background: ${c.surface};
+      border-left: 4px solid ${c.accent};
+      border-radius: 0 4px 4px 0;
+    }
+    .item-name {
+      font-weight: 600;
+      color: ${c.text};
+    }
+    .item-meta {
+      font-size: 0.875rem;
+      color: ${c.textMuted};
+      margin-top: 0.25rem;
+    }
+    
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .stat-box {
+      text-align: center;
+      padding: 1.5rem;
+      background: ${c.surface};
+      border-radius: 8px;
+      border: 1px solid ${c.border};
+    }
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: ${c.primary};
+    }
+    .stat-label {
+      font-size: 0.875rem;
+      color: ${c.textMuted};
+      margin-top: 0.25rem;
+    }
+    
+    /* Footer */
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid ${c.border};
+      font-size: 0.875rem;
+      color: ${c.textMuted};
+    }
+    
+    /* Print */
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+    
+    @media print {
+      body { padding: 20px; }
+    }
+  `;
+};
+
+// Generate full HTML document
+const generateHtmlDocument = (content, theme) => {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>${generateThemeCSS(theme)}</style>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+};
+
 /**
  * TemplateEditor - Edit and preview report templates
- * Features: Syntax validation, live preview, variable reference
+ * Features: Syntax validation, live preview, design themes
  */
 export default function TemplateEditor({ 
   template, 
@@ -23,6 +276,7 @@ export default function TemplateEditor({
   const [description, setDescription] = useState(template?.description || '');
   const [templateContent, setTemplateContent] = useState(template?.template_content || '');
   const [category, setCategory] = useState(template?.category || 'custom');
+  const [selectedTheme, setSelectedTheme] = useState('modern');
   const [validation, setValidation] = useState({ valid: true, error: null });
   const [preview, setPreview] = useState('');
   const [showVariables, setShowVariables] = useState(false);
@@ -31,51 +285,9 @@ export default function TemplateEditor({
   const [isExporting, setIsExporting] = useState(false);
 
   const variables = getTemplateVariables();
+  const theme = DESIGN_THEMES[selectedTheme];
 
-  // Wrap content in full HTML document with Tailwind CSS
-  const wrapInHtmlDocument = (content) => {
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Base styles for print/PDF */
-    body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
-      color: #1e293b;
-      padding: 40px;
-      margin: 0;
-    }
-    /* Print-specific styles */
-    @media print {
-      body { padding: 0; }
-      .page-break { page-break-before: always; }
-      .no-break { page-break-inside: avoid; }
-    }
-    /* Typography helpers */
-    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
-    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; }
-    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
-    /* Table styles */
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-    th { background: #f8fafc; font-weight: 600; }
-    /* Utility classes */
-    .text-muted { color: #64748b; }
-    .text-small { font-size: 0.875rem; }
-    .border-left-accent { border-left: 4px solid #3b82f6; padding-left: 12px; }
-  </style>
-</head>
-<body>
-${content}
-</body>
-</html>`;
-  };
-
-  // Validate template on content change
+  // Validate template and update preview on content or theme change
   useEffect(() => {
     if (templateContent) {
       const result = validateTemplate(templateContent);
@@ -86,21 +298,21 @@ ${content}
         try {
           const context = buildTemplateContext(wheelData, pageData, organizationData);
           const rendered = renderTemplate(templateContent, context);
-          setPreview(wrapInHtmlDocument(rendered));
+          setPreview(generateHtmlDocument(rendered, theme));
         } catch (error) {
           console.error('Template render error:', error);
-          setPreview(wrapInHtmlDocument(`<div class="text-red-600 p-5">
+          setPreview(generateHtmlDocument(`<div style="color: red; padding: 20px;">
             <strong>Preview Error:</strong><br>
             ${error.message}
-          </div>`));
+          </div>`, theme));
         }
       } else if (!wheelData || !organizationData) {
-        setPreview(wrapInHtmlDocument(`<div class="text-gray-400 p-5 italic">
+        setPreview(generateHtmlDocument(`<div style="color: #64748b; padding: 20px; font-style: italic;">
           Ingen hjuldata tillgänglig. Öppna mallredigeraren från ett hjul för att se förhandsvisning.
-        </div>`));
+        </div>`, theme));
       }
     }
-  }, [templateContent, wheelData, pageData, organizationData]);
+  }, [templateContent, wheelData, pageData, organizationData, selectedTheme]);
 
   const handleSave = async () => {
     if (!validation.valid) {
@@ -129,12 +341,15 @@ ${content}
   };
 
   const handleExportPreview = async () => {
-    if (!preview) return;
+    if (!templateContent || !wheelData) return;
     
     setIsExporting(true);
     try {
-      const filename = `${name.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}.pdf`;
-      await exportToPDF(preview, filename);
+      const context = buildTemplateContext(wheelData, pageData, organizationData);
+      const rendered = renderTemplate(templateContent, context);
+      const htmlDocument = generateHtmlDocument(rendered, theme);
+      const filename = `${name.replace(/\s+/g, '_').toLowerCase() || 'rapport'}_${Date.now()}.pdf`;
+      await exportToPDF(htmlDocument, filename);
     } catch (error) {
       alert('Failed to export PDF: ' + error.message);
     } finally {
@@ -190,7 +405,7 @@ ${content}
         </div>
 
         {/* Metadata fields */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Mallnamn *
@@ -218,7 +433,23 @@ ${content}
               <option value="summary">Sammanfattning</option>
             </select>
           </div>
-          <div className="col-span-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Designschema
+            </label>
+            <select
+              value={selectedTheme}
+              onChange={(e) => setSelectedTheme(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {Object.entries(DESIGN_THEMES).map(([key, t]) => (
+                <option key={key} value={key}>
+                  {t.name} - {t.description}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Beskrivning
             </label>
@@ -228,6 +459,33 @@ ${content}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Beskriv vad mallen används till"
+            />
+          </div>
+        </div>
+
+        {/* Theme color preview */}
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-gray-500">Färger:</span>
+          <div className="flex gap-1">
+            <div 
+              className="w-5 h-5 rounded border border-gray-300" 
+              style={{ background: theme.colors.primary }}
+              title="Primär"
+            />
+            <div 
+              className="w-5 h-5 rounded border border-gray-300" 
+              style={{ background: theme.colors.secondary }}
+              title="Sekundär"
+            />
+            <div 
+              className="w-5 h-5 rounded border border-gray-300" 
+              style={{ background: theme.colors.accent }}
+              title="Accent"
+            />
+            <div 
+              className="w-5 h-5 rounded border border-gray-300" 
+              style={{ background: theme.colors.surface }}
+              title="Bakgrund"
             />
           </div>
         </div>
@@ -319,63 +577,16 @@ ${content}
                 </div>
               </div>
 
-              {/* Tailwind CSS */}
+              {/* CSS Classes */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Tailwind CSS</h4>
-                <p className="text-xs text-gray-500 mb-2">Förhandsvisning har full Tailwind CDN. PDF har vanliga klasser.</p>
-                
-                <div className="mb-2">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Typografi:</p>
-                  <div className="flex flex-wrap gap-1">
-                    <code className="text-xs bg-gray-100 px-1 rounded">text-sm</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">text-lg</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">font-bold</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">italic</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">uppercase</code>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Färger:</p>
-                  <div className="flex flex-wrap gap-1">
-                    <code className="text-xs bg-gray-100 px-1 rounded">text-gray-600</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">text-blue-600</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">bg-slate-50</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">bg-blue-100</code>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Spacing:</p>
-                  <div className="flex flex-wrap gap-1">
-                    <code className="text-xs bg-gray-100 px-1 rounded">p-4</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">mb-4</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">mt-6</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">px-3</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">py-2</code>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Layout:</p>
-                  <div className="flex flex-wrap gap-1">
-                    <code className="text-xs bg-gray-100 px-1 rounded">flex</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">grid</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">grid-cols-2</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">gap-4</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">items-center</code>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Borders:</p>
-                  <div className="flex flex-wrap gap-1">
-                    <code className="text-xs bg-gray-100 px-1 rounded">border</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">border-l-4</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">rounded</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">rounded-lg</code>
-                    <code className="text-xs bg-gray-100 px-1 rounded">shadow</code>
-                  </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Styling-klasser</h4>
+                <p className="text-xs text-gray-500 mb-2">Använd dessa klasser för styling (färger sätts av designschemat)</p>
+                <div className="space-y-1">
+                  <button onClick={() => insertVariable('<div class="section">\n  ...\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">section</button>
+                  <button onClick={() => insertVariable('<div class="card">\n  ...\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">card</button>
+                  <button onClick={() => insertVariable('<div class="item">\n  <span class="item-name">{{name}}</span>\n  <span class="item-meta">{{formatDate startDate}}</span>\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">item</button>
+                  <button onClick={() => insertVariable('<div class="stats-grid">\n  <div class="stat-box">\n    <div class="stat-value">{{stats.totalItems}}</div>\n    <div class="stat-label">Aktiviteter</div>\n  </div>\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats-grid</button>
+                  <button onClick={() => insertVariable('<div class="footer">\n  Genererad {{currentDate}}\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">footer</button>
                 </div>
               </div>
 
