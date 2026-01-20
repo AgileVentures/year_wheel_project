@@ -888,30 +888,45 @@ export default function TemplateEditor({
   const formatCode = useCallback(() => {
     if (!templateContent) return;
     
-    // Simple HTML formatter
-    let formatted = templateContent
-      .replace(/></g, '>\n<')
-      .replace(/({{#[^}]+}})/g, '\n$1\n')
-      .replace(/({{\/(each|if|unless)[^}]*}})/g, '\n$1\n')
-      .split('\n')
-      .filter(line => line.trim())
+    let formatted = templateContent;
+    
+    // Step 1: Add newlines around tags and Handlebars blocks
+    formatted = formatted
+      .replace(/>\s*</g, '>\n<')  // Between HTML tags
+      .replace(/(\{\{#(?:each|if|unless)[^}]*\}\})/g, '\n$1\n')  // Opening blocks
+      .replace(/(\{\{\/(?:each|if|unless)\}\})/g, '\n$1\n')  // Closing blocks
+      .replace(/(\{\{else\}\})/g, '\n$1\n');  // else blocks
+    
+    // Step 2: Split into lines and clean up
+    let lines = formatted.split('\n')
       .map(line => line.trim())
-      .join('\n');
+      .filter(line => line.length > 0);
     
-    // Add indentation
+    // Step 3: Add proper indentation
     let indent = 0;
-    formatted = formatted.split('\n').map(line => {
-      // Decrease indent for closing tags
-      if (line.match(/^<\/|^{{\//) && indent > 0) indent--;
-      
-      const indentedLine = '  '.repeat(Math.max(0, indent)) + line;
-      
-      // Increase indent for opening tags (excluding self-closing)
-      if (line.match(/^<[^/!][^>]*[^/]>$|^{{#/) && !line.match(/\/>$/)) indent++;
-      
-      return indentedLine;
-    }).join('\n');
+    const indentedLines = [];
     
+    for (let line of lines) {
+      // Decrease indent BEFORE adding line for closing tags
+      if (line.match(/^<\//) || line.match(/^\{\{\/(?:each|if|unless)\}\}/)) {
+        indent = Math.max(0, indent - 1);
+      }
+      
+      // Add indented line
+      indentedLines.push('  '.repeat(indent) + line);
+      
+      // Increase indent AFTER adding line for opening tags
+      if (line.match(/^<[^/!?][^>]*[^/]>$/) || line.match(/^\{\{#(?:each|if|unless)/)) {
+        indent++;
+      }
+      
+      // Handle self-closing tags - no indent change
+      if (line.match(/\/>/)) {
+        // Self-closing, no change
+      }
+    }
+    
+    formatted = indentedLines.join('\n');
     setTemplateContent(formatted);
   }, [templateContent]);
   const theme = DESIGN_THEMES[selectedTheme];
@@ -938,11 +953,51 @@ export default function TemplateEditor({
   const handleModeSwitch = useCallback((newMode) => {
     // When leaving visual mode, save TipTap content
     if (editorMode === 'visual' && visualEditor) {
-      setTemplateContent(visualEditor.getHTML());
+      const content = visualEditor.getHTML();
+      setTemplateContent(content);
     }
     // When entering visual mode, load content into TipTap
     if (newMode === 'visual' && visualEditor) {
       visualEditor.commands.setContent(templateContent || '<p></p>');
+    }
+    // When entering code mode, auto-format the code
+    if (newMode === 'code' && templateContent) {
+      // Format on next tick to ensure state is updated
+      setTimeout(() => {
+        // Trigger format
+        let formatted = templateContent;
+        
+        // Add newlines around tags and Handlebars blocks
+        formatted = formatted
+          .replace(/>\s*</g, '>\n<')
+          .replace(/(\{\{#(?:each|if|unless)[^}]*\}\})/g, '\n$1\n')
+          .replace(/(\{\{\/(?:each|if|unless)\}\})/g, '\n$1\n')
+          .replace(/(\{\{else\}\})/g, '\n$1\n');
+        
+        // Split and clean
+        let lines = formatted.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+        
+        // Add indentation
+        let indent = 0;
+        const indentedLines = [];
+        
+        for (let line of lines) {
+          if (line.match(/^<\//) || line.match(/^\{\{\/(?:each|if|unless)\}\}/)) {
+            indent = Math.max(0, indent - 1);
+          }
+          
+          indentedLines.push('  '.repeat(indent) + line);
+          
+          if (line.match(/^<[^/!?][^>]*[^/]>$/) || line.match(/^\{\{#(?:each|if|unless)/)) {
+            indent++;
+          }
+        }
+        
+        formatted = indentedLines.join('\n');
+        setTemplateContent(formatted);
+      }, 10);
     }
     setEditorMode(newMode);
   }, [visualEditor, templateContent, editorMode]);
