@@ -101,6 +101,11 @@ export default function TemplateManager({
   };
 
   const handleGenerateReport = async (template) => {
+    if (!wheelData || !organizationData) {
+      alert('Du måste öppna ett hjul för att generera en rapport. Gå till ett hjul och välj "Rapporter" därifrån.');
+      return;
+    }
+    
     setGeneratingPDF(true);
     try {
       const context = buildTemplateContext(wheelData, pageData, organizationData);
