@@ -7,7 +7,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
-import { ColumnExtension } from '../extensions/ColumnExtension';
+import { ColumnExtension } from './extensions/ColumnExtension';
 import CodeEditor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -18,7 +18,7 @@ import {
   buildTemplateContext,
   exportToPDF,
   getTemplateVariables
-} from '../services/templateService';
+} from './templateService';
 
 // Design themes with complete styling
 const DESIGN_THEMES = {

@@ -7,8 +7,8 @@ import {
   renderTemplate,
   buildTemplateContext,
   exportToPDF
-} from '../services/templateService';
-import TemplateEditor from './TemplateEditor';
+} from '../template/templateService';
+import TemplateEditor from '../template/TemplateEditor';
 
 /**
  * TemplateManager - Browse, create, edit, and use report templates
