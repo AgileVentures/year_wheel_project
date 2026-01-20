@@ -1,4 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
 import { 
   renderTemplate, 
   validateTemplate, 
@@ -260,9 +267,191 @@ ${content}
 </html>`;
 };
 
+// Toolbar component for visual editor
+function VisualEditorToolbar({ editor }) {
+  if (!editor) return null;
+
+  const buttonClass = (active) => 
+    `p-2 rounded ${active ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-700'}`;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-gray-200 bg-white">
+      {/* Text formatting */}
+      <button
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        className={buttonClass(editor.isActive('bold'))}
+        title="Fet (Ctrl+B)"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        className={buttonClass(editor.isActive('italic'))}
+        title="Kursiv (Ctrl+I)"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 4h4m-2 0v16m-4 0h8" transform="skewX(-10)" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        className={buttonClass(editor.isActive('underline'))}
+        title="Understrykning (Ctrl+U)"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v7a5 5 0 0010 0V4M5 20h14" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        className={buttonClass(editor.isActive('strike'))}
+        title="Genomstruken"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5v14" transform="rotate(45 12 12)" />
+        </svg>
+      </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1" />
+
+      {/* Headings */}
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        className={buttonClass(editor.isActive('heading', { level: 1 }))}
+        title="Rubrik 1"
+      >
+        <span className="font-bold text-sm">H1</span>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        className={buttonClass(editor.isActive('heading', { level: 2 }))}
+        title="Rubrik 2"
+      >
+        <span className="font-bold text-sm">H2</span>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        className={buttonClass(editor.isActive('heading', { level: 3 }))}
+        title="Rubrik 3"
+      >
+        <span className="font-bold text-sm">H3</span>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().setParagraph().run()}
+        className={buttonClass(editor.isActive('paragraph'))}
+        title="Brödtext"
+      >
+        <span className="text-sm">P</span>
+      </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1" />
+
+      {/* Lists */}
+      <button
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className={buttonClass(editor.isActive('bulletList'))}
+        title="Punktlista"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        className={buttonClass(editor.isActive('orderedList'))}
+        title="Numrerad lista"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 6h13M7 12h13M7 18h13M3 6h.01M3 12h.01M3 18h.01" />
+        </svg>
+      </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1" />
+
+      {/* Text alignment */}
+      <button
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        className={buttonClass(editor.isActive({ textAlign: 'left' }))}
+        title="Vänsterjustera"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h14" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        className={buttonClass(editor.isActive({ textAlign: 'center' }))}
+        title="Centrera"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M5 18h14" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        className={buttonClass(editor.isActive({ textAlign: 'right' }))}
+        title="Högerjustera"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M10 12h10M6 18h14" />
+        </svg>
+      </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1" />
+
+      {/* Highlight */}
+      <button
+        onClick={() => editor.chain().focus().toggleHighlight().run()}
+        className={buttonClass(editor.isActive('highlight'))}
+        title="Markera"
+      >
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M15.243 4.515l-6.738 6.737-.707 2.121-1.04 1.041 2.828 2.829 1.04-1.041 2.122-.707 6.737-6.738-4.242-4.242zm6.364 3.536a1 1 0 010 1.414l-7.778 7.778-2.122.707-1.414 1.414a1 1 0 01-1.414 0l-4.243-4.243a1 1 0 010-1.414l1.414-1.414.707-2.121 7.778-7.778a1 1 0 011.414 0l5.658 5.657z" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        className={buttonClass(editor.isActive('blockquote'))}
+        title="Citat"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      </button>
+
+      <div className="w-px h-6 bg-gray-300 mx-1" />
+
+      {/* Undo/Redo */}
+      <button
+        onClick={() => editor.chain().focus().undo().run()}
+        disabled={!editor.can().undo()}
+        className={`p-2 rounded ${editor.can().undo() ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
+        title="Ångra (Ctrl+Z)"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+      </button>
+      <button
+        onClick={() => editor.chain().focus().redo().run()}
+        disabled={!editor.can().redo()}
+        className={`p-2 rounded ${editor.can().redo() ? 'hover:bg-gray-100 text-gray-700' : 'text-gray-300'}`}
+        title="Gör om (Ctrl+Y)"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 /**
  * TemplateEditor - Edit and preview report templates
- * Features: Syntax validation, live preview, design themes
+ * Features: Syntax validation, live preview, design themes, visual/code modes
  */
 export default function TemplateEditor({ 
   template, 
@@ -283,9 +472,50 @@ export default function TemplateEditor({
   const [showPreview, setShowPreview] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [editorMode, setEditorMode] = useState('code'); // 'code' or 'visual'
 
   const variables = getTemplateVariables();
   const theme = DESIGN_THEMES[selectedTheme];
+
+  // TipTap editor for visual mode
+  const visualEditor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    ],
+    content: templateContent || '<p>Börja skriva här...</p>',
+    onUpdate: ({ editor }) => {
+      if (editorMode === 'visual') {
+        setTemplateContent(editor.getHTML());
+      }
+    },
+  });
+
+  // Sync content when switching modes
+  const handleModeSwitch = useCallback((newMode) => {
+    if (newMode === 'visual' && visualEditor) {
+      // Switching to visual mode: load HTML into TipTap
+      visualEditor.commands.setContent(templateContent || '<p></p>');
+    } else if (newMode === 'code' && visualEditor) {
+      // Switching to code mode: get HTML from TipTap
+      setTemplateContent(visualEditor.getHTML());
+    }
+    setEditorMode(newMode);
+  }, [visualEditor, templateContent]);
+
+  // Insert variable into visual editor
+  const insertVariableInVisual = useCallback((variable) => {
+    if (visualEditor) {
+      // Insert as styled span that looks like a variable chip
+      visualEditor.chain().focus().insertContent(
+        `<span class="variable-chip" style="background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.875rem;">${variable}</span>`
+      ).run();
+    }
+  }, [visualEditor]);
 
   // Validate template and update preview on content or theme change
   useEffect(() => {
@@ -357,21 +587,28 @@ export default function TemplateEditor({
     }
   };
 
-  const insertVariable = (variable) => {
-    const textarea = document.getElementById('template-editor');
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = templateContent;
-    const before = text.substring(0, start);
-    const after = text.substring(end);
-    setTemplateContent(before + variable + after);
-    
-    // Set cursor position after inserted variable
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + variable.length, start + variable.length);
-    }, 0);
-  };
+  // Insert variable - handles both code and visual mode
+  const insertVariable = useCallback((variable) => {
+    if (editorMode === 'visual') {
+      insertVariableInVisual(variable);
+    } else {
+      // Code mode - insert into textarea
+      const textarea = document.getElementById('template-editor');
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = templateContent;
+      const before = text.substring(0, start);
+      const after = text.substring(end);
+      setTemplateContent(before + variable + after);
+      
+      // Set cursor position after inserted variable
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + variable.length, start + variable.length);
+      }, 0);
+    }
+  }, [editorMode, insertVariableInVisual, templateContent]);
 
   return (
     <div className="template-editor h-full flex flex-col">
@@ -400,6 +637,44 @@ export default function TemplateEditor({
               className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition disabled:opacity-50"
             >
               {isExporting ? 'Exporterar...' : 'Exportera PDF'}
+            </button>
+          </div>
+        </div>
+
+        {/* Editor mode toggle */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm font-medium text-gray-700">Redigeringsläge:</span>
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <button
+              onClick={() => handleModeSwitch('visual')}
+              className={`px-4 py-2 text-sm font-medium transition ${
+                editorMode === 'visual' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Visuell
+              </span>
+            </button>
+            <button
+              onClick={() => handleModeSwitch('code')}
+              className={`px-4 py-2 text-sm font-medium transition ${
+                editorMode === 'code' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                Kod
+              </span>
             </button>
           </div>
         </div>
@@ -604,19 +879,79 @@ export default function TemplateEditor({
 
         {/* Editor and preview */}
         <div className={`flex-1 flex ${showPreview ? 'flex-row' : ''}`}>
-          {/* Template editor */}
+          {/* Template editor - Visual or Code mode */}
           <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col border-r border-gray-200`}>
-            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700">HTML-mall (Handlebars)</h3>
-            </div>
-            <textarea
-              id="template-editor"
-              value={templateContent}
-              onChange={(e) => setTemplateContent(e.target.value)}
-              className="flex-1 p-4 font-mono text-sm border-none focus:ring-0 resize-none"
-              placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
-              spellCheck={false}
-            />
+            {editorMode === 'visual' ? (
+              <>
+                {/* Visual editor toolbar */}
+                <VisualEditorToolbar editor={visualEditor} />
+                
+                {/* TipTap editor */}
+                <div className="flex-1 overflow-auto bg-white">
+                  <style>{`
+                    .ProseMirror {
+                      padding: 1rem;
+                      min-height: 100%;
+                      outline: none;
+                    }
+                    .ProseMirror p {
+                      margin-bottom: 0.5rem;
+                    }
+                    .ProseMirror h1 {
+                      font-size: 2rem;
+                      font-weight: 700;
+                      margin-bottom: 1rem;
+                    }
+                    .ProseMirror h2 {
+                      font-size: 1.5rem;
+                      font-weight: 600;
+                      margin-bottom: 0.75rem;
+                    }
+                    .ProseMirror h3 {
+                      font-size: 1.25rem;
+                      font-weight: 600;
+                      margin-bottom: 0.5rem;
+                    }
+                    .ProseMirror ul, .ProseMirror ol {
+                      padding-left: 1.5rem;
+                      margin-bottom: 0.5rem;
+                    }
+                    .ProseMirror blockquote {
+                      border-left: 3px solid #e5e7eb;
+                      padding-left: 1rem;
+                      margin-left: 0;
+                      color: #6b7280;
+                    }
+                    .ProseMirror .variable-chip {
+                      background: #dbeafe;
+                      color: #1e40af;
+                      padding: 2px 6px;
+                      border-radius: 4px;
+                      font-family: monospace;
+                      font-size: 0.875rem;
+                    }
+                  `}</style>
+                  <EditorContent editor={visualEditor} className="h-full" />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Code editor header */}
+                <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-700">HTML-kod (Handlebars)</h3>
+                </div>
+                
+                {/* Code textarea */}
+                <textarea
+                  id="template-editor"
+                  value={templateContent}
+                  onChange={(e) => setTemplateContent(e.target.value)}
+                  className="flex-1 p-4 font-mono text-sm border-none focus:ring-0 resize-none bg-white"
+                  placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
+                  spellCheck={false}
+                />
+              </>
+            )}
           </div>
 
           {/* Preview pane */}
