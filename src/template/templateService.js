@@ -200,17 +200,61 @@ export function renderTemplate(templateContent, context) {
  * Export rendered HTML to PDF
  * Expects a complete HTML document with styling already included
  */
+/**
+ * Export HTML to PDF using Supabase Edge Function (Browserless/Puppeteer)
+ * Falls back to browser print if Edge Function is not available
+ */
 export async function exportToPDF(html, filename = 'report.pdf') {
-  const options = {
-    margin: [10, 10],
-    filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-  
   try {
-    await html2pdf().set(options).from(html).save();
+    // Try server-side generation first (better for automation, consistent output)
+    try {
+      const response = await supabase.functions.invoke('generate-pdf', {
+        body: { html, filename },
+      });
+
+      if (response.data && !response.data.fallback && !response.error) {
+        // Successfully generated PDF on server
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        return true;
+      }
+    } catch (edgeFunctionError) {
+      console.log('Edge function not available, using browser print:', edgeFunctionError.message);
+    }
+
+    // Fallback to browser print (perfect CSS support)
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-10000px';
+    iframe.style.left = '-10000px';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    await new Promise(resolve => {
+      if (iframe.contentWindow) {
+        iframe.contentWindow.onload = resolve;
+      }
+      setTimeout(resolve, 500);
+    });
+
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1000);
+
     return true;
   } catch (error) {
     console.error('PDF export error:', error);

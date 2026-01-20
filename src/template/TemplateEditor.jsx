@@ -8,6 +8,7 @@ import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import { ColumnExtension } from './extensions/ColumnExtension';
+import { PageBreak } from './extensions/PageBreak';
 import CodeEditor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -311,12 +312,8 @@ const generateThemeCSS = (theme) => {
       color: ${c.primary};
     }
     .column {
-      overflow: auto;
-      border: 1px ${c.border} dashed;
-      border-radius: 0;
-      padding: 8px;
-      margin: -8px;
-      position: relative;
+      min-width: 0;
+      overflow: visible;
     }
     .column::before {
       content: '⋮';
@@ -338,9 +335,39 @@ const generateThemeCSS = (theme) => {
       color: ${c.primary};
     }
     
+    /* PDF-friendly column layout */
+    @supports not (display: grid) {
+      .column-block {
+        display: flex;
+        flex-direction: row;
+      }
+      .column {
+        flex: 1;
+      }
+    }
+    
     @media print {
       body { padding: 20px; }
-      .column { border: none; margin: 0; }
+      .column-block {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 20px !important;
+        page-break-inside: avoid;
+      }
+      .column-block::before,
+      .column::before {
+        display: none !important;
+      }
+      .column {
+        flex: 1 !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .page-break {
+        page-break-after: always !important;
+        break-after: page !important;
+      }
     }
   `;
 };
@@ -1174,6 +1201,7 @@ export default function TemplateEditor({
         scrollTreshold: 100,
       }),
       ColumnExtension,
+      PageBreak,
     ],
     content: templateContent || '<p>Börja skriva här...</p>',
     onUpdate: ({ editor }) => {
@@ -1408,7 +1436,12 @@ export default function TemplateEditor({
   // Insert layout block - handles both code and visual mode
   const insertBlock = useCallback((blockHtml) => {
     if (editorMode === 'visual' && visualEditor) {
-      visualEditor.chain().focus().insertContent(blockHtml).run();
+      // Special handling for page break
+      if (blockHtml.includes('page-break')) {
+        visualEditor.chain().focus().setPageBreak().run();
+      } else {
+        visualEditor.chain().focus().insertContent(blockHtml).run();
+      }
     } else {
       const textarea = document.getElementById('template-editor');
       if (!textarea) return;
