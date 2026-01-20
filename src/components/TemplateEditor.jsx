@@ -1641,16 +1641,44 @@ export default function TemplateEditor({
                     .ProseMirror .four-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0; }
                     .ProseMirror .sidebar-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin: 1rem 0; }
                     ${showOutlines ? `
-                    /* Design outlines for editing - ALWAYS visible borders */
+                    /* ALL ELEMENTS get visible borders when editing */
+                    .ProseMirror > * {
+                      position: relative;
+                      outline: 1px dashed #cbd5e1 !important;
+                      outline-offset: 2px !important;
+                      margin-bottom: 0.75rem;
+                    }
+                    .ProseMirror > h1 {
+                      outline-color: #3b82f6 !important;
+                    }
+                    .ProseMirror > h2 {
+                      outline-color: #8b5cf6 !important;
+                    }
+                    .ProseMirror > h3 {
+                      outline-color: #06b6d4 !important;
+                    }
+                    .ProseMirror > p {
+                      outline-color: #94a3b8 !important;
+                    }
+                    .ProseMirror > ul, .ProseMirror > ol {
+                      outline-color: #f59e0b !important;
+                    }
+                    /* Element type labels */
+                    .ProseMirror > h1::before { content: 'H1'; position: absolute; top: -8px; left: 0; font-size: 8px; font-weight: 700; color: white; background: #3b82f6; padding: 1px 4px; border-radius: 2px; z-index: 10; }
+                    .ProseMirror > h2::before { content: 'H2'; position: absolute; top: -8px; left: 0; font-size: 8px; font-weight: 700; color: white; background: #8b5cf6; padding: 1px 4px; border-radius: 2px; z-index: 10; }
+                    .ProseMirror > h3::before { content: 'H3'; position: absolute; top: -8px; left: 0; font-size: 8px; font-weight: 700; color: white; background: #06b6d4; padding: 1px 4px; border-radius: 2px; z-index: 10; }
+                    .ProseMirror > p::before { content: 'P'; position: absolute; top: -8px; left: 0; font-size: 8px; font-weight: 700; color: white; background: #64748b; padding: 1px 4px; border-radius: 2px; z-index: 10; }
+                    .ProseMirror > ul::before { content: 'UL'; position: absolute; top: -8px; left: 0; font-size: 8px; font-weight: 700; color: white; background: #f59e0b; padding: 1px 4px; border-radius: 2px; z-index: 10; }
+                    .ProseMirror > ol::before { content: 'OL'; position: absolute; top: -8px; left: 0; font-size: 8px; font-weight: 700; color: white; background: #f59e0b; padding: 1px 4px; border-radius: 2px; z-index: 10; }
+                    .ProseMirror > blockquote::before { content: 'QUOTE'; position: absolute; top: -8px; left: 0; font-size: 8px; font-weight: 700; color: white; background: #10b981; padding: 1px 4px; border-radius: 2px; z-index: 10; }
+                    /* Custom class elements with stronger borders */
                     .ProseMirror .section, .ProseMirror .card, .ProseMirror .item, 
                     .ProseMirror .stat-box, .ProseMirror .footer,
                     .ProseMirror .two-columns, .ProseMirror .three-columns, 
                     .ProseMirror .four-columns, .ProseMirror .sidebar-layout,
                     .ProseMirror .stats-grid {
                       outline: 2px dashed #3b82f6 !important;
-                      outline-offset: -2px !important;
-                      position: relative;
-                      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+                      outline-offset: 2px !important;
                     }
                     .ProseMirror .section::after { content: 'SECTION'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #3b82f6; padding: 2px 6px; border-radius: 3px; z-index: 10; }
                     .ProseMirror .card::after { content: 'CARD'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #8b5cf6; padding: 2px 6px; border-radius: 3px; z-index: 10; }
