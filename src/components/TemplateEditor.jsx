@@ -1596,89 +1596,98 @@ export default function TemplateEditor({
         )}
 
         {/* Main Editor Area - 3 modes */}
-        <div className="flex-1 flex flex-col bg-white">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Visual Editor Mode */}
           {editorMode === 'visual' && (
             <>
               <VisualEditorToolbar editor={visualEditor} showOutlines={showOutlines} setShowOutlines={setShowOutlines} />
-              <div className="flex-1 overflow-auto">
-                <style>{`
-                  .ProseMirror {
-                    padding: 2rem 3rem;
-                    min-height: 100%;
-                    max-width: 900px;
-                    margin: 0 auto;
-                    outline: none;
-                    background: white;
-                  }
-                  .ProseMirror p { margin-bottom: 0.75rem; line-height: 1.7; }
-                  .ProseMirror h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #1e293b; border-bottom: 2px solid #3b82f6; padding-bottom: 0.5rem; }
-                  .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #3b82f6; }
-                  .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #64748b; }
-                  .ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 0.75rem; }
-                  .ProseMirror li { margin-bottom: 0.25rem; }
-                  .ProseMirror blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; margin: 1rem 0; background: #f8fafc; padding: 1rem; border-radius: 0 8px 8px 0; }
-                  .ProseMirror .variable-chip { 
-                    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
-                    color: #1e40af; 
-                    padding: 3px 8px; 
-                    border-radius: 6px; 
-                    font-family: 'JetBrains Mono', monospace; 
-                    font-size: 0.8rem;
-                    border: 1px solid #93c5fd;
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                  }
-                  /* Design classes for visual preview */
-                  .ProseMirror .section { margin: 1.5rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6; }
-                  .ProseMirror .card { margin: 0.75rem 0; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-                  .ProseMirror .item { margin: 0.5rem 0; padding: 0.75rem 1rem; background: #f8fafc; border-left: 4px solid #0ea5e9; border-radius: 0 6px 6px 0; }
-                  .ProseMirror .stats-grid { display: flex; gap: 1rem; margin: 1.5rem 0; }
-                  .ProseMirror .stat-box { flex: 1; text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
-                  .ProseMirror .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 0.875rem; }
-                  /* Grid layouts */
-                  .ProseMirror .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-                  .ProseMirror .three-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-                  .ProseMirror .four-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-                  .ProseMirror .sidebar-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; }
-                  ${showOutlines ? `
-                  /* Design outlines for editing - show structure clearly */
-                  .ProseMirror .section, .ProseMirror .card, .ProseMirror .item, 
-                  .ProseMirror .stat-box, .ProseMirror .footer,
-                  .ProseMirror .two-columns, .ProseMirror .three-columns, 
-                  .ProseMirror .four-columns, .ProseMirror .sidebar-layout,
-                  .ProseMirror .stats-grid {
-                    outline: 2px dashed #94a3b8;
-                    outline-offset: 4px;
-                    position: relative;
-                    margin-top: 24px;
-                  }
-                  .ProseMirror .section::before { content: 'section'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #3b82f6; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .card::before { content: 'card'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #8b5cf6; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .item::before { content: 'item'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #0ea5e9; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .stats-grid::before { content: 'stats-grid'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #10b981; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .stat-box::before { content: 'stat-box'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #10b981; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .footer::before { content: 'footer'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #64748b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .two-columns::before { content: '2-kolumner'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .three-columns::before { content: '3-kolumner'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .four-columns::before { content: '4-kolumner'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  .ProseMirror .sidebar-layout::before { content: 'sidofält-layout'; position: absolute; top: -20px; left: 0; font-size: 10px; color: white; background: #f59e0b; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
-                  /* Child elements in grid layouts */
-                  .ProseMirror .two-columns > *, .ProseMirror .three-columns > *, .ProseMirror .four-columns > *, .ProseMirror .sidebar-layout > * {
-                    outline: 1px dashed #cbd5e1;
-                    outline-offset: 2px;
-                    min-height: 60px;
-                    padding: 8px;
-                    background: rgba(248, 250, 252, 0.5);
-                  }
-                  /* Visual indicator for Handlebars variables */
-                  .ProseMirror p:has(.variable-chip), .ProseMirror h1:has(.variable-chip), .ProseMirror h2:has(.variable-chip), .ProseMirror h3:has(.variable-chip) {
-                    background: linear-gradient(90deg, rgba(219, 234, 254, 0.3) 0%, transparent 100%);
-                    padding-left: 8px;
-                    border-radius: 4px;
-                  }
-                  ` : ''}
-                `}</style>
-                <EditorContent editor={visualEditor} className="h-full" />
+              <div className="flex-1 overflow-auto bg-gray-100 p-6">
+                <div className="mx-auto bg-white shadow-xl" style={{ width: '794px', minHeight: '1123px' }}>
+                  <style>{`
+                    .ProseMirror {
+                      padding: 48px 64px;
+                      min-height: 1123px;
+                      outline: none;
+                      background: white;
+                    }
+                    .ProseMirror p { margin-bottom: 0.75rem; line-height: 1.7; color: #1e293b; }
+                    .ProseMirror h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #1e293b; border-bottom: 3px solid #3b82f6; padding-bottom: 0.5rem; }
+                    .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: #3b82f6; }
+                    .ProseMirror h3 { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; color: #64748b; }
+                    .ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 0.75rem; }
+                    .ProseMirror li { margin-bottom: 0.25rem; }
+                    .ProseMirror blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; margin: 1rem 0; background: #f8fafc; padding: 1rem; border-radius: 0 8px 8px 0; }
+                    .ProseMirror .variable-chip { 
+                      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
+                      color: #1e40af; 
+                      padding: 4px 10px; 
+                      border-radius: 6px; 
+                      font-family: 'JetBrains Mono', 'Courier New', monospace; 
+                      font-size: 0.85rem;
+                      border: 1px solid #93c5fd;
+                      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                      white-space: nowrap;
+                    }
+                    /* Design classes for visual preview */
+                    .ProseMirror .section { margin: 1.5rem 0; padding: 1.25rem; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6; }
+                    .ProseMirror .card { margin: 0.75rem 0; padding: 1.25rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                    .ProseMirror .item { margin: 0.5rem 0; padding: 0.75rem 1rem; background: #f8fafc; border-left: 4px solid #0ea5e9; border-radius: 0 6px 6px 0; }
+                    .ProseMirror .stats-grid { display: flex; gap: 1rem; margin: 1.5rem 0; }
+                    .ProseMirror .stat-box { flex: 1; text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+                    .ProseMirror .footer { margin-top: 3rem; padding-top: 1rem; border-top: 2px solid #e2e8f0; color: #64748b; font-size: 0.875rem; }
+                    /* Grid layouts */
+                    .ProseMirror .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1rem 0; }
+                    .ProseMirror .three-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+                    .ProseMirror .four-columns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0; }
+                    .ProseMirror .sidebar-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin: 1rem 0; }
+                    ${showOutlines ? `
+                    /* Design outlines for editing - ALWAYS visible borders */
+                    .ProseMirror .section, .ProseMirror .card, .ProseMirror .item, 
+                    .ProseMirror .stat-box, .ProseMirror .footer,
+                    .ProseMirror .two-columns, .ProseMirror .three-columns, 
+                    .ProseMirror .four-columns, .ProseMirror .sidebar-layout,
+                    .ProseMirror .stats-grid {
+                      outline: 2px dashed #3b82f6 !important;
+                      outline-offset: -2px !important;
+                      position: relative;
+                      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+                    }
+                    .ProseMirror .section::after { content: 'SECTION'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #3b82f6; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .card::after { content: 'CARD'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #8b5cf6; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .item::after { content: 'ITEM'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #0ea5e9; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .stats-grid::after { content: 'STATS GRID'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #10b981; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .stat-box::after { content: 'STAT'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #10b981; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .footer::after { content: 'FOOTER'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #64748b; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .two-columns::after { content: '2 COLUMNS'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #f59e0b; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .three-columns::after { content: '3 COLUMNS'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #f59e0b; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .four-columns::after { content: '4 COLUMNS'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #f59e0b; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    .ProseMirror .sidebar-layout::after { content: 'SIDEBAR LAYOUT'; position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 700; color: white; background: #f59e0b; padding: 2px 6px; border-radius: 3px; z-index: 10; }
+                    /* Child elements in grid layouts */
+                    .ProseMirror .two-columns > *, .ProseMirror .three-columns > *, .ProseMirror .four-columns > *, .ProseMirror .sidebar-layout > * {
+                      outline: 1px solid #cbd5e1 !important;
+                      outline-offset: -1px !important;
+                      min-height: 80px;
+                      padding: 12px !important;
+                      background: rgba(248, 250, 252, 0.8) !important;
+                      position: relative;
+                    }
+                    .ProseMirror .two-columns > *::before, .ProseMirror .three-columns > *::before, .ProseMirror .four-columns > *::before, .ProseMirror .sidebar-layout > *::before {
+                      content: 'COLUMN';
+                      position: absolute;
+                      bottom: 4px;
+                      right: 4px;
+                      font-size: 8px;
+                      font-weight: 600;
+                      color: #94a3b8;
+                      background: white;
+                      padding: 1px 4px;
+                      border-radius: 2px;
+                      border: 1px solid #cbd5e1;
+                    }
+                    ` : ''}
+                  `}</style>
+                  <EditorContent editor={visualEditor} className="h-full" />
+                </div>
               </div>
             </>
           )}
