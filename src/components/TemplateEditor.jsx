@@ -907,7 +907,7 @@ export default function TemplateEditor({
     const indentedLines = [];
     
     for (let line of lines) {
-      // Decrease indent BEFORE adding line for closing tags
+      // Decrease indent BEFORE adding line for closing tags/blocks
       if (line.match(/^<\//) || line.match(/^\{\{\/(?:each|if|unless)\}\}/)) {
         indent = Math.max(0, indent - 1);
       }
@@ -915,14 +915,13 @@ export default function TemplateEditor({
       // Add indented line
       indentedLines.push('  '.repeat(indent) + line);
       
-      // Increase indent AFTER adding line for opening tags
-      if (line.match(/^<[^/!?][^>]*[^/]>$/) || line.match(/^\{\{#(?:each|if|unless)/)) {
-        indent++;
-      }
+      // Check if this is an opening tag/block that should increase indent
+      const isOpeningTag = line.match(/^<([a-z][a-z0-9]*)\b[^>]*>$/i) && !line.match(/<\/\1>/);  // Opening tag without closing on same line
+      const isHandlebarsBlock = line.match(/^\{\{#(?:each|if|unless)/);
+      const isSelfClosing = line.match(/\/>$/);  // Self-closing like <br/>
       
-      // Handle self-closing tags - no indent change
-      if (line.match(/\/>/)) {
-        // Self-closing, no change
+      if ((isOpeningTag || isHandlebarsBlock) && !isSelfClosing) {
+        indent++;
       }
     }
     
@@ -984,13 +983,19 @@ export default function TemplateEditor({
         const indentedLines = [];
         
         for (let line of lines) {
+          // Decrease indent for closing tags/blocks
           if (line.match(/^<\//) || line.match(/^\{\{\/(?:each|if|unless)\}\}/)) {
             indent = Math.max(0, indent - 1);
           }
           
           indentedLines.push('  '.repeat(indent) + line);
           
-          if (line.match(/^<[^/!?][^>]*[^/]>$/) || line.match(/^\{\{#(?:each|if|unless)/)) {
+          // Check if this is an opening tag/block that should increase indent
+          const isOpeningTag = line.match(/^<([a-z][a-z0-9]*)\b[^>]*>$/i) && !line.match(/<\/\1>/);
+          const isHandlebarsBlock = line.match(/^\{\{#(?:each|if|unless)/);
+          const isSelfClosing = line.match(/\/>$/);
+          
+          if ((isOpeningTag || isHandlebarsBlock) && !isSelfClosing) {
             indent++;
           }
         }
