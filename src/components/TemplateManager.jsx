@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   fetchTemplates, 
   createTemplate, 
@@ -9,6 +9,7 @@ import {
   exportToPDF
 } from '../services/templateService';
 import TemplateEditor from './TemplateEditor';
+import VisualTemplateEditor from './VisualTemplateEditor';
 
 /**
  * TemplateManager - Browse, create, edit, and use report templates
@@ -21,11 +22,12 @@ export default function TemplateManager({
 }) {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('list'); // 'list', 'editor', 'preview'
+  const [view, setView] = useState('list'); // 'list', 'editor', 'visual-editor', 'preview'
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [filterCategory, setFilterCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [editorType, setEditorType] = useState('visual'); // 'visual' | 'code'
 
   useEffect(() => {
     loadTemplates();
@@ -44,12 +46,13 @@ export default function TemplateManager({
     }
   };
 
-  const handleCreateTemplate = () => {
+  const handleCreateTemplate = (type = 'visual') => {
     setSelectedTemplate(null);
-    setView('editor');
+    setEditorType(type);
+    setView(type === 'visual' ? 'visual-editor' : 'editor');
   };
 
-  const handleEditTemplate = (template) => {
+  const handleEditTemplate = (template, type = 'visual') => {
     if (template.is_system) {
       // Clone system template for editing
       setSelectedTemplate({
@@ -62,7 +65,8 @@ export default function TemplateManager({
     } else {
       setSelectedTemplate(template);
     }
-    setView('editor');
+    setEditorType(type);
+    setView(type === 'visual' ? 'visual-editor' : 'editor');
   };
 
   const handleSaveTemplate = async (templateData) => {
@@ -131,6 +135,26 @@ export default function TemplateManager({
   const systemTemplates = filteredTemplates.filter(t => t.is_system);
   const userTemplates = filteredTemplates.filter(t => !t.is_system);
 
+  // Visual editor (GrapesJS)
+  if (view === 'visual-editor') {
+    return (
+      <div className="h-full">
+        <VisualTemplateEditor
+          template={selectedTemplate}
+          onSave={handleSaveTemplate}
+          onCancel={() => {
+            setView('list');
+            setSelectedTemplate(null);
+          }}
+          wheelData={wheelData}
+          pageData={pageData}
+          organizationData={organizationData}
+        />
+      </div>
+    );
+  }
+
+  // Code editor (original)
   if (view === 'editor') {
     return (
       <div className="h-full">
@@ -196,13 +220,33 @@ export default function TemplateManager({
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">Rapportmallar</h2>
           <div className="flex gap-2">
-            <button
-              onClick={handleCreateTemplate}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition flex items-center gap-2"
-            >
-              <span>+</span>
-              Skapa ny mall
-            </button>
+            <div className="relative group">
+              <button
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition flex items-center gap-2"
+              >
+                <span>+</span>
+                Skapa ny mall
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <button
+                  onClick={() => handleCreateTemplate('visual')}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 rounded-t-lg border-b border-gray-100"
+                >
+                  <div className="font-medium text-gray-900">Visuell editor</div>
+                  <div className="text-xs text-gray-500">Dra och släpp-redigering</div>
+                </button>
+                <button
+                  onClick={() => handleCreateTemplate('code')}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 rounded-b-lg"
+                >
+                  <div className="font-medium text-gray-900">Kod-editor</div>
+                  <div className="text-xs text-gray-500">HTML + Handlebars</div>
+                </button>
+              </div>
+            </div>
             {onClose && (
               <button
                 onClick={onClose}
@@ -315,6 +359,22 @@ export default function TemplateManager({
 }
 
 function TemplateCard({ template, onEdit, onDelete, onPreview, onGenerate, isGenerating }) {
+  const [showEditMenu, setShowEditMenu] = useState(false);
+  const editMenuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (editMenuRef.current && !editMenuRef.current.contains(event.target)) {
+        setShowEditMenu(false);
+      }
+    };
+    if (showEditMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEditMenu]);
+
   const categoryColors = {
     custom: 'bg-gray-100 text-gray-700',
     monthly: 'bg-blue-100 text-blue-700',
@@ -366,12 +426,46 @@ function TemplateCard({ template, onEdit, onDelete, onPreview, onGenerate, isGen
       </div>
 
       <div className="flex gap-2 mt-2">
-        <button
-          onClick={() => onEdit(template)}
-          className="flex-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded transition"
-        >
-          {template.is_system ? 'Kopiera' : 'Redigera'}
-        </button>
+        {/* Edit/Copy dropdown */}
+        <div className="relative flex-1" ref={editMenuRef}>
+          <button
+            onClick={() => setShowEditMenu(!showEditMenu)}
+            className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded transition flex items-center justify-center gap-1"
+          >
+            {template.is_system ? 'Kopiera' : 'Redigera'}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showEditMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+              <button
+                onClick={() => {
+                  onEdit(template, 'visual');
+                  setShowEditMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
+                Visuell editor
+              </button>
+              <button
+                onClick={() => {
+                  onEdit(template, 'code');
+                  setShowEditMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                Kodeditor
+              </button>
+            </div>
+          )}
+        </div>
         {onDelete && !template.is_system && (
           <button
             onClick={() => onDelete(template.id)}
