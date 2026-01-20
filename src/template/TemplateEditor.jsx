@@ -1159,30 +1159,27 @@ export default function TemplateEditor({
     
     // Step 3: Add proper indentation
     let indent = 0;
-    const indentedLines = [];
-    
-    for (let line of lines) {
-      // Decrease indent BEFORE adding line for closing tags/blocks
-      if (line.match(/^<\//) || line.match(/^\{\{\/(?:each|if|unless)\}\}/)) {
+    lines = lines.map(line => {
+      // Closing tags and blocks - decrease indent first
+      if (line.startsWith('</') || line.match(/^\{\{\/(each|if|unless)\}\}$/)) {
         indent = Math.max(0, indent - 1);
       }
       
-      // Add indented line
-      indentedLines.push('  '.repeat(indent) + line);
+      const indented = '  '.repeat(indent) + line;
       
-      // Check if this is an opening tag/block that should increase indent
-      const isOpeningTag = line.match(/^<([a-z][a-z0-9]*)\b[^>]*>$/i) && !line.match(/<\/\1>/);  // Opening tag without closing on same line
-      const isHandlebarsBlock = line.match(/^\{\{#(?:each|if|unless)/);
-      const isSelfClosing = line.match(/\/>$/);  // Self-closing like <br/>
-      
-      if ((isOpeningTag || isHandlebarsBlock) && !isSelfClosing) {
+      // Opening tags and blocks - increase indent after
+      if ((line.startsWith('<') && !line.startsWith('</') && !line.endsWith('/>') && !line.match(/<\w+[^>]*\/>/)) ||
+          line.match(/^\{\{#(each|if|unless)/)) {
         indent++;
       }
-    }
+      // {{else}} keeps same indent
+      
+      return indented;
+    });
     
-    formatted = indentedLines.join('\n');
-    setTemplateContent(formatted);
+    setTemplateContent(lines.join('\n'));
   }, [templateContent]);
+
   const theme = DESIGN_THEMES[selectedTheme];
 
   // TipTap editor for visual mode
@@ -2216,16 +2213,21 @@ export default function TemplateEditor({
                 .code-editor-container pre {
                   min-height: 100%;
                 }
-                /* Custom Handlebars/HTML highlighting */
-                .token.tag { color: #e06c75; }
-                .token.attr-name { color: #d19a66; }
-                .token.attr-value { color: #98c379; }
-                .token.punctuation { color: #abb2bf; }
-                .token.comment { color: #5c6370; font-style: italic; }
-                .token.handlebars-delimiter { color: #c678dd; font-weight: bold; }
-                .token.handlebars-variable { color: #61afef; }
-                .token.handlebars-helper { color: #c678dd; }
-                .token.handlebars-block { color: #e5c07b; }
+                /* Custom Handlebars/HTML highlighting - brightened for visibility */
+                .token.tag { color: #ff6b7f; font-weight: 500; }
+                .token.attr-name { color: #ffc777; }
+                .token.attr-value { color: #c3e88d; }
+                .token.punctuation { color: #c8d3f5; }
+                .token.comment { color: #7a8ca8; font-style: italic; }
+                .token.handlebars-delimiter { color: #c099ff; font-weight: bold; }
+                .token.handlebars-variable { color: #82aaff; font-weight: 500; }
+                .token.handlebars-helper { color: #fca7ea; font-weight: 600; }
+                .token.handlebars-block { color: #ffc777; font-weight: 600; }
+                /* Plain text (not tokenized) */
+                .code-editor-container pre,
+                .code-editor-container textarea {
+                  color: #c8d3f5 !important;
+                }
               `}</style>
             </>
           )}
