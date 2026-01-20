@@ -954,7 +954,9 @@ const LAYOUT_BLOCKS = [
   {{#if items}}
   <ul>
     {{#each items}}
-    <li><strong>{{name}}</strong> - {{formatDate startDate}} till {{formatDate endDate}}</li>
+    {{#if name}}
+    <li><strong>{{name}}</strong>{{#if startDate}} - {{formatDate startDate}} till {{formatDate endDate}}{{/if}}</li>
+    {{/if}}
     {{/each}}
   </ul>
   {{else}}

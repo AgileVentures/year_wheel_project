@@ -88,6 +88,7 @@ export function buildTemplateContext(wheelData, pageData, organizationData) {
   
   const months = monthNames.map((name, index) => {
     const monthItems = items.filter(item => {
+      if (!item.name) return false; // Skip items without names
       const startDate = new Date(item.startDate);
       return startDate.getMonth() === index && startDate.getFullYear() === (pageData?.year || wheelData.year);
     }).map(item => enrichItem(item, rings, activityGroups, labels));
@@ -101,18 +102,30 @@ export function buildTemplateContext(wheelData, pageData, organizationData) {
   });
   
   // Enrich rings with item counts
-  const enrichedRings = rings.map(ring => ({
-    ...ring,
-    items: items.filter(item => item.ringId === ring.id).map(item => enrichItem(item, rings, activityGroups, labels)),
-    itemCount: items.filter(item => item.ringId === ring.id).length
-  }));
+  const enrichedRings = rings.map(ring => {
+    const ringItems = items
+      .filter(item => item.ringId === ring.id && item.name) // Filter out items without names
+      .map(item => enrichItem(item, rings, activityGroups, labels));
+    
+    return {
+      ...ring,
+      items: ringItems,
+      itemCount: ringItems.length
+    };
+  });
   
   // Enrich activity groups with items
-  const enrichedActivityGroups = activityGroups.map(group => ({
-    ...group,
-    items: items.filter(item => item.activityId === group.id).map(item => enrichItem(item, rings, activityGroups, labels)),
-    itemCount: items.filter(item => item.activityId === group.id).length
-  }));
+  const enrichedActivityGroups = activityGroups.map(group => {
+    const groupItems = items
+      .filter(item => item.activityId === group.id && item.name) // Filter out items without names
+      .map(item => enrichItem(item, rings, activityGroups, labels));
+    
+    return {
+      ...group,
+      items: groupItems,
+      itemCount: groupItems.length
+    };
+  });
   
   // Enrich labels with items
   const enrichedLabels = labels.map(label => ({
