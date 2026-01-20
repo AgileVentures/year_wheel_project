@@ -740,12 +740,13 @@ export default function TemplateEditor({
   const [selectedTheme, setSelectedTheme] = useState('modern');
   const [validation, setValidation] = useState({ valid: true, error: null });
   const [preview, setPreview] = useState('');
-  const [showVariables, setShowVariables] = useState(false);
-  const [showBlocks, setShowBlocks] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [sidebarTab, setSidebarTab] = useState('blocks'); // 'blocks' or 'variables'
   const [showPreview, setShowPreview] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [editorMode, setEditorMode] = useState('code'); // 'code' or 'visual'
+  const [showSettings, setShowSettings] = useState(false);
 
   const variables = getTemplateVariables();
   const theme = DESIGN_THEMES[selectedTheme];
@@ -771,10 +772,8 @@ export default function TemplateEditor({
   // Sync content when switching modes
   const handleModeSwitch = useCallback((newMode) => {
     if (newMode === 'visual' && visualEditor) {
-      // Switching to visual mode: load HTML into TipTap
       visualEditor.commands.setContent(templateContent || '<p></p>');
     } else if (newMode === 'code' && visualEditor) {
-      // Switching to code mode: get HTML from TipTap
       setTemplateContent(visualEditor.getHTML());
     }
     setEditorMode(newMode);
@@ -783,7 +782,6 @@ export default function TemplateEditor({
   // Insert variable into visual editor
   const insertVariableInVisual = useCallback((variable) => {
     if (visualEditor) {
-      // Insert as styled span that looks like a variable chip
       visualEditor.chain().focus().insertContent(
         `<span class="variable-chip" style="background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.875rem;">${variable}</span>`
       ).run();
@@ -796,7 +794,6 @@ export default function TemplateEditor({
       const result = validateTemplate(templateContent);
       setValidation(result);
       
-      // Update preview if valid
       if (result.valid && wheelData && organizationData) {
         try {
           const context = buildTemplateContext(wheelData, pageData, organizationData);
@@ -811,7 +808,7 @@ export default function TemplateEditor({
         }
       } else if (!wheelData || !organizationData) {
         setPreview(generateHtmlDocument(`<div style="color: #64748b; padding: 20px; font-style: italic;">
-          Ingen hjuldata tillgänglig. Öppna mallredigeraren från ett hjul för att se förhandsvisning.
+          Välj ett hjul ovan för att se förhandsvisning med riktiga data.
         </div>`, theme));
       }
     }
@@ -819,12 +816,12 @@ export default function TemplateEditor({
 
   const handleSave = async () => {
     if (!validation.valid) {
-      alert('Please fix template errors before saving');
+      alert('Åtgärda mallfel innan du sparar');
       return;
     }
 
     if (!name.trim()) {
-      alert('Please enter a template name');
+      alert('Ange ett mallnamn');
       return;
     }
 
@@ -837,7 +834,7 @@ export default function TemplateEditor({
         category
       });
     } catch (error) {
-      alert('Failed to save template: ' + error.message);
+      alert('Kunde inte spara mall: ' + error.message);
     } finally {
       setIsSaving(false);
     }
@@ -854,7 +851,7 @@ export default function TemplateEditor({
       const filename = `${name.replace(/\s+/g, '_').toLowerCase() || 'rapport'}_${Date.now()}.pdf`;
       await exportToPDF(htmlDocument, filename);
     } catch (error) {
-      alert('Failed to export PDF: ' + error.message);
+      alert('Kunde inte exportera PDF: ' + error.message);
     } finally {
       setIsExporting(false);
     }
@@ -865,7 +862,6 @@ export default function TemplateEditor({
     if (editorMode === 'visual') {
       insertVariableInVisual(variable);
     } else {
-      // Code mode - insert into textarea
       const textarea = document.getElementById('template-editor');
       if (!textarea) return;
       const start = textarea.selectionStart;
@@ -875,7 +871,6 @@ export default function TemplateEditor({
       const after = text.substring(end);
       setTemplateContent(before + variable + after);
       
-      // Set cursor position after inserted variable
       setTimeout(() => {
         textarea.focus();
         textarea.setSelectionRange(start + variable.length, start + variable.length);
@@ -886,10 +881,8 @@ export default function TemplateEditor({
   // Insert layout block - handles both code and visual mode
   const insertBlock = useCallback((blockHtml) => {
     if (editorMode === 'visual' && visualEditor) {
-      // Insert block HTML into TipTap
       visualEditor.chain().focus().insertContent(blockHtml).run();
     } else {
-      // Code mode - insert into textarea
       const textarea = document.getElementById('template-editor');
       if (!textarea) return;
       const start = textarea.selectionStart;
@@ -897,74 +890,68 @@ export default function TemplateEditor({
       const text = templateContent;
       const before = text.substring(0, start);
       const after = text.substring(end);
-      // Add newlines for better formatting
       const formattedBlock = '\n' + blockHtml + '\n';
       setTemplateContent(before + formattedBlock + after);
       
-      // Set cursor position after inserted block
       setTimeout(() => {
         textarea.focus();
         textarea.setSelectionRange(start + formattedBlock.length, start + formattedBlock.length);
       }, 0);
     }
   }, [editorMode, visualEditor, templateContent]);
-  return (
-    <div className="template-editor h-full flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {template?.id ? 'Redigera mall' : 'Skapa ny mall'}
-          </h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowBlocks(!showBlocks)}
-              className={`px-3 py-2 text-sm rounded transition flex items-center gap-1.5 ${
-                showBlocks 
-                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' 
-                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-              </svg>
-              {showBlocks ? 'Dölj block' : 'Layout-block'}
-            </button>
-            <button
-              onClick={() => setShowVariables(!showVariables)}
-              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition"
-            >
-              {showVariables ? 'Dölj variabler' : 'Visa variabler'}
-            </button>
-            <button
-              onClick={() => setShowPreview(!showPreview)}
-              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition"
-            >
-              {showPreview ? 'Dölj förhandsvisning' : 'Visa förhandsvisning'}
-            </button>
-            <button
-              onClick={handleExportPreview}
-              disabled={!preview || isExporting}
-              className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition disabled:opacity-50"
-            >
-              {isExporting ? 'Exporterar...' : 'Exportera PDF'}
-            </button>
-          </div>
-        </div>
 
-        {/* Editor mode toggle */}
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm font-medium text-gray-700">Redigeringsläge:</span>
-          <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+  // Icon button component for toolbar
+  const IconButton = ({ onClick, active, disabled, title, children }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`p-2 rounded-lg transition-all ${
+        active 
+          ? 'bg-blue-100 text-blue-700' 
+          : disabled 
+            ? 'text-gray-300 cursor-not-allowed'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+      }`}
+    >
+      {children}
+    </button>
+  );
+
+  return (
+    <div className="template-editor h-full flex flex-col bg-gray-50">
+      {/* Compact Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: Title input */}
+          <div className="flex items-center gap-3 flex-1 max-w-md">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="flex-1 px-3 py-1.5 text-lg font-semibold border-0 border-b-2 border-transparent focus:border-blue-500 focus:ring-0 bg-transparent"
+              placeholder="Mallnamn..."
+            />
+            {!validation.valid && (
+              <span className="text-red-500" title={validation.error}>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </span>
+            )}
+          </div>
+
+          {/* Center: Mode toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
               onClick={() => handleModeSwitch('visual')}
-              className={`px-4 py-2 text-sm font-medium transition ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
                 editorMode === 'visual' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -974,13 +961,13 @@ export default function TemplateEditor({
             </button>
             <button
               onClick={() => handleModeSwitch('code')}
-              className={`px-4 py-2 text-sm font-medium transition ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
                 editorMode === 'code' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                 </svg>
@@ -988,283 +975,365 @@ export default function TemplateEditor({
               </span>
             </button>
           </div>
-        </div>
 
-        {/* Metadata fields */}
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mallnamn *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="t.ex. Månadsrapport"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Kategori
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          {/* Right: Icon buttons */}
+          <div className="flex items-center gap-1">
+            <IconButton 
+              onClick={() => setShowSidebar(!showSidebar)} 
+              active={showSidebar}
+              title="Verktygspanel (Block & Variabler)"
             >
-              <option value="custom">Anpassad</option>
-              <option value="monthly">Månatlig</option>
-              <option value="activity">Aktivitet</option>
-              <option value="summary">Sammanfattning</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Designschema
-            </label>
-            <select
-              value={selectedTheme}
-              onChange={(e) => setSelectedTheme(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+              </svg>
+            </IconButton>
+            <IconButton 
+              onClick={() => setShowPreview(!showPreview)} 
+              active={showPreview}
+              title="Förhandsvisning"
             >
-              {Object.entries(DESIGN_THEMES).map(([key, t]) => (
-                <option key={key} value={key}>
-                  {t.name} - {t.description}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Beskrivning
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Beskriv vad mallen används till"
-            />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </IconButton>
+            <IconButton 
+              onClick={() => setShowSettings(!showSettings)} 
+              active={showSettings}
+              title="Inställningar"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </IconButton>
+            
+            <div className="w-px h-6 bg-gray-300 mx-2" />
+            
+            <IconButton 
+              onClick={handleExportPreview}
+              disabled={!preview || isExporting}
+              title="Exportera PDF"
+            >
+              {isExporting ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+            </IconButton>
+
+            <div className="w-px h-6 bg-gray-300 mx-2" />
+
+            <button
+              onClick={onCancel}
+              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+            >
+              Avbryt
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!validation.valid || !name.trim() || isSaving}
+              className="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Sparar...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Spara
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Theme color preview */}
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-gray-500">Färger:</span>
-          <div className="flex gap-1">
-            <div 
-              className="w-5 h-5 rounded border border-gray-300" 
-              style={{ background: theme.colors.primary }}
-              title="Primär"
-            />
-            <div 
-              className="w-5 h-5 rounded border border-gray-300" 
-              style={{ background: theme.colors.secondary }}
-              title="Sekundär"
-            />
-            <div 
-              className="w-5 h-5 rounded border border-gray-300" 
-              style={{ background: theme.colors.accent }}
-              title="Accent"
-            />
-            <div 
-              className="w-5 h-5 rounded border border-gray-300" 
-              style={{ background: theme.colors.surface }}
-              title="Bakgrund"
-            />
-          </div>
-        </div>
-
-        {/* Validation error */}
-        {!validation.valid && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-            <strong>Template Error:</strong> {validation.error}
-            {validation.line && ` (Line ${validation.line}${validation.column ? `, Column ${validation.column}` : ''})`}
+        {/* Settings panel (collapsible) */}
+        {showSettings && (
+          <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Kategori</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="custom">Anpassad</option>
+                <option value="monthly">Månatlig</option>
+                <option value="activity">Aktivitet</option>
+                <option value="summary">Sammanfattning</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Designschema</label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedTheme}
+                  onChange={(e) => setSelectedTheme(e.target.value)}
+                  className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {Object.entries(DESIGN_THEMES).map(([key, t]) => (
+                    <option key={key} value={key}>{t.name}</option>
+                  ))}
+                </select>
+                <div className="flex gap-0.5">
+                  {['primary', 'secondary', 'accent'].map(c => (
+                    <div 
+                      key={c}
+                      className="w-4 h-4 rounded-full border border-gray-300" 
+                      style={{ background: theme.colors[c] }}
+                      title={c}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Beskrivning</label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Valfri beskrivning av mallen"
+              />
+            </div>
           </div>
         )}
       </div>
 
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Block palette sidebar */}
-        {showBlocks && (
-          <div className="w-72 bg-gray-50 border-r border-gray-200 overflow-y-auto">
-            <BlockPalette onInsertBlock={insertBlock} />
-          </div>
-        )}
+        {/* Left Sidebar - Tools */}
+        {showSidebar && (
+          <div className="w-72 bg-white border-r border-gray-200 flex flex-col">
+            {/* Sidebar tabs */}
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setSidebarTab('blocks')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                  sidebarTab === 'blocks' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6z" />
+                  </svg>
+                  Block
+                </span>
+                {sidebarTab === 'blocks' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                )}
+              </button>
+              <button
+                onClick={() => setSidebarTab('variables')}
+                className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+                  sidebarTab === 'variables' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  Variabler
+                </span>
+                {sidebarTab === 'variables' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
+                )}
+              </button>
+            </div>
 
-        {/* Variables sidebar */}
-        {showVariables && (
-          <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto p-4">
-            <h3 className="font-semibold text-gray-900 mb-3">Tillgängliga variabler</h3>
-            <div className="space-y-4">
-              
-              {/* Top-level variables */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Hjul & Sida</h4>
-                <div className="space-y-1">
-                  <button onClick={() => insertVariable('{{wheel.title}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">wheel.title</button>
-                  <button onClick={() => insertVariable('{{wheel.year}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">wheel.year</button>
-                  <button onClick={() => insertVariable('{{page.title}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">page.title</button>
-                  <button onClick={() => insertVariable('{{currentDate}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">currentDate</button>
+            {/* Sidebar content */}
+            <div className="flex-1 overflow-y-auto">
+              {sidebarTab === 'blocks' ? (
+                <div className="p-3">
+                  <p className="text-xs text-gray-500 mb-3">Klicka för att infoga block vid markören</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {LAYOUT_BLOCKS.map(block => (
+                      <button
+                        key={block.id}
+                        onClick={() => insertBlock(block.html)}
+                        className="p-2 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+                        title={block.name}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-base">{block.icon}</span>
+                          <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600 truncate">{block.name}</span>
+                        </div>
+                        <div className="h-10 overflow-hidden rounded bg-white p-1 border border-gray-100">
+                          {block.preview}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-3 space-y-4">
+                  <p className="text-xs text-gray-500">Klicka för att infoga variabel vid markören</p>
+                  
+                  {/* Basic variables */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      Grunddata
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {[
+                        { var: '{{wheel.title}}', label: 'Titel' },
+                        { var: '{{wheel.year}}', label: 'År' },
+                        { var: '{{page.title}}', label: 'Sidtitel' },
+                        { var: '{{currentDate}}', label: 'Datum' },
+                      ].map(v => (
+                        <button 
+                          key={v.var}
+                          onClick={() => insertVariable(v.var)} 
+                          className="px-2 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded transition text-left truncate"
+                          title={v.var}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Statistics */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Statistik</h4>
-                <div className="space-y-1">
-                  <button onClick={() => insertVariable('{{stats.totalItems}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats.totalItems</button>
-                  <button onClick={() => insertVariable('{{stats.totalRings}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats.totalRings</button>
-                  <button onClick={() => insertVariable('{{stats.totalActivityGroups}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats.totalActivityGroups</button>
-                </div>
-              </div>
-              
-              {/* Loop context variables */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Loopar (använd bara fältnamn)</h4>
-                <p className="text-xs text-gray-500 mb-2">I loopar: <code className="bg-gray-100 px-1">{'{{name}}'}</code> inte <code className="bg-gray-100 px-1 line-through">{'{{months.name}}'}</code></p>
-                
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Månader:</p>
-                  <button onClick={() => insertVariable('{{#each months}}\n  <p>{{name}} - {{itemCount}} aktiviteter</p>\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each months</button>
-                  <p className="text-xs text-gray-500 pl-2">→ name, index, items, itemCount</p>
-                </div>
+                  {/* Statistics */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      Statistik
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {[
+                        { var: '{{stats.totalItems}}', label: 'Antal aktiviteter' },
+                        { var: '{{stats.totalRings}}', label: 'Antal ringar' },
+                        { var: '{{stats.totalActivityGroups}}', label: 'Antal grupper' },
+                      ].map(v => (
+                        <button 
+                          key={v.var}
+                          onClick={() => insertVariable(v.var)} 
+                          className="px-2 py-1.5 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded transition text-left truncate"
+                          title={v.var}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Aktivitetsgrupper:</p>
-                  <button onClick={() => insertVariable('{{#each activityGroups}}\n  <h3>{{name}}</h3>\n  {{#each items}}\n    <p>{{name}}</p>\n  {{/each}}\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each activityGroups</button>
-                  <p className="text-xs text-gray-500 pl-2">→ name, color, items, itemCount</p>
-                </div>
+                  {/* Loops */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                      Loopar
+                    </h4>
+                    <div className="space-y-1">
+                      <button 
+                        onClick={() => insertVariable('{{#each activityGroups}}\n  <div class="section">\n    <h3>{{name}}</h3>\n    {{#each items}}<p>{{name}}</p>{{/each}}\n  </div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                      >
+                        🔄 Aktivitetsgrupper med items
+                      </button>
+                      <button 
+                        onClick={() => insertVariable('{{#each months}}\n  <div class="card">\n    <h3>{{name}}</h3>\n    <p>{{itemCount}} aktiviteter</p>\n  </div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                      >
+                        📅 Alla månader
+                      </button>
+                      <button 
+                        onClick={() => insertVariable('{{#each rings}}\n  <div class="section">\n    <h3>{{name}}</h3>\n    <p>{{itemCount}} aktiviteter</p>\n  </div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                      >
+                        ⭕ Alla ringar
+                      </button>
+                      <button 
+                        onClick={() => insertVariable('{{#each items}}\n  <div class="item">\n    <span class="item-name">{{name}}</span>\n    <span class="item-meta">{{formatDate startDate}}</span>\n  </div>\n{{/each}}')} 
+                        className="w-full px-2 py-1.5 text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 rounded transition text-left"
+                      >
+                        📋 Alla aktiviteter
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Ringar:</p>
-                  <button onClick={() => insertVariable('{{#each rings}}\n  <p>{{name}} - {{itemCount}} aktiviteter</p>\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each rings</button>
-                  <p className="text-xs text-gray-500 pl-2">→ name, type, items, itemCount</p>
+                  {/* Helpers */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                      Hjälpfunktioner
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button onClick={() => insertVariable('{{formatDate startDate}}')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">formatDate</button>
+                      <button onClick={() => insertVariable('{{uppercase name}}')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">uppercase</button>
+                      <button onClick={() => insertVariable('{{#if items}}...{{else}}...{{/if}}')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">#if villkor</button>
+                      <button onClick={() => insertVariable('<div class="page-break"></div>')} className="px-2 py-1.5 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 rounded transition text-left">Sidbrytning</button>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-1">Aktiviteter:</p>
-                  <button onClick={() => insertVariable('{{#each items}}\n  <p>{{name}}: {{ringName}} - {{activityName}}</p>\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each items</button>
-                  <p className="text-xs text-gray-500 pl-2">→ name, startDate, endDate, ringName, activityName, ringColor, activityColor</p>
-                </div>
-              </div>
-
-              {/* Helpers */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Hjälpfunktioner</h4>
-                <div className="space-y-1">
-                  <button onClick={() => insertVariable('{{formatDate startDate}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">formatDate</button>
-                  <button onClick={() => insertVariable('{{uppercase name}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">uppercase</button>
-                  <button onClick={() => insertVariable('{{lowercase name}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">lowercase</button>
-                </div>
-              </div>
-
-              {/* Conditionals */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Villkor</h4>
-                <div className="space-y-1">
-                  <button onClick={() => insertVariable('{{#if items}}\n  ...\n{{else}}\n  <p>Inga aktiviteter</p>\n{{/if}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">#if</button>
-                  <button onClick={() => insertVariable('{{#unless items}}\n  <p>Inga aktiviteter</p>\n{{/unless}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">#unless</button>
-                </div>
-              </div>
-
-              {/* CSS Classes */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Styling-klasser</h4>
-                <p className="text-xs text-gray-500 mb-2">Använd dessa klasser för styling (färger sätts av designschemat)</p>
-                <div className="space-y-1">
-                  <button onClick={() => insertVariable('<div class="section">\n  ...\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">section</button>
-                  <button onClick={() => insertVariable('<div class="card">\n  ...\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">card</button>
-                  <button onClick={() => insertVariable('<div class="item">\n  <span class="item-name">{{name}}</span>\n  <span class="item-meta">{{formatDate startDate}}</span>\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">item</button>
-                  <button onClick={() => insertVariable('<div class="stats-grid">\n  <div class="stat-box">\n    <div class="stat-value">{{stats.totalItems}}</div>\n    <div class="stat-label">Aktiviteter</div>\n  </div>\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats-grid</button>
-                  <button onClick={() => insertVariable('<div class="footer">\n  Genererad {{currentDate}}\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">footer</button>
-                </div>
-              </div>
-
-              {/* Print helpers */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">PDF/Print</h4>
-                <div className="space-y-1">
-                  <button onClick={() => insertVariable('<div class="page-break"></div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">page-break</button>
-                  <button onClick={() => insertVariable('<div class="no-break">\n  ...\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">no-break</button>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Editor and preview */}
-        <div className={`flex-1 flex ${showPreview ? 'flex-row' : ''}`}>
-          {/* Template editor - Visual or Code mode */}
-          <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col border-r border-gray-200`}>
+        <div className="flex-1 flex">
+          {/* Editor pane */}
+          <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col bg-white ${showPreview ? 'border-r border-gray-200' : ''}`}>
             {editorMode === 'visual' ? (
               <>
-                {/* Visual editor toolbar */}
                 <VisualEditorToolbar editor={visualEditor} />
-                
-                {/* TipTap editor */}
-                <div className="flex-1 overflow-auto bg-white">
+                <div className="flex-1 overflow-auto">
                   <style>{`
                     .ProseMirror {
-                      padding: 1rem;
+                      padding: 1.5rem;
                       min-height: 100%;
                       outline: none;
                     }
-                    .ProseMirror p {
-                      margin-bottom: 0.5rem;
-                    }
-                    .ProseMirror h1 {
-                      font-size: 2rem;
-                      font-weight: 700;
-                      margin-bottom: 1rem;
-                    }
-                    .ProseMirror h2 {
-                      font-size: 1.5rem;
-                      font-weight: 600;
-                      margin-bottom: 0.75rem;
-                    }
-                    .ProseMirror h3 {
-                      font-size: 1.25rem;
-                      font-weight: 600;
-                      margin-bottom: 0.5rem;
-                    }
-                    .ProseMirror ul, .ProseMirror ol {
-                      padding-left: 1.5rem;
-                      margin-bottom: 0.5rem;
-                    }
-                    .ProseMirror blockquote {
-                      border-left: 3px solid #e5e7eb;
-                      padding-left: 1rem;
-                      margin-left: 0;
-                      color: #6b7280;
-                    }
-                    .ProseMirror .variable-chip {
-                      background: #dbeafe;
-                      color: #1e40af;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      font-family: monospace;
-                      font-size: 0.875rem;
-                    }
+                    .ProseMirror p { margin-bottom: 0.5rem; }
+                    .ProseMirror h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+                    .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; }
+                    .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+                    .ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 0.5rem; }
+                    .ProseMirror blockquote { border-left: 3px solid #e5e7eb; padding-left: 1rem; margin-left: 0; color: #6b7280; }
+                    .ProseMirror .variable-chip { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.875rem; }
                   `}</style>
                   <EditorContent editor={visualEditor} className="h-full" />
                 </div>
               </>
             ) : (
               <>
-                {/* Code editor header */}
-                <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-                  <h3 className="text-sm font-medium text-gray-700">HTML-kod (Handlebars)</h3>
+                <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
+                  <span className="text-xs text-gray-400 font-mono">HTML / Handlebars</span>
+                  {validation.valid ? (
+                    <span className="text-xs text-green-400 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Giltig syntax
+                    </span>
+                  ) : (
+                    <span className="text-xs text-red-400 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {validation.error}
+                    </span>
+                  )}
                 </div>
-                
-                {/* Code textarea */}
                 <textarea
                   id="template-editor"
                   value={templateContent}
                   onChange={(e) => setTemplateContent(e.target.value)}
-                  className="flex-1 p-4 font-mono text-sm border-none focus:ring-0 resize-none bg-white"
+                  className="flex-1 p-4 font-mono text-sm bg-gray-900 text-gray-100 border-none focus:ring-0 resize-none"
                   placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
                   spellCheck={false}
                 />
@@ -1275,62 +1344,34 @@ export default function TemplateEditor({
           {/* Preview pane */}
           {showPreview && (
             <div className="w-1/2 flex flex-col bg-gray-100">
-              <div className="bg-gray-200 px-4 py-2 border-b border-gray-300 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">Förhandsvisning</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">A4-format</span>
-                  <button
-                    onClick={handleExportPreview}
-                    disabled={!preview || isExporting}
-                    className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition disabled:opacity-50"
-                  >
-                    {isExporting ? 'Exporterar...' : 'Exportera PDF'}
-                  </button>
-                </div>
+              <div className="bg-gray-200 px-4 py-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-600">Förhandsvisning (A4)</span>
+                <span className="text-xs text-gray-500">{theme.name}</span>
               </div>
-              <div className="flex-1 overflow-auto p-8">
+              <div className="flex-1 overflow-auto p-6">
                 {preview ? (
-                  <div className="max-w-4xl mx-auto">
-                    {/* A4 Document Preview - 210mm x 297mm at 96dpi = 794px x 1123px */}
+                  <div className="mx-auto" style={{ maxWidth: '794px' }}>
                     <iframe
                       srcDoc={preview}
-                      className="bg-white shadow-2xl mx-auto border-0"
-                      style={{
-                        width: '794px',
-                        height: '1123px',
-                      }}
+                      className="bg-white shadow-xl mx-auto border-0 w-full"
+                      style={{ height: '1123px' }}
                       title="Template Preview"
                     />
-                    <div className="mt-4 text-center text-xs text-gray-500">
-                      Detta är en förhandsgranskning. Verkliga PDF:en kan se något annorlunda ut.
-                    </div>
                   </div>
                 ) : (
-                  <div className="text-gray-400 text-center py-8">
-                    Skriv en mall för att se förhandsvisning
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    <div className="text-center">
+                      <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p className="text-sm">Skriv i editorn för att se förhandsvisning</p>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           )}
         </div>
-      </div>
-
-      {/* Footer actions */}
-      <div className="bg-white border-t border-gray-200 p-4 flex justify-end gap-3">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition"
-        >
-          Avbryt
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={!validation.valid || !name.trim() || isSaving}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition disabled:opacity-50"
-        >
-          {isSaving ? 'Sparar...' : 'Spara mall'}
-        </button>
       </div>
     </div>
   );
