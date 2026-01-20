@@ -32,6 +32,49 @@ export default function TemplateEditor({
 
   const variables = getTemplateVariables();
 
+  // Wrap content in full HTML document with Tailwind CSS
+  const wrapInHtmlDocument = (content) => {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Base styles for print/PDF */
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      color: #1e293b;
+      padding: 40px;
+      margin: 0;
+    }
+    /* Print-specific styles */
+    @media print {
+      body { padding: 0; }
+      .page-break { page-break-before: always; }
+      .no-break { page-break-inside: avoid; }
+    }
+    /* Typography helpers */
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; }
+    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+    /* Table styles */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f8fafc; font-weight: 600; }
+    /* Utility classes */
+    .text-muted { color: #64748b; }
+    .text-small { font-size: 0.875rem; }
+    .border-left-accent { border-left: 4px solid #3b82f6; padding-left: 12px; }
+  </style>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+  };
+
   // Validate template on content change
   useEffect(() => {
     if (templateContent) {
@@ -42,21 +85,19 @@ export default function TemplateEditor({
       if (result.valid && wheelData && organizationData) {
         try {
           const context = buildTemplateContext(wheelData, pageData, organizationData);
-          console.log('Template context:', context); // Debug
           const rendered = renderTemplate(templateContent, context);
-          setPreview(rendered);
+          setPreview(wrapInHtmlDocument(rendered));
         } catch (error) {
           console.error('Template render error:', error);
-          setPreview(`<div style="color: red; padding: 20px;">
+          setPreview(wrapInHtmlDocument(`<div class="text-red-600 p-5">
             <strong>Preview Error:</strong><br>
-            ${error.message}<br>
-            <pre style="font-size: 11px; margin-top: 10px;">${error.stack || ''}</pre>
-          </div>`);
+            ${error.message}
+          </div>`));
         }
       } else if (!wheelData || !organizationData) {
-        setPreview(`<div style="color: #64748b; padding: 20px; font-style: italic;">
+        setPreview(wrapInHtmlDocument(`<div class="text-gray-400 p-5 italic">
           Ingen hjuldata tillgänglig. Öppna mallredigeraren från ett hjul för att se förhandsvisning.
-        </div>`);
+        </div>`));
       }
     }
   }, [templateContent, wheelData, pageData, organizationData]);
@@ -277,6 +318,75 @@ export default function TemplateEditor({
                   <button onClick={() => insertVariable('{{#unless items}}\n  <p>Inga aktiviteter</p>\n{{/unless}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">#unless</button>
                 </div>
               </div>
+
+              {/* Tailwind CSS */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Tailwind CSS</h4>
+                <p className="text-xs text-gray-500 mb-2">Förhandsvisning har full Tailwind CDN. PDF har vanliga klasser.</p>
+                
+                <div className="mb-2">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Typografi:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <code className="text-xs bg-gray-100 px-1 rounded">text-sm</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">text-lg</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">font-bold</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">italic</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">uppercase</code>
+                  </div>
+                </div>
+
+                <div className="mb-2">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Färger:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <code className="text-xs bg-gray-100 px-1 rounded">text-gray-600</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">text-blue-600</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">bg-slate-50</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">bg-blue-100</code>
+                  </div>
+                </div>
+
+                <div className="mb-2">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Spacing:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <code className="text-xs bg-gray-100 px-1 rounded">p-4</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">mb-4</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">mt-6</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">px-3</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">py-2</code>
+                  </div>
+                </div>
+
+                <div className="mb-2">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Layout:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <code className="text-xs bg-gray-100 px-1 rounded">flex</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">grid</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">grid-cols-2</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">gap-4</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">items-center</code>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Borders:</p>
+                  <div className="flex flex-wrap gap-1">
+                    <code className="text-xs bg-gray-100 px-1 rounded">border</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">border-l-4</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">rounded</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">rounded-lg</code>
+                    <code className="text-xs bg-gray-100 px-1 rounded">shadow</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Print helpers */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">PDF/Print</h4>
+                <div className="space-y-1">
+                  <button onClick={() => insertVariable('<div class="page-break"></div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">page-break</button>
+                  <button onClick={() => insertVariable('<div class="no-break">\n  ...\n</div>')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">no-break</button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -318,15 +428,14 @@ export default function TemplateEditor({
                 {preview ? (
                   <div className="max-w-4xl mx-auto">
                     {/* A4 Document Preview - 210mm x 297mm at 96dpi = 794px x 1123px */}
-                    <div 
-                      className="bg-white shadow-2xl mx-auto"
+                    <iframe
+                      srcDoc={preview}
+                      className="bg-white shadow-2xl mx-auto border-0"
                       style={{
                         width: '794px',
-                        minHeight: '1123px',
-                        padding: '60px',
-                        boxSizing: 'border-box'
+                        height: '1123px',
                       }}
-                      dangerouslySetInnerHTML={{ __html: preview }} 
+                      title="Template Preview"
                     />
                     <div className="mt-4 text-center text-xs text-gray-500">
                       Detta är en förhandsgranskning. Verkliga PDF:en kan se något annorlunda ut.
