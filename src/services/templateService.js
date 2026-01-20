@@ -1,6 +1,6 @@
 import Handlebars from 'handlebars';
 import html2pdf from 'html2pdf.js';
-import { supabase } from './supabase';
+import { supabase } from '../lib/supabase';
 
 /**
  * Template Service - Handles report template rendering with Handlebars
