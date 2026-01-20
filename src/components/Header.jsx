@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
@@ -75,7 +75,9 @@ function Header({
   // Wheel comments props
   wheelData = null,
   wheelStructure = null,
-  onNavigateToItem = null
+  onNavigateToItem = null,
+  // Report templates
+  onOpenReportTemplates = null
 }) {
   const { t } = useTranslation(['common', 'subscription']);
   const navigate = useNavigate();
@@ -555,6 +557,24 @@ function Header({
                           ) : (
                             <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
                           )}
+                        </div>
+                      )}
+
+                      {/* Report Templates */}
+                      {onOpenReportTemplates && (
+                        <div className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-50">
+                          <FileEdit size={16} className="text-gray-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-gray-900">Rapportmallar</div>
+                            <div className="text-xs text-gray-500">Skapa anpassade rapporter</div>
+                          </div>
+                          <button
+                            onClick={() => { onOpenReportTemplates(); setShowImageExportMenu(false); }}
+                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                            title="Öppna mallredigeraren"
+                          >
+                            <ChevronDown size={14} className="text-gray-500" />
+                          </button>
                         </div>
                       )}
                     </div>
