@@ -234,30 +234,31 @@ export default function TemplateEditor({
               
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Loopar</h4>
+                <p className="text-xs text-gray-500 mb-2">Inuti loopar använd bara fältnamnet: <code className="bg-gray-100 px-1">{'{{name}}'}</code></p>
                 <div className="space-y-1">
                   <button
-                    onClick={() => insertVariable('{{#each months}}\n  \n{{/each}}')}
+                    onClick={() => insertVariable('{{#each months}}\n  <p>{{name}} - {{itemCount}} items</p>\n{{/each}}')}
                     className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
                   >
                     #each months
                   </button>
                   <button
-                    onClick={() => insertVariable('{{#each items}}\n  \n{{/each}}')}
+                    onClick={() => insertVariable('{{#each activityGroups}}\n  <h3>{{name}}</h3>\n  {{#each items}}\n    <p>{{name}}</p>\n  {{/each}}\n{{/each}}')}
                     className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
                   >
-                    #each items
+                    #each activityGroups + items
                   </button>
                   <button
-                    onClick={() => insertVariable('{{#each rings}}\n  \n{{/each}}')}
+                    onClick={() => insertVariable('{{#each rings}}\n  <p>{{name}} - {{itemCount}} items</p>\n{{/each}}')}
                     className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
                   >
                     #each rings
                   </button>
                   <button
-                    onClick={() => insertVariable('{{#each activityGroups}}\n  \n{{/each}}')}
+                    onClick={() => insertVariable('{{#each items}}\n  <p>{{name}}: {{ringName}} - {{activityName}}</p>\n{{/each}}')}
                     className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
                   >
-                    #each activityGroups
+                    #each items
                   </button>
                 </div>
               </div>
