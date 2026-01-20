@@ -6,6 +6,7 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
+import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
 import CodeEditor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -939,6 +940,10 @@ export default function TemplateEditor({
       Color,
       Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      GlobalDragHandle.configure({
+        dragHandleWidth: 24,
+        scrollTreshold: 100,
+      }),
     ],
     content: templateContent || '<p>Börja skriva här...</p>',
     onUpdate: ({ editor }) => {
@@ -1609,6 +1614,42 @@ export default function TemplateEditor({
                       min-height: 1123px;
                       outline: none;
                       background: white;
+                    }
+                    /* Global drag handle styles */
+                    .drag-handle {
+                      position: fixed;
+                      opacity: 1;
+                      transition: opacity 0.2s ease, background-color 0.2s ease;
+                      border-radius: 4px;
+                      background: #f1f5f9;
+                      border: 1px solid #e2e8f0;
+                      width: 20px;
+                      height: 20px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      cursor: grab;
+                      z-index: 50;
+                      user-select: none;
+                    }
+                    .drag-handle:hover {
+                      background: #e2e8f0;
+                      border-color: #cbd5e1;
+                    }
+                    .drag-handle:active {
+                      cursor: grabbing;
+                      background: #cbd5e1;
+                    }
+                    .drag-handle::before {
+                      content: '⋮⋮';
+                      font-size: 10px;
+                      color: #64748b;
+                      letter-spacing: -2px;
+                    }
+                    /* Drop indicator line */
+                    .ProseMirror-dropcursor {
+                      border-left: 2px solid #3b82f6 !important;
+                      margin-left: -1px;
                     }
                     .ProseMirror p { margin-bottom: 0.75rem; line-height: 1.7; color: #1e293b; }
                     .ProseMirror h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #1e293b; border-bottom: 3px solid #3b82f6; padding-bottom: 0.5rem; }
