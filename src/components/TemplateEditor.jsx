@@ -7,6 +7,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
+import { ResizableColumns, Column } from '../extensions/ResizableColumns';
 import CodeEditor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -579,6 +580,8 @@ const LAYOUT_BLOCKS = [
     id: 'two-columns',
     name: '2 Kolumner',
     icon: '▥',
+    isResizable: true,
+    preset: '50-50',
     preview: (
       <div className="grid grid-cols-2 gap-1">
         <div className="bg-gray-100 rounded p-1">
@@ -604,6 +607,8 @@ const LAYOUT_BLOCKS = [
     id: 'three-columns',
     name: '3 Kolumner',
     icon: '▦',
+    isResizable: true,
+    preset: '33-33-33',
     preview: (
       <div className="grid grid-cols-3 gap-0.5">
         <div className="bg-gray-100 rounded p-0.5">
@@ -636,6 +641,8 @@ const LAYOUT_BLOCKS = [
     id: 'sidebar-layout',
     name: 'Sidofält',
     icon: '◧',
+    isResizable: true,
+    preset: '66-33',
     preview: (
       <div className="grid grid-cols-3 gap-0.5">
         <div className="col-span-2 bg-gray-100 rounded p-1">
@@ -658,6 +665,35 @@ const LAYOUT_BLOCKS = [
       <p>Extra info...</p>
     </div>
   </div>
+</div>`
+  },
+  {
+    id: 'four-columns',
+    name: '4 Kolumner',
+    icon: '▤',
+    isResizable: true,
+    preset: '25-25-25-25',
+    preview: (
+      <div className="grid grid-cols-4 gap-0.5">
+        <div className="bg-gray-100 rounded p-0.5">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+        <div className="bg-gray-100 rounded p-0.5">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+        <div className="bg-gray-100 rounded p-0.5">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+        <div className="bg-gray-100 rounded p-0.5">
+          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
+        </div>
+      </div>
+    ),
+    html: `<div class="four-columns">
+  <div><p>Kolumn 1</p></div>
+  <div><p>Kolumn 2</p></div>
+  <div><p>Kolumn 3</p></div>
+  <div><p>Kolumn 4</p></div>
 </div>`
   },
   {
@@ -801,7 +837,7 @@ const LAYOUT_BLOCKS = [
 ];
 
 // Block palette component
-function BlockPalette({ onInsertBlock }) {
+function BlockPalette({ onInsertBlock, onInsertColumns }) {
   return (
     <div className="p-3 space-y-2">
       <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Layout-block</h4>
@@ -809,13 +845,16 @@ function BlockPalette({ onInsertBlock }) {
         {LAYOUT_BLOCKS.map(block => (
           <button
             key={block.id}
-            onClick={() => onInsertBlock(block.html)}
-            className="p-2 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all text-left group"
-            title={block.name}
+            onClick={() => block.isResizable && onInsertColumns ? onInsertColumns(block.preset) : onInsertBlock(block.html)}
+            className={`p-2 bg-white border rounded-lg hover:border-blue-400 hover:shadow-md transition-all text-left group ${block.isResizable ? 'border-blue-200' : 'border-gray-200'}`}
+            title={block.isResizable ? `${block.name} (resizable)` : block.name}
           >
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-lg">{block.icon}</span>
               <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600">{block.name}</span>
+              {block.isResizable && (
+                <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded font-medium">↔</span>
+              )}
             </div>
             <div className="h-12 overflow-hidden rounded bg-gray-50 p-1.5">
               {block.preview}
@@ -944,6 +983,8 @@ export default function TemplateEditor({
         dragHandleWidth: 24,
         scrollTreshold: 100,
       }),
+      ResizableColumns,
+      Column,
     ],
     content: templateContent || '<p>Börja skriva här...</p>',
     onUpdate: ({ editor }) => {
@@ -1132,6 +1173,50 @@ export default function TemplateEditor({
       }, 0);
     }
   }, [editorMode, visualEditor, templateContent]);
+
+  // Insert resizable columns - only works in visual mode
+  const insertColumns = useCallback((preset) => {
+    if (editorMode === 'visual' && visualEditor) {
+      visualEditor.chain().focus().insertColumnsPreset(preset).run();
+    } else {
+      // In code mode, insert static HTML version
+      const presetMap = {
+        '50-50': `<div class="two-columns">
+  <div><p>Kolumn 1</p></div>
+  <div><p>Kolumn 2</p></div>
+</div>`,
+        '33-33-33': `<div class="three-columns">
+  <div><p>Kolumn 1</p></div>
+  <div><p>Kolumn 2</p></div>
+  <div><p>Kolumn 3</p></div>
+</div>`,
+        '25-25-25-25': `<div class="four-columns">
+  <div><p>Kolumn 1</p></div>
+  <div><p>Kolumn 2</p></div>
+  <div><p>Kolumn 3</p></div>
+  <div><p>Kolumn 4</p></div>
+</div>`,
+        '66-33': `<div class="sidebar-layout">
+  <div><p>Huvudinnehåll</p></div>
+  <div><p>Sidofält</p></div>
+</div>`,
+        '33-66': `<div class="sidebar-layout" style="grid-template-columns: 1fr 2fr;">
+  <div><p>Sidofält</p></div>
+  <div><p>Huvudinnehåll</p></div>
+</div>`,
+      };
+      insertBlock(presetMap[preset] || presetMap['50-50']);
+    }
+  }, [editorMode, visualEditor, insertBlock]);
+
+  // Handle block insertion - routes to correct function based on block type
+  const handleBlockInsert = useCallback((block) => {
+    if (block.isResizable && block.preset) {
+      insertColumns(block.preset);
+    } else {
+      insertBlock(block.html);
+    }
+  }, [insertBlock, insertColumns]);
 
   // Icon button component for toolbar
   const IconButton = ({ onClick, active, disabled, title, children }) => (
@@ -1403,18 +1488,21 @@ export default function TemplateEditor({
             <div className="flex-1 overflow-y-auto">
               {sidebarTab === 'blocks' ? (
                 <div className="p-3">
-                  <p className="text-xs text-gray-500 mb-3">Klicka för att infoga block vid markören</p>
+                  <p className="text-xs text-gray-500 mb-3">Klicka för att infoga block vid markören. <span className="text-blue-500">↔</span> = storlek kan ändras</p>
                   <div className="grid grid-cols-2 gap-2">
                     {LAYOUT_BLOCKS.map(block => (
                       <button
                         key={block.id}
-                        onClick={() => insertBlock(block.html)}
-                        className="p-2 bg-gray-50 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
-                        title={block.name}
+                        onClick={() => handleBlockInsert(block)}
+                        className={`p-2 bg-gray-50 border rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all text-left group ${block.isResizable ? 'border-blue-200' : 'border-gray-200'}`}
+                        title={block.isResizable ? `${block.name} (klicka & dra för att ändra storlek)` : block.name}
                       >
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-base">{block.icon}</span>
                           <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600 truncate">{block.name}</span>
+                          {block.isResizable && (
+                            <span className="ml-auto text-[9px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded font-medium">↔</span>
+                          )}
                         </div>
                         <div className="h-10 overflow-hidden rounded bg-white p-1 border border-gray-100">
                           {block.preview}
