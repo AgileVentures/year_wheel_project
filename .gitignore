@@ -33,3 +33,6 @@ docs/*
 cypress/downloads/*
 cypress/videos/*
 cypress/screenshots/*supabase/.temp/
+
+# Project archives
+*.zip
