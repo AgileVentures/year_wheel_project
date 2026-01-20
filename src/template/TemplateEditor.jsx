@@ -797,10 +797,8 @@ const LAYOUT_BLOCKS = [
         <div className="h-2 bg-gray-400 rounded w-1/2"></div>
       </div>
     ),
-    html: `<div class="mb-6">
-  <h1>{{wheel.title}}</h1>
-  <p class="text-muted">{{wheel.year}}</p>
-</div>`
+    html: `<h1>{{wheel.title}}</h1>
+<p class="text-muted">Årsplanering för {{wheel.year}}</p>`
   },
   {
     id: 'section',
@@ -814,8 +812,8 @@ const LAYOUT_BLOCKS = [
       </div>
     ),
     html: `<div class="section">
-  <h2>Rubrik</h2>
-  <p>Innehåll här...</p>
+  <h2>Sektion rubrik</h2>
+  <p>Skriv innehåll här...</p>
 </div>`
   },
   {
@@ -829,8 +827,8 @@ const LAYOUT_BLOCKS = [
       </div>
     ),
     html: `<div class="card">
-  <h3>Korttitel</h3>
-  <p>Kortinnehåll...</p>
+  <h3>Kortrubrik</h3>
+  <p>Lägg till information här...</p>
 </div>`
   },
   {
@@ -866,126 +864,6 @@ const LAYOUT_BLOCKS = [
 </div>`
   },
   {
-    id: 'two-columns',
-    name: '2 Kolumner',
-    icon: '▥',
-    isResizable: true,
-    preset: '50-50',
-    preview: (
-      <div className="grid grid-cols-2 gap-1">
-        <div className="bg-gray-100 rounded p-1">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-        <div className="bg-gray-100 rounded p-1">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-      </div>
-    ),
-    html: `<div class="two-columns">
-  <div>
-    <h3>Vänster kolumn</h3>
-    <p>Innehåll...</p>
-  </div>
-  <div>
-    <h3>Höger kolumn</h3>
-    <p>Innehåll...</p>
-  </div>
-</div>`
-  },
-  {
-    id: 'three-columns',
-    name: '3 Kolumner',
-    icon: '▦',
-    isResizable: true,
-    preset: '33-33-33',
-    preview: (
-      <div className="grid grid-cols-3 gap-0.5">
-        <div className="bg-gray-100 rounded p-0.5">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-        <div className="bg-gray-100 rounded p-0.5">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-        <div className="bg-gray-100 rounded p-0.5">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-      </div>
-    ),
-    html: `<div class="three-columns">
-  <div class="card">
-    <h3>Kolumn 1</h3>
-    <p>Innehåll...</p>
-  </div>
-  <div class="card">
-    <h3>Kolumn 2</h3>
-    <p>Innehåll...</p>
-  </div>
-  <div class="card">
-    <h3>Kolumn 3</h3>
-    <p>Innehåll...</p>
-  </div>
-</div>`
-  },
-  {
-    id: 'sidebar-layout',
-    name: 'Sidofält',
-    icon: '◧',
-    isResizable: true,
-    preset: '66-33',
-    preview: (
-      <div className="grid grid-cols-3 gap-0.5">
-        <div className="col-span-2 bg-gray-100 rounded p-1">
-          <div className="h-1.5 bg-gray-400 rounded w-full mb-0.5"></div>
-          <div className="h-1.5 bg-gray-300 rounded w-3/4"></div>
-        </div>
-        <div className="bg-blue-100 rounded p-1">
-          <div className="h-1 bg-blue-400 rounded w-full"></div>
-        </div>
-      </div>
-    ),
-    html: `<div class="sidebar-layout">
-  <div class="main-content">
-    <h2>Huvudinnehåll</h2>
-    <p>Det primära innehållet...</p>
-  </div>
-  <div class="sidebar">
-    <div class="card">
-      <h4>Sidofält</h4>
-      <p>Extra info...</p>
-    </div>
-  </div>
-</div>`
-  },
-  {
-    id: 'four-columns',
-    name: '4 Kolumner',
-    icon: '▤',
-    isResizable: true,
-    preset: '25-25-25-25',
-    preview: (
-      <div className="grid grid-cols-4 gap-0.5">
-        <div className="bg-gray-100 rounded p-0.5">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-        <div className="bg-gray-100 rounded p-0.5">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-        <div className="bg-gray-100 rounded p-0.5">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-        <div className="bg-gray-100 rounded p-0.5">
-          <div className="h-1.5 bg-gray-400 rounded w-full"></div>
-        </div>
-      </div>
-    ),
-    html: `<div class="four-columns">
-  <div><p>Kolumn 1</p></div>
-  <div><p>Kolumn 2</p></div>
-  <div><p>Kolumn 3</p></div>
-  <div><p>Kolumn 4</p></div>
-</div>`
-  },
-  {
     id: 'table',
     name: 'Tabell',
     icon: '📋',
@@ -1002,16 +880,16 @@ const LAYOUT_BLOCKS = [
     html: `<table>
   <thead>
     <tr>
-      <th>Kolumn 1</th>
-      <th>Kolumn 2</th>
-      <th>Kolumn 3</th>
+      <th>Aktivitet</th>
+      <th>Ring</th>
+      <th>Datum</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>Data</td>
-      <td>Data</td>
-      <td>Data</td>
+      <td>Exempel</td>
+      <td>Ring 1</td>
+      <td>2024-01-15</td>
     </tr>
   </tbody>
 </table>`
@@ -1039,13 +917,16 @@ const LAYOUT_BLOCKS = [
     html: `{{#each activityGroups}}
 <div class="section" style="border-left-color: {{color}};">
   <h3>{{name}}</h3>
-  <p>{{itemCount}} aktiviteter</p>
-  {{#each items}}
-  <div class="item">
-    <span class="item-name">{{name}}</span>
-    <span class="item-meta">{{formatDate startDate}} - {{formatDate endDate}}</span>
-  </div>
-  {{/each}}
+  <p>{{items.length}} aktiviteter</p>
+  {{#if items}}
+  <ul>
+    {{#each items}}
+    <li><strong>{{name}}</strong> - {{formatDate startDate}} till {{formatDate endDate}}</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p>Inga aktiviteter</p>
+  {{/if}}
 </div>
 {{/each}}`
   },
@@ -1062,17 +943,19 @@ const LAYOUT_BLOCKS = [
         ))}
       </div>
     ),
-    html: `<h2>Månadsöversikt</h2>
+    html: `<h2>Månadsöversikt {{wheel.year}}</h2>
 {{#each months}}
 <div class="card">
   <h3>{{name}}</h3>
-  <p>{{itemCount}} aktiviteter</p>
   {{#if items}}
+  <p>{{items.length}} aktiviteter</p>
   <ul>
     {{#each items}}
-    <li>{{name}}</li>
+    <li>{{name}} ({{ringName}})</li>
     {{/each}}
   </ul>
+  {{else}}
+  <p class="text-muted">Inga aktiviteter denna månad</p>
   {{/if}}
 </div>
 {{/each}}`
@@ -1091,11 +974,20 @@ const LAYOUT_BLOCKS = [
         </div>
       </div>
     ),
-    html: `<h2>Per ring</h2>
+    html: `<h2>Aktiviteter per ring</h2>
 {{#each rings}}
 <div class="section">
   <h3>{{name}}</h3>
-  <p>{{itemCount}} aktiviteter</p>
+  {{#if items}}
+  <p>{{items.length}} aktiviteter</p>
+  <ul>
+    {{#each items}}
+    <li>{{name}} - {{activityName}}</li>
+    {{/each}}
+  </ul>
+  {{else}}
+  <p class="text-muted">Inga aktiviteter i denna ring</p>
+  {{/if}}
 </div>
 {{/each}}`
   },
@@ -1109,7 +1001,7 @@ const LAYOUT_BLOCKS = [
       </div>
     ),
     html: `<div class="footer">
-  <p>Genererad {{currentDate}} | {{wheel.title}}</p>
+  <p>Rapport genererad {{currentDate}}</p>
 </div>`
   },
   {
@@ -1126,28 +1018,33 @@ const LAYOUT_BLOCKS = [
 ];
 
 // Block palette component
-function BlockPalette({ onInsertBlock, onInsertColumns }) {
+function BlockPalette({ onInsertBlock }) {
   return (
     <div className="p-3 space-y-2">
-      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Layout-block</h4>
+      <p className="text-xs text-gray-500 mb-3">
+        Klicka för att infoga block vid markören. ⬌ = storlek kan ändras
+      </p>
       <div className="grid grid-cols-2 gap-2">
         {LAYOUT_BLOCKS.map(block => (
           <button
             key={block.id}
-            onClick={() => block.isResizable && onInsertColumns ? onInsertColumns(block.preset) : onInsertBlock(block.html)}
-            className={`p-2 bg-white border rounded-lg hover:border-blue-400 hover:shadow-md transition-all text-left group ${block.isResizable ? 'border-blue-200' : 'border-gray-200'}`}
-            title={block.isResizable ? `${block.name} (resizable)` : block.name}
+            onClick={() => onInsertBlock(block.html)}
+            className="p-2 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-md transition-all text-left group"
+            title={block.name}
           >
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-lg">{block.icon}</span>
               <span className="text-xs font-medium text-gray-700 group-hover:text-blue-600">{block.name}</span>
-              {block.isResizable && (
-                <span className="ml-auto text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded font-medium">↔</span>
-              )}
             </div>
             <div className="h-12 overflow-hidden rounded bg-gray-50 p-1.5">
               {block.preview}
             </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
           </button>
         ))}
       </div>
@@ -1529,59 +1426,6 @@ export default function TemplateEditor({
       }, 0);
     }
   }, [editorMode, visualEditor, templateContent]);
-
-  // Insert resizable columns - only works in visual mode
-  const insertColumns = useCallback((preset) => {
-    if (editorMode === 'visual' && visualEditor) {
-      // Map presets to column counts for the ColumnExtension
-      const presetToColumns = {
-        '50-50': 2,
-        '33-33-33': 3,
-        '25-25-25-25': 4,
-        '66-33': 2,
-        '33-66': 2,
-      };
-      const columnCount = presetToColumns[preset] || 2;
-      visualEditor.chain().focus().setColumns(columnCount).run();
-    } else {
-      // In code mode, insert static HTML version
-      const presetMap = {
-        '50-50': `<div class="two-columns">
-  <div><p>Kolumn 1</p></div>
-  <div><p>Kolumn 2</p></div>
-</div>`,
-        '33-33-33': `<div class="three-columns">
-  <div><p>Kolumn 1</p></div>
-  <div><p>Kolumn 2</p></div>
-  <div><p>Kolumn 3</p></div>
-</div>`,
-        '25-25-25-25': `<div class="four-columns">
-  <div><p>Kolumn 1</p></div>
-  <div><p>Kolumn 2</p></div>
-  <div><p>Kolumn 3</p></div>
-  <div><p>Kolumn 4</p></div>
-</div>`,
-        '66-33': `<div class="sidebar-layout">
-  <div><p>Huvudinnehåll</p></div>
-  <div><p>Sidofält</p></div>
-</div>`,
-        '33-66': `<div class="sidebar-layout" style="grid-template-columns: 1fr 2fr;">
-  <div><p>Sidofält</p></div>
-  <div><p>Huvudinnehåll</p></div>
-</div>`,
-      };
-      insertBlock(presetMap[preset] || presetMap['50-50']);
-    }
-  }, [editorMode, visualEditor, insertBlock]);
-
-  // Handle block insertion - routes to correct function based on block type
-  const handleBlockInsert = useCallback((block) => {
-    if (block.isResizable && block.preset) {
-      insertColumns(block.preset);
-    } else {
-      insertBlock(block.html);
-    }
-  }, [insertBlock, insertColumns]);
 
   // Icon button component for toolbar
   const IconButton = ({ onClick, active, disabled, title, children }) => (
