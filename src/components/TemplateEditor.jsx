@@ -742,10 +742,9 @@ export default function TemplateEditor({
   const [preview, setPreview] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
   const [sidebarTab, setSidebarTab] = useState('blocks'); // 'blocks' or 'variables'
-  const [showPreview, setShowPreview] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [editorMode, setEditorMode] = useState('code'); // 'code' or 'visual'
+  const [editorMode, setEditorMode] = useState('visual'); // 'code', 'visual', or 'preview'
   const [showSettings, setShowSettings] = useState(false);
 
   const variables = getTemplateVariables();
@@ -771,13 +770,16 @@ export default function TemplateEditor({
 
   // Sync content when switching modes
   const handleModeSwitch = useCallback((newMode) => {
-    if (newMode === 'visual' && visualEditor) {
-      visualEditor.commands.setContent(templateContent || '<p></p>');
-    } else if (newMode === 'code' && visualEditor) {
+    // When leaving visual mode, save TipTap content
+    if (editorMode === 'visual' && visualEditor) {
       setTemplateContent(visualEditor.getHTML());
     }
+    // When entering visual mode, load content into TipTap
+    if (newMode === 'visual' && visualEditor) {
+      visualEditor.commands.setContent(templateContent || '<p></p>');
+    }
     setEditorMode(newMode);
-  }, [visualEditor, templateContent]);
+  }, [visualEditor, templateContent, editorMode]);
 
   // Insert variable into visual editor
   const insertVariableInVisual = useCallback((variable) => {
@@ -941,7 +943,7 @@ export default function TemplateEditor({
             )}
           </div>
 
-          {/* Center: Mode toggle */}
+          {/* Center: 3-Mode toggle */}
           <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
               onClick={() => handleModeSwitch('visual')}
@@ -950,13 +952,13 @@ export default function TemplateEditor({
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
+              title="Visuell redigering med designade element"
             >
               <span className="flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                Visuell
+                Redigera
               </span>
             </button>
             <button
@@ -966,6 +968,7 @@ export default function TemplateEditor({
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
+              title="Redigera HTML/Handlebars-kod"
             >
               <span className="flex items-center gap-1.5">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -974,28 +977,39 @@ export default function TemplateEditor({
                 Kod
               </span>
             </button>
+            <button
+              onClick={() => handleModeSwitch('preview')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
+                editorMode === 'preview' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Förhandsgranska med verklig data"
+            >
+              <span className="flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                Förhandsvisa
+              </span>
+            </button>
           </div>
 
           {/* Right: Icon buttons */}
           <div className="flex items-center gap-1">
-            <IconButton 
-              onClick={() => setShowSidebar(!showSidebar)} 
-              active={showSidebar}
-              title="Verktygspanel (Block & Variabler)"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-              </svg>
-            </IconButton>
-            <IconButton 
-              onClick={() => setShowPreview(!showPreview)} 
-              active={showPreview}
-              title="Förhandsvisning"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </IconButton>
+            {/* Only show sidebar toggle when not in preview mode */}
+            {editorMode !== 'preview' && (
+              <IconButton 
+                onClick={() => setShowSidebar(!showSidebar)} 
+                active={showSidebar}
+                title="Verktygspanel (Block & Variabler)"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
+              </IconButton>
+            )}
             <IconButton 
               onClick={() => setShowSettings(!showSettings)} 
               active={showSettings}
@@ -1115,8 +1129,8 @@ export default function TemplateEditor({
 
       {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Tools */}
-        {showSidebar && (
+        {/* Left Sidebar - Tools (only in edit modes) */}
+        {showSidebar && editorMode !== 'preview' && (
           <div className="w-72 bg-white border-r border-gray-200 flex flex-col">
             {/* Sidebar tabs */}
             <div className="flex border-b border-gray-200">
@@ -1284,87 +1298,115 @@ export default function TemplateEditor({
           </div>
         )}
 
-        {/* Editor and preview */}
-        <div className="flex-1 flex">
-          {/* Editor pane */}
-          <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col bg-white ${showPreview ? 'border-r border-gray-200' : ''}`}>
-            {editorMode === 'visual' ? (
-              <>
-                <VisualEditorToolbar editor={visualEditor} />
-                <div className="flex-1 overflow-auto">
-                  <style>{`
-                    .ProseMirror {
-                      padding: 1.5rem;
-                      min-height: 100%;
-                      outline: none;
-                    }
-                    .ProseMirror p { margin-bottom: 0.5rem; }
-                    .ProseMirror h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; }
-                    .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; }
-                    .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
-                    .ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 0.5rem; }
-                    .ProseMirror blockquote { border-left: 3px solid #e5e7eb; padding-left: 1rem; margin-left: 0; color: #6b7280; }
-                    .ProseMirror .variable-chip { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.875rem; }
-                  `}</style>
-                  <EditorContent editor={visualEditor} className="h-full" />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-                  <span className="text-xs text-gray-400 font-mono">HTML / Handlebars</span>
-                  {validation.valid ? (
-                    <span className="text-xs text-green-400 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Giltig syntax
-                    </span>
-                  ) : (
-                    <span className="text-xs text-red-400 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      {validation.error}
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  id="template-editor"
-                  value={templateContent}
-                  onChange={(e) => setTemplateContent(e.target.value)}
-                  className="flex-1 p-4 font-mono text-sm bg-gray-900 text-gray-100 border-none focus:ring-0 resize-none"
-                  placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
-                  spellCheck={false}
-                />
-              </>
-            )}
-          </div>
+        {/* Main Editor Area - 3 modes */}
+        <div className="flex-1 flex flex-col bg-white">
+          {/* Visual Editor Mode */}
+          {editorMode === 'visual' && (
+            <>
+              <VisualEditorToolbar editor={visualEditor} />
+              <div className="flex-1 overflow-auto">
+                <style>{`
+                  .ProseMirror {
+                    padding: 2rem 3rem;
+                    min-height: 100%;
+                    max-width: 900px;
+                    margin: 0 auto;
+                    outline: none;
+                    background: white;
+                  }
+                  .ProseMirror p { margin-bottom: 0.75rem; line-height: 1.7; }
+                  .ProseMirror h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #1e293b; border-bottom: 2px solid #3b82f6; padding-bottom: 0.5rem; }
+                  .ProseMirror h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #3b82f6; }
+                  .ProseMirror h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #64748b; }
+                  .ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 0.75rem; }
+                  .ProseMirror li { margin-bottom: 0.25rem; }
+                  .ProseMirror blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; margin: 1rem 0; background: #f8fafc; padding: 1rem; border-radius: 0 8px 8px 0; }
+                  .ProseMirror .variable-chip { 
+                    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
+                    color: #1e40af; 
+                    padding: 3px 8px; 
+                    border-radius: 6px; 
+                    font-family: 'JetBrains Mono', monospace; 
+                    font-size: 0.8rem;
+                    border: 1px solid #93c5fd;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                  }
+                  /* Design classes for visual preview */
+                  .ProseMirror .section { margin: 1.5rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6; }
+                  .ProseMirror .card { margin: 0.75rem 0; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                  .ProseMirror .item { margin: 0.5rem 0; padding: 0.75rem 1rem; background: #f8fafc; border-left: 4px solid #0ea5e9; border-radius: 0 6px 6px 0; }
+                  .ProseMirror .stats-grid { display: flex; gap: 1rem; margin: 1.5rem 0; }
+                  .ProseMirror .stat-box { flex: 1; text-align: center; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+                  .ProseMirror .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 0.875rem; }
+                `}</style>
+                <EditorContent editor={visualEditor} className="h-full" />
+              </div>
+            </>
+          )}
 
-          {/* Preview pane */}
-          {showPreview && (
-            <div className="w-1/2 flex flex-col bg-gray-100">
+          {/* Code Editor Mode */}
+          {editorMode === 'code' && (
+            <>
+              <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
+                <span className="text-xs text-gray-400 font-mono">HTML / Handlebars</span>
+                {validation.valid ? (
+                  <span className="text-xs text-green-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Giltig syntax
+                  </span>
+                ) : (
+                  <span className="text-xs text-red-400 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {validation.error}
+                  </span>
+                )}
+              </div>
+              <textarea
+                id="template-editor"
+                value={templateContent}
+                onChange={(e) => setTemplateContent(e.target.value)}
+                className="flex-1 p-4 font-mono text-sm bg-gray-900 text-gray-100 border-none focus:ring-0 resize-none"
+                placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
+                spellCheck={false}
+              />
+            </>
+          )}
+
+          {/* Preview Mode */}
+          {editorMode === 'preview' && (
+            <div className="flex-1 flex flex-col bg-gray-100">
               <div className="bg-gray-200 px-4 py-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-600">Förhandsvisning (A4)</span>
-                <span className="text-xs text-gray-500">{theme.name}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">Förhandsvisning</span>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded">{theme.name}</span>
+                </div>
+                <span className="text-xs text-gray-500">A4-format (210×297mm)</span>
               </div>
               <div className="flex-1 overflow-auto p-6">
                 {preview ? (
                   <div className="mx-auto" style={{ maxWidth: '794px' }}>
                     <iframe
                       srcDoc={preview}
-                      className="bg-white shadow-xl mx-auto border-0 w-full"
+                      className="bg-white shadow-2xl mx-auto border-0 w-full rounded-sm"
                       style={{ height: '1123px' }}
                       title="Template Preview"
                     />
+                    <p className="text-center text-xs text-gray-500 mt-4">
+                      Detta visar hur rapporten ser ut med verklig data från det valda hjulet
+                    </p>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-400">
                     <div className="text-center">
-                      <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-16 h-16 mx-auto mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p className="text-sm">Skriv i editorn för att se förhandsvisning</p>
+                      <p className="text-sm font-medium text-gray-600 mb-1">Ingen förhandsvisning tillgänglig</p>
+                      <p className="text-xs text-gray-500">Välj ett hjul ovan för att se rapporten med verklig data</p>
                     </div>
                   </div>
                 )}
