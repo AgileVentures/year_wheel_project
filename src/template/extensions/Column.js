@@ -16,7 +16,10 @@ export const Column = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    const attrs = mergeAttributes(HTMLAttributes, { class: 'column' });
+    const attrs = mergeAttributes(HTMLAttributes, { 
+      class: 'column',
+      'data-column-config': 'column'
+    });
     return ['div', attrs, 0];
   },
 });

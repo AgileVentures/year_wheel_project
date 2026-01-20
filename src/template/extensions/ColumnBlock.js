@@ -2,7 +2,7 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { NodeSelection } from 'prosemirror-state';
 import { Column } from './Column';
 import { ColumnSelection } from './ColumnSelection';
-import { buildColumn, buildNColumns, buildColumnBlock, findParentNodeClosestToPos } from './utils';
+import { buildColumn, buildNColumns, buildColumnBlock, buildParagraph, findParentNodeClosestToPos } from './utils';
 
 export const ColumnBlock = Node.create({
   name: 'columnBlock',
@@ -27,7 +27,10 @@ export const ColumnBlock = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    const attrs = mergeAttributes(HTMLAttributes, { class: 'column-block' });
+    const attrs = mergeAttributes(HTMLAttributes, { 
+      class: 'column-block',
+      'data-column-config': 'block'
+    });
     return ['div', attrs, 0];
   },
 
@@ -138,9 +141,85 @@ export const ColumnBlock = Node.create({
         }
       };
 
+    const changeColumnCount =
+      (n) =>
+      ({ tr, dispatch, state }) => {
+        try {
+          if (!dispatch) {
+            return false;
+          }
+
+          // Find the column block ancestor
+          const pos = tr.selection.$from;
+          const where = ({ node }) => node.type == this.type;
+          let columnBlock;
+          
+          try {
+            columnBlock = findParentNodeClosestToPos(pos, where);
+          } catch (e) {
+            console.log('Not inside a column block');
+            return false;
+          }
+
+          // Collect all content from all existing columns
+          const allColumnContents = [];
+          columnBlock.node.forEach((child) => {
+            if (child.type.name === Column.name) {
+              const columnContent = [];
+              child.forEach((contentNode) => {
+                columnContent.push(contentNode.toJSON());
+              });
+              allColumnContents.push(columnContent);
+            }
+          });
+
+          // Create new columns with the collected content
+          const newColumns = [];
+          for (let i = 0; i < n; i++) {
+            if (i < allColumnContents.length && allColumnContents[i].length > 0) {
+              // Use existing column content
+              newColumns.push(buildColumn({ content: allColumnContents[i] }));
+            } else {
+              // Create empty column with a paragraph
+              newColumns.push(buildColumn({ content: [buildParagraph({})] }));
+            }
+          }
+
+          // If we have more columns of content than the new column count,
+          // append the extra content to the last column
+          if (allColumnContents.length > n) {
+            const lastColumnContent = [...allColumnContents[n - 1]];
+            for (let i = n; i < allColumnContents.length; i++) {
+              lastColumnContent.push(...allColumnContents[i]);
+            }
+            newColumns[n - 1] = buildColumn({ content: lastColumnContent });
+          }
+
+          const newColumnBlock = buildColumnBlock({ content: newColumns });
+          const newNode = state.schema.nodeFromJSON(newColumnBlock);
+          
+          if (!newNode) {
+            return false;
+          }
+
+          // Replace the column block
+          tr = tr.replaceRangeWith(
+            columnBlock.pos,
+            columnBlock.pos + columnBlock.node.nodeSize,
+            newNode
+          );
+
+          return dispatch(tr);
+        } catch (error) {
+          console.error('Error changing column count:', error);
+          return false;
+        }
+      };
+
     return {
       unsetColumns,
       setColumns,
+      changeColumnCount,
     };
   },
 });

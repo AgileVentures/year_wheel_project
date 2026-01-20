@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
@@ -289,13 +289,53 @@ const generateThemeCSS = (theme) => {
       grid-auto-columns: 1fr;
       gap: 24px;
       padding: 8px 0;
+      position: relative;
+    }
+    .column-block::before {
+      content: '⋮⋮';
+      position: absolute;
+      top: 0;
+      left: 0;
+      font-size: 16px;
+      color: ${c.border};
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+      opacity: 0.5;
+      transition: all 0.2s;
+      z-index: 10;
+      user-select: none;
+    }
+    .column-block:hover::before {
+      opacity: 1;
+      color: ${c.primary};
     }
     .column {
       overflow: auto;
       border: 1px ${c.border} dashed;
-      border-radius: 8px;
+      border-radius: 0;
       padding: 8px;
       margin: -8px;
+      position: relative;
+    }
+    .column::before {
+      content: '⋮';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      font-size: 14px;
+      color: ${c.border};
+      cursor: pointer;
+      padding: 2px 4px;
+      line-height: 1;
+      opacity: 0.3;
+      transition: all 0.2s;
+      z-index: 10;
+      user-select: none;
+    }
+    .column:hover::before {
+      opacity: 1;
+      color: ${c.primary};
     }
     
     @media print {
@@ -319,8 +359,200 @@ ${content}
 </html>`;
 };
 
+// Column Configuration Popup
+function ColumnConfigPopup({ editor, onClose }) {
+  // Detect current column count from the editor
+  const getCurrentColumnCount = () => {
+    if (!editor) return 2;
+    
+    try {
+      const { state } = editor;
+      const { $from } = state.selection;
+      
+      // Find column-block node
+      for (let depth = $from.depth; depth > 0; depth--) {
+        const node = $from.node(depth);
+        if (node.type.name === 'columnBlock') {
+          // Count the column children
+          let count = 0;
+          node.forEach((child) => {
+            if (child.type.name === 'column') {
+              count++;
+            }
+          });
+          return count || 2;
+        }
+      }
+    } catch (e) {
+      console.log('Could not detect column count:', e);
+    }
+    
+    return 2;
+  };
+
+  const [columnCount, setColumnCount] = useState(getCurrentColumnCount());
+  const [columnWidths, setColumnWidths] = useState(Array(getCurrentColumnCount()).fill(1));
+  const [backgroundColor, setBackgroundColor] = useState('transparent');
+  const popupRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  useEffect(() => {
+    // Update column widths array when count changes
+    if (columnWidths.length !== columnCount) {
+      setColumnWidths(Array(columnCount).fill(1));
+    }
+  }, [columnCount]);
+
+  const applyColumns = () => {
+    // Ensure editor has focus before running command
+    if (!editor) {
+      console.log('No editor available');
+      onClose();
+      return;
+    }
+
+    // Run the command
+    const success = editor.commands.changeColumnCount(columnCount);
+    
+    if (!success) {
+      console.log('changeColumnCount returned false, but it might have worked anyway');
+    }
+    
+    onClose();
+  };
+
+  const updateWidth = (index, value) => {
+    const newWidths = [...columnWidths];
+    newWidths[index] = parseFloat(value) || 1;
+    setColumnWidths(newWidths);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
+      <div ref={popupRef} className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Kolumninställningar</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Column Count */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Antal kolumner
+          </label>
+          <div className="flex gap-2">
+            {[2, 3, 4, 5, 6].map(count => (
+              <button
+                key={count}
+                onClick={() => setColumnCount(count)}
+                className={`px-4 py-2 rounded ${
+                  columnCount === count 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {count}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Column Widths */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Kolumnbredd (relativa värden)
+          </label>
+          <div className="space-y-2">
+            {columnWidths.map((width, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 w-20">Kolumn {index + 1}:</span>
+                <input
+                  type="number"
+                  min="0.5"
+                  max="10"
+                  step="0.5"
+                  value={width}
+                  onChange={(e) => updateWidth(index, e.target.value)}
+                  className="flex-1 px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            T.ex. [2, 1] ger en 2:1-layout där första kolumnen är dubbelt så bred
+          </p>
+        </div>
+
+        {/* Background Color */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Bakgrundsfärg (kolumnblock)
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="color"
+              value={backgroundColor === 'transparent' ? '#ffffff' : backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+              className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+            />
+            <input
+              type="text"
+              value={backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+              placeholder="#ffffff eller transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={() => setBackgroundColor('transparent')}
+              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              Transparent
+            </button>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
+          >
+            Avbryt
+          </button>
+          <button
+            onClick={applyColumns}
+            className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded"
+          >
+            Använd
+          </button>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-500">
+            <strong>Tips:</strong> För att ändra kolumnantalet på befintliga kolumner, klicka på handtaget och välj nytt antal.
+            Innehållet från första kolumnen kommer att behållas.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Toolbar component for visual editor
-function VisualEditorToolbar({ editor, showOutlines, setShowOutlines }) {
+function VisualEditorToolbar({ editor, showOutlines, setShowOutlines, setShowColumnConfig }) {
   if (!editor) return null;
 
   const buttonClass = (active) => 
@@ -502,22 +734,30 @@ function VisualEditorToolbar({ editor, showOutlines, setShowOutlines }) {
 
       {/* Column controls */}
       <button
-        onClick={() => editor.chain().focus().setColumns(2).run()}
+        onClick={() => {
+          try {
+            editor.chain().focus().setColumns(2, false).run();
+          } catch (e) {
+            console.log('Cannot insert columns here');
+          }
+        }}
         className={buttonClass(false)}
         title="Lägg till 2 kolumner"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 4v16M9 4H4v16h5M9 4h6v16H9M15 4h5v16h-5" />
-        </svg>
+        <span className="text-xs font-semibold px-1">2 kol</span>
       </button>
       <button
-        onClick={() => editor.chain().focus().setColumns(3).run()}
+        onClick={() => {
+          try {
+            editor.chain().focus().setColumns(3, false).run();
+          } catch (e) {
+            console.log('Cannot insert columns here');
+          }
+        }}
         className={buttonClass(false)}
         title="Lägg till 3 kolumner"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 4v16M8 4H4v16h4M8 4h4v16H8M12 4h4v16h-4M16 4h4v16h-4" />
-        </svg>
+        <span className="text-xs font-semibold px-1">3 kol</span>
       </button>
       <button
         onClick={() => editor.chain().focus().unsetColumns().run()}
@@ -941,6 +1181,8 @@ export default function TemplateEditor({
   const [editorMode, setEditorMode] = useState('visual'); // 'code', 'visual', or 'preview'
   const [showSettings, setShowSettings] = useState(false);
   const [showOutlines, setShowOutlines] = useState(true); // Show element borders in visual editor
+  const [showColumnConfig, setShowColumnConfig] = useState(false); // Column configuration popup
+  const clickedColumnElement = useRef(null); // Track which column element was clicked
 
   // Syntax highlighting function for HTML + Handlebars
   const highlightCode = useCallback((code) => {
@@ -1022,7 +1264,9 @@ export default function TemplateEditor({
   // TipTap editor for visual mode
   const visualEditor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        strike: false, // We'll add our own formatting if needed
+      }),
       Underline,
       TextStyle,
       Color,
@@ -1041,6 +1285,70 @@ export default function TemplateEditor({
       }
     },
   });
+
+  // Handle clicks on column configuration handles
+  useEffect(() => {
+    if (!visualEditor) return;
+
+    const handleClick = (event) => {
+      const target = event.target;
+      
+      // Check if click is on column-block (handle area is top-left, 40px)
+      if (target.dataset.columnConfig === 'block') {
+        const rect = target.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        // Handle is at top-left, roughly 40px x 30px
+        if (x <= 40 && y <= 30) {
+          event.preventDefault();
+          event.stopPropagation();
+          clickedColumnElement.current = target;
+          
+          // Set cursor inside the column block
+          const pos = visualEditor.view.posAtDOM(target, 0);
+          if (pos) {
+            visualEditor.commands.focus();
+            visualEditor.commands.setTextSelection(pos + 1);
+          }
+          
+          setShowColumnConfig(true);
+        }
+      }
+      
+      // Check if click is on column (handle area is top-right, 30px)
+      if (target.dataset.columnConfig === 'column') {
+        const rect = target.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const width = rect.width;
+        
+        // Handle is at top-right, roughly 30px x 30px
+        if (x >= width - 30 && y <= 30) {
+          event.preventDefault();
+          event.stopPropagation();
+          clickedColumnElement.current = target;
+          
+          // Set cursor inside the column
+          const pos = visualEditor.view.posAtDOM(target, 0);
+          if (pos) {
+            visualEditor.commands.focus();
+            visualEditor.commands.setTextSelection(pos + 1);
+          }
+          
+          setShowColumnConfig(true);
+        }
+      }
+    };
+
+    const editorElement = visualEditor.view.dom;
+    editorElement.addEventListener('click', handleClick);
+
+    return () => {
+      editorElement.removeEventListener('click', handleClick);
+    };
+  }, [visualEditor]);
+
 
   // Sync content when switching modes
   const handleModeSwitch = useCallback((newMode) => {
@@ -1750,7 +2058,12 @@ export default function TemplateEditor({
           {/* Visual Editor Mode */}
           {editorMode === 'visual' && (
             <>
-              <VisualEditorToolbar editor={visualEditor} showOutlines={showOutlines} setShowOutlines={setShowOutlines} />
+              <VisualEditorToolbar 
+                editor={visualEditor} 
+                showOutlines={showOutlines} 
+                setShowOutlines={setShowOutlines}
+                setShowColumnConfig={setShowColumnConfig}
+              />
               <div className="flex-1 overflow-auto bg-gray-100 p-6">
                 <div className="mx-auto bg-white shadow-xl" style={{ width: '794px', minHeight: '1123px' }}>
                   <style>{`
@@ -1835,13 +2148,59 @@ export default function TemplateEditor({
                       gap: 24px;
                       padding: 8px 0;
                       margin: 1rem 0;
+                      position: relative;
+                    }
+                    .ProseMirror .column-block::before {
+                      content: '⋮⋮';
+                      position: absolute;
+                      top: 0;
+                      left: 0;
+                      font-size: 16px;
+                      color: #94a3b8;
+                      cursor: pointer;
+                      padding: 4px 8px;
+                      line-height: 1;
+                      opacity: 0.5;
+                      transition: all 0.2s;
+                      z-index: 10;
+                      user-select: none;
+                      background: white;
+                      border-radius: 4px;
+                    }
+                    .ProseMirror .column-block:hover::before {
+                      opacity: 1;
+                      color: #3b82f6;
+                      transform: scale(1.1);
                     }
                     .ProseMirror .column {
                       overflow: auto;
                       border: 1px #cbd5e1 dashed;
-                      border-radius: 8px;
+                      border-radius: 0;
                       padding: 8px;
                       min-height: 100px;
+                      position: relative;
+                    }
+                    .ProseMirror .column::before {
+                      content: '⋮';
+                      position: absolute;
+                      top: 4px;
+                      right: 4px;
+                      font-size: 14px;
+                      color: #94a3b8;
+                      cursor: pointer;
+                      padding: 2px 4px;
+                      line-height: 1;
+                      opacity: 0.3;
+                      transition: all 0.2s;
+                      z-index: 10;
+                      user-select: none;
+                      background: white;
+                      border-radius: 3px;
+                    }
+                    .ProseMirror .column:hover::before {
+                      opacity: 1;
+                      color: #3b82f6;
+                      transform: scale(1.15);
                     }
                     ${showOutlines ? `
                     /* ALL ELEMENTS get visible borders when editing */
@@ -2036,6 +2395,14 @@ export default function TemplateEditor({
           )}
         </div>
       </div>
+
+      {/* Column Configuration Popup */}
+      {showColumnConfig && (
+        <ColumnConfigPopup 
+          editor={visualEditor} 
+          onClose={() => setShowColumnConfig(false)} 
+        />
+      )}
     </div>
   );
 }
