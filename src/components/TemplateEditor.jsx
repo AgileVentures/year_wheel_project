@@ -7,7 +7,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle';
-import { ColumnExtension } from '@gocapsule/column-extension';
+import { ColumnExtension } from '../extensions/ColumnExtension';
 import CodeEditor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
@@ -1044,12 +1044,12 @@ export default function TemplateEditor({
 
   // Sync content when switching modes
   const handleModeSwitch = useCallback((newMode) => {
-    // When leaving visual mode, save TipTap content
+    // When leaving visual mode, save TipTap content as HTML
     if (editorMode === 'visual' && visualEditor) {
       const content = visualEditor.getHTML();
       setTemplateContent(content);
     }
-    // When entering visual mode, load content into TipTap
+    // When entering visual mode, load content from HTML (now works with parseHTML!)
     if (newMode === 'visual' && visualEditor) {
       visualEditor.commands.setContent(templateContent || '<p></p>');
     }
