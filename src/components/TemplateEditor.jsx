@@ -207,77 +207,74 @@ export default function TemplateEditor({
           <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto p-4">
             <h3 className="font-semibold text-gray-900 mb-3">Tillgängliga variabler</h3>
             <div className="space-y-4">
-              {Object.entries(variables).map(([category, vars]) => (
-                <div key={category}>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 capitalize">
-                    {category}
-                  </h4>
-                  <div className="space-y-1">
-                    {Array.isArray(vars) ? (
-                      vars.map(v => (
-                        <button
-                          key={v}
-                          onClick={() => insertVariable(
-                            category === 'helpers' 
-                              ? `{{${v} }}` 
-                              : `{{${category}.${v}}}`
-                          )}
-                          className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded transition"
-                        >
-                          {category === 'helpers' ? v : `${category}.${v}`}
-                        </button>
-                      ))
-                    ) : null}
-                  </div>
-                </div>
-              ))}
               
+              {/* Top-level variables */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Loopar</h4>
-                <p className="text-xs text-gray-500 mb-2">Inuti loopar använd bara fältnamnet: <code className="bg-gray-100 px-1">{'{{name}}'}</code></p>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Hjul & Sida</h4>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => insertVariable('{{#each months}}\n  <p>{{name}} - {{itemCount}} items</p>\n{{/each}}')}
-                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
-                  >
-                    #each months
-                  </button>
-                  <button
-                    onClick={() => insertVariable('{{#each activityGroups}}\n  <h3>{{name}}</h3>\n  {{#each items}}\n    <p>{{name}}</p>\n  {{/each}}\n{{/each}}')}
-                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
-                  >
-                    #each activityGroups + items
-                  </button>
-                  <button
-                    onClick={() => insertVariable('{{#each rings}}\n  <p>{{name}} - {{itemCount}} items</p>\n{{/each}}')}
-                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
-                  >
-                    #each rings
-                  </button>
-                  <button
-                    onClick={() => insertVariable('{{#each items}}\n  <p>{{name}}: {{ringName}} - {{activityName}}</p>\n{{/each}}')}
-                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
-                  >
-                    #each items
-                  </button>
+                  <button onClick={() => insertVariable('{{wheel.title}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">wheel.title</button>
+                  <button onClick={() => insertVariable('{{wheel.year}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">wheel.year</button>
+                  <button onClick={() => insertVariable('{{page.title}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">page.title</button>
+                  <button onClick={() => insertVariable('{{currentDate}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">currentDate</button>
                 </div>
               </div>
 
+              {/* Statistics */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Statistik</h4>
+                <div className="space-y-1">
+                  <button onClick={() => insertVariable('{{stats.totalItems}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats.totalItems</button>
+                  <button onClick={() => insertVariable('{{stats.totalRings}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats.totalRings</button>
+                  <button onClick={() => insertVariable('{{stats.totalActivityGroups}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">stats.totalActivityGroups</button>
+                </div>
+              </div>
+              
+              {/* Loop context variables */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Loopar (använd bara fältnamn)</h4>
+                <p className="text-xs text-gray-500 mb-2">I loopar: <code className="bg-gray-100 px-1">{'{{name}}'}</code> inte <code className="bg-gray-100 px-1 line-through">{'{{months.name}}'}</code></p>
+                
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Månader:</p>
+                  <button onClick={() => insertVariable('{{#each months}}\n  <p>{{name}} - {{itemCount}} aktiviteter</p>\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each months</button>
+                  <p className="text-xs text-gray-500 pl-2">→ name, index, items, itemCount</p>
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Aktivitetsgrupper:</p>
+                  <button onClick={() => insertVariable('{{#each activityGroups}}\n  <h3>{{name}}</h3>\n  {{#each items}}\n    <p>{{name}}</p>\n  {{/each}}\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each activityGroups</button>
+                  <p className="text-xs text-gray-500 pl-2">→ name, color, items, itemCount</p>
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Ringar:</p>
+                  <button onClick={() => insertVariable('{{#each rings}}\n  <p>{{name}} - {{itemCount}} aktiviteter</p>\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each rings</button>
+                  <p className="text-xs text-gray-500 pl-2">→ name, type, items, itemCount</p>
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-xs font-semibold text-gray-600 mb-1">Aktiviteter:</p>
+                  <button onClick={() => insertVariable('{{#each items}}\n  <p>{{name}}: {{ringName}} - {{activityName}}</p>\n{{/each}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded mb-1">#each items</button>
+                  <p className="text-xs text-gray-500 pl-2">→ name, startDate, endDate, ringName, activityName, ringColor, activityColor</p>
+                </div>
+              </div>
+
+              {/* Helpers */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Hjälpfunktioner</h4>
+                <div className="space-y-1">
+                  <button onClick={() => insertVariable('{{formatDate startDate}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">formatDate</button>
+                  <button onClick={() => insertVariable('{{uppercase name}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">uppercase</button>
+                  <button onClick={() => insertVariable('{{lowercase name}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">lowercase</button>
+                </div>
+              </div>
+
+              {/* Conditionals */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Villkor</h4>
                 <div className="space-y-1">
-                  <button
-                    onClick={() => insertVariable('{{#if }}\n  \n{{/if}}')}
-                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
-                  >
-                    #if
-                  </button>
-                  <button
-                    onClick={() => insertVariable('{{#unless }}\n  \n{{/unless}}')}
-                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
-                  >
-                    #unless
-                  </button>
+                  <button onClick={() => insertVariable('{{#if items}}\n  ...\n{{else}}\n  <p>Inga aktiviteter</p>\n{{/if}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">#if</button>
+                  <button onClick={() => insertVariable('{{#unless items}}\n  <p>Inga aktiviteter</p>\n{{/unless}}')} className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded">#unless</button>
                 </div>
               </div>
             </div>
