@@ -47,6 +47,7 @@ const EditorOnboarding = lazyWithRetry(() => import("../EditorOnboarding"));
 const AIAssistantOnboarding = lazyWithRetry(() => import("../AIAssistantOnboarding"));
 const ConflictResolutionModal = lazyWithRetry(() => import("../ConflictResolutionModal"));
 const MobileEditor = lazyWithRetry(() => import("../mobile/MobileEditor"));
+const TemplateManager = lazyWithRetry(() => import("../TemplateManager"));
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t, i18n } = useTranslation(['common', 'conflict']);
@@ -749,6 +750,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showReportModal, setShowReportModal] = useState(false); // PDF Report selection modal
   const [showConflictModal, setShowConflictModal] = useState(false); // Conflict resolution modal
   const [conflictDetails, setConflictDetails] = useState(null); // Details of conflicts to resolve
+  const [showTemplateManager, setShowTemplateManager] = useState(false); // Report templates manager
   
   
   // AI Assistant state
@@ -5403,6 +5405,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             ganttViewRef.current.export(format);
           }
         }}
+        // Report templates
+        onOpenReportTemplates={() => setShowTemplateManager(true)}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -5753,6 +5757,20 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
               setConflictDetails(null);
             }}
           />
+        </Suspense>
+      )}
+
+      {/* Report Templates Manager */}
+      {showTemplateManager && (
+        <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"><WheelLoader size="sm" /></div>}>
+          <div className="fixed inset-0 bg-white z-50">
+            <TemplateManager
+              wheelData={wheelData}
+              pageData={currentPage}
+              organizationData={wheelStructure}
+              onClose={() => setShowTemplateManager(false)}
+            />
+          </div>
         </Suspense>
       )}
 

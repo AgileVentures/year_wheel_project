@@ -1,0 +1,334 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  renderTemplate, 
+  validateTemplate, 
+  buildTemplateContext,
+  exportToPDF,
+  getTemplateVariables
+} from '../services/templateService';
+
+/**
+ * TemplateEditor - Edit and preview report templates
+ * Features: Syntax validation, live preview, variable reference
+ */
+export default function TemplateEditor({ 
+  template, 
+  onSave, 
+  onCancel,
+  wheelData,
+  pageData,
+  organizationData 
+}) {
+  const [name, setName] = useState(template?.name || '');
+  const [description, setDescription] = useState(template?.description || '');
+  const [templateContent, setTemplateContent] = useState(template?.template_content || '');
+  const [category, setCategory] = useState(template?.category || 'custom');
+  const [validation, setValidation] = useState({ valid: true, error: null });
+  const [preview, setPreview] = useState('');
+  const [showVariables, setShowVariables] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const variables = getTemplateVariables();
+
+  // Validate template on content change
+  useEffect(() => {
+    if (templateContent) {
+      const result = validateTemplate(templateContent);
+      setValidation(result);
+      
+      // Update preview if valid
+      if (result.valid && wheelData && organizationData) {
+        try {
+          const context = buildTemplateContext(wheelData, pageData, organizationData);
+          const rendered = renderTemplate(templateContent, context);
+          setPreview(rendered);
+        } catch (error) {
+          setPreview(`<div style="color: red; padding: 20px;">Preview Error: ${error.message}</div>`);
+        }
+      }
+    }
+  }, [templateContent, wheelData, pageData, organizationData]);
+
+  const handleSave = async () => {
+    if (!validation.valid) {
+      alert('Please fix template errors before saving');
+      return;
+    }
+
+    if (!name.trim()) {
+      alert('Please enter a template name');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSave({
+        name: name.trim(),
+        description: description.trim(),
+        template_content: templateContent,
+        category
+      });
+    } catch (error) {
+      alert('Failed to save template: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleExportPreview = async () => {
+    if (!preview) return;
+    
+    setIsExporting(true);
+    try {
+      const filename = `${name.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}.pdf`;
+      await exportToPDF(preview, filename);
+    } catch (error) {
+      alert('Failed to export PDF: ' + error.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const insertVariable = (variable) => {
+    const textarea = document.getElementById('template-editor');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = templateContent;
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+    setTemplateContent(before + variable + after);
+    
+    // Set cursor position after inserted variable
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + variable.length, start + variable.length);
+    }, 0);
+  };
+
+  return (
+    <div className="template-editor h-full flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {template?.id ? 'Redigera mall' : 'Skapa ny mall'}
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowVariables(!showVariables)}
+              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition"
+            >
+              {showVariables ? 'Dölj variabler' : 'Visa variabler'}
+            </button>
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition"
+            >
+              {showPreview ? 'Dölj förhandsvisning' : 'Visa förhandsvisning'}
+            </button>
+            <button
+              onClick={handleExportPreview}
+              disabled={!preview || isExporting}
+              className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition disabled:opacity-50"
+            >
+              {isExporting ? 'Exporterar...' : 'Exportera PDF'}
+            </button>
+          </div>
+        </div>
+
+        {/* Metadata fields */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Mallnamn *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="t.ex. Månadsrapport"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Kategori
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="custom">Anpassad</option>
+              <option value="monthly">Månatlig</option>
+              <option value="activity">Aktivitet</option>
+              <option value="summary">Sammanfattning</option>
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Beskrivning
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Beskriv vad mallen används till"
+            />
+          </div>
+        </div>
+
+        {/* Validation error */}
+        {!validation.valid && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            <strong>Template Error:</strong> {validation.error}
+            {validation.line && ` (Line ${validation.line}${validation.column ? `, Column ${validation.column}` : ''})`}
+          </div>
+        )}
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Variables sidebar */}
+        {showVariables && (
+          <div className="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto p-4">
+            <h3 className="font-semibold text-gray-900 mb-3">Tillgängliga variabler</h3>
+            <div className="space-y-4">
+              {Object.entries(variables).map(([category, vars]) => (
+                <div key={category}>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2 capitalize">
+                    {category}
+                  </h4>
+                  <div className="space-y-1">
+                    {Array.isArray(vars) ? (
+                      vars.map(v => (
+                        <button
+                          key={v}
+                          onClick={() => insertVariable(
+                            category === 'helpers' 
+                              ? `{{${v} }}` 
+                              : `{{${category}.${v}}}`
+                          )}
+                          className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded transition"
+                        >
+                          {category === 'helpers' ? v : `${category}.${v}`}
+                        </button>
+                      ))
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Loopar</h4>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => insertVariable('{{#each months}}\n  \n{{/each}}')}
+                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
+                  >
+                    #each months
+                  </button>
+                  <button
+                    onClick={() => insertVariable('{{#each items}}\n  \n{{/each}}')}
+                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
+                  >
+                    #each items
+                  </button>
+                  <button
+                    onClick={() => insertVariable('{{#each rings}}\n  \n{{/each}}')}
+                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
+                  >
+                    #each rings
+                  </button>
+                  <button
+                    onClick={() => insertVariable('{{#each activityGroups}}\n  \n{{/each}}')}
+                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
+                  >
+                    #each activityGroups
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Villkor</h4>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => insertVariable('{{#if }}\n  \n{{/if}}')}
+                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
+                  >
+                    #if
+                  </button>
+                  <button
+                    onClick={() => insertVariable('{{#unless }}\n  \n{{/unless}}')}
+                    className="block w-full text-left px-2 py-1 text-xs font-mono bg-white hover:bg-blue-50 border border-gray-200 rounded"
+                  >
+                    #unless
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Editor and preview */}
+        <div className={`flex-1 flex ${showPreview ? 'flex-row' : ''}`}>
+          {/* Template editor */}
+          <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col border-r border-gray-200`}>
+            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+              <h3 className="text-sm font-medium text-gray-700">HTML-mall (Handlebars)</h3>
+            </div>
+            <textarea
+              id="template-editor"
+              value={templateContent}
+              onChange={(e) => setTemplateContent(e.target.value)}
+              className="flex-1 p-4 font-mono text-sm border-none focus:ring-0 resize-none"
+              placeholder="Skriv din mall här... Använd {{variabler}} och {{#each loops}}...{{/each}}"
+              spellCheck={false}
+            />
+          </div>
+
+          {/* Preview pane */}
+          {showPreview && (
+            <div className="w-1/2 flex flex-col bg-gray-50">
+              <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                <h3 className="text-sm font-medium text-gray-700">Förhandsvisning</h3>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                {preview ? (
+                  <div 
+                    className="bg-white shadow-sm"
+                    dangerouslySetInnerHTML={{ __html: preview }} 
+                  />
+                ) : (
+                  <div className="text-gray-400 text-center py-8">
+                    Skriv en mall för att se förhandsvisning
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer actions */}
+      <div className="bg-white border-t border-gray-200 p-4 flex justify-end gap-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition"
+        >
+          Avbryt
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!validation.valid || !name.trim() || isSaving}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition disabled:opacity-50"
+        >
+          {isSaving ? 'Sparar...' : 'Spara mall'}
+        </button>
+      </div>
+    </div>
+  );
+}
