@@ -23,12 +23,20 @@ ALTER TABLE notifications
   DROP CONSTRAINT IF EXISTS notifications_comment_id_fkey;
 
 -- Add CHECK constraint to ensure comment_id is only set for 'mention' or 'comment' types
-ALTER TABLE notifications
-  ADD CONSTRAINT notifications_comment_id_check
-  CHECK (
-    (comment_id IS NULL) OR 
-    (type IN ('mention', 'comment'))
-  );
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'notifications_comment_id_check'
+  ) THEN
+    ALTER TABLE notifications
+      ADD CONSTRAINT notifications_comment_id_check
+      CHECK (
+        (comment_id IS NULL) OR 
+        (type IN ('mention', 'comment'))
+      );
+  END IF;
+END $$;
 
 -- Verify the fix
 SELECT 

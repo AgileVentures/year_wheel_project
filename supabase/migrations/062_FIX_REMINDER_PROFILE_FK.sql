@@ -23,17 +23,34 @@ ALTER TABLE activity_reminders
   DROP CONSTRAINT IF EXISTS activity_reminders_created_by_fkey;
 
 -- Step 2: Add FKs to profiles instead (profiles.id = auth.users.id via trigger)
-ALTER TABLE activity_reminders
-  ADD CONSTRAINT activity_reminders_recipient_user_id_fkey
-  FOREIGN KEY (recipient_user_id) 
-  REFERENCES profiles(id) 
-  ON DELETE CASCADE;
-
-ALTER TABLE activity_reminders
-  ADD CONSTRAINT activity_reminders_created_by_fkey
-  FOREIGN KEY (created_by) 
-  REFERENCES profiles(id) 
-  ON DELETE CASCADE;
+DO $$ 
+BEGIN
+  -- Add recipient_user_id FK if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'activity_reminders_recipient_user_id_fkey'
+    AND conrelid = 'activity_reminders'::regclass
+  ) THEN
+    ALTER TABLE activity_reminders
+      ADD CONSTRAINT activity_reminders_recipient_user_id_fkey
+      FOREIGN KEY (recipient_user_id) 
+      REFERENCES profiles(id) 
+      ON DELETE CASCADE;
+  END IF;
+  
+  -- Add created_by FK if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'activity_reminders_created_by_fkey'
+    AND conrelid = 'activity_reminders'::regclass
+  ) THEN
+    ALTER TABLE activity_reminders
+      ADD CONSTRAINT activity_reminders_created_by_fkey
+      FOREIGN KEY (created_by) 
+      REFERENCES profiles(id) 
+      ON DELETE CASCADE;
+  END IF;
+END $$;
 
 -- Verify the constraint exists
 SELECT

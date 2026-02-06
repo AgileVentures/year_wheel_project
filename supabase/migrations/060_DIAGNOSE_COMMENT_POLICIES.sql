@@ -68,52 +68,70 @@ BEGIN
 END $$;
 
 -- Recreate with admin check for ITEM_COMMENTS
-CREATE POLICY "Team members and admins can create comments"
-  ON item_comments FOR INSERT
-  WITH CHECK (
-    user_id = auth.uid() AND (
-      -- Wheel owner
-      wheel_id IN (SELECT id FROM year_wheels WHERE user_id = auth.uid())
-      OR
-      -- Team member
-      wheel_id IN (
-        SELECT yw.id FROM year_wheels yw
-        INNER JOIN team_members tm ON yw.team_id = tm.team_id
-        WHERE tm.user_id = auth.uid()
-      )
-      OR
-      -- Administrator
-      EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.is_admin = true
-      )
-    )
-  );
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'item_comments' 
+    AND policyname = 'Team members and admins can create comments'
+  ) THEN
+    CREATE POLICY "Team members and admins can create comments"
+      ON item_comments FOR INSERT
+      WITH CHECK (
+        user_id = auth.uid() AND (
+          -- Wheel owner
+          wheel_id IN (SELECT id FROM year_wheels WHERE user_id = auth.uid())
+          OR
+          -- Team member
+          wheel_id IN (
+            SELECT yw.id FROM year_wheels yw
+            INNER JOIN team_members tm ON yw.team_id = tm.team_id
+            WHERE tm.user_id = auth.uid()
+          )
+          OR
+          -- Administrator
+          EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+          )
+        )
+      );
+  END IF;
+END $$;
 
 -- Recreate with admin check for WHEEL_COMMENTS
-CREATE POLICY "Team members and admins can create wheel comments"
-  ON wheel_comments FOR INSERT
-  WITH CHECK (
-    user_id = auth.uid() AND (
-      -- Wheel owner
-      wheel_id IN (SELECT id FROM year_wheels WHERE user_id = auth.uid())
-      OR
-      -- Team member
-      wheel_id IN (
-        SELECT yw.id FROM year_wheels yw
-        INNER JOIN team_members tm ON yw.team_id = tm.team_id
-        WHERE tm.user_id = auth.uid()
-      )
-      OR
-      -- Administrator
-      EXISTS (
-        SELECT 1 FROM profiles
-        WHERE profiles.id = auth.uid()
-        AND profiles.is_admin = true
-      )
-    )
-  );
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'wheel_comments' 
+    AND policyname = 'Team members and admins can create wheel comments'
+  ) THEN
+    CREATE POLICY "Team members and admins can create wheel comments"
+      ON wheel_comments FOR INSERT
+      WITH CHECK (
+        user_id = auth.uid() AND (
+          -- Wheel owner
+          wheel_id IN (SELECT id FROM year_wheels WHERE user_id = auth.uid())
+          OR
+          -- Team member
+          wheel_id IN (
+            SELECT yw.id FROM year_wheels yw
+            INNER JOIN team_members tm ON yw.team_id = tm.team_id
+            WHERE tm.user_id = auth.uid()
+          )
+          OR
+          -- Administrator
+          EXISTS (
+            SELECT 1 FROM profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.is_admin = true
+          )
+        )
+      );
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 4. VERIFY FINAL STATE
