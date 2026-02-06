@@ -79,8 +79,3 @@ ORDER BY tablename, policyname;
 -- ============================================================================
 -- MIGRATION COMPLETE
 -- ============================================================================
-
--- Add migration record
-INSERT INTO _migrations (name, executed_at)
-VALUES ('027_FIX_COMMENT_RLS_FOR_ADMINS', NOW())
-ON CONFLICT (name) DO NOTHING;

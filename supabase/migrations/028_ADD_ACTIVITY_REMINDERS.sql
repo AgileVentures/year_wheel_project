@@ -276,8 +276,3 @@ GRANT EXECUTE ON FUNCTION mark_reminder_failed TO authenticated;
 -- ============================================================================
 -- MIGRATION COMPLETE
 -- ============================================================================
-
--- Add migration record
-INSERT INTO _migrations (name, executed_at)
-VALUES ('028_ADD_ACTIVITY_REMINDERS', NOW())
-ON CONFLICT (name) DO NOTHING;
