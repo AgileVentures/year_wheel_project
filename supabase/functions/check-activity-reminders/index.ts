@@ -1,6 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+/**
+ * Sleep utility to avoid rate limits
+ */
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 interface ReminderRow {
   reminder_id: string
   item_id: string
@@ -85,6 +90,9 @@ Deno.serve(async (req: Request) => {
           try {
             const emailId = await sendReminderEmail(reminder, recipient)
             console.log(`[Reminders] Sent reminder to ${recipient.email}, email ID: ${emailId}`)
+            
+            // Add delay to avoid rate limits (Resend allows 2 requests/second)
+            await sleep(600)
           } catch (emailError) {
             console.error(`[Reminders] Failed to send to ${recipient.email}:`, emailError)
             throw emailError
