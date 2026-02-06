@@ -199,7 +199,7 @@ export default function ReportTemplatesPage() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ height: 'calc(100vh - 160px)' }}>
+        <div className="bg-white rounded-sm shadow-sm border border-gray-200 overflow-hidden" style={{ height: 'calc(100vh - 160px)' }}>
           <TemplateManager
             wheelData={wheelData}
             pageData={pageData}

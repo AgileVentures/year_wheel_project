@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, Tag, Circle, MessageSquare } from 'lucide-react';
+import { X, Calendar, Tag, Circle, MessageSquare, Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { sv, enUS } from 'date-fns/locale';
 import { ItemCommentsPanel } from '../ItemCommentsPanel';
+import RemindersPanel from '../RemindersPanel';
 import { getCommentCount } from '../../services/commentService';
+import { getRemindersCount } from '../../services/reminderService';
 
 const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDelete }) => {
   const { t, i18n } = useTranslation(['editor']);
   const [activeTab, setActiveTab] = useState('details');
   const [commentCount, setCommentCount] = useState(0);
+  const [reminderCount, setReminderCount] = useState(0);
   
   // Editable fields
   const [name, setName] = useState(item.name || '');
@@ -26,11 +29,26 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
   useEffect(() => {
     const loadCommentCount = async () => {
       if (item?.id) {
-        const count = await getCommentCount(item.id);
-        setCommentCount(count);
+        const { data } = await getCommentCount(item.id);
+        if (data !== null) {
+          setCommentCount(data);
+        }
       }
     };
     loadCommentCount();
+  }, [item?.id]);
+
+  // Load reminder count
+  useEffect(() => {
+    const loadReminderCount = async () => {
+      if (item?.id) {
+        const { data } = await getRemindersCount(item.id);
+        if (data !== null) {
+          setReminderCount(data);
+        }
+      }
+    };
+    loadReminderCount();
   }, [item?.id]);
   
   const handleSave = () => {
@@ -105,6 +123,24 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
               {commentCount > 0 && (
                 <span className="bg-blue-100 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">
                   {commentCount}
+                </span>
+              )}
+            </div>
+          </button>
+          <button
+            className={`px-4 py-3 font-medium transition-colors relative ${
+              activeTab === 'reminders'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            onClick={() => setActiveTab('reminders')}
+          >
+            <div className="flex items-center gap-2">
+              <Bell size={16} />
+              {t('editor:reminders', 'Reminders')}
+              {reminderCount > 0 && (
+                <span className="bg-blue-100 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+                  {reminderCount}
                 </span>
               )}
             </div>
@@ -230,9 +266,11 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
                 </select>
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'comments' ? (
             <ItemCommentsPanel item={item} wheel={wheel} />
-          )}
+          ) : activeTab === 'reminders' ? (
+            <RemindersPanel item={item} wheel={wheel} />
+          ) : null}
         </div>
         
         {/* Footer */}

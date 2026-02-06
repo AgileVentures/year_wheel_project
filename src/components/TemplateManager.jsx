@@ -336,7 +336,7 @@ function TemplateCard({ template, onEdit, onDelete, onPreview, onGenerate, isGen
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
+    <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-4 hover:shadow-md transition">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h4 className="font-semibold text-gray-900 mb-1">{template.name}</h4>

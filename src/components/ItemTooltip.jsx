@@ -1,10 +1,12 @@
-import { X, Edit2, Trash2, GripVertical, ExternalLink, MessageCircle } from 'lucide-react';
+import { X, Edit2, Trash2, GripVertical, ExternalLink, MessageCircle, Bell } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showConfirmDialog } from '../utils/dialogs';
 import { fetchLinkedWheelInfo } from '../services/wheelService';
 import ItemCommentsPanel from './ItemCommentsPanel';
+import RemindersPanel from './RemindersPanel';
 import { getCommentCount } from '../services/commentService';
+import { getRemindersCount } from '../services/reminderService';
 
 function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose, onOpenItem, readonly = false, wheel = null }) {
   const { t, i18n } = useTranslation(['editor']);
@@ -13,8 +15,9 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
   const [currentPosition, setCurrentPosition] = useState(position);
   const [linkedWheelInfo, setLinkedWheelInfo] = useState(null);
   const [loadingLinkedWheel, setLoadingLinkedWheel] = useState(false);
-  const [activeTab, setActiveTab] = useState('details'); // 'details' or 'comments'
+  const [activeTab, setActiveTab] = useState('details'); // 'details', 'comments', or 'reminders'
   const [commentCount, setCommentCount] = useState(0);
+  const [reminderCount, setReminderCount] = useState(0);
   const tooltipRef = useRef(null);
 
   const ring = item ? wheelStructure.rings.find(r => r.id === item.ringId) : null;
@@ -74,6 +77,32 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
       }
     };
     loadCommentCount();
+  }, [item, wheel]);
+
+  // Fetch reminder count
+  useEffect(() => {
+    const loadReminderCount = async () => {
+      if (!item) {
+        setReminderCount(0);
+        return;
+      }
+
+      try {
+        const isValidUUID = item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id);
+        if (isValidUUID && wheel) {
+          const { data } = await getRemindersCount(item.id);
+          if (data !== null) {
+            setReminderCount(data);
+          }
+        } else {
+          setReminderCount(0);
+        }
+      } catch (error) {
+        console.error('Error loading reminder count:', error);
+        setReminderCount(0);
+      }
+    };
+    loadReminderCount();
   }, [item, wheel]);
 
   // Update position when prop changes
@@ -144,7 +173,7 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
         left: `${currentPosition.x}px`,
         top: `${currentPosition.y}px`,
         cursor: isDragging ? 'grabbing' : 'default',
-        width: activeTab === 'comments' ? '500px' : '320px',
+        width: activeTab === 'comments' ? '500px' : activeTab === 'reminders' ? '480px' : '320px',
         maxHeight: '80vh',
         display: 'flex',
         flexDirection: 'column'
@@ -205,6 +234,22 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
               {commentCount > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-700 rounded-full">
                   {commentCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('reminders')}
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                activeTab === 'reminders'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <Bell size={14} />
+              <span>{t('editor:itemTooltip.reminders', 'Reminders')}</span>
+              {reminderCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-700 rounded-full">
+                  {reminderCount}
                 </span>
               )}
             </button>
@@ -321,10 +366,13 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
               </div>
             )}
           </div>
-        ) : (
+        ) : activeTab === 'comments' ? (
           // Comments tab
           wheel && <div className="p-3 h-full"><ItemCommentsPanel item={item} wheel={wheel} /></div>
-        )}
+        ) : activeTab === 'reminders' ? (
+          // Reminders tab
+          wheel && <div className="p-3 h-full"><RemindersPanel item={item} wheel={wheel} /></div>
+        ) : null}
       </div>
 
       {/* Actions - only show in edit mode and details tab */}

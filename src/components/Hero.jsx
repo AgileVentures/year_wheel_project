@@ -164,10 +164,10 @@ function Hero() {
                       const viewsSection = document.getElementById('views-section');
                       viewsSection?.scrollIntoView({ behavior: 'smooth' });
                     }}
-                    className="relative w-20 h-20 bg-white/5 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/10 transition-all duration-300 cursor-pointer border border-white/10 flex-shrink-0"
+                    className="relative w-20 h-20 bg-white/5 backdrop-blur-sm rounded-sm flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:bg-white/10 transition-all duration-300 cursor-pointer border border-white/10 flex-shrink-0"
                   >
                     {/* Gradient glow on hover */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${view.color} rounded-lg blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-300`}></div>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${view.color} rounded-sm blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-300`}></div>
                     
                     {view.useImg ? (
                       <img 
