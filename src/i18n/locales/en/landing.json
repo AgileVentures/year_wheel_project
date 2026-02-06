@@ -77,6 +77,10 @@
       "title": "SmartCopy",
       "description": "Copy entire year wheels or individual pages between years with one click. Perfect for recurring planning and templates that evolve over time."
     },
+    "emailReminders": {
+      "title": "Email Reminders",
+      "description": "Never miss important deadlines – automated email reminders keep your team aligned and on track. Schedule reminders for activities and receive advance notifications."
+    },
     "circularOverview": {
       "title": "Circular Overview",
       "description": "See months, weeks, and days in an intuitive wheel. Discover seasonal peaks and resource spikes that easily disappear in traditional calendars."
@@ -132,6 +136,7 @@
       "cta": "Get started",
       "features": [
         "AI assistant for planning",
+        "Email reminders for activities",
         "Google Integration (Calendar & Sheets)",
         "SmartCopy - copy all activities between years",
         "Unlimited year wheels",

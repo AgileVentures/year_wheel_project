@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Crown, Sparkles, Calendar, Copy, TrendingUp, Users, Zap, Download, History, MessageSquare, Share2 } from 'lucide-react';
+import { Crown, Sparkles, Calendar, Copy, TrendingUp, Users, Zap, Download, History, MessageSquare, Share2, Bell } from 'lucide-react';
 
 function FeaturesSection() {
   const { t } = useTranslation(['landing']);
@@ -69,7 +69,7 @@ function FeaturesSection() {
             </p>
           </div>
 
-          {/* Feature 4 - Circular Overview */}
+          {/* Feature 5 - Circular Overview */}
           <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#36C2C6]/30 hover:shadow-lg transition-shadow">
             <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
               <TrendingUp className="text-white" size={24} />
@@ -82,7 +82,7 @@ function FeaturesSection() {
             </p>
           </div>
 
-          {/* Feature 5 - Real-time Collaboration */}
+          {/* Feature 6 - Real-time Collaboration */}
           <div className="bg-gradient-to-br from-[#9FCB3E]/20 to-white p-8 rounded-sm border border-[#9FCB3E]/30 hover:shadow-lg transition-shadow">
             <div className="w-12 h-12 bg-[#336B3E] rounded-sm flex items-center justify-center mb-6">
               <Users className="text-white" size={24} />
@@ -95,7 +95,7 @@ function FeaturesSection() {
             </p>
           </div>
 
-          {/* Feature 6 - Smart Rings */}
+          {/* Feature 7 - Smart Rings */}
           <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#2E9E97]/30 hover:shadow-lg transition-shadow">
             <div className="w-12 h-12 bg-[#2E9E97] rounded-sm flex items-center justify-center mb-6">
               <Zap className="text-white" size={24} />
@@ -108,7 +108,7 @@ function FeaturesSection() {
             </p>
           </div>
 
-          {/* Feature 7 - High Quality Export */}
+          {/* Feature 8 - High Quality Export */}
           <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#36C2C6]/30 hover:shadow-lg transition-shadow">
             <div className="w-12 h-12 bg-[#36C2C6] rounded-sm flex items-center justify-center mb-6">
               <Download className="text-white" size={24} />
@@ -121,7 +121,24 @@ function FeaturesSection() {
             </p>
           </div>
 
-          {/* Feature 8 - Version History (PREMIUM) */}
+          {/* Feature 9 - Version History (PREMIUM) */}
+          <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#2D4EC8] hover:shadow-xl transition-all relative overflow-hidden">
+            <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#1a3d1f] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
+              <Crown size={12} />
+              {t('landing:features.premium')}
+            </div>
+            <div className="w-12 h-12 bg-[#2D4EC8] rounded-sm flex items-center justify-center mb-6">
+              <History className="text-white" size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              {t('landing:features.versionHistory.title')}
+            </h3>
+            <p className="text-gray-600">
+              {t('landing:features.versionHistory.description')}
+            </p>
+          </div>
+
+          {/* Feature 10 - Version History (PREMIUM) */}
           <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border-2 border-[#2D4EC8] hover:shadow-xl transition-all relative overflow-hidden">
             <div className="absolute top-3 right-3 bg-[#9FCB3E] text-[#1a3d1f] px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1">
               <Crown size={12} />
@@ -151,7 +168,7 @@ function FeaturesSection() {
             </p>
           </div>
 
-          {/* Feature 10 - Multiple Share Modes */}
+          {/* Feature 11 - Multiple Share Modes */}
           <div className="bg-gradient-to-br from-[#A4E6E0]/20 to-white p-8 rounded-sm border border-[#00A4A6]/30 hover:shadow-lg transition-shadow">
             <div className="w-12 h-12 bg-[#00A4A6] rounded-sm flex items-center justify-center mb-6">
               <Share2 className="text-white" size={24} />

@@ -77,6 +77,10 @@
       "title": "SmartCopy",
       "description": "Kopiera hela årshjul eller enskilda sidor mellan år med ett klick. Perfekt för återkommande planering och mallar som utvecklas över tid."
     },
+    "emailReminders": {
+      "title": "E-postpåminnelser",
+      "description": "Missa aldrig viktiga deadlines – automatiska e-postpåminnelser håller ditt team synkat och på rätt spår. Schemalägg påminnelser för aktiviteter och få notiser i förväg."
+    },
     "circularOverview": {
       "title": "Cirkulär överblick",
       "description": "Se månader, veckor och dagar i ett intuitivt hjul. Upptäck säsongstoppar och resurstoppar som lätt försvinner i traditionella kalendrar."
@@ -132,6 +136,7 @@
       "cta": "Kom igång",
       "features": [
         "AI-assistent för planering",
+        "E-postpåminnelser för aktiviteter",
         "Google Integration (Calendar & Sheets)",
         "SmartCopy - kopiera alla aktiviteter mellan år",
         "Obegränsade årshjul",
