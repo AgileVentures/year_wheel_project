@@ -4,7 +4,7 @@
  * Uses react-mentions library for mention detection and autocomplete
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Mention, MentionsInput } from 'react-mentions';
 import { useTranslation } from 'react-i18next';
 
@@ -112,15 +112,14 @@ export function MentionInput({
   onBlur,
 }) {
   const { t } = useTranslation('notifications');
-  const [suggestions, setSuggestions] = useState([]);
 
-  // Transform team members to mention suggestions format
-  useEffect(() => {
-    const formatted = teamMembers.map(member => ({
+  // Transform team members to mention suggestions format using useMemo
+  // This prevents unnecessary re-renders that cause cursor jumping
+  const suggestions = useMemo(() => {
+    return teamMembers.map(member => ({
       id: member.id,
       display: member.full_name || member.email,
     }));
-    setSuggestions(formatted);
   }, [teamMembers]);
 
   // Handle input change
