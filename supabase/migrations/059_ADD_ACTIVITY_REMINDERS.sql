@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS activity_reminders (
   -- Foreign keys
   item_id UUID NOT NULL REFERENCES items(id) ON DELETE CASCADE,
   wheel_id UUID NOT NULL REFERENCES year_wheels(id) ON DELETE CASCADE,
-  created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   
   -- Reminder configuration
   reminder_type TEXT NOT NULL CHECK (reminder_type IN ('before_start', 'after_start', 'after_completion')),
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS activity_reminders (
   
   -- Recipients
   recipient_type TEXT NOT NULL CHECK (recipient_type IN ('team', 'user')),
-  recipient_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE, -- NULL for team
+  recipient_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE, -- NULL for team
   
   -- Email content
   custom_message TEXT, -- Optional custom message to include
