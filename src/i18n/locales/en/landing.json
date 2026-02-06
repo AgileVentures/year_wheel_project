@@ -65,6 +65,7 @@
     "title": "Everything you need for professional planning",
     "subtitle": "From strategy to execution – YearWheel gives you the tools to keep your team in sync",
     "premium": "PREMIUM",
+    "free": "FREE",
     "aiAssistant": {
       "title": "AI Planning Assistant",
       "description": "Describe what you want to accomplish in natural language – AI creates the structure, adds activities, detects conflicts, and suggests improvements automatically."
