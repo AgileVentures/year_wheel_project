@@ -24,7 +24,7 @@ interface ReminderRow {
  * Check and Send Activity Reminders
  * 
  * This edge function is designed to be called daily via Supabase cron scheduler.
- * It checks for pending reminders and sends emails via Resend.
+ * It checks for pending AND overdue reminders and sends emails via Resend.
  * 
  * Cron setup: Run daily at 9:00 AM UTC
  * SELECT cron.schedule('check-activity-reminders', '0 9 * * *', 'https://[project-ref].supabase.co/functions/v1/check-activity-reminders');
@@ -42,9 +42,9 @@ Deno.serve(async (req: Request) => {
       { auth: { persistSession: false } }
     )
 
-    console.log('[Reminders] Starting daily reminder check...')
+    console.log('[Reminders] Starting reminder check (includes overdue)...')
 
-    // Get today's pending reminders
+    // Get today's AND overdue pending reminders
     const { data: reminders, error: remindersError } = await supabaseAdmin
       .rpc('get_pending_reminders_for_date', { p_date: new Date().toISOString().split('T')[0] })
 
@@ -54,14 +54,14 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!reminders || reminders.length === 0) {
-      console.log('[Reminders] No pending reminders for today')
+      console.log('[Reminders] No pending or overdue reminders')
       return new Response(
         JSON.stringify({ success: true, message: 'No pending reminders', sent: 0 }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`[Reminders] Found ${reminders.length} pending reminders`)
+    console.log(`[Reminders] Found ${reminders.length} pending/overdue reminders`)
 
     // Process each reminder
     let sentCount = 0
