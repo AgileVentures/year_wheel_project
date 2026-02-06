@@ -1,12 +1,12 @@
 import { X, Edit2, Trash2, GripVertical, ExternalLink, MessageCircle, Bell } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { showConfirmDialog } from '../utils/dialogs';
+import { showConfirmDialog, showToast } from '../utils/dialogs';
 import { fetchLinkedWheelInfo } from '../services/wheelService';
 import ItemCommentsPanel from './ItemCommentsPanel';
 import RemindersPanel from './RemindersPanel';
 import { getCommentCount } from '../services/commentService';
-import { getRemindersCount } from '../services/reminderService';
+import { getRemindersCount, updateItemStatus } from '../services/reminderService';
 
 function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose, onOpenItem, readonly = false, wheel = null }) {
   const { t, i18n } = useTranslation(['editor']);
@@ -18,7 +18,17 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
   const [activeTab, setActiveTab] = useState('details'); // 'details', 'comments', or 'reminders'
   const [commentCount, setCommentCount] = useState(0);
   const [reminderCount, setReminderCount] = useState(0);
+  const [itemStatus, setItemStatus] = useState(item?.status || 'planned');
   const tooltipRef = useRef(null);
+
+  // Status options for activity lifecycle
+  const STATUS_OPTIONS = [
+    { value: 'planned', label: t('editor:reminders.statusOptions.planned', 'Planerad'), color: 'bg-gray-100 text-gray-700' },
+    { value: 'not_started', label: t('editor:reminders.statusOptions.not_started', 'Ej påbörjad'), color: 'bg-yellow-100 text-yellow-700' },
+    { value: 'started', label: t('editor:reminders.statusOptions.started', 'Påbörjad'), color: 'bg-blue-100 text-blue-700' },
+    { value: 'in_progress', label: t('editor:reminders.statusOptions.in_progress', 'Pågående'), color: 'bg-indigo-100 text-indigo-700' },
+    { value: 'done', label: t('editor:reminders.statusOptions.done', 'Klar'), color: 'bg-green-100 text-green-700' }
+  ];
 
   const ring = item ? wheelStructure.rings.find(r => r.id === item.ringId) : null;
   const activity = item ? wheelStructure.activityGroups.find(a => a.id === item.activityId) : null;
@@ -161,6 +171,18 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
     }
   };
 
+  // Handle activity status change
+  const handleStatusChange = async (newStatus) => {
+    const { data, error } = await updateItemStatus(item.id, newStatus);
+    
+    if (error) {
+      showToast(t('editor:reminders.toasts.statusUpdateError', 'Kunde inte uppdatera status'), 'error');
+    } else {
+      setItemStatus(newStatus);
+      showToast(t('editor:reminders.toasts.statusUpdateSuccess', 'Status uppdaterad'), 'success');
+    }
+  };
+
   if (!item) {
     return null;
   }
@@ -289,6 +311,31 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
                 </p>
               </div>
             )}
+            
+            {/* Activity Status */}
+            {!isCluster && !readonly && (
+              <div className="mb-3 pb-3 border-b border-gray-200">
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  {t('editor:reminders.status', 'Status')}
+                </label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {STATUS_OPTIONS.map(status => (
+                    <button
+                      key={status.value}
+                      onClick={() => handleStatusChange(status.value)}
+                      className={`px-2 py-1 rounded-full text-xs font-medium transition-all ${
+                        itemStatus === status.value
+                          ? status.color + ' ring-1 ring-offset-1 ring-gray-400'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {status.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <span className="text-gray-500">{t('editor:itemTooltip.ring')}:</span>
               <span className="text-gray-900 font-medium">{ring?.name || 'N/A'}</span>

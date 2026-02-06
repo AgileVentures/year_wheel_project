@@ -116,21 +116,16 @@ export async function deleteReminder(reminderId) {
  */
 export async function updateItemStatus(itemId, status) {
   try {
-    console.log(`[updateItemStatus] Updating item ${itemId} to status "${status}"`);
-    
     const { data, error } = await supabase
       .from('items')
       .update({ status })
       .eq('id', itemId)
       .select();
 
-    console.log('[updateItemStatus] Response:', { data, error });
-
     if (error) throw error;
     
     // Check if any rows were updated
     if (!data || data.length === 0) {
-      console.error(`[updateItemStatus] No rows returned. Item ID: ${itemId}`);
       throw new Error('No item found or you do not have permission to update it');
     }
     

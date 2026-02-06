@@ -12,8 +12,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import {
   getItemReminders,
   createReminder,
-  deleteReminder,
-  updateItemStatus
+  deleteReminder
 } from '../services/reminderService';
 import { showConfirmDialog, showToast } from '../utils/dialogs';
 import WheelLoader from './WheelLoader';
@@ -32,14 +31,6 @@ export default function RemindersPanel({ item, wheel }) {
   ];
 
   const DAYS_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
-
-  const STATUS_OPTIONS = [
-    { value: 'planned', label: t('reminders.statusOptions.planned'), color: 'bg-gray-100 text-gray-700' },
-    { value: 'not_started', label: t('reminders.statusOptions.not_started'), color: 'bg-yellow-100 text-yellow-700' },
-    { value: 'started', label: t('reminders.statusOptions.started'), color: 'bg-blue-100 text-blue-700' },
-    { value: 'in_progress', label: t('reminders.statusOptions.in_progress'), color: 'bg-indigo-100 text-indigo-700' },
-    { value: 'done', label: t('reminders.statusOptions.done'), color: 'bg-green-100 text-green-700' }
-  ];
   
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,9 +45,6 @@ export default function RemindersPanel({ item, wheel }) {
   const [customMessage, setCustomMessage] = useState('');
   const [appliesToAllOccurrences, setAppliesToAllOccurrences] = useState(false);
   const [remindNow, setRemindNow] = useState(false);
-  
-  // Item status
-  const [itemStatus, setItemStatus] = useState(item?.status || 'planned');
 
   // Load reminders
   useEffect(() => {
@@ -154,21 +142,6 @@ export default function RemindersPanel({ item, wheel }) {
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
-    const { data, error } = await updateItemStatus(item.id, newStatus);
-    
-    if (error) {
-      showToast(t('reminders.toasts.statusUpdateError'), 'error');
-    } else {
-      setItemStatus(newStatus);
-      showToast(t('reminders.toasts.statusUpdateSuccess'), 'success');
-      // Notify parent if needed
-      if (window.dispatchEvent) {
-        window.dispatchEvent(new CustomEvent('itemUpdated', { detail: { itemId: item.id } }));
-      }
-    }
-  };
-
   const resetForm = () => {
     setReminderType('before_start');
     setDaysOffset(3);
@@ -189,8 +162,6 @@ export default function RemindersPanel({ item, wheel }) {
     return `${typeLabel}, ${daysText} → ${recipient}`;
   };
 
-  const currentStatusOption = STATUS_OPTIONS.find(s => s.value === itemStatus);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -201,28 +172,6 @@ export default function RemindersPanel({ item, wheel }) {
 
   return (
     <div className="space-y-4">
-      {/* Activity Status */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {t('reminders.status')}
-        </label>
-        <div className="flex gap-2 flex-wrap">
-          {STATUS_OPTIONS.map(status => (
-            <button
-              key={status.value}
-              onClick={() => handleStatusChange(status.value)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                itemStatus === status.value
-                  ? status.color + ' ring-2 ring-offset-1 ring-gray-400'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {status.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Existing Reminders */}
       <div>
         {/* Premium Feature Gate */}
