@@ -17,26 +17,27 @@ import {
 import { showConfirmDialog, showToast } from '../utils/dialogs';
 import WheelLoader from './WheelLoader';
 
-const REMINDER_TYPES = [
-  { value: 'before_start', label: 'Före start', icon: '📅' },
-  { value: 'after_start', label: 'Efter start', icon: '🚀' },
-  { value: 'after_completion', label: 'Efter slutdatum', icon: '✅' }
-];
-
-const DAYS_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
-
-const STATUS_OPTIONS = [
-  { value: 'planned', label: 'Planerad', color: 'bg-gray-100 text-gray-700' },
-  { value: 'not_started', label: 'Ej påbörjad', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'started', label: 'Påbörjad', color: 'bg-blue-100 text-blue-700' },
-  { value: 'in_progress', label: 'Pågående', color: 'bg-indigo-100 text-indigo-700' },
-  { value: 'done', label: 'Klar', color: 'bg-green-100 text-green-700' }
-];
-
 export default function RemindersPanel({ item, wheel }) {
   const { t } = useTranslation('editor');
   const { user } = useAuth();
   const { teamMembers } = useTeamMembers(wheel, user);
+  
+  // Constants with translations
+  const REMINDER_TYPES = [
+    { value: 'before_start', label: t('reminders.types.before_start') },
+    { value: 'after_start', label: t('reminders.types.after_start') },
+    { value: 'after_completion', label: t('reminders.types.after_completion') }
+  ];
+
+  const DAYS_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
+
+  const STATUS_OPTIONS = [
+    { value: 'planned', label: t('reminders.statusOptions.planned'), color: 'bg-gray-100 text-gray-700' },
+    { value: 'not_started', label: t('reminders.statusOptions.not_started'), color: 'bg-yellow-100 text-yellow-700' },
+    { value: 'started', label: t('reminders.statusOptions.started'), color: 'bg-blue-100 text-blue-700' },
+    { value: 'in_progress', label: t('reminders.statusOptions.in_progress'), color: 'bg-indigo-100 text-indigo-700' },
+    { value: 'done', label: t('reminders.statusOptions.done'), color: 'bg-green-100 text-green-700' }
+  ];
   
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +67,7 @@ export default function RemindersPanel({ item, wheel }) {
     const { data, error } = await getItemReminders(item.id);
     
     if (error) {
-      showToast('Kunde inte ladda påminnelser', 'error');
+      showToast(t('reminders.toasts.loadError'), 'error');
     } else {
       setReminders(data || []);
     }
@@ -75,7 +76,7 @@ export default function RemindersPanel({ item, wheel }) {
 
   const handleCreateReminder = async () => {
     if (recipientType === 'user' && !recipientUserId) {
-      showToast('Välj en mottagare', 'error');
+      showToast(t('reminders.selectRecipient'), 'error');
       return;
     }
 
@@ -94,13 +95,13 @@ export default function RemindersPanel({ item, wheel }) {
 
       if (error) throw error;
 
-      showToast('Påminnelse skapad!', 'success');
+      showToast(t('reminders.toasts.createSuccess'), 'success');
       setShowForm(false);
       resetForm();
       loadReminders();
     } catch (error) {
       console.error('Error creating reminder:', error);
-      showToast('Kunde inte skapa påminnelse', 'error');
+      showToast(t('reminders.toasts.createError'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -108,8 +109,8 @@ export default function RemindersPanel({ item, wheel }) {
 
   const handleDeleteReminder = async (reminderId) => {
     const confirmed = await showConfirmDialog(
-      'Ta bort påminnelse?',
-      'Vill du verkligen ta bort denna påminnelse?'
+      t('reminders.delete'),
+      t('reminders.deleteConfirm')
     );
 
     if (!confirmed) return;
@@ -117,9 +118,9 @@ export default function RemindersPanel({ item, wheel }) {
     const { error } = await deleteReminder(reminderId);
     
     if (error) {
-      showToast('Kunde inte ta bort påminnelse', 'error');
+      showToast(t('reminders.toasts.deleteError'), 'error');
     } else {
-      showToast('Påminnelse borttagen', 'success');
+      showToast(t('reminders.toasts.deleteSuccess'), 'success');
       loadReminders();
     }
   };
@@ -128,10 +129,10 @@ export default function RemindersPanel({ item, wheel }) {
     const { data, error } = await updateItemStatus(item.id, newStatus);
     
     if (error) {
-      showToast('Kunde inte uppdatera status', 'error');
+      showToast(t('reminders.toasts.statusUpdateError'), 'error');
     } else {
       setItemStatus(newStatus);
-      showToast('Status uppdaterad', 'success');
+      showToast(t('reminders.toasts.statusUpdateSuccess'), 'success');
       // Notify parent if needed
       if (window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('itemUpdated', { detail: { itemId: item.id } }));
@@ -151,10 +152,11 @@ export default function RemindersPanel({ item, wheel }) {
   const formatReminderDescription = (reminder) => {
     const typeLabel = REMINDER_TYPES.find(t => t.value === reminder.reminder_type)?.label || '';
     const recipient = reminder.recipient_type === 'team' 
-      ? 'Hela teamet' 
-      : reminder.recipient_profile?.full_name || reminder.recipient_profile?.email || 'Användare';
+      ? t('reminders.wholeTeam')
+      : reminder.recipient_profile?.full_name || reminder.recipient_profile?.email || t('reminders.specificPerson');
     
-    return `${typeLabel}, ${reminder.days_offset} dag${reminder.days_offset !== 1 ? 'ar' : ''} → ${recipient}`;
+    const daysText = t('reminders.days', { count: reminder.days_offset });
+    return `${typeLabel}, ${daysText} → ${recipient}`;
   };
 
   const currentStatusOption = STATUS_OPTIONS.find(s => s.value === itemStatus);
@@ -172,7 +174,7 @@ export default function RemindersPanel({ item, wheel }) {
       {/* Activity Status */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Status
+          {t('reminders.status')}
         </label>
         <div className="flex gap-2 flex-wrap">
           {STATUS_OPTIONS.map(status => (
@@ -195,21 +197,21 @@ export default function RemindersPanel({ item, wheel }) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-gray-700">
-            Aktiva påminnelser ({reminders.filter(r => r.status === 'pending').length})
+            {t('reminders.activeReminders', { count: reminders.filter(r => r.status === 'pending').length })}
           </label>
           <button
             onClick={() => setShowForm(!showForm)}
             className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
           >
             <Plus size={16} />
-            Lägg till
+            {t('reminders.addReminder')}
           </button>
         </div>
 
         {reminders.length === 0 ? (
           <div className="text-center py-6 bg-gray-50 rounded-sm border border-gray-200">
             <Bell size={32} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-sm text-gray-500">Inga påminnelser ännu</p>
+            <p className="text-sm text-gray-500">{t('reminders.noReminders')}</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -231,13 +233,13 @@ export default function RemindersPanel({ item, wheel }) {
                     </p>
                   )}
                   <p className="text-xs text-gray-500 ml-5 mt-1">
-                    Skickas: {new Date(reminder.scheduled_date).toLocaleDateString('sv-SE')}
+                    {t('reminders.sentOn', { date: new Date(reminder.scheduled_date).toLocaleDateString('sv-SE') })}
                   </p>
                 </div>
                 <button
                   onClick={() => handleDeleteReminder(reminder.id)}
                   className="text-red-600 hover:text-red-700 p-1"
-                  title="Ta bort påminnelse"
+                  title={t('reminders.delete')}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -252,13 +254,13 @@ export default function RemindersPanel({ item, wheel }) {
         <div className="border border-blue-200 bg-blue-50 rounded-sm p-4 space-y-3">
           <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <Plus size={16} />
-            Ny påminnelse
+            {t('reminders.newReminder')}
           </h4>
 
           {/* Reminder Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Typ
+              {t('reminders.type')}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {REMINDER_TYPES.map(type => (
@@ -271,7 +273,7 @@ export default function RemindersPanel({ item, wheel }) {
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  {type.icon} {type.label}
+                  {type.label}
                 </button>
               ))}
             </div>
@@ -280,7 +282,7 @@ export default function RemindersPanel({ item, wheel }) {
           {/* Days Offset */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Antal dagar
+              {t('reminders.daysCount')}
             </label>
             <select
               value={daysOffset}
@@ -289,7 +291,7 @@ export default function RemindersPanel({ item, wheel }) {
             >
               {DAYS_OPTIONS.map(days => (
                 <option key={days} value={days}>
-                  {days} dag{days !== 1 ? 'ar' : ''}
+                  {t('reminders.days', { count: days })}
                 </option>
               ))}
             </select>
@@ -298,7 +300,7 @@ export default function RemindersPanel({ item, wheel }) {
           {/* Recipient */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Skicka till
+              {t('reminders.sendTo')}
             </label>
             <div className="space-y-2">
               <div className="flex gap-2">
@@ -311,7 +313,7 @@ export default function RemindersPanel({ item, wheel }) {
                   }`}
                 >
                   <Users size={16} />
-                  Hela teamet
+                  {t('reminders.wholeTeam')}
                 </button>
                 <button
                   onClick={() => setRecipientType('user')}
@@ -322,7 +324,7 @@ export default function RemindersPanel({ item, wheel }) {
                   }`}
                 >
                   <User size={16} />
-                  Specifik person
+                  {t('reminders.specificPerson')}
                 </button>
               </div>
 
@@ -332,7 +334,7 @@ export default function RemindersPanel({ item, wheel }) {
                   onChange={(e) => setRecipientUserId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Välj person...</option>
+                  <option value="">{t('reminders.selectPerson')}</option>
                   {teamMembers.map(member => (
                     <option key={member.id} value={member.id}>
                       {member.full_name || member.email}
@@ -346,12 +348,12 @@ export default function RemindersPanel({ item, wheel }) {
           {/* Custom Message */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Egen text (valfritt)
+              {t('reminders.customMessage')}
             </label>
             <textarea
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
-              placeholder="Lägg till ett meddelande som ska visas i påminnelsen..."
+              placeholder={t('reminders.customMessagePlaceholder')}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
@@ -367,7 +369,7 @@ export default function RemindersPanel({ item, wheel }) {
               className="mt-1"
             />
             <label htmlFor="recurring" className="text-sm text-gray-700 cursor-pointer">
-              Gäller för alla förekomster av denna aktivitet (om återkommande)
+              {t('reminders.recurring')}
             </label>
           </div>
 
@@ -375,8 +377,7 @@ export default function RemindersPanel({ item, wheel }) {
           <div className="flex items-start gap-2 p-2 bg-blue-100 rounded-sm">
             <AlertCircle size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-blue-800">
-              Påminnelser skickas automatiskt via e-post till valda mottagare. 
-              Du kan hantera påminnelser här när som helst.
+              {t('reminders.infoText')}
             </p>
           </div>
 
@@ -387,7 +388,7 @@ export default function RemindersPanel({ item, wheel }) {
               disabled={submitting || (recipientType === 'user' && !recipientUserId)}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Skapar...' : 'Skapa påminnelse'}
+              {submitting ? t('reminders.creating') : t('reminders.create')}
             </button>
             <button
               onClick={() => {
@@ -396,7 +397,7 @@ export default function RemindersPanel({ item, wheel }) {
               }}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-sm font-medium hover:bg-gray-200"
             >
-              Avbryt
+              {t('reminders.cancel')}
             </button>
           </div>
         </div>

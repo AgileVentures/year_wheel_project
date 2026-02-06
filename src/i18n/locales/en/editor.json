@@ -481,6 +481,54 @@
   "openWheelButton": "Open",
   "removeLinkButton": "Remove link",
   "linkedWheelNotFound": "Linked wheel not found or no longer accessible",
+  "reminders": {
+    "title": "Reminders",
+    "status": "Status",
+    "activeReminders": "Active reminders ({{count}})",
+    "addReminder": "Add",
+    "noReminders": "No reminders yet",
+    "newReminder": "New reminder",
+    "type": "Type",
+    "daysCount": "Number of days",
+    "sendTo": "Send to",
+    "wholeTeam": "Whole team",
+    "specificPerson": "Specific person",
+    "selectPerson": "Select person...",
+    "customMessage": "Custom message (optional)",
+    "customMessagePlaceholder": "Add a message to display in the reminder...",
+    "recurring": "Applies to all occurrences of this activity (if recurring)",
+    "infoText": "Reminders are sent automatically via email to selected recipients. You can manage reminders here anytime.",
+    "creating": "Creating...",
+    "create": "Create reminder",
+    "cancel": "Cancel",
+    "delete": "Delete reminder",
+    "deleteConfirm": "Do you really want to delete this reminder?",
+    "sentOn": "Sent on: {{date}}",
+    "selectRecipient": "Select a recipient",
+    "statusOptions": {
+      "planned": "Planned",
+      "not_started": "Not started",
+      "started": "Started",
+      "in_progress": "In progress",
+      "done": "Done"
+    },
+    "types": {
+      "before_start": "Before start",
+      "after_start": "After start",
+      "after_completion": "After completion"
+    },
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "toasts": {
+      "loadError": "Could not load reminders",
+      "createError": "Could not create reminder",
+      "createSuccess": "Reminder created!",
+      "deleteError": "Could not delete reminder",
+      "deleteSuccess": "Reminder deleted",
+      "statusUpdateError": "Could not update status",
+      "statusUpdateSuccess": "Status updated"
+    }
+  },
   "aiOnboarding": {
     "welcome": {
       "title": "Welcome to the AI Assistant!",

@@ -481,6 +481,54 @@
   "openWheelButton": "Öppna",
   "removeLinkButton": "Ta bort länk",
   "linkedWheelNotFound": "Länkat hjul hittades inte eller är inte längre tillgängligt",
+  "reminders": {
+    "title": "Påminnelser",
+    "status": "Status",
+    "activeReminders": "Aktiva påminnelser ({{count}})",
+    "addReminder": "Lägg till",
+    "noReminders": "Inga påminnelser ännu",
+    "newReminder": "Ny påminnelse",
+    "type": "Typ",
+    "daysCount": "Antal dagar",
+    "sendTo": "Skicka till",
+    "wholeTeam": "Hela teamet",
+    "specificPerson": "Specifik person",
+    "selectPerson": "Välj person...",
+    "customMessage": "Egen text (valfritt)",
+    "customMessagePlaceholder": "Lägg till ett meddelande som ska visas i påminnelsen...",
+    "recurring": "Gäller för alla förekomster av denna aktivitet (om återkommande)",
+    "infoText": "Påminnelser skickas automatiskt via e-post till valda mottagare. Du kan hantera påminnelser här när som helst.",
+    "creating": "Skapar...",
+    "create": "Skapa påminnelse",
+    "cancel": "Avbryt",
+    "delete": "Ta bort påminnelse",
+    "deleteConfirm": "Vill du verkligen ta bort denna påminnelse?",
+    "sentOn": "Skickas: {{date}}",
+    "selectRecipient": "Välj en mottagare",
+    "statusOptions": {
+      "planned": "Planerad",
+      "not_started": "Ej påbörjad",
+      "started": "Påbörjad",
+      "in_progress": "Pågående",
+      "done": "Klar"
+    },
+    "types": {
+      "before_start": "Före start",
+      "after_start": "Efter start",
+      "after_completion": "Efter slutdatum"
+    },
+    "days_one": "{{count}} dag",
+    "days_other": "{{count}} dagar",
+    "toasts": {
+      "loadError": "Kunde inte ladda påminnelser",
+      "createError": "Kunde inte skapa påminnelse",
+      "createSuccess": "Påminnelse skapad!",
+      "deleteError": "Kunde inte ta bort påminnelse",
+      "deleteSuccess": "Påminnelse borttagen",
+      "statusUpdateError": "Kunde inte uppdatera status",
+      "statusUpdateSuccess": "Status uppdaterad"
+    }
+  },
   "aiOnboarding": {
     "welcome": {
       "title": "Välkommen till AI-assistenten!",
