@@ -138,6 +138,7 @@
     "cancel": "Cancel",
     "details": "Details",
     "comments": "Comments",
+    "reminders": "Reminders",
     "clusterInfo": "This is a cluster of {{count}} activities in the same week:",
     "clusterZoomHint": "Zoom in to see individual activities",
     "clusterEditHint": "Zoom in to edit individual activities"

@@ -137,7 +137,7 @@ const KanbanItemDialog = ({ item, wheelStructure, wheel, onClose, onUpdate, onDe
           >
             <div className="flex items-center gap-2">
               <Bell size={16} />
-              {t('editor:reminders', 'Reminders')}
+              {t('editor:reminders.title')}
               {reminderCount > 0 && (
                 <span className="bg-blue-100 text-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">
                   {reminderCount}
