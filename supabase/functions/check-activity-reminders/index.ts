@@ -207,7 +207,7 @@ async function sendReminderEmail(
     throw new Error('RESEND_API_KEY not configured')
   }
 
-  const APP_URL = Deno.env.get('APP_URL') || 'https://app.yearwheel.se'
+  const APP_URL = Deno.env.get('APP_URL') || 'https://yearwheel.se'
   const wheelUrl = `${APP_URL}/wheel/${reminder.wheel_id}?item=${reminder.item_id}`
 
   // Format dates
