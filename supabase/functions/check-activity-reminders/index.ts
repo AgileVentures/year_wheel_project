@@ -224,89 +224,122 @@ async function sendReminderEmail(
     reminderContext = `skulle vara klar för ${reminder.days_offset} dag${reminder.days_offset !== 1 ? 'ar' : ''} sedan`
   }
 
-  // Build HTML email
-  const htmlContent = `
+  // Build HTML email with YearWheel template
+  const emailContent = `
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
+      Hej ${recipient.name}!
+    </p>
+
+    <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+      Detta är en påminnelse om aktiviteten <strong>"${reminder.item_name}"</strong> som ${reminderContext}.
+    </p>
+
+    <!-- Activity Card -->
+    <div style="background-color: #f9fafb; border-left: 4px solid #00A4A6; padding: 20px; margin-bottom: 24px; border-radius: 4px;">
+      <h2 style="color: #1f2937; font-size: 18px; margin: 0 0 12px 0; font-weight: 600;">
+        ${reminder.item_name}
+      </h2>
+      
+      <div style="color: #6b7280; font-size: 14px; line-height: 1.8;">
+        <p style="margin: 4px 0;"><strong>Hjul:</strong> ${reminder.wheel_title}</p>
+        <p style="margin: 4px 0;"><strong>Startdatum:</strong> ${startDate}</p>
+        <p style="margin: 4px 0;"><strong>Slutdatum:</strong> ${endDate}</p>
+        <p style="margin: 4px 0;"><strong>Status:</strong> ${translateStatus(reminder.item_status)}</p>
+        ${reminder.item_description ? `
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+            <p style="margin: 0; color: #374151;"><strong>Beskrivning:</strong></p>
+            <p style="margin: 8px 0 0 0; white-space: pre-wrap;">${reminder.item_description}</p>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+
+    ${reminder.custom_message ? `
+      <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+        <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.6;">
+          <strong>Meddelande:</strong><br>
+          ${reminder.custom_message}
+        </p>
+      </div>
+    ` : ''}
+
+    <!-- CTA Button -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${wheelUrl}" 
+         style="display: inline-block; background: linear-gradient(135deg, #00A4A6 0%, #36C2C6 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
+        Visa aktivitet
+      </a>
+    </div>
+
+    <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin: 24px 0 0 0; text-align: center;">
+      Länken tar dig direkt till aktiviteten i ditt hjul.
+    </p>
+  `
+
+  const htmlContent = emailLayout(emailContent, `Påminnelse: ${reminder.item_name}`, 'Visualisera och planera ditt år!')
+  
+  // Email layout function (based on emailTemplates.js)
+  function emailLayout(content: string, preheader = '', tagline = 'Visualisera och planera ditt år!') {
+    return `
 <!DOCTYPE html>
-<html>
+<html lang="sv">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YearWheel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+    }
+    table { border-collapse: collapse; border-spacing: 0; }
+    img { border: 0; max-width: 100%; height: auto; }
+    .preheader { display: none; max-width: 0; max-height: 0; overflow: hidden; }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-    
-    <!-- Header -->
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px 24px; text-align: center;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">
-        🔔 Aktivitetspåminnelse
-      </h1>
-    </div>
-
-    <!-- Content -->
-    <div style="padding: 32px 24px;">
-      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
-        Hej ${recipient.name}!
-      </p>
-
-      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
-        Detta är en påminnelse om aktiviteten <strong>"${reminder.item_name}"</strong> som ${reminderContext}.
-      </p>
-
-      <!-- Activity Card -->
-      <div style="background-color: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 24px; border-radius: 4px;">
-        <h2 style="color: #1f2937; font-size: 18px; margin: 0 0 12px 0; font-weight: 600;">
-          ${reminder.item_name}
-        </h2>
-        
-        <div style="color: #6b7280; font-size: 14px; line-height: 1.8;">
-          <p style="margin: 4px 0;"><strong>Hjul:</strong> ${reminder.wheel_title}</p>
-          <p style="margin: 4px 0;"><strong>Startdatum:</strong> ${startDate}</p>
-          <p style="margin: 4px 0;"><strong>Slutdatum:</strong> ${endDate}</p>
-          <p style="margin: 4px 0;"><strong>Status:</strong> ${translateStatus(reminder.item_status)}</p>
-          ${reminder.item_description ? `
-            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0; color: #374151;"><strong>Beskrivning:</strong></p>
-              <p style="margin: 8px 0 0 0; white-space: pre-wrap;">${reminder.item_description}</p>
-            </div>
-          ` : ''}
-        </div>
-      </div>
-
-      ${reminder.custom_message ? `
-        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
-          <p style="color: #92400e; margin: 0; font-size: 14px; line-height: 1.6;">
-            <strong>Meddelande:</strong><br>
-            ${reminder.custom_message}
-          </p>
-        </div>
-      ` : ''}
-
-      <!-- CTA Button -->
-      <div style="text-align: center; margin: 32px 0;">
-        <a href="${wheelUrl}" 
-           style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;">
-          Visa aktivitet →
-        </a>
-      </div>
-
-      <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin: 24px 0 0 0; text-align: center;">
-        Länken tar dig direkt till aktiviteten i ditt hjul.
-      </p>
-    </div>
-
-    <!-- Footer -->
-    <div style="background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-      <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0;">
-        <strong>YearWheel</strong> - Visualisera ditt år
-      </p>
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-        Detta är en automatisk påminnelse som du eller en teammedlem har ställt in.
-      </p>
-    </div>
-  </div>
+<body style="background-color: #f3f4f6; padding: 0; margin: 0;">
+  <span class="preheader">${preheader}</span>
+  <table role="presentation" style="width: 100%; background-color: #f3f4f6; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+          <tr>
+            <td style="background: linear-gradient(135deg, rgba(54, 194, 198, 0.6) 0%, rgba(0, 164, 166, 0.6) 100%); padding: 32px 40px; text-align: center;">
+              <div style="margin-bottom: 16px;">
+                <img src="https://yearwheel.se/year_wheel_logo_transparent.png" alt="YearWheel" width="220" />
+              </div>
+              <p style="margin: 8px 0 0 0; color: #1B2A63; font-size: 14px; font-weight: 600;">${tagline}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">${content}</td>
+          </tr>
+          <tr>
+            <td style="background-color: #f9fafb; padding: 32px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px;">
+                <a href="https://yearwheel.se" style="color: #00A4A6; text-decoration: none; font-weight: 600;">YearWheel.se</a>
+              </p>
+              <p style="margin: 0 0 12px 0; color: #9ca3af; font-size: 12px;">
+                Du får detta mail för att du har ett konto hos YearWheel.
+              </p>
+              <p style="margin: 0; font-size: 12px;">
+                <a href="https://yearwheel.se/settings" style="color: #9ca3af; text-decoration: underline;">Inställningar</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
-  `
+    `
+  }
 
   // Send via Resend
   const response = await fetch('https://api.resend.com/emails', {
@@ -319,7 +352,7 @@ async function sendReminderEmail(
       from: 'YearWheel Påminnelser <hello@notify.yearwheel.se>',
       reply_to: 'hey@communitaslabs.io',
       to: [recipient.email],
-      subject: `🔔 Påminnelse: ${reminder.item_name} ${reminderContext}`,
+      subject: `Påminnelse: ${reminder.item_name} ${reminderContext}`,
       html: htmlContent
     })
   })

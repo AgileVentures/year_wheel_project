@@ -2,7 +2,7 @@
 -- Both reminders will be sent to thomas@communitaslabs.io
 
 WITH user_info AS (
-  SELECT id FROM profiles WHERE email = 'thomas@communitaslabs.io'
+  SELECT id FROM profiles WHERE email = 'nadmyranna@gmail.com'
 )
 INSERT INTO activity_reminders (
   item_id,
