@@ -528,7 +528,10 @@
       "deleteSuccess": "Påminnelse borttagen",
       "statusUpdateError": "Kunde inte uppdatera status",
       "statusUpdateSuccess": "Status uppdaterad"
-    }
+    },
+    "premiumFeature": "Påminnelser är en Premium-funktion",
+    "premiumDescription": "Uppgradera till Premium för att skapa automatiska e-postpåminnelser för dina aktiviteter.",
+    "upgradeToPremium": "Uppgradera till Premium"
   },
   "aiOnboarding": {
     "welcome": {

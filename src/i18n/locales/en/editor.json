@@ -528,7 +528,10 @@
       "deleteSuccess": "Reminder deleted",
       "statusUpdateError": "Could not update status",
       "statusUpdateSuccess": "Status updated"
-    }
+    },
+    "premiumFeature": "Reminders are a Premium feature",
+    "premiumDescription": "Upgrade to Premium to create automatic email reminders for your activities.",
+    "upgradeToPremium": "Upgrade to Premium"
   },
   "aiOnboarding": {
     "welcome": {

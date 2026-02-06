@@ -5,9 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bell, Clock, Users, User, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Bell, Clock, Users, User, Plus, Trash2, AlertCircle, Crown } from 'lucide-react';
 import { useTeamMembers } from '../hooks/useTeamMembers';
 import { useAuth } from '../hooks/useAuth';
+import { useSubscription } from '../hooks/useSubscription';
 import {
   getItemReminders,
   createReminder,
@@ -21,6 +22,7 @@ export default function RemindersPanel({ item, wheel }) {
   const { t } = useTranslation('editor');
   const { user } = useAuth();
   const { teamMembers } = useTeamMembers(wheel, user);
+  const { isPremium, isAdmin } = useSubscription();
   
   // Constants with translations
   const REMINDER_TYPES = [
@@ -195,17 +197,43 @@ export default function RemindersPanel({ item, wheel }) {
 
       {/* Existing Reminders */}
       <div>
+        {/* Premium Feature Gate */}
+        {!isPremium && !isAdmin && (
+          <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-lg">
+            <div className="flex items-start gap-3">
+              <Crown size={24} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                  {t('reminders.premiumFeature', 'Påminnelser är en Premium-funktion')}
+                </h4>
+                <p className="text-xs text-gray-700 mb-3">
+                  {t('reminders.premiumDescription', 'Uppgradera till Premium för att skapa automatiska e-postpåminnelser för dina aktiviteter.')}
+                </p>
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-semibold rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all"
+                >
+                  <Crown size={16} />
+                  {t('reminders.upgradeToPremium', 'Uppgradera till Premium')}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-gray-700">
             {t('reminders.activeReminders', { count: reminders.filter(r => r.status === 'pending').length })}
           </label>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-          >
-            <Plus size={16} />
-            {t('reminders.addReminder')}
-          </button>
+          {(isPremium || isAdmin) && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            >
+              <Plus size={16} />
+              {t('reminders.addReminder')}
+            </button>
+          )}
         </div>
 
         {reminders.length === 0 ? (
