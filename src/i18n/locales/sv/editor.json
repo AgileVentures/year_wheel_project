@@ -498,6 +498,7 @@
     "customMessage": "Egen text (valfritt)",
     "customMessagePlaceholder": "Lägg till ett meddelande som ska visas i påminnelsen...",
     "recurring": "Gäller för alla förekomster av denna aktivitet (om återkommande)",
+    "remindNow": "Skicka påminnelse nu (direkt efter att den skapats)",
     "infoText": "Påminnelser skickas automatiskt via e-post till valda mottagare. Du kan hantera påminnelser här när som helst.",
     "creating": "Skapar...",
     "create": "Skapa påminnelse",
@@ -527,7 +528,9 @@
       "deleteError": "Kunde inte ta bort påminnelse",
       "deleteSuccess": "Påminnelse borttagen",
       "statusUpdateError": "Kunde inte uppdatera status",
-      "statusUpdateSuccess": "Status uppdaterad"
+      "statusUpdateSuccess": "Status uppdaterad",
+      "sentNow": "Påminnelse skickad direkt!",
+      "sentNowError": "Påminnelse skapad men kunde inte skickas direkt"
     },
     "premiumFeature": "Påminnelser är en Premium-funktion",
     "premiumDescription": "Uppgradera till Premium för att skapa automatiska e-postpåminnelser för dina aktiviteter.",

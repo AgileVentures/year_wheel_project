@@ -53,6 +53,7 @@ export default function RemindersPanel({ item, wheel }) {
   const [recipientUserId, setRecipientUserId] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [appliesToAllOccurrences, setAppliesToAllOccurrences] = useState(false);
+  const [remindNow, setRemindNow] = useState(false);
   
   // Item status
   const [itemStatus, setItemStatus] = useState(item?.status || 'planned');
@@ -98,6 +99,30 @@ export default function RemindersPanel({ item, wheel }) {
       if (error) throw error;
 
       showToast(t('reminders.toasts.createSuccess'), 'success');
+      
+      // If "remind now" is checked, trigger the edge function immediately
+      if (remindNow && data) {
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-activity-reminders`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          if (response.ok) {
+            showToast(t('reminders.toasts.sentNow'), 'success');
+          }
+        } catch (sendError) {
+          console.error('Error triggering immediate send:', sendError);
+          showToast(t('reminders.toasts.sentNowError'), 'warning');
+        }
+      }
+      
       setShowForm(false);
       resetForm();
       loadReminders();
@@ -149,6 +174,7 @@ export default function RemindersPanel({ item, wheel }) {
     setRecipientUserId('');
     setCustomMessage('');
     setAppliesToAllOccurrences(false);
+    setRemindNow(false);
   };
 
   const formatReminderDescription = (reminder) => {
@@ -398,6 +424,20 @@ export default function RemindersPanel({ item, wheel }) {
             />
             <label htmlFor="recurring" className="text-sm text-gray-700 cursor-pointer">
               {t('reminders.recurring')}
+            </label>
+          </div>
+
+          {/* Remind Now Option */}
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="remindNow"
+              checked={remindNow}
+              onChange={(e) => setRemindNow(e.target.checked)}
+              className="mt-1"
+            />
+            <label htmlFor="remindNow" className="text-sm text-gray-700 cursor-pointer">
+              {t('reminders.remindNow')}
             </label>
           </div>
 

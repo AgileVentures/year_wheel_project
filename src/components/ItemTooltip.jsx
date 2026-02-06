@@ -173,7 +173,7 @@ function ItemTooltip({ item, wheelStructure, position, onEdit, onDelete, onClose
         left: `${currentPosition.x}px`,
         top: `${currentPosition.y}px`,
         cursor: isDragging ? 'grabbing' : 'default',
-        width: activeTab === 'comments' ? '600px' : activeTab === 'reminders' ? '600px' : '400px',
+        width: '600px',
         maxHeight: '85vh',
         display: 'flex',
         flexDirection: 'column'

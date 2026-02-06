@@ -498,6 +498,7 @@
     "customMessage": "Custom message (optional)",
     "customMessagePlaceholder": "Add a message to display in the reminder...",
     "recurring": "Applies to all occurrences of this activity (if recurring)",
+    "remindNow": "Send reminder now (immediately after creation)",
     "infoText": "Reminders are sent automatically via email to selected recipients. You can manage reminders here anytime.",
     "creating": "Creating...",
     "create": "Create reminder",
@@ -527,7 +528,9 @@
       "deleteError": "Could not delete reminder",
       "deleteSuccess": "Reminder deleted",
       "statusUpdateError": "Could not update status",
-      "statusUpdateSuccess": "Status updated"
+      "statusUpdateSuccess": "Status updated",
+      "sentNow": "Reminder sent immediately!",
+      "sentNowError": "Reminder created but could not be sent immediately"
     },
     "premiumFeature": "Reminders are a Premium feature",
     "premiumDescription": "Upgrade to Premium to create automatic email reminders for your activities.",
