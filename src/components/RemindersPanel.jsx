@@ -249,7 +249,7 @@ export default function RemindersPanel({ item, wheel }) {
 
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-gray-700">
-            {t('reminders.activeReminders', { count: reminders.filter(r => r.status === 'pending').length })}
+            {t('reminders.activeReminders', { count: reminders.filter(r => ['pending', 'sent'].includes(r.status)).length })}
           </label>
           {(isPremium || isAdmin) && (
             <button
@@ -269,17 +269,32 @@ export default function RemindersPanel({ item, wheel }) {
           </div>
         ) : (
           <div className="space-y-2">
-            {reminders.filter(r => r.status === 'pending').map(reminder => (
+            {reminders.filter(r => ['pending', 'sent'].includes(r.status)).map(reminder => (
               <div
                 key={reminder.id}
-                className="flex items-start justify-between p-3 bg-gray-50 rounded-sm border border-gray-200"
+                className={`flex items-start justify-between p-3 rounded-sm border ${
+                  reminder.status === 'sent' 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-gray-50 border-gray-200'
+                }`}
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <Bell size={14} className="text-blue-600" />
+                    {reminder.status === 'sent' ? (
+                      <svg className="w-3.5 h-3.5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <Bell size={14} className="text-blue-600" />
+                    )}
                     <span className="text-sm font-medium text-gray-900">
                       {formatReminderDescription(reminder)}
                     </span>
+                    {reminder.status === 'sent' && (
+                      <span className="px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 rounded-full">
+                        {t('reminders.sent', 'Skickad')}
+                      </span>
+                    )}
                   </div>
                   {reminder.custom_message && (
                     <p className="text-xs text-gray-600 ml-5 mt-1">

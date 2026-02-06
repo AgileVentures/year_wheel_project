@@ -499,6 +499,8 @@
     "customMessagePlaceholder": "Lägg till ett meddelande som ska visas i påminnelsen...",
     "recurring": "Gäller för alla förekomster av denna aktivitet (om återkommande)",
     "remindNow": "Skicka påminnelse nu (direkt efter att den skapats)",
+    "sent": "Skickad",
+    "pending": "Väntande",
     "infoText": "Påminnelser skickas automatiskt via e-post till valda mottagare. Du kan hantera påminnelser här när som helst.",
     "creating": "Skapar...",
     "create": "Skapa påminnelse",

@@ -499,6 +499,8 @@
     "customMessagePlaceholder": "Add a message to display in the reminder...",
     "recurring": "Applies to all occurrences of this activity (if recurring)",
     "remindNow": "Send reminder now (immediately after creation)",
+    "sent": "Sent",
+    "pending": "Pending",
     "infoText": "Reminders are sent automatically via email to selected recipients. You can manage reminders here anytime.",
     "creating": "Creating...",
     "create": "Create reminder",
