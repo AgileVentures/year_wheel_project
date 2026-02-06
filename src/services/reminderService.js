@@ -120,11 +120,16 @@ export async function updateItemStatus(itemId, status) {
       .from('items')
       .update({ status })
       .eq('id', itemId)
-      .select()
-      .single();
+      .select();
 
     if (error) throw error;
-    return { data, error: null };
+    
+    // Check if any rows were updated
+    if (!data || data.length === 0) {
+      throw new Error('No item found or you do not have permission to update it');
+    }
+    
+    return { data: data[0], error: null };
   } catch (error) {
     console.error('Error updating item status:', error);
     return { data: null, error };

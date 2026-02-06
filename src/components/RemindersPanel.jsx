@@ -100,6 +100,9 @@ export default function RemindersPanel({ item, wheel }) {
 
       showToast(t('reminders.toasts.createSuccess'), 'success');
       
+      setShowForm(false);
+      resetForm();
+      
       // If "remind now" is checked, trigger the edge function immediately
       if (remindNow && data) {
         try {
@@ -123,9 +126,8 @@ export default function RemindersPanel({ item, wheel }) {
         }
       }
       
-      setShowForm(false);
-      resetForm();
-      loadReminders();
+      // Reload reminders after edge function completes (to get updated status)
+      await loadReminders();
     } catch (error) {
       console.error('Error creating reminder:', error);
       showToast(t('reminders.toasts.createError'), 'error');
