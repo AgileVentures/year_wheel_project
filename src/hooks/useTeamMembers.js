@@ -19,15 +19,40 @@ export function useTeamMembers(wheel, user) {
   useEffect(() => {
     async function fetchTeamMembers() {
       if (!wheel?.team_id) {
-        // No team - just include wheel owner and current user
+        // No team - fetch wheel owner profile and include current user
         const members = [];
+        
+        // Fetch wheel owner's actual profile
         if (wheel?.user_id) {
-          members.push({
-            id: wheel.user_id,
-            full_name: 'Wheel Owner',
-            email: '',
-          });
+          try {
+            const { data: ownerProfile, error } = await supabase
+              .from('profiles')
+              .select('id, full_name, email, avatar_url')
+              .eq('id', wheel.user_id)
+              .single();
+            
+            if (!error && ownerProfile) {
+              members.push(ownerProfile);
+            } else {
+              // Fallback if profile fetch fails
+              members.push({
+                id: wheel.user_id,
+                full_name: 'Wheel Owner',
+                email: '',
+              });
+            }
+          } catch (err) {
+            console.error('[useTeamMembers] Error fetching wheel owner profile:', err);
+            // Fallback
+            members.push({
+              id: wheel.user_id,
+              full_name: 'Wheel Owner',
+              email: '',
+            });
+          }
         }
+        
+        // Include current user if different from owner
         if (user?.id && user.id !== wheel?.user_id) {
           members.push({
             id: user.id,
@@ -35,6 +60,7 @@ export function useTeamMembers(wheel, user) {
             email: user.email,
           });
         }
+        
         setTeamMembers(members);
         return;
       }
