@@ -393,6 +393,7 @@ export const fetchPageData = async (pageId, pageYear = null, wheelId = null) => 
     endDate: i.end_date,
     time: i.time,
     description: i.description, // CRITICAL: Include description from synced items
+    status: i.status || 'planned', // Activity lifecycle status
     pageId: shouldUsePageScope ? i.page_id : pageId,
     // Wheel linking fields
     linkedWheelId: i.linked_wheel_id,
@@ -1249,6 +1250,7 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
       start_date: item.startDate,
       end_date: item.endDate,
       time: item.time || null,
+      status: item.status || 'planned',
       // Dependency fields
       depends_on_item_id: item.dependsOn || null,
       dependency_type: item.dependencyType || 'finish_to_start',
@@ -1670,6 +1672,7 @@ export const updateSingleItem = async (wheelId, pageId, item, ringIdMap = new Ma
     end_date: item.endDate,
     time: item.time || null,
     description: item.description || null,
+    status: item.status || 'planned',
     // Wheel linking fields (optional)
     linked_wheel_id: item.linkedWheelId || null,
     link_type: item.linkType || null,
