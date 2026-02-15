@@ -8,6 +8,7 @@ import AdminWheelsTable from './AdminWheelsTable';
 import AdminAffiliates from './AdminAffiliates';
 import AdminEmailStats from './AdminEmailStats';
 import AdminMondayUsers from './AdminMondayUsers';
+import AdminNPSPage from './AdminNPSPage';
 import WheelLoader from '../WheelLoader';
 import {
   Activity,
@@ -17,6 +18,7 @@ import {
   Mail,
   Calendar,
   Circle,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -284,6 +286,18 @@ export default function AdminPanel() {
               <span className="sm:hidden">Monday</span>
             </button>
             <button
+              onClick={() => setActiveTab('nps')}
+              className={`px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeTab === 'nps'
+                  ? 'border-gray-900 text-gray-900'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <MessageSquare size={16} className="inline mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">NPS</span>
+              <span className="sm:hidden">NPS</span>
+            </button>
+            <button
               onClick={() => navigate('/newsletter')}
               className="px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors whitespace-nowrap flex-shrink-0"
             >
@@ -339,6 +353,10 @@ export default function AdminPanel() {
             mondayUsers={mondayUsers}
             onRefresh={loadData}
           />
+        )}
+
+        {activeTab === 'nps' && (
+          <AdminNPSPage />
         )}
       </div>
     </div>
