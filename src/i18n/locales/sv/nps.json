@@ -1,0 +1,20 @@
+{
+  "title": "Hur troligt är det att du rekommenderar YearWheel?",
+  "subtitle": "Din feedback hjälper oss att förbättra",
+  "question": "På en skala från 0 till 10, hur troligt är det att du rekommenderar YearWheel till en vän eller kollega?",
+  "description": "0 = Inte alls troligt, 10 = Mycket troligt",
+  "score": "Poäng",
+  "notLikely": "Inte alls troligt (0)",
+  "veryLikely": "Mycket troligt (10)",
+  "commentLabel": "Vad är den främsta anledningen till ditt betyg? (Valfritt)",
+  "commentPlaceholder": "Vi skulle gärna höra dina tankar...",
+  "characters": "tecken",
+  "pleaseSelectScore": "Välj ett betyg innan du skickar",
+  "submitError": "Misslyckades med att skicka feedback. Försök igen.",
+  "submit": "Skicka Feedback",
+  "maybeLater": "Kanske Senare",
+  "detractor": "Vi beklagar att höra det",
+  "passive": "Tack för din feedback",
+  "promoter": "Tack! Vi är glada!",
+  "thankYou": "Tack för din feedback!"
+}

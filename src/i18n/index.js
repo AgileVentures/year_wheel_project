@@ -25,6 +25,7 @@ import svToast from './locales/sv/toast.json';
 import svConflict from './locales/sv/conflict.json';
 import svReports from './locales/sv/reports.json';
 import svTimeline from './locales/sv/timeline.json';
+import svNps from './locales/sv/nps.json';
 
 // Import English translations
 import enCommon from './locales/en/common.json';
@@ -49,6 +50,7 @@ import enToast from './locales/en/toast.json';
 import enConflict from './locales/en/conflict.json';
 import enReports from './locales/en/reports.json';
 import enTimeline from './locales/en/timeline.json';
+import enNps from './locales/en/nps.json';
 
 i18n
   .use(LanguageDetector)
@@ -78,6 +80,7 @@ i18n
         conflict: svConflict,
         reports: svReports,
         timeline: svTimeline,
+        nps: svNps,
       },
       en: {
         common: enCommon,
@@ -102,6 +105,7 @@ i18n
         conflict: enConflict,
         reports: enReports,
         timeline: enTimeline,
+        nps: enNps,
       },
     },
     lng: undefined, // Don't set default - let detector choose

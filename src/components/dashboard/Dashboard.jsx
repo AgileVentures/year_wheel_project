@@ -9,6 +9,7 @@ import { getMyInvitations } from '../../services/teamService';
 import WheelCard from './WheelCard';
 import CreateWheelCard from './CreateWheelCard';
 import CreateWheelModal from './CreateWheelModal';
+import NPSModal from '../NPSModal';
 import ProfilePage from '../ProfilePage';
 import TeamList from '../teams/TeamList';
 import MyInvitations from '../teams/MyInvitations';
@@ -24,6 +25,7 @@ import MobileNav from './MobileNav';
 import { showConfirmDialog, showToast } from '../../utils/dialogs';
 import { trackPurchase } from '../../utils/gtm';
 import { isMondayUser } from '../../services/mondayService';
+import { shouldShowNPS } from '../../services/npsService';
 
 // User Menu Dropdown Component
 function UserMenu({ user, onShowProfile, onSignOut, isPremium, isAdmin, isAffiliateMember, onManageSubscription, mondayUserData }) {
@@ -248,6 +250,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showSubscriptionSettings, setShowSubscriptionSettings] = useState(false);
+  const [showNPSModal, setShowNPSModal] = useState(false);
 
   // Check if user is a Monday user
   useEffect(() => {
@@ -263,6 +266,23 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       checkMondayUser();
     }
   }, [user]);
+
+  // Check if NPS modal should be shown
+  useEffect(() => {
+    const checkNPS = async () => {
+      if (!user || loading) return;
+      
+      // Wait a bit after dashboard loads to not be intrusive
+      setTimeout(async () => {
+        const shouldShow = await shouldShowNPS();
+        if (shouldShow) {
+          setShowNPSModal(true);
+        }
+      }, 5000); // Show after 5 seconds
+    };
+    
+    checkNPS();
+  }, [user, loading]);
 
   // Check for successful Stripe checkout on mount
   useEffect(() => {
@@ -876,6 +896,17 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       {showSubscriptionSettings && (
         <SubscriptionSettings 
           onClose={() => setShowSubscriptionSettings(false)}
+        />
+      )}
+
+      {/* NPS Modal */}
+      {showNPSModal && (
+        <NPSModal 
+          onClose={() => setShowNPSModal(false)}
+          onSubmit={() => {
+            setShowNPSModal(false);
+            showToast(t('nps:thankYou', { defaultValue: 'Thank you for your feedback!' }), 'success');
+          }}
         />
       )}
 

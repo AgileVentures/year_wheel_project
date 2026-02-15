@@ -1,0 +1,20 @@
+{
+  "title": "How likely are you to recommend YearWheel?",
+  "subtitle": "Your feedback helps us improve",
+  "question": "On a scale of 0 to 10, how likely are you to recommend YearWheel to a friend or colleague?",
+  "description": "0 = Not at all likely, 10 = Extremely likely",
+  "score": "Score",
+  "notLikely": "Not at all likely (0)",
+  "veryLikely": "Extremely likely (10)",
+  "commentLabel": "What's the main reason for your score? (Optional)",
+  "commentPlaceholder": "We'd love to hear your thoughts...",
+  "characters": "characters",
+  "pleaseSelectScore": "Please select a score before submitting",
+  "submitError": "Failed to submit feedback. Please try again.",
+  "submit": "Submit Feedback",
+  "maybeLater": "Maybe Later",
+  "detractor": "We're sorry to hear that",
+  "passive": "Thanks for your feedback",
+  "promoter": "Thank you! We're thrilled!",
+  "thankYou": "Thank you for your feedback!"
+}
