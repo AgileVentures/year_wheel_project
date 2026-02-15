@@ -35,7 +35,9 @@
     "linkCopied": "Link copied!",
     "reload": "Reload",
     "goBack": "Go back",
-    "reset": "Reset"
+    "reset": "Reset",
+    "submit": "Submit",
+    "submitting": "Submitting..."
   },
   "controls": {
     "rotation": "Rotation",

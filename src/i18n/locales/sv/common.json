@@ -35,7 +35,9 @@
     "linkCopied": "Länk kopierad!",
     "reload": "Ladda om",
     "goBack": "Gå tillbaka",
-    "reset": "Återställ"
+    "reset": "Återställ",
+    "submit": "Skicka",
+    "submitting": "Skickar..."
   },
   "controls": {
     "rotation": "Rotation",
