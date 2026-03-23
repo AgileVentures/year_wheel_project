@@ -43,7 +43,9 @@
       "upgrades": "Upgrades",
       "conversionRate": "Conversion Rate",
       "freeSignups": "Free Signups",
-      "premiumUpgrades": "Premium Upgrades"
+      "premiumUpgrades": "Premium Upgrades",
+      "totalAffiliates": "Total Affiliates",
+      "customRates": "Custom Rates"
     },
     "tables": {
       "commissionPayouts": "Commission Payouts",
@@ -66,7 +68,8 @@
       "deactivate": "Deactivate",
       "reset": "Reset",
       "verify": "Mark as Verified",
-      "unverify": "Mark as Unverified"
+      "unverify": "Mark as Unverified",
+      "editRates": "Edit Rates"
     },
     "details": {
       "application": "Application Details",
@@ -93,7 +96,16 @@
       "taxId": "VAT/Tax ID",
       "address": "Address",
       "paymentEmail": "Payment Email",
-      "notSet": "Not set"
+      "notSet": "Not set",
+      "commissionRates": "Commission Rates",
+      "rateFreeSignup": "Free Signup",
+      "ratePremium": "Premium",
+      "rateDefault": "Default: {{value}}",
+      "rateCustom": "custom",
+      "invalidFreeRate": "Invalid free signup rate",
+      "invalidPremiumRate": "Invalid premium rate (must be 0\u2013100)",
+      "saveRatesError": "Failed to update commission rates",
+      "saveRatesSuccess": "Commission rates updated"
     },
     "dialogs": {
       "approve": {

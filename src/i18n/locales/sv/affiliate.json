@@ -43,7 +43,9 @@
       "upgrades": "Uppgraderingar",
       "conversionRate": "Konverteringsgrad",
       "freeSignups": "Gratis Registreringar",
-      "premiumUpgrades": "Premiumuppgraderingar"
+      "premiumUpgrades": "Premiumuppgraderingar",
+      "totalAffiliates": "Totala Affiliates",
+      "customRates": "Anpassade räntor"
     },
     "tables": {
       "commissionPayouts": "Provisionsutbetalningar",
@@ -66,7 +68,8 @@
       "deactivate": "Inaktivera",
       "reset": "Återställ",
       "verify": "Markera som Verifierad",
-      "unverify": "Markera som Overifierad"
+      "unverify": "Markera som Overifierad",
+      "editRates": "Redigera räntor"
     },
     "details": {
       "application": "Ansökningsdetaljer",
@@ -93,7 +96,16 @@
       "taxId": "Organisations-/Skattenummer",
       "address": "Adress",
       "paymentEmail": "Betalningsepost",
-      "notSet": "Ej angiven"
+      "notSet": "Ej angiven",
+      "commissionRates": "Provisionsräntor",
+      "rateFreeSignup": "Gratisregistrering",
+      "ratePremium": "Premium",
+      "rateDefault": "Standard: {{value}}",
+      "rateCustom": "anpassad",
+      "invalidFreeRate": "Ogiltig provision för gratisregistrering",
+      "invalidPremiumRate": "Ogiltig premiumränta (måste vara 0\u2013100)",
+      "saveRatesError": "Kunde inte uppdatera provisionsräntor",
+      "saveRatesSuccess": "Provisionsräntor uppdaterade"
     },
     "dialogs": {
       "approve": {

@@ -13,6 +13,8 @@ import {
   Filter,
   Download,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { showConfirmDialog, showToast } from '../../utils/dialogs';
@@ -63,6 +65,10 @@ export default function AdminAffiliates() {
   const [conversions, setConversions] = useState([]);
   const [conversionStats, setConversionStats] = useState(null);
   
+  // Commission rate editing
+  const [editingRatesOrgId, setEditingRatesOrgId] = useState(null);
+  const [rateForm, setRateForm] = useState({ commission_rate_free: '', commission_rate_premium: '' });
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -235,6 +241,43 @@ export default function AdminAffiliates() {
       return;
     }
 
+    loadOrganizations();
+  };
+
+  const startEditingRates = (org) => {
+    setEditingRatesOrgId(org.id);
+    setRateForm({
+      commission_rate_free: parseFloat(org.commission_rate_free ?? 2).toFixed(2),
+      commission_rate_premium: (parseFloat(org.commission_rate_premium ?? 0.50) * 100).toFixed(0),
+    });
+  };
+
+  const updateOrgRates = async (orgId) => {
+    const freeRate = parseFloat(rateForm.commission_rate_free);
+    const premiumRate = parseFloat(rateForm.commission_rate_premium) / 100;
+
+    if (isNaN(freeRate) || freeRate < 0) {
+      showToast(t('affiliate:admin.details.invalidFreeRate'), 'error');
+      return;
+    }
+    if (isNaN(premiumRate) || premiumRate < 0 || premiumRate > 1) {
+      showToast(t('affiliate:admin.details.invalidPremiumRate'), 'error');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('organizations')
+      .update({ commission_rate_free: freeRate, commission_rate_premium: premiumRate })
+      .eq('id', orgId);
+
+    if (error) {
+      console.error('Error updating commission rates:', error);
+      showToast(t('affiliate:admin.details.saveRatesError'), 'error');
+      return;
+    }
+
+    showToast(t('affiliate:admin.details.saveRatesSuccess'), 'success');
+    setEditingRatesOrgId(null);
     loadOrganizations();
   };
 
@@ -414,6 +457,36 @@ export default function AdminAffiliates() {
       {/* Organizations Tab */}
       {activeSubTab === 'organizations' && (
         <div className="space-y-4">
+          {/* Stats Summary */}
+          {organizations.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-sm shadow-sm border border-gray-200">
+                <div className="text-sm text-gray-500">{t('affiliate:admin.stats.totalAffiliates')}</div>
+                <div className="text-2xl font-bold text-gray-900 mt-1">{organizations.length}</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-sm shadow-sm border border-green-200">
+                <div className="text-sm text-green-700">{t('affiliate:admin.status.active')}</div>
+                <div className="text-2xl font-bold text-green-900 mt-1">
+                  {organizations.filter(o => o.affiliate_active).length}
+                </div>
+              </div>
+              <div className="bg-yellow-50 p-4 rounded-sm shadow-sm border border-yellow-200">
+                <div className="text-sm text-yellow-700">{t('affiliate:admin.status.pending')}</div>
+                <div className="text-2xl font-bold text-yellow-900 mt-1">
+                  {organizations.filter(o => o.affiliate_status === 'pending').length}
+                </div>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-sm shadow-sm border border-purple-200">
+                <div className="text-sm text-purple-700">{t('affiliate:admin.stats.customRates')}</div>
+                <div className="text-2xl font-bold text-purple-900 mt-1">
+                  {organizations.filter(o =>
+                    (o.commission_rate_free != null && Math.abs(parseFloat(o.commission_rate_free) - 2.00) > 0.001) ||
+                    (o.commission_rate_premium != null && Math.abs(parseFloat(o.commission_rate_premium) - 0.50) > 0.001)
+                  ).length}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="bg-white rounded-sm shadow-sm border border-gray-200">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('affiliate:admin.title')}</h3>
@@ -434,6 +507,7 @@ export default function AdminAffiliates() {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('affiliate:admin.conversions')}</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('affiliate:admin.status.label')}</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('affiliate:admin.status.active')}</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('affiliate:admin.details.commissionRates')}</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">{t('common:labels.actions')}</th>
                         </tr>
                       </thead>
@@ -443,7 +517,9 @@ export default function AdminAffiliates() {
                             <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedOrgId(expandedOrgId === org.id ? null : org.id)}>
                               <td className="px-4 py-4">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-gray-600">{expandedOrgId === org.id ? '▼' : '▶'}</span>
+                                  {expandedOrgId === org.id
+                                    ? <ChevronDown size={16} className="text-gray-400 flex-shrink-0" />
+                                    : <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />}
                                   <div>
                                     <div className="font-medium text-gray-900 flex items-center gap-2">
                                       {org.name}
@@ -479,6 +555,17 @@ export default function AdminAffiliates() {
                               }`}>
                                 {org.affiliate_active ? t('affiliate:admin.status.active') : t('common:inactive')}
                               </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm font-mono text-gray-900 flex items-center gap-1">
+                                <span>€{parseFloat(org.commission_rate_free ?? 2).toFixed(2)}</span>
+                                <span className="text-gray-400">/</span>
+                                <span>{(parseFloat(org.commission_rate_premium ?? 0.50) * 100).toFixed(0)}%</span>
+                                {((org.commission_rate_free != null && Math.abs(parseFloat(org.commission_rate_free) - 2.00) > 0.001) ||
+                                  (org.commission_rate_premium != null && Math.abs(parseFloat(org.commission_rate_premium) - 0.50) > 0.001)) && (
+                                  <span className="bg-purple-100 text-purple-700 text-xs px-1.5 py-0.5 rounded-full font-sans ml-1">{t('affiliate:admin.details.rateCustom')}</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                               <div className="flex flex-col gap-1">
@@ -526,7 +613,7 @@ export default function AdminAffiliates() {
                           </tr>
                           {expandedOrgId === org.id && (
                             <tr className="bg-gray-50">
-                              <td colSpan="6" className="px-4 py-6">
+                              <td colSpan="7" className="px-4 py-6">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                   {/* Organization Info */}
                                   <div>
@@ -685,6 +772,80 @@ export default function AdminAffiliates() {
                                     </button>
                                   </div>
                                 </div>
+
+                                {/* Commission Rates */}
+                                <div className="mt-6">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h4 className="font-semibold text-gray-900">{t('affiliate:admin.details.commissionRates')}</h4>
+                                    {editingRatesOrgId !== org.id && (
+                                      <button
+                                        onClick={() => startEditingRates(org)}
+                                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                      >
+                                        {t('affiliate:admin.actions.editRates')}
+                                      </button>
+                                    )}
+                                  </div>
+                                  {editingRatesOrgId === org.id ? (
+                                    <div className="flex flex-wrap gap-6 items-end">
+                                      <div>
+                                        <label className="block text-xs text-gray-500 mb-1">{t('affiliate:admin.details.rateFreeSignup')} (€)</label>
+                                        <input
+                                          type="number" min="0" step="0.01"
+                                          value={rateForm.commission_rate_free}
+                                          onChange={(e) => setRateForm(f => ({ ...f, commission_rate_free: e.target.value }))}
+                                          className="border border-gray-300 rounded px-2 py-1 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-0.5">{t('affiliate:admin.details.rateDefault', { value: '€2.00' })}</p>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs text-gray-500 mb-1">{t('affiliate:admin.details.ratePremium')} (%)</label>
+                                        <input
+                                          type="number" min="0" max="100" step="1"
+                                          value={rateForm.commission_rate_premium}
+                                          onChange={(e) => setRateForm(f => ({ ...f, commission_rate_premium: e.target.value }))}
+                                          className="border border-gray-300 rounded px-2 py-1 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <p className="text-xs text-gray-400 mt-0.5">{t('affiliate:admin.details.rateDefault', { value: '50%' })}</p>
+                                      </div>
+                                      <div className="flex gap-2 pb-0.5">
+                                        <button
+                                          onClick={() => updateOrgRates(org.id)}
+                                          className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-medium"
+                                        >
+                                          {t('common:save')}
+                                        </button>
+                                        <button
+                                          onClick={() => setEditingRatesOrgId(null)}
+                                          className="px-3 py-1.5 text-gray-600 text-sm rounded hover:bg-gray-100 border border-gray-200"
+                                        >
+                                          {t('common:cancel')}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <dt className="text-gray-500">{t('affiliate:admin.details.rateFreeSignup')}</dt>
+                                        <dd className="font-medium text-gray-900 flex items-center gap-2">
+                                          €{parseFloat(org.commission_rate_free ?? 2).toFixed(2)}
+                                          {org.commission_rate_free != null && Math.abs(parseFloat(org.commission_rate_free) - 2.00) > 0.001 && (
+                                            <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">{t('affiliate:admin.details.rateCustom')}</span>
+                                          )}
+                                        </dd>
+                                      </div>
+                                      <div>
+                                        <dt className="text-gray-500">{t('affiliate:admin.details.ratePremium')}</dt>
+                                        <dd className="font-medium text-gray-900 flex items-center gap-2">
+                                          {(parseFloat(org.commission_rate_premium ?? 0.50) * 100).toFixed(0)}%
+                                          {org.commission_rate_premium != null && Math.abs(parseFloat(org.commission_rate_premium) - 0.50) > 0.001 && (
+                                            <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">{t('affiliate:admin.details.rateCustom')}</span>
+                                          )}
+                                        </dd>
+                                      </div>
+                                    </dl>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           )}
@@ -706,7 +867,9 @@ export default function AdminAffiliates() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium text-gray-900">
-                              <span className="text-gray-600">{expandedOrgId === org.id ? '▼' : '▶'}</span>
+                              {expandedOrgId === org.id
+                                ? <ChevronDown size={16} className="text-gray-400 flex-shrink-0" />
+                                : <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />}
                               {org.name}
                               {org.payment_details_verified && (
                                 <CheckCircle size={14} className="text-green-600" title={t('affiliate:admin.tooltips.paymentVerified')} />
@@ -784,7 +947,7 @@ export default function AdminAffiliates() {
                             {t('affiliate:admin.actions.reset')}
                           </button>
                           <button
-                            onClick={() => togglePaymentVerification(org.id, org.payment_details_verified)}
+                            onClick={() => verifyPaymentDetails(org.id, !org.payment_details_verified)}
                             className="text-sm text-purple-600 hover:text-purple-800 font-medium"
                           >
                             {org.payment_details_verified ? t('affiliate:admin.actions.unverify') : t('affiliate:admin.actions.verify')}
@@ -824,6 +987,27 @@ export default function AdminAffiliates() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Commission Rates (mobile read-only) */}
+                            <div>
+                              <div className="font-medium text-gray-900 mb-2">{t('affiliate:admin.details.commissionRates')}</div>
+                              <div className="space-y-1 text-gray-600">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{t('affiliate:admin.details.rateFreeSignup')}:</span>
+                                  €{parseFloat(org.commission_rate_free ?? 2).toFixed(2)}
+                                  {org.commission_rate_free != null && Math.abs(parseFloat(org.commission_rate_free) - 2.00) > 0.001 && (
+                                    <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">{t('affiliate:admin.details.rateCustom')}</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{t('affiliate:admin.details.ratePremium')}:</span>
+                                  {(parseFloat(org.commission_rate_premium ?? 0.50) * 100).toFixed(0)}%
+                                  {org.commission_rate_premium != null && Math.abs(parseFloat(org.commission_rate_premium) - 0.50) > 0.001 && (
+                                    <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">{t('affiliate:admin.details.rateCustom')}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
