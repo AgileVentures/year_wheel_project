@@ -331,6 +331,8 @@
     "changeRingName": "Ändra ringnamn",
     "changeRingColor": "Ändra ringfärg",
     "toggleRingVisibility": "Växla ringsynlighet",
+    "reorderRing": "Ändra ringordning",
+    "changeRingType": "Flytta ring",
     "addActivityGroup": "Lägg till aktivitetsgrupp",
     "removeActivityGroup": "Ta bort aktivitetsgrupp",
     "changeActivityGroupName": "Ändra aktivitetsgruppnamn",

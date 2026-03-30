@@ -27,9 +27,11 @@ class DataProcessor {
     if (!structure) return '';
     
     // Create a lightweight fingerprint of the structure
-    const ringIds = structure.rings?.map(r => `${r.id}:${r.visible}`).join(',') || '';
-    const activityIds = structure.activityGroups?.map(a => `${a.id}:${a.visible}`).join(',') || '';
-    const labelIds = structure.labels?.map(l => `${l.id}:${l.visible}`).join(',') || '';
+    // CRITICAL: Include type, ring_order, color, orientation — not just id:visible
+    // Without these, moving a ring between inner/outer or reordering won't invalidate the cache
+    const ringIds = structure.rings?.map(r => `${r.id}:${r.visible}:${r.type}:${r.ring_order}:${r.color}:${r.orientation}`).join(',') || '';
+    const activityIds = structure.activityGroups?.map(a => `${a.id}:${a.visible}:${a.color}`).join(',') || '';
+    const labelIds = structure.labels?.map(l => `${l.id}:${l.visible}:${l.color}`).join(',') || '';
     
     // CRITICAL FIX: Include item dates and ring assignments, not just count
     // This ensures cache invalidates when items are moved/resized
@@ -44,10 +46,12 @@ class DataProcessor {
    * Update the wheel structure and invalidate cache if changed
    */
   updateStructure(newWheelStructure) {
-    const newHash = this.computeStructureHash(newWheelStructure);
+    // CRITICAL: Always update the data reference so stale ring types/orders aren't used
+    // Cache invalidation is separate — only clear computed caches when hash changes
+    this.wheelStructure = newWheelStructure;
     
+    const newHash = this.computeStructureHash(newWheelStructure);
     if (newHash !== this.lastStructureHash) {
-      this.wheelStructure = newWheelStructure;
       this.lastStructureHash = newHash;
       this.invalidate();
     }

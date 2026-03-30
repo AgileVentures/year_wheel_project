@@ -115,6 +115,8 @@
     "addLabel": "Lägg till etikett",
     "deleteLabel": "Ta bort etikett",
     "toggleRingVisibility": "Växla ringsynlighet",
+    "reorderRing": "Ändra ringordning",
+    "changeRingType": "Flytta ring",
     "toggleActivityVisibility": "Växla aktivitetssynlighet",
     "change": "Ändra organisationsdata"
   },

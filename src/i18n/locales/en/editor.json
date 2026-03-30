@@ -115,6 +115,8 @@
     "addLabel": "Add label",
     "deleteLabel": "Remove label",
     "toggleRingVisibility": "Toggle ring visibility",
+    "reorderRing": "Reorder ring",
+    "changeRingType": "Move ring",
     "toggleActivityVisibility": "Toggle activity visibility",
     "change": "Change organization data"
   },

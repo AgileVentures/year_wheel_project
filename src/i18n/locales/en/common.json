@@ -332,6 +332,8 @@
     "changeRingName": "Change ring name",
     "changeRingColor": "Change ring color",
     "toggleRingVisibility": "Toggle ring visibility",
+    "reorderRing": "Reorder ring",
+    "changeRingType": "Move ring",
     "addActivityGroup": "Add activity group",
     "removeActivityGroup": "Remove activity group",
     "changeActivityGroupName": "Change activity group name",

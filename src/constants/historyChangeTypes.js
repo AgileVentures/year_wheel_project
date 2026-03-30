@@ -16,6 +16,8 @@ export const CHANGE_TYPES = {
   CHANGE_RING_NAME: 'changeRingName',
   CHANGE_RING_COLOR: 'changeRingColor',
   TOGGLE_RING_VISIBILITY: 'toggleRingVisibility',
+  REORDER_RING: 'reorderRing',
+  CHANGE_RING_TYPE: 'changeRingType',
   
   // Activity Groups
   ADD_ACTIVITY_GROUP: 'addActivityGroup',
@@ -80,6 +82,8 @@ export const getHistoryLabel = (t, changeTypeOrLabel, params = {}) => {
     changeRingName: 'Ändra ringnamn',
     changeRingColor: 'Ändra ringfärg',
     toggleRingVisibility: 'Växla ringsynlighet',
+    reorderRing: 'Ändra ringordning',
+    changeRingType: 'Flytta ring',
     addActivityGroup: 'Lägg till aktivitetsgrupp',
     removeActivityGroup: 'Ta bort aktivitetsgrupp',
     changeActivityGroupName: 'Ändra aktivitetsgruppnamn',
@@ -154,6 +158,20 @@ export const detectOrganizationChange = (oldData, newData) => {
   if (itemChanged) {
     return CHANGE_TYPES.UPDATE_ACTIVITY;
   }
+  
+  // Check for ring type changes (inner <-> outer)
+  const ringTypeChanged = newData.rings?.some(ring => {
+    const oldRing = oldData.rings?.find(old => old.id === ring.id);
+    return oldRing && ring.type !== oldRing.type;
+  });
+  if (ringTypeChanged) return CHANGE_TYPES.CHANGE_RING_TYPE;
+  
+  // Check for ring reordering (ring_order changed)
+  const ringOrderChanged = newData.rings?.some((ring, i) => {
+    const oldRing = oldData.rings?.find(old => old.id === ring.id);
+    return oldRing && ring.ring_order !== oldRing.ring_order;
+  });
+  if (ringOrderChanged) return CHANGE_TYPES.REORDER_RING;
   
   // Check for visibility changes
   const ringVisChanged = newData.rings?.some((r, i) => 
