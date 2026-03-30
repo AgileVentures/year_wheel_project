@@ -1,5 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from 'react-i18next';
+import { Edit2, Trash2 } from 'lucide-react';
 import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
 import EditItemModal from "./components/EditItemModal";
@@ -79,6 +80,7 @@ function YearWheel({
   const [tooltipPosition, setTooltipPosition] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null); // { item, x, y }
   
   // Multi-select mode
   const [selectionMode, setSelectionMode] = useState(false);
@@ -483,6 +485,9 @@ function YearWheel({
 
   // Stable wrapper functions for wheel callbacks (never recreated, use refs internally)
   const stableHandleItemClick = useCallback((item, position, event) => {
+    // Close context menu if open
+    setContextMenu(null);
+    
     // CRITICAL: Validate that the item exists in current wheelStructure
     // This prevents showing stale data when canvas clickableItems array is out of sync
     // EXCEPTION: Allow clusters through (they have isCluster flag and don't exist in items array)
@@ -586,6 +591,13 @@ function YearWheel({
     }
   }, []); // Empty deps - uses ref
 
+  const handleContextMenu = useCallback((item, position) => {
+    setContextMenu({ item, x: position.x, y: position.y });
+    // Close tooltip if open
+    setSelectedItem(null);
+    setTooltipPosition(null);
+  }, []);
+
   useEffect(() => {
     setEvents(yearEventsCollection || []);
   }, [year, yearEventsCollection]);
@@ -684,6 +696,7 @@ function YearWheel({
     onExtendActivityToNextYear: stableOnExtendActivityBeyondYear, // Use stable version
     onExtendActivityToPreviousYear: stableOnExtendActivityToPreviousYear, // Use stable version
     onUpdateCrossYearGroup: stableOnUpdateCrossYearGroup, // Use stable version
+    onContextMenu: handleContextMenu, // Right-click context menu
         onRotationChange, // Pass rotation callback for casting sync
         selectionMode,
         selectedItems: Array.from(selectedItems),
@@ -1177,6 +1190,45 @@ function YearWheel({
           readonly={readonly}
           wheel={wheelData}
         />
+      )}
+
+      {/* Right-click Context Menu */}
+      {contextMenu && !readonly && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setContextMenu(null)}
+            onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
+          />
+          <div
+            className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[160px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button
+              onClick={() => {
+                setEditingItem(contextMenu.item);
+                setContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 text-gray-700"
+            >
+              <Edit2 className="h-4 w-4" />
+              {t('common:actions.edit', 'Redigera')}
+            </button>
+
+            <div className="border-t border-gray-200 my-1" />
+
+            <button
+              onClick={() => {
+                handleDeleteAktivitet(contextMenu.item.id);
+                setContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t('common:actions.delete', 'Ta bort')}
+            </button>
+          </div>
+        </>
       )}
 
       {/* Edit Aktivitet Modal - only in edit mode */}

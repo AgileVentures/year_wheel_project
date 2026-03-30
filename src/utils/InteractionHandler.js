@@ -68,6 +68,7 @@ class InteractionHandler {
       mouseUp: this.handleMouseUp.bind(this),
       mouseLeave: this.handleMouseLeave.bind(this),
       click: this.handleClick.bind(this),
+      contextMenu: this.handleContextMenu.bind(this),
     };
     
     // Attach event listeners
@@ -108,6 +109,7 @@ class InteractionHandler {
     this.canvas.addEventListener('mouseup', this.boundHandlers.mouseUp);
     this.canvas.addEventListener('mouseleave', this.boundHandlers.mouseLeave);
     this.canvas.addEventListener('click', this.boundHandlers.click);
+    this.canvas.addEventListener('contextmenu', this.boundHandlers.contextMenu);
   }
 
   detachListeners() {
@@ -116,6 +118,7 @@ class InteractionHandler {
     this.canvas.removeEventListener('mouseup', this.boundHandlers.mouseUp);
     this.canvas.removeEventListener('mouseleave', this.boundHandlers.mouseLeave);
     this.canvas.removeEventListener('click', this.boundHandlers.click);
+    this.canvas.removeEventListener('contextmenu', this.boundHandlers.contextMenu);
   }
 
   // ============================================================================
@@ -1435,6 +1438,41 @@ class InteractionHandler {
             }
             return;
           }
+        }
+      }
+    }
+  }
+
+  /**
+   * Handle right-click context menu on canvas items
+   * @param {MouseEvent} event - Context menu event
+   */
+  handleContextMenu(event) {
+    if (!this.options.onContextMenu) return;
+    if (this.dragState.isDragging) return;
+
+    const { x, y } = this.getCanvasCoordinates(event);
+
+    if (this.wheel.clickableItems) {
+      for (const itemRegion of this.wheel.clickableItems) {
+        if (this.isPointInItemRegion(x, y, itemRegion)) {
+          // Skip clusters
+          if (itemRegion.clusterData) return;
+
+          const pendingEntry = this.wheel.pendingItemUpdates.get(itemRegion.itemId);
+          const freshItemFromData = this.wheel.wheelStructure.items.find(
+            (i) => i.id === itemRegion.itemId
+          );
+          const freshItem = pendingEntry ? pendingEntry.item : freshItemFromData;
+
+          if (freshItem) {
+            event.preventDefault();
+            this.options.onContextMenu(freshItem, {
+              x: event.clientX,
+              y: event.clientY
+            });
+          }
+          return;
         }
       }
     }
