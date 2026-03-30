@@ -5,6 +5,7 @@ import YearWheelClass from "./YearWheelClass";
 import ItemTooltip from "./components/ItemTooltip";
 import EditItemModal from "./components/EditItemModal";
 import BulkActionsToolbar from "./components/BulkActionsToolbar";
+import WheelLoader from "./components/WheelLoader";
 
 // Helper function to show confirm dialog
 const showConfirmDialog = (title, message, confirmText, cancelText, confirmButtonClass = 'bg-blue-600 hover:bg-blue-700 text-white') => {
@@ -882,7 +883,7 @@ function YearWheel({
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
       {!isWheelReady && (
         <div className="absolute inset-0 flex items-center justify-center z-10 bg-white">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-blue-500" />
+          <WheelLoader size="lg" />
         </div>
       )}
       <div 
