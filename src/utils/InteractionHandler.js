@@ -1218,10 +1218,10 @@ class InteractionHandler {
       if (this.hoveredItem || this.wheel.hoveredItem) {
         this.hoveredItem = null;
         this.wheel.hoveredItem = null;
-        if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+        if (this.wheel.createFromCache && !this.wheel.hoverRedrawPending) {
           this.wheel.hoverRedrawPending = true;
           requestAnimationFrame(() => {
-            if (this.wheel.create) this.wheel.create();
+            if (this.wheel.createFromCache) this.wheel.createFromCache();
             this.wheel.hoverRedrawPending = false;
           });
         }
@@ -1248,10 +1248,10 @@ class InteractionHandler {
       if (this.hoveredItem || this.wheel.hoveredItem) {
         this.hoveredItem = null;
         this.wheel.hoveredItem = null;
-        if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+        if (this.wheel.createFromCache && !this.wheel.hoverRedrawPending) {
           this.wheel.hoverRedrawPending = true;
           requestAnimationFrame(() => {
-            if (this.wheel.create) this.wheel.create();
+            if (this.wheel.createFromCache) this.wheel.createFromCache();
             this.wheel.hoverRedrawPending = false;
           });
         }
@@ -1309,10 +1309,10 @@ class InteractionHandler {
         this.wheel.onHoverChange(newHoveredItem);
       }
 
-      if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+      if (this.wheel.createFromCache && !this.wheel.hoverRedrawPending) {
         this.wheel.hoverRedrawPending = true;
         requestAnimationFrame(() => {
-          if (this.wheel.create) this.wheel.create();
+          if (this.wheel.createFromCache) this.wheel.createFromCache();
           this.wheel.hoverRedrawPending = false;
         });
       }
@@ -1368,10 +1368,10 @@ class InteractionHandler {
     if (this.hoveredItem || this.wheel.hoveredItem) {
       this.hoveredItem = null;
       this.wheel.hoveredItem = null;
-      if (this.wheel.create && !this.wheel.hoverRedrawPending) {
+      if (this.wheel.createFromCache && !this.wheel.hoverRedrawPending) {
         this.wheel.hoverRedrawPending = true;
         requestAnimationFrame(() => {
-          if (this.wheel.create) this.wheel.create();
+          if (this.wheel.createFromCache) this.wheel.createFromCache();
           this.wheel.hoverRedrawPending = false;
         });
       }

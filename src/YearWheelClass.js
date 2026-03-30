@@ -3331,11 +3331,94 @@ class YearWheel {
     // Explicitly clear canvas to prevent ghosting artifacts
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+    // Temporarily suppress hover highlight so the cache is hover-free
+    const savedHoveredItem = this.hoveredItem;
+    this.hoveredItem = null;
+
     // Apply rotation and draw rotating elements (months, events)
     this.drawRotatingElements();
+
+    // Save the hover-free render to background cache for fast hover redraws
+    this.backgroundCache.width = this.size;
+    this.backgroundCache.height = this.size;
+    this.backgroundCacheContext.clearRect(0, 0, this.size, this.size);
+    this.backgroundCacheContext.drawImage(this.canvas, 0, 0);
+    this.cacheValid = true;
+
+    // Restore hover state and draw overlay + static elements
+    this.hoveredItem = savedHoveredItem;
+    if (this.hoveredItem) {
+      this.drawHoverOverlay();
+    }
     // Draw static elements (title and year)
     this.drawStaticElements();
     // Drag preview and dependency arrows are now drawn inside drawRotatingElements()
+  }
+
+  /**
+   * Fast redraw from cached background - used for hover-only changes.
+   * Skips all expensive computations (clustering, overlap detection, text rendering).
+   * Only redraws the hover highlight overlay and static elements.
+   */
+  createFromCache() {
+    if (!this.cacheValid) {
+      // Cache miss - fall back to full render
+      this.create();
+      return;
+    }
+
+    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.drawImage(this.backgroundCache, 0, 0);
+
+    if (this.hoveredItem) {
+      this.drawHoverOverlay();
+    }
+
+    this.drawStaticElements();
+  }
+
+  /**
+   * Draw hover highlight (glow border) for the currently hovered item.
+   * Renders in the rotated context to match item positions.
+   */
+  drawHoverOverlay() {
+    if (!this.hoveredItem) return;
+
+    const itemRegion = this.clickableItems.find(
+      ci => ci.itemId === this.hoveredItem.id
+    );
+    if (!itemRegion) return;
+
+    this.context.save();
+    this.context.translate(this.center.x, this.center.y);
+    this.context.rotate(this.rotationAngle);
+    this.context.translate(-this.center.x, -this.center.y);
+
+    this.context.shadowColor = 'rgba(59, 130, 246, 0.5)';
+    this.context.shadowBlur = 10;
+    this.context.beginPath();
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      itemRegion.startRadius,
+      itemRegion.startAngle,
+      itemRegion.endAngle,
+      false
+    );
+    this.context.arc(
+      this.center.x,
+      this.center.y,
+      itemRegion.endRadius,
+      itemRegion.endAngle,
+      itemRegion.startAngle,
+      true
+    );
+    this.context.closePath();
+    this.context.lineWidth = 2;
+    this.context.strokeStyle = 'rgba(59, 130, 246, 0.6)';
+    this.context.stroke();
+
+    this.context.restore();
   }
 
   drawDragPreview() {
