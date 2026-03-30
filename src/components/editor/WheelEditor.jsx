@@ -48,6 +48,7 @@ const AIAssistantOnboarding = lazyWithRetry(() => import("../AIAssistantOnboardi
 const ConflictResolutionModal = lazyWithRetry(() => import("../ConflictResolutionModal"));
 const MobileEditor = lazyWithRetry(() => import("../mobile/MobileEditor"));
 const TemplateManager = lazyWithRetry(() => import("../TemplateManager"));
+import KeyboardShortcutsModal from "../KeyboardShortcutsModal";
 
 function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const { t, i18n } = useTranslation(['common', 'conflict']);
@@ -769,6 +770,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
   const [showConflictModal, setShowConflictModal] = useState(false); // Conflict resolution modal
   const [conflictDetails, setConflictDetails] = useState(null); // Details of conflicts to resolve
   const [showTemplateManager, setShowTemplateManager] = useState(false); // Report templates manager
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false); // Keyboard shortcuts modal
   
   
   // AI Assistant state
@@ -2377,6 +2379,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 's') {
         e.preventDefault();
         handleSaveWithVersion();
+      }
+      
+      // ? key - Toggle keyboard shortcuts modal (only when not typing)
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.target.matches('input, textarea, [contenteditable]')) {
+        e.preventDefault();
+        setShowKeyboardShortcuts(prev => !prev);
       }
     };
     
@@ -5407,6 +5415,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         }}
         // Report templates
         onOpenReportTemplates={() => setShowTemplateManager(true)}
+        // Keyboard shortcuts
+        onShowKeyboardShortcuts={() => setShowKeyboardShortcuts(true)}
       />
       
       <div className="flex h-[calc(100vh-3.5rem)]">
@@ -5805,6 +5815,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           />
         </Suspense>
       )}
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
     </div>
   );
 }

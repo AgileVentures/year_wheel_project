@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit, Loader2 } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit, Loader2, Keyboard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
@@ -77,7 +77,9 @@ function Header({
   wheelStructure = null,
   onNavigateToItem = null,
   // Report templates
-  onOpenReportTemplates = null
+  onOpenReportTemplates = null,
+  // Keyboard shortcuts
+  onShowKeyboardShortcuts = null
 }) {
   const { t } = useTranslation(['common', 'subscription']);
   const navigate = useNavigate();
@@ -788,6 +790,7 @@ function Header({
               onStartEditorGuide={onStartOnboarding}
               onStartAIGuide={onStartAIOnboarding}
               showAIOption={!!wheelId && !!onToggleAI}
+              onShowKeyboardShortcuts={onShowKeyboardShortcuts}
             />
           </div>
         )}
@@ -1310,7 +1313,7 @@ function Header({
                 </div>
               )}
 
-              {(onToggleAI || onStartOnboarding || (isAdmin && onToggleTemplate)) && (
+              {(onToggleAI || onStartOnboarding || onShowKeyboardShortcuts || (isAdmin && onToggleTemplate)) && (
                 <div>
                   <p className="text-xs font-semibold uppercase text-gray-500 mb-2">{t('common:actions.more')}</p>
                   <div className="space-y-2">
@@ -1363,6 +1366,18 @@ function Header({
                         <span className="flex items-center gap-3">
                           <Sparkles size={16} aria-hidden="true" />
                           {isTemplate ? t('common:header.template') : t('common:header.markAsTemplate')}
+                        </span>
+                      </button>
+                    )}
+                    {onShowKeyboardShortcuts && (
+                      <button
+                        type="button"
+                        onClick={runMobileAction(onShowKeyboardShortcuts)}
+                        className={mobileActionClass}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Keyboard size={16} aria-hidden="true" />
+                          {t('common:shortcuts.title', 'Tangentbordsgenvägar')}
                         </span>
                       </button>
                     )}

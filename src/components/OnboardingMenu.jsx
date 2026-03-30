@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { HelpCircle, BookOpen, Sparkles } from 'lucide-react';
+import { HelpCircle, BookOpen, Sparkles, Keyboard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 /**
  * OnboardingMenu - Dropdown menu for selecting which onboarding guide to show
  */
-function OnboardingMenu({ onStartEditorGuide, onStartAIGuide, showAIOption = false }) {
+function OnboardingMenu({ onStartEditorGuide, onStartAIGuide, showAIOption = false, onShowKeyboardShortcuts }) {
   const { t } = useTranslation(['editor', 'common']);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -35,6 +35,11 @@ function OnboardingMenu({ onStartEditorGuide, onStartAIGuide, showAIOption = fal
   const handleAIGuide = () => {
     setIsOpen(false);
     onStartAIGuide && onStartAIGuide();
+  };
+
+  const handleKeyboardShortcuts = () => {
+    setIsOpen(false);
+    onShowKeyboardShortcuts && onShowKeyboardShortcuts();
   };
 
   return (
@@ -85,6 +90,23 @@ function OnboardingMenu({ onStartEditorGuide, onStartAIGuide, showAIOption = fal
                         <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">PREMIUM</span>
                       </div>
                       <div className="text-xs text-gray-500">{t('editor:guides.aiGuide.description')}</div>
+                    </div>
+                  </button>
+                </>
+              )}
+
+              {/* Keyboard Shortcuts */}
+              {onShowKeyboardShortcuts && (
+                <>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={handleKeyboardShortcuts}
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-3 transition-colors"
+                  >
+                    <Keyboard size={16} className="text-gray-500 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-gray-900">{t('common:shortcuts.title', 'Tangentbordsgenvägar')}</div>
+                      <div className="text-xs text-gray-500">{t('common:shortcuts.menuHint', 'Visa alla genvägar (?)')}</div>
                     </div>
                   </button>
                 </>
