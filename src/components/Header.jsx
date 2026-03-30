@@ -321,24 +321,6 @@ function Header({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-        {/* History Menu - Hidden on mobile */}
-        {onUndo && onRedo && (
-          <>
-            <div className="hidden md:flex items-center gap-1" data-onboarding="undo-redo">
-              <UndoHistoryMenu
-                history={undoHistory}
-                currentIndex={currentHistoryIndex}
-                jumpToIndex={onJumpToHistory}
-                undo={onUndo}
-                redo={onRedo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-              />
-            </div>
-            <div className="hidden md:block w-px h-6 bg-gray-300"></div>
-          </>
-        )}
-        
         {/* Combined Export & Share Menu - Hidden on small screens */}
         <div className="hidden lg:flex relative flex-shrink-0" data-onboarding="export-share">
           <button
@@ -359,6 +341,26 @@ function Header({
               ></div>
               <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 w-80 max-h-[80vh] overflow-y-auto">
                 
+                {/* Undo/Redo History Section */}
+                {onUndo && onRedo && (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-200" data-onboarding="undo-redo">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.history', 'Historik')}</p>
+                    </div>
+                    <div className="p-1 flex justify-center">
+                      <UndoHistoryMenu
+                        history={undoHistory}
+                        currentIndex={currentHistoryIndex}
+                        jumpToIndex={onJumpToHistory}
+                        undo={onUndo}
+                        redo={onRedo}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
+                      />
+                    </div>
+                  </>
+                )}
+
                 {/* File Operations Section - Universal for all views */}
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
                   <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.fileOperations')}</p>
@@ -702,9 +704,59 @@ function Header({
 
                 {/* Other Actions Section - Universal */}
                 <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:actions.more')}</p>
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.settings', 'Inställningar')}</p>
                 </div>
                 <div className="p-1">
+                  {/* Public/Private Toggle */}
+                  {wheelId && onTogglePublic && (
+                    <button
+                      onClick={() => { onTogglePublic(); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                    >
+                      {isPublic ? <Globe size={16} className="text-green-500" /> : <Lock size={16} className="text-gray-500" />}
+                      <span className="flex-1 text-left">{isPublic ? t('subscription:publicShare.public', 'Publik') : t('subscription:publicShare.private', 'Privat')}</span>
+                      <span className="text-xs text-gray-400">{isPublic ? t('subscription:publicShare.isPublic', 'Synligt för alla') : t('subscription:publicShare.makePublic', 'Bara du')}</span>
+                    </button>
+                  )}
+                  {/* Help & Onboarding */}
+                  {onStartOnboarding && (
+                    <button
+                      onClick={() => { onStartOnboarding(); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                    >
+                      <Sparkles size={16} className="text-gray-500" />
+                      {t('common:header.startTour', 'Guidad tur')}
+                    </button>
+                  )}
+                  {onStartAIOnboarding && onToggleAI && (
+                    <button
+                      onClick={() => { onStartAIOnboarding(); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                    >
+                      <Sparkles size={16} className="text-purple-500" />
+                      {t('common:header.aiTour', 'AI-guide')}
+                    </button>
+                  )}
+                  {/* Keyboard Shortcuts */}
+                  {onShowKeyboardShortcuts && (
+                    <button
+                      onClick={() => { onShowKeyboardShortcuts(); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                    >
+                      <Keyboard size={16} className="text-gray-500" />
+                      {t('common:shortcuts.title', 'Tangentbordsgenvägar')}
+                    </button>
+                  )}
+                  {/* Template Toggle (admin only) */}
+                  {wheelId && isAdmin && onToggleTemplate && (
+                    <button
+                      onClick={() => { onToggleTemplate(); setShowImageExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                    >
+                      <FileEdit size={16} className={isTemplate ? "text-purple-500" : "text-gray-500"} />
+                      {isTemplate ? t('common:header.isTemplate', 'Mall ✓') : t('common:header.makeTemplate', 'Gör till mall')}
+                    </button>
+                  )}
                   {onTemplateSelect && (
                     <button
                       onClick={() => { setShowTemplateModal(true); setShowImageExportMenu(false); }}
@@ -733,31 +785,6 @@ function Header({
             <PresenceIndicator activeUsers={activeUsers} />
           </div>
         )}
-        
-        {/* Public Share Toggle (only show for database wheels) - Hidden on small screens */}
-        {wheelId && onTogglePublic && (
-          <div className="hidden lg:block">
-            <PublicShareButton 
-              isPublic={isPublic}
-              onTogglePublic={onTogglePublic}
-            />
-          </div>
-        )}
-        
-        {/* Template Toggle (only show for admins) - Text-based for clarity */}
-        {wheelId && isAdmin && onToggleTemplate && (
-          <button
-            onClick={onToggleTemplate}
-            className={`hidden lg:flex items-center p-2 text-xs font-medium rounded-sm transition-colors ${
-              isTemplate
-                ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title={isTemplate ? t('common:header.templateWheelVisibleOnLanding') : t('common:header.markAsTemplate')}
-          >
-            {isTemplate ? t('common:header.isTemplate') : t('common:header.makeTemplate')}
-          </button>
-        )}
 
         {/* AI Assistant Toggle (only show for database wheels) */}
         {wheelId && onToggleAI && (
@@ -780,18 +807,6 @@ function Header({
                 PRO
               </span>
             )}
-          </div>
-        )}
-
-        {/* Onboarding Help Menu - Hidden on small screens */}
-        {onStartOnboarding && (
-          <div className="hidden lg:block">
-            <OnboardingMenu
-              onStartEditorGuide={onStartOnboarding}
-              onStartAIGuide={onStartAIOnboarding}
-              showAIOption={!!wheelId && !!onToggleAI}
-              onShowKeyboardShortcuts={onShowKeyboardShortcuts}
-            />
           </div>
         )}
 
