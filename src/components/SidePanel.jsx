@@ -466,6 +466,7 @@ function SidePanel({
       name: `Innerring ${innerRings.length + 1}`,
       type: 'inner',
       visible: true,
+      ring_order: wheelStructure.rings.length, // Set ring_order for new ring
       data: Array.from({ length: 12 }, () => [""]),
       orientation: 'vertical'
     };
@@ -482,7 +483,8 @@ function SidePanel({
       name: `Ytterring ${outerRings.length + 1}`,
       type: 'outer',
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
-      visible: true
+      visible: true,
+      ring_order: wheelStructure.rings.length // Set ring_order for new ring
     };
     const updatedOrgData = { ...wheelStructure, rings: [...wheelStructure.rings, newRing] };
     
@@ -495,7 +497,9 @@ function SidePanel({
     if (wheelStructure.rings.length <= 1) return;
     
     // Remove the ring
-    const updatedRings = wheelStructure.rings.filter(r => r.id !== ringId);
+    const updatedRings = wheelStructure.rings
+      .filter(r => r.id !== ringId)
+      .map((ring, index) => ({ ...ring, ring_order: index })); // Re-index remaining rings
     
     // CRITICAL: Also remove all items on this ring to prevent orphaned items
     const updatedItems = wheelStructure.items.filter(item => item.ringId !== ringId);
@@ -612,7 +616,13 @@ function SidePanel({
       // Insert at target position
       rings.splice(targetIndex, 0, removed);
       
-      onOrganizationChange({ ...wheelStructure, rings });
+      // CRITICAL: Update ring_order to reflect new positions so change tracking detects the reordering
+      const reorderedRings = rings.map((ring, index) => ({
+        ...ring,
+        ring_order: index
+      }));
+      
+      onOrganizationChange({ ...wheelStructure, rings: reorderedRings });
       setDraggedRing(null);
       queueSilentRingSave('ring-reorder');
       return;
@@ -641,7 +651,13 @@ function SidePanel({
     // Insert at target position
     rings.splice(targetIndex, 0, updatedRing);
 
-    onOrganizationChange({ ...wheelStructure, rings });
+    // CRITICAL: Update ring_order to reflect new positions so change tracking detects the reordering
+    const reorderedRings = rings.map((ring, index) => ({
+      ...ring,
+      ring_order: index
+    }));
+
+    onOrganizationChange({ ...wheelStructure, rings: reorderedRings });
     setDraggedRing(null);
     queueSilentRingSave('ring-type-swap');
   };
@@ -655,15 +671,9 @@ function SidePanel({
     }
 
     // If same type, don't do anything (reordering is handled by handleDropOnRing)
-    if (draggedRing.type === targetType) {
-      setDraggedRing(null);
-      return;
-    }
-
-    // Update ring type (dropping on empty space in different section)
-    const updatedRings = wheelStructure.rings.map(ring => {
+    if (draggedRing.type === targetType) {(ring, index) => {
       if (ring.id === draggedRing.id) {
-        const updatedRing = { ...ring, type: targetType };
+        const updatedRing = { ...ring, type: targetType, ring_order: index };
         
         // When converting to outer ring, ensure it has a color
         if (targetType === 'outer' && !updatedRing.color) {
@@ -677,6 +687,12 @@ function SidePanel({
           }
           if (!updatedRing.orientation) {
             updatedRing.orientation = 'vertical';
+          }
+        }
+        
+        return updatedRing;
+      }
+      return { ...ring, ring_order: index }edRing.orientation = 'vertical';
           }
         }
         
