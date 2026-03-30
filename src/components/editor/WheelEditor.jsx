@@ -304,10 +304,28 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         wheelRef.clearPendingItemUpdates();
       }
       
-      // CRITICAL: Fix currentPageId after state restoration if needed
-      // Can't modify restoredState (it's frozen), so we schedule a fix if needed
-      if (preservedPageId && restoredState.currentPageId !== preservedPageId) {
-        // Use setTimeout to run AFTER the state restoration completes
+      // CRITICAL FIX: Restore pages from pageItemsById
+      // When undo/redo happens, pageItemsById is restored but pages is not updated
+      // This causes items to disappear because pages is the source of truth
+      if (restoredState?.pageItemsById) {
+        setWheelState((prev) => ({
+          ...prev,
+          pages: prev.pages.map(page => {
+            // If pageItemsById has items for this page, restore them
+            const restoredItems = restoredState.pageItemsById[page.id];
+            if (restoredItems !== undefined) {
+              return {
+                ...page,
+                items: restoredItems
+              };
+            }
+            return page;
+          }),
+          // Preserve the currentPageId if needed
+          currentPageId: preservedPageId || prev.currentPageId
+        }));
+      } else if (preservedPageId && restoredState.currentPageId !== preservedPageId) {
+        // If no pageItemsById but currentPageId needs fixing
         setTimeout(() => {
           setWheelState((prev) => {
             // Only update if still mismatched (prevent unnecessary updates)
