@@ -977,8 +977,11 @@ class YearWheel {
     this.context.fill();
     this.context.closePath();
 
-    // Draw highlight border if this section is highlighted (zoomed month)
+    // Draw highlight border and glow if this section is highlighted (hovered item)
     if (highlight) {
+      this.context.save();
+      this.context.shadowColor = 'rgba(59, 130, 246, 0.5)';
+      this.context.shadowBlur = 10;
       this.context.beginPath();
       this.context.arc(
         this.center.x,
@@ -996,10 +999,11 @@ class YearWheel {
         calculatedStartAngle,
         true
       );
-      this.context.lineWidth = 1.5; // Subtle highlight
-      this.context.strokeStyle = "rgba(59, 130, 246, 0.4)"; // Very subtle blue
+      this.context.lineWidth = 2;
+      this.context.strokeStyle = "rgba(59, 130, 246, 0.6)";
       this.context.stroke();
       this.context.closePath();
+      this.context.restore();
     }
 
     if (text !== undefined) {
