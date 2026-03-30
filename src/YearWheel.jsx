@@ -880,6 +880,11 @@ function YearWheel({
 
   return (
     <div ref={containerRef} className="relative flex flex-col w-full h-full">
+      {!isWheelReady && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 bg-white">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-blue-500" />
+        </div>
+      )}
       <div 
         ref={scrollContainerRef}
         className="flex-1 w-full overflow-auto bg-white transition-opacity duration-150"

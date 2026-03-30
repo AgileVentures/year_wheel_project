@@ -11,6 +11,7 @@ import EditItemModal from '../EditItemModal';
 import { useGanttData } from './useGanttData';
 import { useTimeScale } from './useTimeScale';
 import { exportGanttAsPNG, exportGanttAsPDF, exportGanttAsCSV, printGantt } from './GanttExporter';
+import { showToast } from '../../utils/dialogs';
 
 /**
  * GanttView Component
@@ -484,7 +485,7 @@ const GanttView = forwardRef(function GanttView({
       }
     } catch (error) {
       console.error('Export failed:', error);
-      // TODO: Show error toast to user
+      showToast(t('common:errors.exportFailed', { defaultValue: 'Export misslyckades' }), 'error');
     }
   }, [wheel?.title, viewStart, viewEnd, wheelStructure, i18n.language, t, groupedItems, allItems]);
   
