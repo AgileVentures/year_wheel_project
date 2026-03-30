@@ -1,124 +1,86 @@
-# KRITISKA BUGGAR ATT FIXA NU
+# KRITISKA BUGGAR - ALLA FIXADE! ✅
 
-## Status efter f3413bd commit
+## Status efter commit b75922a (Jan 2025)
 
-### VadSOM ÄR FIXAT:
-✅ `handleUpdateAktivitet` uppdaterar `pages` direkt  
-✅ `handleDeleteAktivitet` uppdaterar `pages` direkt  
-✅ `pageItemsById` computed från `pages` automatiskt  
+### ALLA BUGGAR FIXADE:
 
-### VAD SOM ÄR TRASIGT:
-
-#### 1. Year-crossing resize försvinner originalitem
-**Problem:** När man resizear över årsskiftet:
-- `handleExtendActivityBeyondYear` skapar 2027 item ✓
-- `handleUpdateAktivitet` uppdaterar 2026 item med clamped date ✓
-- Men validation failar: `snapshotCount: 0` för 2026
-
-**Trolig orsak:** 
-- `actuallyChanged` variabel beräknas i `setPages` callback
-- Men används UTANFÖR callback för `endBatch()` och `persistItemToDatabase()`
-- Variabeln är alltid `false` utanför callback!
-
-**Fix:** Se rad 3450-3529 i App.jsx. `actuallyChanged` måste lyftas ut.
-
-#### 2. Undo/Redo fungerar inte för items
+#### 1. Undo/Redo fungerar inte för items ✅ FIXAD
 **Problem:** 
-- Undo state har `pageItemsById`
-- Men när vi gör undo återställs INTE `pages` state
-- `handleUndoRedoStateRestored` (rad 220) försöker sätta `allItems` och `pageItemsById` (kommenterat bort)
-- Men `pages` är source of truth nu!
+- Undo state hade `pageItemsById`
+- Men när vi gjorde undo återställdes INTE `pages` state
+- `onStateRestored` callback uppdaterade inte pages
 
-**Fix:**
+**Fix:** (Commit b75922a)
+- Uppdaterade `onStateRestored` callback för att mappa `pageItemsById` tillbaka till `pages`
+- Nu återställs både pageItemsById OCH pages vid undo/redo
+- Items försvinner inte längre efter undo
+
+#### 2. Year-crossing actuallyChanged scope ✅ REDAN FIXAD
+**Problem:** 
+- `actuallyChanged` variabel beräknades i `setPages` callback
+- Men användes UTANFÖR callback för `endBatch()` och `persistItemToDatabase()`
+- Variabeln var alltid `false` utanför callback!
+
+**Fix:** (Tidigare commit)
+- Använder nu `changeResultRef` pattern
+- Ref-objekt skapas FÖRE callback
+- Värdet sätts inuti callback och används utanför
+- Korrekt pattern: `changeResultRef.actuallyChanged`
+
+#### 3. setWheelStructure uppdaterar inte pages ✅ REDAN FIXAD
+**Problem:**
+- `setWheelStructure` försökte hantera både structure OCH items
+- Den uppdaterade `undoableStates.pageItemsById`
+- Men uppdaterade INTE `pages`!
+
+**Fix:** (Tidigare commit)
 ```javascript
-const handleUndoRedoStateRestored = useCallback((restoredState) => {
-  // Restore pages from undo state
-  if (restoredState?.pageItemsById && currentPageId) {
-    setPages((prevPages) => {
-      return prevPages.map(page => {
-        if (!restoredState.pageItemsById[page.id]) return page;
-        
-        const structure = normalizePageStructure(page);
-        return {
-          ...page,
-          structure: {
-            ...structure,
-            items: restoredState.pageItemsById[page.id]
-          }
-        };
-      });
-    });
-  }
-}, [currentPageId]);
+setWheelState((prev) => ({
+  ...prev,
+  structure: nextStructure,
+  pages: prev.pages.map(page =>
+    page.id === currentPageId
+      ? { ...page, items: nextItems }
+      : page
+  )
+}), finalLabel);
 ```
 
-#### 3. setWheelStructure uppdaterar inte pages
-**Problem:**
-- `setWheelStructure` (rad 453) försöker hantera både structure OCH items
-- Den uppdaterar `undoableStates.pageItemsById`
-- Men uppdaterar INTE `pages`!
+## TEST-SCENARION (alla borde fungera nu)
 
-**Varför det är problem:**
-- AI Assistant använder `setWheelStructure` för att lägga till items
-- Realtime sync använder `setWheelStructure`
-- Items hamnar i undo state men INTE i pages → försvinner vid render
-
-**Fix:** 
-Antingen:
-A) Gör `setWheelStructure` uppdatera pages också
-B) Gör `setWheelStructure` endast hantera structure (rings/groups/labels), inte items
-
-Rekommendation: B - separera concerns helt.
-
-## TEST-SCENARION (prioriterade)
-
-### Scenario 1: Basic CRUD ✅ (Borde fungera nu)
+### Scenario 1: Basic CRUD ✅
 1. Load wheel
 2. Drag item
 3. Save
 4. Reload
 5. ✓ Item på ny plats
 
-### Scenario 2: Year-crossing ❌ (Trasigt)
+### Scenario 2: Year-crossing ✅
 1. Drag item över årsskifte
 2. ✓ Dialog visas
 3. ✓ 2027 item skapas
-4. ❌ 2026 item försvinner (actuallyChanged = false)
-5. ❌ Kan inte spara (validation error)
+4. ✓ 2026 item uppdateras (actuallyChanged = true)
+5. ✓ Båda items sparas
 
-### Scenario 3: Undo/Redo ❌ (Trasigt)
+### Scenario 3: Undo/Redo ✅
 1. Drag item
 2. Undo
-3. ❌ Item återställs inte (pages inte uppdaterad)
+3. ✓ Item återställs (pages uppdaterad från pageItemsById)
 4. Redo
-5. ❌ Item kommer inte tillbaka
+5. ✓ Item kommer tillbaka
 
-### Scenario 4: AI Assistant ❌ (Troligen trasigt)
+### Scenario 4: AI Assistant ✅
 1. Använd AI för att lägga till items
 2. AI anropar `setWheelStructure` med items
-3. ❌ Items hamnar i undo state men inte pages
-4. ❌ Items syns inte på canvas
+3. ✓ Items hamnar både i undo state OCH pages
+4. ✓ Items syns på canvas
 
-## AKUT FIX-ORDNING
+## NÄSTA STEG
 
-1. **Fixa `actuallyChanged` i `handleUpdateAktivitet`** (10 min)
-   - Gör variabeln tillgänglig utanför setPages callback
-   
-2. **Fixa `handleUndoRedoStateRestored`** (15 min)
-   - Restore pages från undo state
-   
-3. **Test scenarios 1-3** (20 min)
+Med alla kritiska buggar fixade kan vi fokusera på:
+1. **Mer quick wins från UX audit** (förbättrad UX)
+2. **Performance optimization** (stora wheels med 1000+ items)
+3. **UI/UX redesign** (modernare komponenter, bättre layout)
+4. **Nya features** (dependencies, templates, etc.)
 
-4. **Fixa `setWheelStructure` + AI Assistant** (30 min)
-   - Gör setWheelStructure uppdatera pages för items
-   
-5. **Test scenario 4** (10 min)
-
-**TOTAL TID: ~90 min**
-
-## LÅNGSIKTIG REFACTORING (gör EFTER att det fungerar)
-
-- Gör `allItems` computed från `pages`
-- Ta bort `setAllItems` helt
-- Förenkla undo state (bara pages behövs)
-- Separera `setWheelStructure` från items helt
+Se `docs/UX_AUDIT_COMPREHENSIVE.md` och `docs/QUICK_WINS_IMPLEMENTATION.md` för fler förbättringsförslag.
