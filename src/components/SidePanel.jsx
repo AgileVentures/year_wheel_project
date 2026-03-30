@@ -222,6 +222,26 @@ function SidePanel({
   });
   const [expandedInnerRings, setExpandedInnerRings] = useState({});
 
+  // Helper function to highlight search matches
+  const highlightMatch = (text, query) => {
+    if (!query || !text) return text;
+    
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return (
+      <span>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() ? (
+            <mark key={i} className="bg-yellow-200 px-1 rounded">
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </span>
+    );
+  };
+
   // Search filter
   const searchLower = searchQuery.toLowerCase();
   const innerRings = wheelStructure.rings.filter(ring => ring.type === 'inner');
@@ -671,7 +691,13 @@ function SidePanel({
     }
 
     // If same type, don't do anything (reordering is handled by handleDropOnRing)
-    if (draggedRing.type === targetType) {(ring, index) => {
+    if (draggedRing.type === targetType) {
+      setDraggedRing(null);
+      return;
+    }
+
+    // Update ring type (dropping on empty space in different section)
+    const updatedRings = wheelStructure.rings.map((ring, index) => {
       if (ring.id === draggedRing.id) {
         const updatedRing = { ...ring, type: targetType, ring_order: index };
         
@@ -692,13 +718,7 @@ function SidePanel({
         
         return updatedRing;
       }
-      return { ...ring, ring_order: index }edRing.orientation = 'vertical';
-          }
-        }
-        
-        return updatedRing;
-      }
-      return ring;
+      return { ...ring, ring_order: index };
     });
 
     onOrganizationChange({ ...wheelStructure, rings: updatedRings });

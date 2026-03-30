@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { History, ChevronDown } from 'lucide-react';
+import { History, ChevronDown, Undo, Redo } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getHistoryLabel } from '../constants/historyChangeTypes';
 
@@ -96,6 +96,26 @@ export default function UndoHistoryMenu({
 
   return (
     <div className="relative" ref={menuRef}>
+      {/* Undo Button */}
+      <button
+        onClick={undo}
+        disabled={!canUndo}
+        className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        title={canUndo ? `Undo: ${history[currentIndex]?.label || ''}` : 'Nothing to undo'}
+      >
+        <Undo size={16} />
+      </button>
+      
+      {/* Redo Button */}
+      <button
+        onClick={redo}
+        disabled={!canRedo}
+        className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        title={canRedo ? `Redo: ${history[currentIndex + 1]?.label || ''}` : 'Nothing to redo'}
+      >
+        <Redo size={16} />
+      </button>
+      
       {/* History Dropdown Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

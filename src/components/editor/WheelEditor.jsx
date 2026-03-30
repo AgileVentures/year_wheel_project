@@ -2287,16 +2287,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             hasUnsavedChangesRef.current = false;
             
             if (!silent) {
-              const { items, rings, activityGroups, labels, pages } = result;
-              const totalOps = 
-                (items?.inserted || 0) + (items?.updated || 0) + (items?.deleted || 0) +
-                (rings?.inserted || 0) + (rings?.updated || 0) + (rings?.deleted || 0) +
-                (activityGroups?.inserted || 0) + (activityGroups?.updated || 0) + (activityGroups?.deleted || 0) +
-                (labels?.inserted || 0) + (labels?.updated || 0) + (labels?.deleted || 0) +
-                (pages?.updated || 0);
-              
-              const message = `Data har sparats! ${totalOps} ändring${totalOps !== 1 ? 'ar' : ''} tillämpade.`;
-              showToast(message, 'success');
+              // Simplified, clear success message
+              showToast('✓ Ändringar sparade', 'success');
             }
             
             markSaved();
@@ -2307,17 +2299,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             const saveResult = await enqueueFullSave(reason === 'manual' ? 'manual' : reason);
 
             if (!silent) {
-              const validationDetails = saveResult?.validation;
-
-              if (validationDetails?.valid) {
-                const validatedPages = validationDetails.details?.length || 0;
-                const message = validatedPages > 0
-                  ? `Data har sparats! ${validatedPages} sidor verifierades med sina aktiviteter.`
-                  : 'Data har sparats!';
-                showToast(message, 'success');
-              } else {
-                showToast('Data har sparats!', 'success');
-              }
+              showToast('✓ Ändringar sparade', 'success');
             }
           }
         } else {

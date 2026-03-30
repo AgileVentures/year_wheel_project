@@ -1084,6 +1084,11 @@ class InteractionHandler {
    * @param {MouseEvent} event - Mouse event
    */
   startWheelRotation(event) {
+    // Don't start rotation if locked
+    if (this.options.rotationLocked) {
+      return;
+    }
+    
     if (this.wheel.isAnimating) {
       this.wheel.stopSpinning();
     }

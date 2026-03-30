@@ -73,6 +73,7 @@ function YearWheel({
   const [yearWheel, setYearWheel] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [spinSpeed, setSpinSpeed] = useState('medium'); // 'slow', 'medium', 'fast'
+  const [rotationLocked, setRotationLocked] = useState(false); // Prevent accidental rotation
   const [isWheelReady, setIsWheelReady] = useState(false); // Track if wheel is ready to show
   const [selectedItem, setSelectedItem] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState(null);
@@ -689,6 +690,7 @@ function YearWheel({
         readonly, // Pass readonly to disable interactions
         activeEditors, // Pass active editors for real-time collaboration
         broadcastOperation, // Pass broadcast function for real-time operations
+        rotationLocked, // Pass rotation lock state
       }
     );
     
@@ -1013,6 +1015,28 @@ function YearWheel({
             >
               {isSpinning ? 'Stoppa' : 'Rotera'}
             </button>
+            
+            {/* Lock Rotation Toggle */}
+            {!readonly && (
+              <button
+                onClick={() => setRotationLocked(!rotationLocked)}
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                  rotationLocked
+                    ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-300'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={rotationLocked ? 'Lås upp rotation (kan rotera hjulet)' : 'Lås rotation (förhindra oavsiktlig rotation)'}
+              >
+                <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {rotationLocked ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                  )}
+                </svg>
+                {rotationLocked ? 'Låst' : 'Lås rotation'}
+              </button>
+            )}
             
             {/* Speed Control - show when spinning */}
             {isSpinning && (

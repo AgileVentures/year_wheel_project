@@ -182,6 +182,7 @@ class YearWheel {
     
     this.interactionHandler = new InteractionHandler(this.canvas, this, {
       readonly: this.readonly,
+      rotationLocked: this.rotationLocked,
       selectionMode: this.selectionMode,
       onItemClick: options.onItemClick,
       onDragStart: options.onDragStart,

@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
@@ -846,7 +846,11 @@ function Header({
               title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
               data-onboarding="save-button"
             >
-              <Save size={18} strokeWidth={2} />
+              {isSaving ? (
+                <Loader2 size={18} strokeWidth={2} className="animate-spin" />
+              ) : (
+                <Save size={18} strokeWidth={2} />
+              )}
               <span className="hidden sm:inline">
                 {isSaving ? t('common:header.saving') : t('common:actions.save')}
                 {!isSaving && unsavedChangesCount > 0 && (
