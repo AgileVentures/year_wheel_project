@@ -1,4 +1,4 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit, Loader2, Keyboard } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit, Loader2, Keyboard, FolderOpen, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
@@ -83,7 +83,9 @@ function Header({
 }) {
   const { t } = useTranslation(['common', 'subscription']);
   const navigate = useNavigate();
-  const [showImageExportMenu, setShowImageExportMenu] = useState(false);
+  const [showFileMenu, setShowFileMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   const [copiedLink, setCopiedLink] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -91,6 +93,9 @@ function Header({
   const [showCommentsPanel, setShowCommentsPanel] = useState(false);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
   const saveMenuRef = useRef(null);
+  const fileMenuRef = useRef(null);
+  const exportMenuRef = useRef(null);
+  const settingsMenuRef = useRef(null);
   
   useEffect(() => {
     if (!showMobileMenu) return;
@@ -112,9 +117,31 @@ function Header({
 
   useEffect(() => {
     if (showMobileMenu) {
-      setShowImageExportMenu(false);
+      setShowFileMenu(false);
+      setShowExportMenu(false);
+      setShowSettingsMenu(false);
     }
   }, [showMobileMenu]);
+
+  // Close menus on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (fileMenuRef.current && !fileMenuRef.current.contains(event.target)) {
+        setShowFileMenu(false);
+      }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
+        setShowExportMenu(false);
+      }
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
+        setShowSettingsMenu(false);
+      }
+    };
+    
+    if (showFileMenu || showExportMenu || showSettingsMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showFileMenu, showExportMenu, showSettingsMenu]);
 
   // Close save menu on click outside
   useEffect(() => {
@@ -321,461 +348,503 @@ function Header({
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-        {/* Combined Export & Share Menu - Hidden on small screens */}
-        <div className="hidden lg:flex relative flex-shrink-0" data-onboarding="export-share">
+        {/* Undo/Redo Toolbar Buttons - Visible on desktop */}
+        {onUndo && onRedo && (
+          <div className="hidden lg:flex items-center gap-0.5 mr-1" data-onboarding="undo-redo">
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title={canUndo ? `${t('common:actions.undo')}: ${undoLabel || ''}` : t('common:actions.nothingToUndo', 'Inget att ångra')}
+            >
+              <Undo size={18} />
+            </button>
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title={canRedo ? `${t('common:actions.redo')}: ${redoLabel || ''}` : t('common:actions.nothingToRedo', 'Inget att göra om')}
+            >
+              <Redo size={18} />
+            </button>
+            {/* History Dropdown */}
+            <UndoHistoryMenu
+              history={undoHistory}
+              currentIndex={currentHistoryIndex}
+              jumpToIndex={onJumpToHistory}
+              undo={onUndo}
+              redo={onRedo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+            />
+          </div>
+        )}
+        
+        <div className="hidden lg:block w-px h-6 bg-gray-200"></div>
+
+        {/* File Menu - Desktop */}
+        <div className="hidden lg:flex relative flex-shrink-0" ref={fileMenuRef}>
           <button
-            onClick={() => setShowImageExportMenu(!showImageExportMenu)}
-            className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors flex items-center gap-1"
-            title={t('common:header.exportAndShare')}
-            aria-label={t('common:header.exportAndShare')}
+            onClick={() => { setShowFileMenu(!showFileMenu); setShowExportMenu(false); setShowSettingsMenu(false); }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+            title={t('common:header.file', 'Fil')}
           >
-            <Download size={18} />
-            <ChevronDown size={14} />
+            <FolderOpen size={16} />
+            <span className="hidden xl:inline">{t('common:header.file', 'Fil')}</span>
+            <ChevronDown size={14} className={`transition-transform ${showFileMenu ? 'rotate-180' : ''}`} />
           </button>
 
-          {showImageExportMenu && (
-            <>
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setShowImageExportMenu(false)}
-              ></div>
-              <div className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-sm shadow-xl z-50 w-80 max-h-[80vh] overflow-y-auto">
-                
-                {/* Undo/Redo History Section */}
-                {onUndo && onRedo && (
-                  <>
-                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-200" data-onboarding="undo-redo">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.history', 'Historik')}</p>
-                    </div>
-                    <div className="p-1 flex justify-center">
-                      <UndoHistoryMenu
-                        history={undoHistory}
-                        currentIndex={currentHistoryIndex}
-                        jumpToIndex={onJumpToHistory}
-                        undo={onUndo}
-                        redo={onRedo}
-                        canUndo={canUndo}
-                        canRedo={canRedo}
-                      />
-                    </div>
-                  </>
-                )}
+          {showFileMenu && (
+            <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-sm shadow-lg z-50 w-64 py-1">
+              <button
+                onClick={() => { onLoadFromFile(); setShowFileMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Upload size={16} className="text-gray-500" />
+                <span className="flex-1 text-left">{t('common:header.importFile')}</span>
+                <span className="text-xs text-gray-400">.yrw</span>
+              </button>
+              <button
+                onClick={() => { onSaveToFile(); setShowFileMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Download size={16} className="text-gray-500" />
+                <span className="flex-1 text-left">{t('common:header.exportFile')}</span>
+                <span className="text-xs text-gray-400">.yrw</span>
+              </button>
+              
+              <div className="my-1 border-t border-gray-100"></div>
+              
+              {onExportData && (
+                <button
+                  onClick={() => { onExportData(); setShowFileMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <FileSpreadsheet size={16} className="text-gray-500" />
+                  <span className="flex-1 text-left">{t('common:header.exportData')}</span>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
+                </button>
+              )}
+              {onSmartImport && wheelId && (
+                <button
+                  onClick={() => { onSmartImport(); setShowFileMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Sparkles size={16} className="text-purple-500" />
+                  <span className="flex-1 text-left">Smart Import (CSV)</span>
+                  <span className="text-xs font-semibold px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">AI</span>
+                </button>
+              )}
+              
+              {onTemplateSelect && (
+                <>
+                  <div className="my-1 border-t border-gray-100"></div>
+                  <button
+                    onClick={() => { setShowTemplateModal(true); setShowFileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Sparkles size={16} className="text-gray-500" />
+                    <span className="flex-1 text-left">{t('common:header.useTemplate')}</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
-                {/* File Operations Section - Universal for all views */}
-                <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.fileOperations')}</p>
-                </div>
-                <div className="p-1">
-                  <button
-                    onClick={() => { onLoadFromFile(); setShowImageExportMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                  >
-                    <Upload size={16} className="text-gray-500" />
-                    {t('common:header.importFile')}
-                  </button>
-                  <button
-                    onClick={() => { onSaveToFile(); setShowImageExportMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                  >
-                    <Download size={16} className="text-gray-500" />
-                    {t('common:header.exportFile')}
-                  </button>
-                  {onExportData && (
+        {/* Export Menu - Desktop */}
+        <div className="hidden lg:flex relative flex-shrink-0" ref={exportMenuRef} data-onboarding="export-share">
+          <button
+            onClick={() => { setShowExportMenu(!showExportMenu); setShowFileMenu(false); setShowSettingsMenu(false); }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
+            title={t('common:header.exportAndShare')}
+          >
+            <Download size={16} />
+            <span className="hidden xl:inline">{t('common:header.export', 'Export')}</span>
+            <ChevronDown size={14} className={`transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showExportMenu && (
+            <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-sm shadow-lg z-50 w-80 max-h-[80vh] overflow-y-auto">
+              
+              {/* View-specific Export Section */}
+              {viewMode === 'wheel' && (
+                <>
+                  {/* Wheel Image Export Section */}
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('common:header.imageExport')}</p>
+                  </div>
+                  <div className="p-1">
+                    {/* PNG Transparent */}
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                      <FileDown size={16} className="text-gray-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-gray-900">{t('common:header.pngTransparent')}</div>
+                        <div className="text-xs text-gray-500">{t('common:header.pngTransparentDesc')}</div>
+                      </div>
+                      {isPremium ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => { handleExport('png'); setShowExportMenu(false); }}
+                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                            title={t('common:actions.download')}
+                          >
+                            <Download size={14} className="text-gray-500" />
+                          </button>
+                          <button
+                            onClick={() => { handleCopyToClipboard('png'); setShowExportMenu(false); }}
+                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                            title={t('common:actions.copy')}
+                          >
+                            {copiedFormat === 'png' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
+                      )}
+                    </div>
+
+                    {/* PNG White */}
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-gray-50">
+                      <FileDown size={16} className="text-gray-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-gray-900">{t('common:header.pngWhite')}</div>
+                        <div className="text-xs text-gray-500">{t('common:header.pngWhiteDesc')}</div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => { handleExport('png-white'); setShowExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.download')}
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </button>
+                        <button
+                          onClick={() => { handleCopyToClipboard('png-white'); setShowExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.copy')}
+                        >
+                          {copiedFormat === 'png-white' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* JPEG */}
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                      <FileDown size={16} className="text-gray-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-gray-900">JPEG</div>
+                        <div className="text-xs text-gray-500">{t('common:header.jpegDesc')}</div>
+                      </div>
+                      {isPremium ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => { handleExport('jpeg'); setShowExportMenu(false); }}
+                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                            title={t('common:actions.download')}
+                          >
+                            <Download size={14} className="text-gray-500" />
+                          </button>
+                          <button
+                            onClick={() => { handleCopyToClipboard('jpeg'); setShowExportMenu(false); }}
+                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                            title={t('common:actions.copy')}
+                          >
+                            {copiedFormat === 'jpeg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
+                      )}
+                    </div>
+
+                    {/* SVG */}
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-gray-50">
+                      <FileDown size={16} className="text-gray-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-gray-900">SVG</div>
+                        <div className="text-xs text-gray-500">{t('common:header.svgDesc')}</div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => { handleExport('svg'); setShowExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.download')}
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </button>
+                        <button
+                          onClick={() => { handleCopyToClipboard('svg'); setShowExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.copy')}
+                        >
+                          {copiedFormat === 'svg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* PDF */}
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                      <FileDown size={16} className="text-gray-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-gray-900">PDF</div>
+                        <div className="text-xs text-gray-500">{t('common:header.pdfDesc')}</div>
+                      </div>
+                      {isPremium ? (
+                        <button
+                          onClick={() => { handleExport('pdf'); setShowExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title={t('common:actions.download')}
+                        >
+                          <Download size={14} className="text-gray-500" />
+                        </button>
+                      ) : (
+                        <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
+                      )}
+                    </div>
+
+                    {/* PDF Report */}
+                    {onDownloadPDFReport && (
+                      <div className={`flex items-center gap-2 px-3 py-2 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
+                        <FileSpreadsheet size={16} className="text-gray-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-gray-900">{t('common:header.pdfReport')}</div>
+                          <div className="text-xs text-gray-500">{t('common:header.pdfReportDesc')}</div>
+                        </div>
+                        {isPremium ? (
+                          <button
+                            onClick={() => { onDownloadPDFReport(); setShowExportMenu(false); }}
+                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                            title={t('common:actions.download')}
+                          >
+                            <Download size={14} className="text-gray-500" />
+                          </button>
+                        ) : (
+                          <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Report Templates */}
+                    {onOpenReportTemplates && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-sm hover:bg-gray-50">
+                        <FileEdit size={16} className="text-gray-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-gray-900">Rapportmallar</div>
+                          <div className="text-xs text-gray-500">Skapa anpassade rapporter</div>
+                        </div>
+                        <button
+                          onClick={() => { onOpenReportTemplates(); setShowExportMenu(false); }}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title="Öppna mallredigeraren"
+                        >
+                          <ChevronDown size={14} className="text-gray-500" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Gantt/Timeline Export Section */}
+              {viewMode === 'gantt' && onGanttExport && (
+                <>
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('common:header.timelineExport', 'Exportera tidslinje')}</p>
+                  </div>
+                  <div className="p-1">
                     <button
-                      onClick={() => { onExportData(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                      onClick={() => { onGanttExport('png'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <FileImage size={16} className="text-gray-500" />
+                      {t('export.png', 'PNG-bild')}
+                    </button>
+                    <button
+                      onClick={() => { onGanttExport('pdf'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <FileText size={16} className="text-gray-500" />
+                      {t('export.pdf', 'PDF-dokument')}
+                    </button>
+                    <button
+                      onClick={() => { onGanttExport('print'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Printer size={16} className="text-gray-500" />
+                      {t('common.print', 'Skriv ut')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Kanban Export Section */}
+              {viewMode === 'kanban' && onKanbanExport && (
+                <>
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('common:header.kanbanExport', 'Exportera kanban')}</p>
+                  </div>
+                  <div className="p-1">
+                    <button
+                      onClick={() => { onKanbanExport('png'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <FileImage size={16} className="text-gray-500" />
+                      {t('export.png', 'PNG-bild')}
+                    </button>
+                    <button
+                      onClick={() => { onKanbanExport('print'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Printer size={16} className="text-gray-500" />
+                      {t('common.print', 'Skriv ut')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* List Export Section */}
+              {viewMode === 'list' && onListExport && (
+                <>
+                  <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('common:header.listExport', 'Exportera lista')}</p>
+                  </div>
+                  <div className="p-1">
+                    <button
+                      onClick={() => { onListExport('csv'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <FileSpreadsheet size={16} className="text-gray-500" />
+                      {t('export.csv', 'CSV-fil')}
+                    </button>
+                    <button
+                      onClick={() => { onListExport('print'); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Printer size={16} className="text-gray-500" />
+                      {t('common.print', 'Skriv ut')}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Sharing Links Section */}
+              {wheelId && isPublic && (
+                <>
+                  <div className="px-3 py-2 bg-gray-50 border-y border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('common:header.sharingLinks')}</p>
+                  </div>
+                  <div className="p-1">
+                    <button
+                      onClick={() => { handleCopyPreviewLink(); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Eye size={16} className="text-gray-500" />
+                      {copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
+                    </button>
+                    <button
+                      onClick={() => { handleOpenPresentationMode(); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Presentation size={16} className="text-gray-500" />
+                      {t('common:header.presentationMode')}
+                    </button>
+                    <button
+                      onClick={() => { handleCopyEmbedLink(); setShowExportMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Link2 size={16} className="text-gray-500" />
                       <span className="flex items-center gap-2">
-                        {t('common:header.exportData')}
+                        {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
                         <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
                       </span>
                     </button>
-                  )}
-                  {onSmartImport && wheelId && (
-                    <button
-                      onClick={() => { onSmartImport(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                    >
-                      <Sparkles size={16} className="text-purple-500" />
-                      <span className="flex items-center gap-2">
-                        Smart Import (CSV)
-                        <span className="text-xs font-semibold px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">AI</span>
-                      </span>
-                    </button>
-                  )}
-                </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
-                {/* View-specific Export Section */}
-                {viewMode === 'wheel' && (
-                  <>
-                    {/* Wheel Image Export Section */}
-                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.imageExport')}</p>
-                    </div>
-                    <div className="p-1">
-                      {/* PNG Transparent */}
-                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
-                        <FileDown size={16} className="text-gray-400 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900">{t('common:header.pngTransparent')}</div>
-                          <div className="text-xs text-gray-500">{t('common:header.pngTransparentDesc')}</div>
-                        </div>
-                        {isPremium ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => { handleExport('png'); setShowImageExportMenu(false); }}
-                              className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                              title={t('common:actions.download')}
-                            >
-                              <Download size={14} className="text-gray-500" />
-                            </button>
-                            <button
-                              onClick={() => { handleCopyToClipboard('png'); setShowImageExportMenu(false); }}
-                              className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                              title={t('common:actions.copy')}
-                            >
-                              {copiedFormat === 'png' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
-                        )}
-                      </div>
+        {/* Settings Menu - Desktop */}
+        <div className="hidden lg:flex relative flex-shrink-0" ref={settingsMenuRef}>
+          <button
+            onClick={() => { setShowSettingsMenu(!showSettingsMenu); setShowFileMenu(false); setShowExportMenu(false); }}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
+            title={t('common:header.settings', 'Inställningar')}
+          >
+            <Settings size={18} />
+          </button>
 
-                      {/* PNG White */}
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-50">
-                        <FileDown size={16} className="text-gray-400 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900">{t('common:header.pngWhite')}</div>
-                          <div className="text-xs text-gray-500">{t('common:header.pngWhiteDesc')}</div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => { handleExport('png-white'); setShowImageExportMenu(false); }}
-                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                            title={t('common:actions.download')}
-                          >
-                            <Download size={14} className="text-gray-500" />
-                          </button>
-                          <button
-                            onClick={() => { handleCopyToClipboard('png-white'); setShowImageExportMenu(false); }}
-                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                            title={t('common:actions.copy')}
-                          >
-                            {copiedFormat === 'png-white' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* JPEG */}
-                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
-                        <FileDown size={16} className="text-gray-400 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900">JPEG</div>
-                          <div className="text-xs text-gray-500">{t('common:header.jpegDesc')}</div>
-                        </div>
-                        {isPremium ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => { handleExport('jpeg'); setShowImageExportMenu(false); }}
-                              className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                              title={t('common:actions.download')}
-                            >
-                              <Download size={14} className="text-gray-500" />
-                            </button>
-                            <button
-                              onClick={() => { handleCopyToClipboard('jpeg'); setShowImageExportMenu(false); }}
-                              className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                              title={t('common:actions.copy')}
-                            >
-                              {copiedFormat === 'jpeg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
-                        )}
-                      </div>
-
-                      {/* SVG */}
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-50">
-                        <FileDown size={16} className="text-gray-400 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900">SVG</div>
-                          <div className="text-xs text-gray-500">{t('common:header.svgDesc')}</div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => { handleExport('svg'); setShowImageExportMenu(false); }}
-                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                            title={t('common:actions.download')}
-                          >
-                            <Download size={14} className="text-gray-500" />
-                          </button>
-                          <button
-                            onClick={() => { handleCopyToClipboard('svg'); setShowImageExportMenu(false); }}
-                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                            title={t('common:actions.copy')}
-                          >
-                            {copiedFormat === 'svg' ? <Check size={14} className="text-green-600" /> : <Clipboard size={14} className="text-gray-500" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* PDF */}
-                      <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
-                        <FileDown size={16} className="text-gray-400 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900">PDF</div>
-                          <div className="text-xs text-gray-500">{t('common:header.pdfDesc')}</div>
-                        </div>
-                        {isPremium ? (
-                          <button
-                            onClick={() => { handleExport('pdf'); setShowImageExportMenu(false); }}
-                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                            title={t('common:actions.download')}
-                          >
-                            <Download size={14} className="text-gray-500" />
-                          </button>
-                        ) : (
-                          <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
-                        )}
-                      </div>
-
-                      {/* PDF Report */}
-                      {onDownloadPDFReport && (
-                        <div className={`flex items-center gap-2 px-2 py-1.5 rounded-sm ${!isPremium ? 'opacity-50' : 'hover:bg-gray-50'}`}>
-                          <FileSpreadsheet size={16} className="text-gray-400 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-gray-900">{t('common:header.pdfReport')}</div>
-                            <div className="text-xs text-gray-500">{t('common:header.pdfReportDesc')}</div>
-                          </div>
-                          {isPremium ? (
-                            <button
-                              onClick={() => { onDownloadPDFReport(); setShowImageExportMenu(false); }}
-                              className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                              title={t('common:actions.download')}
-                            >
-                              <Download size={14} className="text-gray-500" />
-                            </button>
-                          ) : (
-                            <span className="text-xs text-amber-600 font-medium px-1.5 py-0.5 bg-amber-50 rounded">{t('subscription:premium')}</span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Report Templates */}
-                      {onOpenReportTemplates && (
-                        <div className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-50">
-                          <FileEdit size={16} className="text-gray-400 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm text-gray-900">Rapportmallar</div>
-                            <div className="text-xs text-gray-500">Skapa anpassade rapporter</div>
-                          </div>
-                          <button
-                            onClick={() => { onOpenReportTemplates(); setShowImageExportMenu(false); }}
-                            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
-                            title="Öppna mallredigeraren"
-                          >
-                            <ChevronDown size={14} className="text-gray-500" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {/* Gantt/Timeline Export Section */}
-                {viewMode === 'gantt' && onGanttExport && (
-                  <>
-                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.timelineExport', 'Exportera tidslinje')}</p>
-                    </div>
-                    <div className="p-1">
-                      <button
-                        onClick={() => { onGanttExport('png'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <FileImage size={16} className="text-gray-500" />
-                        {t('export.png', 'PNG-bild')}
-                      </button>
-                      <button
-                        onClick={() => { onGanttExport('pdf'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <FileText size={16} className="text-gray-500" />
-                        {t('export.pdf', 'PDF-dokument')}
-                      </button>
-                      <button
-                        onClick={() => { onGanttExport('print'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <Printer size={16} className="text-gray-500" />
-                        {t('common.print', 'Skriv ut')}
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {/* Kanban Export Section */}
-                {viewMode === 'kanban' && onKanbanExport && (
-                  <>
-                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.kanbanExport', 'Exportera kanban')}</p>
-                    </div>
-                    <div className="p-1">
-                      <button
-                        onClick={() => { onKanbanExport('png'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <FileImage size={16} className="text-gray-500" />
-                        {t('export.png', 'PNG-bild')}
-                      </button>
-                      <button
-                        onClick={() => { onKanbanExport('print'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <Printer size={16} className="text-gray-500" />
-                        {t('common.print', 'Skriv ut')}
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {/* List Export Section */}
-                {viewMode === 'list' && onListExport && (
-                  <>
-                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.listExport', 'Exportera lista')}</p>
-                    </div>
-                    <div className="p-1">
-                      <button
-                        onClick={() => { onListExport('csv'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <FileSpreadsheet size={16} className="text-gray-500" />
-                        {t('export.csv', 'CSV-fil')}
-                      </button>
-                      <button
-                        onClick={() => { onListExport('print'); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <Printer size={16} className="text-gray-500" />
-                        {t('common.print', 'Skriv ut')}
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {/* Sharing Links Section - Universal */}
-                {wheelId && isPublic && (
-                  <>
-                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.sharingLinks')}</p>
-                    </div>
-                    <div className="p-1">
-                      <button
-                        onClick={() => { handleCopyPreviewLink(); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <Eye size={16} className="text-gray-500" />
-                        {copiedLink === 'preview' ? t('common:actions.linkCopied') : t('common:header.copyPreviewLink')}
-                      </button>
-                      <button
-                        onClick={() => { handleOpenPresentationMode(); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <Presentation size={16} className="text-gray-500" />
-                        {t('common:header.presentationMode')}
-                      </button>
-                      <button
-                        onClick={() => { handleCopyEmbedLink(); setShowImageExportMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                      >
-                        <Link2 size={16} className="text-gray-500" />
-                        <span className="flex items-center gap-2">
-                          {copiedLink === 'embed' ? t('common:actions.linkCopied') : t('common:header.copyEmbedLink')}
-                          <span className="text-xs font-semibold px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">BETA</span>
-                        </span>
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {/* Other Actions Section - Universal */}
-                <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.settings', 'Inställningar')}</p>
-                </div>
-                <div className="p-1">
-                  {/* Public/Private Toggle */}
-                  {wheelId && onTogglePublic && (
-                    <button
-                      onClick={() => { onTogglePublic(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                    >
-                      {isPublic ? <Globe size={16} className="text-green-500" /> : <Lock size={16} className="text-gray-500" />}
-                      <span className="flex-1 text-left">{isPublic ? t('subscription:publicShare.public', 'Publik') : t('subscription:publicShare.private', 'Privat')}</span>
-                      <span className="text-xs text-gray-400">{isPublic ? t('subscription:publicShare.isPublic', 'Synligt för alla') : t('subscription:publicShare.makePublic', 'Bara du')}</span>
-                    </button>
-                  )}
-                  {/* Help & Onboarding */}
-                  {onStartOnboarding && (
-                    <button
-                      onClick={() => { onStartOnboarding(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                    >
-                      <Sparkles size={16} className="text-gray-500" />
-                      {t('common:header.startTour', 'Guidad tur')}
-                    </button>
-                  )}
-                  {onStartAIOnboarding && onToggleAI && (
-                    <button
-                      onClick={() => { onStartAIOnboarding(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                    >
-                      <Sparkles size={16} className="text-purple-500" />
-                      {t('common:header.aiTour', 'AI-guide')}
-                    </button>
-                  )}
-                  {/* Keyboard Shortcuts */}
-                  {onShowKeyboardShortcuts && (
-                    <button
-                      onClick={() => { onShowKeyboardShortcuts(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                    >
-                      <Keyboard size={16} className="text-gray-500" />
-                      {t('common:shortcuts.title', 'Tangentbordsgenvägar')}
-                    </button>
-                  )}
-                  {/* Template Toggle (admin only) */}
-                  {wheelId && isAdmin && onToggleTemplate && (
-                    <button
-                      onClick={() => { onToggleTemplate(); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                    >
-                      <FileEdit size={16} className={isTemplate ? "text-purple-500" : "text-gray-500"} />
-                      {isTemplate ? t('common:header.isTemplate', 'Mall ✓') : t('common:header.makeTemplate', 'Gör till mall')}
-                    </button>
-                  )}
-                  {onTemplateSelect && (
-                    <button
-                      onClick={() => { setShowTemplateModal(true); setShowImageExportMenu(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
-                    >
-                      <Sparkles size={16} className="text-gray-500" />
-                      {t('common:header.useTemplate')}
-                    </button>
-                  )}
+          {showSettingsMenu && (
+            <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-sm shadow-lg z-50 w-64 py-1">
+              {/* Public/Private Toggle */}
+              {wheelId && onTogglePublic && (
+                <button
+                  onClick={() => { onTogglePublic(); setShowSettingsMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  {isPublic ? <Globe size={16} className="text-green-500" /> : <Lock size={16} className="text-gray-500" />}
+                  <span className="flex-1 text-left">{isPublic ? t('subscription:publicShare.public', 'Publik') : t('subscription:publicShare.private', 'Privat')}</span>
+                  <span className="text-xs text-gray-400">{isPublic ? t('subscription:publicShare.isPublic', 'Synligt för alla') : t('subscription:publicShare.makePublic', 'Bara du')}</span>
+                </button>
+              )}
+              
+              <div className="my-1 border-t border-gray-100"></div>
+              
+              {/* Help & Onboarding */}
+              {onStartOnboarding && (
+                <button
+                  onClick={() => { onStartOnboarding(); setShowSettingsMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Sparkles size={16} className="text-gray-500" />
+                  {t('common:header.startTour', 'Guidad tur')}
+                </button>
+              )}
+              {onStartAIOnboarding && onToggleAI && (
+                <button
+                  onClick={() => { onStartAIOnboarding(); setShowSettingsMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Sparkles size={16} className="text-purple-500" />
+                  {t('common:header.aiTour', 'AI-guide')}
+                </button>
+              )}
+              {/* Keyboard Shortcuts */}
+              {onShowKeyboardShortcuts && (
+                <button
+                  onClick={() => { onShowKeyboardShortcuts(); setShowSettingsMenu(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Keyboard size={16} className="text-gray-500" />
+                  {t('common:shortcuts.title', 'Tangentbordsgenvägar')}
+                </button>
+              )}
+              {/* Template Toggle (admin only) */}
+              {wheelId && isAdmin && onToggleTemplate && (
+                <>
+                  <div className="my-1 border-t border-gray-100"></div>
                   <button
-                    onClick={() => { onReset(); setShowImageExportMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-sm transition-colors"
+                    onClick={() => { onToggleTemplate(); setShowSettingsMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    <RotateCcw size={16} className="text-red-500" />
-                    {t('common:header.resetAll')}
+                    <FileEdit size={16} className={isTemplate ? "text-purple-500" : "text-gray-500"} />
+                    {isTemplate ? t('common:header.isTemplate', 'Mall ✓') : t('common:header.makeTemplate', 'Gör till mall')}
                   </button>
-                </div>
-              </div>
-            </>
+                </>
+              )}
+              
+              <div className="my-1 border-t border-gray-100"></div>
+              
+              <button
+                onClick={() => { onReset(); setShowSettingsMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <RotateCcw size={16} className="text-red-500" />
+                {t('common:header.resetAll')}
+              </button>
+            </div>
           )}
         </div>
         
