@@ -143,8 +143,8 @@ function YearLineLegalPage() {
               </p>
               <p className="text-gray-600">
                 Contact us at{' '}
-                <a href="mailto:hey@communitaslabs.io" className="text-[#FF5A5F] font-medium hover:underline">
-                  hey@communitaslabs.io
+                <a href="mailto:info@auctum.se" className="text-[#FF5A5F] font-medium hover:underline">
+                  info@auctum.se
                 </a>
               </p>
             </div>

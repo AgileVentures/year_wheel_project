@@ -82,11 +82,11 @@ function SupportPage() {
                     {t('support:contactTitle')}
                   </h2>
                   <a 
-                    href="mailto:hey@communitaslabs.io"
+                    href="mailto:info@auctum.se"
                     className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-lg transition-colors"
                   >
                     <Mail size={20} />
-                    hey@communitaslabs.io
+                    info@auctum.se
                   </a>
                 </div>
               </div>

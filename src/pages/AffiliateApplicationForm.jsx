@@ -128,7 +128,7 @@ These terms are governed by the laws of Sweden. Any disputes shall be resolved i
 ## 14. Contact
 
 For questions about the Affiliate Program:
-- Email: hey@communitaslabs.io
+- Email: info@auctum.se
 - Dashboard: https://yearwheel.com/affiliate-dashboard
 
 ---
@@ -256,7 +256,7 @@ Dessa villkor styrs av svensk lag. Eventuella tvister ska lösas i svenska domst
 ## 14. Kontakt
 
 För frågor om Affiliateprogrammet:
-- E-post: hey@communitaslabs.io
+- E-post: info@auctum.se
 - Panel: https://yearwheel.com/affiliate-dashboard
 
 ---

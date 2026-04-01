@@ -96,7 +96,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'YearWheel Team <hello@notify.yearwheel.se>',
-        reply_to: 'hey@communitaslabs.io',
+        reply_to: 'info@auctum.se',
         to: [recipientEmail],
         subject: language === 'en' 
           ? `Invitation to join "${teamName}" on YearWheel`

@@ -678,8 +678,8 @@ function YearLineHowToGuide() {
             Privacy Policy
           </a>
           <span className="hidden sm:inline text-gray-400">•</span>
-          <a href="mailto:hey@communitaslabs.io" className="hover:text-[#FF5A5F] transition-colors">
-            hey@communitaslabs.io
+          <a href="mailto:info@auctum.se" className="hover:text-[#FF5A5F] transition-colors">
+            info@auctum.se
           </a>
         </div>
       </div>

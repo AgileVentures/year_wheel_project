@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         from: 'YearWheel <hello@notify.yearwheel.se>',
-        reply_to: 'hey@communitaslabs.io',
+        reply_to: 'info@auctum.se',
         to: [recipientEmail],
         subject: language === 'en' 
           ? '🎁 You received a YearWheel Premium gift!'

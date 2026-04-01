@@ -6,7 +6,7 @@
 
 Welcome to YearWheel ("we", "us", "our"). We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, share, and protect your information when you use our service.
 
-YearWheel is provided by **CommunitasLabs Inc**, registered in the United States.
+YearWheel is provided by **Auctum**, registered in Sweden.
 
 ## 2. Information We Collect
 
@@ -364,7 +364,7 @@ You have the right to:
 - **Restriction**: Restrict processing of your data
 - **Withdraw Consent**: At any time
 
-To exercise your rights, contact us at: hey@communitaslabs.io
+To exercise your rights, contact us at: info@auctum.se
 
 ## 8. International Data Transfers
 
@@ -397,8 +397,7 @@ We may update this policy from time to time. For significant changes:
 
 For privacy questions or concerns about this policy:
 
-**Email**: hey@communitaslabs.io  
-**Postal Address**: CommunitasLabs Inc, [Address]
+**Email**: info@auctum.se
 
 **EU Representative**: [Name and address if applicable]
 

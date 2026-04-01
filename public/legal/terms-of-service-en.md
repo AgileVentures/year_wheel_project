@@ -6,7 +6,7 @@
 
 By using YearWheel ("Service"), you accept these Terms of Service ("Terms"). If you do not accept all terms, you may not use the Service.
 
-YearWheel is provided by **CommunitasLabs Inc** ("we", "us", "our").
+YearWheel is provided by **Auctum** ("we", "us", "our").
 
 ## 2. Definitions
 
@@ -183,10 +183,8 @@ Our failure to enforce a right does not constitute a waiver.
 
 For questions about these Terms:
 
-**Email**: hey@communitaslabs.io  
-**Support**: hey@communitaslabs.io  
-**Postal Address**: CommunitasLabs Inc, 1111B S Governors Ave #26534, Dover, DE 19904, US  
-**Phone**: +1 (302) 467-1070
+**Email**: info@auctum.se  
+**Support**: info@auctum.se
 
 ---
 

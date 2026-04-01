@@ -221,7 +221,7 @@ serve(async (req) => {
 
             return {
               from: `${fromName} <hello@notify.yearwheel.se>`,
-              reply_to: 'hey@communitaslabs.io',
+              reply_to: 'info@auctum.se',
               to: [email],
               subject: subject,
               html: personalizedHtml

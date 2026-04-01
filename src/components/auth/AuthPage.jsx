@@ -99,7 +99,7 @@ function AuthPage() {
         {/* Footer */}
         <div className="text-center mt-12 pb-8">
           <p className="text-sm text-gray-500">
-            {t('auth:provider.name')} {t('auth:provider.tagline')} <a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors">{t('auth:provider.company')}</a>
+            {t('auth:provider.name')} {t('auth:provider.tagline')} <span className="text-[#00A4A6] font-medium">{t('auth:provider.company')}</span>
           </p>
           {/* <p className="text-sm text-gray-400 mt-1">© 2025 YearWheel. Alla rättigheter reserverade.</p> */}
         </div>

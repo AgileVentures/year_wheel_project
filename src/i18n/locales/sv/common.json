@@ -89,7 +89,7 @@
   "errors": {
     "loadingError": "Problem med att ladda komponent",
     "loadingErrorMessage": "Ett fel uppstod när en del av applikationen skulle laddas. Försök att ladda om sidan.",
-    "persistentIssue": "Om det här problemet kvarstår, kontakta hey@communitaslabs.io"
+    "persistentIssue": "Om det här problemet kvarstår, kontakta info@auctum.se"
   },
   "navigation": {
     "menu": "Meny",

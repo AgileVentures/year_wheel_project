@@ -379,7 +379,7 @@ async function sendQuizResultEmail(
       },
       body: JSON.stringify({
         from: 'Thomas från YearWheel <hello@notify.yearwheel.se>',
-        reply_to: 'hey@communitaslabs.io',
+        reply_to: 'info@auctum.se',
         to: email,
         subject: subject,
         html: htmlContent

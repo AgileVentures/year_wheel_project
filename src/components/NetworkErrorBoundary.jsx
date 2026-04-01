@@ -204,7 +204,7 @@ class NetworkErrorBoundary extends Component {
               </div>
 
               <div className="text-sm text-gray-600 mb-6 text-center">
-                {t('errors.persistentIssue', 'If this problem persists, contact hey@communitaslabs.io')}
+                {t('errors.persistentIssue', 'If this problem persists, contact info@auctum.se')}
               </div>
 
               <div className="flex gap-3">

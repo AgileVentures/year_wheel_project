@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Communitas Labs Inc**
+**Auctum**
 
 **Last updated: January 15, 2026**
 
@@ -8,7 +8,7 @@
 
 Welcome to YearLine ("we", "us", "our"). We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, and protect your information when you use YearLine.
 
-YearLine is provided by **Communitas Labs Inc**, a company incorporated in Delaware, United States.
+YearLine is provided by **Auctum**, a company registered in Sweden.
 
 ## 2. Information We Collect
 
@@ -116,7 +116,7 @@ You have the right to:
 ### 7.3 How to Exercise Your Rights
 To exercise your rights:
 1. **Revoke Access**: Remove YearLine from your monday.com board settings
-2. **Contact Us**: Email hey@communitaslabs.io with your request
+2. **Contact Us**: Email info@auctum.se with your request
 3. **monday.com Data**: Manage your board data through monday.com
 
 ## 8. Cookies and Tracking
@@ -161,24 +161,24 @@ YearLine may contain links to monday.com and other external sites. We are not re
 
 ## 14. Business Transfers
 
-If Communitas Labs Inc is acquired or merged, your information may be transferred to the new entity. You will be notified of any such change.
+If Auctum is acquired or merged, your information may be transferred to the new entity. You will be notified of any such change.
 
 ## 15. Contact Information
 
 For privacy questions or to exercise your rights:
 
-**Communitas Labs Inc**  
-Email: hey@communitaslabs.io  
+**Auctum**  
+Email: info@auctum.se  
 Website: https://yearwheel.se/yearline/how-to
 
-**Data Protection Officer**: hey@communitaslabs.io
+**Data Protection Officer**: info@auctum.se
 
 For monday.com data inquiries, contact monday.com's privacy team directly.
 
 ## 16. Specific Jurisdiction Information
 
 ### 16.1 European Union (GDPR)
-- Data Controller: Communitas Labs Inc
+- Data Controller: Auctum
 - Legal Basis: Consent and legitimate interests
 - Data Retention: As specified in Section 6.3
 - Your Rights: As specified in Section 7.1

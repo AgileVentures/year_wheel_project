@@ -243,7 +243,7 @@ export default function Unsubscribe() {
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
             Behöver du hjälp?{' '}
-            <a href="mailto:hey@communitaslabs.io" className="text-blue-600 hover:underline">
+            <a href="mailto:info@auctum.se" className="text-blue-600 hover:underline">
               Kontakta oss
             </a>
           </p>

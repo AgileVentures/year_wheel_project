@@ -6,7 +6,7 @@
 
 Genom att använda YearWheel ("Tjänsten") accepterar du dessa användarvillkor ("Villkor"). Om du inte accepterar alla villkor, får du inte använda Tjänsten.
 
-YearWheel tillhandahålls av **CommunitasLabs Inc** ("vi", "oss", "vår").
+YearWheel tillhandahålls av **Auctum** ("vi", "oss", "vår").
 
 ## 2. Definitioner
 
@@ -183,10 +183,8 @@ Vår underlåtenhet att upprätthålla en rättighet utgör inte en eftergift.
 
 För frågor om dessa Villkor:
 
-**E-post**: hey@communitaslabs.io  
-**Support**: hey@communitaslabs.io  
-**Postadress**: CommunitasLabs Inc, 1111B S Governors Ave #26534, Dover, DE 19904, US  
-**Telefon**: +1 (302) 467-1070
+**E-post**: info@auctum.se  
+**Support**: info@auctum.se
 
 ---
 

@@ -17,7 +17,7 @@
     "user_metadata": {
       "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
       "custom_claims": {
-        "hd": "communitaslabs.io"
+        "hd": "auctum.se"
       },
       "email": "user2@example.com",
       "email_verified": true,
@@ -37,7 +37,7 @@
         "identity_data": {
           "avatar_url": "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
           "custom_claims": {
-            "hd": "communitaslabs.io"
+            "hd": "auctum.se"
           },
           "email": "user2@example.com",
           "email_verified": true,

@@ -1,6 +1,6 @@
 # Terms of Service
 
-**Communitas Labs Inc**
+**Auctum**
 
 **Last updated: January 15, 2026**
 
@@ -8,7 +8,7 @@
 
 By using YearLine ("Service"), you accept these Terms of Service ("Terms"). If you do not accept all terms, you may not use the Service.
 
-YearLine is provided by **Communitas Labs Inc** ("we", "us", "our").
+YearLine is provided by **Auctum** ("we", "us", "our").
 
 ## 2. Definitions
 
@@ -181,7 +181,7 @@ You agree to resolve disputes individually, not as part of a class action.
 ## 15. General Provisions
 
 ### 15.1 Entire Agreement
-These Terms constitute the entire agreement between you and Communitas Labs Inc regarding YearLine.
+These Terms constitute the entire agreement between you and Auctum regarding YearLine.
 
 ### 15.2 Severability
 If any provision is found unenforceable, the remaining provisions remain in effect.
@@ -199,8 +199,8 @@ We are not liable for delays caused by circumstances beyond our reasonable contr
 
 For questions about these Terms:
 
-**Communitas Labs Inc**  
-Email: hey@communitaslabs.io  
+**Auctum**  
+Email: info@auctum.se  
 Website: https://yearwheel.se/yearline/how-to
 
 For monday.com platform issues, contact monday.com support directly.

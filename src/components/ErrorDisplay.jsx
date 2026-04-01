@@ -165,10 +165,10 @@ function ErrorDisplay({
                 {t('common:errors.helpText', 'Om problemet kvarstår, kopiera feldetaljerna och kontakta support på')}
                 {' '}
                 <a 
-                  href="mailto:hey@communitaslabs.io" 
+                  href="mailto:info@auctum.se" 
                   className="text-blue-600 hover:underline"
                 >
-                  hey@communitaslabs.io
+                  info@auctum.se
                 </a>
               </p>
             </div>

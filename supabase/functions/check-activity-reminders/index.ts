@@ -350,7 +350,7 @@ async function sendReminderEmail(
     },
     body: JSON.stringify({
       from: 'YearWheel Påminnelser <hello@notify.yearwheel.se>',
-      reply_to: 'hey@communitaslabs.io',
+      reply_to: 'info@auctum.se',
       to: [recipient.email],
       subject: `Påminnelse: ${reminder.item_name} ${reminderContext}`,
       html: htmlContent

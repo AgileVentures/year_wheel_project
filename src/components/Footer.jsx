@@ -10,14 +10,9 @@ function Footer({ variant = 'full' }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600">
           <p>
             {t('landing:footer.createdBy')}{' '}
-            <a 
-              href="https://communitaslabs.io" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors"
-            >
-              CommunitasLabs Inc
-            </a>
+            <span className="text-[#00A4A6] font-medium">
+              Auctum
+            </span>
           </p>
         </div>
       </footer>
@@ -33,14 +28,9 @@ function Footer({ variant = 'full' }) {
               ? 'YearWheel Planner is a SaaS service created and operated by'
               : 'YearWheel Planner är en SaaS-tjänst skapad och driven av'
             }{' '}
-            <a 
-              href="https://communitaslabs.io" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors"
-            >
-              CommunitasLabs Inc
-            </a>
+            <span className="text-[#00A4A6] font-medium">
+              Auctum
+            </span>
           </p>
         </div>
       </footer>
@@ -73,8 +63,7 @@ function Footer({ variant = 'full' }) {
           <div>
             <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.company')}</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.about')}</a></li>
-              <li><a href="https://communitaslabs.io" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.contact')}</a></li>
+              <li><Link to="/support" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.contact')}</Link></li>
             </ul>
           </div>
 
@@ -90,14 +79,9 @@ function Footer({ variant = 'full' }) {
         <div className="border-t border-gray-200 pt-8 text-center text-sm text-gray-600">
           <p>
             {t('landing:footer.createdBy')}{' '}
-            <a 
-              href="https://communitaslabs.io" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-[#00A4A6] hover:text-[#2E9E97] font-medium transition-colors"
-            >
-              CommunitasLabs Inc
-            </a>
+            <span className="text-[#00A4A6] font-medium">
+              Auctum
+            </span>
           </p>
         </div>
       </div>
