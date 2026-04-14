@@ -3217,11 +3217,24 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         };
       });
 
-      // Update latestValuesRef for consistency
+      // CRITICAL: Build merged pages the same way setWheelState updater does,
+      // so latestValuesRef.current.pages matches before enqueueFullSave fires.
+      // Without this, buildWheelSnapshot() reads stale pages from the ref.
+      const currentPages = latestValuesRef.current?.pages || [];
+      const mergedPages = currentPages.map((page) => {
+        let restoredPage = restoredPageMap.get(page.id);
+        if (!restoredPage && page.year) {
+          restoredPage = restoredPageByYear.get(page.year);
+        }
+        return restoredPage
+          ? { ...page, items: restoredPage.items || [] }
+          : page;
+      });
+
       const pageItemsById = {};
-      restoredPages.forEach(p => {
-        if (p.id && p.items) {
-          pageItemsById[p.id] = [...p.items];
+      mergedPages.forEach(p => {
+        if (p.id) {
+          pageItemsById[p.id] = Array.isArray(p.items) ? [...p.items] : [];
         }
       });
       
@@ -3234,9 +3247,8 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
         showMonthRing: restoredShowMonthRing ?? latestValuesRef.current?.showMonthRing,
         showRingNames: restoredShowRingNames ?? latestValuesRef.current?.showRingNames,
         structure: restoredStructure ?? latestValuesRef.current?.structure,
-        pageItemsById: Object.keys(pageItemsById).length > 0
-          ? { ...(latestValuesRef.current?.pageItemsById || {}), ...pageItemsById }
-          : latestValuesRef.current?.pageItemsById,
+        pages: mergedPages,
+        pageItemsById,
       };
 
       clearHistory();

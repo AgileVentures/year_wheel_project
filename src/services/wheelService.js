@@ -1164,12 +1164,13 @@ export const syncItems = async (wheelId, items, ringIdMap, activityIdMap, labelI
   
   const toDelete = [...existingPageIds].filter(id => !currentIds.has(id) && !recentlyCreated.has(id));
   
-  // console.log(`[syncItems] Items on current scope (${supportsPageScope ? pageId?.substring(0, 8) : 'wheel'}): ${existingPageItems.length}`);
-  // console.log(`[syncItems] Items to DELETE: ${toDelete.length}`, toDelete.map(id => id.substring(0, 8)));
-  
-  if (toDelete.length > 0) {
+  // SAFETY GUARD: Block deletion when snapshot has 0 items but page has existing data.
+  // A legitimate "remove all items" goes through delta save (individual tracked deletes).
+  // A full save producing 0 items for a populated page indicates stale state.
+  if (toDelete.length > 0 && toDelete.length === existingPageItems.length && items.length === 0) {
+    console.error(`[syncItems] BLOCKED: refusing to delete ALL ${toDelete.length} items from page ${pageId?.substring(0, 8)} because snapshot has 0 items. Likely stale state.`);
+  } else if (toDelete.length > 0) {
     await supabase.from('items').delete().in('id', toDelete);
-    // console.log(`[syncItems] DELETED ${toDelete.length} items from database`);
   }
 
   // Fetch all pages for this wheel to map years to page IDs
@@ -1442,6 +1443,13 @@ export const saveWheelSnapshot = async (wheelId, snapshot) => {
   }
   
   const existingPageIds = new Set((existingPages || []).map(p => p.id));
+  
+  // SAFETY GUARD: Refuse to proceed if snapshot has zero pages but DB has pages
+  // This prevents catastrophic deletion of all data due to stale state or bugs
+  if (normalizedPages.length === 0 && (existingPages || []).length > 0) {
+    console.error(`[saveWheelSnapshot] BLOCKED: snapshot has 0 pages but DB has ${existingPages.length} pages. Refusing to delete all data.`);
+    throw new Error(`saveWheelSnapshot blocked: cannot save empty snapshot when ${existingPages.length} pages exist in database`);
+  }
   
   // FIRST: Delete pages that exist in DB but are not in the snapshot
   // This MUST happen before creating new pages to avoid unique constraint on page_order
