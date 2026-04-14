@@ -928,7 +928,7 @@ function Header({
           <div className="flex items-stretch shadow-sm rounded-sm overflow-hidden">
             <button
               onClick={onSave}
-              disabled={isSaving}
+              disabled={isSaving || unsavedChangesCount === 0}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               title={onBackToDashboard ? t('common:header.saveToDatabase') : t('common:header.saveToBrowser')}
               data-onboarding="save-button"
@@ -979,7 +979,7 @@ function Header({
                       onSave();
                       setShowSaveMenu(false);
                     }}
-                    disabled={isSaving}
+                    disabled={isSaving || unsavedChangesCount === 0}
                     className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors disabled:opacity-50"
                   >
                     <div className="flex items-center gap-3">
