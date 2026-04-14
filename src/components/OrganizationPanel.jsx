@@ -491,8 +491,28 @@ function OrganizationPanel({
     queueSilentRingSave('ring-add-outer');
   };
 
-  const handleRemoveRing = (ringId) => {
+  const handleRemoveRing = async (ringId) => {
     if (wheelStructure.rings.length <= 1) return;
+    
+    // Count items on this ring to warn the user
+    const itemsOnRing = (wheelStructure.items || []).filter(item => item.ringId === ringId);
+    const ring = wheelStructure.rings.find(r => r.id === ringId);
+    const ringName = ring?.name || t('editor:rings.unnamed', { defaultValue: 'Namnlös ring' });
+    
+    if (itemsOnRing.length > 0) {
+      const confirmed = await showConfirmDialog({
+        title: t('editor:rings.deleteWithItemsTitle', { defaultValue: 'Ring innehåller aktiviteter' }),
+        message: t('editor:rings.deleteWithItemsMessage', {
+          ringName,
+          count: itemsOnRing.length,
+          defaultValue: `Ringen "${ringName}" har ${itemsOnRing.length} aktivitet(er). Dessa kommer att raderas permanent. Vill du fortsätta?`
+        }),
+        confirmText: t('editor:rings.deleteWithItemsConfirm', { defaultValue: 'Radera ring och aktiviteter' }),
+        cancelText: t('common:actions.cancel', { defaultValue: 'Avbryt' }),
+        confirmButtonClass: 'bg-red-600 hover:bg-red-700 text-white'
+      });
+      if (!confirmed) return;
+    }
     
     // Remove the ring
     const updatedRings = wheelStructure.rings.filter(r => r.id !== ringId);

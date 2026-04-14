@@ -87,7 +87,11 @@
     "integrationConnect": "Connect data source",
     "noInnerRings": "No inner rings yet",
     "noOuterRings": "No outer rings yet",
-    "dragHereOrAdd": "Drag rings here or click + to add"
+    "dragHereOrAdd": "Drag rings here or click + to add",
+    "unnamed": "Unnamed ring",
+    "deleteWithItemsTitle": "Ring contains activities",
+    "deleteWithItemsMessage": "The ring \"{{ringName}}\" has {{count}} activity/activities on this page. These will be permanently deleted. Do you want to continue?",
+    "deleteWithItemsConfirm": "Delete ring and activities"
   },
   "activityGroups": {
     "title": "ACTIVITY GROUPS",
