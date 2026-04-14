@@ -1,0 +1,65 @@
+{
+  "version": "2.0",
+  "exportedAt": "2026-04-14T07:22:18.400Z",
+  "exportSource": "audit-recovery-script",
+  "sourceWheelId": "c4b76bc1-070f-4df5-953c-7c12c2cd4e65",
+  "metadata": {
+    "title": "USK GY25 MALL",
+    "year": 2026
+  },
+  "settings": {
+    "colors": [
+      "#F5E6D3",
+      "#A8DCD1",
+      "#F4A896",
+      "#B8D4E8"
+    ],
+    "showWeekRing": true,
+    "showMonthRing": true,
+    "showRingNames": true,
+    "showLabels": false,
+    "weekRingDisplayMode": "week-numbers"
+  },
+  "structure": {
+    "rings": [
+      {
+        "id": "b5025478-8649-4c2e-9be4-b566eeda0bf5",
+        "name": "Ring 1",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb",
+        "data": [
+          [
+            ""
+          ]
+        ]
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "c8a2b762-47d5-45c3-a952-aff1d9c6f272",
+        "name": "Planering",
+        "color": "#3B82F6",
+        "visible": true
+      }
+    ],
+    "labels": []
+  },
+  "pages": [
+    {
+      "id": "3b3510df-11f3-4387-bb35-927e0e5bace1",
+      "year": 2026,
+      "pageOrder": 1,
+      "title": "2026",
+      "items": []
+    },
+    {
+      "id": "10c6a2b7-c8ea-45be-8b86-d30ec36552a6",
+      "year": 2027,
+      "pageOrder": 2,
+      "title": "2027",
+      "items": []
+    }
+  ]
+}

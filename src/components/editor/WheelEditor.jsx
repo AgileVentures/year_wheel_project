@@ -1939,9 +1939,12 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           return changed ? { ...prev, pages: nextPages } : prev;
         });
 
+        // CRITICAL: Do NOT overwrite pages from wheelState here!
+        // wheelState is captured by closure and may be stale (initial []).
+        // The render body keeps latestValuesRef.current.pages up to date.
+        // Only update pageItemsById which comes from the DB response.
         latestValuesRef.current = {
           ...latestValuesRef.current,
-          pages: wheelState.pages,
           pageItemsById: { ...itemsByPage },
         };
       }
@@ -2236,16 +2239,38 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       isSavingRef.current = true;
       setIsSaving(true);
       
-      // First do the regular save
+      // CRITICAL: Build snapshot BEFORE enqueueFullSave to capture current state.
+      // executeFullSave may overwrite latestValuesRef with stale closure values.
+      const snapshotBeforeSave = buildWheelSnapshot();
+      
+      // Do the regular save
       const result = await enqueueFullSave('manual');
       
-      // Then create explicit version snapshot with description
-      const snapshot = buildWheelSnapshot();
+      // Only create version if the full save actually succeeded
+      if (!result) {
+        console.error('[SaveWithVersion] Full save failed or returned null - skipping version creation');
+        showToast('Sparningen misslyckades - ingen version skapad', 'error');
+        return null;
+      }
+      
+      // Try to build a fresh snapshot after save (may have DB-synced IDs)
+      // Fall back to pre-save snapshot if the post-save one is empty
+      const snapshotAfterSave = buildWheelSnapshot();
+      const snapshot = (snapshotAfterSave?.pages?.length > 0)
+        ? snapshotAfterSave
+        : snapshotBeforeSave;
+      
       if (snapshot && wheelId) {
-        const latest = latestValuesRef.current;
         const itemCount = snapshot.pages?.reduce((sum, p) => sum + (p.items?.length || 0), 0) || 0;
         const ringCount = snapshot.structure?.rings?.length || 0;
         const groupCount = snapshot.structure?.activityGroups?.length || 0;
+        
+        // Validate snapshot has actual content before creating version
+        if (!snapshot.pages || snapshot.pages.length === 0) {
+          console.error('[SaveWithVersion] Snapshot has no pages even with fallback - skipping version creation');
+          showToast('Varning: Version skapades inte - inga sidor i snapshot', 'error');
+          return result;
+        }
         
         // Create descriptive version note
         const description = `Manuell sparning (${itemCount} aktiviteter, ${ringCount} ringar, ${groupCount} grupper)`;
@@ -2256,9 +2281,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
           description,
           false // not auto-save
         );
+        
+        showToast('Data och version har sparats!', 'success');
+      } else {
+        // Save succeeded but snapshot build failed - still report partial success
+        showToast('Data sparad, men version kunde inte skapas', 'warning');
       }
       
-      showToast('Data och version har sparats!', 'success');
       markSaved();
       
       return result;
@@ -2307,8 +2336,13 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             hasUnsavedChangesRef.current = false;
             
             if (!silent) {
-              // Simplified, clear success message
-              showToast('✓ Ändringar sparade', 'success');
+              // Surface warnings about skipped items so users know data wasn't fully saved
+              if (result.errors && result.errors.length > 0) {
+                console.warn('[DeltaSave] Partial save - some items skipped:', result.errors);
+                showToast(`Sparad med varningar: ${result.errors.length} objekt kunde inte sparas`, 'warning');
+              } else {
+                showToast('✓ Ändringar sparade', 'success');
+              }
             }
             
             markSaved();
@@ -2319,7 +2353,11 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             const saveResult = await enqueueFullSave(reason === 'manual' ? 'manual' : reason);
 
             if (!silent) {
-              showToast('✓ Ändringar sparade', 'success');
+              if (saveResult) {
+                showToast('✓ Ändringar sparade', 'success');
+              } else {
+                showToast('Sparningen misslyckades', 'error');
+              }
             }
           }
         } else {

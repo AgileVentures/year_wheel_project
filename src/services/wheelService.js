@@ -2590,13 +2590,13 @@ export const checkCircularReference = async (sourceWheelId, targetWheelId, maxDe
  * @returns {Promise<Object>} Summary of applied changes
  */
 export const applyDeltaChanges = async (wheelId, changes) => {
-  // console.log('[wheelService] Applying delta changes:', {
-  //   items: `+${changes.items.added.length} ~${changes.items.modified.length} -${changes.items.deleted.length}`,
-  //   rings: `+${changes.rings.added.length} ~${changes.rings.modified.length} -${changes.rings.deleted.length}`,
-  //   activityGroups: `+${changes.activityGroups.added.length} ~${changes.activityGroups.modified.length} -${changes.activityGroups.deleted.length}`,
-  //   labels: `+${changes.labels.added.length} ~${changes.labels.modified.length} -${changes.labels.deleted.length}`,
-  //   pages: `+${changes.pages.added.length} ~${changes.pages.modified.length} -${changes.pages.deleted.length}`
-  // });
+  console.log('[deltaSave] Applying delta changes:', {
+    items: `+${changes.items.added.length} ~${changes.items.modified.length} -${changes.items.deleted.length}`,
+    rings: `+${changes.rings.added.length} ~${changes.rings.modified.length} -${changes.rings.deleted.length}`,
+    activityGroups: `+${changes.activityGroups.added.length} ~${changes.activityGroups.modified.length} -${changes.activityGroups.deleted.length}`,
+    labels: `+${changes.labels.added.length} ~${changes.labels.modified.length} -${changes.labels.deleted.length}`,
+    pages: `+${changes.pages.added.length} ~${changes.pages.modified.length} -${changes.pages.deleted.length}`
+  });
 
   const results = {
     success: true,
@@ -2868,7 +2868,14 @@ export const applyDeltaChanges = async (wheelId, changes) => {
       }
     }
 
-    // console.log('[wheelService] Delta changes applied:', results);
+    console.log('[deltaSave] Results:', {
+      items: results.items,
+      rings: results.rings,
+      activityGroups: results.activityGroups,
+      labels: results.labels,
+      pages: results.pages,
+      errors: results.errors.length > 0 ? results.errors : 'none'
+    });
     return results;
 
   } catch (error) {

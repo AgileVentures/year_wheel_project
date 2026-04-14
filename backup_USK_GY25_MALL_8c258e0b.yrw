@@ -1,0 +1,92 @@
+{
+  "version": "2.0",
+  "exportedAt": "2026-04-14T07:22:17.754Z",
+  "exportSource": "audit-recovery-script",
+  "sourceWheelId": "8c258e0b-48dc-4b44-a5b5-fa8a7bfad6c6",
+  "metadata": {
+    "title": "USK GY25 MALL",
+    "year": 2026
+  },
+  "settings": {
+    "colors": [
+      "#F5E6D3",
+      "#A8DCD1",
+      "#F4A896",
+      "#B8D4E8"
+    ],
+    "showWeekRing": true,
+    "showMonthRing": true,
+    "showRingNames": true,
+    "showLabels": true,
+    "weekRingDisplayMode": "week-numbers"
+  },
+  "structure": {
+    "rings": [
+      {
+        "id": "980f5a30-6026-47f7-9b95-576ff0950fd7",
+        "name": "KURSER",
+        "type": "inner",
+        "visible": true,
+        "orientation": "vertical",
+        "color": "#408cfb",
+        "data": [
+          [
+            ""
+          ]
+        ]
+      }
+    ],
+    "activityGroups": [
+      {
+        "id": "b70963de-9b00-44f5-90b7-832dce187482",
+        "name": "Planering",
+        "color": "#F5E6D3",
+        "visible": true
+      }
+    ],
+    "labels": [
+      {
+        "id": "83348ffd-30b3-493f-a3e1-c2caf94f7e2b",
+        "name": "Etikett 2",
+        "color": "#2c8e22",
+        "visible": false
+      }
+    ]
+  },
+  "pages": [
+    {
+      "id": "63642eaa-0d9b-4266-a21d-514e989d853e",
+      "year": 2025,
+      "pageOrder": 1,
+      "title": "2025",
+      "items": [
+        {
+          "id": "964fe1f9-3175-4da3-aa67-83a3e0381c5c",
+          "name": "Test",
+          "ringId": "980f5a30-6026-47f7-9b95-576ff0950fd7",
+          "activityId": "b70963de-9b00-44f5-90b7-832dce187482",
+          "labelId": null,
+          "startDate": "2025-01-01",
+          "endDate": "2025-01-30",
+          "time": null,
+          "description": null,
+          "pageId": "63642eaa-0d9b-4266-a21d-514e989d853e"
+        }
+      ]
+    },
+    {
+      "id": "8b08a2a3-8b69-4fe4-9c21-cbf7f0623547",
+      "year": 2026,
+      "pageOrder": 2,
+      "title": "2026",
+      "items": []
+    },
+    {
+      "id": "46e18d44-4ba1-4733-a63c-71687a2ec280",
+      "year": 2027,
+      "pageOrder": 3,
+      "title": "2027",
+      "items": []
+    }
+  ]
+}
