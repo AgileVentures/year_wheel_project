@@ -1,12 +1,9 @@
-import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit, Loader2, Keyboard, FolderOpen, Settings } from 'lucide-react';
+import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, ChevronDown, FileDown, History, Undo, Redo, Check, Sparkles, FileSpreadsheet, Eye, Link2, MessageSquare, Clipboard, Presentation, MoreVertical, Globe, Lock, Target, Printer, FileImage, FileText, FileEdit, Loader2, Keyboard, FolderOpen, HelpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import Dropdown, { DropdownItem, DropdownDivider } from './Dropdown';
 import PresenceIndicator from './PresenceIndicator';
-import PublicShareButton from './PublicShareButton';
 import PageNavigator from './PageNavigator';
 import LanguageSwitcher from './LanguageSwitcher';
-import OnboardingMenu from './OnboardingMenu';
 import UndoHistoryMenu from './UndoHistoryMenu';
 import TemplateSelectionModal from './TemplateSelectionModal';
 import WheelCommentsPanel from './WheelCommentsPanel';
@@ -85,7 +82,7 @@ function Header({
   const navigate = useNavigate();
   const [showFileMenu, setShowFileMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState(null);
   const [copiedLink, setCopiedLink] = useState(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -95,7 +92,7 @@ function Header({
   const saveMenuRef = useRef(null);
   const fileMenuRef = useRef(null);
   const exportMenuRef = useRef(null);
-  const settingsMenuRef = useRef(null);
+  const helpMenuRef = useRef(null);
   
   useEffect(() => {
     if (!showMobileMenu) return;
@@ -119,7 +116,7 @@ function Header({
     if (showMobileMenu) {
       setShowFileMenu(false);
       setShowExportMenu(false);
-      setShowSettingsMenu(false);
+      setShowHelpMenu(false);
     }
   }, [showMobileMenu]);
 
@@ -132,16 +129,16 @@ function Header({
       if (exportMenuRef.current && !exportMenuRef.current.contains(event.target)) {
         setShowExportMenu(false);
       }
-      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target)) {
-        setShowSettingsMenu(false);
+      if (helpMenuRef.current && !helpMenuRef.current.contains(event.target)) {
+        setShowHelpMenu(false);
       }
     };
     
-    if (showFileMenu || showExportMenu || showSettingsMenu) {
+    if (showFileMenu || showExportMenu || showHelpMenu) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showFileMenu, showExportMenu, showSettingsMenu]);
+  }, [showFileMenu, showExportMenu, showHelpMenu]);
 
   // Close save menu on click outside
   useEffect(() => {
@@ -385,7 +382,7 @@ function Header({
         {/* File Menu - Desktop */}
         <div className="hidden lg:flex relative flex-shrink-0" ref={fileMenuRef}>
           <button
-            onClick={() => { setShowFileMenu(!showFileMenu); setShowExportMenu(false); setShowSettingsMenu(false); }}
+            onClick={() => { setShowFileMenu(!showFileMenu); setShowExportMenu(false); setShowHelpMenu(false); }}
             className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
             title={t('common:header.file', 'Fil')}
           >
@@ -448,6 +445,19 @@ function Header({
                   </button>
                 </>
               )}
+
+              {onReset && (
+                <>
+                  <div className="my-1 border-t border-gray-100"></div>
+                  <button
+                    onClick={() => { onReset(); setShowFileMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <RotateCcw size={16} className="text-red-500" />
+                    {t('common:header.resetAll')}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -455,7 +465,7 @@ function Header({
         {/* Export Menu - Desktop */}
         <div className="hidden lg:flex relative flex-shrink-0" ref={exportMenuRef} data-onboarding="export-share">
           <button
-            onClick={() => { setShowExportMenu(!showExportMenu); setShowFileMenu(false); setShowSettingsMenu(false); }}
+            onClick={() => { setShowExportMenu(!showExportMenu); setShowFileMenu(false); setShowHelpMenu(false); }}
             className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-sm transition-colors"
             title={t('common:header.exportAndShare')}
           >
@@ -766,36 +776,22 @@ function Header({
           )}
         </div>
 
-        {/* Settings Menu - Desktop */}
-        <div className="hidden lg:flex relative flex-shrink-0" ref={settingsMenuRef}>
+        {/* Help Menu - Desktop */}
+        <div className="hidden lg:flex relative flex-shrink-0" ref={helpMenuRef}>
           <button
-            onClick={() => { setShowSettingsMenu(!showSettingsMenu); setShowFileMenu(false); setShowExportMenu(false); }}
+            onClick={() => { setShowHelpMenu(!showHelpMenu); setShowFileMenu(false); setShowExportMenu(false); }}
             className="p-2 text-gray-600 hover:bg-gray-100 rounded-sm transition-colors"
-            title={t('common:header.settings', 'Inställningar')}
+            title={t('common:header.help', 'Hjälp')}
+            aria-label={t('common:header.help', 'Hjälp')}
           >
-            <Settings size={18} />
+            <HelpCircle size={18} />
           </button>
 
-          {showSettingsMenu && (
+          {showHelpMenu && (
             <div className="absolute top-full mt-1 right-0 bg-white border border-gray-200 rounded-sm shadow-lg z-50 w-64 py-1">
-              {/* Public/Private Toggle */}
-              {wheelId && onTogglePublic && (
-                <button
-                  onClick={() => { onTogglePublic(); setShowSettingsMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  {isPublic ? <Globe size={16} className="text-green-500" /> : <Lock size={16} className="text-gray-500" />}
-                  <span className="flex-1 text-left">{isPublic ? t('subscription:publicShare.public', 'Publik') : t('subscription:publicShare.private', 'Privat')}</span>
-                  <span className="text-xs text-gray-400">{isPublic ? t('subscription:publicShare.isPublic', 'Synligt för alla') : t('subscription:publicShare.makePublic', 'Bara du')}</span>
-                </button>
-              )}
-              
-              <div className="my-1 border-t border-gray-100"></div>
-              
-              {/* Help & Onboarding */}
               {onStartOnboarding && (
                 <button
-                  onClick={() => { onStartOnboarding(); setShowSettingsMenu(false); }}
+                  onClick={() => { onStartOnboarding(); setShowHelpMenu(false); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Sparkles size={16} className="text-gray-500" />
@@ -804,46 +800,22 @@ function Header({
               )}
               {onStartAIOnboarding && onToggleAI && (
                 <button
-                  onClick={() => { onStartAIOnboarding(); setShowSettingsMenu(false); }}
+                  onClick={() => { onStartAIOnboarding(); setShowHelpMenu(false); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Sparkles size={16} className="text-purple-500" />
                   {t('common:header.aiTour', 'AI-guide')}
                 </button>
               )}
-              {/* Keyboard Shortcuts */}
               {onShowKeyboardShortcuts && (
                 <button
-                  onClick={() => { onShowKeyboardShortcuts(); setShowSettingsMenu(false); }}
+                  onClick={() => { onShowKeyboardShortcuts(); setShowHelpMenu(false); }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Keyboard size={16} className="text-gray-500" />
                   {t('common:shortcuts.title', 'Tangentbordsgenvägar')}
                 </button>
               )}
-              {/* Template Toggle (admin only) */}
-              {wheelId && isAdmin && onToggleTemplate && (
-                <>
-                  <div className="my-1 border-t border-gray-100"></div>
-                  <button
-                    onClick={() => { onToggleTemplate(); setShowSettingsMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <FileEdit size={16} className={isTemplate ? "text-purple-500" : "text-gray-500"} />
-                    {isTemplate ? t('common:header.isTemplate', 'Mall ✓') : t('common:header.makeTemplate', 'Gör till mall')}
-                  </button>
-                </>
-              )}
-              
-              <div className="my-1 border-t border-gray-100"></div>
-              
-              <button
-                onClick={() => { onReset(); setShowSettingsMenu(false); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <RotateCcw size={16} className="text-red-500" />
-                {t('common:header.resetAll')}
-              </button>
             </div>
           )}
         </div>
@@ -1033,6 +1005,47 @@ function Header({
                         <div className="text-left">
                           <div className="font-medium">{t('common:header.versionHistory')}</div>
                           <div className="text-xs text-gray-500">{t('common:header.viewPreviousVersions')}</div>
+                        </div>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Sharing Section */}
+                {wheelId && onTogglePublic && (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.sharing', 'Delning')}</p>
+                    </div>
+                    <div className="p-1">
+                      <button
+                        onClick={() => { onTogglePublic(); setShowSaveMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                      >
+                        {isPublic ? <Globe size={16} className="text-green-600" /> : <Lock size={16} className="text-gray-500" />}
+                        <div className="text-left flex-1">
+                          <div className="font-medium">{isPublic ? t('subscription:publicShare.public', 'Publik') : t('subscription:publicShare.private', 'Privat')}</div>
+                          <div className="text-xs text-gray-500">{isPublic ? t('subscription:publicShare.isPublic', 'Synligt för alla') : t('subscription:publicShare.makePublic', 'Bara du')}</div>
+                        </div>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Admin Section */}
+                {wheelId && isAdmin && onToggleTemplate && (
+                  <>
+                    <div className="px-3 py-2 bg-gray-50 border-y border-gray-200">
+                      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('common:header.admin', 'Admin')}</p>
+                    </div>
+                    <div className="p-1">
+                      <button
+                        onClick={() => { onToggleTemplate(); setShowSaveMenu(false); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-sm transition-colors"
+                      >
+                        <FileEdit size={16} className={isTemplate ? 'text-purple-500' : 'text-gray-500'} />
+                        <div className="text-left flex-1">
+                          <div className="font-medium">{isTemplate ? t('common:header.isTemplate', 'Mall ✓') : t('common:header.makeTemplate', 'Gör till mall')}</div>
                         </div>
                       </button>
                     </div>

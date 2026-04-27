@@ -96,27 +96,7 @@ export default function UndoHistoryMenu({
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Undo Button */}
-      <button
-        onClick={undo}
-        disabled={!canUndo}
-        className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        title={canUndo ? `Undo: ${history[currentIndex]?.label || ''}` : 'Nothing to undo'}
-      >
-        <Undo size={16} />
-      </button>
-      
-      {/* Redo Button */}
-      <button
-        onClick={redo}
-        disabled={!canRedo}
-        className="p-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        title={canRedo ? `Redo: ${history[currentIndex + 1]?.label || ''}` : 'Nothing to redo'}
-      >
-        <Redo size={16} />
-      </button>
-      
-      {/* History Dropdown Button */}
+      {/* History Dropdown Button (Undo/Redo are rendered separately in Header.jsx) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 px-2.5 py-2 text-gray-700 hover:bg-gray-100 rounded-sm transition-colors group relative"
@@ -189,11 +169,9 @@ export default function UndoHistoryMenu({
           {recentHistory.length > 0 && (
             <div className="p-2 border-t border-gray-200 bg-gray-50 flex gap-2">
               <button
-                onClick={() => { 
-                  console.log('[UndoHistoryMenu] Undo button clicked, canUndo:', canUndo, 'undo function:', typeof undo);
-                  const result = undo(); 
-                  console.log('[UndoHistoryMenu] Undo result:', result);
-                  setIsOpen(false); 
+                onClick={() => {
+                  undo();
+                  setIsOpen(false);
                 }}
                 disabled={!canUndo}
                 className="flex-1 px-2 py-1.5 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -201,11 +179,9 @@ export default function UndoHistoryMenu({
                 ← {t('common:actions.undo', { defaultValue: 'Ångra' })}
               </button>
               <button
-                onClick={() => { 
-                  console.log('[UndoHistoryMenu] Redo button clicked, canRedo:', canRedo, 'redo function:', typeof redo);
-                  const result = redo(); 
-                  console.log('[UndoHistoryMenu] Redo result:', result);
-                  setIsOpen(false); 
+                onClick={() => {
+                  redo();
+                  setIsOpen(false);
                 }}
                 disabled={!canRedo}
                 className="flex-1 px-2 py-1.5 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

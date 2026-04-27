@@ -9,6 +9,7 @@
     "postbuild": "node scripts/prerender.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
     "preview": "vite preview",
+    "copy:wheel": "node scripts/copy_wheel.js",
     "generate:icons": "node scripts/generate-app-icons.js",
     "cy:open": "cypress open --e2e -b chrome",
     "cy:run": "cypress run",

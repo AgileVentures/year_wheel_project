@@ -29,6 +29,7 @@ dist-ssr
 
 scripts/*
 !scripts/prerender.js
+!scripts/copy_wheel.js
 docs/*
 cypress/downloads/*
 cypress/videos/*
