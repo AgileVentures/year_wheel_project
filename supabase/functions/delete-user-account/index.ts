@@ -44,92 +44,8 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Starting account deletion for user: ${userId}`)
 
-    // Delete user data in order (some will cascade automatically via foreign keys)
-    // But we'll be explicit for clarity and logging
-
-    // 1. Delete wheel versions (linked to wheels via FK, will cascade but being explicit)
-    const { error: versionsError } = await supabaseAdmin
-      .from('wheel_versions')
-      .delete()
-      .in('wheel_id', supabaseAdmin
-        .from('year_wheels')
-        .select('id')
-        .eq('user_id', userId)
-      )
-    
-    if (versionsError) {
-      console.error('Error deleting wheel versions:', versionsError)
-    }
-
-    // 2. Delete items (linked to wheels, will cascade)
-    const { error: itemsError } = await supabaseAdmin
-      .from('items')
-      .delete()
-      .in('wheel_id', supabaseAdmin
-        .from('year_wheels')
-        .select('id')
-        .eq('user_id', userId)
-      )
-    
-    if (itemsError) {
-      console.error('Error deleting items:', itemsError)
-    }
-
-    // 3. Delete wheel pages (linked to wheels)
-    const { error: pagesError } = await supabaseAdmin
-      .from('wheel_pages')
-      .delete()
-      .in('wheel_id', supabaseAdmin
-        .from('year_wheels')
-        .select('id')
-        .eq('user_id', userId)
-      )
-    
-    if (pagesError) {
-      console.error('Error deleting wheel pages:', pagesError)
-    }
-
-    // 4. Delete rings, activity groups, labels (linked to wheels)
-    const { error: ringsError } = await supabaseAdmin
-      .from('wheel_rings')
-      .delete()
-      .in('wheel_id', supabaseAdmin
-        .from('year_wheels')
-        .select('id')
-        .eq('user_id', userId)
-      )
-    
-    if (ringsError) {
-      console.error('Error deleting rings:', ringsError)
-    }
-
-    const { error: groupsError } = await supabaseAdmin
-      .from('activity_groups')
-      .delete()
-      .in('wheel_id', supabaseAdmin
-        .from('year_wheels')
-        .select('id')
-        .eq('user_id', userId)
-      )
-    
-    if (groupsError) {
-      console.error('Error deleting activity groups:', groupsError)
-    }
-
-    const { error: labelsError } = await supabaseAdmin
-      .from('labels')
-      .delete()
-      .in('wheel_id', supabaseAdmin
-        .from('year_wheels')
-        .select('id')
-        .eq('user_id', userId)
-      )
-    
-    if (labelsError) {
-      console.error('Error deleting labels:', labelsError)
-    }
-
-    // 5. Delete wheels
+    // Wheel-owned data uses ON DELETE CASCADE, including items, pages, rings,
+    // activity groups, labels, versions, comments, and import jobs.
     const { error: wheelsError } = await supabaseAdmin
       .from('year_wheels')
       .delete()
@@ -140,7 +56,7 @@ Deno.serve(async (req: Request) => {
       throw wheelsError
     }
 
-    // 6. Delete team memberships
+    // Delete user-scoped records that are not owned by a wheel.
     const { error: teamMembersError } = await supabaseAdmin
       .from('team_members')
       .delete()
@@ -148,9 +64,10 @@ Deno.serve(async (req: Request) => {
     
     if (teamMembersError) {
       console.error('Error deleting team memberships:', teamMembersError)
+      throw teamMembersError
     }
 
-    // 7. Delete teams owned by user (will cascade delete team members)
+    // Teams owned by the user cascade their remaining memberships.
     const { error: teamsError } = await supabaseAdmin
       .from('teams')
       .delete()
@@ -158,9 +75,9 @@ Deno.serve(async (req: Request) => {
     
     if (teamsError) {
       console.error('Error deleting teams:', teamsError)
+      throw teamsError
     }
 
-    // 8. Delete team invitations
     const { error: invitesError } = await supabaseAdmin
       .from('team_invitations')
       .delete()
@@ -168,9 +85,9 @@ Deno.serve(async (req: Request) => {
     
     if (invitesError) {
       console.error('Error deleting team invitations:', invitesError)
+      throw invitesError
     }
 
-    // 9. Delete user integrations
     const { error: integrationsError } = await supabaseAdmin
       .from('user_integrations')
       .delete()
@@ -178,9 +95,9 @@ Deno.serve(async (req: Request) => {
     
     if (integrationsError) {
       console.error('Error deleting integrations:', integrationsError)
+      throw integrationsError
     }
 
-    // 10. Delete subscription records
     const { error: subscriptionError } = await supabaseAdmin
       .from('subscriptions')
       .delete()
@@ -188,9 +105,9 @@ Deno.serve(async (req: Request) => {
     
     if (subscriptionError) {
       console.error('Error deleting subscription:', subscriptionError)
+      throw subscriptionError
     }
 
-    // 11. Delete monday.com user data
     const { error: mondayError } = await supabaseAdmin
       .from('monday_users')
       .delete()
@@ -198,9 +115,9 @@ Deno.serve(async (req: Request) => {
     
     if (mondayError) {
       console.error('Error deleting Monday user:', mondayError)
+      throw mondayError
     }
 
-    // 12. Delete affiliate data if exists
     const { error: affiliateError } = await supabaseAdmin
       .from('affiliates')
       .delete()
@@ -208,9 +125,9 @@ Deno.serve(async (req: Request) => {
     
     if (affiliateError) {
       console.error('Error deleting affiliate:', affiliateError)
+      throw affiliateError
     }
 
-    // 13. Delete profile
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
@@ -221,7 +138,7 @@ Deno.serve(async (req: Request) => {
       throw profileError
     }
 
-    // 14. Delete auth user (this is the final step)
+    // Delete auth user last so the authenticated request cannot orphan data.
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
     
     if (authDeleteError) {

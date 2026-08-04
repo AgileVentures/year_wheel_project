@@ -92,7 +92,20 @@ export async function deleteUserAccount() {
     body: { userId: user.id }
   });
 
-  if (error) throw error;
+  if (error) {
+    let message = error.message;
+
+    if (error.context && typeof error.context.json === 'function') {
+      try {
+        const response = await error.context.json();
+        message = response.error || message;
+      } catch {
+        // Use the transport error when the response body is unavailable.
+      }
+    }
+
+    throw new Error(message);
+  }
 
   // Sign out the user
   await supabase.auth.signOut();
