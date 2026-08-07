@@ -143,36 +143,8 @@ export default function InviteAcceptPage() {
         return;
       }
 
-      // Get team details
-      const { data: teamData, error: teamError } = await supabase
-        .from('teams')
-        .select('name, description')
-        .eq('id', inviteData.team_id)
-        .maybeSingle();
-
-      if (teamError) {
-        console.error('Team error:', teamError);
-        setError('Kunde inte hämta teaminformation');
-        setLoading(false);
-        return;
-      }
-
-      if (!teamData) {
-        setError('Teamet hittades inte');
-        setLoading(false);
-        return;
-      }
-
-      // Combine invitation with team data
-      const invitationWithTeam = {
-        ...inviteData,
-        teams: teamData
-      };
-
-      setInvitation(invitationWithTeam);
-
-      // Ensure the team still has capacity before inserting the member
-      // Add user to team (should not fail since we checked above)
+      // The invitation-specific RLS policy permits this insert. The team itself
+      // is only readable after the recipient has become a member.
       const { error: memberError } = await supabase
         .from('team_members')
         .insert([
@@ -190,6 +162,19 @@ export default function InviteAcceptPage() {
           throw memberError;
         }
       }
+
+      const { data: teamData, error: teamError } = await supabase
+        .from('teams')
+        .select('name, description')
+        .eq('id', inviteData.team_id)
+        .single();
+
+      if (teamError || !teamData) {
+        console.error('Team fetch error after accepting invitation:', teamError);
+        throw teamError || new Error('Team not found after accepting invitation');
+      }
+
+      setInvitation({ ...inviteData, teams: teamData });
 
       // Update invitation status
       await supabase
