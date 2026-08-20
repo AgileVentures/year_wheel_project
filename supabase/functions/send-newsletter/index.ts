@@ -74,7 +74,29 @@ serve(async (req) => {
     let recipients: string[] = []
 
     if (recipientType === 'custom' && customEmails) {
-      recipients = customEmails
+      const customRecipients = [...new Set(
+        customEmails
+          .map(email => email.trim().toLowerCase())
+          .filter(Boolean)
+      )]
+
+      // Custom lists may include existing users, so apply unsubscribe status here too.
+      const { data: unsubscribedProfiles, error: unsubscribedError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('newsletter_subscribed', false)
+
+      if (unsubscribedError) {
+        throw unsubscribedError
+      }
+
+      const unsubscribedEmails = new Set(
+        (unsubscribedProfiles ?? [])
+          .map(profile => profile.email?.trim().toLowerCase())
+          .filter(Boolean)
+      )
+
+      recipients = customRecipients.filter(email => !unsubscribedEmails.has(email))
     } else {
       let query = supabase
         .from('profiles')
@@ -269,7 +291,7 @@ serve(async (req) => {
               event_data: row,
               created_at: new Date().toISOString()
             }))
-            .filter(e => e.email_id)
+            .filter((event: { email_id?: string }) => Boolean(event.email_id))
 
           if (sentEvents.length > 0) {
             const { error: eventsError } = await supabase

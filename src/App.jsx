@@ -19,6 +19,7 @@ const AuthPage = lazy(() => import("./components/auth/AuthPage"));
 const InviteAcceptPage = lazy(() => import("./components/InviteAcceptPage"));
 const PreviewWheelPage = lazy(() => import("./components/PreviewWheelPage"));
 const PricingPage = lazy(() => import("./components/PricingPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
 const LegalPage = lazy(() => import("./components/LegalPage"));
 const SupportPage = lazy(() => import("./components/SupportPage"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
@@ -100,6 +101,7 @@ function AppContent() {
         <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
         <Route path="/auth" element={user ? <Navigate to={getAuthRedirect()} replace /> : <AuthPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/support" element={<SupportPage />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="/guide/quick-start" element={<QuickStartGuide />} />

@@ -84,6 +84,9 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
   const openedEvents = events.filter(e => e.event_type === 'opened');
   const clickedEvents = events.filter(e => e.event_type === 'clicked');
   const bouncedEvents = events.filter(e => e.event_type === 'bounced' || e.event_type === 'complained');
+  const deliveredCount = new Set(deliveredEvents.map(e => e.email_id)).size;
+  const openedCount = new Set(openedEvents.map(e => e.email_id)).size;
+  const failedCount = new Set(bouncedEvents.map(e => e.email_id)).size;
 
   // Track unsubscribe clicks specifically
   const unsubscribeClicks = clickedEvents.filter(e => {
@@ -113,9 +116,9 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
   }));
 
   // Calculate rates - use sent count as base for all calculations to avoid division by zero
-  const deliveryRate = send.recipient_count > 0 ? ((send.delivered_count / send.recipient_count) * 100).toFixed(1) : 0;
-  const openRate = send.recipient_count > 0 ? ((send.opened_count / send.recipient_count) * 100).toFixed(1) : 0;
-  const clickRate = send.recipient_count > 0 ? ((send.clicked_count / send.recipient_count) * 100).toFixed(1) : 0;
+  const deliveryRate = send.recipient_count > 0 ? ((deliveredCount / send.recipient_count) * 100).toFixed(1) : 0;
+  const openRate = send.recipient_count > 0 ? ((openedCount / send.recipient_count) * 100).toFixed(1) : 0;
+  const clickRate = send.recipient_count > 0 ? ((clickedEvents.length / send.recipient_count) * 100).toFixed(1) : 0;
   const unsubscribeRate = send.recipient_count > 0 ? ((unsubscribeClicks.length / send.recipient_count) * 100).toFixed(2) : 0;
 
   return (
@@ -218,7 +221,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
                         <CheckCircle size={20} />
                         <span className="text-sm font-medium">Levererade</span>
                       </div>
-                      <p className="text-3xl font-bold text-green-900">{send.delivered_count}</p>
+                      <p className="text-3xl font-bold text-green-900">{deliveredCount}</p>
                       <p className="text-xs text-green-700 mt-1">{deliveryRate}% av skickade</p>
                     </div>
 
@@ -227,7 +230,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
                         <Mail size={20} />
                         <span className="text-sm font-medium">Öppnade</span>
                       </div>
-                      <p className="text-3xl font-bold text-purple-900">{send.opened_count}</p>
+                      <p className="text-3xl font-bold text-purple-900">{openedCount}</p>
                       <p className="text-xs text-purple-700 mt-1">{openRate}% av skickade</p>
                     </div>
 
@@ -236,7 +239,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
                         <MousePointer size={20} />
                         <span className="text-sm font-medium">Klick</span>
                       </div>
-                      <p className="text-3xl font-bold text-indigo-900">{send.clicked_count}</p>
+                      <p className="text-3xl font-bold text-indigo-900">{clickedEvents.length}</p>
                       <p className="text-xs text-indigo-700 mt-1">{clickRate}% av skickade</p>
                     </div>
                   </div>
@@ -252,13 +255,13 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
                       <p className="text-xs text-orange-700 mt-1">{unsubscribeRate}% av skickade</p>
                     </div>
 
-                    {send.failed_count > 0 && (
+                    {failedCount > 0 && (
                       <div className="bg-red-50 rounded-sm p-4 border border-red-200">
                         <div className="flex items-center gap-2 text-red-600 mb-2">
                           <AlertCircle size={20} />
                           <span className="text-sm font-medium">Misslyckade</span>
                         </div>
-                        <p className="text-2xl font-bold text-red-900">{send.failed_count}</p>
+                        <p className="text-2xl font-bold text-red-900">{failedCount}</p>
                         <p className="text-xs text-red-700 mt-1">Studsar och klagomål</p>
                       </div>
                     )}

@@ -137,7 +137,7 @@ export const emailLayout = (content, preheader = '', tagline = 'Visualisera och 
             <td style="background: linear-gradient(135deg, rgba(54, 194, 198, 0.6) 0%, rgba(0, 164, 166, 0.6) 100%); padding: 32px 40px; text-align: center;">
               <!-- Logo -->
               <div style="margin-bottom: 16px;">
-                <img src="https://yearwheel.se/year_wheel_logo_transparent.png" alt="YearWheel" width="220" style="max-width: 220px; height: auto;" />
+                <img src="https://yearwheel.se/year_wheel_logo_email.png" alt="YearWheel" width="220" style="max-width: 220px; height: auto;" />
               </div>
               <p style="margin: 8px 0 0 0; color: #1B2A63; font-size: 14px; font-weight: 600;">
                 ${tagline}
@@ -161,6 +161,9 @@ export const emailLayout = (content, preheader = '', tagline = 'Visualisera och 
               <p style="margin: 0 0 12px 0; color: #9ca3af; font-size: 12px;">
                 Du får detta mail för att du har ett konto hos YearWheel.
               </p>
+              <p style="margin: 0 0 12px 0; font-size: 12px;">
+                <a href="mailto:info@auctum.se" style="color: #00A4A6; text-decoration: none;">info@auctum.se</a>
+              </p>
               <p style="margin: 0; font-size: 12px;">
                 <a href="https://yearwheel.se/unsubscribe" style="color: #9ca3af; text-decoration: underline;">Avregistrera från nyhetsbrev</a> •
                 <a href="https://yearwheel.se/settings" style="color: #9ca3af; text-decoration: underline;">Inställningar</a>
@@ -175,6 +178,9 @@ export const emailLayout = (content, preheader = '', tagline = 'Visualisera och 
 </body>
 </html>
 `
+
+const normalizeNewsletterContact = (text = '') =>
+  text.replace(/hey@communitaslabs\.io/gi, 'info@auctum.se')
 
 /**
  * Newsletter template
@@ -250,7 +256,7 @@ export const newsletterTemplate = ({
     ${ps ? `
       <div style="border-top: 2px solid #A4E6E0; padding-top: 24px; margin-top: 40px;">
         <p style="color: #2E9E97; font-size: 14px; line-height: 1.6; margin: 0;">
-          <strong>P.S.</strong> ${ps}
+          <strong>P.S.</strong> ${normalizeNewsletterContact(ps)}
         </p>
       </div>
     ` : ''}
@@ -542,7 +548,7 @@ export const compositeTemplate = ({
     ${ps ? `
       <div style="border-top: 2px solid #A4E6E0; padding-top: 24px; margin-top: 40px;">
         <p style="color: #2E9E97; font-size: 14px; line-height: 1.6; margin: 0;">
-          <strong>P.S.</strong> ${ps}
+          <strong>P.S.</strong> ${normalizeNewsletterContact(ps)}
         </p>
       </div>
     ` : ''}

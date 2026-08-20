@@ -63,6 +63,7 @@ function Footer({ variant = 'full' }) {
           <div>
             <h4 className="text-gray-900 font-semibold mb-4">{t('landing:footer.company')}</h4>
             <ul className="space-y-2 text-sm">
+              <li><Link to="/about" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.about')}</Link></li>
               <li><Link to="/support" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.contact')}</Link></li>
             </ul>
           </div>
