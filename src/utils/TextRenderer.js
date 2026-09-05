@@ -44,6 +44,14 @@ export class TextRenderer {
   }
 
   /**
+   * Update the target canvas context without recreating the renderer.
+   * This is used when rendering into an offscreen cache.
+   */
+  setContext(context) {
+    this.context = context;
+  }
+
+  /**
    * Update zoom level (affects font size calculations)
    * @param {number} zoomLevel - Zoom percentage (100 = normal)
    */
@@ -279,9 +287,24 @@ export class TextRenderer {
    * @param {string} color - Text color
    */
   drawTextAlongArc(text, radius, startAngleRad, endAngleRad, fontSize, color) {
+    if (!text || !Number.isFinite(radius) || radius <= 0) return;
+
     const angleSpan = endAngleRad - startAngleRad;
+    const availableAngle = Math.abs(angleSpan);
+    const direction = angleSpan >= 0 ? 1 : -1;
     const font = `500 ${fontSize}px ${this.defaultFont.family}`;
-    
+    const availableWidth = radius * availableAngle * 0.9;
+
+    // Keep arc text inside its segment. The 10% inset leaves room for glyph
+    // overhang and ensures long labels are truncated rather than drawn outside.
+    const ellipsisWidth = this.measureText('…', font);
+    if (availableWidth < ellipsisWidth) return;
+
+    let displayText = this.truncateText(text, availableWidth, font);
+    if (this.measureText(displayText, font) > availableWidth) {
+      displayText = '…';
+    }
+
     this.context.save();
     this.context.font = font;
     this.context.fillStyle = color;
@@ -291,43 +314,41 @@ export class TextRenderer {
     // Measure each character's natural width
     const charWidths = [];
     let totalWidth = 0;
-    for (let i = 0; i < text.length; i++) {
-      const charWidth = this.measureText(text[i], font);
+    for (let i = 0; i < displayText.length; i++) {
+      const charWidth = this.measureText(displayText[i], font);
       charWidths.push(charWidth);
       totalWidth += charWidth;
     }
 
     // Add natural spacing between characters (10% of average char width)
-    const avgCharWidth = totalWidth / text.length;
+    const avgCharWidth = totalWidth / displayText.length;
     const letterSpacing = avgCharWidth * 0.1;
-    const totalSpacing = letterSpacing * (text.length - 1);
+    const totalSpacing = letterSpacing * (displayText.length - 1);
     const totalTextWidth = totalWidth + totalSpacing;
 
-    // Calculate the angular span this text would naturally occupy
-    const textAngleSpan = totalTextWidth / radius;
-
     // Center the text within the available angle
-    const startOffset = (angleSpan - textAngleSpan) / 2;
-    let currentAngle = startAngleRad + startOffset;
+    const textAngleSpan = totalTextWidth / radius;
+    const startOffset = (availableAngle - textAngleSpan) / 2;
+    let currentAngle = startAngleRad + direction * startOffset;
 
     // Draw each character with natural spacing
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
+    for (let i = 0; i < displayText.length; i++) {
+      const char = displayText[i];
       const charWidth = charWidths[i];
       const charAngleSpan = charWidth / radius;
 
       // Position at center of character's arc span
-      const charAngle = currentAngle + charAngleSpan / 2;
+      const charAngle = currentAngle + direction * charAngleSpan / 2;
       const pos = this.polarToCartesian(radius, charAngle);
 
       this.context.save();
       this.context.translate(pos.x, pos.y);
-      this.context.rotate(charAngle + Math.PI / 2);
+      this.context.rotate(charAngle + direction * Math.PI / 2);
       this.context.fillText(char, 0, 0);
       this.context.restore();
 
       // Move to next character
-      currentAngle += charAngleSpan + letterSpacing / radius;
+      currentAngle += direction * (charAngleSpan + letterSpacing / radius);
     }
 
     this.context.restore();

@@ -9,6 +9,27 @@ export const formatDateOnly = (date) => {
 };
 
 /**
+ * Parse date-only values as local calendar dates.
+ * Native Date parsing treats YYYY-MM-DD as UTC, which can shift the date
+ * to the previous day in western time zones.
+ */
+export const parseDateOnly = (value) => {
+  if (value instanceof Date) {
+    return new Date(value.getTime());
+  }
+
+  if (typeof value === 'string') {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+    if (match) {
+      const [, year, month, day] = match;
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    }
+  }
+
+  return new Date(value);
+};
+
+/**
  * Convert a value to a year number
  * Handles Date objects, numbers, and strings
  */

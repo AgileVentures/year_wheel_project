@@ -10,6 +10,7 @@ import LRUCache from "./utils/LRUCache.js";
 import TextRenderer from "./utils/TextRenderer.js";
 import DataProcessor from "./utils/DataProcessor.js";
 import WheelConstants from "./utils/WheelConstants.js";
+import { parseDateOnly } from "./utils/DateUtils.js";
 
 class YearWheel {
   constructor(canvas, year, title, colors, size, events, options) {
@@ -683,8 +684,8 @@ class YearWheel {
 
     // Check for overlaps
     const collidingItems = ringItems.filter((item) => {
-      const itemStart = new Date(item.startDate);
-      const itemEnd = new Date(item.endDate);
+      const itemStart = parseDateOnly(item.startDate);
+      const itemEnd = parseDateOnly(item.endDate);
       return this.dateRangesOverlap(startDate, endDate, itemStart, itemEnd);
     });
 
@@ -710,7 +711,7 @@ class YearWheel {
 
     // Sort items by start date
     const sortedItems = [...items].sort(
-      (a, b) => new Date(a.startDate) - new Date(b.startDate)
+      (a, b) => parseDateOnly(a.startDate) - parseDateOnly(b.startDate)
     );
 
     // Track assignment: tracks[trackIndex] = array of items in that track
@@ -718,8 +719,8 @@ class YearWheel {
     const itemToTrack = new Map(); // Store which track each item is assigned to
 
     sortedItems.forEach((item) => {
-      const itemStart = new Date(item.startDate);
-      const itemEnd = new Date(item.endDate);
+      const itemStart = parseDateOnly(item.startDate);
+      const itemEnd = parseDateOnly(item.endDate);
 
       // Find the first available track for this item
       let assignedTrack = -1;
@@ -728,8 +729,8 @@ class YearWheel {
 
         // Check if this track has space (no overlaps with existing items)
         const hasOverlap = track.some((existingItem) => {
-          const existingStart = new Date(existingItem.startDate);
-          const existingEnd = new Date(existingItem.endDate);
+          const existingStart = parseDateOnly(existingItem.startDate);
+          const existingEnd = parseDateOnly(existingItem.endDate);
           return this.dateRangesOverlap(
             itemStart,
             itemEnd,
@@ -3293,16 +3294,23 @@ class YearWheel {
     // Clear the cache canvas
     this.backgroundCacheContext.clearRect(0, 0, this.size, this.size);
     
-    // Save the main context and swap to cache context
+    // Save rendering contexts and swap to the cache context. TextRenderer keeps
+    // its own context reference, so it must be switched as well.
     const mainContext = this.context;
+    const mainTextContext = this.textRenderer?.context;
     this.context = this.backgroundCacheContext;
-    
-    // Draw rotating elements to cache (at rotation=0)
-    this.drawRotatingElements();
-    
-    // Restore main context
-    this.context = mainContext;
-    this.rotationAngle = savedRotation;
+    this.textRenderer?.setContext(this.backgroundCacheContext);
+
+    try {
+      // Draw rotating elements to cache (at rotation=0)
+      this.drawRotatingElements();
+    } finally {
+      this.context = mainContext;
+      if (mainTextContext) {
+        this.textRenderer.setContext(mainTextContext);
+      }
+      this.rotationAngle = savedRotation;
+    }
     
     // Store that we have a valid animation cache
     this.animationCache = this.backgroundCache;
@@ -3835,8 +3843,8 @@ class YearWheel {
           "dec",
         ];
 
-        const startDate = new Date(start);
-        const endDate = new Date(end);
+        const startDate = parseDateOnly(start);
+        const endDate = parseDateOnly(end);
         const startDay = startDate.getDate();
         const endDay = endDate.getDate();
         const startMonth = startDate.getMonth();
@@ -4309,8 +4317,8 @@ class YearWheel {
     const indicatorOffset = width * 0.15; // Center vertically
     
     // Parse the item's actual displayed dates
-    const itemStartDate = new Date(item.startDate);
-    const itemEndDate = new Date(item.endDate);
+    const itemStartDate = parseDateOnly(item.startDate);
+    const itemEndDate = parseDateOnly(item.endDate);
     
     // Check if item ACTUALLY starts on January 1st of current year (continues from previous year)
     const startsOnJan1 = itemStartDate.getMonth() === 0 && itemStartDate.getDate() === 1 && 
@@ -4322,7 +4330,7 @@ class YearWheel {
     
     // Check if item extends BEFORE this year (starts in previous year) AND current segment starts at Jan 1
     if (item._originalStartDate && startsOnJan1) {
-      const originalStartYear = new Date(item._originalStartDate).getFullYear();
+      const originalStartYear = parseDateOnly(item._originalStartDate).getFullYear();
       if (originalStartYear < currentYear) {
         // Draw indicator at January position (start of year)
         const januaryAngle = this.initAngle; // January 1st position
@@ -4375,7 +4383,7 @@ class YearWheel {
     
     // Check if item extends AFTER this year (ends in next year) AND current segment ends at Dec 31
     if (item._originalEndDate && endsOnDec31) {
-      const originalEndYear = new Date(item._originalEndDate).getFullYear();
+      const originalEndYear = parseDateOnly(item._originalEndDate).getFullYear();
       if (originalEndYear > currentYear) {
         // Draw indicator at December position (end of year)
         const decemberEndAngle = this.initAngle + 360; // December 31st wraps to January
@@ -4471,8 +4479,8 @@ class YearWheel {
     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
     items.forEach((item) => {
-      const startDate = new Date(item.startDate);
-      const endDate = new Date(item.endDate);
+      const startDate = parseDateOnly(item.startDate);
+      const endDate = parseDateOnly(item.endDate);
       const duration = endDate - startDate;
 
       if (duration <= ONE_WEEK_MS) {
@@ -4491,7 +4499,7 @@ class YearWheel {
 
     // Only cluster the short items
     shortItems.forEach((item) => {
-      const startDate = new Date(item.startDate);
+      const startDate = parseDateOnly(item.startDate);
       const { year, week } = this.getISOWeek(startDate);
       // Include ringId in key to cluster per ring
       const key = `${year}-${String(week).padStart(2, "0")}-${item.ringId}`;
@@ -4772,10 +4780,10 @@ class YearWheel {
                     itemToTrack.get(otherItem.id) === 0
                   ) {
                     const overlap = this.dateRangesOverlap(
-                      new Date(overlappingItem.startDate),
-                      new Date(overlappingItem.endDate),
-                      new Date(otherItem.startDate),
-                      new Date(otherItem.endDate)
+                      parseDateOnly(overlappingItem.startDate),
+                      parseDateOnly(overlappingItem.endDate),
+                      parseDateOnly(otherItem.startDate),
+                      parseDateOnly(otherItem.endDate)
                     );
                     if (overlap) itemsWithOverlaps.add(otherItem.id);
                   }
@@ -4789,14 +4797,14 @@ class YearWheel {
           const itemOverlapInfo = new Map();
 
           ringItems.forEach((item) => {
-            const itemStart = new Date(item.startDate);
-            const itemEnd = new Date(item.endDate);
+            const itemStart = parseDateOnly(item.startDate);
+            const itemEnd = parseDateOnly(item.endDate);
 
             // Find all items that overlap with this one
             const overlappingItems = ringItems.filter((otherItem) => {
               if (otherItem.id === item.id) return true; // Include self
-              const otherStart = new Date(otherItem.startDate);
-              const otherEnd = new Date(otherItem.endDate);
+              const otherStart = parseDateOnly(otherItem.startDate);
+              const otherEnd = parseDateOnly(otherItem.endDate);
               return this.dateRangesOverlap(
                 itemStart,
                 itemEnd,
@@ -4889,8 +4897,8 @@ class YearWheel {
               }
             }
 
-            let itemStartDate = new Date(itemToRender.startDate);
-            let itemEndDate = new Date(itemToRender.endDate);
+            let itemStartDate = parseDateOnly(itemToRender.startDate);
+            let itemEndDate = parseDateOnly(itemToRender.endDate);
 
             // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
             if (itemEndDate < minDate || itemStartDate > maxDate) return;
@@ -5232,14 +5240,14 @@ class YearWheel {
         const itemOverlapInfo = new Map();
 
         ringItems.forEach((item) => {
-          const itemStart = new Date(item.startDate);
-          const itemEnd = new Date(item.endDate);
+          const itemStart = parseDateOnly(item.startDate);
+          const itemEnd = parseDateOnly(item.endDate);
 
           // Find all items that overlap with this one
           const overlappingItems = ringItems.filter((otherItem) => {
             if (otherItem.id === item.id) return true; // Include self
-            const otherStart = new Date(otherItem.startDate);
-            const otherEnd = new Date(otherItem.endDate);
+            const otherStart = parseDateOnly(otherItem.startDate);
+            const otherEnd = parseDateOnly(otherItem.endDate);
             return this.dateRangesOverlap(
               itemStart,
               itemEnd,
@@ -5301,8 +5309,8 @@ class YearWheel {
             }
           }
 
-          let itemStartDate = new Date(itemToRender.startDate);
-          let itemEndDate = new Date(itemToRender.endDate);
+          let itemStartDate = parseDateOnly(itemToRender.startDate);
+          let itemEndDate = parseDateOnly(itemToRender.endDate);
 
           // VIEWPORT CULLING: Skip items outside the current date range (year or zoom)
           if (itemEndDate < minDate || itemStartDate > maxDate) return;

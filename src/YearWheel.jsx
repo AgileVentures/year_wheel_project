@@ -6,6 +6,7 @@ import ItemTooltip from "./components/ItemTooltip";
 import EditItemModal from "./components/EditItemModal";
 import BulkActionsToolbar from "./components/BulkActionsToolbar";
 import WheelLoader from "./components/WheelLoader";
+import { parseDateOnly } from "./utils/DateUtils";
 
 // Helper function to show confirm dialog
 const showConfirmDialog = (title, message, confirmText, cancelText, confirmButtonClass = 'bg-blue-600 hover:bg-blue-700 text-white') => {
@@ -187,8 +188,8 @@ function YearWheel({
       if (!item.crossYearGroupId) return;
       
       const groupId = item.crossYearGroupId;
-      const itemStart = new Date(item.startDate);
-      const itemEnd = new Date(item.endDate);
+      const itemStart = parseDateOnly(item.startDate);
+      const itemEnd = parseDateOnly(item.endDate);
       
       if (!crossYearGroupRanges.has(groupId)) {
         crossYearGroupRanges.set(groupId, {
@@ -204,14 +205,14 @@ function YearWheel({
     
     const filteredItems = wheelStructure.items
       .filter(item => {
-        const startYear = new Date(item.startDate).getFullYear();
-        const endYear = new Date(item.endDate).getFullYear();
+        const startYear = parseDateOnly(item.startDate).getFullYear();
+        const endYear = parseDateOnly(item.endDate).getFullYear();
         // Include item if it overlaps with the year
         return startYear <= currentYear && endYear >= currentYear;
       })
       .map(item => {
-        const startDate = new Date(item.startDate);
-        const endDate = new Date(item.endDate);
+        const startDate = parseDateOnly(item.startDate);
+        const endDate = parseDateOnly(item.endDate);
         
         // Check if this is a cross-year item (either by dates OR by having a crossYearGroupId)
         const startsBeforeYear = startDate < yearStart;

@@ -69,6 +69,7 @@ class InteractionHandler {
       mouseLeave: this.handleMouseLeave.bind(this),
       click: this.handleClick.bind(this),
       contextMenu: this.handleContextMenu.bind(this),
+      readonlyTouchEnd: this.handleReadonlyTouchEnd.bind(this),
     };
     
     // Attach event listeners
@@ -86,19 +87,7 @@ class InteractionHandler {
       if (this.options.onItemClick) {
         this.canvas.addEventListener('click', this.boundHandlers.click);
         // Also add touch support for mobile devices
-        this.canvas.addEventListener("touchend", (e) => {
-          // Prevent the click event from firing (avoid double trigger)
-          e.preventDefault();
-          // Convert touch to click-like event
-          if (e.changedTouches && e.changedTouches.length > 0) {
-            const touch = e.changedTouches[0];
-            const clickEvent = {
-              clientX: touch.clientX,
-              clientY: touch.clientY
-            };
-            this.boundHandlers.click(clickEvent);
-          }
-        });
+        this.canvas.addEventListener("touchend", this.boundHandlers.readonlyTouchEnd);
       }
       return;
     }
@@ -119,6 +108,7 @@ class InteractionHandler {
     this.canvas.removeEventListener('mouseleave', this.boundHandlers.mouseLeave);
     this.canvas.removeEventListener('click', this.boundHandlers.click);
     this.canvas.removeEventListener('contextmenu', this.boundHandlers.contextMenu);
+    this.canvas.removeEventListener('touchend', this.boundHandlers.readonlyTouchEnd);
   }
 
   // ============================================================================
@@ -1375,6 +1365,18 @@ class InteractionHandler {
           this.wheel.hoverRedrawPending = false;
         });
       }
+    }
+  }
+
+  handleReadonlyTouchEnd(event) {
+    // Prevent the click event from firing (avoid double trigger).
+    event.preventDefault();
+    if (event.changedTouches && event.changedTouches.length > 0) {
+      const touch = event.changedTouches[0];
+      this.boundHandlers.click({
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      });
     }
   }
 
