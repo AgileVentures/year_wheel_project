@@ -51,13 +51,19 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   // OpenAI Agents SDK server-side conversation management
   // Store the last response ID to chain context across turns
   const [lastResponseId, setLastResponseId] = useState(null);
+  const [pendingPlan, setPendingPlan] = useState(null);
   
   // Reset conversation only when switching wheels (NOT when changing pages)
   // This allows users to navigate between years while keeping conversation history
   useEffect(() => {
     setLastResponseId(null);
     setMessages([]);
+    setPendingPlan(null);
   }, [wheelId]);
+
+  useEffect(() => {
+    setPendingPlan(null);
+  }, [currentPageId]);
   
   useEffect(() => {
     if (wheelId && isOpen) {
@@ -313,18 +319,20 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   // State for streaming status
   const [streamingStatus, setStreamingStatus] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const handleSubmit = async (e, approvalToken = null) => {
+    e?.preventDefault();
+    const messageContent = approvalToken ? 'Skapa den granskade planen' : input.trim();
+    if (!messageContent || isLoading) return;
 
     const userMessage = {
       id: Date.now(),
       role: 'user',
-      content: input.trim()
+      content: messageContent
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setPendingPlan(null);
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -353,7 +361,8 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
           userMessage: userMessage.content,
           previousResponseId: lastResponseId,
           wheelId,
-          currentPageId
+          currentPageId,
+          planApprovalToken: approvalToken
         })
       });
 
@@ -446,10 +455,14 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 setStreamingStatus(null);
                 break;
               
-              case 'error':
-                throw new Error(data.message);
+              case 'error': {
+                const serverError = new Error(data.message || data.error || 'AI-fel');
+                serverError.name = 'AIServerError';
+                throw serverError;
+              }
             }
           } catch (parseError) {
+            if (parseError?.name === 'AIServerError') throw parseError;
             console.error('[AI SSE] Parse error:', parseError, 'Line:', line);
           }
         }
@@ -473,6 +486,9 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
       // Store the response ID for the next turn
       if (finalResult.lastResponseId) {
         setLastResponseId(finalResult.lastResponseId);
+      }
+      if (finalResult.planProposal) {
+        setPendingPlan(finalResult.planProposal);
       }
 
       // Append the assistant's message
@@ -618,6 +634,40 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
             </div>
           </div>
         ))}
+
+        {pendingPlan && (
+          <div className="flex justify-start">
+            <div className="max-w-[95%] rounded-sm border border-purple-200 bg-purple-50 p-3 shadow-sm">
+              <div className="text-sm font-semibold text-gray-900">Planförslag att granska</div>
+              <div className="mt-1 text-xs text-gray-700">
+                {pendingPlan.startDate} – {pendingPlan.endDate}
+              </div>
+              <div className="mt-2 text-xs text-gray-700">
+                {pendingPlan.suggestions.rings.length} ringar · {pendingPlan.suggestions.activityGroups.length} grupper · {pendingPlan.suggestions.labels.length} etiketter · {pendingPlan.suggestions.activities.length} aktiviteter
+              </div>
+              <div className="mt-2 space-y-1 text-xs text-gray-700">
+                <div><span className="font-medium">Ringar:</span> {pendingPlan.suggestions.rings.map((ring) => ring.name).join(', ')}</div>
+                <div><span className="font-medium">Grupper:</span> {pendingPlan.suggestions.activityGroups.map((group) => group.name).join(', ')}</div>
+                <div><span className="font-medium">Etiketter:</span> {pendingPlan.suggestions.labels.map((label) => label.name).join(', ')}</div>
+              </div>
+              <ul className="mt-2 max-h-32 list-disc overflow-y-auto pl-5 text-xs text-gray-700">
+                {pendingPlan.suggestions.activities.map((activity) => (
+                  <li key={`${activity.name}-${activity.startDate}-${activity.endDate}`}>
+                    {activity.name} ({activity.startDate} – {activity.endDate})
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                disabled={isLoading}
+                onClick={() => handleSubmit(null, pendingPlan.approvalToken)}
+                className="mt-3 w-full rounded-sm bg-purple-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Skapa plan
+              </button>
+            </div>
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex justify-start">

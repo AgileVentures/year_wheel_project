@@ -21,6 +21,17 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+const CURRENT_YEAR_WHEEL_CONTRACT = `KANONISK MODELL (använd alltid dessa begrepp):
+- En ring är en visuell/spatial bandindelning. Ringar kan vara inner eller outer och båda kan innehålla aktiviteter.
+- En aktivitetsgrupp är en färgkodad kategori som en aktivitet tillhör.
+- En etikett är en valfri tagg för kanal, målgrupp, status eller arbetsflöde.
+- En aktivitet är ett daterat arbete/event med namn, startdatum, slutdatum, ring och aktivitetsgrupp.
+- Ringar, aktivitetsgrupper och etiketter delas av hela hjulet. Aktiviteter är kopplade till en årssida och kan delas upp mellan år.
+- Använd alltid aktuella verktyg och UUID:n från verktygsresultat. Gissa aldrig ID:n.
+- Använd den aktuella sidstrukturen och aktuella verktyg; nämn eller emitera aldrig interna gamla fältnamn, verktygsnamn eller benämningar för aktivitetsgrupper.
+- En lyckad tool-anrop betyder inte automatiskt att allt lyckades: kontrollera alltid skapade, återanvända, förväntade och misslyckade antal samt eventuella fel.
+- Ändra aldrig data bara för att förbättra ordningen. För flytt/omfördelning: inspektera först, visa föreslagna ändringar och undvik dubbletter.`
+
 // ═══════════════════════════════════════════════════════════════════
 // RATE LIMITING (CRITICAL SECURITY)
 // ═══════════════════════════════════════════════════════════════════
@@ -225,21 +236,21 @@ interface WheelContext {
   // Store ALL pages so AI knows what years exist
   allPages?: Array<{ id: string; year: number; title: string; page_order: number }>
   // Store suggestions for "suggest then create" workflow
-  lastSuggestions?: {
-    rings: Array<{ name: string; type: string; description?: string; color?: string }>
-    activityGroups: Array<{ name: string; color: string; description?: string }>
-    activities: Array<{ name: string; startDate: string; endDate: string; ring: string; group: string; description?: string }>
-  }
+  lastSuggestions?: PlanSuggestions
   lastSuggestionsRaw?: string
   refreshRequests?: RefreshRequest[]
   progressEvents?: Array<ProgressEvent>
   emitEvent?: (type: string, data: any) => void
+  pendingPlanProposal?: PlanProposal
+  activePlanProposalId?: string
   // ✅ HIGH PRIORITY: Context caching to eliminate redundant DB queries
   contextCache?: {
     rings: Array<any>
     groups: Array<any>
     labels: Array<any>
     pages: Array<any>
+    ringActivityCounts: Record<string, number>
+    groupActivityCounts: Record<string, number>
     currentYear: number
     fetchedAt: number
   }
@@ -252,6 +263,7 @@ const CreateActivityInput = z.object({
   ringId: z.string().uuid().describe('Ring UUID'),
   activityGroupId: z.string().uuid().describe('Activity group UUID'),
   labelId: z.string().uuid().nullable().describe('Optional label UUID'),
+  proposalId: z.string().uuid().nullable().optional().describe('Internal AI plan proposal identifier'),
 })
 
 const CreateRingInput = z.object({
@@ -340,20 +352,35 @@ const DateRangeInput = z.object({
 type PlanSuggestions = {
   rings: Array<{ name: string; type: string; description?: string; color?: string }>
   activityGroups: Array<{ name: string; color: string; description?: string }>
-  activities: Array<{ name: string; startDate: string; endDate: string; ring: string; group: string; description?: string }>
+  labels: Array<{ name: string; color: string; description?: string }>
+  activities: Array<{ name: string; startDate: string; endDate: string; ring: string; group: string; label?: string; description?: string }>
+}
+
+type PlanProposal = {
+  proposalId: string
+  approvalToken: string
+  wheelId: string
+  currentPageId: string
+  userId: string
+  goal: string
+  startDate: string
+  endDate: string
+  suggestions: PlanSuggestions
+  expiresAt: string
 }
 
 type SuggestionSource = 'input' | 'contextRaw' | 'contextObject'
 
 type ApplySummary = {
   success: boolean
-  created: { rings: number; groups: number; activities: number }
-  reused: { rings: number; groups: number }
-  expected: { rings: number; groups: number; activities: number }
+  created: { rings: number; groups: number; labels: number; activities: number }
+  reused: { rings: number; groups: number; labels: number }
+  expected: { rings: number; groups: number; labels: number; activities: number }
   errors?: string[]
   details: {
     rings: { created: string[]; reused: string[] }
     groups: { created: string[]; reused: string[] }
+    labels: { created: string[]; reused: string[] }
     activities: { successful: string[]; failed: string[] }
   }
   message: string
@@ -459,6 +486,16 @@ function normalizePlanSuggestions(value: any): PlanSuggestions | null {
         }))
     : []
 
+  const labels = Array.isArray(value.labels)
+    ? value.labels
+        .filter((label: any) => label && typeof label.name === 'string')
+        .map((label: any) => ({
+          name: label.name.trim(),
+          color: sanitizeHexColor(label.color) || '#64748B',
+          description: typeof label.description === 'string' ? label.description.trim() : undefined,
+        }))
+    : []
+
   const activities = Array.isArray(value.activities)
     ? value.activities
         .filter(
@@ -476,15 +513,16 @@ function normalizePlanSuggestions(value: any): PlanSuggestions | null {
           endDate: activity.endDate.trim(),
           ring: activity.ring.trim(),
           group: activity.group.trim(),
+          label: typeof activity.label === 'string' ? activity.label.trim() : undefined,
           description: typeof activity.description === 'string' ? activity.description.trim() : undefined,
         }))
     : []
 
-  if (!rings.length && !activityGroups.length && !activities.length) {
+  if (!rings.length && !activityGroups.length && !labels.length && !activities.length) {
     return null
   }
 
-  return { rings, activityGroups, activities }
+  return { rings, activityGroups, labels, activities }
 }
 
 function extractSuggestionsFromJson(raw: string): PlanSuggestions | null {
@@ -500,6 +538,123 @@ function extractSuggestionsFromJson(raw: string): PlanSuggestions | null {
     return null
   }
   return null
+}
+
+function isValidDateOnly(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
+
+function validatePlanSuggestions(
+  suggestions: PlanSuggestions,
+  startDate?: string,
+  endDate?: string
+): string[] {
+  const errors: string[] = []
+  const ringNames = new Set<string>()
+  const groupNames = new Set<string>()
+  const labelNames = new Set<string>()
+
+  for (const ring of suggestions.rings) {
+    const key = ring.name.toLocaleLowerCase()
+    if (!ring.name || ringNames.has(key)) errors.push(`Dubblerad eller tom ring: ${ring.name || '(tom)'}`)
+    ringNames.add(key)
+  }
+  for (const group of suggestions.activityGroups) {
+    const key = group.name.toLocaleLowerCase()
+    if (!group.name || groupNames.has(key)) errors.push(`Dubblerad eller tom aktivitetsgrupp: ${group.name || '(tom)'}`)
+    groupNames.add(key)
+  }
+  for (const label of suggestions.labels) {
+    const key = label.name.toLocaleLowerCase()
+    if (!label.name || labelNames.has(key)) errors.push(`Dubblerad eller tom etikett: ${label.name || '(tom)'}`)
+    labelNames.add(key)
+  }
+
+  if (startDate && !isValidDateOnly(startDate)) errors.push(`Ogiltigt startdatum: ${startDate}`)
+  if (endDate && !isValidDateOnly(endDate)) errors.push(`Ogiltigt slutdatum: ${endDate}`)
+  if (startDate && endDate && isValidDateOnly(startDate) && isValidDateOnly(endDate) && startDate > endDate) {
+    errors.push('Startdatum måste vara före slutdatum')
+  }
+
+  const activityKeys = new Set<string>()
+  for (const activity of suggestions.activities) {
+    const key = `${activity.name.toLocaleLowerCase()}|${activity.startDate}|${activity.endDate}|${activity.ring.toLocaleLowerCase()}|${activity.group.toLocaleLowerCase()}|${(activity.label || '').toLocaleLowerCase()}`
+    if (activityKeys.has(key)) errors.push(`Dubblettaktivitet: ${activity.name}`)
+    activityKeys.add(key)
+    if (!isValidDateOnly(activity.startDate) || !isValidDateOnly(activity.endDate)) {
+      errors.push(`Ogiltigt datum för aktivitet: ${activity.name}`)
+      continue
+    }
+    if (activity.startDate > activity.endDate) errors.push(`Aktivitetens startdatum är efter slutdatum: ${activity.name}`)
+    if (startDate && activity.startDate < startDate) errors.push(`Aktivitet ligger före planperioden: ${activity.name}`)
+    if (endDate && activity.endDate > endDate) errors.push(`Aktivitet ligger efter planperioden: ${activity.name}`)
+    if (!ringNames.has(activity.ring.toLocaleLowerCase())) errors.push(`Aktiviteten saknar ring: ${activity.name}`)
+    if (!groupNames.has(activity.group.toLocaleLowerCase())) errors.push(`Aktiviteten saknar grupp: ${activity.name}`)
+    if (activity.label && !labelNames.has(activity.label.toLocaleLowerCase())) errors.push(`Aktiviteten saknar etikett: ${activity.name}`)
+  }
+
+  if (suggestions.activities.length > 60) errors.push('Planen innehåller för många aktiviteter (max 60)')
+  return errors
+}
+
+function base64UrlEncodeBytes(bytes: Uint8Array): string {
+  let binary = ''
+  bytes.forEach(byte => { binary += String.fromCharCode(byte) })
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function base64UrlEncode(value: string): string {
+  return base64UrlEncodeBytes(new TextEncoder().encode(value))
+}
+
+function base64UrlDecodeBytes(value: string): Uint8Array {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (value.length % 4)) % 4)
+  const binary = atob(padded)
+  return Uint8Array.from(binary, character => character.charCodeAt(0))
+}
+
+function base64UrlDecode(value: string): string {
+  return new TextDecoder().decode(base64UrlDecodeBytes(value))
+}
+
+async function getPlanSigningKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get('AI_PLAN_SIGNING_SECRET') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (!secret) throw new Error('AI plan signing secret is not configured')
+  return crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  )
+}
+
+async function signPlanProposal(payload: Omit<PlanProposal, 'approvalToken'>): Promise<string> {
+  const encoded = base64UrlEncode(JSON.stringify(payload))
+  const signature = await crypto.subtle.sign('HMAC', await getPlanSigningKey(), new TextEncoder().encode(encoded))
+  return `${encoded}.${base64UrlEncodeBytes(new Uint8Array(signature))}`
+}
+
+async function verifyPlanProposal(token: string): Promise<Omit<PlanProposal, 'approvalToken'> | null> {
+  try {
+    const [encoded, encodedSignature] = token.split('.')
+    if (!encoded || !encodedSignature) return null
+    const signatureBytes = base64UrlDecodeBytes(encodedSignature)
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      await getPlanSigningKey(),
+      signatureBytes,
+      new TextEncoder().encode(encoded)
+    )
+    if (!valid) return null
+    const payload = JSON.parse(base64UrlDecode(encoded)) as Omit<PlanProposal, 'approvalToken'>
+    if (!payload.expiresAt || new Date(payload.expiresAt).getTime() <= Date.now()) return null
+    return payload
+  } catch {
+    return null
+  }
 }
 
 async function applySuggestions(
@@ -542,6 +697,11 @@ async function applySuggestions(
     throw new Error('Inga giltiga förslag hittades. Kör verktyget "suggest_plan" igen innan du försöker applicera.')
   }
 
+  const validationErrors = validatePlanSuggestions(suggestions)
+  if (validationErrors.length > 0) {
+    throw new Error(`Planen kunde inte valideras: ${validationErrors.join('; ')}`)
+  }
+
   ctx.context.lastSuggestions = suggestions
   ctx.context.lastSuggestionsRaw = rawStringUsed || rawSuggestionsJson || undefined
 
@@ -557,7 +717,7 @@ async function applySuggestions(
 
   // 🎯 SMART ARCHITECTURE: Query existing structure to detect reuse opportunities
   console.log('[applySuggestions] 🔍 Querying existing structure for smart reuse...')
-  const [existingRingsRes, existingGroupsRes] = await Promise.all([
+  const [existingRingsRes, existingGroupsRes, existingLabelsRes] = await Promise.all([
     supabase
       .from('wheel_rings')
       .select('id, name, type, color')
@@ -566,10 +726,15 @@ async function applySuggestions(
       .from('activity_groups')
       .select('id, name, color')
       .eq('wheel_id', wheelId),
+    supabase
+      .from('labels')
+      .select('id, name, color')
+      .eq('wheel_id', wheelId),
   ])
 
   const existingRings = existingRingsRes.data || []
   const existingGroups = existingGroupsRes.data || []
+  const existingLabels = existingLabelsRes.data || []
   
   console.log('[applySuggestions] 📊 Existing structure:', {
     rings: existingRings.map((r: any) => r.name),
@@ -592,6 +757,7 @@ async function applySuggestions(
 
   const ringLookup = new Map<string, string>()
   const groupLookup = new Map<string, string>()
+  const labelLookup = new Map<string, string>()
   
   // 🎯 PRE-POPULATE LOOKUPS WITH EXISTING STRUCTURE
   // This enables activities to reference existing rings/groups without creating duplicates
@@ -600,6 +766,9 @@ async function applySuggestions(
   }
   for (const group of existingGroups) {
     groupLookup.set(group.name.toLowerCase(), group.id)
+  }
+  for (const label of existingLabels) {
+    labelLookup.set(label.name.toLowerCase(), label.id)
   }
 
   const ringStats = {
@@ -610,6 +779,13 @@ async function applySuggestions(
   }
 
   const groupStats = {
+    created: 0,
+    reused: 0,
+    createdNames: [] as string[],
+    reusedNames: [] as string[],
+  }
+
+  const labelStats = {
     created: 0,
     reused: 0,
     createdNames: [] as string[],
@@ -752,6 +928,36 @@ async function applySuggestions(
     }
   }
 
+  // Labels are created or reused before activities so every reference is valid.
+  for (const label of suggestions.labels) {
+    const labelKey = label.name.toLowerCase()
+    if (labelLookup.has(labelKey)) {
+      labelStats.reused += 1
+      labelStats.reusedNames.push(label.name)
+      continue
+    }
+    try {
+      const result = await createLabel(supabase, wheelId, {
+        name: label.name,
+        color: label.color,
+      })
+      if (result.success && result.labelId) {
+        labelLookup.set(labelKey, result.labelId)
+        labelStats.created += 1
+        labelStats.createdNames.push(label.name)
+        queueRefreshEvent(ctx, {
+          scope: 'structure',
+          reason: 'label_created',
+          payload: { labelId: result.labelId, labelName: label.name, color: label.color },
+        })
+      } else {
+        errors.push(`Etikett "${label.name}": ${result.message || 'Kunde inte skapa etiketten'}`)
+      }
+    } catch (error) {
+      errors.push(`Etikett "${label.name}": ${(error as Error).message}`)
+    }
+  }
+
   // Activities
   for (const activity of suggestions.activities) {
     try {
@@ -799,13 +1005,39 @@ async function applySuggestions(
         continue
       }
 
+      const labelId = activity.label ? labelLookup.get(activity.label.toLowerCase()) : null
+      if (activity.label && !labelId) {
+        const message = `Aktivitet "${activity.name}": Etikett "${activity.label}" hittades inte`
+        errors.push(message)
+        failedActivities.push(activity.name)
+        continue
+      }
+
+      if (ctx.context.activePlanProposalId) {
+        const { data: existingPlanItems, error: idempotencyError } = await supabase
+          .from('items')
+          .select('id')
+          .eq('wheel_id', wheelId)
+          .eq('name', activity.name)
+          .eq('ring_id', ringId)
+          .eq('activity_id', groupId)
+          .contains('sync_metadata', { ai_plan_proposal_id: ctx.context.activePlanProposalId })
+          .limit(1)
+        if (idempotencyError) throw idempotencyError
+        if (existingPlanItems && existingPlanItems.length > 0) {
+          successfulActivities.push(activity.name)
+          continue
+        }
+      }
+
       const result = await createActivity(ctx, {
         name: activity.name,
         startDate: activity.startDate,
         endDate: activity.endDate,
         ringId,
         activityGroupId: groupId,
-        labelId: null,
+        labelId: labelId || null,
+        proposalId: ctx.context.activePlanProposalId || null,
       })
 
       if (result.success) {
@@ -864,18 +1096,22 @@ async function applySuggestions(
   const expectedActivities = suggestions.activities.length
   const totalSuggestedRings = suggestions.rings.length
   const totalSuggestedGroups = suggestions.activityGroups.length
+  const totalSuggestedLabels = suggestions.labels.length
   const ringCoverage = ringStats.created + ringStats.reused
   const groupCoverage = groupStats.created + groupStats.reused
+  const labelCoverage = labelStats.created + labelStats.reused
   const successRate = expectedActivities > 0 ? totalActivitySegments / expectedActivities : 1
 
   const overallSuccess =
     (totalSuggestedRings === 0 || ringCoverage >= totalSuggestedRings) &&
     (totalSuggestedGroups === 0 || groupCoverage >= totalSuggestedGroups) &&
+    (totalSuggestedLabels === 0 || labelCoverage >= totalSuggestedLabels) &&
     (expectedActivities === 0 || successRate >= 0.8) &&
     errors.length === 0
 
   const ringMessage = `${ringStats.created} nya${ringStats.reused ? ` (+${ringStats.reused} återanvända)` : ''}`
   const groupMessage = `${groupStats.created} nya${groupStats.reused ? ` (+${groupStats.reused} återanvända)` : ''}`
+  const labelMessage = `${labelStats.created} nya${labelStats.reused ? ` (+${labelStats.reused} återanvända)` : ''}`
   const activityMessage = expectedActivities > 0
     ? `${totalActivitySegments}/${expectedActivities} skapade`
     : `${totalActivitySegments} skapade`
@@ -883,6 +1119,7 @@ async function applySuggestions(
   const messageParts = [
     `Ringar: ${ringMessage}`,
     `Grupper: ${groupMessage}`,
+    `Etiketter: ${labelMessage}`,
     `Aktiviteter: ${activityMessage}`,
   ]
 
@@ -895,15 +1132,18 @@ async function applySuggestions(
     created: {
       rings: ringStats.created,
       groups: groupStats.created,
+      labels: labelStats.created,
       activities: totalActivitySegments,
     },
     reused: {
       rings: ringStats.reused,
       groups: groupStats.reused,
+      labels: labelStats.reused,
     },
     expected: {
       rings: totalSuggestedRings,
       groups: totalSuggestedGroups,
+      labels: totalSuggestedLabels,
       activities: expectedActivities,
     },
     errors: errors.length ? errors : undefined,
@@ -915,6 +1155,10 @@ async function applySuggestions(
       groups: {
         created: groupStats.createdNames,
         reused: groupStats.reusedNames,
+      },
+      labels: {
+        created: labelStats.createdNames,
+        reused: labelStats.reusedNames,
       },
       activities: {
         successful: successfulActivities,
@@ -943,7 +1187,7 @@ async function applySuggestions(
     ctx,
     {
       scope: 'structure',
-      reason: 'apply_suggested_plan',
+      reason: 'ai_plan_apply',
       summary,
       payload: {
         ringMappings,
@@ -1144,6 +1388,7 @@ async function createActivity(
         name: args.name,
         start_date: args.startDate,
         end_date: args.endDate,
+        ...(args.proposalId ? { sync_metadata: { ai_plan_proposal_id: args.proposalId } } : {}),
       })
       .select()
       .single()
@@ -1173,6 +1418,7 @@ async function createActivity(
           name: args.name,
           start_date: segmentStart,
           end_date: segmentEnd,
+          ...(args.proposalId ? { sync_metadata: { ai_plan_proposal_id: args.proposalId } } : {}),
         })
         .select()
         .single()
@@ -1266,20 +1512,19 @@ async function createRing(
 
   console.log(`[createRing] Ring created successfully with id ${ring.id}`)
 
-  // 🚨 CRITICAL FIX: Sync ring to ALL pages' organization_data JSONB (frontend still reads from JSONB!)
-  // Get all pages for this wheel
+  // Sync the shared ring definition into each page's structure cache.
   const { data: pages } = await supabase
     .from('wheel_pages')
-    .select('id, organization_data')
+    .select('id, structure')
     .eq('wheel_id', wheelId)
   
   if (pages && pages.length > 0) {
     console.log(`[createRing] Syncing ring "${args.name}" to ${pages.length} pages`)
     
     for (const page of pages) {
-      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
       
-      // Add ring to organization_data if not already there
+      // Add ring to structure if not already there
       if (!orgData.rings.find((r: any) => r.id === ring.id)) {
         orgData.rings.push({
           id: ring.id,
@@ -1293,7 +1538,7 @@ async function createRing(
         await supabase
           .from('wheel_pages')
           .update({ 
-            organization_data: orgData,
+            structure: orgData,
             updated_at: new Date().toISOString()
           })
           .eq('id', page.id)
@@ -1361,20 +1606,19 @@ async function createGroup(
 
   console.log(`[createGroup] Group created successfully with id ${group.id}`)
 
-  // 🚨 CRITICAL FIX: Sync group to ALL pages' organization_data JSONB (frontend still reads from JSONB!)
-  // Get all pages for this wheel
+  // Sync the shared activity-group definition into each page's structure cache.
   const { data: pages } = await supabase
     .from('wheel_pages')
-    .select('id, organization_data')
+    .select('id, structure')
     .eq('wheel_id', wheelId)
   
   if (pages && pages.length > 0) {
     console.log(`[createGroup] Syncing group "${args.name}" to ${pages.length} pages`)
     
     for (const page of pages) {
-      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
       
-      // Add group to organization_data if not already there
+      // Add group to structure if not already there
       if (!orgData.activityGroups.find((g: any) => g.id === group.id)) {
         orgData.activityGroups.push({
           id: group.id,
@@ -1386,7 +1630,7 @@ async function createGroup(
         await supabase
           .from('wheel_pages')
           .update({ 
-            organization_data: orgData,
+            structure: orgData,
             updated_at: new Date().toISOString()
           })
           .eq('id', page.id)
@@ -2057,7 +2301,7 @@ async function updateActivity(
     const pageExists = allPages.find((p: { year: number }) => p.year === year)
     if (!pageExists) {
       const referencePage = allPages[0]
-      const referenceOrgData = referencePage?.organization_data || {}
+      const referenceOrgData = referencePage?.structure || {}
       const organizationData = {
         rings: referenceOrgData.rings || [],
         activityGroups: referenceOrgData.activityGroups || referenceOrgData.activities || [],
@@ -2079,7 +2323,7 @@ async function updateActivity(
           year: year,
           title: `${year}`,
           page_order: nextOrder ?? allPages.length,
-          organization_data: organizationData
+          structure: organizationData
         })
         .select()
         .single()
@@ -2561,7 +2805,7 @@ async function createYearPage(
       page_order: nextOrder,
       year: year,
       title: `${year}`,
-      organization_data: organizationData
+      structure: organizationData
     })
     .select()
     .single()
@@ -2708,6 +2952,8 @@ function createAgentSystem() {
           groups: ctx.context.contextCache.groups,
           labels: ctx.context.contextCache.labels,
           pages: ctx.context.contextCache.pages,
+          ringActivityCounts: ctx.context.contextCache.ringActivityCounts,
+          groupActivityCounts: ctx.context.contextCache.groupActivityCounts,
         }
         return JSON.stringify(result)
       }
@@ -2730,9 +2976,9 @@ function createAgentSystem() {
       
       // CRITICAL: Post-migration 015 - rings/groups/labels are WHEEL-SCOPED (shared across all pages)
       // Only ITEMS are page-scoped (distributed by year)
-      // Read from database tables (source of truth), NOT organization_data JSONB cache
+      // Read from database tables (source of truth), not the structure JSONB cache
       // This ensures newly created rings/groups are immediately visible to AI
-      const [ringsRes, groupsRes, labelsRes, pagesRes] = await Promise.all([
+      const [ringsRes, groupsRes, labelsRes, pagesRes, itemsRes] = await Promise.all([
         supabase
           .from('wheel_rings')
           .select('id, name, type, color, visible')
@@ -2750,7 +2996,11 @@ function createAgentSystem() {
           .from('wheel_pages')
           .select('id, year, title')
           .eq('wheel_id', wheelId)
-          .order('year')
+          .order('year'),
+       supabase
+         .from('items')
+         .select('ring_id, activity_id')
+         .eq('wheel_id', wheelId)
       ])
       
       if (ringsRes.error) {
@@ -2797,6 +3047,12 @@ function createAgentSystem() {
         year: p.year, 
         title: p.title 
       }))
+      const ringActivityCounts: Record<string, number> = {}
+      const groupActivityCounts: Record<string, number> = {}
+      for (const item of itemsRes.data || []) {
+        ringActivityCounts[item.ring_id] = (ringActivityCounts[item.ring_id] || 0) + 1
+        groupActivityCounts[item.activity_id] = (groupActivityCounts[item.activity_id] || 0) + 1
+      }
       
       // ✅ Cache the result
       ctx.context.contextCache = {
@@ -2804,6 +3060,8 @@ function createAgentSystem() {
         groups,
         labels,
         pages,
+        ringActivityCounts,
+        groupActivityCounts,
         currentYear: currentPage.year,
         fetchedAt: now
       }
@@ -2818,6 +3076,8 @@ function createAgentSystem() {
         groups,
         labels,
         pages,
+        ringActivityCounts,
+        groupActivityCounts,
       }
       console.log('✅ [TOOL] get_current_context result:', JSON.stringify(result, null, 2))
       return JSON.stringify(result)
@@ -3071,7 +3331,7 @@ function createAgentSystem() {
 
   const toggleRingVisibilityTool = tool<WheelContext>({
     name: 'toggle_ring_visibility',
-    description: 'Show or hide a ring without deleting it. Updates visibility in the current page\'s organization_data.',
+    description: 'Show or hide a ring without deleting it. Updates visibility in the current page\'s structure cache.',
     parameters: z.object({
       ringName: z.string().describe('Name or partial name of the ring to toggle'),
       visible: z.boolean().describe('true to show the ring, false to hide it'),
@@ -3116,11 +3376,11 @@ function createAgentSystem() {
           })
         }
         
-        // Update page's organization_data
+        // Update the page's structure cache
         const { error: updateError } = await supabase
           .from('wheel_pages')
           .update({ 
-            organization_data: { ...orgData, rings: updatedRings },
+            structure: { ...orgData, rings: updatedRings },
             updated_at: new Date().toISOString()
           })
           .eq('id', currentPageId)
@@ -3149,7 +3409,7 @@ function createAgentSystem() {
 
   const toggleGroupVisibilityTool = tool<WheelContext>({
     name: 'toggle_group_visibility',
-    description: 'Show or hide an activity group without deleting it. Updates visibility in the current page\'s organization_data.',
+    description: 'Show or hide an activity group without deleting it. Updates visibility in the current page\'s structure cache.',
     parameters: z.object({
       groupName: z.string().describe('Name or partial name of the activity group to toggle'),
       visible: z.boolean().describe('true to show the group, false to hide it'),
@@ -3195,11 +3455,11 @@ function createAgentSystem() {
           })
         }
         
-        // Update page's organization_data (use activityGroups, not activities)
+        // Update the page's structure cache (use activityGroups, not activities)
         const { error: updateError } = await supabase
           .from('wheel_pages')
           .update({ 
-            organization_data: { ...orgData, activityGroups: updatedGroups },
+            structure: { ...orgData, activityGroups: updatedGroups },
             updated_at: new Date().toISOString()
           })
           .eq('id', currentPageId)
@@ -3320,19 +3580,20 @@ function createAgentSystem() {
   const structureAgent = new Agent<WheelContext>({
     name: 'Structure Agent',
     model: 'gpt-4o',
-  instructions: `Du ansvarar för årshjulets struktur: ringar, aktivitetsgrupper, etiketter och årssidor. Svara på svenska med markdown-formatering. Inga emojis.
+  instructions: `${CURRENT_YEAR_WHEEL_CONTRACT}
+
+Du ansvarar för årshjulets struktur: ringar, aktivitetsgrupper, etiketter och årssidor. Svara på svenska med markdown-formatering. Inga emojis.
 
 RINGTYPER (KRITISKT):
 - Både "inner" och "outer" kan innehålla aktiviteter
 - **Outer**: Används typiskt för mindre/externa händelser (helgdagar, lov, säsonger, terminer, externa milstolpar)
 - **Inner**: Används för huvudspår, strategiska initiativ, projektfaser eller textbaserad planering
 
-TOOL RESULTS (EXTRA KRITISKT):
-- När ett tool returnerar {success: true, ...} → Operationen LYCKADES!
-- Bekräfta ALLTID framgång explicit till användaren: "✅ Ring 'Marknadsföring' skapad!"
-- Tool-resultat är ALLTID korrekt - om success=true fungerade verktyget perfekt
-- Säg ALDRIG "tekniskt fel" om success=true i resultatet
-- Ignorera interna loggar - lita endast på tool return value {success: true/false}
+TOOLRESULTAT:
+- Använd verktygsresultatet som enda källa till vad som faktiskt hände.
+- Rapportera exakta antal skapade, återanvända, förväntade och misslyckade poster.
+- Om resultatet innehåller fel, partiellt resultat eller avvikande antal: säg det tydligt och påstå inte att hela operationen lyckades.
+- Bekräfta inte en ändring innan verktyget har returnerat att den genomförts.
 
 STRUCTURE SUGGESTIONS:
 When user asks for structure ideas for a domain:
@@ -3440,7 +3701,7 @@ CRUD OPERATIONS:
         const results: Array<{ index: number; name: string; itemsCreated: number }> = []
         const errors: Array<{ index: number; name: string; error: string }> = []
         
-        // Run sequentially to avoid organization_data race conditions
+        // Run sequentially to avoid structure-cache race conditions
         for (let index = 0; index < input.activities.length; index++) {
           const activity = input.activities[index]
           try {
@@ -3716,13 +3977,14 @@ CRUD OPERATIONS:
 
   const smartDistributeActivitiesTool = tool<WheelContext>({
     name: 'smart_distribute_activities',
-    description: 'AI-powered redistribution of activities across rings based on their names, descriptions, and semantic meaning. Analyzes activity content and suggests optimal ring placement.',
+    description: 'Analyzes activity placement and returns a reviewable redistribution proposal. It must inspect first and requires explicit confirmation before applying ring changes.',
     parameters: z.object({
-      includeRingNames: z.array(z.string()).nullable().optional().describe('Optional: Only redistribute activities from these rings (partial name match). Null = analyze all activities.'),
-      excludeRingNames: z.array(z.string()).nullable().optional().describe('Optional: Exclude these rings from redistribution (partial name match). Null = no exclusions.'),
-      dryRun: z.boolean().default(false).describe('If true, only suggests changes without applying them. If false, applies changes automatically.')
+      includeRingNames: z.array(z.string()).nullable().optional().describe('Optional: Only analyze activities from these rings (partial name match). Null = analyze all activities.'),
+      excludeRingNames: z.array(z.string()).nullable().optional().describe('Optional: Exclude these rings from analysis (partial name match). Null = no exclusions.'),
+      dryRun: z.boolean().default(true).describe('Preview proposed moves without applying them. Use false only after the user explicitly confirms the displayed proposal.'),
+      confirm: z.boolean().default(false).describe('Must be true together with dryRun=false after the user explicitly confirms the proposal.')
     }),
-    async execute(input: { includeRingNames?: string[] | null; excludeRingNames?: string[] | null; dryRun?: boolean }, ctx: RunContext<WheelContext>) {
+    async execute(input: { includeRingNames?: string[] | null; excludeRingNames?: string[] | null; dryRun?: boolean; confirm?: boolean }, ctx: RunContext<WheelContext>) {
       const metric = trackToolStart('smart_distribute_activities', ctx.context.userId)
       
       try {
@@ -3787,7 +4049,9 @@ CRUD OPERATIONS:
           apiKey: Deno.env.get('OPENAI_API_KEY'),
         })
         
-        const analysisPrompt = `Du är en AI som hjälper till att organisera aktiviteter i ringar baserat på deras innehåll och syfte.
+        const analysisPrompt = `${CURRENT_YEAR_WHEEL_CONTRACT}
+
+Du är en AI som hjälper till att organisera aktiviteter i ringar baserat på deras innehåll och syfte.
 
 TILLGÄNGLIGA RINGAR:
 ${rings.map((r: any) => `- "${r.name}" (${r.type}, färg: ${r.color})`).join('\n')}
@@ -3803,9 +4067,10 @@ Analysera varje aktivitet och föreslå den BÄSTA ringen baserat på:
 4. Ringarnas syfte och typ
 
 VIKTIGT:
-- Om en aktivitet redan är i rätt ring: behåll den där (ingen förändring)
-- Om du är osäker: välj den mest troliga ringen baserat på semantik
-- Försök sprida aktiviteter jämnt om möjligt, men semantisk matchning är viktigare
+- Om en aktivitet redan passar sin nuvarande ring: behåll den där (ingen förändring)
+- Om du är osäker: föreslå ingen flytt; undvik ändringar som bara balanserar antal aktiviteter
+- Föreslå endast en flytt när målringens betydelse tydligt passar bättre än den nuvarande ringen
+- Inkludera aldrig samma aktivitet mer än en gång och använd endast ringnamn från listan
 
 Returnera ENDAST giltig JSON i detta format:
 {
@@ -3839,53 +4104,99 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
         }
         
         const analysis = JSON.parse(content)
-        const redistributions = analysis.redistributions || []
-        
-        console.log(`[smart_distribute_activities] AI suggested ${redistributions.length} redistributions`)
-        
-        if (redistributions.length === 0) {
+        const candidateRedistributions = Array.isArray(analysis.redistributions) ? analysis.redistributions : []
+        const validationErrors: string[] = []
+        const seenActivityIds = new Set<string>()
+        const redistributions: Array<any> = []
+
+        for (const candidate of candidateRedistributions) {
+          if (!candidate || typeof candidate.activityName !== 'string' || typeof candidate.suggestedRing !== 'string') {
+            validationErrors.push('AI-förslaget innehöll en ofullständig omfördelning')
+            continue
+          }
+
+          const matchingActivities = items.filter((item: any) =>
+            item.name.toLowerCase() === candidate.activityName.trim().toLowerCase()
+          )
+          if (matchingActivities.length !== 1) {
+            validationErrors.push(
+              matchingActivities.length === 0
+                ? `Aktivitet "${candidate.activityName}" hittades inte`
+                : `Aktivitet "${candidate.activityName}" är tvetydig eftersom flera aktiviteter har samma namn`
+            )
+            continue
+          }
+
+          const activity = matchingActivities[0]
+          if (seenActivityIds.has(activity.id)) {
+            validationErrors.push(`Aktivitet "${activity.name}" föreslogs flera gånger`)
+            continue
+          }
+
+          const targetRing = rings.find((ring: any) =>
+            ring.name.toLowerCase() === candidate.suggestedRing.trim().toLowerCase()
+          )
+          if (!targetRing) {
+            validationErrors.push(`Ring "${candidate.suggestedRing}" hittades inte`)
+            continue
+          }
+          if (activity.ring_id === targetRing.id) continue
+
+          seenActivityIds.add(activity.id)
+          redistributions.push({
+            activityId: activity.id,
+            activityName: activity.name,
+            currentRing: activity.wheel_rings?.name || 'Okänd ring',
+            suggestedRing: targetRing.name,
+            targetRingId: targetRing.id,
+            reason: typeof candidate.reason === 'string' ? candidate.reason : 'Semantisk matchning',
+          })
+        }
+
+        console.log(`[smart_distribute_activities] AI suggested ${candidateRedistributions.length} redistributions; ${redistributions.length} validated`)
+
+        if (candidateRedistributions.length === 0) {
           trackToolEnd(metric, true)
           return JSON.stringify({
             success: true,
             redistributions: [],
             applied: 0,
-            message: 'Alla aktiviteter är redan i optimala ringar - ingen omfördelning behövs!'
+            message: 'Ingen omfördelning föreslogs efter analysen.'
+          })
+        }
+        if (redistributions.length === 0) {
+          if (validationErrors.length === 0) {
+            trackToolEnd(metric, true)
+            return JSON.stringify({
+              success: true,
+              redistributions: [],
+              suggested: 0,
+              applied: 0,
+              message: 'Analysen föreslog inga faktiska flyttar.'
+            })
+          }
+          trackToolEnd(metric, false, validationErrors.join('; '))
+          return JSON.stringify({
+            success: false,
+            redistributions: [],
+            suggested: 0,
+            applied: 0,
+            errors: validationErrors,
+            message: 'Förslaget kunde inte valideras och inga ändringar genomfördes.'
           })
         }
         
-        // Step 4: Apply redistributions if not dry run
+        // Step 4: Apply only after explicit confirmation; the default is a preview.
+        const shouldApply = input.dryRun === false && input.confirm === true
         let appliedCount = 0
-        const errors: string[] = []
+        const errors: string[] = [...validationErrors]
         
-        if (!input.dryRun) {
+        if (shouldApply) {
           for (const redist of redistributions) {
-            // Find the actual activity by name (AI might not provide correct UUID)
-            const activity = items.find((item: any) => 
-              item.name.toLowerCase() === redist.activityName.toLowerCase()
-            )
-            
-            if (!activity) {
-              console.error(`[smart_distribute_activities] Activity not found: ${redist.activityName}`)
-              errors.push(`Aktivitet "${redist.activityName}" hittades inte`)
-              continue
-            }
-            
-            // Find target ring ID
-            const targetRing = rings.find((r: any) => 
-              r.name.toLowerCase() === redist.suggestedRing.toLowerCase()
-            )
-            
-            if (!targetRing) {
-              console.error(`[smart_distribute_activities] Ring not found: ${redist.suggestedRing}`)
-              errors.push(`Ring "${redist.suggestedRing}" hittades inte`)
-              continue
-            }
-            
-            // Update activity using the actual UUID from our database query
             const { error: updateError } = await supabase
               .from('items')
-              .update({ ring_id: targetRing.id, updated_at: new Date().toISOString() })
-              .eq('id', activity.id)
+              .update({ ring_id: redist.targetRingId, updated_at: new Date().toISOString() })
+              .eq('id', redist.activityId)
             
             if (updateError) {
               console.error(`[smart_distribute_activities] Update error for ${redist.activityName}:`, updateError)
@@ -3916,11 +4227,12 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
             reason: r.reason
           })),
           suggested: redistributions.length,
-          applied: input.dryRun ? 0 : appliedCount,
+          applied: shouldApply ? appliedCount : 0,
+          requiresConfirmation: !shouldApply,
           errors: errors.length > 0 ? errors : undefined,
-          message: input.dryRun 
-            ? `Föreslår ${redistributions.length} omfördelningar (kör utan dryRun för att applicera)`
-            : `Omfördelade ${appliedCount} av ${redistributions.length} aktiviteter${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+          message: shouldApply
+            ? `Omfördelade ${appliedCount} av ${redistributions.length} aktiviteter${errors.length > 0 ? ` (${errors.length} fel)` : ''}`
+            : `Föreslår ${redistributions.length} omfördelningar. Visa förslaget och be användaren bekräfta innan ändringar appliceras.`
         }
         
         trackToolEnd(metric, true)
@@ -3936,14 +4248,15 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
   const activityAgent = new Agent<WheelContext>({
     name: 'Activity Agent',
     model: 'gpt-4o',
-    instructions: `Du skapar, uppdaterar och tar bort aktiviteter i årshjulet. Svara på svenska med markdown-formattering. Inga emojis.
+    instructions: `${CURRENT_YEAR_WHEEL_CONTRACT}
 
-TOOL SUCCESS HANDLING (EXTRA KRITISKT):
-- När ett tool returnerar {success: true, ...} → Operationen LYCKADES!
-- Bekräfta ALLTID framgång explicit: "✅ Flyttade 5 aktiviteter till ring Marknadsföring"
-- Tool-resultat är ALLTID korrekt - om success=true fungerade verktyget perfekt
-- Säg ALDRIG "problem med systemet" om success=true i resultatet
-- Ignorera interna loggar - lita endast på tool return value {success: true/false}
+Du skapar, uppdaterar och tar bort aktiviteter i årshjulet. Svara på svenska med markdown-formattering. Inga emojis.
+
+TOOLRESULTAT:
+- Kontrollera alltid expected, successful, failed, applied och errors innan du sammanfattar en ändring.
+- Rapportera vad som faktiskt ändrades, inte vad som var tänkt att ändras.
+- Om flera aktiviteter ska flyttas eller omfördelas: inspektera först, undvik dubbletter och använd förhandsvisning före massändring.
+- Bekräfta inte full framgång när någon post misslyckades eller när antalet ändrade poster avviker från antalet begärda.
 
 FLYTTA ALLA AKTIVITETER TILL RING:
 När användaren säger "flytta alla aktiviteter till [ring]":
@@ -3951,7 +4264,7 @@ När användaren säger "flytta alla aktiviteter till [ring]":
 2. list_activities → Få lista på ALLA aktiviteter
 3. För VARJE aktivitet: update_activity({activityName: "exakt namn från lista", newRingId: "målring-id"})
 4. Räkna lyckade uppdateringar
-5. Bekräfta: "✅ Flyttade X aktiviteter till ring [namn]"
+5. Bekräfta med det faktiska antalet: "Flyttade X aktiviteter till ring [namn]"
 
 RINGVAL:
 - Både "inner" och "outer" ringar kan innehålla aktiviteter
@@ -3969,18 +4282,18 @@ WORKFLOW:
 
 EXAMPLE - Creating an activity:
 User: "skapa kampanj i november"
-→ get_current_context returns: {date: "2025-11-05", rings: [{id: "abc", name: "Kampanjer"}], groups: [{id: "def", name: "Kampanj"}]}
+→ get_current_context returns the selected page year and: {rings: [{id: "abc", name: "Kampanjer"}], groups: [{id: "def", name: "Kampanj"}]}
 → Match: "kampanj" → ring "Kampanjer" (abc) + group "Kampanj" (def)
-→ Parse: "november" → "2025-11-01" to "2025-11-30" (current year since Nov >= current month)
-→ create_activity({name: "kampanj", startDate: "2025-11-01", endDate: "2025-11-30", ringId: "abc", activityGroupId: "def"})
+→ Parse: "november" → the selected page year's "YYYY-11-01" to "YYYY-11-30". If the year is ambiguous, ask instead of guessing.
+→ create_activity({name: "kampanj", startDate: "YYYY-11-01", endDate: "YYYY-11-30", ringId: "abc", activityGroupId: "def"})
 → Tool returns: {success: true, itemsCreated: 1}
-→ Respond: "✅ Klart! Jag har skapat aktiviteten **Kampanj** i november 2025."
+→ Respond: "Klart! Jag har skapat aktiviteten **Kampanj** i november 2025."
 
 DATE PARSING:
-- "idag" → Current date from context
-- "november" without year → Current year if month >= current month, else next year
-- "en vecka" → 7 days duration
-- Always use YYYY-MM-DD format
+- "idag" → Current date from context.
+- A month without a year → Use the selected page year from context; ask a clarification question when the request could reasonably refer to another year.
+- "en vecka" → 7 days duration from the resolved start date.
+- Always use YYYY-MM-DD format and validate that startDate is not after endDate.
 
 UPDATING ACTIVITIES:
 update_activity supports all changes including:
@@ -4001,7 +4314,7 @@ User: "Ändra alla Månadsbrev till 1 dag"
 → query_activities({nameContains: "Månadsbrev"}) returns [{name: "Månadsbrev Januari", ...}, {name: "Månadsbrev Februari", ...}]
 → update_activity({activityName: "Månadsbrev Januari", newEndDate: "2026-01-15"})
 → update_activity({activityName: "Månadsbrev Februari", newEndDate: "2026-02-15"})
-→ Report: "✅ Uppdaterade 12 aktiviteter"
+→ Report: "Uppdaterade 12 aktiviteter"
 
 BULK CREATION:
 Use batch_create_activities for multiple similar activities:
@@ -4013,30 +4326,32 @@ Use query_activities to find activities (searches ALL years/pages automatically)
 - "Visa kampanjer i Q4" → query_activities({quarter: 4, groupName: "Kampanj"})
 - "Hitta aktiviteter med REA" → query_activities({nameContains: "REA"})
 
-SMART REDISTRIBUTION (NEW):
-smart_distribute_activities uses AI to analyze activity content and suggest optimal ring placement:
-- "Fördela aktiviteterna till de olika ringarna efter ämne" → smart_distribute_activities({dryRun: false})
+SMART REDISTRIBUTION:
+smart_distribute_activities analyzes activity content and returns a reviewable proposal. It must not silently mutate the wheel:
+- "Fördela aktiviteterna till de olika ringarna efter ämne" → smart_distribute_activities({dryRun: true})
 - "Föreslå omfördelning av aktiviteter i ring X" → smart_distribute_activities({includeRingNames: ["X"], dryRun: true})
-- "Töm ring Y genom att flytta aktiviteter" → smart_distribute_activities({includeRingNames: ["Y"], dryRun: false})
+- "Töm ring Y genom att flytta aktiviteter" → inspect ring usage, propose exact moves, then ask for confirmation
 
-WORKFLOW for redistribution:
-1. User: "Fördela aktiviteterna till olika ringar efter ämne"
-2. smart_distribute_activities({dryRun: false}) → AI analyzes activity names/descriptions, suggests optimal rings
-3. Tool returns: {redistributions: [{activityName: "X", from: "Ring A", to: "Ring B", reason: "..."}], applied: 15}
-4. Report: "✅ Omfördelade 15 aktiviteter baserat på deras innehåll och syfte"
+WORKFLOW för omfördelning:
+1. Hämta aktuell kontext och kontrollera vilka ringar och aktiviteter som faktiskt används.
+2. Kör smart_distribute_activities med dryRun=true.
+3. Visa varje föreslagen flytt, inklusive aktivitet, aktuell ring, målring och motivering.
+4. Ändra inget förrän användaren uttryckligen bekräftar förslaget.
+5. Efter bekräftelse: kör samma verktyg med dryRun=false och confirm=true och rapportera applied/errors.
 
-Options:
-- includeRingNames: Only redistribute FROM these rings (e.g., ["Ring 1", "Ring 2"])
-- excludeRingNames: Skip these rings (e.g., ["Helgdagar"])
-- dryRun: true = only suggest, false = apply changes
+Alternativ:
+- includeRingNames: Begränsa analysen till aktiviteter från namngivna ringar.
+- excludeRingNames: Undanta namngivna ringar från analysen.
+- dryRun: true = förhandsvisning (standard), false = kan endast applicera med confirm=true.
+- confirm: Krävs tillsammans med dryRun=false efter uttryckligt användargodkännande.
 
 MULTI-YEAR ACTIVITIES:
 Activities spanning multiple years are automatically split into segments. Missing year pages are auto-created with structure from existing pages.
 
 IMPORTANT:
 - Always use UUIDs from get_current_context, never use names as IDs
-- Only confirm success after seeing success:true in tool result
-- If tool fails, explain the error and suggest solutions`,
+- Only confirm success after checking actual counts and errors in the tool result
+- If tool fails or is partial, explain the result and suggest a safe next step`,
     tools: [
       getContextTool, 
       createActivityTool, 
@@ -4245,7 +4560,9 @@ Var konkret och åsiktsstark. Använd domänexpertis. Svara på svenska.`
     modelSettings: {
       tool_choice: 'auto'
     },
-    instructions: `You analyze the Year Wheel and provide insights. Respond in Swedish with markdown formatting. No emojis.
+    instructions: `${CURRENT_YEAR_WHEEL_CONTRACT}
+
+You analyze the Year Wheel and provide insights. Respond in Swedish with markdown formatting. No emojis.
 
 WORKFLOW:
 1. Call analyze_wheel tool immediately
@@ -4267,14 +4584,11 @@ OUTPUT STRUCTURE:
 Only present data from the tool - never fabricate analysis
 
 ### Rekommendationer
-
-1. Lägg till "Kampanjanalys" 1-2 veckor efter varje stor kampanj
-2. Byt ut "Produktlansering" mot "Sommarkollektion 2025 - Lansering"
-3. Fyll Q3 med mer innehåll - det är för tomt just nu
+- Base recommendations only on the statistics and AI insights returned by the analysis tool.
+- Do not invent activities, dates, products, or targets that are not present in the wheel.
 
 ### Sammanfattning
-
-Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans mellan kvartalen."`,
+- Summarize the observed strengths, gaps, and next steps without fabricating details."`,
     tools: [analyzeWheelTool],
   })
 
@@ -4284,7 +4598,7 @@ Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans 
 
   const suggestPlanTool = tool<WheelContext>({
     name: 'suggest_plan',
-    description: 'AI-powered suggestion of complete planning structure (rings, activity groups, activities) for a specific goal/project',
+    description: 'AI-powered suggestion of a complete, reviewable plan (rings, activity groups, labels, and activities) for a specific goal/project. This tool never changes the wheel.',
     parameters: z.object({
       goal: z.string().describe('User\'s goal or project description (e.g., "Lansera en SaaS-applikation", "Marknadsföra ny produkt")'),
       startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Project start date (YYYY-MM-DD)'),
@@ -4295,16 +4609,27 @@ Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans 
         const openai = new OpenAI({
           apiKey: Deno.env.get('OPENAI_API_KEY'),
         })
+        const existingContext = ctx.context.contextCache
+        const existingStructure = existingContext
+          ? `BEFINTLIG STRUKTUR (återanvänd exakt namn när den passar):
+Ringar: ${existingContext.rings.map((ring: any) => `${ring.name} (${existingContext.ringActivityCounts?.[ring.id] || 0} aktiviteter)`).join(', ') || '(inga)'}
+Aktivitetsgrupper: ${existingContext.groups.map((group: any) => `${group.name} (${existingContext.groupActivityCounts?.[group.id] || 0} aktiviteter)`).join(', ') || '(inga)'}
+Etiketter: ${existingContext.labels.map((label: any) => label.name).join(', ') || '(inga)'}`
+          : 'Ingen befintlig struktur är inläst; skapa endast den struktur som behövs för målet.'
 
-        const suggestionPrompt = `Generera en komplett projektplan för: "${input.goal}"
+        const suggestionPrompt = `${CURRENT_YEAR_WHEEL_CONTRACT}
+
+Generera en komplett, professionell projektplan för: "${input.goal}"
 
 Tidsperiod: ${input.startDate} till ${input.endDate}
+
+${existingStructure}
 
 Skapa en strukturerad JSON-response med:
 
 1. **RINGAR** (2-4 ringar för att organisera aktiviteter):
    - Name (t.ex. "Strategi", "Exekvering", "Tillväxt")
-   - Type ("inner" för textringar, "outer" för aktivitetsringar - använd främst outer)
+   - Type ("inner" eller "outer"; båda kan innehålla aktiviteter, välj utifrån den visuella planeringen)
    - Description (varför denna ring behövs)
 
 2. **AKTIVITETSGRUPPER** (4-8 kategorier):
@@ -4318,23 +4643,33 @@ Skapa en strukturerad JSON-response med:
      * Gul (#EAB308) - Planering/Research
    - Description (vad denna grupp innehåller)
 
-3. **AKTIVITETER** (15-25 nyckelmilstolpar/uppgifter):
-   - Name (specifik och handlingsbar)
+3. **ETIKETTER** (2-6 arbetsflödes- eller kanaletiketter):
+   - Name (t.ex. "Annons", "Sociala medier", "Blogg", "Mätning")
+   - Color (hex-kod)
+   - Description (hur etiketten används)
+
+4. **AKTIVITETER** (ett realistiskt antal utifrån mål och period, normalt 8-30):
+   - Name (specifik och handlingsbar; använd inte generiska platshållare)
    - StartDate (YYYY-MM-DD, inom projekttidsramen)
    - EndDate (YYYY-MM-DD, realistisk varaktighet)
    - Ring (vilket ringnamn den tillhör)
    - Group (vilket gruppnamn den tillhör)
-   - Description (varför denna aktivitet är viktig)
+   - Label (valfri etikett från listan ovan)
+   - Description (varför aktiviteten är viktig och vilket resultat som förväntas)
 
 VIKTIGT:
-- Sprid aktiviteter jämnt över tidslinjen
-- Använd realistiska varaktigheter (t.ex. "Betatestning" = 4 veckor, inte 1 dag)
-- Inkludera pre-lansering, lansering och post-lanseringsfaser
-- Tänk på beroenden (t.ex. "Produktutveckling" före "Betatestning")
+- Respektera exakt den angivna perioden. Om användaren nämner kvartal eller halvår ska datumen översättas till exakta datum innan planen skapas.
+- Ta med varje konkret leverans användaren efterfrågar, till exempel annonser, sociala medieinlägg och blogginlägg.
+- Bryt ned återkommande leveranser till tydliga arbetsaktiviteter med realistisk frekvens eller milstolpar; slå inte ihop olika kanaler till en vag aktivitet.
+- Ge varje aktivitet ett unikt, handlingsbart namn och skapa inte dubbletter med samma leverans och tidsperiod.
+- Sprid aktiviteterna logiskt över perioden och undvik både luckor och orimlig överbelastning.
+- Använd realistiska varaktigheter och kontrollera beroenden.
+- Skapa inte en generell produktplan när användaren specifikt ber om marknadsföring.
+- Returnera en komplett plan; utelämna inte aktiviteter bara för att listan blir lång.
 
 DOMÄNSPECIFIKA RIKTLINJER:
 - SaaS: MVP, testning, lansering, marknadsföring, kundsupport, analytics
-- Marknadsföring: strategi, innehållsskapande, kampanjer, analys
+- Marknadsföring: målgrupper, annonskampanjer, sociala medieinlägg, blogg/innehåll, publicering och analys
 - Personliga mål: lärande, övning, milstolpar, reflektion
 - Utbildning: planering, innehållsskapande, genomförande, utvärdering
 
@@ -4346,13 +4681,17 @@ Returnera ENDAST giltig JSON i detta format:
   "activityGroups": [
     { "name": "Produktutveckling", "color": "#3B82F6", "description": "Bygga och förbättra produkten" }
   ],
+  "labels": [
+    { "name": "Sociala medier", "color": "#8B5CF6", "description": "Organiskt innehåll i sociala kanaler" }
+  ],
   "activities": [
     { 
       "name": "Bygga MVP", 
-      "startDate": "2025-10-01", 
-      "endDate": "2025-12-31",
+      "startDate": "2026-10-01",
+      "endDate": "2026-12-31",
       "ring": "Strategi",
       "group": "Produktutveckling",
+      "label": "Sociala medier",
       "description": "Utveckla minimum viable product med kärnfunktioner"
     }
   ]
@@ -4377,71 +4716,53 @@ Returnera ENDAST giltig JSON i detta format:
 
         const suggestions = JSON.parse(response.choices[0].message.content || '{}')
         const normalizedSuggestions = normalizePlanSuggestions(suggestions)
+        if (!normalizedSuggestions) throw new Error('AI returnerade ingen giltig plan')
 
-        console.log('💾 [suggest_plan] Storing suggestions in context')
-        console.log('[suggest_plan] Rings:', suggestions.rings?.length || 0)
-        console.log('[suggest_plan] Groups:', suggestions.activityGroups?.length || 0)
-        console.log('[suggest_plan] Activities:', suggestions.activities?.length || 0)
+        const validationErrors = validatePlanSuggestions(normalizedSuggestions, input.startDate, input.endDate)
+        if (validationErrors.length > 0) {
+          throw new Error(`AI-planen kunde inte valideras: ${validationErrors.join('; ')}`)
+        }
 
-        // Store suggestions (normalized if possible) in context for potential later use
-        ctx.context.lastSuggestions = normalizedSuggestions || suggestions
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+        const proposalId = crypto.randomUUID()
+        const proposalPayload = {
+          proposalId,
+          wheelId: ctx.context.wheelId,
+          currentPageId: ctx.context.currentPageId,
+          userId: ctx.context.userId,
+          goal: input.goal,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          suggestions: normalizedSuggestions,
+          expiresAt,
+        }
+        const approvalToken = await signPlanProposal(proposalPayload)
+        const proposal: PlanProposal = { ...proposalPayload, approvalToken }
+
+        console.log('💾 [suggest_plan] Stored a reviewable proposal in context')
+        console.log('[suggest_plan] Rings:', normalizedSuggestions.rings.length)
+        console.log('[suggest_plan] Groups:', normalizedSuggestions.activityGroups.length)
+        console.log('[suggest_plan] Labels:', normalizedSuggestions.labels.length)
+        console.log('[suggest_plan] Activities:', normalizedSuggestions.activities.length)
+
+        ctx.context.lastSuggestions = normalizedSuggestions
+        ctx.context.lastSuggestionsRaw = JSON.stringify({ success: true, suggestions: normalizedSuggestions })
+        ctx.context.pendingPlanProposal = proposal
 
         const payload = {
           success: true,
-          suggestions,
-          message: `Genererat förslag med ${suggestions.rings?.length || 0} ringar, ${suggestions.activityGroups?.length || 0} grupper och ${suggestions.activities?.length || 0} aktiviteter`
+          requiresConfirmation: true,
+          proposal,
+          message: `Förslag klart för granskning: ${normalizedSuggestions.rings.length} ringar, ${normalizedSuggestions.activityGroups.length} grupper, ${normalizedSuggestions.labels.length} etiketter och ${normalizedSuggestions.activities.length} aktiviteter. Inget har skapats ännu.`
         }
 
-        const payloadString = JSON.stringify(payload)
-        ctx.context.lastSuggestionsRaw = payloadString
-
-        return payloadString
+        return JSON.stringify(payload)
       } catch (error) {
         console.error('[suggest_plan] Error:', error)
         return JSON.stringify({
           success: false,
           error: (error as Error).message,
           message: 'Kunde inte generera förslag'
-        })
-      }
-    }
-  })
-
-  const applySuggestedPlanTool = tool<WheelContext>({
-    name: 'apply_suggested_plan',
-    description: 'Creates rings, activity groups, and activities from AI suggestions. Pass the EXACT JSON string returned by suggest_plan (do not modify it). Use this after suggest_plan when user confirms.',
-    parameters: z.object({
-      suggestionsJson: z.string().describe('The complete suggestions JSON string returned from suggest_plan tool - pass it exactly as received')
-    }),
-    async execute(input: { suggestionsJson: string }, ctx: RunContext<WheelContext>) {
-      const metric = trackToolStart('apply_suggested_plan', ctx.context.userId)
-      
-      try {
-        console.log('🚀 [apply_suggested_plan] TOOL CALLED!')
-        console.log('[apply_suggested_plan] Received suggestionsJson parameter?', !!input.suggestionsJson)
-        console.log('[apply_suggested_plan] suggestionsJson length:', input.suggestionsJson?.length || 0)
-        console.log('[apply_suggested_plan] First 500 chars:', input.suggestionsJson?.substring(0, 500))
-        
-        // Also check context fallback
-        console.log('[apply_suggested_plan] Context lastSuggestionsRaw exists?', !!ctx.context.lastSuggestionsRaw)
-        console.log('[apply_suggested_plan] Context lastSuggestions exists?', !!ctx.context.lastSuggestions)
-        if (ctx.context.lastSuggestions) {
-          console.log('[apply_suggested_plan] Context lastSuggestions activities count:', ctx.context.lastSuggestions.activities?.length || 0)
-        }
-
-        const summary = await applySuggestions(ctx, input.suggestionsJson)
-        console.log('[apply_suggested_plan] Summary metadata:', summary.metadata)
-        
-        const errorMessage = summary.success ? undefined : (summary.errors && summary.errors.length > 0 ? summary.errors[0] : 'Unknown error')
-        trackToolEnd(metric, summary.success, errorMessage)
-        return JSON.stringify(summary)
-      } catch (error: any) {
-        console.error('[apply_suggested_plan] Fatal error:', error)
-        trackToolEnd(metric, false, error.message)
-        return JSON.stringify({
-          success: false,
-          error: error.message,
-          message: 'Kunde inte applicera förslag'
         })
       }
     }
@@ -4454,66 +4775,36 @@ Returnera ENDAST giltig JSON i detta format:
   const planningAgent = new Agent<WheelContext>({
     name: 'Planning Agent',
     model: 'gpt-4o',
-    instructions: `You coordinate AI-powered project planning using AI suggestions. Respond in Swedish with markdown formatting. No emojis.
+    instructions: `${CURRENT_YEAR_WHEEL_CONTRACT}
 
-🚨 CRITICAL: YOU MUST USE apply_suggested_plan TOOL - NEVER use create_ring or create_activity_group directly!
-Those tools are NOT available to you. Use the atomic workflow below.
+You coordinate professional project planning. Respond in Swedish with markdown formatting. No emojis.
 
-🎯 SMART ARCHITECTURE:
-- apply_suggested_plan is INTELLIGENT - it automatically detects and reuses existing rings/groups
-- You don't need to manually coordinate ring/group creation
-- Just: suggest → present → apply → done!
+PROFESSIONAL PLAN WORKFLOW:
+1. Clarify the user's goal, concrete deliverables, and exact date range. Convert quarters and half-years to explicit dates before calling tools.
+2. Call get_current_context to inspect existing rings, activity groups, labels, pages, and usage counts.
+3. Call suggest_plan once. It creates a complete reviewable proposal with rings, activity groups, labels, and activities, but does not change the wheel.
+4. Present the complete proposal and state clearly that nothing has been created yet. Never call a mutation tool in this turn.
+5. The user confirms using the plan preview's Skapa plan action. The server applies the signed proposal exactly as reviewed.
 
-MANDATORY WORKFLOW (3 steps only):
-1. **suggest_plan** → Get AI-generated plan (rings, groups, activities)
-2. **Present to user** → Show the plan in clear markdown
-3. **apply_suggested_plan** → Creates everything atomically (smart reuse built-in)
-4. **get_current_context** → Verify what was created (ALWAYS check after applying!)
+QUALITY RULES:
+- Preserve every concrete deliverable in the request. For marketing, distinguish ads, social media posts, blog/content, publishing, and measurement.
+- Stay strictly inside the requested date range; never silently expand it.
+- Use existing structures only when names match. Inspect usage before recommending changes to an existing ring, including generic names such as "Ring 1".
+- Do not report creation or completion until the server returns an apply result.
+- If a request changes an existing plan, describe exact additions, moves, and possible duplicates before confirmation.
+- Return one complete validated proposal rather than a partial plan.
 
-EXAMPLE:
-User: "Föreslå aktiviteter för ett 3-månaders projekt som ska ligga på ring Projekt"
+The user interface, not the model, controls confirmation and mutation.
 
-Step 1 - Suggest:
-→ suggest_plan({ goal: "3-månaders projekt", startDate: "2025-11-01", endDate: "2026-01-31" })
-Returns: {rings: ["Projekt"], activityGroups: ["Projektarbete"], activities: [11 items]}
-
-Step 2 - Present:
-Show plan with: "Förslag för 3-månaders projekt - Aktiviteter (11 st): 1. Projektstart, 2. Analys..."
-Ask: "Vill du att jag skapar dessa aktiviteter?"
-
-Step 3 - Apply (when user confirms):
-→ apply_suggested_plan({ suggestionsJson: "[exact JSON from suggest_plan]" })
-→ Smart applySuggestions checks: "Ring Projekt" exists? ✅ Reuse it! "Grupp Projektarbete" missing? Create it!
-→ Result: {success: true, created: {rings: 0, groups: 1, activities: 11}, reused: {rings: 1}}
-
-Step 4 - Verify (MANDATORY after apply):
-→ get_current_context() to see what actually exists now
-→ Check that rings/groups/activities match what was expected
-→ Report discrepancies if any
-
-Report example:
-"✅ Klart! Skapade 11 aktiviteter på befintlig ring Projekt (återanvände 1 ring, skapade 1 ny grupp)."
-Then verify: "Kontrollerar... ja, alla 11 aktiviteter finns nu på ring Projekt!"
-
-CRITICAL RULES (MUST FOLLOW):
-1. NEVER call create_ring, create_activity_group, or create_activity directly - those tools are NOT available to you
-2. ONLY use: suggest_plan → apply_suggested_plan → get_current_context (verify)
-3. ALWAYS verify with get_current_context after applying - report what actually exists
-4. Pass EXACT JSON string from suggest_plan to apply_suggested_plan (don't modify)
-5. Report actual result from apply_suggested_plan (created vs reused counts)
-6. If apply fails, check get_current_context to see what partial state exists
-
-EDGE CASES:
-- Ring exists but group doesn't → Reuses ring, creates group
-- Both exist → Reuses both, only creates activities
-- Neither exists → Creates everything
-- Multi-year activities → Auto-distributed to correct pages
-
-You don't need agent tools (structure_agent/activity_agent) - apply_suggested_plan handles everything atomically!`,
+RESPONSE RULES:
+- After suggest_plan returns, summarize every proposed ring, group, label, and activity in the response.
+- State explicitly that the proposal is a preview and that nothing has been created.
+- Do not ask the model to apply the proposal or claim that it was applied.
+- The user interface owns confirmation; only the signed proposal from the preview may be applied by the server.
+- If the user requests changes, generate a new complete proposal instead of patching or partially applying the old one.`,
     tools: [
       getContextTool,
-      suggestPlanTool,
-      applySuggestedPlanTool
+      suggestPlanTool
     ],
   })
 
@@ -4524,7 +4815,9 @@ You don't need agent tools (structure_agent/activity_agent) - apply_suggested_pl
   const orchestratorAgent = Agent.create<WheelContext>({
     name: 'Year Wheel Assistant',
     model: 'gpt-4o',
-    instructions: `You help users plan and organize activities in a circular year wheel. Respond in Swedish. No emojis.
+    instructions: `${CURRENT_YEAR_WHEEL_CONTRACT}
+
+You help users plan and organize activities in a circular year wheel. Respond in Swedish. No emojis.
 
 Immediately delegate to the appropriate specialist:
 
@@ -4614,7 +4907,6 @@ function getToolStatusMessage(toolName: string, args?: any): string {
     'suggest_wheel_structure': () => 'Genererar strukturförslag med AI...',
     'analyze_wheel': () => 'Analyserar hjulet med AI...',
     'suggest_plan': () => 'Skapar projektplan med AI...',
-    'apply_suggested_plan': () => 'Applicerar förslag...',
   }
 
   const messageFunc = messages[toolName]
@@ -4669,6 +4961,37 @@ function sendSSEEvent(controller: ReadableStreamDefaultController, type: string,
   }
 }
 
+async function assertWheelAccess(supabase: any, wheelId: string, userId: string, pageId: string) {
+  const { data: wheel, error: wheelError } = await supabase
+    .from('year_wheels')
+    .select('id, user_id, team_id')
+    .eq('id', wheelId)
+    .maybeSingle()
+  if (wheelError || !wheel) throw new Error('Hjulet kunde inte hittas')
+
+  let allowed = wheel.user_id === userId
+  if (!allowed && wheel.team_id) {
+    const { data: membership, error: membershipError } = await supabase
+      .from('team_members')
+      .select('id')
+      .eq('team_id', wheel.team_id)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (membershipError) throw new Error('Kunde inte verifiera teamåtkomst')
+    allowed = !!membership
+  }
+  if (!allowed) throw new Error('Du saknar behörighet att ändra detta hjul')
+
+  const { data: page, error: pageError } = await supabase
+    .from('wheel_pages')
+    .select('id, wheel_id, year')
+    .eq('id', pageId)
+    .eq('wheel_id', wheelId)
+    .maybeSingle()
+  if (pageError || !page) throw new Error('Den aktiva sidan tillhör inte det valda hjulet')
+  return { wheel, page }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════════
@@ -4710,13 +5033,22 @@ serve(async (req: Request) => {
       )
     }
 
-    const { userMessage, previousResponseId, wheelId, currentPageId } = await req.json()
+    const { userMessage, previousResponseId, wheelId, currentPageId, planApprovalToken } = await req.json()
     if (!userMessage || !wheelId) {
       throw new Error('Missing required fields: userMessage, wheelId')
     }
     
     if (!currentPageId) {
       throw new Error('Missing currentPageId - frontend must provide the active page ID')
+    }
+
+    await assertWheelAccess(supabase, wheelId, user.id, currentPageId)
+    const approvedProposal = planApprovalToken ? await verifyPlanProposal(planApprovalToken) : null
+    if (planApprovalToken && (!approvedProposal || approvedProposal.proposalId.length === 0)) {
+      throw new Error('Planförslaget är ogiltigt eller har löpt ut. Skapa ett nytt förslag.')
+    }
+    if (approvedProposal && (approvedProposal.userId !== user.id || approvedProposal.wheelId !== wheelId || approvedProposal.currentPageId !== currentPageId)) {
+      throw new Error('Planförslaget gäller inte för detta hjul eller denna sida')
     }
 
     // ✅ CRITICAL: Sanitize User Input
@@ -4768,7 +5100,9 @@ serve(async (req: Request) => {
       userId: user.id,
       currentYear: pageData.year,
       currentPageId: currentPageId,
-      lastSuggestions: undefined, // Will be populated by tools if needed
+      lastSuggestions: approvedProposal?.suggestions,
+      lastSuggestionsRaw: approvedProposal ? JSON.stringify({ success: true, suggestions: approvedProposal.suggestions }) : undefined,
+      activePlanProposalId: approvedProposal?.proposalId,
       allPages: allPages || [], // ✅ NEW: AI knows what pages exist
     }
 
@@ -4798,18 +5132,31 @@ serve(async (req: Request) => {
             stage: 'init'
           })
 
-          // Run agent with just the new user message (OpenAI SDK handles history)
+          // Run a confirmed proposal directly; only unconfirmed requests go through the model.
           console.log('🚀 [AI] Starting agent execution...')
-          sendSSEEvent(controller, 'status', { 
-            message: 'AI arbetar...',
-            stage: 'thinking'
+          sendSSEEvent(controller, 'status', {
+            message: approvedProposal ? 'Skapar den bekräftade planen...' : 'AI arbetar...',
+            stage: approvedProposal ? 'applying' : 'thinking'
           })
 
           wheelContext.emitEvent = (type: string, data: any) => {
             sendSSEEvent(controller, type, data)
           }
 
-          const result = await run(orchestrator, sanitizedMessage, runOptions)
+          let result: any
+          if (approvedProposal) {
+            const summary = await applySuggestions({ context: wheelContext } as RunContext<WheelContext>, JSON.stringify({ suggestions: approvedProposal.suggestions }))
+            result = {
+              finalOutput: summary.success
+                ? `Planen skapades: ${summary.message}.`
+                : `Planen skapades delvis. ${summary.message}`,
+              history: [],
+              lastResponseId: null,
+              agent: { name: 'Planbekräftelse' },
+            }
+          } else {
+            result = await run(orchestrator, sanitizedMessage, runOptions)
+          }
 
           console.log('✅ [AI] Agent execution complete')
           console.log('[AI] Result keys:', Object.keys(result))
@@ -4950,6 +5297,7 @@ serve(async (req: Request) => {
             lastResponseId,
             toolsExecuted: toolExecutionSummary,
             agentPath: agentHandoffs.length > 0 ? agentHandoffs : undefined,
+            planProposal: wheelContext.pendingPlanProposal,
             stage: 'done'
           }
           
