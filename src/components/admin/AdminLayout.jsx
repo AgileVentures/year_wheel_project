@@ -166,7 +166,7 @@ export default function AdminLayout() {
 
         {/* Main Content */}
         <div className="flex-1 ml-64">
-          <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="app-page-container py-8">
             <Outlet />
           </div>
         </div>
@@ -174,7 +174,7 @@ export default function AdminLayout() {
 
       {/* Mobile Content */}
       <div className="lg:hidden">
-        <div className="px-4 py-4">
+        <div className="app-page-container py-4">
           <Outlet />
         </div>
       </div>

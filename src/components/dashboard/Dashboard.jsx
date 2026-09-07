@@ -556,7 +556,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5">
+        <div className="app-page-container py-3 sm:py-5">
           <div className="flex justify-between items-center gap-4">
             {/* Left: Logo & Navigation */}
             <div className="flex items-center gap-3 sm:gap-8 min-w-0 flex-1">
@@ -688,7 +688,7 @@ function DashboardContent({ onSelectWheel, onShowProfile, currentView, setCurren
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 app-page-container py-8">
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {error}

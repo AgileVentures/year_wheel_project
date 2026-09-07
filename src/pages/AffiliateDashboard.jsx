@@ -321,7 +321,7 @@ export default function AffiliateDashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="app-page-container py-4">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Affiliate Dashboard</h1>
@@ -337,7 +337,7 @@ export default function AffiliateDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="app-page-container py-8">
         {/* Application Status Banners */}
         {organization?.affiliate_status === 'pending' && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-sm p-6 mb-6">

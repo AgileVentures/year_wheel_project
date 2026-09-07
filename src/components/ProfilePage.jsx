@@ -256,7 +256,7 @@ function ProfilePage({ onBack }) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <div className="app-page-container py-5">
           <div className="flex items-center gap-4">
             <button
               onClick={onBack}
@@ -279,7 +279,7 @@ function ProfilePage({ onBack }) {
       </header>
 
       {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="app-page-container py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('common:profilePage.title')}</h1>
           <p className="text-gray-600">{t('common:profilePage.subtitle')}</p>

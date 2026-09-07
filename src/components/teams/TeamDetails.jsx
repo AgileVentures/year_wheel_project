@@ -216,7 +216,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
@@ -232,7 +232,7 @@ const TeamDetails = ({ teamId, onBack, onTeamUpdated, onTeamDeleted, onSelectWhe
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div className="flex-1">
