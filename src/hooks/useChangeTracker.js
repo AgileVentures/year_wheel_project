@@ -25,7 +25,8 @@ export function useChangeTracker() {
     rings: { added: new Map(), modified: new Map(), deleted: new Set() },
     activityGroups: { added: new Map(), modified: new Map(), deleted: new Set() },
     labels: { added: new Map(), modified: new Map(), deleted: new Set() },
-    pages: { added: new Map(), modified: new Map(), deleted: new Set() }
+    pages: { added: new Map(), modified: new Map(), deleted: new Set() },
+    metadata: { modified: new Map() }
   });
 
   const trackItemChange = useCallback((id, action, item) => {
@@ -114,6 +115,20 @@ export function useChangeTracker() {
     setVersion(v => v + 1);
   }, []);
 
+  const trackMetadataChange = useCallback((field, value) => {
+    changesRef.current.metadata.modified.set(field, value);
+    setVersion(v => v + 1);
+  }, []);
+
+  const clearMetadataChange = useCallback((field) => {
+    if (!changesRef.current.metadata.modified.has(field)) {
+      return;
+    }
+
+    changesRef.current.metadata.modified.delete(field);
+    setVersion(v => v + 1);
+  }, []);
+
   const trackPageChange = useCallback((id, action, page) => {
     const changes = changesRef.current.pages;
 
@@ -162,6 +177,9 @@ export function useChangeTracker() {
         added: Array.from(changes.pages.added.values()),
         modified: Array.from(changes.pages.modified.values()),
         deleted: Array.from(changes.pages.deleted)
+      },
+      metadata: {
+        modified: Object.fromEntries(changes.metadata.modified)
       }
     };
   }, []);
@@ -183,7 +201,8 @@ export function useChangeTracker() {
       changes.labels.deleted.size > 0 ||
       changes.pages.added.size > 0 ||
       changes.pages.modified.size > 0 ||
-      changes.pages.deleted.size > 0
+      changes.pages.deleted.size > 0 ||
+      changes.metadata.modified.size > 0
     );
   }, []);
 
@@ -193,7 +212,8 @@ export function useChangeTracker() {
       rings: { added: new Map(), modified: new Map(), deleted: new Set() },
       activityGroups: { added: new Map(), modified: new Map(), deleted: new Set() },
       labels: { added: new Map(), modified: new Map(), deleted: new Set() },
-      pages: { added: new Map(), modified: new Map(), deleted: new Set() }
+      pages: { added: new Map(), modified: new Map(), deleted: new Set() },
+      metadata: { modified: new Map() }
     };
     // Increment version to trigger React re-render
     setVersion(v => v + 1);
@@ -226,6 +246,9 @@ export function useChangeTracker() {
         added: changes.pages.added.size,
         modified: changes.pages.modified.size,
         deleted: changes.pages.deleted.size
+      },
+      metadata: {
+        modified: changes.metadata.modified.size
       }
     };
   }, []);
@@ -235,6 +258,8 @@ export function useChangeTracker() {
     trackRingChange,
     trackActivityGroupChange,
     trackLabelChange,
+    trackMetadataChange,
+    clearMetadataChange,
     trackPageChange,
     getChanges,
     hasChanges,

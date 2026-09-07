@@ -15,6 +15,7 @@ function SidePanel({
   onOrganizationChange,
   title,
   onTitleChange,
+  onTitleInputChange,
   colors,
   onColorsChange,
   onPaletteChange,
@@ -877,7 +878,11 @@ function SidePanel({
           <input
             type="text"
             value={localTitle}
-            onChange={(e) => setLocalTitle(e.target.value)}
+            onChange={(e) => {
+              const nextValue = e.target.value;
+              setLocalTitle(nextValue);
+              onTitleInputChange && onTitleInputChange(nextValue);
+            }}
             onBlur={(e) => {
               const trimmedValue = e.target.value.trim();
               if (trimmedValue !== title) {

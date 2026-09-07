@@ -2,6 +2,7 @@ import { Save, RotateCcw, Menu, X, Download, Upload, Calendar, ArrowLeft, Chevro
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PresenceIndicator from './PresenceIndicator';
+import PublicShareButton from './PublicShareButton';
 import PageNavigator from './PageNavigator';
 import LanguageSwitcher from './LanguageSwitcher';
 import UndoHistoryMenu from './UndoHistoryMenu';
@@ -824,6 +825,16 @@ function Header({
         {activeUsers.length > 0 && (
           <div className="hidden lg:block">
             <PresenceIndicator activeUsers={activeUsers} />
+          </div>
+        )}
+
+        {/* Public sharing status and toggle - kept visible in the desktop header */}
+        {wheelId && onTogglePublic && (
+          <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-gray-200">
+            <PublicShareButton
+              isPublic={isPublic}
+              onTogglePublic={onTogglePublic}
+            />
           </div>
         )}
 

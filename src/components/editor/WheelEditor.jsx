@@ -499,11 +499,25 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       }
     }), historyLabel);
 
+    changeTracker.trackMetadataChange('title', nextTitle);
+
     latestValuesRef.current = {
       ...latestValuesRef.current,
       title: nextTitle,
     };
-  }, [setWheelState, wheelState]);
+  }, [setWheelState, wheelState, changeTracker]);
+
+  const trackTitleInputChange = useCallback((value) => {
+    const currentTitle = wheelState?.metadata?.title || 'Nytt hjul';
+    const normalizedTitle = value.trim() || currentTitle;
+
+    if (normalizedTitle === currentTitle) {
+      changeTracker.clearMetadataChange('title');
+      return;
+    }
+
+    changeTracker.trackMetadataChange('title', normalizedTitle);
+  }, [changeTracker, wheelState]);
 
   const setYear = useCallback((value, historyLabel = { type: CHANGE_TYPES.CHANGE_YEAR }) => {
     const currentYear = wheelState?.metadata?.year || "2025";
@@ -5300,7 +5314,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
       summary.rings.added + summary.rings.modified + summary.rings.deleted +
       summary.activityGroups.added + summary.activityGroups.modified + summary.activityGroups.deleted +
       summary.labels.added + summary.labels.modified + summary.labels.deleted +
-      summary.pages.modified
+      summary.pages.modified + summary.metadata.modified
     );
   }, [changeTracker.version]); // Recalculate when changeTracker version changes (cleared or updated)
 
@@ -5481,6 +5495,7 @@ function WheelEditor({ wheelId, reloadTrigger, onBackToDashboard }) {
             onOrganizationChange={setWheelStructure}
             title={title}
             onTitleChange={setTitle}
+            onTitleInputChange={trackTitleInputChange}
             colors={colors}
             onColorsChange={handleColorsChange}
             onPaletteChange={handlePaletteChange}

@@ -2598,7 +2598,10 @@ export const checkCircularReference = async (sourceWheelId, targetWheelId, maxDe
  * @returns {Promise<Object>} Summary of applied changes
  */
 export const applyDeltaChanges = async (wheelId, changes) => {
+  const metadataChanges = changes.metadata?.modified || {};
+
   console.log('[deltaSave] Applying delta changes:', {
+    metadata: Object.keys(metadataChanges),
     items: `+${changes.items.added.length} ~${changes.items.modified.length} -${changes.items.deleted.length}`,
     rings: `+${changes.rings.added.length} ~${changes.rings.modified.length} -${changes.rings.deleted.length}`,
     activityGroups: `+${changes.activityGroups.added.length} ~${changes.activityGroups.modified.length} -${changes.activityGroups.deleted.length}`,
@@ -2613,11 +2616,38 @@ export const applyDeltaChanges = async (wheelId, changes) => {
     activityGroups: { inserted: 0, updated: 0, deleted: 0 },
     labels: { inserted: 0, updated: 0, deleted: 0 },
     pages: { inserted: 0, updated: 0, deleted: 0 },
+    metadata: { updated: 0 },
     errors: []
   };
 
   try {
-    // 1. DELETE operations (do deletes first to avoid conflicts)
+    // 1. Update wheel metadata before applying entity changes.
+    const metadataColumnMap = {
+      title: 'title',
+      year: 'year',
+      colors: 'colors',
+      showWeekRing: 'show_week_ring',
+      showMonthRing: 'show_month_ring',
+      showRingNames: 'show_ring_names',
+      showLabels: 'show_labels',
+      weekRingDisplayMode: 'week_ring_display_mode'
+    };
+    const wheelMetadata = Object.entries(metadataChanges).reduce((updates, [field, value]) => {
+      const column = metadataColumnMap[field];
+      if (column) updates[column] = field === 'year' ? parseInt(value, 10) : value;
+      return updates;
+    }, {});
+
+    if (Object.keys(wheelMetadata).length > 0) {
+      const { error } = await supabase
+        .from('year_wheels')
+        .update(wheelMetadata)
+        .eq('id', wheelId);
+      if (error) throw new Error(`Wheel metadata update failed: ${error.message}`);
+      results.metadata.updated = Object.keys(wheelMetadata).length;
+    }
+
+    // 2. DELETE operations (do deletes first to avoid conflicts)
     if (changes.items.deleted.length > 0) {
       const { error } = await supabase
         .from('items')
