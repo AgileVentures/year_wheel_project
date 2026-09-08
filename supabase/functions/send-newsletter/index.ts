@@ -246,7 +246,9 @@ serve(async (req) => {
               reply_to: 'info@auctum.se',
               to: [email],
               subject: subject,
-              html: personalizedHtml
+              html: personalizedHtml,
+              open_tracking: true,
+              click_tracking: true
             }
           })
         )
