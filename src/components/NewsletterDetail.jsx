@@ -86,6 +86,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
   const bouncedEvents = events.filter(e => e.event_type === 'bounced' || e.event_type === 'complained');
   const deliveredCount = new Set(deliveredEvents.map(e => e.email_id)).size;
   const openedCount = new Set(openedEvents.map(e => e.email_id)).size;
+  const clickedCount = new Set(clickedEvents.map(e => e.email_id)).size;
   const failedCount = new Set(bouncedEvents.map(e => e.email_id)).size;
 
   // Track unsubscribe clicks specifically
@@ -93,6 +94,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
     const url = e.event_data?.click?.link || e.event_data?.click?.url || '';
     return url.includes('/unsubscribe') || url.includes('avregistrera');
   });
+  const unsubscribeCount = new Set(unsubscribeClicks.map(e => e.email_id)).size;
 
   // Get unique link clicks (grouped by URL)
   const linkClickStats = clickedEvents.reduce((acc, event) => {
@@ -118,8 +120,8 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
   // Calculate rates - use sent count as base for all calculations to avoid division by zero
   const deliveryRate = send.recipient_count > 0 ? ((deliveredCount / send.recipient_count) * 100).toFixed(1) : 0;
   const openRate = send.recipient_count > 0 ? ((openedCount / send.recipient_count) * 100).toFixed(1) : 0;
-  const clickRate = send.recipient_count > 0 ? ((clickedEvents.length / send.recipient_count) * 100).toFixed(1) : 0;
-  const unsubscribeRate = send.recipient_count > 0 ? ((unsubscribeClicks.length / send.recipient_count) * 100).toFixed(2) : 0;
+  const clickRate = send.recipient_count > 0 ? ((clickedCount / send.recipient_count) * 100).toFixed(1) : 0;
+  const unsubscribeRate = send.recipient_count > 0 ? ((unsubscribeCount / send.recipient_count) * 100).toFixed(2) : 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -239,7 +241,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
                         <MousePointer size={20} />
                         <span className="text-sm font-medium">Klick</span>
                       </div>
-                      <p className="text-3xl font-bold text-indigo-900">{clickedEvents.length}</p>
+                      <p className="text-3xl font-bold text-indigo-900">{clickedCount}</p>
                       <p className="text-xs text-indigo-700 mt-1">{clickRate}% av skickade</p>
                     </div>
                   </div>
@@ -251,7 +253,7 @@ export default function NewsletterDetail({ send: initialSend, onClose }) {
                         <UserMinus size={20} />
                         <span className="text-sm font-medium">Avregistreringar</span>
                       </div>
-                      <p className="text-2xl font-bold text-orange-900">{unsubscribeClicks.length}</p>
+                      <p className="text-2xl font-bold text-orange-900">{unsubscribeCount}</p>
                       <p className="text-xs text-orange-700 mt-1">{unsubscribeRate}% av skickade</p>
                     </div>
 

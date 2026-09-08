@@ -125,7 +125,9 @@ serve(async (req) => {
         .select('id, event_data')
         .eq('email_id', emailId)
         .eq('event_type', eventType)
-        .single()
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
       if (existingClick) {
         const existingTimestamp = existingClick.event_data?.click?.timestamp || existingClick.event_data?.created_at
