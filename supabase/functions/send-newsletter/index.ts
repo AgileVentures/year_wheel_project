@@ -70,6 +70,21 @@ serve(async (req) => {
       templateData
     } = await req.json() as NewsletterRequest
 
+    if (!subject?.trim() || !htmlContent?.trim()) {
+      return new Response(
+        JSON.stringify({ error: 'Subject and newsletter content are required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (/\{\{[^}]+\}\}/.test(htmlContent)) {
+      console.error('Newsletter contains unresolved template tokens')
+      return new Response(
+        JSON.stringify({ error: 'Newsletter contains unresolved template tokens' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Get recipient emails based on type
     let recipients: string[] = []
 

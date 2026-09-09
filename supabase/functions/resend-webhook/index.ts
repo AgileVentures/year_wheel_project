@@ -69,8 +69,8 @@ serve(async (req) => {
     const recipient = data.to?.[0] || data.to
     const subject = data.subject
 
-    if (!emailId || !subject) {
-      console.log('Missing email_id or subject, skipping')
+    if (!emailId) {
+      console.log('Missing email_id, skipping')
       return new Response('ok', { headers: corsHeaders })
     }
 
@@ -90,7 +90,7 @@ serve(async (req) => {
       }
     }
 
-    if (!sendId) {
+    if (!sendId && subject) {
       // Fallback: find latest send by subject (less reliable)
       const { data: send, error: sendError } = await supabase
         .from('newsletter_sends')
@@ -106,6 +106,11 @@ serve(async (req) => {
       }
       sendId = send.id
       console.log(`Resolved send via subject fallback: ${sendId}`)
+    }
+
+    if (!sendId) {
+      console.log(`Newsletter send not found for email: ${emailId}`)
+      return new Response('ok', { headers: corsHeaders })
     }
 
     // Extract event type (remove 'email.' prefix)

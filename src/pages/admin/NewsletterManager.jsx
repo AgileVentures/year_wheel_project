@@ -146,6 +146,13 @@ export default function NewsletterManager() {
       return;
     }
 
+    const unresolvedTokens = preview.match(/\{\{[^}]+\}\}/g);
+    if (unresolvedTokens) {
+      showToast(t('messages.unresolvedTemplateTokens'), 'error');
+      console.error('Newsletter contains unresolved template tokens:', unresolvedTokens);
+      return;
+    }
+
     showConfirm(t('messages.sendConfirm', { type: recipientType }), async () => {
       setSending(true);
 
