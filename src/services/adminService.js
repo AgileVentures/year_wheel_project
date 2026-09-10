@@ -41,9 +41,28 @@ export const getSubscriptionStats = async () => {
 /**
  * Get paginated users list with detailed information
  */
-export const getUsers = async ({ page = 1, limit = 50, search = '', sortBy = 'created_at', sortOrder = 'desc' }) => {
+export const getUsers = async ({ page = 1, limit = 50, search = '', sortBy = 'created_at', sortOrder = 'desc', subscriptionFilter = 'all' }) => {
   try {
-    const offset = (page - 1) * limit;
+    let subscribedUserIds = null;
+
+    if (subscriptionFilter !== 'all') {
+      const { data: response, error: subscriptionError } = await supabase.functions.invoke('admin-get-user-data', {
+        body: { userIds: [] }
+      });
+
+      if (subscriptionError) throw subscriptionError;
+
+      const subscriptions = response?.subscriptions || [];
+      const isSubscribed = (subscription) => (
+        subscription.status === 'active' &&
+        ['monthly', 'yearly', 'gift'].includes(subscription.plan_type)
+      );
+      const activeUserIds = new Set(
+        subscriptions.filter(isSubscribed).map(subscription => subscription.user_id)
+      );
+
+      subscribedUserIds = [...activeUserIds];
+    }
 
     // Build query for profiles
     let query = supabase
@@ -54,6 +73,19 @@ export const getUsers = async ({ page = 1, limit = 50, search = '', sortBy = 'cr
     if (search) {
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
     }
+
+    if (subscribedUserIds) {
+      if (subscriptionFilter === 'subscribed') {
+        if (subscribedUserIds.length === 0) {
+          return { users: [], total: 0, page, limit, totalPages: 1 };
+        }
+        query = query.in('id', subscribedUserIds);
+      } else if (subscribedUserIds.length > 0) {
+        query = query.not('id', 'in', `(${subscribedUserIds.join(',')})`);
+      }
+    }
+
+    const offset = (page - 1) * limit;
 
     // Apply sorting
     query = query.order(sortBy, { ascending: sortOrder === 'asc' });

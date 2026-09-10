@@ -58,6 +58,7 @@ export default function AdminPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [subscriptionFilter, setSubscriptionFilter] = useState('all');
   
   // Pagination & filters for wheels
   const [wheelsPage, setWheelsPage] = useState(1);
@@ -76,7 +77,7 @@ export default function AdminPanel() {
     if (isAdmin) {
       loadData();
     }
-  }, [isAdmin, currentPage, searchQuery, sortBy, sortOrder]);
+  }, [isAdmin, currentPage, searchQuery, sortBy, sortOrder, subscriptionFilter]);
 
   // Load wheels when on wheels tab or when wheel filters change
   useEffect(() => {
@@ -134,7 +135,7 @@ export default function AdminPanel() {
         mondayData,
       ] = await Promise.all([
         getAdminStats(),
-        getUsers({ page: currentPage, limit: 50, search: searchQuery, sortBy, sortOrder }),
+        getUsers({ page: currentPage, limit: 50, search: searchQuery, sortBy, sortOrder, subscriptionFilter }),
         getUserGrowthData(30),
         getWheelGrowthData(30),
         getSubscriptionStats(),
@@ -162,6 +163,11 @@ export default function AdminPanel() {
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1); // Reset to first page on search
+  };
+
+  const handleSubscriptionFilter = (e) => {
+    setSubscriptionFilter(e.target.value);
+    setCurrentPage(1);
   };
 
   const handleSort = (column) => {
@@ -328,6 +334,8 @@ export default function AdminPanel() {
             onSort={handleSort}
             onPageChange={setCurrentPage}
             onRefresh={loadData}
+            subscriptionFilter={subscriptionFilter}
+            onSubscriptionFilter={handleSubscriptionFilter}
           />
         )}
 

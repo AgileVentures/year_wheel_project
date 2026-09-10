@@ -12,10 +12,11 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [subscriptionFilter, setSubscriptionFilter] = useState('all');
 
   useEffect(() => {
     loadUsers();
-  }, [currentPage, searchQuery, sortBy, sortOrder]);
+  }, [currentPage, searchQuery, sortBy, sortOrder, subscriptionFilter]);
 
   const loadUsers = async () => {
     try {
@@ -26,6 +27,7 @@ export default function AdminUsersPage() {
         search: searchQuery,
         sortBy,
         sortOrder,
+        subscriptionFilter,
       });
       setUsers(usersData.users);
       setTotalPages(usersData.totalPages);
@@ -38,6 +40,11 @@ export default function AdminUsersPage() {
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleSubscriptionFilter = (e) => {
+    setSubscriptionFilter(e.target.value);
     setCurrentPage(1);
   };
 
@@ -65,6 +72,8 @@ export default function AdminUsersPage() {
         onSearch={handleSearch}
         onSort={handleSort}
         onPageChange={setCurrentPage}
+        subscriptionFilter={subscriptionFilter}
+        onSubscriptionFilter={handleSubscriptionFilter}
         onRefresh={loadUsers}
         loading={loading}
       />

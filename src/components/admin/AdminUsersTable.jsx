@@ -172,7 +172,9 @@ export default function AdminUsersTable({
   onSearch, 
   onSort, 
   onPageChange,
-  onRefresh 
+  onRefresh,
+  subscriptionFilter,
+  onSubscriptionFilter
 }) {
   const { t } = useTranslation(['admin']);
   const [showGrantModal, setShowGrantModal] = useState(false);
@@ -589,6 +591,16 @@ export default function AdminUsersTable({
             />
           </div>
           <div className="flex gap-2">
+            <select
+              value={subscriptionFilter}
+              onChange={onSubscriptionFilter}
+              className="px-3 py-2 border border-gray-300 rounded-sm text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+              aria-label={t('subscriptionFilter')}
+            >
+              <option value="all">{t('allUsers')}</option>
+              <option value="subscribed">{t('subscribedUsers')}</option>
+              <option value="free">{t('freeUsers')}</option>
+            </select>
             {selectedUsers.length > 0 && (
               <button
                 onClick={openBulkGrantModal}
