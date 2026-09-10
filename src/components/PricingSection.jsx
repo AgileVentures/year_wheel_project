@@ -178,6 +178,9 @@ function PricingSection({ billingCycle, setBillingCycle, setAuthMode, scrollToAu
           <Link to="/pricing" className="text-[#00A4A6] hover:text-[#2E9E97] font-semibold">
             {t('landing:pricing.viewAllDetails')}
           </Link>
+          <p className="text-sm text-gray-600 mt-3">
+            {t('landing:pricing.trustSignals')}
+          </p>
           {/* Billing note for English language */}
           {i18n.language === 'en' && (
             <p className="text-sm text-gray-500 mt-4">
