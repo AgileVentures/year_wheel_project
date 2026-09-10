@@ -78,7 +78,8 @@
     "characterCount": "{{count}}/500 tecken",
     "cancel": "Avbryt",
     "create": "Skapa team",
-    "creating": "Skapar..."
+    "creating": "Skapar...",
+    "limitReached": "Gratisplanen innehåller 1 team. Uppgradera för att skapa fler team."
   },
   "inviteMemberModal": {
     "title": "Bjud in medlem",
@@ -123,6 +124,7 @@
     "errorDecline": "Kunde inte avvisa inbjudan"
   },
   "limits": {
+    "maxTeamsReached": "Gratisplanen innehåller 1 team. Uppgradera för att skapa fler team.",
     "maxMembersReached": "Du har nått gratis-planens gräns på {{max}} teammedlemmar. Uppgradera för att lägga till fler medlemmar.",
     "maxMembersReachedShort": "Gratis-plan: max {{max}} medlemmar",
     "upgradeCta": "Uppgradera för fler platser"

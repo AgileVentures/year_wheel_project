@@ -3,7 +3,7 @@
  * 
  * These tests verify:
  * 1. Users can create wheels
- * 2. Free-plan limit of 2 wheels is enforced for freemium users
+ * 2. Free-plan limit of 1 wheel is enforced for freemium users
  * 3. Subscribing users can create unlimited wheels
  */
 
@@ -159,22 +159,22 @@ describe('Wheel Creation and Limits', () => {
     cy.wait('@createPage');
   });
 
-  it('blocks creation when free user has reached the 2-wheel limit', () => {
-    // Set up with 2 existing wheels (at the limit)
-    const twoWheels = [fixtures.userWheels[0], fixtures.userWheels[1]];
+  it('blocks creation when free user has reached the 1-wheel limit', () => {
+    // Set up with 1 existing wheel (at the limit)
+    const oneWheel = [fixtures.userWheels[0]];
     
     cy.intercept('GET', '**/rest/v1/year_wheels*user_id*', (req) => {
       const url = new URL(req.url);
       if (url.searchParams.get('is_template') === 'eq.true') {
         req.reply(fixtures.templateWheels || []);
       } else {
-        req.reply(twoWheels);
+        req.reply(oneWheel);
       }
     }).as('userWheels');
 
     cy.intercept('POST', '**/rest/v1/rpc/get_user_wheel_count', { 
       statusCode: 200, 
-      body: 2 
+      body: 1 
     }).as('wheelCount');
 
     cy.intercept('GET', '**/rest/v1/teams*', { statusCode: 200, body: [] }).as('teams');
@@ -203,21 +203,21 @@ describe('Wheel Creation and Limits', () => {
   });
 
   it('shows upgrade prompt when user tries to create beyond limit', () => {
-    // Set up with 2 wheels but allow modal to open
-    const twoWheels = [fixtures.userWheels[0], fixtures.userWheels[1]];
+    // Set up with 1 wheel but allow modal to open
+    const oneWheel = [fixtures.userWheels[0]];
     
     cy.intercept('GET', '**/rest/v1/year_wheels*user_id*', (req) => {
       const url = new URL(req.url);
       if (url.searchParams.get('is_template') === 'eq.true') {
         req.reply(fixtures.templateWheels || []);
       } else {
-        req.reply(twoWheels);
+        req.reply(oneWheel);
       }
     }).as('userWheels');
 
     cy.intercept('POST', '**/rest/v1/rpc/get_user_wheel_count', { 
       statusCode: 200, 
-      body: 2 
+      body: 1 
     }).as('wheelCount');
 
     cy.intercept('GET', '**/rest/v1/teams*', { statusCode: 200, body: [] }).as('teams');

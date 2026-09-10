@@ -130,7 +130,8 @@ Google Integrations:
 **Critical Database Functions:**
 - `is_premium_user(user_id)` - Checks active subscription OR is_admin flag
 - `is_admin(user_id)` - Checks profiles.is_admin (currently: thomas@freefoot.se)
-- `can_create_wheel(user_id)` - Free: 2 wheels, Premium: unlimited
+- `can_create_wheel(user_id)` - Free: 1 wheel, Premium: unlimited
+- `can_create_team(user_id)` - Free: 1 team, Premium: unlimited
 - `can_add_team_member(wheel_id, user_id)` - Free: 3 members, Premium: unlimited
 - `get_next_page_order(wheel_id)` - Returns next sequential page_order for new pages
 - `duplicate_wheel_page(page_id)` - Clones page with incremented year

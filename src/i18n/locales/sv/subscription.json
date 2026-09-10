@@ -13,7 +13,7 @@
       "current": "Nuvarande plan",
       "notAvailable": "Inte tillgänglig",
       "features": {
-        "wheels": "3 årshjul",
+        "wheels": "1 årshjul",
         "teams": "1 team med upp till 3 medlemmar",
         "export": "Export som PNG och SVG",
         "basic": "Grundläggande funktioner"
@@ -72,7 +72,7 @@
     },
     "periodEnd": {
       "question": "Vad händer när prenumerationen tar slut?",
-      "answer": "Du återgår automatiskt till gratisplanen. Dina hjul sparas, men du kan bara ha 2 aktiva hjul och 3 teammedlemmar. Ingen återbetalning sker för resterande tid."
+      "answer": "Du återgår automatiskt till gratisplanen. Dina hjul sparas, men du kan bara ha 1 aktivt hjul, 1 team och 3 teammedlemmar. Ingen återbetalning sker för resterande tid."
     },
     "secure": {
       "question": "Är betalningen säker?",

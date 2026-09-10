@@ -78,7 +78,8 @@
     "characterCount": "{{count}}/500 characters",
     "cancel": "Cancel",
     "create": "Create team",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "limitReached": "The free plan includes 1 team. Upgrade to create more teams."
   },
   "inviteMemberModal": {
     "title": "Invite member",
@@ -122,6 +123,7 @@
     "errorLimitReached": "The team has reached the maximum number of members on the free plan. Ask the owner to upgrade to invite more."
   },
   "limits": {
+    "maxTeamsReached": "The free plan includes 1 team. Upgrade to create more teams.",
     "maxMembersReached": "You have reached the free plan limit of {{max}} team members. Upgrade to add more members.",
     "maxMembersReachedShort": "Free plan limit ({{max}} members)",
     "upgradeCta": "Upgrade to unlock more seats"

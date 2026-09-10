@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
+import { canCreateTeam } from './subscriptionService';
 
 export const TEAM_LIMIT_ERROR_CODE = 'TEAM_MEMBER_LIMIT_REACHED';
+export const TEAM_CREATION_LIMIT_ERROR_CODE = 'TEAM_LIMIT_REACHED';
 
 const createTeamLimitError = () => {
   const error = new Error(TEAM_LIMIT_ERROR_CODE);
@@ -33,6 +35,12 @@ async function ensureTeamHasCapacity(teamId, actingUserId) {
 export async function createTeam(name, description = '') {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  if (!(await canCreateTeam(user))) {
+    const error = new Error(TEAM_CREATION_LIMIT_ERROR_CODE);
+    error.code = TEAM_CREATION_LIMIT_ERROR_CODE;
+    throw error;
+  }
 
   const { data, error } = await supabase
     .from('teams')

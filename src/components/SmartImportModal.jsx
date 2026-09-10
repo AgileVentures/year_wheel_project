@@ -821,18 +821,10 @@ export default function SmartImportModal({ isOpen, onClose, wheelId, currentPage
         // Create new team
         console.log('[SmartImport] Creating new team:', teamName);
         
-        const { data: newTeam, error: teamError } = await supabase
-          .from('teams')
-          .insert({
-            name: teamName.trim(),
-            description: `Team för Smart Import ${csvData?.fileName || ''}`,
-            owner_id: user.id
-          })
-          .select()
-          .single();
-
-        if (teamError) throw teamError;
-        team = newTeam;
+        team = await createTeamService(
+          teamName.trim(),
+          `Team för Smart Import ${csvData?.fileName || ''}`
+        );
         console.log('[SmartImport] New team created:', team.id);
 
         // Assign wheel to new team

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { createTeam } from '../../services/teamService';
+import { createTeam, TEAM_CREATION_LIMIT_ERROR_CODE } from '../../services/teamService';
 
 const CreateTeamModal = ({ onClose, onTeamCreated }) => {
   const { t } = useTranslation(['teams']);
@@ -25,7 +25,9 @@ const CreateTeamModal = ({ onClose, onTeamCreated }) => {
       onTeamCreated(newTeam);
     } catch (err) {
       console.error('Error creating team:', err);
-      setError(err.message);
+      setError(err?.code === TEAM_CREATION_LIMIT_ERROR_CODE || err?.message === TEAM_CREATION_LIMIT_ERROR_CODE
+        ? t('teams:createTeamModal.limitReached')
+        : err.message);
     } finally {
       setLoading(false);
     }

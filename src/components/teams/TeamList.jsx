@@ -2,17 +2,22 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Users, Plus, Crown, Shield, User } from 'lucide-react';
 import { getUserTeams } from '../../services/teamService';
+import { useAuth } from '../../hooks/useAuth';
+import { useSubscription } from '../../hooks/useSubscription';
 import CreateTeamModal from './CreateTeamModal';
 import TeamDetails from './TeamDetails';
 import WheelLoader from '../WheelLoader';
 
 const TeamList = ({ onSelectWheel }) => {
   const { t, i18n } = useTranslation(['teams', 'common']);
+  const { user } = useAuth();
+  const { isPremium, isAdmin } = useSubscription();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
+  const canCreateAnotherTeam = isPremium || isAdmin || teams.filter(team => team.owner_id === user?.id).length < 1;
 
   useEffect(() => {
     loadTeams();
@@ -95,8 +100,10 @@ const TeamList = ({ onSelectWheel }) => {
           </p>
         </div>
         <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
+          onClick={() => canCreateAnotherTeam && setShowCreateModal(true)}
+          disabled={!canCreateAnotherTeam}
+          title={!canCreateAnotherTeam ? t('teams:limits.maxTeamsReached') : undefined}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           <Plus className="w-5 h-5" />
           {t('teams:create')}
@@ -123,8 +130,9 @@ const TeamList = ({ onSelectWheel }) => {
             {t('teams:noTeamsDescription')}
           </p>
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors"
+            onClick={() => canCreateAnotherTeam && setShowCreateModal(true)}
+            disabled={!canCreateAnotherTeam}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             <Plus className="w-5 h-5" />
             {t('teams:createFirst')}

@@ -159,12 +159,13 @@ export function useSubscription() {
 export function useUsageLimits() {
   const { isPremium, isAdmin, wheelCount, limits, loading, refresh, subscription } = useSubscription();
 
-  const hasReachedWheelLimit = !isPremium && wheelCount >= (limits?.maxWheels || 2);
+  const hasReachedWheelLimit = !isPremium && wheelCount >= (limits?.maxWheels || 1);
   
   return {
     hasReachedWheelLimit,
     wheelCount,
-    maxWheels: limits?.maxWheels || 2,
+    maxWheels: limits?.maxWheels || 1,
+    maxTeams: limits?.maxTeams || 1,
     isPremium,
     isAdmin,
     subscription,

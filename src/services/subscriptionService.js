@@ -123,6 +123,26 @@ export async function canCreateWheel(user = null) {
 }
 
 /**
+ * Check if the current user can create another team.
+ */
+export async function canCreateTeam(user = null) {
+  try {
+    if (!user) user = await getCurrentUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase.rpc('can_create_team', {
+      user_uuid: user.id
+    });
+
+    if (error) throw error;
+    return data || false;
+  } catch (error) {
+    console.error('Error checking team creation permission:', error);
+    return false;
+  }
+}
+
+/**
  * Get member count for a team
  */
 export async function getTeamMemberCount(teamId) {
@@ -307,14 +327,15 @@ export function getUsageLimits(isPremium, isAdminUser = false) {
   }
 
   return {
-    maxWheels: 2,
+    maxWheels: 1,
+    maxTeams: 1,
     maxTeamMembers: 3,
     allowedExports: ['png', 'svg'],
     canUseVersionControl: false,
     canShareWheels: false,
     isAdmin: false,
     features: [
-      'Upp till 2 årshjul',
+      '1 årshjul',
       '1 team med upp till 3 medlemmar',
       'Export som PNG och SVG',
       'Grundläggande funktioner'

@@ -13,7 +13,7 @@
       "current": "Current plan",
       "notAvailable": "Not available",
       "features": {
-        "wheels": "3 year wheels",
+        "wheels": "1 year wheel",
         "teams": "1 team with up to 3 members",
         "export": "Export as PNG and SVG",
         "basic": "Basic features"
@@ -72,7 +72,7 @@
     },
     "periodEnd": {
       "question": "What happens when the subscription ends?",
-      "answer": "You automatically return to the free plan. Your wheels are saved, but you can only have 2 active wheels and 3 team members. No refund is given for remaining time."
+      "answer": "You automatically return to the free plan. Your wheels are saved, but you can only have 1 active wheel, 1 team, and 3 team members. No refund is given for remaining time."
     },
     "secure": {
       "question": "Is payment secure?",
