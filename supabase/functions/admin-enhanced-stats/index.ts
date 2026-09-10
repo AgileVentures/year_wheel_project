@@ -219,6 +219,7 @@ Deno.serve(async (req: Request) => {
         ['monthly', 'yearly', 'gift'].includes(s.plan_type) &&
         (!s.current_period_end || new Date(s.current_period_end) > new Date())
       ))
+      const activeSubscriberIds = new Set(activeSubscriptions.map(s => s.user_id))
       const monthlyPremium = activeSubscriptions.filter(s => s.plan_type === 'monthly').length || 0
       const yearlyPremium = activeSubscriptions.filter(s => s.plan_type === 'yearly').length || 0
       const giftPremium = activeSubscriptions.filter(s => s.plan_type === 'gift').length || 0
@@ -318,14 +319,12 @@ Deno.serve(async (req: Request) => {
       // At risk - users who haven't been active in 14+ days but have subscription
       const twoWeeksAgo = new Date()
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
-      const activeSubscriberIds = activeSubscriptions.map(s => s.user_id)
-
       let atRiskCount = 0
-      if (activeSubscriberIds.length > 0) {
+      if (activeSubscriberIds.size > 0) {
         const { data: subscriberWheels } = await supabase
           .from('year_wheels')
           .select('user_id, updated_at')
-          .in('user_id', activeSubscriberIds)
+          .in('user_id', [...activeSubscriberIds])
         const lastActivityByUser = new Map<string, string>()
         for (const wheel of subscriberWheels || []) {
           const previousActivity = lastActivityByUser.get(wheel.user_id)
@@ -333,7 +332,7 @@ Deno.serve(async (req: Request) => {
             lastActivityByUser.set(wheel.user_id, wheel.updated_at)
           }
         }
-        atRiskCount = activeSubscriberIds.filter(userId => {
+        atRiskCount = [...activeSubscriberIds].filter(userId => {
           const lastActivity = lastActivityByUser.get(userId)
           return !lastActivity || new Date(lastActivity) < twoWeeksAgo
         }).length
@@ -455,7 +454,7 @@ Deno.serve(async (req: Request) => {
       : await getStatsForPeriod(dates.prevStart, dates.prevEnd)
 
     return new Response(
-      JSON.stringify({ current, previous }),
+      JSON.stringify({ statsVersion: 2, current, previous }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

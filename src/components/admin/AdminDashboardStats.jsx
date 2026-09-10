@@ -240,7 +240,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
 
     // Previous period metrics for comparison (with null safety)
     const prevConversionRate = comparisonStats?.users?.new > 0
-      ? (comparisonStats.premium.new / comparisonStats.users.new) * 100
+      ? ((comparisonStats.premium.newPaying || 0) / comparisonStats.users.new) * 100
       : null;
 
     const prevActiveRate = comparisonStats?.users?.total > 0
@@ -279,6 +279,28 @@ export default function AdminDashboardStats({ onPeriodChange }) {
         >
           Försök igen
         </button>
+      </div>
+    );
+  }
+
+  if (stats.dataIncomplete) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-sm p-5">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="text-amber-600 flex-shrink-0" size={20} />
+          <div>
+            <h2 className="font-semibold text-amber-900">Statistik behöver uppdateras</h2>
+            <p className="text-sm text-amber-800 mt-1">
+              Den publicerade statistikfunktionen använder ett äldre dataformat. Uppdatera edge-funktionen innan du visar översikten.
+            </p>
+            <button
+              onClick={loadStats}
+              className="mt-3 text-sm font-medium text-amber-900 underline"
+            >
+              Försök igen
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -370,7 +392,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           value={formatNumber(stats.premium.newPaying || 0)}
           target={premiumTarget}
           targetLabel={`Mål (${periodDays}d)`}
-          previousValue={comparisonStats?.premium?.new}
+          previousValue={comparisonStats?.premium?.newPaying}
           icon={Crown}
           color="pink"
         />
@@ -400,29 +422,11 @@ export default function AdminDashboardStats({ onPeriodChange }) {
         />
       </div>
 
-      {/* Gift Subscriptions - only show if there are any */}
-      {stats.premium.gift > 0 && (
-        <div className="bg-purple-50 border border-purple-100 rounded-sm p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500 rounded-sm">
-              <Gift size={18} className="text-white" />
-            </div>
-            <div>
-              <div className="text-sm font-medium text-purple-900">Gåvoprenumerationer</div>
-              <div className="text-2xl font-bold text-purple-700">
-                {formatNumber(stats.premium.gift)}
-              </div>
-              <div className="text-xs text-purple-600">Administratörstilldelade (genererar ingen intäkt)</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Aktiva premium"
           value={formatNumber(stats.premium.total)}
-          sublabel={`${stats.premium.paying} betalande + ${stats.premium.gift} gåva`}
+          sublabel={`${stats.premium.paying} betalande · ${stats.premium.gift} gåva`}
           icon={Crown}
         />
         <StatCard
@@ -432,16 +436,10 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           icon={Users}
         />
         <StatCard
-          label="Nya gåvor"
-          value={formatNumber(stats.premium.newGift || 0)}
-          sublabel="under vald period"
+          label="Gåvoåtkomst"
+          value={formatNumber(stats.premium.gift)}
+          sublabel={`${formatNumber(stats.premium.newGift || 0)} nya under vald period`}
           icon={Gift}
-        />
-        <StatCard
-          label="Riskkunder"
-          value={formatNumber(stats.churn?.atRisk || 0)}
-          sublabel="aktiva premium utan hjulaktivitet 14+ dagar"
-          icon={AlertCircle}
         />
       </div>
 

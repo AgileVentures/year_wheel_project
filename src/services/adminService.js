@@ -693,6 +693,10 @@ export const getEnhancedAdminStats = async (period = '30d', customStart = null, 
     });
 
     if (error) throw error;
+    if (data?.statsVersion !== 2 || data.current?.premium?.paying === undefined ||
+      data.current.premium.newPaying === undefined) {
+      throw new Error('Admin stats function is out of date');
+    }
     return data;
   } catch (error) {
     console.error('Error fetching enhanced admin stats:', error);
@@ -708,7 +712,7 @@ export const getEnhancedAdminStats = async (period = '30d', customStart = null, 
 const getEmptyStatsStructure = () => ({
   users: { total: 0, new: 0, active: 0, today: 0 },
   wheels: { total: 0, new: 0, withActivities: 0 },
-  premium: { total: 0, monthly: 0, yearly: 0, gift: 0, new: 0, newPaying: 0, newGift: 0 },
+  premium: { total: 0, paying: 0, monthly: 0, yearly: 0, gift: 0, new: 0, newPaying: 0, newGift: 0 },
   revenue: { mrr: 0, arpu: 0 },
   activities: { total: 0, new: 0 },
   ai: { requests: 0, uniqueUsers: 0 },
@@ -716,7 +720,8 @@ const getEmptyStatsStructure = () => ({
   sharing: { publicWheels: 0, templates: 0, exports: 0, onLanding: 0 },
   retention: { newUsers: 0, returning: 0 },
   churn: { canceled: 0, rate: 0, atRisk: 0 },
-  leads: { quizStarts: 0, quizCompleted: 0, signups: 0, newsletter: 0 }
+  leads: { quizStarts: 0, quizCompleted: 0, signups: 0, newsletter: 0 },
+  dataIncomplete: true
 });
 
 /**
