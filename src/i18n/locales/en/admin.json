@@ -28,6 +28,8 @@
   "subscriptionFilter": "Filter subscription",
   "allUsers": "All users",
   "subscribedUsers": "Subscribers",
+  "payingUsers": "Paying subscribers",
+  "giftUsers": "Gift subscribers",
   "freeUsers": "Not subscribed",
   "refresh": "Refresh",
   "user": "User",

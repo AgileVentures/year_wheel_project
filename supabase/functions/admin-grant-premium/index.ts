@@ -84,6 +84,13 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    if (expiryDate <= new Date()) {
+      return new Response(
+        JSON.stringify({ error: 'expiresAt must be in the future' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Check if target user exists
     const { data: targetProfile, error: targetError } = await supabaseAdmin
       .from('profiles')

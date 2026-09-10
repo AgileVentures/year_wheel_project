@@ -205,9 +205,12 @@ Deno.serve(async (req: Request) => {
         .select('*')
         .eq('status', 'active')
 
-      const monthlyPremium = subscriptions?.filter(s => s.plan_type === 'monthly').length || 0
-      const yearlyPremium = subscriptions?.filter(s => s.plan_type === 'yearly').length || 0
-      const giftPremium = subscriptions?.filter(s => s.plan_type === 'gift').length || 0
+      const activeSubscriptions = (subscriptions || []).filter(s => (
+        !s.current_period_end || new Date(s.current_period_end) > new Date()
+      ))
+      const monthlyPremium = activeSubscriptions.filter(s => s.plan_type === 'monthly').length || 0
+      const yearlyPremium = activeSubscriptions.filter(s => s.plan_type === 'yearly').length || 0
+      const giftPremium = activeSubscriptions.filter(s => s.plan_type === 'gift').length || 0
       
       // Paying subscribers = monthly + yearly (excludes gift)
       const payingSubscribers = monthlyPremium + yearlyPremium

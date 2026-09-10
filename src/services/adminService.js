@@ -53,15 +53,27 @@ export const getUsers = async ({ page = 1, limit = 50, search = '', sortBy = 'cr
       if (subscriptionError) throw subscriptionError;
 
       const subscriptions = response?.subscriptions || [];
-      const isSubscribed = (subscription) => (
+      const isActiveSubscription = (subscription) => (
         subscription.status === 'active' &&
-        ['monthly', 'yearly', 'gift'].includes(subscription.plan_type)
-      );
-      const activeUserIds = new Set(
-        subscriptions.filter(isSubscribed).map(subscription => subscription.user_id)
+        ['monthly', 'yearly', 'gift'].includes(subscription.plan_type) &&
+        (!subscription.current_period_end || new Date(subscription.current_period_end) > new Date())
       );
 
-      subscribedUserIds = [...activeUserIds];
+      const matchingUserIds = new Set(
+        subscriptions
+          .filter(subscription => {
+            if (subscriptionFilter === 'paying') {
+              return isActiveSubscription(subscription) && ['monthly', 'yearly'].includes(subscription.plan_type);
+            }
+            if (subscriptionFilter === 'gift') {
+              return isActiveSubscription(subscription) && subscription.plan_type === 'gift';
+            }
+            return isActiveSubscription(subscription);
+          })
+          .map(subscription => subscription.user_id)
+      );
+
+      subscribedUserIds = [...matchingUserIds];
     }
 
     // Build query for profiles
@@ -75,7 +87,7 @@ export const getUsers = async ({ page = 1, limit = 50, search = '', sortBy = 'cr
     }
 
     if (subscribedUserIds) {
-      if (subscriptionFilter === 'subscribed') {
+      if (['subscribed', 'paying', 'gift'].includes(subscriptionFilter)) {
         if (subscribedUserIds.length === 0) {
           return { users: [], total: 0, page, limit, totalPages: 1 };
         }

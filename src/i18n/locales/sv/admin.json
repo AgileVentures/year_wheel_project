@@ -28,6 +28,8 @@
   "subscriptionFilter": "Filtrera prenumeration",
   "allUsers": "Alla användare",
   "subscribedUsers": "Prenumeranter",
+  "payingUsers": "Betalande prenumeranter",
+  "giftUsers": "Gåvoprenumeranter",
   "freeUsers": "Ej prenumeranter",
   "refresh": "Uppdatera",
   "user": "Användare",

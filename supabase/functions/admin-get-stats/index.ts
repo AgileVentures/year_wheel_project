@@ -114,13 +114,16 @@ Deno.serve(async (req: Request) => {
     // Get premium users count
     const { data: subscriptions } = await supabaseAdmin
       .from('subscriptions')
-      .select('user_id, plan_type, status')
+      .select('user_id, plan_type, status, current_period_end')
       .eq('status', 'active')
       .in('plan_type', ['monthly', 'yearly', 'gift'])
 
-    const premiumUsers = subscriptions?.length || 0
-    const monthlyCount = subscriptions?.filter(s => s.plan_type === 'monthly').length || 0
-    const yearlyCount = subscriptions?.filter(s => s.plan_type === 'yearly').length || 0
+    const activeSubscriptions = (subscriptions || []).filter(subscription => (
+      !subscription.current_period_end || new Date(subscription.current_period_end) > new Date()
+    ))
+    const premiumUsers = activeSubscriptions.length
+    const monthlyCount = activeSubscriptions.filter(s => s.plan_type === 'monthly').length || 0
+    const yearlyCount = activeSubscriptions.filter(s => s.plan_type === 'yearly').length || 0
 
     // Get public wheels count (excluding templates)
     const { count: publicWheels } = await supabaseAdmin

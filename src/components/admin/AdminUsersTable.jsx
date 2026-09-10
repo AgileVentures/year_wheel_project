@@ -75,7 +75,9 @@ function UserRow({ user, hasPremium, isSelected, toggleUserSelection, openGrantM
       return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">Free</span>;
     }
     
-    if (sub.status !== 'active') {
+    const isExpired = sub.current_period_end && new Date(sub.current_period_end) <= new Date();
+
+    if (sub.status !== 'active' || isExpired) {
       return <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full capitalize">{sub.status}</span>;
     }
     
@@ -259,7 +261,9 @@ export default function AdminUsersTable({
       return <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">Free</span>;
     }
     
-    if (sub.status !== 'active') {
+    const isExpired = sub.current_period_end && new Date(sub.current_period_end) <= new Date();
+
+    if (sub.status !== 'active' || isExpired) {
       return <span className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full capitalize">{sub.status}</span>;
     }
     
@@ -287,7 +291,9 @@ export default function AdminUsersTable({
   const hasActivePremium = (user) => {
     if (!user.subscriptions || user.subscriptions.length === 0) return false;
     const sub = user.subscriptions[0];
-    return sub.status === 'active' && ['monthly', 'yearly', 'gift'].includes(sub.plan_type);
+    return sub.status === 'active' &&
+      ['monthly', 'yearly', 'gift'].includes(sub.plan_type) &&
+      (!sub.current_period_end || new Date(sub.current_period_end) > new Date());
   };
 
   // Get eligible users (no active premium)
@@ -598,7 +604,8 @@ export default function AdminUsersTable({
               aria-label={t('subscriptionFilter')}
             >
               <option value="all">{t('allUsers')}</option>
-              <option value="subscribed">{t('subscribedUsers')}</option>
+              <option value="paying">{t('payingUsers')}</option>
+              <option value="gift">{t('giftUsers')}</option>
               <option value="free">{t('freeUsers')}</option>
             </select>
             {selectedUsers.length > 0 && (
