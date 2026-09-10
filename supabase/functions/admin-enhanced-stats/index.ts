@@ -22,7 +22,7 @@ const getPeriodDates = (period: string, customStart?: string, customEnd?: string
       prevEnd.setDate(prevEnd.getDate() - 1)
       prevStart = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate())
       break
-    case 'week': // This week (Monday to now)
+    case 'week': { // This week (Monday to now)
       const dayOfWeek = now.getDay()
       const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Monday = 0 days back
       start = new Date(now)
@@ -33,6 +33,7 @@ const getPeriodDates = (period: string, customStart?: string, customEnd?: string
       prevStart = new Date(prevEnd)
       prevStart.setDate(prevStart.getDate() - 6)
       break
+    }
     case '7d':
       start = new Date(now)
       start.setDate(start.getDate() - 7)
@@ -149,7 +150,7 @@ Deno.serve(async (req: Request) => {
     const dates = getPeriodDates(period, customStart, customEnd)
 
     // Helper function to get stats for a period
-    const getStatsForPeriod = async (startDate: Date, endDate: Date, isAllTime: boolean = false) => {
+    const getStatsForPeriod = async (startDate: Date, endDate: Date) => {
       const startStr = formatDate(startDate)
       const endStr = formatDate(endDate)
 
@@ -199,14 +200,16 @@ Deno.serve(async (req: Request) => {
       
       const wheelsWithActivities = new Set((wheelsWithItems || []).map(i => i.wheel_id)).size
 
-      // Premium subscriptions
+      // Premium subscriptions. Free rows are present for many users, so plan_type
+      // must be checked explicitly instead of relying on status alone.
       const { data: subscriptions } = await supabase
         .from('subscriptions')
         .select('*')
-        .eq('status', 'active')
 
       const activeSubscriptions = (subscriptions || []).filter(s => (
-        !s.current_period_end || new Date(s.current_period_end) > new Date()
+        s.status === 'active' &&
+        ['monthly', 'yearly', 'gift'].includes(s.plan_type) &&
+        (!s.current_period_end || new Date(s.current_period_end) > new Date())
       ))
       const monthlyPremium = activeSubscriptions.filter(s => s.plan_type === 'monthly').length || 0
       const yearlyPremium = activeSubscriptions.filter(s => s.plan_type === 'yearly').length || 0
@@ -217,12 +220,13 @@ Deno.serve(async (req: Request) => {
       // Total premium includes gift subscriptions
       const totalPremium = payingSubscribers + giftPremium
 
-      const { count: newPremium } = await supabase
-        .from('subscriptions')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active')
-        .gte('created_at', startStr)
-        .lte('created_at', endStr)
+      const newPremium = (subscriptions || []).filter(s => (
+        s.status === 'active' &&
+        ['monthly', 'yearly', 'gift'].includes(s.plan_type) &&
+        (!s.current_period_end || new Date(s.current_period_end) > new Date()) &&
+        s.created_at >= startDate.toISOString() &&
+        s.created_at <= endDate.toISOString()
+      )).length
 
       // Calculate MRR (Monthly Recurring Revenue) - only from paying subscribers
       // Pricing: monthly = 79 SEK, yearly = 768 SEK/year (64 SEK/month)
@@ -259,7 +263,7 @@ Deno.serve(async (req: Request) => {
         
         aiRequests = aiCount || 0
         aiUniqueUsers = new Set((aiUsers || []).map(u => u.user_id)).size
-      } catch (e) {
+      } catch {
         // Table might not exist
       }
 
@@ -342,7 +346,7 @@ Deno.serve(async (req: Request) => {
 
         quizStarts = quizStartCount || 0
         quizCompleted = quizCompleteCount || 0
-      } catch (e) {
+      } catch {
         // Table might not exist
       }
 
@@ -354,7 +358,7 @@ Deno.serve(async (req: Request) => {
           .lte('created_at', endStr)
         
         newsletterSubs = newsCount || 0
-      } catch (e) {
+      } catch {
         // Table might not exist
       }
 
@@ -421,7 +425,7 @@ Deno.serve(async (req: Request) => {
 
     // Get current and previous period stats
     const isAllTime = period === 'all'
-    const current = await getStatsForPeriod(dates.start, dates.end, isAllTime)
+    const current = await getStatsForPeriod(dates.start, dates.end)
     const previous = isAllTime 
       ? current // No comparison for all-time
       : await getStatsForPeriod(dates.prevStart, dates.prevEnd)
