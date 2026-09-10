@@ -151,8 +151,8 @@ Deno.serve(async (req: Request) => {
 
     // Helper function to get stats for a period
     const getStatsForPeriod = async (startDate: Date, endDate: Date) => {
-      const startStr = formatDate(startDate)
-      const endStr = formatDate(endDate)
+      const startIso = startDate.toISOString()
+      const endIso = endDate.toISOString()
 
       // Users
       const { count: totalUsers } = await supabase
@@ -162,17 +162,15 @@ Deno.serve(async (req: Request) => {
       const { count: newUsers } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', startStr)
-        .lte('created_at', endStr)
+        .gte('created_at', startIso)
+        .lte('created_at', endIso)
 
-      // Active users (logged in within period) - check auth.users last_sign_in_at
-      // We'll estimate based on updated_at in profiles or wheels
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      // Active users are users who changed a wheel during the selected period.
       const { data: activeWheelUsers } = await supabase
         .from('year_wheels')
         .select('user_id')
-        .gte('updated_at', formatDate(thirtyDaysAgo))
+        .gte('updated_at', startIso)
+        .lte('updated_at', endIso)
       
       const activeUserIds = new Set((activeWheelUsers || []).map(w => w.user_id))
 
@@ -186,17 +184,27 @@ Deno.serve(async (req: Request) => {
       const { count: totalWheels } = await supabase
         .from('year_wheels')
         .select('*', { count: 'exact', head: true })
+        .eq('is_template', false)
 
       const { count: newWheels } = await supabase
         .from('year_wheels')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', startStr)
-        .lte('created_at', endStr)
+        .eq('is_template', false)
+        .gte('created_at', startIso)
+        .lte('created_at', endIso)
 
       // Wheels with activities
-      const { data: wheelsWithItems } = await supabase
+      const { data: realWheels } = await supabase
+        .from('year_wheels')
+        .select('id')
+        .eq('is_template', false)
+
+      const { data: wheelsWithItems } = realWheels?.length
+        ? await supabase
         .from('items')
         .select('wheel_id')
+        .in('wheel_id', realWheels.map(wheel => wheel.id))
+        : { data: [] }
       
       const wheelsWithActivities = new Set((wheelsWithItems || []).map(i => i.wheel_id)).size
 
@@ -220,13 +228,14 @@ Deno.serve(async (req: Request) => {
       // Total premium includes gift subscriptions
       const totalPremium = payingSubscribers + giftPremium
 
-      const newPremium = (subscriptions || []).filter(s => (
-        s.status === 'active' &&
+      const newSubscriptions = (subscriptions || []).filter(s => (
         ['monthly', 'yearly', 'gift'].includes(s.plan_type) &&
-        (!s.current_period_end || new Date(s.current_period_end) > new Date()) &&
-        s.created_at >= startDate.toISOString() &&
-        s.created_at <= endDate.toISOString()
-      )).length
+        s.created_at >= startIso &&
+        s.created_at <= endIso
+      ))
+      const newPremium = newSubscriptions.length
+      const newPaying = newSubscriptions.filter(s => ['monthly', 'yearly'].includes(s.plan_type)).length
+      const newGift = newSubscriptions.filter(s => s.plan_type === 'gift').length
 
       // Calculate MRR (Monthly Recurring Revenue) - only from paying subscribers
       // Pricing: monthly = 79 SEK, yearly = 768 SEK/year (64 SEK/month)
@@ -242,8 +251,8 @@ Deno.serve(async (req: Request) => {
       const { count: newActivities } = await supabase
         .from('items')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', startStr)
-        .lte('created_at', endStr)
+        .gte('created_at', startIso)
+        .lte('created_at', endIso)
 
       // AI Usage - check ai_conversation_logs if exists
       let aiRequests = 0
@@ -252,14 +261,14 @@ Deno.serve(async (req: Request) => {
         const { count: aiCount } = await supabase
           .from('ai_conversation_logs')
           .select('*', { count: 'exact', head: true })
-          .gte('created_at', startStr)
-          .lte('created_at', endStr)
+          .gte('created_at', startIso)
+          .lte('created_at', endIso)
         
         const { data: aiUsers } = await supabase
           .from('ai_conversation_logs')
           .select('user_id')
-          .gte('created_at', startStr)
-          .lte('created_at', endStr)
+          .gte('created_at', startIso)
+          .lte('created_at', endIso)
         
         aiRequests = aiCount || 0
         aiUniqueUsers = new Set((aiUsers || []).map(u => u.user_id)).size
@@ -275,8 +284,8 @@ Deno.serve(async (req: Request) => {
       const { count: newTeams } = await supabase
         .from('teams')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', startStr)
-        .lte('created_at', endStr)
+        .gte('created_at', startIso)
+        .lte('created_at', endIso)
 
       const { count: totalMembers } = await supabase
         .from('team_members')
@@ -299,32 +308,45 @@ Deno.serve(async (req: Request) => {
         .eq('show_on_landing', true)
 
       // Churn
-      const { count: canceledSubs } = await supabase
-        .from('subscriptions')
+      const { count: canceledSubscriptionEvents } = await supabase
+        .from('subscription_events')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'canceled')
-        .gte('updated_at', startStr)
-        .lte('updated_at', endStr)
+        .eq('event_type', 'customer.subscription.deleted')
+        .gte('created_at', startIso)
+        .lte('created_at', endIso)
 
       // At risk - users who haven't been active in 14+ days but have subscription
       const twoWeeksAgo = new Date()
       twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
-      const { data: inactiveSubUsers } = await supabase
-        .from('subscriptions')
-        .select('user_id')
-        .eq('status', 'active')
+      const activeSubscriberIds = activeSubscriptions.map(s => s.user_id)
 
       let atRiskCount = 0
-      if (inactiveSubUsers && inactiveSubUsers.length > 0) {
-        const { count } = await supabase
+      if (activeSubscriberIds.length > 0) {
+        const { data: subscriberWheels } = await supabase
           .from('year_wheels')
-          .select('user_id', { count: 'exact', head: true })
-          .in('user_id', inactiveSubUsers.map(s => s.user_id))
-          .lt('updated_at', formatDate(twoWeeksAgo))
-        atRiskCount = count || 0
+          .select('user_id, updated_at')
+          .in('user_id', activeSubscriberIds)
+        const lastActivityByUser = new Map<string, string>()
+        for (const wheel of subscriberWheels || []) {
+          const previousActivity = lastActivityByUser.get(wheel.user_id)
+          if (!previousActivity || wheel.updated_at > previousActivity) {
+            lastActivityByUser.set(wheel.user_id, wheel.updated_at)
+          }
+        }
+        atRiskCount = activeSubscriberIds.filter(userId => {
+          const lastActivity = lastActivityByUser.get(userId)
+          return !lastActivity || new Date(lastActivity) < twoWeeksAgo
+        }).length
       }
 
-      const churnRate = totalPremium > 0 ? ((canceledSubs || 0) / totalPremium) * 100 : 0
+      const expiredGiftCount = (subscriptions || []).filter(s => (
+        s.plan_type === 'gift' &&
+        s.current_period_end &&
+        s.current_period_end >= startIso &&
+        s.current_period_end <= endIso
+      )).length
+      const canceledSubs = (canceledSubscriptionEvents || 0) + expiredGiftCount
+      const churnRate = totalPremium > 0 ? (canceledSubs / totalPremium) * 100 : 0
 
       // Leads
       let quizStarts = 0
@@ -334,15 +356,15 @@ Deno.serve(async (req: Request) => {
         const { count: quizStartCount } = await supabase
           .from('quiz_leads')
           .select('*', { count: 'exact', head: true })
-          .gte('created_at', startStr)
-          .lte('created_at', endStr)
+            .gte('created_at', startIso)
+            .lte('created_at', endIso)
         
         const { count: quizCompleteCount } = await supabase
           .from('quiz_leads')
           .select('*', { count: 'exact', head: true })
           .not('pain_points', 'is', null)
-          .gte('created_at', startStr)
-          .lte('created_at', endStr)
+          .gte('created_at', startIso)
+          .lte('created_at', endIso)
 
         quizStarts = quizStartCount || 0
         quizCompleted = quizCompleteCount || 0
@@ -354,8 +376,8 @@ Deno.serve(async (req: Request) => {
         const { count: newsCount } = await supabase
           .from('newsletter_subscribers')
           .select('*', { count: 'exact', head: true })
-          .gte('created_at', startStr)
-          .lte('created_at', endStr)
+          .gte('created_at', startIso)
+          .lte('created_at', endIso)
         
         newsletterSubs = newsCount || 0
       } catch {
@@ -380,7 +402,9 @@ Deno.serve(async (req: Request) => {
           monthly: monthlyPremium,
           yearly: yearlyPremium,
           gift: giftPremium,
-          new: newPremium || 0
+          new: newPremium || 0,
+          newPaying,
+          newGift
         },
         revenue: {
           mrr,

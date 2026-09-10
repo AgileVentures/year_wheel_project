@@ -708,7 +708,7 @@ export const getEnhancedAdminStats = async (period = '30d', customStart = null, 
 const getEmptyStatsStructure = () => ({
   users: { total: 0, new: 0, active: 0, today: 0 },
   wheels: { total: 0, new: 0, withActivities: 0 },
-  premium: { total: 0, monthly: 0, yearly: 0, new: 0 },
+  premium: { total: 0, monthly: 0, yearly: 0, gift: 0, new: 0, newPaying: 0, newGift: 0 },
   revenue: { mrr: 0, arpu: 0 },
   activities: { total: 0, new: 0 },
   ai: { requests: 0, uniqueUsers: 0 },

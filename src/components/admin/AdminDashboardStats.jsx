@@ -218,10 +218,9 @@ export default function AdminDashboardStats({ onPeriodChange }) {
     // Paying subscribers (excludes gift)
     const payingSubscribers = stats.premium.paying || 0;
     
-    // Conversion rate: paying premium / new users in period (not total users)
-    // This shows how many NEW signups converted to paid in this period
+    // Conversion rate: new paying subscriptions / new users in period.
     const conversionRate = stats.users.new > 0 
-      ? (stats.premium.new / stats.users.new) * 100
+      ? ((stats.premium.newPaying || 0) / stats.users.new) * 100
       : 0;
     
     // Active rate: active / total users  
@@ -240,8 +239,6 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       : 0;
 
     // Previous period metrics for comparison (with null safety)
-    const prevPayingSubscribers = comparisonStats?.premium?.paying || 0;
-    
     const prevConversionRate = comparisonStats?.users?.new > 0
       ? (comparisonStats.premium.new / comparisonStats.users.new) * 100
       : null;
@@ -353,7 +350,7 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           previousValue={metrics.prevConversionRate}
           icon={Percent}
           color="purple"
-          subtitle={`${stats.premium.new} nya premium av ${stats.users.new} nya`}
+          subtitle={`${stats.premium.newPaying || 0} nya betalande av ${stats.users.new} nya`}
         />
         
         <KPICard
@@ -369,8 +366,8 @@ export default function AdminDashboardStats({ onPeriodChange }) {
       {/* Secondary KPIs - Business Health */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Nya Premium"
-          value={formatNumber(stats.premium.new)}
+          title="Nya betalande"
+          value={formatNumber(stats.premium.newPaying || 0)}
           target={premiumTarget}
           targetLabel={`Mål (${periodDays}d)`}
           previousValue={comparisonStats?.premium?.new}
@@ -420,6 +417,33 @@ export default function AdminDashboardStats({ onPeriodChange }) {
           </div>
         </div>
       )}
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Aktiva premium"
+          value={formatNumber(stats.premium.total)}
+          sublabel={`${stats.premium.paying} betalande + ${stats.premium.gift} gåva`}
+          icon={Crown}
+        />
+        <StatCard
+          label="Ej prenumeranter"
+          value={formatNumber(Math.max(0, stats.users.total - stats.premium.total))}
+          sublabel="utan aktiv premiumåtkomst"
+          icon={Users}
+        />
+        <StatCard
+          label="Nya gåvor"
+          value={formatNumber(stats.premium.newGift || 0)}
+          sublabel="under vald period"
+          icon={Gift}
+        />
+        <StatCard
+          label="Riskkunder"
+          value={formatNumber(stats.churn?.atRisk || 0)}
+          sublabel="aktiva premium utan hjulaktivitet 14+ dagar"
+          icon={AlertCircle}
+        />
+      </div>
 
       {/* Volume Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
