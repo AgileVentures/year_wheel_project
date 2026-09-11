@@ -51,6 +51,7 @@ const MondayHowToGuide = lazy(() => import("./pages/MondayHowToGuide"));
 const YearLineHowToGuide = lazy(() => import("./pages/YearLineHowToGuide"));
 const YearLineLegalPage = lazy(() => import("./components/YearLineLegalPage"));
 const ReportTemplatesPage = lazy(() => import("./pages/ReportTemplatesPage"));
+const YearWheelSeoPage = lazy(() => import("./pages/YearWheelSeoPage"));
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -116,10 +117,18 @@ function AppContent() {
         <Route path="/cast-receiver" element={<CastReceiverPage />} />
 
         {/* Keyword-optimized landing pages */}
+        <Route path="/en/" element={<LandingPage />} />
         <Route path="/hr-planering" element={<HRPlanering />} />
         <Route path="/marknadsplanering" element={<Marknadsplanering />} />
         <Route path="/skola-och-utbildning" element={<SkolaUtbildning />} />
         <Route path="/projektplanering" element={<Projektplanering />} />
+        <Route path="/arshjul-mall" element={<YearWheelSeoPage />} />
+        <Route path="/en/year-wheel-template" element={<YearWheelSeoPage />} />
+        <Route path="/hr" element={<YearWheelSeoPage />} />
+        <Route path="/en/hr" element={<YearWheelSeoPage />} />
+        <Route path="/marketing" element={<YearWheelSeoPage />} />
+        <Route path="/en/marketing" element={<YearWheelSeoPage />} />
+        <Route path="/year-wheel-template-excel" element={<Navigate to="/arshjul-mall" replace />} />
 
         {/* Protected routes */}
         <Route path="/dashboard" element={

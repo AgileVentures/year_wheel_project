@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import { useCanonicalUrl } from "../hooks/useCanonicalUrl";
+import { useLanguageAlternates } from "../hooks/useLanguageAlternates";
 import Hero from "./Hero";
 import LandingNavigation from "./LandingNavigation";
 import MobileDemoMessage from "./MobileDemoMessage";
@@ -18,15 +19,22 @@ import PhilosophySection from "./PhilosophySection";
 import WheelLoader from "./WheelLoader";
 
 const LandingPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const language = pathname.startsWith('/en') ? 'en' : 'sv';
 
   // Loading state with delay for examining the loader
   const [isLoading, setIsLoading] = useState(true);
 
   // Set canonical URL for main landing page
-  useCanonicalUrl("https://yearwheel.se/");
+  useCanonicalUrl(language === 'en' ? "https://yearwheel.se/en/" : "https://yearwheel.se/");
+  useLanguageAlternates({
+    sv: 'https://yearwheel.se/',
+    en: 'https://yearwheel.se/en/',
+    'x-default': 'https://yearwheel.se/',
+  });
   const featuresRef = useRef(null);
   const pricingRef = useRef(null);
   const aboutRef = useRef(null);
@@ -35,6 +43,13 @@ const LandingPage = () => {
   const [authMode, setAuthMode] = useState("signup");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [billingCycle, setBillingCycle] = useState("yearly"); // Default to yearly to show savings
+
+  useEffect(() => {
+    if (i18n.language !== language) {
+      i18n.changeLanguage(language);
+    }
+    document.documentElement.lang = language;
+  }, [i18n, language]);
 
   useEffect(() => {
     if (user) {

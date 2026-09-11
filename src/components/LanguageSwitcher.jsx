@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { memo } from 'react';
 
 // SVG flag components for better cross-platform support
@@ -36,14 +37,20 @@ const languages = {
   }
 };
 
-function LanguageSwitcher({ className = '' }) {
+function LanguageSwitcher({ className = '', languageLinks = null }) {
   const { i18n } = useTranslation();
+  const navigate = useNavigate();
   const currentLang = languages[i18n.language] || languages.sv;
   const otherLang = i18n.language === 'sv' ? languages.en : languages.sv;
   const FlagComponent = currentLang.FlagComponent;
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'sv' ? 'en' : 'sv';
+    if (languageLinks?.[newLang]) {
+      i18n.changeLanguage(newLang);
+      navigate(languageLinks[newLang]);
+      return;
+    }
     i18n.changeLanguage(newLang);
   };
 

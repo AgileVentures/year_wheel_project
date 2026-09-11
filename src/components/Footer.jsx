@@ -56,6 +56,9 @@ function Footer({ variant = 'full' }) {
             <ul className="space-y-2 text-sm">
               <li><Link to="/pricing" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.pricing')}</Link></li>
               <li><Link to="/guide/quick-start" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:footer.quickStart', 'Quick Start Guide')}</Link></li>
+              <li><Link to={i18n.language === 'en' ? '/en/year-wheel-template' : '/arshjul-mall'} className="text-gray-600 hover:text-[#00A4A6] transition-colors">{i18n.language === 'en' ? 'Import from Excel' : 'Importera från Excel'}</Link></li>
+              <li><Link to={i18n.language === 'en' ? '/en/hr' : '/hr'} className="text-gray-600 hover:text-[#00A4A6] transition-colors">{i18n.language === 'en' ? 'HR year wheel' : 'HR-årshjul'}</Link></li>
+              <li><Link to={i18n.language === 'en' ? '/en/marketing' : '/marketing'} className="text-gray-600 hover:text-[#00A4A6] transition-colors">{i18n.language === 'en' ? 'Marketing planner' : 'Marketing-årshjul'}</Link></li>
               <li><Link to="/auth" className="text-gray-600 hover:text-[#00A4A6] transition-colors">{t('landing:nav.getStarted')}</Link></li>
             </ul>
           </div>
