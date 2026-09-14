@@ -52,18 +52,19 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
   // Store the last response ID to chain context across turns
   const [lastResponseId, setLastResponseId] = useState(null);
   
-  // Reset conversation only when switching wheels (NOT when changing pages)
-  // This allows users to navigate between years while keeping conversation history
+  // Reset conversation when the wheel or active year changes so context cannot leak between pages.
   useEffect(() => {
     setLastResponseId(null);
     setMessages([]);
-  }, [wheelId]);
+  }, [wheelId, currentPageId]);
   
   useEffect(() => {
     if (wheelId && isOpen) {
       loadWheelContext();
     }
-  }, [wheelId, isOpen]);  const loadWheelContext = async () => {
+  }, [wheelId, currentPageId, isOpen]);
+
+  const loadWheelContext = async () => {
     try {
       // Fetch wheel info
       const { data: wheel, error: wheelError } = await supabase
@@ -384,10 +385,15 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
           
+          let data;
           try {
-            const data = JSON.parse(line.slice(6));
+            data = JSON.parse(line.slice(6));
+          } catch (parseError) {
+            console.warn('[AI SSE] Ignoring malformed event:', parseError);
+            continue;
+          }
 
-            switch (data.type) {
+          switch (data.type) {
               case 'status':
                 setStreamingStatus(data.message);
                 break;
@@ -447,10 +453,7 @@ function AIAssistant({ wheelId, currentPageId, onWheelUpdate, onPageChange, isOp
                 break;
               
               case 'error':
-                throw new Error(data.message);
-            }
-          } catch (parseError) {
-            console.error('[AI SSE] Parse error:', parseError, 'Line:', line);
+                throw new Error(data.error || data.message || 'AI error');
           }
         }
       }

@@ -4719,6 +4719,70 @@ function sendSSEEvent(controller: ReadableStreamDefaultController, type: string,
   }
 }
 
+async function authorizeAssistantRequest(
+  supabase: any,
+  userId: string,
+  wheelId: string,
+  currentPageId: string
+) {
+  const [{ data: wheel, error: wheelError }, { data: page, error: pageError }, { data: isPremium, error: premiumError }, { data: profile, error: profileError }] = await Promise.all([
+    supabase
+      .from('year_wheels')
+      .select('id, user_id, team_id')
+      .eq('id', wheelId)
+      .maybeSingle(),
+    supabase
+      .from('wheel_pages')
+      .select('id')
+      .eq('id', currentPageId)
+      .eq('wheel_id', wheelId)
+      .maybeSingle(),
+    supabase.rpc('is_premium_user', { user_uuid: userId }),
+    supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', userId)
+      .maybeSingle(),
+  ])
+
+  if (wheelError || pageError || premiumError || profileError || !wheel || !page) {
+    console.error('[AI Authorization] Failed to validate request context', {
+      wheelError,
+      pageError,
+      premiumError,
+      profileError,
+    })
+    return { allowed: false, status: 403, message: 'Hjulet eller sidan är inte tillgänglig.' }
+  }
+
+  if (isPremium !== true && profile?.is_admin !== true) {
+    return { allowed: false, status: 403, message: 'AI-assistenten kräver Premium.' }
+  }
+
+  if (wheel.user_id === userId || profile?.is_admin === true) {
+    return { allowed: true }
+  }
+
+  if (!wheel.team_id) {
+    return { allowed: false, status: 403, message: 'Du saknar åtkomst till detta hjul.' }
+  }
+
+  const { data: membership, error: membershipError } = await supabase
+    .from('team_members')
+    .select('id')
+    .eq('team_id', wheel.team_id)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (membershipError) {
+    console.error('[AI Authorization] Membership query failed:', membershipError)
+  }
+
+  return membership
+    ? { allowed: true }
+    : { allowed: false, status: 403, message: 'Du saknar åtkomst till detta hjul.' }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═══════════════════════════════════════════════════════════════════
@@ -4769,6 +4833,17 @@ serve(async (req: Request) => {
       throw new Error('Missing currentPageId - frontend must provide the active page ID')
     }
 
+    const authorization = await authorizeAssistantRequest(supabase, user.id, wheelId, currentPageId)
+    if (!authorization.allowed) {
+      return new Response(
+        JSON.stringify({ success: false, error: authorization.message }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: authorization.status,
+        }
+      )
+    }
+
     // ✅ CRITICAL: Sanitize User Input
     const sanitizedMessage = sanitizeUserInput(userMessage)
     if (sanitizedMessage !== userMessage) {
@@ -4790,6 +4865,7 @@ serve(async (req: Request) => {
       .from('wheel_pages')
       .select('*')
       .eq('id', currentPageId)
+      .eq('wheel_id', wheelId)
       .single()
 
     if (pageError) {
