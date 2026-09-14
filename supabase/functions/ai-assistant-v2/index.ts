@@ -276,6 +276,7 @@ const UpdateActivityInput = z.object({
   newEndDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().describe('Optional: New end date (YYYY-MM-DD)'),
   newRingId: z.string().uuid().nullable().describe('Optional: New ring UUID'),
   newActivityGroupId: z.string().uuid().nullable().describe('Optional: New activity group UUID'),
+  newLabelId: z.string().uuid().nullable().describe('Optional: New label UUID. Use null to remove the current label.'),
 })
 
 const DeleteActivityInput = z.object({
@@ -1955,6 +1956,7 @@ async function updateActivity(
     newEndDate?: string
     newRingId?: string
     newActivityGroupId?: string
+    newLabelId?: string | null
   }
 ) {
   const { supabase, wheelId } = ctx.context
@@ -1979,12 +1981,29 @@ async function updateActivity(
 
   console.log('[updateActivity] Found items:', items.length)
 
+  if (updates.newLabelId !== undefined && updates.newLabelId !== null) {
+    const { data: label, error: labelError } = await supabase
+      .from('labels')
+      .select('id, name, wheel_id')
+      .eq('id', updates.newLabelId)
+      .single()
+
+    if (labelError || !label) {
+      throw new Error(`Etikett med ID "${updates.newLabelId}" hittades inte. Använd get_current_context för att hämta giltiga etikett-IDn.`)
+    }
+
+    if (label.wheel_id !== wheelId) {
+      throw new Error(`Etikett "${label.name}" tillhör inte detta hjul.`)
+    }
+  }
+
   // If only changing simple properties (name, ring, group) and NOT dates, do in-place update
   if (!updates.newStartDate && !updates.newEndDate) {
     const updateData: any = {}
     if (updates.newName) updateData.name = updates.newName
     if (updates.newRingId) updateData.ring_id = updates.newRingId
     if (updates.newActivityGroupId) updateData.activity_id = updates.newActivityGroupId
+    if (updates.newLabelId !== undefined) updateData.label_id = updates.newLabelId
 
     const itemIds = items.map((i: any) => i.id)
     const { data: updatedRows, error: updateError } = await supabase
@@ -2010,6 +2029,7 @@ async function updateActivity(
 
     let message = `Uppdaterade ${items.length} objekt för "${activityName}"`
     if (updates.newName) message += ` → nytt namn: "${updates.newName}"`
+    if (updates.newLabelId !== undefined) message += updates.newLabelId ? ' → etikett tillämpad' : ' → etikett borttagen'
 
     return {
       success: true,
@@ -2039,7 +2059,7 @@ async function updateActivity(
   // Get all existing rings and activity groups to preserve references
   const finalRingId = updates.newRingId || firstItem.ring_id
   const finalActivityGroupId = updates.newActivityGroupId || firstItem.activity_id
-  const finalLabelId = firstItem.label_id
+  const finalLabelId = updates.newLabelId !== undefined ? updates.newLabelId : firstItem.label_id
   const finalName = updates.newName || firstItem.name
 
   // Fetch all pages for this wheel
@@ -2184,6 +2204,9 @@ async function updateActivity(
   }
   if (updates.newName) {
     message += ` - nytt namn: "${updates.newName}"`
+  }
+  if (updates.newLabelId !== undefined) {
+    message += updates.newLabelId ? ' - etikett tillämpad' : ' - etikett borttagen'
   }
 
   return {
@@ -3646,10 +3669,22 @@ CRUD OPERATIONS:
         if (input.newEndDate) updates.newEndDate = input.newEndDate;
         if (input.newRingId) updates.newRingId = input.newRingId;
         if (input.newActivityGroupId) updates.newActivityGroupId = input.newActivityGroupId;
+        if (input.newLabelId !== undefined) updates.newLabelId = input.newLabelId;
         
         console.log('[updateActivityTool] Updates to apply:', JSON.stringify(updates, null, 2));
         
         const result = await updateActivity(ctx, input.activityName, updates);
+        if (result.success) {
+          queueRefreshEvent(ctx, {
+            scope: 'activities',
+            reason: 'activity_updated',
+            payload: {
+              activityName: input.activityName,
+              labelId: input.newLabelId,
+              itemsUpdated: result.itemsUpdated,
+            },
+          })
+        }
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
       } catch (error: any) {
@@ -3987,7 +4022,21 @@ update_activity supports all changes including:
 - Same year moves: "flytta till augusti" → Change dates within year
 - Cross-year moves: "flytta till 2026" → Move to different year
 - Multi-year spans: "från nov 2025 till mars 2026" → Extends across years (auto-splits)
-- Property changes: "byt namn till X" → Change name, ring, or group
+- Property changes: "byt namn till X" → Change name, ring, group, or label
+
+APPLYING LABELS:
+- To apply an existing label, first call get_current_context and match the label by name, then call update_activity with the exact activityName and newLabelId.
+- To label several activities, use query_activities first, then call update_activity once per exact activity name with the same newLabelId.
+- To remove a label, call update_activity with newLabelId: null.
+- If the requested label does not exist, call create_label first, use the returned labelId, then call update_activity for the requested activities.
+- Never pass a label name as newLabelId; always use the UUID returned by get_current_context or create_label.
+
+Example:
+User: "Skapa etiketten Prioriterad och lägg den på alla aktiviteter som innehåller kund"
+→ create_label({name: "Prioriterad", color: "#F97316"})
+→ query_activities({nameContains: "kund"})
+→ update_activity({activityName: "Exakt aktivitetsnamn", newLabelId: "label-uuid-from-create_label"}) for each result
+→ Confirm how many activities received the label
 
 BATCH UPDATES:
 For "ändra alla X" requests:
@@ -4039,6 +4088,7 @@ IMPORTANT:
 - If tool fails, explain the error and suggest solutions`,
     tools: [
       getContextTool, 
+      createLabelTool,
       createActivityTool, 
       batchCreateActivitiesTool,
       updateActivityTool, 
