@@ -12,7 +12,8 @@ DECLARE
 BEGIN
   SELECT owner_id INTO team_owner
   FROM public.teams
-  WHERE id = NEW.team_id;
+  WHERE id = NEW.team_id
+  FOR UPDATE;
 
   IF team_owner IS NULL THEN
     RAISE EXCEPTION 'TEAM_NOT_FOUND';

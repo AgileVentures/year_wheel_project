@@ -1,18 +1,23 @@
 // AI Assistant V2 - Using OpenAI Agents SDK
 // Comprehensive multi-agent system with tools, handoffs, and guardrails
-// @ts-ignore
+// @ts-ignore: Deno resolves this remote module at deploy time.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-declare const Deno: any;
+declare const Deno: {
+  env: {
+    get(name: string): string | undefined
+  }
+};
 
 // Import from ESM for Supabase Edge Functions (Deno)
-// @ts-ignore
+// @ts-ignore: Deno resolves this remote module at deploy time.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-// @ts-ignore
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
+// @ts-ignore: Deno resolves this remote module at deploy time.
 import { Agent, run, tool, handoff, RunContext } from 'https://esm.sh/@openai/agents@0.1.9'
-// @ts-ignore
+// @ts-ignore: Deno resolves this remote module at deploy time.
 import { z } from 'https://esm.sh/zod@3'
-// @ts-ignore
+// @ts-ignore: Deno resolves this remote module at deploy time.
 import OpenAI from 'https://esm.sh/openai@4.73.0'
 
 const corsHeaders = {
@@ -183,7 +188,6 @@ function trackToolEnd(metric: ToolMetrics, success: boolean, error?: string) {
 function logAggregatedMetrics() {
   const total = metricsBuffer.length
   const successful = metricsBuffer.filter(m => m.success).length
-  const failed = total - successful
   const avgDuration = metricsBuffer.reduce((sum, m) => sum + (m.duration || 0), 0) / total
   
   const toolStats = metricsBuffer.reduce((acc, m) => {
@@ -216,14 +220,98 @@ function logAggregatedMetrics() {
 // ═══════════════════════════════════════════════════════════════════
 
 // Context type that will be passed to all agents and tools
+type JsonRecord = Record<string, unknown>
+type EmptyObject = Record<string | number | symbol, never>
+
+type PageSummary = {
+  id: string
+  year: number
+  title: string
+  page_order?: number
+}
+
+type DbRing = {
+  id: string
+  name: string
+  type?: string | null
+  color?: string | null
+  visible?: boolean | null
+  orientation?: string | null
+  ring_order?: number | null
+  data?: unknown
+}
+
+type DbGroup = {
+  id: string
+  name: string
+  color?: string | null
+  visible?: boolean | null
+}
+
+type DbLabel = {
+  id: string
+  name: string
+  color?: string | null
+  visible?: boolean | null
+}
+
+type RelatedRing = Pick<DbRing, 'name' | 'type'>
+type RelatedGroup = Pick<DbGroup, 'name' | 'color'>
+
+type DbItem = {
+  id: string
+  page_id?: string | null
+  wheel_id?: string
+  ring_id?: string | null
+  activity_id?: string | null
+  label_id?: string | null
+  name: string
+  description?: string | null
+  start_date: string
+  end_date: string
+  time?: string | null
+  linked_wheel_id?: string | null
+  link_type?: string | null
+  source?: string | null
+  external_id?: string | null
+  sync_metadata?: unknown
+  wheel_rings?: RelatedRing
+  activity_groups?: RelatedGroup
+}
+
+type OrgRing = DbRing & { data?: unknown[] }
+type OrgGroup = DbGroup
+type OrgLabel = DbLabel
+type OrgItem = JsonRecord
+
+type OrgData = JsonRecord & {
+  rings: OrgRing[]
+  activityGroups: OrgGroup[]
+  labels: OrgLabel[]
+  items: OrgItem[]
+  activities?: OrgGroup[]
+}
+
+type SupabaseClientLike = Pick<SupabaseClient, 'from' | 'rpc' | 'auth'>
+
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (isJsonRecord(error) && typeof error.message === 'string') return error.message
+  return String(error)
+}
+
 interface WheelContext {
-  supabase: any
+  supabase: SupabaseClientLike
   wheelId: string
   userId: string
   currentYear: number
   currentPageId: string
   // Store ALL pages so AI knows what years exist
-  allPages?: Array<{ id: string; year: number; title: string; page_order: number }>
+  allPages?: PageSummary[]
   // Store suggestions for "suggest then create" workflow
   lastSuggestions?: {
     rings: Array<{ name: string; type: string; description?: string; color?: string }>
@@ -233,13 +321,13 @@ interface WheelContext {
   lastSuggestionsRaw?: string
   refreshRequests?: RefreshRequest[]
   progressEvents?: Array<ProgressEvent>
-  emitEvent?: (type: string, data: any) => void
+  emitEvent?: (type: string, data: unknown) => void
   // ✅ HIGH PRIORITY: Context caching to eliminate redundant DB queries
   contextCache?: {
-    rings: Array<any>
-    groups: Array<any>
-    labels: Array<any>
-    pages: Array<any>
+    rings: DbRing[]
+    groups: DbGroup[]
+    labels: DbLabel[]
+    pages: PageSummary[]
     currentYear: number
     fetchedAt: number
   }
@@ -331,11 +419,6 @@ const CreateYearPageInput = z.object({
 const SmartCopyYearInput = z.object({
   sourceYear: z.number().describe('Year to copy from'),
   targetYear: z.number().describe('New year to create'),
-})
-
-const DateRangeInput = z.object({
-  month: z.number().min(1).max(12).nullable(),
-  year: z.number().nullable(),
 })
 
 type PlanSuggestions = {
@@ -436,26 +519,26 @@ function sanitizeHexColor(color?: string | null): string | null {
   return /^#[0-9A-Fa-f]{6}$/.test(trimmed) ? trimmed : null
 }
 
-function normalizePlanSuggestions(value: any): PlanSuggestions | null {
-  if (!value || typeof value !== 'object') return null
+function normalizePlanSuggestions(value: unknown): PlanSuggestions | null {
+  if (!isJsonRecord(value)) return null
 
   const rings = Array.isArray(value.rings)
     ? value.rings
-        .filter((ring: any) => ring && typeof ring.name === 'string')
-        .map((ring: any) => ({
-          name: ring.name.trim(),
+        .filter((ring): ring is JsonRecord => isJsonRecord(ring) && typeof ring.name === 'string')
+        .map((ring) => ({
+          name: (ring.name as string).trim(),
           type: (typeof ring.type === 'string' && ring.type.toLowerCase() === 'inner') ? 'inner' : 'outer',
           description: typeof ring.description === 'string' ? ring.description.trim() : undefined,
-          color: sanitizeHexColor(ring.color),
+          color: sanitizeHexColor(typeof ring.color === 'string' ? ring.color : null) || undefined,
         }))
     : []
 
   const activityGroups = Array.isArray(value.activityGroups)
     ? value.activityGroups
-        .filter((group: any) => group && typeof group.name === 'string' && typeof group.color === 'string')
-        .map((group: any) => ({
-          name: group.name.trim(),
-          color: sanitizeHexColor(group.color) || '#3B82F6',
+        .filter((group): group is JsonRecord => isJsonRecord(group) && typeof group.name === 'string' && typeof group.color === 'string')
+        .map((group) => ({
+          name: (group.name as string).trim(),
+          color: sanitizeHexColor(typeof group.color === 'string' ? group.color : null) || '#3B82F6',
           description: typeof group.description === 'string' ? group.description.trim() : undefined,
         }))
     : []
@@ -463,20 +546,20 @@ function normalizePlanSuggestions(value: any): PlanSuggestions | null {
   const activities = Array.isArray(value.activities)
     ? value.activities
         .filter(
-          (activity: any) =>
-            activity &&
+          (activity): activity is JsonRecord =>
+            isJsonRecord(activity) &&
             typeof activity.name === 'string' &&
             typeof activity.startDate === 'string' &&
             typeof activity.endDate === 'string' &&
             typeof activity.ring === 'string' &&
             typeof activity.group === 'string'
         )
-        .map((activity: any) => ({
-          name: activity.name.trim(),
-          startDate: activity.startDate.trim(),
-          endDate: activity.endDate.trim(),
-          ring: activity.ring.trim(),
-          group: activity.group.trim(),
+        .map((activity) => ({
+          name: (activity.name as string).trim(),
+          startDate: (activity.startDate as string).trim(),
+          endDate: (activity.endDate as string).trim(),
+          ring: (activity.ring as string).trim(),
+          group: (activity.group as string).trim(),
           description: typeof activity.description === 'string' ? activity.description.trim() : undefined,
         }))
     : []
@@ -507,7 +590,7 @@ async function applySuggestions(
   ctx: RunContext<WheelContext>,
   rawSuggestionsJson?: string
 ): Promise<ApplySummary> {
-  const { supabase, wheelId, currentPageId } = ctx.context
+  const { supabase, wheelId } = ctx.context
 
   let suggestionSource: SuggestionSource | null = null
   let suggestions: PlanSuggestions | null = null
@@ -569,12 +652,12 @@ async function applySuggestions(
       .eq('wheel_id', wheelId),
   ])
 
-  const existingRings = existingRingsRes.data || []
-  const existingGroups = existingGroupsRes.data || []
+  const existingRings = (existingRingsRes.data || []) as DbRing[]
+  const existingGroups = (existingGroupsRes.data || []) as DbGroup[]
   
   console.log('[applySuggestions] 📊 Existing structure:', {
-    rings: existingRings.map((r: any) => r.name),
-    groups: existingGroups.map((g: any) => g.name),
+    rings: existingRings.map((r) => r.name),
+    groups: existingGroups.map((g) => g.name),
   })
 
   queueProgressEvent(ctx, {
@@ -1113,7 +1196,7 @@ async function createActivity(
       pages.push(newPage)
       // Update in-memory context so subsequent tool calls know about the page
       const normalizedPages = ctx.context.allPages || []
-      if (!normalizedPages.some((p: any) => p.id === newPage.id)) {
+      if (!normalizedPages.some((p) => p.id === newPage.id)) {
         normalizedPages.push({
           id: newPage.id,
           year: newPage.year,
@@ -1127,7 +1210,6 @@ async function createActivity(
   }
 
   const itemsCreated = []
-  const itemsByPage = new Map<string, any[]>()
 
   if (startYear === endYear) {
     // Single year activity
@@ -1151,9 +1233,6 @@ async function createActivity(
 
     if (insertError) throw insertError
     itemsCreated.push(newItem)
-    const byPage = itemsByPage.get(page.id) || []
-    byPage.push(mapDbItemToOrgItem(newItem))
-    itemsByPage.set(page.id, byPage)
   } else {
     // Cross-year activity - split into segments
     for (let year = startYear; year <= endYear; year++) {
@@ -1200,7 +1279,7 @@ async function createActivity(
 }
 
 async function createRing(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   args: z.infer<typeof CreateRingInput>
 ) {
@@ -1278,10 +1357,10 @@ async function createRing(
     console.log(`[createRing] Syncing ring "${args.name}" to ${pages.length} pages`)
     
     for (const page of pages) {
-      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      const orgData = normalizeOrgData(page.organization_data || {})
       
       // Add ring to organization_data if not already there
-      if (!orgData.rings.find((r: any) => r.id === ring.id)) {
+      if (!orgData.rings.find((r) => r.id === ring.id)) {
         orgData.rings.push({
           id: ring.id,
           name: ring.name,
@@ -1313,7 +1392,7 @@ async function createRing(
 }
 
 async function createGroup(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   args: z.infer<typeof CreateGroupInput>
 ) {
@@ -1373,10 +1452,10 @@ async function createGroup(
     console.log(`[createGroup] Syncing group "${args.name}" to ${pages.length} pages`)
     
     for (const page of pages) {
-      const orgData = page.organization_data || { rings: [], activityGroups: [], labels: [], items: [] }
+      const orgData = normalizeOrgData(page.organization_data || {})
       
       // Add group to organization_data if not already there
-      if (!orgData.activityGroups.find((g: any) => g.id === group.id)) {
+      if (!orgData.activityGroups.find((g) => g.id === group.id)) {
         orgData.activityGroups.push({
           id: group.id,
           name: group.name,
@@ -1406,7 +1485,7 @@ async function createGroup(
 }
 
 async function updateRing(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   ringName: string,
   updates: { newName?: string; newColor?: string }
@@ -1426,7 +1505,7 @@ async function updateRing(
     }
   }
 
-  const updateData: any = {}
+  const updateData: Record<string, unknown> = {}
   if (updates.newName) updateData.name = updates.newName
   if (updates.newColor) updateData.color = updates.newColor
 
@@ -1445,7 +1524,7 @@ async function updateRing(
   }
 
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    const current = orgData.rings.find((r: any) => r.id === updatedRing.id)
+    const current = orgData.rings.find((r) => r.id === updatedRing.id)
     const visible = updatedRing.visible !== false
     const targetColor = updatedRing.type === 'outer'
       ? updatedRing.color || updates.newColor || ring.color
@@ -1479,7 +1558,7 @@ async function updateRing(
       return changed
     }
 
-    const entry: any = {
+    const entry: OrgRing = {
       id: updatedRing.id,
       name: updatedRing.name,
       type: updatedRing.type,
@@ -1503,7 +1582,7 @@ async function updateRing(
   }
 }
 
-async function deleteRing(supabase: any, wheelId: string, ringName: string) {
+async function deleteRing(supabase: SupabaseClientLike, wheelId: string, ringName: string) {
   const { data: ring, error: findError } = await supabase
     .from('wheel_rings')
     .select('id, name')
@@ -1540,7 +1619,7 @@ async function deleteRing(supabase: any, wheelId: string, ringName: string) {
   if (deleteError) throw deleteError
 
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    const index = orgData.rings.findIndex((r: any) => r.id === ring.id)
+    const index = orgData.rings.findIndex((r) => r.id === ring.id)
     if (index === -1) {
       return false
     }
@@ -1555,7 +1634,7 @@ async function deleteRing(supabase: any, wheelId: string, ringName: string) {
 }
 
 async function updateGroup(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   groupName: string,
   updates: { newName?: string; newColor?: string }
@@ -1575,7 +1654,7 @@ async function updateGroup(
     }
   }
 
-  const updateData: any = {}
+  const updateData: Record<string, unknown> = {}
   if (updates.newName) updateData.name = updates.newName
   if (updates.newColor) updateData.color = updates.newColor
 
@@ -1594,7 +1673,7 @@ async function updateGroup(
   }
 
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    const current = orgData.activityGroups.find((g: any) => g.id === updatedGroup.id)
+    const current = orgData.activityGroups.find((g) => g.id === updatedGroup.id)
     const normalizedColor = updatedGroup.color || updates.newColor || group.color || '#3B82F6'
     const visible = updatedGroup.visible !== false
 
@@ -1630,7 +1709,7 @@ async function updateGroup(
   }
 }
 
-async function deleteGroup(supabase: any, wheelId: string, groupName: string) {
+async function deleteGroup(supabase: SupabaseClientLike, wheelId: string, groupName: string) {
   const { data: group, error: findError } = await supabase
     .from('activity_groups')
     .select('id, name')
@@ -1667,7 +1746,7 @@ async function deleteGroup(supabase: any, wheelId: string, groupName: string) {
   if (deleteError) throw deleteError
 
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    const index = orgData.activityGroups.findIndex((g: any) => g.id === group.id)
+    const index = orgData.activityGroups.findIndex((g) => g.id === group.id)
     if (index === -1) {
       return false
     }
@@ -1682,7 +1761,7 @@ async function deleteGroup(supabase: any, wheelId: string, groupName: string) {
 }
 
 async function createLabel(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   args: z.infer<typeof CreateLabelInput>
 ) {
@@ -1744,7 +1823,7 @@ async function createLabel(
 }
 
 async function updateLabel(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   labelName: string,
   updates: { newName?: string; newColor?: string }
@@ -1764,7 +1843,7 @@ async function updateLabel(
     }
   }
 
-  const updateData: any = {}
+  const updateData: Record<string, unknown> = {}
   if (updates.newName) updateData.name = updates.newName
   if (updates.newColor) updateData.color = updates.newColor
 
@@ -1783,7 +1862,7 @@ async function updateLabel(
   }
 
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    const current = orgData.labels.find((l: any) => l.id === updatedLabel.id)
+    const current = orgData.labels.find((l) => l.id === updatedLabel.id)
     const normalizedColor = updatedLabel.color || updates.newColor || label.color || '#3B82F6'
     const visible = updatedLabel.visible !== false
 
@@ -1819,7 +1898,7 @@ async function updateLabel(
   }
 }
 
-async function deleteLabel(supabase: any, wheelId: string, labelName: string) {
+async function deleteLabel(supabase: SupabaseClientLike, wheelId: string, labelName: string) {
   const { data: label, error: findError } = await supabase
     .from('labels')
     .select('id, name')
@@ -1844,7 +1923,7 @@ async function deleteLabel(supabase: any, wheelId: string, labelName: string) {
   if (deleteError) throw deleteError
 
   await updateOrgDataAcrossPages(supabase, wheelId, (orgData) => {
-    const index = orgData.labels.findIndex((l: any) => l.id === label.id)
+    const index = orgData.labels.findIndex((l) => l.id === label.id)
     if (index === -1) {
       return false
     }
@@ -1999,13 +2078,13 @@ async function updateActivity(
 
   // If only changing simple properties (name, ring, group) and NOT dates, do in-place update
   if (!updates.newStartDate && !updates.newEndDate) {
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {}
     if (updates.newName) updateData.name = updates.newName
     if (updates.newRingId) updateData.ring_id = updates.newRingId
     if (updates.newActivityGroupId) updateData.activity_id = updates.newActivityGroupId
     if (updates.newLabelId !== undefined) updateData.label_id = updates.newLabelId
 
-    const itemIds = items.map((i: any) => i.id)
+    const itemIds = (items as DbItem[]).map((i) => i.id)
     const { data: updatedRows, error: updateError } = await supabase
       .from('items')
       .update(updateData)
@@ -2015,8 +2094,8 @@ async function updateActivity(
     if (updateError) throw updateError
 
     if (updatedRows && updatedRows.length > 0) {
-      const updatesByPage = new Map<string, any[]>()
-      updatedRows.forEach((row: any) => {
+      const updatesByPage = new Map<string, OrgItem[]>()
+      ;(updatedRows as DbItem[]).forEach((row) => {
         if (!row.page_id) return
         const list = updatesByPage.get(row.page_id) || []
         list.push(mapDbItemToOrgItem(row))
@@ -2046,7 +2125,7 @@ async function updateActivity(
   const newEndDate = updates.newEndDate || oldEndDate
 
   const itemsByPageToRemove = new Map<string, string[]>()
-  items.forEach((item: any) => {
+  ;(items as DbItem[]).forEach((item) => {
     if (!item.page_id) return
     const list = itemsByPageToRemove.get(item.page_id) || []
     list.push(item.id)
@@ -2110,7 +2189,7 @@ async function updateActivity(
       allPages.push(newPage)
 
       const normalizedPages = ctx.context.allPages || []
-      if (!normalizedPages.some((p: any) => p.id === newPage.id)) {
+      if (!normalizedPages.some((p) => p.id === newPage.id)) {
         normalizedPages.push({
           id: newPage.id,
           year: newPage.year,
@@ -2123,7 +2202,7 @@ async function updateActivity(
   }
 
   // Delete old items
-  const oldItemIds = items.map((i: any) => i.id)
+  const oldItemIds = (items as DbItem[]).map((i) => i.id)
   const { error: deleteError } = await supabase
     .from('items')
     .delete()
@@ -2136,8 +2215,6 @@ async function updateActivity(
 
   // Create new items across the new date range
   const itemsCreated = []
-  const newItemsByPage = new Map<string, any[]>()
-
   if (newStartYear === newEndYear) {
     // Single year activity
     const page = allPages.find((p: { year: number }) => p.year === newStartYear)
@@ -2160,9 +2237,6 @@ async function updateActivity(
 
     if (insertError) throw insertError
     itemsCreated.push(newItem)
-    const list = newItemsByPage.get(page.id) || []
-    list.push(mapDbItemToOrgItem(newItem))
-    newItemsByPage.set(page.id, list)
   } else {
     // Cross-year activity - split into segments
     for (let year = newStartYear; year <= newEndYear; year++) {
@@ -2189,9 +2263,6 @@ async function updateActivity(
 
       if (insertError) throw insertError
       itemsCreated.push(newItem)
-      const list = newItemsByPage.get(page.id) || []
-      list.push(mapDbItemToOrgItem(newItem))
-      newItemsByPage.set(page.id, list)
     }
   }
 
@@ -2217,7 +2288,7 @@ async function updateActivity(
 }
 
 async function deleteActivity(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   activityName: string
 ) {
@@ -2243,7 +2314,7 @@ async function deleteActivity(
   const { error: deleteError } = await supabase
     .from('items')
     .delete()
-    .in('id', items.map((i: any) => i.id))
+    .in('id', (items as DbItem[]).map((i) => i.id))
 
   if (deleteError) throw deleteError
 
@@ -2260,7 +2331,7 @@ async function deleteActivity(
   }
 }
 
-async function getCurrentRingsAndGroups(supabase: any, wheelId: string) {
+async function getCurrentRingsAndGroups(supabase: SupabaseClientLike, wheelId: string) {
   const [ringsRes, groupsRes] = await Promise.all([
     supabase.from('wheel_rings').select('id, name, type, color, visible, orientation').eq('wheel_id', wheelId).order('ring_order'),
     supabase.from('activity_groups').select('id, name, color, visible').eq('wheel_id', wheelId),
@@ -2286,15 +2357,15 @@ function getCurrentDate() {
   }
 }
 
-function cloneInnerRingData(data: any) {
+function cloneInnerRingData(data: unknown) {
   if (!Array.isArray(data) || data.length === 0) {
     return Array.from({ length: 12 }, () => [''])
   }
-  return data.map((entry: any) => (Array.isArray(entry) ? [...entry] : ['']))
+  return data.map((entry) => (Array.isArray(entry) ? [...entry] : ['']))
 }
 
-function cloneRing(ring: any) {
-  const cloned: any = { ...ring }
+function cloneRing(ring: OrgRing): OrgRing {
+  const cloned: OrgRing = { ...ring }
   if (ring.type === 'inner') {
     cloned.data = cloneInnerRingData(ring.data)
     cloned.orientation = ring.orientation || 'vertical'
@@ -2302,33 +2373,34 @@ function cloneRing(ring: any) {
   return cloned
 }
 
-function cloneItem(item: any) {
+function cloneItem(item: OrgItem): OrgItem {
   return { ...item }
 }
 
-function normalizeOrgData(raw: any = {}) {
-  const rings = Array.isArray(raw.rings)
-    ? raw.rings.map((ring: any) => cloneRing(ring))
+function normalizeOrgData(raw: unknown = {}): OrgData {
+  const source = isJsonRecord(raw) ? raw : {}
+  const rings = Array.isArray(source.rings)
+    ? source.rings.filter(isJsonRecord).map((ring) => cloneRing(ring as OrgRing))
     : []
 
-  const legacyGroups = Array.isArray(raw.activities)
-    ? raw.activities.map((group: any) => ({ ...group }))
+  const legacyGroups = Array.isArray(source.activities)
+    ? source.activities.filter(isJsonRecord).map((group) => ({ ...group }) as OrgGroup)
     : []
 
-  const activityGroups = Array.isArray(raw.activityGroups)
-    ? raw.activityGroups.map((group: any) => ({ ...group }))
+  const activityGroups = Array.isArray(source.activityGroups)
+    ? source.activityGroups.filter(isJsonRecord).map((group) => ({ ...group }) as OrgGroup)
     : legacyGroups
 
-  const labels = Array.isArray(raw.labels)
-    ? raw.labels.map((label: any) => ({ ...label }))
+  const labels = Array.isArray(source.labels)
+    ? source.labels.filter(isJsonRecord).map((label) => ({ ...label }) as OrgLabel)
     : []
 
-  const items = Array.isArray(raw.items)
-    ? raw.items.map((item: any) => cloneItem(item))
+  const items = Array.isArray(source.items)
+    ? source.items.filter(isJsonRecord).map((item) => cloneItem(item))
     : []
 
-  const normalized: any = {
-    ...raw,
+  const normalized: OrgData = {
+    ...source,
     rings,
     activityGroups,
     labels,
@@ -2342,9 +2414,9 @@ function normalizeOrgData(raw: any = {}) {
 }
 
 async function updateOrgDataAcrossPages(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
-  mutate: (orgData: any, pageId: string) => boolean,
+  mutate: (orgData: OrgData, pageId: string) => boolean,
   targetPageIds?: string[]
 ) {
   let query = supabase
@@ -2432,10 +2504,10 @@ async function updateOrgDataAcrossPages(
   return updatedCount
 }
 
-async function updatePageOrganizationData(
-  supabase: any,
+async function _updatePageOrganizationData(
+  supabase: SupabaseClientLike,
   pageId: string,
-  mutate: (orgData: any) => boolean
+  mutate: (orgData: OrgData) => boolean
 ) {
   const MAX_RETRIES = 3
 
@@ -2485,8 +2557,8 @@ async function updatePageOrganizationData(
   throw new Error(`Konflikt vid uppdatering av sida ${pageId} - försök igen`)
 }
 
-function mapDbItemToOrgItem(dbItem: any) {
-  const orgItem: any = {
+function mapDbItemToOrgItem(dbItem: DbItem): OrgItem {
+  const orgItem: OrgItem = {
     id: dbItem.id,
     ringId: dbItem.ring_id,
     activityId: dbItem.activity_id,
@@ -2509,7 +2581,7 @@ function mapDbItemToOrgItem(dbItem: any) {
 }
 
 async function createYearPage(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   year: number,
   copyStructure: boolean
@@ -2537,12 +2609,7 @@ async function createYearPage(
   if (orderError) throw orderError
 
   // Get current rings and groups if copying structure
-  let organizationData = {
-    rings: [],
-    activityGroups: [],
-    labels: [],
-    items: []
-  }
+  let organizationData: OrgData = normalizeOrgData({})
 
   if (copyStructure) {
     const { rings, groups } = await getCurrentRingsAndGroups(supabase, wheelId)
@@ -2552,7 +2619,7 @@ async function createYearPage(
       .eq('wheel_id', wheelId)
 
     organizationData = {
-      rings: rings.map((r: any) => ({
+      rings: (rings as DbRing[]).map((r) => ({
         id: r.id,
         name: r.name,
         type: r.type,
@@ -2560,13 +2627,13 @@ async function createYearPage(
         visible: r.visible !== false,
         orientation: r.type === 'inner' ? r.orientation || 'vertical' : null
       })),
-      activityGroups: groups.map((g: any) => ({
+      activityGroups: (groups as DbGroup[]).map((g) => ({
         id: g.id,
         name: g.name,
         color: g.color,
         visible: g.visible !== false
       })),
-      labels: (labels || []).map((l: any) => ({
+      labels: ((labels || []) as DbLabel[]).map((l) => ({
         id: l.id,
         name: l.name,
         color: l.color,
@@ -2600,7 +2667,7 @@ async function createYearPage(
 }
 
 async function smartCopyYear(
-  supabase: any,
+  supabase: SupabaseClientLike,
   wheelId: string,
   sourceYear: number,
   targetYear: number
@@ -2660,7 +2727,7 @@ async function smartCopyYear(
   }
 
   // Copy all items with adjusted dates
-  const itemsToInsert = (sourceItems || []).map((item: any) => ({
+  const itemsToInsert = (sourceItems || []).map((item: DbItem) => ({
     wheel_id: wheelId,
     page_id: newPageId,
     ring_id: item.ring_id,
@@ -2672,16 +2739,13 @@ async function smartCopyYear(
     time: item.time
   }))
 
-  let insertedItems: any[] = []
   if (itemsToInsert.length > 0) {
-    const { data: inserted, error: insertError } = await supabase
+    const { data: _inserted, error: insertError } = await supabase
       .from('items')
       .insert(itemsToInsert)
       .select('*')
 
     if (insertError) throw insertError
-    insertedItems = inserted || []
-
     // ✅ ARCHITECTURE FIX: Items copied to items table (source of truth)
     // Frontend queries items table directly - no JSONB sync needed!
   }
@@ -2707,11 +2771,12 @@ function createAgentSystem() {
   // CONTEXT TOOLS (shared across agents)
   // ──────────────────────────────────────────────────────────────────
   
-  const getContextTool = tool<WheelContext>({
+  const getContextTool = tool({
     name: 'get_current_context',
     description: 'Get current rings, groups, labels, pages (years), and date. Call this when you need fresh IDs or to check which years exist. Returns ONLY visible items.',
     parameters: z.object({}),
-    async execute(_input: {}, ctx: RunContext<WheelContext>) {
+    async execute(_input: EmptyObject, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       console.log('🔧 [TOOL] get_current_context called')
       const { supabase, wheelId, currentPageId } = ctx.context
       
@@ -2790,32 +2855,32 @@ function createAgentSystem() {
       }
       
       // Filter and map data
-      const rings = (ringsRes.data || [])
-        .filter((r: any) => r.visible !== false)
-        .map((r: any) => ({ 
+      const rings = (ringsRes.data as DbRing[] | null || [])
+        .filter((r) => r.visible !== false)
+        .map((r) => ({
           id: r.id, 
           name: r.name, 
           type: r.type, 
           color: r.color 
         }))
       
-      const groups = (groupsRes.data || [])
-        .filter((g: any) => g.visible !== false)
-        .map((g: any) => ({ 
+      const groups = (groupsRes.data as DbGroup[] | null || [])
+        .filter((g) => g.visible !== false)
+        .map((g) => ({
           id: g.id, 
           name: g.name, 
           color: g.color 
         }))
       
-      const labels = (labelsRes.data || [])
-        .filter((l: any) => l.visible !== false)
-        .map((l: any) => ({
+      const labels = (labelsRes.data as DbLabel[] | null || [])
+        .filter((l) => l.visible !== false)
+        .map((l) => ({
           id: l.id,
           name: l.name,
           color: l.color
         }))
       
-      const pages = (pagesRes.data || []).map((p: any) => ({ 
+      const pages = (pagesRes.data as Array<Pick<PageSummary, 'id' | 'year' | 'title'>> | null || []).map((p) => ({
         id: p.id, 
         year: p.year, 
         title: p.title 
@@ -2851,13 +2916,14 @@ function createAgentSystem() {
   // STRUCTURE AGENT - Handles rings and groups
   // ──────────────────────────────────────────────────────────────────
   
-  const createRingTool = tool<WheelContext>({
+  const createRingTool = tool({
     name: 'create_ring',
     description: 'Skapa en ny ring. Både "inner" och "outer" kan innehålla aktiviteter. ' +
       'Rekommendation: "outer" för mindre/externa händelser (helgdagar, lov, säsonger, terminer). ' +
       '"inner" för huvudspår, strategiska aktiviteter eller textbaserad planering.',
     parameters: CreateRingInput,
-    async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof CreateRingInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       console.log('🔧 [TOOL] create_ring called with:', JSON.stringify(input, null, 2))
       
       // ✅ HIGH PRIORITY: Track metrics
@@ -2889,18 +2955,19 @@ function createAgentSystem() {
         }
 
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const createGroupTool = tool<WheelContext>({
+  const createGroupTool = tool({
     name: 'create_activity_group',
     description: 'Create a new activity group for organizing activities.',
     parameters: CreateGroupInput,
-    async execute(input: z.infer<typeof CreateGroupInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof CreateGroupInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       console.log('🔧 [TOOL] create_activity_group called with:', JSON.stringify(input, null, 2))
       
       // ✅ HIGH PRIORITY: Track metrics
@@ -2919,12 +2986,12 @@ function createAgentSystem() {
           
           queueRefreshEvent(ctx, {
             scope: 'structure',
-            reason: (result as any).alreadyExists ? 'group_reused' : 'group_created',
+            reason: result.alreadyExists ? 'group_reused' : 'group_created',
             payload: {
               groupId: result.groupId,
               groupName: result.groupName || input.name,
               color: input.color,
-              alreadyExists: !!(result as any).alreadyExists,
+              alreadyExists: !!result.alreadyExists,
             },
           })
         } else {
@@ -2932,19 +2999,20 @@ function createAgentSystem() {
         }
 
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
   // Add update/delete ring tools
-  const updateRingTool = tool<WheelContext>({
+  const updateRingTool = tool({
     name: 'update_ring',
     description: 'Update an existing ring name or color',
     parameters: UpdateRingInput,
-    async execute(input: z.infer<typeof UpdateRingInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof UpdateRingInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('update_ring', ctx.context.userId)
       
       try {
@@ -2955,18 +3023,19 @@ function createAgentSystem() {
         })
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const deleteRingTool = tool<WheelContext>({
+  const deleteRingTool = tool({
     name: 'delete_ring',
     description: 'Delete a ring by name. Will fail if ring has activities.',
     parameters: DeleteRingInput,
-    async execute(input: z.infer<typeof DeleteRingInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof DeleteRingInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('delete_ring', ctx.context.userId)
       
       try {
@@ -2974,18 +3043,19 @@ function createAgentSystem() {
         const result = await deleteRing(supabase, wheelId, input.name)
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const updateGroupTool = tool<WheelContext>({
+  const updateGroupTool = tool({
     name: 'update_activity_group',
     description: 'Update an existing activity group name or color',
     parameters: UpdateGroupInput,
-    async execute(input: z.infer<typeof UpdateGroupInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof UpdateGroupInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('update_activity_group', ctx.context.userId)
       
       try {
@@ -2996,18 +3066,19 @@ function createAgentSystem() {
         })
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const deleteGroupTool = tool<WheelContext>({
+  const deleteGroupTool = tool({
     name: 'delete_activity_group',
     description: 'Delete an activity group by name. Will fail if group has activities.',
     parameters: DeleteGroupInput,
-    async execute(input: z.infer<typeof DeleteGroupInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof DeleteGroupInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('delete_activity_group', ctx.context.userId)
       
       try {
@@ -3015,18 +3086,19 @@ function createAgentSystem() {
         const result = await deleteGroup(supabase, wheelId, input.name)
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const createLabelTool = tool<WheelContext>({
+  const createLabelTool = tool({
     name: 'create_label',
     description: 'Create a new label for categorizing activities',
     parameters: CreateLabelInput,
-    async execute(input: z.infer<typeof CreateLabelInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof CreateLabelInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('create_label', ctx.context.userId)
       
       try {
@@ -3042,18 +3114,19 @@ function createAgentSystem() {
         }
         
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const updateLabelTool = tool<WheelContext>({
+  const updateLabelTool = tool({
     name: 'update_label',
     description: 'Update an existing label name or color',
     parameters: UpdateLabelInput,
-    async execute(input: z.infer<typeof UpdateLabelInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof UpdateLabelInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('update_label', ctx.context.userId)
       
       try {
@@ -3065,18 +3138,19 @@ function createAgentSystem() {
         
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const deleteLabelTool = tool<WheelContext>({
+  const deleteLabelTool = tool({
     name: 'delete_label',
     description: 'Delete a label by name. Can be deleted even if in use.',
     parameters: DeleteLabelInput,
-    async execute(input: z.infer<typeof DeleteLabelInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof DeleteLabelInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('delete_label', ctx.context.userId)
       
       try {
@@ -3085,21 +3159,22 @@ function createAgentSystem() {
         
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const toggleRingVisibilityTool = tool<WheelContext>({
+  const toggleRingVisibilityTool = tool({
     name: 'toggle_ring_visibility',
     description: 'Show or hide a ring without deleting it. Updates visibility in the current page\'s organization_data.',
     parameters: z.object({
       ringName: z.string().describe('Name or partial name of the ring to toggle'),
       visible: z.boolean().describe('true to show the ring, false to hide it'),
     }),
-    async execute(input: { ringName: string; visible: boolean }, ctx: RunContext<WheelContext>) {
+    async execute(input: { ringName: string; visible: boolean }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('toggle_ring_visibility', ctx.context.userId)
       
       try {
@@ -3118,12 +3193,12 @@ function createAgentSystem() {
           throw new Error('Kunde inte hitta sida')
         }
         
-        const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
+        const orgData = normalizeOrgData(page.structure || {})
         
         // Find matching ring (case-insensitive partial match)
         const ringNameLower = input.ringName.toLowerCase()
         let matchCount = 0
-        const updatedRings = (orgData.rings || []).map((r: any) => {
+        const updatedRings = orgData.rings.map((r) => {
           if (r.name.toLowerCase().includes(ringNameLower)) {
             matchCount++
             return { ...r, visible: input.visible }
@@ -3163,21 +3238,22 @@ function createAgentSystem() {
         trackToolEnd(metric, true)
         console.log('✅ [TOOL] toggle_ring_visibility result:', result)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const toggleGroupVisibilityTool = tool<WheelContext>({
+  const toggleGroupVisibilityTool = tool({
     name: 'toggle_group_visibility',
     description: 'Show or hide an activity group without deleting it. Updates visibility in the current page\'s organization_data.',
     parameters: z.object({
       groupName: z.string().describe('Name or partial name of the activity group to toggle'),
       visible: z.boolean().describe('true to show the group, false to hide it'),
     }),
-    async execute(input: { groupName: string; visible: boolean }, ctx: RunContext<WheelContext>) {
+    async execute(input: { groupName: string; visible: boolean }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('toggle_group_visibility', ctx.context.userId)
       
       try {
@@ -3196,13 +3272,13 @@ function createAgentSystem() {
           throw new Error('Kunde inte hitta sida')
         }
         
-        const orgData = page.structure || { rings: [], activityGroups: [], labels: [], items: [] }
+        const orgData = normalizeOrgData(page.structure || {})
         const activityGroups = orgData.activityGroups || orgData.activities || []
         
         // Find matching group (case-insensitive partial match)
         const groupNameLower = input.groupName.toLowerCase()
         let matchCount = 0
-        const updatedGroups = activityGroups.map((g: any) => {
+        const updatedGroups = activityGroups.map((g) => {
           if (g.name.toLowerCase().includes(groupNameLower)) {
             matchCount++
             return { ...g, visible: input.visible }
@@ -3242,18 +3318,19 @@ function createAgentSystem() {
         trackToolEnd(metric, true)
         console.log('✅ [TOOL] toggle_group_visibility result:', result)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const createYearPageTool = tool<WheelContext>({
+  const createYearPageTool = tool({
     name: 'create_year_page',
     description: 'Create a new year page. Can copy structure (rings, groups, labels) from current pages or start blank.',
     parameters: CreateYearPageInput,
-    async execute(input: z.infer<typeof CreateYearPageInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof CreateYearPageInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('create_year_page', ctx.context.userId)
       
       try {
@@ -3263,7 +3340,7 @@ function createAgentSystem() {
         if (result.success && result.pageId) {
           trackToolEnd(metric, true)
           const pages = ctx.context.allPages || []
-          if (!pages.some((p: any) => p.id === result.pageId)) {
+          if (!pages.some((p) => p.id === result.pageId)) {
             pages.push({
               id: result.pageId,
               year: result.year ?? input.year,
@@ -3277,18 +3354,19 @@ function createAgentSystem() {
         }
         
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const smartCopyYearTool = tool<WheelContext>({
+  const smartCopyYearTool = tool({
     name: 'smart_copy_year',
     description: 'Create a new year page and copy ALL activities from a source year with dates automatically adjusted to the new year.',
     parameters: SmartCopyYearInput,
-    async execute(input: z.infer<typeof SmartCopyYearInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof SmartCopyYearInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('smart_copy_year', ctx.context.userId)
       
       try {
@@ -3298,7 +3376,7 @@ function createAgentSystem() {
         if (result.success && result.pageId) {
           trackToolEnd(metric, true)
           const pages = ctx.context.allPages || []
-          if (!pages.some((p: any) => p.id === result.pageId)) {
+          if (!pages.some((p) => p.id === result.pageId)) {
             pages.push({
               id: result.pageId,
               year: result.year ?? input.targetYear,
@@ -3312,29 +3390,30 @@ function createAgentSystem() {
         }
         
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const suggestStructureTool = tool<WheelContext>({
+  const suggestStructureTool = tool({
     name: 'suggest_wheel_structure',
     description: 'AI-powered tool that suggests a complete Year Wheel structure (rings, activity groups, sample activities) based on a domain or use case. Use this when user wants ideas or a starting point.',
     parameters: SuggestStructureInput,
-    async execute(input: z.infer<typeof SuggestStructureInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof SuggestStructureInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('suggest_wheel_structure', ctx.context.userId)
       
       try {
         console.log('[TOOL] suggest_wheel_structure called with:', JSON.stringify(input, null, 2))
-        const suggestion = await suggestWheelStructure(input.domain, input.additionalContext)
+        const suggestion = await suggestWheelStructure(input.domain, input.additionalContext || undefined)
         console.log('[TOOL] suggest_wheel_structure result:', JSON.stringify(suggestion, null, 2))
         
         trackToolEnd(metric, true)
         return JSON.stringify(suggestion)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
@@ -3400,11 +3479,12 @@ CRUD OPERATIONS:
   // ACTIVITY AGENT - Handles creating/managing activities
   // ──────────────────────────────────────────────────────────────────
 
-  const createActivityTool = tool<WheelContext>({
+  const createActivityTool = tool({
     name: 'create_activity',
     description: 'Create an activity/event. Can span multiple years. Requires ring ID and activity group ID.',
     parameters: CreateActivityInput,
-    async execute(input: z.infer<typeof CreateActivityInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof CreateActivityInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       console.log('🔧 [TOOL] create_activity called with:', JSON.stringify(input, null, 2))
       
       // ✅ HIGH PRIORITY: Track metrics
@@ -3433,14 +3513,14 @@ CRUD OPERATIONS:
         }
 
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const batchCreateActivitiesTool = tool<WheelContext>({
+  const batchCreateActivitiesTool = tool({
     name: 'batch_create_activities',
     description: 'Create multiple activities in one operation for faster bulk creation. Use this for use cases like "create 12 monthly campaigns" or "add quarterly reviews".',
     parameters: z.object({
@@ -3454,7 +3534,8 @@ CRUD OPERATIONS:
         description: z.string().nullable().describe('Optional description (set to null if not needed)'),
       })).min(1).max(50).describe('Array of activities to create (max 50)')
     }),
-    async execute(input: { activities: any[] }, ctx: RunContext<WheelContext>) {
+    async execute(input: { activities: Array<z.infer<typeof CreateActivityInput> & { description?: string | null }> }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('batch_create_activities', ctx.context.userId)
       
       try {
@@ -3520,14 +3601,14 @@ CRUD OPERATIONS:
         trackToolEnd(metric, true)
         console.log('✅ [TOOL] batch_create_activities result:', summary)
         return JSON.stringify(summary)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const queryActivitiesTool = tool<WheelContext>({
+  const queryActivitiesTool = tool({
     name: 'query_activities',
     description: 'Search and filter activities across ALL years/pages in the wheel by name, date range, ring, or group. Use this to find specific activities like "all activities named Månadsbrev" or "activities containing REA".',
     parameters: z.object({
@@ -3538,7 +3619,15 @@ CRUD OPERATIONS:
       endBefore: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().describe('Filter: activities ending on or before this date (null to skip)'),
       quarter: z.number().min(1).max(4).nullable().describe('Filter by quarter 1-4 (null to skip)'),
     }),
-    async execute(input: any, ctx: RunContext<WheelContext>) {
+    async execute(input: {
+      nameContains: string | null
+      ringName: string | null
+      groupName: string | null
+      startAfter: string | null
+      endBefore: string | null
+      quarter: number | null
+    }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const { supabase, wheelId, currentPageId } = ctx.context
       console.log('🔧 [TOOL] query_activities called with filters:', input)
       
@@ -3604,21 +3693,21 @@ CRUD OPERATIONS:
       
       if (input.nameContains) {
         const nameLower = input.nameContains.toLowerCase()
-        filtered = filtered.filter((i: any) => 
+        filtered = (filtered as DbItem[]).filter((i) =>
           i.name.toLowerCase().includes(nameLower)
         )
       }
       
       if (input.ringName) {
         const ringLower = input.ringName.toLowerCase()
-        filtered = filtered.filter((i: any) => 
+        filtered = (filtered as DbItem[]).filter((i) =>
           i.wheel_rings?.name.toLowerCase().includes(ringLower)
         )
       }
       
       if (input.groupName) {
         const groupLower = input.groupName.toLowerCase()
-        filtered = filtered.filter((i: any) => 
+        filtered = (filtered as DbItem[]).filter((i) =>
           i.activity_groups?.name.toLowerCase().includes(groupLower)
         )
       }
@@ -3627,7 +3716,7 @@ CRUD OPERATIONS:
         success: true,
         count: filtered.length,
         filters: input,
-        activities: filtered.map((i: any) => ({
+        activities: (filtered as DbItem[]).map((i) => ({
           id: i.id,
           name: i.name,
           startDate: i.start_date,
@@ -3641,18 +3730,19 @@ CRUD OPERATIONS:
       console.log('✅ [TOOL] query_activities found:', result.count, 'activities')
       trackToolEnd(metric, true)
       return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const updateActivityTool = tool<WheelContext>({
+  const updateActivityTool = tool({
     name: 'update_activity',
     description: 'Update an existing activity. Can change dates, name, ring, or activity group. Supports moving activities across years and multi-year spans.',
     parameters: UpdateActivityInput,
-    async execute(input: z.infer<typeof UpdateActivityInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof UpdateActivityInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       console.log('[updateActivityTool] Input received:', JSON.stringify(input, null, 2));
       
       // ✅ HIGH PRIORITY: Track metrics
@@ -3660,7 +3750,14 @@ CRUD OPERATIONS:
       
       try {
         // Only include properties that are actually provided (not null, undefined, or empty string)
-        const updates: any = {};
+        const updates: {
+          newName?: string
+          newStartDate?: string
+          newEndDate?: string
+          newRingId?: string
+          newActivityGroupId?: string
+          newLabelId?: string | null
+        } = {};
         // IMPORTANT: Only update name if explicitly provided and not null/empty
         if (input.newName !== null && input.newName !== undefined && input.newName.trim()) {
           updates.newName = input.newName.trim();
@@ -3687,18 +3784,19 @@ CRUD OPERATIONS:
         }
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const deleteActivityTool = tool<WheelContext>({
+  const deleteActivityTool = tool({
     name: 'delete_activity',
     description: 'Delete an activity by name. Searches for activities matching the name.',
     parameters: DeleteActivityInput,
-    async execute(input: z.infer<typeof DeleteActivityInput>, ctx: RunContext<WheelContext>) {
+    async execute(input: z.infer<typeof DeleteActivityInput>, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       // ✅ HIGH PRIORITY: Track metrics
       const metric = trackToolStart('delete_activity', ctx.context.userId)
       
@@ -3707,18 +3805,19 @@ CRUD OPERATIONS:
         const result = await deleteActivity(supabase, wheelId, input.name)
         trackToolEnd(metric, result.success, result.success ? undefined : result.message)
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const listActivitiesTool = tool<WheelContext>({
+  const listActivitiesTool = tool({
     name: 'list_activities',
     description: 'List all activities for the entire wheel (all years/pages)',
     parameters: z.object({}),
-    async execute(_input: {}, ctx: RunContext<WheelContext>) {
+    async execute(_input: EmptyObject, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       // ✅ HIGH PRIORITY: Track metrics
       const metric = trackToolStart('list_activities', ctx.context.userId)
       
@@ -3742,14 +3841,14 @@ CRUD OPERATIONS:
 
         trackToolEnd(metric, true)
         return JSON.stringify(items)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
   })
 
-  const smartDistributeActivitiesTool = tool<WheelContext>({
+  const smartDistributeActivitiesTool = tool({
     name: 'smart_distribute_activities',
     description: 'AI-powered redistribution of activities across rings based on their names, descriptions, and semantic meaning. Analyzes activity content and suggests optimal ring placement.',
     parameters: z.object({
@@ -3757,7 +3856,8 @@ CRUD OPERATIONS:
       excludeRingNames: z.array(z.string()).nullable().optional().describe('Optional: Exclude these rings from redistribution (partial name match). Null = no exclusions.'),
       dryRun: z.boolean().default(false).describe('If true, only suggests changes without applying them. If false, applies changes automatically.')
     }),
-    async execute(input: { includeRingNames?: string[] | null; excludeRingNames?: string[] | null; dryRun?: boolean }, ctx: RunContext<WheelContext>) {
+    async execute(input: { includeRingNames?: string[] | null; excludeRingNames?: string[] | null; dryRun?: boolean }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('smart_distribute_activities', ctx.context.userId)
       
       try {
@@ -3783,8 +3883,8 @@ CRUD OPERATIONS:
           throw new Error('Kunde inte hämta data från databasen')
         }
         
-        const rings = ringsRes.data || []
-        let items = itemsRes.data || []
+        const rings = (ringsRes.data || []) as DbRing[]
+        let items = (itemsRes.data || []) as unknown as DbItem[]
         
         if (rings.length === 0 || items.length === 0) {
           trackToolEnd(metric, false, 'Inga ringar eller aktiviteter hittades')
@@ -3797,14 +3897,14 @@ CRUD OPERATIONS:
         // Step 2: Apply filters
         if (input.includeRingNames && input.includeRingNames.length > 0) {
           const includeLower = input.includeRingNames.map(n => n.toLowerCase())
-          items = items.filter((item: any) => 
+          items = items.filter((item) =>
             includeLower.some(filter => item.wheel_rings?.name.toLowerCase().includes(filter))
           )
         }
         
         if (input.excludeRingNames && input.excludeRingNames.length > 0) {
           const excludeLower = input.excludeRingNames.map(n => n.toLowerCase())
-          items = items.filter((item: any) => 
+          items = items.filter((item) =>
             !excludeLower.some(filter => item.wheel_rings?.name.toLowerCase().includes(filter))
           )
         }
@@ -3825,10 +3925,10 @@ CRUD OPERATIONS:
         const analysisPrompt = `Du är en AI som hjälper till att organisera aktiviteter i ringar baserat på deras innehåll och syfte.
 
 TILLGÄNGLIGA RINGAR:
-${rings.map((r: any) => `- "${r.name}" (${r.type}, färg: ${r.color})`).join('\n')}
+${rings.map((r) => `- "${r.name}" (${r.type}, färg: ${r.color})`).join('\n')}
 
 AKTIVITETER ATT FÖRDELA (${items.length} st):
-${items.map((item: any) => `- "${item.name}" ${item.description ? `(Beskrivning: ${item.description})` : ''} [Nuvarande ring: ${item.wheel_rings?.name || 'Okänd'}]`).join('\n')}
+${items.map((item) => `- "${item.name}" ${item.description ? `(Beskrivning: ${item.description})` : ''} [Nuvarande ring: ${item.wheel_rings?.name || 'Okänd'}]`).join('\n')}
 
 UPPGIFT:
 Analysera varje aktivitet och föreslå den BÄSTA ringen baserat på:
@@ -3895,7 +3995,7 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
         if (!input.dryRun) {
           for (const redist of redistributions) {
             // Find the actual activity by name (AI might not provide correct UUID)
-            const activity = items.find((item: any) => 
+            const activity = items.find((item) =>
               item.name.toLowerCase() === redist.activityName.toLowerCase()
             )
             
@@ -3906,7 +4006,7 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
             }
             
             // Find target ring ID
-            const targetRing = rings.find((r: any) => 
+            const targetRing = rings.find((r) =>
               r.name.toLowerCase() === redist.suggestedRing.toLowerCase()
             )
             
@@ -3944,7 +4044,7 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
         
         const result = {
           success: true,
-          redistributions: redistributions.map((r: any) => ({
+          redistributions: redistributions.map((r: JsonRecord) => ({
             activityName: r.activityName,
             from: r.currentRing,
             to: r.suggestedRing,
@@ -3961,8 +4061,8 @@ Inkludera ENDAST aktiviteter som ska FLYTTAS (inte de som redan är i rätt ring
         trackToolEnd(metric, true)
         console.log('✅ [TOOL] smart_distribute_activities result:', JSON.stringify(result, null, 2))
         return JSON.stringify(result)
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
@@ -4103,13 +4203,14 @@ IMPORTANT:
   // ANALYSIS AGENT - Provides insights
   // ──────────────────────────────────────────────────────────────────
 
-  const analyzeWheelTool = tool<WheelContext>({
+  const analyzeWheelTool = tool({
     name: 'analyze_wheel',
     description: 'Analyze the current wheel and provide AI-powered insights about domain, activity distribution, and quality assessment',
     parameters: z.object({
       includeAIInsights: z.boolean().default(true).describe('Whether to include AI-powered domain analysis and quality assessment')
     }),
-    async execute(input: { includeAIInsights?: boolean }, ctx: RunContext<WheelContext>) {
+    async execute(input: { includeAIInsights?: boolean }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       // ✅ HIGH PRIORITY: Track metrics
       const metric = trackToolStart('analyze_wheel', ctx.context.userId)
       
@@ -4146,13 +4247,13 @@ IMPORTANT:
           throw new Error('Kunde inte analysera hjulet')
         }
 
-      const rings = ringsRes.data || []
-      const groups = groupsRes.data || []
-      const items = itemsRes.data || []
+      const rings = (ringsRes.data || []) as DbRing[]
+      const groups = (groupsRes.data || []) as DbGroup[]
+      const items = (itemsRes.data || []) as DbItem[]
 
       // Basic statistical analysis
       const quarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 }
-      items.forEach((item: any) => {
+      items.forEach((item) => {
         const month = new Date(item.start_date).getMonth()
         if (month < 3) quarters.Q1++
         else if (month < 6) quarters.Q2++
@@ -4163,7 +4264,7 @@ IMPORTANT:
       const ringDistribution: Record<string, number> = {}
       const groupDistribution: Record<string, number> = {}
       
-      items.forEach((item: any) => {
+      items.forEach((item) => {
         const ringName = item.wheel_rings?.name || 'Unknown'
         const groupName = item.activity_groups?.name || 'Unknown'
         ringDistribution[ringName] = (ringDistribution[ringName] || 0) + 1
@@ -4188,7 +4289,7 @@ IMPORTANT:
           })
 
           // Prepare activity summary for AI analysis
-          const activitySummary = items.map((item: any) => ({
+          const activitySummary = items.map((item) => ({
             name: item.name,
             group: item.activity_groups?.name || 'Unknown',
             ring: item.wheel_rings?.name || 'Unknown',
@@ -4282,8 +4383,8 @@ Var konkret och åsiktsstark. Använd domänexpertis. Svara på svenska.`
         aiInsights: null,
         message: 'Grundläggande statistisk analys klar'
       })
-      } catch (error: any) {
-        trackToolEnd(metric, false, error.message)
+      } catch (error) {
+        trackToolEnd(metric, false, getErrorMessage(error))
         throw error
       }
     }
@@ -4293,7 +4394,7 @@ Var konkret och åsiktsstark. Använd domänexpertis. Svara på svenska.`
     name: 'Analysis Agent',
     model: 'gpt-4o',
     modelSettings: {
-      tool_choice: 'auto'
+      toolChoice: 'auto'
     },
     instructions: `You analyze the Year Wheel and provide insights. Respond in Swedish with markdown formatting. No emojis.
 
@@ -4332,7 +4433,7 @@ Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans 
   // PLANNING AGENT - Coordinates Structure + Activity agents for complete project plans
   // ──────────────────────────────────────────────────────────────────
 
-  const suggestPlanTool = tool<WheelContext>({
+  const suggestPlanTool = tool({
     name: 'suggest_plan',
     description: 'AI-powered suggestion of complete planning structure (rings, activity groups, activities) for a specific goal/project',
     parameters: z.object({
@@ -4340,7 +4441,8 @@ Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans 
       startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Project start date (YYYY-MM-DD)'),
       endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Project end date (YYYY-MM-DD)'),
     }),
-    async execute(input: { goal: string; startDate: string; endDate: string }, ctx: RunContext<WheelContext>) {
+    async execute(input: { goal: string; startDate: string; endDate: string }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       try {
         const openai = new OpenAI({
           apiKey: Deno.env.get('OPENAI_API_KEY'),
@@ -4457,13 +4559,14 @@ Returnera ENDAST giltig JSON i detta format:
     }
   })
 
-  const applySuggestedPlanTool = tool<WheelContext>({
+  const applySuggestedPlanTool = tool({
     name: 'apply_suggested_plan',
     description: 'Creates rings, activity groups, and activities from AI suggestions. Pass the EXACT JSON string returned by suggest_plan (do not modify it). Use this after suggest_plan when user confirms.',
     parameters: z.object({
       suggestionsJson: z.string().describe('The complete suggestions JSON string returned from suggest_plan tool - pass it exactly as received')
     }),
-    async execute(input: { suggestionsJson: string }, ctx: RunContext<WheelContext>) {
+    async execute(input: { suggestionsJson: string }, ctx: RunContext<WheelContext> | undefined) {
+      ctx = requireRunContext(ctx)
       const metric = trackToolStart('apply_suggested_plan', ctx.context.userId)
       
       try {
@@ -4485,12 +4588,13 @@ Returnera ENDAST giltig JSON i detta format:
         const errorMessage = summary.success ? undefined : (summary.errors && summary.errors.length > 0 ? summary.errors[0] : 'Unknown error')
         trackToolEnd(metric, summary.success, errorMessage)
         return JSON.stringify(summary)
-      } catch (error: any) {
+        } catch (error) {
+          const message = getErrorMessage(error)
         console.error('[apply_suggested_plan] Fatal error:', error)
-        trackToolEnd(metric, false, error.message)
+          trackToolEnd(metric, false, message)
         return JSON.stringify({
           success: false,
-          error: error.message,
+            error: message,
           message: 'Kunde inte applicera förslag'
         })
       }
@@ -4571,7 +4675,7 @@ You don't need agent tools (structure_agent/activity_agent) - apply_suggested_pl
   // MAIN ORCHESTRATOR AGENT - Routes to appropriate specialist
   // ──────────────────────────────────────────────────────────────────
 
-  const orchestratorAgent = Agent.create<WheelContext>({
+  const orchestratorAgent = Agent.create({
     name: 'Year Wheel Assistant',
     model: 'gpt-4o',
     instructions: `You help users plan and organize activities in a circular year wheel. Respond in Swedish. No emojis.
@@ -4639,8 +4743,38 @@ Keep your intro brief (1 sentence max) then transfer immediately.
 /**
  * Get user-friendly Swedish status message for tool execution
  */
-function getToolStatusMessage(toolName: string, args?: any): string {
-  const messages: Record<string, (args?: any) => string> = {
+type ToolStatusArgs = JsonRecord & {
+  name?: string
+  activities?: unknown[]
+  activityName?: string
+  ringName?: string
+  groupName?: string
+  labelName?: string
+  visible?: boolean
+  year?: number
+  sourceYear?: number
+  targetYear?: number
+}
+
+type HistoryPart = {
+  type?: string
+  text?: string
+  name?: string
+}
+
+type HistoryItem = {
+  role?: string
+  name?: string
+  content?: unknown
+}
+
+function requireRunContext(ctx: RunContext<WheelContext> | undefined): RunContext<WheelContext> {
+  if (!ctx) throw new Error('Tool context is unavailable')
+  return ctx
+}
+
+function _getToolStatusMessage(toolName: string, args?: ToolStatusArgs): string {
+  const messages: Record<string, (args?: ToolStatusArgs) => string> = {
     'get_current_context': () => 'Hämtar aktuell kontext...',
     'create_activity': (a) => `Skapar aktivitet "${a?.name || 'ny aktivitet'}"...`,
     'batch_create_activities': (a) => `Skapar ${a?.activities?.length || 'flera'} aktiviteter...`,
@@ -4679,9 +4813,9 @@ function getToolStatusMessage(toolName: string, args?: any): string {
 /**
  * Safe JSON stringifier that handles circular references
  */
-function safeStringify(obj: any): string {
+function safeStringify(obj: unknown): string {
   const seen = new WeakSet()
-  return JSON.stringify(obj, (key, value) => {
+  return JSON.stringify(obj, (_key, value) => {
     if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
         return '[Circular]'
@@ -4695,12 +4829,12 @@ function safeStringify(obj: any): string {
 /**
  * Send SSE event to client
  */
-function sendSSEEvent(controller: ReadableStreamDefaultController, type: string, data: any) {
+function sendSSEEvent(controller: ReadableStreamDefaultController, type: string, data: unknown) {
   const encoder = new TextEncoder()
   const event = {
     type,
     timestamp: Date.now(),
-    ...data
+    ...(isJsonRecord(data) ? data : { data })
   }
   try {
     const message = `data: ${safeStringify(event)}\n\n`
@@ -4720,7 +4854,7 @@ function sendSSEEvent(controller: ReadableStreamDefaultController, type: string,
 }
 
 async function authorizeAssistantRequest(
-  supabase: any,
+  supabase: SupabaseClientLike,
   userId: string,
   wheelId: string,
   currentPageId: string
@@ -4799,7 +4933,7 @@ serve(async (req: Request) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey) as unknown as SupabaseClientLike
 
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
@@ -4884,7 +5018,7 @@ serve(async (req: Request) => {
       console.error('[AI] Error fetching pages:', allPagesError)
     }
 
-    console.log(`[AI] Wheel has ${allPages?.length || 0} pages:`, allPages?.map((p: any) => `${p.year} (${p.id})`).join(', '))
+    console.log(`[AI] Wheel has ${allPages?.length || 0} pages:`, allPages?.map((p) => `${p.year} (${p.id})`).join(', '))
     console.log(`[AI] Current page: ${pageData.year} (${pageData.id})`)
 
     // Create wheel context that will be passed to all tools
@@ -4901,7 +5035,11 @@ serve(async (req: Request) => {
     // OPENAI AGENTS SDK RECOMMENDED APPROACH:
     // Use previousResponseId to let OpenAI manage conversation state server-side
     // See: https://openai.github.io/openai-agents-js/guides/running-agents/#2-previousresponseid-to-continue-from-the-last-turn
-    const runOptions: any = {
+    const runOptions: {
+      context: WheelContext
+      maxTurns: number
+      previousResponseId?: string
+    } = {
       context: wheelContext,
       maxTurns: 20,
     }
@@ -4931,7 +5069,7 @@ serve(async (req: Request) => {
             stage: 'thinking'
           })
 
-          wheelContext.emitEvent = (type: string, data: any) => {
+          wheelContext.emitEvent = (type: string, data: unknown) => {
             sendSSEEvent(controller, type, data)
           }
 
@@ -4942,15 +5080,16 @@ serve(async (req: Request) => {
           console.log('[AI] result.finalOutput type:', typeof result.finalOutput)
           console.log('[AI] result.finalOutput value:', result.finalOutput)
           console.log('[AI] result.history length:', result.history?.length || 0)
+          const history = (result.history || []) as unknown as HistoryItem[]
           
           // Log last few history items to understand what's happening
-          if (result.history && result.history.length > 0) {
-            const lastThree = result.history.slice(-3)
+          if (history.length > 0) {
+            const lastThree = history.slice(-3)
             console.log('[AI] Last 3 history items:')
-            lastThree.forEach((item: any, i: number) => {
+            lastThree.forEach((item: HistoryItem, i: number) => {
               console.log(`  [${i}] role=${item.role}, name=${item.name || 'none'}, content type=${typeof item.content}`)
               if (Array.isArray(item.content)) {
-                console.log(`      content parts:`, item.content.map((p: any) => p.type).join(', '))
+                console.log(`      content parts:`, (item.content as HistoryPart[]).map((p) => p.type).join(', '))
               }
             })
           }
@@ -4968,7 +5107,7 @@ serve(async (req: Request) => {
           } else if (result.history && result.history.length > 0) {
             console.log('[AI] Fallback: extracting from result.history')
             // Find the last assistant message that's not a tool call
-            const assistantMessages = result.history.filter((h: any) => h.role === 'assistant')
+            const assistantMessages = history.filter((h) => h.role === 'assistant')
             console.log('[AI] Found', assistantMessages.length, 'assistant messages')
             
             // Get the last one
@@ -4978,10 +5117,10 @@ serve(async (req: Request) => {
               if (typeof lastMessage.content === 'string') {
                 finalOutput = lastMessage.content
               } else if (Array.isArray(lastMessage.content)) {
-                const textParts = lastMessage.content.filter((p: any) => p.type === 'text')
+                const textParts = (lastMessage.content as HistoryPart[]).filter((p) => p.type === 'text')
                 console.log('[AI] Text parts found:', textParts.length)
                 if (textParts.length > 0) {
-                  finalOutput = textParts.map((p: any) => p.text).join('\n')
+                  finalOutput = textParts.map((p) => p.text || '').join('\n')
                 }
               }
             }
@@ -5003,8 +5142,8 @@ serve(async (req: Request) => {
             stage: 'processing'
           })
           
-          if (result.history) {
-            result.history.forEach((item: any) => {
+          if (history.length > 0) {
+            history.forEach((item) => {
               // Detect agent handoffs
               if (item.role === 'assistant' && item.name && item.name !== currentAgent) {
                 currentAgent = item.name
@@ -5013,10 +5152,10 @@ serve(async (req: Request) => {
               
               // Detect tool calls
               if (item.role === 'assistant' && item.content && Array.isArray(item.content)) {
-                item.content.forEach((part: any) => {
+                ;(item.content as HistoryPart[]).forEach((part) => {
                   if (part.type === 'tool_use') {
                     const toolName = part.name
-                    toolExecutionSummary.push(toolName)
+                    if (toolName) toolExecutionSummary.push(toolName)
                     console.log(`🔧 [AI] Tool: ${toolName}`)
                   }
                 })
@@ -5072,7 +5211,7 @@ serve(async (req: Request) => {
           const completeEvent = {
             success: true,
             message: finalOutput,
-            agentUsed: result.agent?.name || currentAgent,
+            agentUsed: currentAgent,
             lastResponseId,
             toolsExecuted: toolExecutionSummary,
             agentPath: agentHandoffs.length > 0 ? agentHandoffs : undefined,
