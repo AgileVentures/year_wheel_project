@@ -112,6 +112,39 @@ export class TextRenderer {
     return width;
   }
 
+  curvedTextWidth(text, font) {
+    if (!text) return 0;
+    const naturalWidth = [...text].reduce(
+      (total, character) => total + this.measureText(character, font),
+      0
+    );
+    const averageWidth = naturalWidth / [...text].length;
+    return naturalWidth + averageWidth * 0.1 * Math.max(0, [...text].length - 1);
+  }
+
+  fitCurvedText(text, maxWidth, font) {
+    if (!text || maxWidth <= 0) return '';
+    if (this.curvedTextWidth(text, font) <= maxWidth) return text;
+
+    const ellipsis = '…';
+    if (this.curvedTextWidth(ellipsis, font) > maxWidth) return '';
+
+    let low = 0;
+    let high = text.length;
+    let best = ellipsis;
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2);
+      const candidate = text.slice(0, middle).trimEnd() + ellipsis;
+      if (this.curvedTextWidth(candidate, font) <= maxWidth) {
+        best = candidate;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+    return best;
+  }
+
   /**
    * Truncate text to fit within maxWidth with ellipsis
    * @param {string} text - Text to truncate
@@ -366,6 +399,12 @@ export class TextRenderer {
 
     const angleLength = endAngleRad - startAngleRad;
     const font = `${fontWeight} ${fontSize}px ${this.defaultFont.family}`;
+    const displayText = this.fitCurvedText(
+      text,
+      radius * Math.abs(angleLength) * 0.9,
+      font
+    );
+    if (!displayText) return;
     
     this.context.save();
     this.context.font = font;
@@ -376,8 +415,8 @@ export class TextRenderer {
     // Measure each character's natural width
     const charWidths = [];
     let totalWidth = 0;
-    for (let i = 0; i < text.length; i++) {
-      const charWidth = this.measureText(text[i], font);
+    for (let i = 0; i < displayText.length; i++) {
+      const charWidth = this.measureText(displayText[i], font);
       charWidths.push(charWidth);
       totalWidth += charWidth;
     }
@@ -385,7 +424,7 @@ export class TextRenderer {
     // Add natural spacing between characters (10% of average char width)
     const avgCharWidth = totalWidth / text.length;
     const letterSpacing = avgCharWidth * 0.1;
-    const totalSpacing = letterSpacing * (text.length - 1);
+    const totalSpacing = letterSpacing * (displayText.length - 1);
     const totalTextWidth = totalWidth + totalSpacing;
 
     // Calculate the angular span this text would naturally occupy
@@ -396,8 +435,8 @@ export class TextRenderer {
     let currentAngle = startAngleRad + startOffset;
 
     // Draw each character with natural spacing
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
+    for (let i = 0; i < displayText.length; i++) {
+      const char = displayText[i];
       const charWidth = charWidths[i];
       const charAngleSpan = charWidth / radius;
 

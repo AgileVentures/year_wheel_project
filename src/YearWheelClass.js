@@ -3905,8 +3905,8 @@ class YearWheel {
         maxContentHeight * 0.5,
         {
           fontWeight: "700",
-          maxFontSize: Math.min(baseFontSize * 1.5, maxContentHeight / 4),
-          minFontSize: Math.max(8, baseFontSize * 0.7),
+          maxFontSize: Math.min(baseFontSize * 1.7, safeRadius / 3),
+          minFontSize: Math.max(10, Math.min(13, baseFontSize)),
           maxLines: 2,
           wrap: true,
         }
@@ -3920,17 +3920,29 @@ class YearWheel {
 
       let ringFont = `400 ${spacing.ringName}px Arial, sans-serif`;
       let dateFont = `400 ${spacing.date}px Arial, sans-serif`;
+      let showRing = Boolean(ring);
+      let showLabel = Boolean(label && label.visible);
 
-      // Calculate total height needed for all elements
-      let totalHeight = 0;
-      totalHeight += spacing.ringName; // Ring name
-      totalHeight += spacing.gap;
-      if (label && label.visible) {
-        totalHeight += spacing.badge + spacing.gap * 1.5; // Badge with padding
+      const calculateTotalHeight = () => {
+        let height = 0;
+        if (showRing) height += spacing.ringName + spacing.gap;
+        if (showLabel) height += spacing.badge + spacing.gap * 1.5;
+        height += spacing.itemName * itemNameLines.length;
+        height += spacing.gap + spacing.date;
+        return height;
+      };
+
+      // The title is the primary hover information. Drop secondary metadata
+      // before shrinking the title into unreadable text.
+      let totalHeight = calculateTotalHeight();
+      if (totalHeight > maxContentHeight && showLabel) {
+        showLabel = false;
+        totalHeight = calculateTotalHeight();
       }
-      totalHeight += spacing.itemName * itemNameLines.length; // Item name (1-2 lines)
-      totalHeight += spacing.gap;
-      totalHeight += spacing.date; // Date
+      if (totalHeight > maxContentHeight && showRing) {
+        showRing = false;
+        totalHeight = calculateTotalHeight();
+      }
 
       // A badge plus a two-line title can otherwise make the vertical block
       // taller than the circle. Scale all spacing before positioning it.
@@ -3963,13 +3975,13 @@ class YearWheel {
       // 1. Ring name (small, discrete, light gray)
       this.context.fillStyle = "#94A3B8";
       this.context.font = ringFont;
-      if (ring) {
+      if (showRing && ring) {
         this.context.fillText(ringText, this.center.x, currentY);
+        currentY += spacing.ringName + spacing.gap;
       }
-      currentY += spacing.ringName + spacing.gap;
 
       // 2. Status badge (colored pill with label name)
-      if (label && label.visible) {
+      if (showLabel && label) {
         const badgeHeight = spacing.badge;
         const badgePadding = badgeHeight * 0.5;
         this.context.font = `500 ${spacing.badge}px Arial, sans-serif`;
