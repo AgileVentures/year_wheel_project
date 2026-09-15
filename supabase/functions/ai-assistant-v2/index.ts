@@ -304,6 +304,14 @@ function getErrorMessage(error: unknown): string {
   return String(error)
 }
 
+function validateDateRange(startDate: string, endDate: string): void {
+  const start = new Date(`${startDate}T00:00:00Z`)
+  const end = new Date(`${endDate}T00:00:00Z`)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || startDate > endDate) {
+    throw new Error(`Ogiltigt datumintervall: ${startDate} till ${endDate}`)
+  }
+}
+
 interface WheelContext {
   supabase: SupabaseClientLike
   wheelId: string
@@ -429,6 +437,13 @@ type PlanSuggestions = {
 
 type SuggestionSource = 'input' | 'contextRaw' | 'contextObject'
 
+type PlanVerification = {
+  expectedActivities: number
+  foundActivities: number
+  missingActivities: string[]
+  verified: boolean
+}
+
 type ApplySummary = {
   success: boolean
   created: { rings: number; groups: number; activities: number }
@@ -441,6 +456,7 @@ type ApplySummary = {
     activities: { successful: string[]; failed: string[] }
   }
   message: string
+  verification: PlanVerification
   metadata: {
     suggestionSource: SuggestionSource
     fallbackUsed: boolean
@@ -946,6 +962,40 @@ async function applySuggestions(
   }
 
   const expectedActivities = suggestions.activities.length
+  const expectedActivityNames = suggestions.activities.map((activity) => activity.name)
+  let verification: PlanVerification = {
+    expectedActivities,
+    foundActivities: 0,
+    missingActivities: [],
+    verified: expectedActivities === 0,
+  }
+
+  if (expectedActivityNames.length > 0) {
+    const { data: verificationRows, error: verificationError } = await supabase
+      .from('items')
+      .select('name')
+      .eq('wheel_id', wheelId)
+      .in('name', expectedActivityNames)
+
+    if (verificationError) {
+      errors.push(`Verifiering misslyckades: ${verificationError.message}`)
+    } else {
+      const foundNames = new Set(
+        ((verificationRows || []) as unknown as Array<{ name: string }>).map((row) => row.name.toLowerCase())
+      )
+      const missingActivities = expectedActivityNames.filter((name) => !foundNames.has(name.toLowerCase()))
+      verification = {
+        expectedActivities,
+        foundActivities: expectedActivityNames.length - missingActivities.length,
+        missingActivities,
+        verified: missingActivities.length === 0,
+      }
+      if (missingActivities.length > 0) {
+        errors.push(`Verifieringen saknar ${missingActivities.length} aktivitet(er): ${missingActivities.join(', ')}`)
+      }
+    }
+  }
+
   const totalSuggestedRings = suggestions.rings.length
   const totalSuggestedGroups = suggestions.activityGroups.length
   const ringCoverage = ringStats.created + ringStats.reused
@@ -1006,6 +1056,7 @@ async function applySuggestions(
       },
     },
     message: messageParts.join(' · '),
+    verification,
     metadata: {
       suggestionSource,
       fallbackUsed: suggestionSource !== 'input',
@@ -1066,6 +1117,7 @@ async function createActivity(
   ctx: RunContext<WheelContext>,
   args: z.infer<typeof CreateActivityInput>
 ) {
+  validateDateRange(args.startDate, args.endDate)
   const { supabase, wheelId } = ctx.context
   const callId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   console.log(`[createActivity ${callId}] ========== START ==========`)
@@ -2123,6 +2175,7 @@ async function updateActivity(
   const oldEndDate = firstItem.end_date
   const newStartDate = updates.newStartDate || oldStartDate
   const newEndDate = updates.newEndDate || oldEndDate
+  validateDateRange(newStartDate, newEndDate)
 
   const itemsByPageToRemove = new Map<string, string[]>()
   ;(items as DbItem[]).forEach((item) => {
@@ -4102,6 +4155,11 @@ WORKFLOW:
 4. Call the appropriate tool with matched UUIDs
 5. Report the actual tool result
 
+AUTONOMOUS STRUCTURE:
+- If the user explicitly asks to create an activity but the requested ring or group does not exist, create the missing ring/group yourself with a sensible name and color, then create the activity.
+- If several existing rings/groups are plausible, choose the closest semantic match instead of asking the user to repeat the request.
+- Ask a question only when a missing date or destructive intent makes execution genuinely unsafe; never ask for confirmation merely because structure must be created.
+
 EXAMPLE - Creating an activity:
 User: "skapa kampanj i november"
 → get_current_context returns: {date: "2025-11-05", rings: [{id: "abc", name: "Kampanjer"}], groups: [{id: "def", name: "Kampanj"}]}
@@ -4188,6 +4246,8 @@ IMPORTANT:
 - If tool fails, explain the error and suggest solutions`,
     tools: [
       getContextTool, 
+      createRingTool,
+      createGroupTool,
       createLabelTool,
       createActivityTool, 
       batchCreateActivitiesTool,
@@ -4435,13 +4495,14 @@ Bra grundstruktur men behöver mer specificitet i aktivitetsnamn och mer balans 
 
   const suggestPlanTool = tool({
     name: 'suggest_plan',
-    description: 'AI-powered suggestion of complete planning structure (rings, activity groups, activities) for a specific goal/project',
+    description: 'Generate a complete planning structure and, by default, create it immediately. Use mode preview only for an explicit suggestions-only request.',
     parameters: z.object({
       goal: z.string().describe('User\'s goal or project description (e.g., "Lansera en SaaS-applikation", "Marknadsföra ny produkt")'),
       startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Project start date (YYYY-MM-DD)'),
       endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Project end date (YYYY-MM-DD)'),
+      mode: z.enum(['execute', 'preview']).default('execute').describe('Use execute for a direct create/build/plan request. Use preview only when the user explicitly asks for suggestions without changing the wheel.'),
     }),
-    async execute(input: { goal: string; startDate: string; endDate: string }, ctx: RunContext<WheelContext> | undefined) {
+    async execute(input: { goal: string; startDate: string; endDate: string; mode: 'execute' | 'preview' }, ctx: RunContext<WheelContext> | undefined) {
       ctx = requireRunContext(ctx)
       try {
         const openai = new OpenAI({
@@ -4547,13 +4608,23 @@ Returnera ENDAST giltig JSON i detta format:
         const payloadString = JSON.stringify(payload)
         ctx.context.lastSuggestionsRaw = payloadString
 
+        if (input.mode === 'execute') {
+          const summary = await applySuggestions(ctx, payloadString)
+          return JSON.stringify({
+            success: summary.success,
+            suggestions,
+            applied: summary,
+            message: summary.message,
+          })
+        }
+
         return payloadString
       } catch (error) {
         console.error('[suggest_plan] Error:', error)
         return JSON.stringify({
           success: false,
           error: (error as Error).message,
-          message: 'Kunde inte generera förslag'
+          message: 'Kunde inte generera eller applicera plan'
         })
       }
     }
@@ -4561,7 +4632,7 @@ Returnera ENDAST giltig JSON i detta format:
 
   const applySuggestedPlanTool = tool({
     name: 'apply_suggested_plan',
-    description: 'Creates rings, activity groups, and activities from AI suggestions. Pass the EXACT JSON string returned by suggest_plan (do not modify it). Use this after suggest_plan when user confirms.',
+    description: 'Creates rings, activity groups, and activities from AI suggestions. Pass the EXACT JSON string returned by suggest_plan (do not modify it). Use immediately when the user explicitly asks to create, build, plan, or set up the result; do not ask for redundant confirmation.',
     parameters: z.object({
       suggestionsJson: z.string().describe('The complete suggestions JSON string returned from suggest_plan tool - pass it exactly as received')
     }),
@@ -4616,13 +4687,15 @@ Those tools are NOT available to you. Use the atomic workflow below.
 🎯 SMART ARCHITECTURE:
 - apply_suggested_plan is INTELLIGENT - it automatically detects and reuses existing rings/groups
 - You don't need to manually coordinate ring/group creation
-- Just: suggest → present → apply → done!
+- For an explicit create/build/plan request: suggest → apply → verify → report. Do not pause for confirmation.
+- For a request that only says suggest/ideas/propose: suggest → present the proposal without writing data.
 
-MANDATORY WORKFLOW (3 steps only):
-1. **suggest_plan** → Get AI-generated plan (rings, groups, activities)
-2. **Present to user** → Show the plan in clear markdown
-3. **apply_suggested_plan** → Creates everything atomically (smart reuse built-in)
-4. **get_current_context** → Verify what was created (ALWAYS check after applying!)
+MANDATORY WORKFLOW:
+1. **get_current_context** → Load the current date, years, and existing structure before planning.
+2. **suggest_plan** → Generate the plan. Pass mode="execute" for a direct create/build/plan request; pass mode="preview" only when the user explicitly asks for suggestions without writing data. If the user omitted dates, infer a useful range from the current date: a focused project defaults to the next 90 days; an annual planning request defaults to the current calendar year.
+3. For mode="execute", the tool creates the plan automatically in the same call. Read its applied summary and verification, then report what changed. Do not call apply_suggested_plan again.
+4. For mode="preview", present the plan. If the user later explicitly confirms, call apply_suggested_plan with the exact JSON returned by the preview.
+5. Report any missing items from verification. Do not ask the user to approve an action they already explicitly requested.
 
 EXAMPLE:
 User: "Föreslå aktiviteter för ett 3-månaders projekt som ska ligga på ring Projekt"
@@ -4631,18 +4704,13 @@ Step 1 - Suggest:
 → suggest_plan({ goal: "3-månaders projekt", startDate: "2025-11-01", endDate: "2026-01-31" })
 Returns: {rings: ["Projekt"], activityGroups: ["Projektarbete"], activities: [11 items]}
 
-Step 2 - Present:
-Show plan with: "Förslag för 3-månaders projekt - Aktiviteter (11 st): 1. Projektstart, 2. Analys..."
-Ask: "Vill du att jag skapar dessa aktiviteter?"
+Step 2 - Execute (because the user asked to create the plan):
+→ suggest_plan({ goal: "3-månaders projekt", startDate: "2025-11-01", endDate: "2026-01-31", mode: "execute" })
+→ The tool automatically applies the plan and reuses existing structure.
+→ Result: {success: true, applied: {created: {rings: 0, groups: 1, activities: 11}, reused: {rings: 1}}}
 
-Step 3 - Apply (when user confirms):
-→ apply_suggested_plan({ suggestionsJson: "[exact JSON from suggest_plan]" })
-→ Smart applySuggestions checks: "Ring Projekt" exists? ✅ Reuse it! "Grupp Projektarbete" missing? Create it!
-→ Result: {success: true, created: {rings: 0, groups: 1, activities: 11}, reused: {rings: 1}}
-
-Step 4 - Verify (MANDATORY after apply):
-→ get_current_context() to see what actually exists now
-→ Check that rings/groups/activities match what was expected
+Step 3 - Verify and report:
+→ Read the verification returned by suggest_plan
 → Report discrepancies if any
 
 Report example:
@@ -4651,11 +4719,12 @@ Then verify: "Kontrollerar... ja, alla 11 aktiviteter finns nu på ring Projekt!
 
 CRITICAL RULES (MUST FOLLOW):
 1. NEVER call create_ring, create_activity_group, or create_activity directly - those tools are NOT available to you
-2. ONLY use: suggest_plan → apply_suggested_plan → get_current_context (verify)
-3. ALWAYS verify with get_current_context after applying - report what actually exists
-4. Pass EXACT JSON string from suggest_plan to apply_suggested_plan (don't modify)
-5. Report actual result from apply_suggested_plan (created vs reused counts)
-6. If apply fails, check get_current_context to see what partial state exists
+2. For explicit execution requests, call suggest_plan with mode="execute"; it applies the plan in the same tool call.
+3. Never ask "vill du att jag skapar...?" after the user already asked to create/build/plan.
+4. Pass EXACT JSON string from a preview suggest_plan to apply_suggested_plan only after a later explicit confirmation (don't modify it)
+5. Report actual result from apply_suggested_plan (created vs reused counts and verification)
+6. If apply fails, explain the failure and report the partial result returned by the tool
+7. An explicit create/build/plan request may not end after suggest_plan; apply the plan in the same turn.
 
 EDGE CASES:
 - Ring exists but group doesn't → Reuses ring, creates group
@@ -4679,6 +4748,12 @@ You don't need agent tools (structure_agent/activity_agent) - apply_suggested_pl
     name: 'Year Wheel Assistant',
     model: 'gpt-4o',
     instructions: `You help users plan and organize activities in a circular year wheel. Respond in Swedish. No emojis.
+
+AUTONOMY PRINCIPLE:
+- Treat a clear imperative (skapa, lägg till, planera, bygg, ordna, flytta, uppdatera, ta bort, analysera) as authorization to complete the requested operation now.
+- Do not respond with instructions for the user to perform the work and do not ask redundant confirmation.
+- Inspect context, infer sensible defaults, execute the complete workflow, and report what actually changed.
+- Ask only when a critical value is genuinely missing or a destructive request is materially ambiguous.
 
 Immediately delegate to the appropriate specialist:
 
@@ -4708,6 +4783,11 @@ PRIORITY:
 - Always prefer Planning Agent for project/planning requests
 - Only use Structure/Activity agents for single manual operations
 - Only transfer to ONE specialist per request
+
+FOLLOW-THROUGH:
+- A specialist must continue until the requested operation is complete or a real blocker is returned by a tool.
+- If a tool reports success, continue to the next required step instead of stopping to ask what to do next.
+- For multi-step requests, verify the final state and summarize created, reused, updated, or failed items.
 
 Keep your intro brief (1 sentence max) then transfer immediately.
 
