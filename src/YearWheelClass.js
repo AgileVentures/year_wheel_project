@@ -3848,6 +3848,8 @@ class YearWheel {
         date: baseFontSize * 0.8, // 80% of base
         gap: baseFontSize * 0.6, // Proportional gap between elements
       };
+      const titleWordCount = this.hoveredItem.name.trim().split(/\s+/).length;
+      const titleMaxLines = titleWordCount >= 4 ? 3 : 2;
 
       // Smart date formatting helper
       const formatSmartDate = (start, end) => {
@@ -3902,12 +3904,12 @@ class YearWheel {
       const itemLayout = this.textRenderer.layoutText(
         this.hoveredItem.name,
         maxWidth,
-        maxContentHeight * 0.5,
+        maxContentHeight * (titleMaxLines === 3 ? 0.62 : 0.5),
         {
           fontWeight: "700",
           maxFontSize: Math.min(baseFontSize * 1.7, safeRadius / 3),
           minFontSize: Math.max(10, Math.min(13, baseFontSize)),
-          maxLines: 2,
+          maxLines: titleMaxLines,
           wrap: true,
         }
       );
