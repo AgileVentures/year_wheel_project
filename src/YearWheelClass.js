@@ -2595,6 +2595,18 @@ class YearWheel {
       ? this.getContrastColor(backgroundColor)
       : "#FFFFFF";
 
+    // Centralized adaptive layout: measured word wrapping and readable
+    // truncation prevent labels from escaping their arc or becoming tiny.
+    this.textRenderer.drawArcTextBlock(
+      text,
+      middleRadius,
+      startAngle,
+      endAngle,
+      width,
+      { color: textColor, fontWeight: '500' }
+    );
+    return;
+
     // INTELLIGENT DISPLAY-AWARE FONT SIZING - match vertical logic
     const zoomFactor = this.zoomLevel / 100;
     const effectiveDisplaySize = this.size * zoomFactor;
@@ -3800,6 +3812,12 @@ class YearWheel {
     this.context.closePath();
 
     if (this.hoveredItem) {
+      // Keep every hover detail inside the actual center-circle boundary.
+      this.context.save();
+      this.context.beginPath();
+      this.context.arc(this.center.x, this.center.y, this.minRadius, 0, Math.PI * 2);
+      this.context.clip();
+
       // Show hovered activity info with improved visual hierarchy
       const ring = this.wheelStructure.rings.find(
         (r) => r.id === this.hoveredItem.ringId
@@ -3813,7 +3831,12 @@ class YearWheel {
 
       // Base settings
       const baseFontSize = this.size / 70;
-      const maxWidth = this.minRadius * 1.4; // Keep text well within circle
+      const centerPadding = Math.max(4, this.size / 100);
+      const safeRadius = Math.max(1, this.minRadius - centerPadding);
+      // Use a conservative inscribed box rather than the circle diameter:
+      // the top/bottom lines otherwise have less chord width and get clipped.
+      const maxWidth = Math.max(1, safeRadius * 1.25);
+      const maxContentHeight = Math.max(1, safeRadius * 1.5);
       this.context.textAlign = "center";
       this.context.textBaseline = "middle";
 
@@ -3875,71 +3898,73 @@ class YearWheel {
         return `${startDay} ${monthNames[startMonth]} ${startYear} - ${endDay} ${monthNames[endMonth]} ${endYear}`;
       };
 
-      // Text wrapping helper - limit to 2 lines with smart ellipsis
-      const wrapText = (text, font, maxWidth, maxLines = 2) => {
-        this.context.font = font;
-        const parts = text.split(/(-|\s+)/); // Split on hyphens and spaces
-        const lines = [];
-        let currentLine = "";
-
-        for (let part of parts) {
-          if (!part) continue;
-          const testLine = currentLine + part;
-          const metrics = this.context.measureText(testLine);
-          if (metrics.width > maxWidth && currentLine) {
-            lines.push(currentLine);
-            currentLine = part;
-          } else {
-            currentLine = testLine;
-          }
-        }
-        if (currentLine) lines.push(currentLine);
-
-        // Limit to maxLines with ellipsis
-        if (lines.length > maxLines) {
-          const lastLine = lines[maxLines - 1];
-          const ellipsis = "...";
-          let truncated = lastLine;
-          while (
-            this.context.measureText(truncated + ellipsis).width > maxWidth &&
-            truncated.length > 0
-          ) {
-            truncated = truncated.slice(0, -1);
-          }
-          lines[maxLines - 1] = truncated + ellipsis;
-          lines.length = maxLines;
-        }
-
-        return lines;
-      };
-
-      // Wrap item name text (max 2 lines)
-      const itemNameLines = wrapText(
+      // Fit the item name against the actual center-circle dimensions.
+      const itemLayout = this.textRenderer.layoutText(
         this.hoveredItem.name,
-        `700 ${spacing.itemName}px Arial, sans-serif`,
         maxWidth,
-        2
+        maxContentHeight * 0.5,
+        {
+          fontWeight: "700",
+          maxFontSize: Math.min(baseFontSize * 1.5, maxContentHeight / 4),
+          minFontSize: Math.max(8, baseFontSize * 0.7),
+          maxLines: 2,
+          wrap: true,
+        }
       );
+      const itemNameLines = itemLayout?.lines || [this.textRenderer.truncateText(
+        this.hoveredItem.name,
+        maxWidth,
+        `700 ${spacing.itemName}px Arial, sans-serif`
+      )];
+      if (itemLayout) spacing.itemName = itemLayout.lineHeight;
+
+      let ringFont = `400 ${spacing.ringName}px Arial, sans-serif`;
+      let dateFont = `400 ${spacing.date}px Arial, sans-serif`;
 
       // Calculate total height needed for all elements
       let totalHeight = 0;
       totalHeight += spacing.ringName; // Ring name
       totalHeight += spacing.gap;
-      if (label) {
+      if (label && label.visible) {
         totalHeight += spacing.badge + spacing.gap * 1.5; // Badge with padding
       }
       totalHeight += spacing.itemName * itemNameLines.length; // Item name (1-2 lines)
       totalHeight += spacing.gap;
       totalHeight += spacing.date; // Date
 
+      // A badge plus a two-line title can otherwise make the vertical block
+      // taller than the circle. Scale all spacing before positioning it.
+      if (totalHeight > maxContentHeight) {
+        const contentScale = maxContentHeight / totalHeight;
+        spacing.ringName *= contentScale;
+        spacing.badge *= contentScale;
+        spacing.itemName *= contentScale;
+        spacing.date *= contentScale;
+        spacing.gap *= contentScale;
+        totalHeight = maxContentHeight;
+        ringFont = `400 ${spacing.ringName}px Arial, sans-serif`;
+        dateFont = `400 ${spacing.date}px Arial, sans-serif`;
+      }
+
+      // Re-measure after any vertical scaling so the visible strings obey the
+      // same font size that is actually drawn.
+      const ringText = ring
+        ? this.textRenderer.truncateText(ring.name, maxWidth, ringFont)
+        : "";
+      const dateText = this.textRenderer.truncateText(
+        formatSmartDate(this.hoveredItem.startDate, this.hoveredItem.endDate),
+        maxWidth,
+        dateFont
+      );
+
       // Start position (vertically centered as a group)
       let currentY = this.center.y - totalHeight / 2;
 
       // 1. Ring name (small, discrete, light gray)
       this.context.fillStyle = "#94A3B8";
-      this.context.font = `400 ${spacing.ringName}px Arial, sans-serif`;
+      this.context.font = ringFont;
       if (ring) {
-        this.context.fillText(ring.name, this.center.x, currentY);
+        this.context.fillText(ringText, this.center.x, currentY);
       }
       currentY += spacing.ringName + spacing.gap;
 
@@ -3948,7 +3973,12 @@ class YearWheel {
         const badgeHeight = spacing.badge;
         const badgePadding = badgeHeight * 0.5;
         this.context.font = `500 ${spacing.badge}px Arial, sans-serif`;
-        const badgeTextWidth = this.context.measureText(label.name).width;
+        const badgeText = this.textRenderer.truncateText(
+          label.name,
+          maxWidth - badgePadding * 2,
+          this.context.font
+        );
+        const badgeTextWidth = this.context.measureText(badgeText).width;
         const badgeWidth = badgeTextWidth + badgePadding * 2;
         const badgeRadius = badgeHeight / 2;
 
@@ -3969,7 +3999,7 @@ class YearWheel {
 
         // Draw badge text (contrasting color)
         this.context.fillStyle = this.getContrastColor(label.color || "#94A3B8");
-        this.context.fillText(label.name, this.center.x, currentY);
+        this.context.fillText(badgeText, this.center.x, currentY);
         currentY += badgeHeight + spacing.gap * 1.5;
       }
 
@@ -3984,12 +4014,9 @@ class YearWheel {
 
       // 4. Date range (small, medium gray, smart format)
       this.context.fillStyle = "#64748B";
-      this.context.font = `400 ${spacing.date}px Arial, sans-serif`;
-      const dateText = formatSmartDate(
-        this.hoveredItem.startDate,
-        this.hoveredItem.endDate
-      );
+      this.context.font = dateFont;
       this.context.fillText(dateText, this.center.x, currentY);
+      this.context.restore();
     } else {
       // Draw year or filtered period text in center (bold, large)
       this.context.fillStyle = "#1E293B";
@@ -4012,12 +4039,26 @@ class YearWheel {
         fontSize = this.size / 35; // Slightly smaller
       }
 
-      this.context.font = `700 ${fontSize}px Arial, sans-serif`;
-      this.context.fillText(
+      const centerPadding = Math.max(4, this.size / 100);
+      const centerLayout = this.textRenderer.layoutText(
         centerText,
+        Math.max(1, (this.minRadius - centerPadding) * 2),
+        Math.max(1, (this.minRadius - centerPadding) * 2),
+        {
+          fontWeight: "700",
+          maxFontSize: fontSize,
+          minFontSize: Math.max(8, this.size / 80),
+          maxLines: 1,
+          wrap: false,
+        }
+      );
+      this.context.font = centerLayout
+        ? centerLayout.font
+        : `700 ${fontSize}px Arial, sans-serif`;
+      this.context.fillText(
+        centerLayout?.lines[0] || centerText,
         this.center.x,
-        this.center.y,
-        this.size
+        this.center.y
       );
     }
 

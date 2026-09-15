@@ -180,6 +180,149 @@ export class TextRenderer {
     return bestSize;
   }
 
+  /**
+   * Build a layout that fits the actual measured canvas dimensions.
+   * Unlike the legacy character-ratio approach, this keeps words together,
+   * balances lines, and only truncates after the readable font floor is met.
+   */
+  layoutText(text, maxWidth, maxHeight, options = {}) {
+    const value = typeof text === 'string' ? text.trim() : '';
+    if (!value || maxWidth <= 0 || maxHeight <= 0) return null;
+
+    const fontWeight = options.fontWeight || '500';
+    const maxLines = Math.max(1, options.maxLines || 2);
+    const canWrap = options.wrap !== false && /\s/.test(value);
+    const maxFontSize = Math.max(
+      8,
+      Math.min(options.maxFontSize || 28, maxHeight / 1.15)
+    );
+    const minFontSize = Math.min(
+      maxFontSize,
+      Math.max(options.minFontSize || 9, Math.min(14, maxHeight / (maxLines * 1.35)))
+    );
+
+    const wrapAtSize = (fontSize, truncate = false) => {
+      const font = `${fontWeight} ${fontSize}px ${this.defaultFont.family}`;
+      const words = canWrap ? this.splitTextForWrapping(value) : [value];
+      const lines = [];
+      let current = '';
+
+      for (const word of words) {
+        const candidate = current ? `${current} ${word}` : word;
+        if (this.measureText(candidate, font) <= maxWidth || !current) {
+          current = candidate;
+        } else {
+          lines.push(current);
+          current = word;
+        }
+      }
+      if (current) lines.push(current);
+
+      if (!truncate && lines.length <= maxLines) {
+        const widest = Math.max(...lines.map((line) => this.measureText(line, font)));
+        const height = lines.length * fontSize * 1.2;
+        if (widest <= maxWidth && height <= maxHeight) {
+          return { fontSize, font, lines, truncated: false };
+        }
+      }
+
+      return { fontSize, font, lines, truncated: true };
+    };
+
+    // Find the largest size where every word fits without truncation.
+    let low = minFontSize;
+    let high = maxFontSize;
+    let best = null;
+    for (let iteration = 0; iteration < 10; iteration += 1) {
+      const size = (low + high) / 2;
+      const candidate = wrapAtSize(size);
+      if (!candidate.truncated) {
+        best = candidate;
+        low = size;
+      } else {
+        high = size;
+      }
+    }
+
+    // The binary search can miss the exact lower bound when only the minimum
+    // readable size fits, so check that boundary explicitly.
+    if (!best) {
+      const minimumCandidate = wrapAtSize(minFontSize);
+      if (!minimumCandidate.truncated) best = minimumCandidate;
+    }
+
+    if (best) {
+      return {
+        ...best,
+        lineHeight: best.fontSize * 1.2,
+        maxLineWidth: Math.max(...best.lines.map((line) => this.measureText(line, best.font))),
+      };
+    }
+
+    // The text cannot fit fully at a readable size. Keep the font readable,
+    // use the available lines, and truncate only the final visible line.
+    const fontSize = Math.max(minFontSize, Math.min(maxFontSize, maxHeight / (maxLines * 1.2)));
+    const fallback = wrapAtSize(fontSize, true);
+    let lines = fallback.lines.slice(0, maxLines);
+    if (lines.length === 0) lines = ['…'];
+
+    const consumed = lines.join(' ');
+    const hasHiddenText = consumed.length < value.length || fallback.lines.length > maxLines;
+    lines = lines.map((line, index) => {
+      const shouldEllipsize = index === lines.length - 1 && hasHiddenText;
+      return shouldEllipsize
+        ? this.truncateText(line.replace(/[\s…]+$/, ''), maxWidth, fallback.font)
+        : this.truncateText(line, maxWidth, fallback.font);
+    });
+
+    if (hasHiddenText && lines.length > 0 && !lines[lines.length - 1].endsWith('…')) {
+      lines[lines.length - 1] = this.truncateText(
+        `${lines[lines.length - 1]}…`,
+        maxWidth,
+        fallback.font
+      );
+    }
+
+    return {
+      fontSize,
+      font: fallback.font,
+      lines,
+      truncated: true,
+      lineHeight: fontSize * 1.2,
+      maxLineWidth: Math.max(...lines.map((line) => this.measureText(line, fallback.font))),
+    };
+  }
+
+  /** Draw an adaptive text block on one or more concentric arcs. */
+  drawArcTextBlock(text, radius, startAngleRad, endAngleRad, radialHeight, style = {}) {
+    const angleSpan = Math.abs(endAngleRad - startAngleRad);
+    const availableWidth = radius * angleSpan * 0.88;
+    if (availableWidth < 18 || radialHeight < 12) return;
+    const maxLines = radialHeight >= 54 ? 3 : radialHeight >= 30 ? 2 : 1;
+    const layout = this.layoutText(text, availableWidth, radialHeight * 0.84, {
+      fontWeight: style.fontWeight || '500',
+      minFontSize: style.minFontSize,
+      maxFontSize: style.maxFontSize || Math.min(26, radialHeight * 0.42),
+      maxLines,
+      wrap: maxLines > 1,
+    });
+
+    if (!layout || availableWidth < this.measureText('…', layout.font)) return;
+
+    const totalHeight = layout.lines.length * layout.lineHeight;
+    const firstRadius = radius + totalHeight / 2 - layout.lineHeight / 2;
+    for (let index = 0; index < layout.lines.length; index += 1) {
+      this.drawTextAlongArc(
+        layout.lines[index],
+        firstRadius - index * layout.lineHeight,
+        startAngleRad,
+        endAngleRad,
+        layout.fontSize,
+        style.color || '#FFFFFF'
+      );
+    }
+  }
+
   // ============================================================================
   // COORDINATE HELPERS
   // ============================================================================
@@ -542,6 +685,14 @@ export class TextRenderer {
       renderDecision = null
     } = style;
 
+    // Use measured, bounded layout for all current rendering. The legacy
+    // implementation below remains as a compatibility reference while the
+    // adaptive path is rolled out.
+    if (this.drawAdaptivePerpendicularText) {
+      this.drawAdaptivePerpendicularText(text, startRadius, width, startAngleRad, endAngleRad, backgroundColor);
+      return;
+    }
+
     const angleLength = Math.abs(endAngleRad - startAngleRad);
     const centerAngle = (startAngleRad + endAngleRad) / 2;
     const middleRadius = startRadius + width / 2;
@@ -697,6 +848,48 @@ export class TextRenderer {
       }
     }
 
+    this.context.restore();
+  }
+
+  drawAdaptivePerpendicularText(text, startRadius, width, startAngleRad, endAngleRad, backgroundColor) {
+    const angleLength = Math.abs(endAngleRad - startAngleRad);
+    const middleRadius = startRadius + width / 2;
+    const arcLength = middleRadius * angleLength;
+    const maxWidth = width * 0.86;
+    const maxHeight = arcLength * 0.86;
+    if (maxWidth < 18 || maxHeight < 12) return;
+    const maxLines = arcLength >= 54 ? 3 : arcLength >= 30 ? 2 : 1;
+    const textColor = backgroundColor ? ColorUtils.getContrastColor(backgroundColor) : '#FFFFFF';
+    const layout = this.layoutText(text, maxWidth, maxHeight, {
+      maxLines,
+      maxFontSize: Math.min(26, width * 0.42),
+      minFontSize: Math.max(8, Math.min(13, maxHeight / (maxLines * 1.2))),
+      color: textColor,
+    });
+
+    if (!layout || maxWidth < this.measureText('…', layout.font)) return;
+
+    const centerAngle = (startAngleRad + endAngleRad) / 2;
+    const pos = this.polarToCartesian(middleRadius, centerAngle);
+    let normalizedAngle = centerAngle % (Math.PI * 2);
+    if (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
+    const isLeftSide = normalizedAngle > Math.PI / 2 && normalizedAngle < Math.PI * 1.5;
+    const rotation = centerAngle + (isLeftSide ? Math.PI : 0);
+
+    this.context.save();
+    this.context.font = layout.font;
+    this.context.fillStyle = textColor;
+    this.context.textAlign = 'center';
+    this.context.textBaseline = 'middle';
+    this.context.translate(pos.x, pos.y);
+    this.context.rotate(rotation);
+
+    const totalHeight = layout.lines.length * layout.lineHeight;
+    let y = -totalHeight / 2 + layout.lineHeight / 2;
+    for (const line of layout.lines) {
+      this.context.fillText(line, 0, y);
+      y += layout.lineHeight;
+    }
     this.context.restore();
   }
 
