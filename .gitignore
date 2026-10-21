@@ -33,7 +33,8 @@ scripts/*
 docs/*
 cypress/downloads/*
 cypress/videos/*
-cypress/screenshots/*supabase/.temp/
+cypress/screenshots/*
+supabase/.temp/
 
 # Project archives
 *.zip

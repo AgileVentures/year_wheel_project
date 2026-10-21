@@ -165,6 +165,26 @@ serve(async (req) => {
       )
     }
 
+    // Validate required email secrets up front so we fail fast with a clear error
+    // (and don't leave a phantom newsletter_sends row) when configuration is missing.
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    if (!RESEND_API_KEY) {
+      console.error('RESEND_API_KEY environment variable not set')
+      return new Response(
+        JSON.stringify({ error: 'Resend API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const UNSUBSCRIBE_SECRET = Deno.env.get('UNSUBSCRIBE_SECRET')
+    if (!UNSUBSCRIBE_SECRET) {
+      console.error('UNSUBSCRIBE_SECRET environment variable not set')
+      return new Response(
+        JSON.stringify({ error: 'Unsubscribe secret not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Create send row upfront to get an ID
     const { data: sendRow, error: sendInsertError } = await supabase
       .from('newsletter_sends')
@@ -194,18 +214,6 @@ serve(async (req) => {
     const sendId = sendRow.id
     console.log(`Created newsletter send: ${sendId}`)
 
-    // Send emails via Resend
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    if (!RESEND_API_KEY) {
-      console.error('RESEND_API_KEY environment variable not set')
-      return new Response(
-        JSON.stringify({ error: 'Resend API key not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Get unsubscribe secret for token signing
-    const UNSUBSCRIBE_SECRET = Deno.env.get('UNSUBSCRIBE_SECRET') ?? ''
     const encoder = new TextEncoder()
     const b64url = (str: string) =>
       btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
